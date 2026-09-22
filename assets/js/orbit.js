@@ -86,7 +86,7 @@ document.addEventListener('click', e => {
 
 /* ---------- nav + footer compartidos ---------- */
 const page = document.body.dataset.page;
-const links = [['index.html',L('Inicio','Home'),'home'],['productos.html',L('Productos','Products'),'productos'],['nosotros.html',L('Nosotros','About'),'nosotros']];
+const links = [['index.html',L('Inicio','Home'),'home'],['productos.html',L('Productos','Products'),'productos'],['index.html#a-medida',L('A medida','Custom'),'custom'],['nosotros.html',L('Nosotros','About'),'nosotros']];
 const langSw = `<div class="langsw" role="group" aria-label="Idioma / Language"><button data-set="es" aria-pressed="${lang()==='es'}">ES</button><span>/</span><button data-set="en" aria-pressed="${lang()==='en'}">EN</button></div>`;
 const nav = document.createElement('header');
 nav.className = 'nav';

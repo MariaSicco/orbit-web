@@ -13,12 +13,26 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=5">
+<link rel="stylesheet" href="assets/css/orbit.css?v=6">
 <style>
 /* hero — el ORBIT gigante del manual */
-.hero{min-height:min(940px,100svh);display:flex;flex-direction:column;justify-content:space-between;padding-top:calc(96px + env(safe-area-inset-top,0px));padding-bottom:28px}
+.hero{height:100svh;min-height:600px;display:flex;flex-direction:column;justify-content:space-between;padding-top:calc(84px + env(safe-area-inset-top,0px));padding-bottom:24px;isolation:isolate}
+.hero-bg{position:absolute;inset:0;z-index:-1;overflow:hidden;background:var(--k)}
+.hero-bg .slide{position:absolute;inset:0;background:center/cover no-repeat;filter:grayscale(1) contrast(1.1);opacity:0;transform:scale(1.1);transition:opacity 1.4s var(--ease),transform 6s linear}
+.hero-bg .slide.on{opacity:.5;transform:scale(1)}
+.hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,13,14,.75) 0%,rgba(13,13,14,.2) 30%,rgba(13,13,14,.3) 55%,rgba(13,13,14,.94) 100%)}
+.hprog{display:flex;align-items:center;gap:16px;margin-top:20px;flex-wrap:wrap}
+.hprog .bars{display:flex;gap:5px;width:min(240px,50%)}
+.hprog .bars button{flex:1;height:14px;display:flex;align-items:center;padding:0}
+.hprog .bars i{display:block;width:100%;height:2px;background:rgba(242,239,232,.28);position:relative;overflow:hidden}
+.hprog .bars b{position:absolute;inset:0;background:var(--b);transform-origin:left;transform:scaleX(0)}
+.hprog a{text-decoration:none;transition:color .2s}
+.hprog a:hover{color:var(--ac)}
+.screen2{min-height:100svh;display:flex;flex-direction:column}
+.screen2 .pband{flex:1}
+main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column;justify-content:center}
 .hero .top{display:flex;justify-content:space-between;gap:24px}
-.hero .word{font-size:clamp(64px,min(25vw,38vh),420px);margin:clamp(24px,4vh,48px) 0;cursor:crosshair;user-select:none;line-height:.8}
+.hero .word{font-size:clamp(60px,min(25vw,34vh),420px);margin:clamp(12px,3vh,40px) 0;cursor:crosshair;user-select:none;line-height:.8}
 .hero .bot{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,3vw,48px);align-items:end}
 .hero .tag{font-size:clamp(34px,4.4vw,74px)}
 .rot{font-weight:800;font-size:clamp(26px,3vw,48px);letter-spacing:-.04em;text-transform:uppercase;line-height:.95;margin:0}
@@ -68,7 +82,7 @@
 @media (max-width:860px){.flow{grid-template-columns:1fr 1fr}.flow>div{min-height:240px}}
 
 /* banda editorial */
-.band{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);min-height:620px}
+.band{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);min-height:100svh}
 .band .photo{min-height:460px}
 .band .txt{background:#BDBCB8;color:var(--k);padding:clamp(20px,3vw,44px);display:flex;flex-direction:column;justify-content:space-between;gap:30px}
 .band h2{font-size:clamp(64px,9vw,150px)}
@@ -159,6 +173,26 @@
 @media (max-width:640px){.wf{grid-template-columns:1fr}}
 @media (max-width:860px){.peek{grid-template-columns:1fr}}
 
+/* a medida */
+.cus{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,4vw,72px);align-items:start}
+.cus h2{font-size:clamp(46px,6.4vw,108px)}
+.cus-steps{list-style:none;margin:32px 0 0;padding:0}
+.cus-steps li{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--k3)}
+.cus-steps li:last-child{border-bottom:1px solid var(--k3)}
+.cus-steps b{display:block;font-size:19px;letter-spacing:-.02em}
+.cus-steps p{margin:2px 0 0;font-size:14px;opacity:.65}
+.cform{background:var(--b);color:var(--k);padding:clamp(18px,2.6vw,36px);display:flex;flex-direction:column;gap:20px}
+.cform .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cform label{display:block;margin-bottom:8px}
+.cform input,.cform textarea{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1px solid rgba(13,13,14,.25);background:#fff;color:var(--k);border-radius:0}
+.cform textarea{min-height:120px;resize:vertical}
+.cform input:focus,.cform textarea:focus{outline:2px solid var(--blue);outline-offset:0}
+.cform .opts{display:flex;flex-wrap:wrap;gap:8px}
+.cform .opts .chip{color:var(--k)}
+.cform .send{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid rgba(13,13,14,.15);padding-top:18px}
+.cform .err{color:var(--or);font-size:14px;min-height:1.2em}
+@media (max-width:860px){.cus{grid-template-columns:1fr}.cform .two{grid-template-columns:1fr}}
+
 .faqgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px)}
 .faqgrid h2{font-size:clamp(44px,5.4vw,90px)}
 @media (max-width:860px){.faqgrid{grid-template-columns:1fr}}
@@ -169,6 +203,7 @@
 
 <!-- HERO -->
 <section class="sec dark hero">
+  <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
   <div class="wrap top">
     <p class="mono" style="margin:0">Digital tools<br>for a brighter<br>creative tomorrow.</p>
     <p class="mono" style="margin:0;text-align:right">OB—000<br>Digital goods<br>Est. 2026</p>
@@ -183,18 +218,20 @@
       <p class="rot"><span data-l="es">Herramientas para</span><span data-l="en">Tools to</span> <span class="it" id="rotWord">crear.</span></p>
       <p class="sub"><span data-l="es">Productos digitales para diseñar, vender, organizar, automatizar y hacer crecer ideas — en cualquier disciplina.</span><span data-l="en">Digital products to design, sell, organize, automate and grow ideas — in any discipline.</span></p>
       <div class="ctas"><a class="btn btn-acid" href="productos.html"><span data-l="es">Explorar productos</span><span data-l="en">Explore products</span> <span class="ar">→</span></a><a class="btn btn-line" href="#disciplinas"><span data-l="es">Ver disciplinas</span><span data-l="en">See disciplines</span></a></div>
+      <div class="hprog"><div class="bars" id="hBars"></div><span class="mono dim"><span data-l="es">En órbita</span><span data-l="en">In orbit</span></span><a class="mono" id="hNow" href="productos.html"></a></div>
     </div>
   </div>
 </section>
 
+<!-- SEGUNDA PANTALLA: franja + banda foto -->
+<section class="screen2">
 <div class="dark"><div class="ticker" data-ticker="Ideas in motion|Tools that move|Build what’s next|Enter the orbit|From idea to system|Make better things"></div></div>
-
-<!-- BANDA FOTO -->
-<section class="pband light">
+<div class="pband light">
   <div class="photo" data-photo="landing" role="img" data-aria-es="Arquitectura curva de hormigón" data-aria-en="Curved concrete architecture"></div>
   <div class="ring" data-sym='{"ring":"b","dot":"blue","gap":64,"rot":120}' aria-hidden="true"></div>
   <h2 class="display">Build<br>what’s<br><span class="it">next.</span></h2>
   <span class="mono meta">Creative tools<br>Real progress<br>OB—001</span>
+</div>
 </section>
 
 <!-- QUIZ -->
@@ -261,6 +298,38 @@
   </div>
 </section>
 
+<!-- A MEDIDA -->
+<section class="sec dark" id="a-medida">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">A medida</span><span data-l="en">Custom</span></b>OB—X00</div><div style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></div></div>
+    <div class="cus">
+      <div class="rv">
+        <h2 class="display"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
+        <p class="lead" style="opacity:.75;margin-top:22px"><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA pensados para tu negocio, con el mismo cuidado que cada producto Orbit.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows built for your business, with the same care as every Orbit product.</span></p>
+        <ol class="cus-steps">
+          <li><span class="mono">01</span><div><b><span data-l="es">Brief</span><span data-l="en">Brief</span></b><p><span data-l="es">Nos contás la idea en este formulario.</span><span data-l="en">Tell us the idea in this form.</span></p></div></li>
+          <li><span class="mono">02</span><div><b><span data-l="es">Propuesta</span><span data-l="en">Proposal</span></b><p><span data-l="es">En 48 h hábiles te enviamos alcance, plazo y precio.</span><span data-l="en">Within 2 business days we send scope, timeline and price.</span></p></div></li>
+          <li><span class="mono">03</span><div><b><span data-l="es">Diseño</span><span data-l="en">Design</span></b><p><span data-l="es">Construimos el sistema con revisiones incluidas.</span><span data-l="en">We build the system, revisions included.</span></p></div></li>
+          <li><span class="mono">04</span><div><b><span data-l="es">Entrega</span><span data-l="en">Delivery</span></b><p><span data-l="es">Listo para usar, con guía y soporte.</span><span data-l="en">Ready to use, with a guide and support.</span></p></div></li>
+        </ol>
+      </div>
+      <form class="cform rv" id="cform" novalidate>
+        <div class="two">
+          <div><label class="mono" for="cName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="cName" name="name" autocomplete="name"></div>
+          <div><label class="mono" for="cMail">Email</label><input id="cMail" name="email" type="email" autocomplete="email"></div>
+        </div>
+        <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span><div class="opts" data-group="type"></div></div>
+        <div><label class="mono" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label><textarea id="cIdea" name="idea"></textarea></div>
+        <div class="two">
+          <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Presupuesto (USD)</span><span data-l="en">Budget (USD)</span></span><div class="opts" data-group="budget"></div></div>
+          <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Plazo</span><span data-l="en">Timeline</span></span><div class="opts" data-group="time"></div></div>
+        </div>
+        <div class="send"><span class="err" id="cErr" role="alert"></span><button class="btn btn-blue" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
 <!-- BANDA EDITORIAL -->
 <section class="band">
   <div class="photo" data-photo="figure" role="img" data-aria-es="Persona de espaldas mirando el cielo" data-aria-en="Person seen from behind looking at the sky"></div>
@@ -295,8 +364,8 @@
 </section>
 
 </main>
-<script src="assets/js/products.js?v=5"></script>
-<script src="assets/js/orbit.js?v=5"></script>
+<script src="assets/js/products.js?v=6"></script>
+<script src="assets/js/orbit.js?v=6"></script>
 <script>
 (() => {
 const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow, reveal, toast, money, P, FAM, url, RM} = ORBIT;
@@ -305,13 +374,40 @@ const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow,
 $('#heroWord').innerHTML = bigWm('heroG');
 follow($('#heroG'), $('#heroWord svg'));
 
-/* hero: disciplinas rotando */
-const VERBS = {es:['crear.','diseñar.','vender.','organizar.','automatizar.','enseñar.','construir.','crecer.'], en:['create.','design.','sell.','organize.','automate.','teach.','build.','grow.']};
-const rw = $('#rotWord'); let vi = 0;
-const setVerb = () => rw.textContent = VERBS[lang()][vi % VERBS.es.length];
-setVerb();
-addEventListener('orbit:lang', setVerb);
-if (!RM) setInterval(() => { rw.classList.add('swap'); setTimeout(() => { vi++; setVerb(); rw.classList.remove('swap'); }, 350); }, 2000);
+/* hero: fotos + palabra + producto, sincronizados */
+const SLIDES = [
+  {ph:'hands', v:['crear.','create.'], id:'ob-001'},
+  {ph:'studio', v:['diseñar.','design.'], id:'ob-002'},
+  {ph:'arch', v:['organizar.','organize.'], id:'ob-003'},
+  {ph:'corridor', v:['automatizar.','automate.'], id:'ob-004'},
+  {ph:'figure', v:['crecer.','grow.'], id:null},
+];
+const DUR = 4200;
+const bg = $('#heroBg'), rw = $('#rotWord'), now = $('#hNow'), bars = $('#hBars');
+bg.innerHTML = SLIDES.map(x => `<div class="slide" style="background-image:url(assets/img/${x.ph}.jpg)"></div>`).join('');
+bars.innerHTML = SLIDES.map((x,i) => `<button aria-label="${i+1}"><i><b></b></i></button>`).join('');
+const slides = $$('.slide', bg), fills = $$('b', bars);
+let si = 0, t0 = performance.now();
+function showSlide(i) {
+  si = (i + SLIDES.length) % SLIDES.length; t0 = performance.now();
+  slides.forEach((el,k) => el.classList.toggle('on', k === si));
+  const x = SLIDES[si], p = x.id && P.find(q => q.id === x.id);
+  rw.classList.add('swap');
+  setTimeout(() => { rw.textContent = tr(...x.v); rw.classList.remove('swap'); }, RM ? 0 : 300);
+  now.innerHTML = p ? `${p.code} ${p.name} →` : L('Toda la colección →','The full collection →');
+  now.href = p ? url(p) : 'productos.html';
+  fills.forEach((f,k) => f.style.transform = `scaleX(${k < si ? 1 : 0})`);
+}
+$$('button', bars).forEach((b,i) => b.onclick = () => showSlide(i));
+addEventListener('orbit:lang', () => { rw.textContent = tr(...SLIDES[si].v); });
+showSlide(0);
+if (!RM) (function tick(n) {
+  const k = Math.min(1, (n - t0) / DUR);
+  fills[si].style.transform = `scaleX(${k})`;
+  if (k >= 1) showSlide(si + 1);
+  requestAnimationFrame(tick);
+})(performance.now());
+else fills[0].style.transform = 'scaleX(1)';
 
 /* disciplinas */
 const DISC = [
@@ -486,6 +582,29 @@ win.addEventListener('click', e => {
 win.addEventListener('input', e => { if (e.target.id === 'wfTopic') { wfTopic = e.target.value; const topic = wfTopic || tr('lanzar un producto digital','launching a digital product'); $('#wfOut').innerHTML = tr(...WF[wfStep][1]).replace('{t}', `<mark>${topic.replace(/[<>&]/g,'')}</mark>`); } });
 addEventListener('orbit:lang', () => { if (cur.id === 'ob-004') renderWin(); });
 renderWin();
+
+/* ---------- a medida ---------- */
+const OPTS = {
+  type: [['Sistema en Notion','Notion system'],['Plantillas de marca','Brand templates'],['Kit de contenido','Content kit'],['Workflow de IA','AI workflow'],['Otra idea','Something else']],
+  budget: [['< 500','< 500'],['500 – 1.500','500 – 1,500'],['1.500 +','1,500 +'],['No sé','Not sure']],
+  time: [['Sin apuro','No rush'],['1 mes','1 month'],['Urgente','Urgent']],
+};
+const pick = {type:null, budget:null, time:null};
+$$('.cform .opts').forEach(box => {
+  const g = box.dataset.group;
+  box.innerHTML = OPTS[g].map((o,i) => `<button type="button" class="chip" data-i="${i}" aria-pressed="false">${L(...o)}</button>`).join('');
+  $$('.chip', box).forEach(b => b.onclick = () => { pick[g] = +b.dataset.i; $$('.chip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+});
+$('#cform').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#cName').value.trim(), mail = $('#cMail').value.trim(), idea = $('#cIdea').value.trim(), err = $('#cErr');
+  if (!name || !/^\S+@\S+\.\S+$/.test(mail) || !idea) { err.textContent = tr('Completá nombre, un email válido y la idea.', 'Please add your name, a valid email and the idea.'); return; }
+  err.textContent = '';
+  const val = g => pick[g] === null ? '—' : tr(...OPTS[g][pick[g]]);
+  const body = `${tr('Nombre','Name')}: ${name}\nEmail: ${mail}\n${tr('Qué necesito','What I need')}: ${val('type')}\n${tr('Presupuesto (USD)','Budget (USD)')}: ${val('budget')}\n${tr('Plazo','Timeline')}: ${val('time')}\n\n${idea}`;
+  location.href = `mailto:hola@orbit.studio?subject=${encodeURIComponent(tr('Pedido a medida — ','Custom request — ') + name)}&body=${encodeURIComponent(body)}`;
+  toast(tr('Abrimos tu email con el pedido listo para enviar','Opening your email with the request ready to send'));
+});
 
 reveal();
 })();
