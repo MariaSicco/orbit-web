@@ -12,8 +12,8 @@ const L = (es, en) => (typeof es === 'object' && es) ? L(es.es, es.en) : (en ===
 /* tr(): texto plano en el idioma actual (títulos, avisos, atributos) */
 const tr = (es, en) => (typeof es === 'object' && es) ? es[lang()] : (lang() === 'en' && en !== undefined ? en : es);
 function store(l) { for (const s of [localStorage, sessionStorage]) { try { s.setItem('orbit-lang', l); } catch (e) {} } }
-function setLang(l) {
-  root.dataset.lang = l; root.lang = l; store(l);
+function setLang(l, save=true) {
+  root.dataset.lang = l; root.lang = l; if (save) store(l);
   const t = document.body.dataset['title' + (l === 'en' ? 'En' : 'Es')]; if (t) document.title = t;
   $$('[data-aria-es]').forEach(el => el.setAttribute('aria-label', el.dataset['aria' + (l === 'en' ? 'En' : 'Es')]));
   $$('.langsw button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.set === l)));
@@ -170,7 +170,7 @@ function gate() {
 }
 const needGate = root.classList.contains('gate-on');
 if (needGate) gate();
-setLang(lang());
+setLang(lang(), false);
 
 window.ORBIT = {C, RM, $, $$, L, tr, lang, setLang, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC};
 })();
