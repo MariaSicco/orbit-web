@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es" data-lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi biblioteca — Orbit®</title>
+<meta name="description" content="Tu biblioteca Orbit: descargas, versiones y guías de todo lo que compraste.">
+<meta name="theme-color" content="#0D0D0E">
+<link rel="stylesheet" href="assets/css/orbit.css?v=17">
+<style>
+.lib-head{padding-top:calc(110px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:26px}
+.lib-head .top{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
+.lib-head h1{font-size:clamp(44px,7vw,120px)}
+.lib-head h1 .it{color:var(--or)}
+.lib-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3);margin-top:10px}
+.lib-stats>div{background:var(--k);padding:16px}
+.lib-stats b{display:block;font-size:clamp(26px,3vw,44px);font-weight:800;letter-spacing:-.04em;line-height:1;margin-top:8px}
+.items{display:flex;flex-direction:column;gap:2px;background:var(--k3);margin-top:clamp(28px,4vw,48px)}
+.item{background:var(--k);display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:clamp(16px,2.4vw,36px);align-items:center;padding:clamp(16px,2vw,26px)}
+.item .cover{width:120px}
+.item h3{margin:0 0 6px;font-weight:800;font-size:clamp(22px,2.4vw,34px);letter-spacing:-.035em;text-transform:uppercase;line-height:1}
+.item p{margin:0;opacity:.7;font-size:15px;max-width:52ch}
+.item .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
+.item .acts{display:flex;flex-direction:column;gap:8px;min-width:190px}
+.item .acts .btn{justify-content:center}
+.new{background:var(--blue);color:var(--b);padding:2px 8px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
+.empty2{background:var(--k);padding:clamp(20px,3vw,40px);border:1px dashed var(--k3);display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin-top:2px}
+.lic{margin-top:clamp(40px,5vw,72px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.6vw,24px)}
+.lic>div{border-top:1px solid var(--k3);padding-top:14px}
+.lic b{display:block;font-size:18px;letter-spacing:-.02em;margin:8px 0 6px}
+.lic p{margin:0;font-size:14px;opacity:.7}
+@media (max-width:860px){.item{grid-template-columns:90px minmax(0,1fr)}.item .cover{width:90px}.item .acts{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}.lib-stats,.lic{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="biblioteca" data-nav-solid data-title-es="Mi biblioteca — Orbit®" data-title-en="My library — Orbit®">
+<main>
+<section class="sec dark lib-head">
+  <div class="wrap top">
+    <div>
+      <span class="mono">OB—000 · <span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></span>
+      <h1 class="display" style="margin-top:12px"><span data-l="es">Mi <span class="it">biblioteca.</span></span><span data-l="en">My <span class="it">library.</span></span></h1>
+    </div>
+    <div style="text-align:right"><span class="mono dim" id="who"></span><br><button class="chip" id="out" style="margin-top:10px"><span data-l="es">Salir</span><span data-l="en">Sign out</span></button></div>
+  </div>
+  <div class="wrap">
+    <div class="lib-stats" id="stats"></div>
+    <div class="items" id="items"></div>
+    <div class="empty2">
+      <div><span class="mono dim"><span data-l="es">Sumá herramientas</span><span data-l="en">Add more tools</span></span><p style="margin:8px 0 0;font-size:clamp(20px,2.2vw,30px);font-weight:800;letter-spacing:-.035em;text-transform:uppercase;line-height:1"><span data-l="es">Tu órbita puede crecer.</span><span data-l="en">Your orbit can grow.</span></p></div>
+      <a class="btn btn-acid" href="productos.html"><span data-l="es">Ver catálogo</span><span data-l="en">See catalog</span> <span class="ar">→</span></a>
+    </div>
+    <div class="lic">
+      <div><span class="mono dim">01</span><b><span data-l="es">Licencia comercial</span><span data-l="en">Commercial license</span></b><p><span data-l="es">Usá los productos en proyectos propios y de clientes. No se pueden revender ni redistribuir los archivos originales.</span><span data-l="en">Use the products in your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></div>
+      <div><span class="mono dim">02</span><b><span data-l="es">Actualizaciones sin cargo</span><span data-l="en">Free updates</span></b><p><span data-l="es">Cuando un producto sube de versión, aparece acá con la etiqueta “Nuevo”.</span><span data-l="en">When a product gets a new version, it shows up here tagged “New”.</span></p></div>
+      <div><span class="mono dim">03</span><b><span data-l="es">Acceso para siempre</span><span data-l="en">Lifetime access</span></b><p><span data-l="es">Tus compras quedan disponibles en esta biblioteca, sin suscripción.</span><span data-l="en">Your purchases stay available in this library, no subscription.</span></p></div>
+    </div>
+    <p class="mono dim" style="margin-top:28px"><span data-l="es">Vista de demostración: las descargas se activan al conectar la plataforma de pago.</span><span data-l="en">Demo view: downloads turn on once the payment platform is connected.</span></p>
+  </div>
+</section>
+</main>
+<script src="assets/js/products.js?v=17"></script>
+<script src="assets/js/orbit.js?v=17"></script>
+<script>
+(() => {
+const {$, $$, L, tr, cover, toast, P, url} = ORBIT;
+let user = null;
+try { user = localStorage.getItem('orbit-demo-user'); } catch (e) {}
+if (!user) { location.replace('acceso.html'); return; }
+$('#who').textContent = user;
+$('#out').onclick = () => { try { localStorage.removeItem('orbit-demo-user'); } catch (e) {} location.href = 'acceso.html'; };
+
+/* demo: compras de ejemplo */
+const owned = [{id:'ob-001', date:'12.03.2026', ver:'V.01', fresh:true}, {id:'ob-003', date:'02.04.2026', ver:'V.01', fresh:false}];
+const items = owned.map(o => ({...o, p: P.find(x => x.id === o.id)})).filter(x => x.p);
+$('#stats').innerHTML = [
+  [L('Productos','Products'), String(items.length).padStart(2,'0')],
+  [L('Assets totales','Total assets'), '128'],
+  [L('Última actualización','Last update'), '02.04.2026'],
+].map(([k,v]) => `<div><span class="mono dim">${k}</span><b>${v}</b></div>`).join('');
+$('#items').innerHTML = items.map(({p, date, ver, fresh}) => `<div class="item">
+  <div>${cover(p)}</div>
+  <div><span class="mono dim">${p.code} · ${L('Comprado','Purchased')} ${date}</span>
+    <h3 style="margin-top:8px">${p.name} ${fresh ? `<span class="new">${L('Nuevo','New')}</span>` : ''}</h3>
+    <p>${L(p.tagline)}</p>
+    <div class="meta mono dim">${p.specs.slice(0,3).map(([k,v]) => `<span>${L(k)}: ${L(v)}</span>`).join('')}<span>${ver}</span></div>
+  </div>
+  <div class="acts"><button class="btn btn-acid" data-dl="${p.id}">${L('Descargar','Download')} <span class="ar">↓</span></button><a class="btn btn-line" href="${url(p)}">${L('Ver guía','View guide')}</a></div>
+</div>`).join('');
+$$('[data-dl]').forEach(b => b.onclick = () => toast(tr('Demo: la descarga se activa al conectar la plataforma de pago','Demo: downloads turn on once the payment platform is connected')));
+})();
+</script>
+</body>
+</html>

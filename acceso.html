@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es" data-lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Acceso — Orbit®</title>
+<meta name="description" content="Accedé a tu biblioteca Orbit: todos los productos que compraste, siempre disponibles.">
+<meta name="theme-color" content="#0D0D0E">
+<link rel="stylesheet" href="assets/css/orbit.css?v=17">
+<style>
+.acc{min-height:100svh;display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);align-items:stretch}
+.acc .l{padding:calc(100px + env(safe-area-inset-top,0px)) var(--pad) 32px;display:flex;flex-direction:column;justify-content:space-between;gap:32px;background:var(--k)}
+.acc h1{font-size:clamp(46px,min(6.4vw,12vh),110px)}
+.acc h1 .it{color:var(--or)}
+.acc .form{max-width:440px;width:100%}
+.acc label{display:block;margin-bottom:8px}
+.acc input{width:100%;font:inherit;font-size:16px;padding:14px 16px;background:transparent;border:1px solid var(--k3);color:var(--b)}
+.acc input:focus{outline:2px solid var(--blue);outline-offset:0;border-color:transparent}
+.acc .btn{margin-top:12px;width:100%;justify-content:center}
+.acc .note{margin:16px 0 0;font-size:13px;opacity:.6;max-width:44ch}
+.acc .err{color:var(--or);font-size:14px;min-height:1.3em;margin-top:10px}
+.acc .r{position:relative;background:var(--k2);overflow:hidden;display:grid;place-items:center;padding:var(--pad)}
+.acc .r .ring{position:absolute;width:120%;right:-38%;top:-24%;color:var(--k3)}
+.acc .shelf3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:min(100%,520px);position:relative;z-index:2;transform:rotateY(-12deg) rotateX(6deg);perspective:900px}
+.acc .shelf3 .cover{box-shadow:0 26px 50px -26px rgba(0,0,0,.9)}
+.acc .cap{position:absolute;left:var(--pad);bottom:var(--pad);z-index:2}
+@media (max-width:860px){.acc{grid-template-columns:1fr}.acc .r{min-height:46svh}}
+</style>
+</head>
+<body data-page="acceso" data-nav-solid data-title-es="Acceso — Orbit®" data-title-en="Sign in — Orbit®">
+<main>
+<section class="acc dark">
+  <div class="l">
+    <div><span class="mono">OB—000 · <span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></span></div>
+    <div>
+      <h1 class="display"><span data-l="es">Tu <span class="it">biblioteca.</span></span><span data-l="en">Your <span class="it">library.</span></span></h1>
+      <p class="lead" style="opacity:.75;margin:22px 0 30px"><span data-l="es">Todo lo que comprás queda guardado acá: descargas, versiones nuevas y guías. Sin contraseñas: te enviamos un enlace de acceso a tu email.</span><span data-l="en">Everything you buy stays here: downloads, new versions and guides. No passwords: we send an access link to your email.</span></p>
+      <form class="form" id="accForm" novalidate>
+        <label class="mono" for="accMail">Email</label>
+        <input id="accMail" type="email" autocomplete="email" placeholder="hola@tuestudio.com">
+        <button class="btn btn-acid" type="submit"><span data-l="es">Enviarme el enlace</span><span data-l="en">Send me the link</span> <span class="ar">→</span></button>
+        <p class="err" id="accErr" role="alert"></p>
+        <p class="note"><span data-l="es">Prototipo: el acceso real se activa cuando conectemos la plataforma de pago. Por ahora podés entrar a la biblioteca de demostración.</span><span data-l="en">Prototype: real access turns on once the payment platform is connected. For now you can enter the demo library.</span></p>
+      </form>
+    </div>
+    <div class="mono dim"><span data-l="es">¿Compraste y no encontrás tu acceso? Escribinos a</span><span data-l="en">Bought something and can’t find your access? Email us at</span> hola@orbit.studio</div>
+  </div>
+  <div class="r">
+    <div class="ring" data-sym='{"ring":"#242426","dot":"blue","gap":70}' aria-hidden="true"></div>
+    <div class="shelf3" id="accShelf"></div>
+    <span class="mono cap"><span data-l="es">Tu colección, siempre disponible</span><span data-l="en">Your collection, always available</span></span>
+  </div>
+</section>
+</main>
+<script src="assets/js/products.js?v=17"></script>
+<script src="assets/js/orbit.js?v=17"></script>
+<script>
+(() => {
+const {$, $$, L, tr, cover, toast, P} = ORBIT;
+$('#accShelf').innerHTML = P.slice(0,3).map(p => cover(p)).join('');
+$('#accForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const mail = $('#accMail').value.trim(), err = $('#accErr');
+  if (!/^\S+@\S+\.\S+$/.test(mail)) { err.textContent = tr('Escribí un email válido.','Please enter a valid email.'); return; }
+  err.textContent = '';
+  try { localStorage.setItem('orbit-demo-user', mail); } catch (e) {}
+  toast(tr('Demo: entrando a tu biblioteca','Demo: opening your library'));
+  setTimeout(() => location.href = 'biblioteca.html', 700);
+});
+})();
+</script>
+</body>
+</html>

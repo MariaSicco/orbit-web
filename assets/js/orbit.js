@@ -122,7 +122,7 @@ const nav = document.createElement('header');
 nav.className = 'nav';
 nav.innerHTML = `<a class="logo" href="index.html" aria-label="Orbit">${wm({color:'#F2EFE8'})}</a>
   <ul>${links.map(([h,t,k]) => `<li><a href="${h}"${k===page?' aria-current="page"':''}>${t}</a></li>`).join('')}</ul>
-  <div class="right">${langSw}<button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
+  <div class="right"><a class="acc-link" href="acceso.html">${L('Acceso','Sign in')}</a>${langSw}<button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
 document.body.prepend(nav);
 const navSolid = () => nav.classList.toggle('solid', scrollY > 12 || 'navSolid' in document.body.dataset);
 addEventListener('scroll', navSolid, {passive:true}); navSolid();
@@ -143,7 +143,7 @@ foot.innerHTML = `<div class="wrap">
   <div class="cols">
     <div><span class="mono dim">${L('Productos','Products')}</span>${P.map(p => `<a href="${url(p)}">${p.code} ${p.name}</a>`).join('')}</div>
     <div><span class="mono dim">${L('Familias','Families')}</span>${Object.entries(FAM).map(([k,[n]]) => `<a href="productos.html#${k}">${n}</a>`).join('')}</div>
-    <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="index.html#a-medida">${L('Pedidos a medida','Custom requests')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
+    <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="index.html#a-medida">${L('Pedidos a medida','Custom requests')}</a><a href="acceso.html">${L('Mi biblioteca','My library')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
     <div><span class="mono dim">${L('Contacto','Contact')}</span><a href="mailto:hola@orbit.studio">hola@orbit.studio</a><a href="#">Instagram</a><a href="#">Newsletter</a></div>
   </div>
   <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">Digital goods for creative people.</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>
