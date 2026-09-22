@@ -1,8 +1,11 @@
 /* Envío de emails: Brevo (o Resend como alternativa). */
-const FROM = () => {
-  const raw = process.env.BREVO_FROM || process.env.RESEND_FROM || 'Orbit <hola@orbitando.com.ar>';
-  const m = raw.match(/^(.*?)\s*<(.+)>$/);
-  return m ? { name: m[1] || 'Orbit', email: m[2] } : { name: 'Orbit', email: raw };
+export const FROM = () => {
+  const raw = (process.env.BREVO_FROM || process.env.RESEND_FROM || 'Orbit <hola@orbitando.com.ar>')
+    .replace(/[\u200B-\u200D\uFEFF]/g, '').trim().replace(/^["']|["']$/g, '').trim();
+  const m = raw.match(/^(.*?)\s*<\s*([^<>\s]+)\s*>$/);
+  const name = (m ? m[1] : '').replace(/^["']|["']$/g, '').trim() || 'Orbit';
+  const email = (m ? m[2] : raw).trim();
+  return { name, email };
 };
 export const emailReady = () => Boolean(process.env.BREVO_API_KEY || process.env.RESEND_API_KEY);
 
