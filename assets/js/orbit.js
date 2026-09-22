@@ -105,57 +105,97 @@ function toast(m) {
 /* botón de compra */
 function buyBtn(p, cls='btn btn-acid') {
   if (p.status === 'soon') return `<button class="${cls}" type="button" data-soon="${p.id}">${L('Avisame cuando salga','Notify me')} <span class="ar">→</span></button>`;
-  return `<button class="${cls}" type="button" data-buy="${p.id}">${L('Comprar','Buy')} — ${money(p.price)} <span class="ar">→</span></button>`;
+  return `<button class="${cls}" type="button" data-buy="${p.id}">${L('Agregar al carrito','Add to cart')} — ${money(p.price)} <span class="ar">+</span></button>`;
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-buy]');
-  if (b) { e.preventDefault(); openCheckout(P.find(p => p.id === b.dataset.buy)); }
+  if (b) { e.preventDefault(); cartAdd(b.dataset.buy); }
   const s = e.target.closest('[data-soon]');
   if (s) { e.preventDefault(); toast(tr('Pronto: acá va el formulario de lista de espera', 'Coming soon: the waitlist form goes here')); }
 });
 
-/* ---------- checkout: Mercado Pago o PayPal ---------- */
-function openCheckout(p) {
-  if (!p) return;
-  const box = document.createElement('div');
-  box.className = 'co'; box.setAttribute('role','dialog'); box.setAttribute('aria-modal','true');
-  box.innerHTML = `<div class="co-box">
-    <div class="co-top"><div><span class="mono">${p.code}</span><h3 style="margin-top:10px">${p.name}</h3></div><button class="chip" data-x>${L('Cerrar','Close')}</button></div>
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:1px solid var(--k3);padding-top:14px">
-      <span class="mono dim">${L('Pago único · acceso para siempre','One-time payment · lifetime access')}</span><span class="co-price">${money(p.price)}</span></div>
-    <div><label class="mono" for="coMail">${L('Tu email (ahí llega el acceso)','Your email (where access is sent)')}</label><input id="coMail" type="email" autocomplete="email" placeholder="hola@tuestudio.com"></div>
-    <div class="co-pays">
+/* ---------- carrito ---------- */
+const CART_KEY = 'orbit-cart';
+let cart = [];
+try { cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]').filter(x => P.some(p => p.id === x.id)); } catch (e) {}
+const saveCart = () => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {} paintCart(); };
+const cartCount = () => cart.reduce((a, i) => a + i.qty, 0);
+const cartTotal = () => cart.reduce((a, i) => a + (P.find(p => p.id === i.id)?.price || 0) * i.qty, 0);
+function cartAdd(id) {
+  const p = P.find(x => x.id === id); if (!p || p.status === 'soon') return;
+  const line = cart.find(i => i.id === id);
+  if (line) line.qty = Math.min(10, line.qty + 1); else cart.push({ id, qty: 1 });
+  saveCart(); openDrawer();
+  toast(tr(`${p.name} agregado al carrito`, `${p.name} added to cart`));
+}
+function cartSet(id, qty) {
+  const line = cart.find(i => i.id === id); if (!line) return;
+  line.qty = qty; if (line.qty < 1) cart = cart.filter(i => i.id !== id);
+  saveCart();
+}
+function paintCart() {
+  const btn = $('.cart-btn'); if (!btn) return;
+  const n = cartCount();
+  btn.classList.toggle('has', n > 0);
+  $('b', btn).textContent = n;
+  const box = $('#drawerItems'); if (!box) return;
+  if (!cart.length) {
+    box.innerHTML = `<div class="drawer-empty"><p class="mono">${L('Tu carrito está vacío','Your cart is empty')}</p><a class="btn btn-line" href="productos.html" style="margin-top:16px">${L('Ver catálogo','See catalog')}</a></div>`;
+  } else {
+    box.innerHTML = cart.map(({id, qty}) => { const p = P.find(x => x.id === id); return `<div class="ci">
+      <div>${cover(p)}</div>
+      <div><span class="mono dim">${p.code}</span><b>${p.name}</b>
+        <div class="qty"><button type="button" data-q="${id}:-1" aria-label="${tr('Quitar uno','Remove one')}">−</button><span>${qty}</span><button type="button" data-q="${id}:1" aria-label="${tr('Agregar uno','Add one')}">+</button></div>
+        <button type="button" class="rm" data-rm="${id}">${L('Quitar','Remove')}</button></div>
+      <span class="pr">${money(p.price * qty)}</span></div>`; }).join('');
+  }
+  const foot = $('#drawerFoot'); if (foot) foot.hidden = !cart.length;
+  const tot = $('#cartTotal'); if (tot) tot.textContent = money(cartTotal());
+}
+function openDrawer() { $('.drawer')?.classList.add('on'); document.documentElement.style.overflow = 'hidden'; }
+function closeDrawer() { $('.drawer')?.classList.remove('on'); document.documentElement.style.overflow = ''; }
+
+function mountDrawer() {
+  const d = document.createElement('div');
+  d.className = 'drawer'; d.setAttribute('role', 'dialog'); d.setAttribute('aria-label', tr('Carrito','Cart'));
+  d.innerHTML = `<div class="drawer-box">
+    <div class="drawer-top"><h3>${L('Carrito','Cart')}</h3><button class="chip" data-close>${L('Cerrar','Close')}</button></div>
+    <div class="drawer-items" id="drawerItems"></div>
+    <div class="drawer-foot" id="drawerFoot" hidden>
+      <div class="tot"><span class="mono">${L('Total','Total')}</span><b id="cartTotal"></b></div>
+      <div><label class="mono" for="cartMail" style="display:block;margin-bottom:8px">${L('Tu email (ahí llega el acceso)','Your email (where access is sent)')}</label><input id="cartMail" type="email" autocomplete="email" placeholder="hola@tuestudio.com"></div>
       <button class="btn btn-acid" data-pay="mercadopago">${L('Pagar con Mercado Pago','Pay with Mercado Pago')} <span class="ar">→</span></button>
       <button class="btn btn-line" data-pay="paypal">${L('Pagar con PayPal o tarjeta','Pay with PayPal or card')} <span class="ar">→</span></button>
-    </div>
-    <p class="co-err" id="coErr" role="alert"></p>
-    <p class="co-note">${L('Mercado Pago: tarjeta, débito, cuotas y dinero en cuenta (en pesos). PayPal: tarjeta internacional, en dólares.','Mercado Pago: cards and local methods (ARS). PayPal: international cards, in USD.')}</p>
-  </div>`;
-  document.body.append(box);
-  const close = () => box.remove();
-  $('[data-x]', box).onclick = close;
-  box.addEventListener('click', e => { if (e.target === box) close(); });
-  addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); removeEventListener('keydown', esc); } });
-  $('#coMail', box).focus();
-  $$('[data-pay]', box).forEach(btn => btn.onclick = async () => {
-    const email = $('#coMail', box).value.trim(), err = $('#coErr', box);
-    if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = tr('Escribí un email válido.','Enter a valid email.'); return; }
-    err.textContent = ''; const old = btn.innerHTML; btn.innerHTML = tr('Abriendo…','Opening…');
-    try {
-      const r = await fetch(`/api/checkout/${btn.dataset.pay}`, {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ productId: p.id, email }),
-      });
-      const data = await r.json();
-      if (data.url) { location.href = data.url; return; }
-      err.textContent = data.error === 'not_configured'
-        ? tr('El pago todavía no está activo: faltan las claves de esta plataforma.','Payments are not live yet: platform keys are missing.')
-        : tr('No pudimos abrir el pago. Probá de nuevo o escribinos a hola@orbitando.com.ar','We couldn’t open the payment. Try again or email hola@orbitando.com.ar');
-    } catch (e) {
-      err.textContent = tr('Sin conexión con el servidor de pagos.','No connection to the payment server.');
+      <p class="err" id="cartErr" role="alert"></p>
+      <p class="note">${L('Mercado Pago cobra en pesos; PayPal, en dólares. Pago único, acceso para siempre.','Mercado Pago charges in ARS; PayPal in USD. One-time payment, lifetime access.')}</p>
+    </div></div>`;
+  document.body.append(d);
+  d.addEventListener('click', async e => {
+    if (e.target === d || e.target.closest('[data-close]')) return closeDrawer();
+    const q = e.target.closest('[data-q]');
+    if (q) { const [id, delta] = q.dataset.q.split(':'); const line = cart.find(i => i.id === id); cartSet(id, (line?.qty || 0) + Number(delta)); return; }
+    const rm = e.target.closest('[data-rm]'); if (rm) { cartSet(rm.dataset.rm, 0); return; }
+    const pay = e.target.closest('[data-pay]');
+    if (pay) {
+      const email = $('#cartMail').value.trim(), err = $('#cartErr');
+      if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = tr('Escribí un email válido.','Enter a valid email.'); return; }
+      err.textContent = ''; const old = pay.innerHTML; pay.innerHTML = tr('Abriendo…','Opening…');
+      try {
+        const r = await fetch(`/api/checkout/${pay.dataset.pay}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: cart, email }),
+        });
+        const data = await r.json();
+        if (data.url) { try { localStorage.setItem('orbit-last-order', data.orderId || ''); } catch (e) {} location.href = data.url; return; }
+        err.textContent = data.error === 'not_configured'
+          ? tr('Ese medio de pago todavía no está activo.','That payment method is not live yet.')
+          : tr('No pudimos abrir el pago. Escribinos a hola@orbitando.com.ar','We couldn’t open the payment. Email hola@orbitando.com.ar');
+      } catch (e) { err.textContent = tr('Sin conexión con el servidor de pagos.','No connection to the payment server.'); }
+      pay.innerHTML = old;
     }
-    btn.innerHTML = old;
   });
+  addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+  paintCart();
 }
 
 /* ---------- nav + footer compartidos ---------- */
@@ -166,7 +206,7 @@ const nav = document.createElement('header');
 nav.className = 'nav';
 nav.innerHTML = `<a class="logo" href="index.html" aria-label="Orbit">${wm({color:'#F2EFE8'})}</a>
   <ul>${links.map(([h,t,k]) => `<li><a href="${h}"${k===page?' aria-current="page"':''}>${t}</a></li>`).join('')}</ul>
-  <div class="right"><a class="acc-link" href="acceso.html" aria-label="${tr('Iniciar sesión','Sign in')}" title="${tr('Iniciar sesión','Sign in')}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.2" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.6 20.2c.7-4 3.7-6.2 7.4-6.2s6.7 2.2 7.4 6.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></a>${langSw}<button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
+  <div class="right"><button class="cart-btn" type="button" aria-label="${tr('Carrito','Cart')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l1.4 10.2a1.6 1.6 0 0 1-1.6 1.8H7.2a1.6 1.6 0 0 1-1.6-1.8L7 8Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9.3 9.5V7.2a2.7 2.7 0 0 1 5.4 0v2.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><b>0</b></button><a class="acc-link" href="acceso.html" aria-label="${tr('Iniciar sesión','Sign in')}" title="${tr('Iniciar sesión','Sign in')}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.2" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.6 20.2c.7-4 3.7-6.2 7.4-6.2s6.7 2.2 7.4 6.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></a>${langSw}<button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
 document.body.prepend(nav);
 const navSolid = () => nav.classList.toggle('solid', scrollY > 12 || 'navSolid' in document.body.dataset);
 addEventListener('scroll', navSolid, {passive:true}); navSolid();
@@ -174,6 +214,8 @@ const mnav = document.createElement('nav');
 mnav.className = 'mnav'; mnav.id = 'mnav'; mnav.hidden = true; mnav.setAttribute('aria-label','Menu');
 mnav.innerHTML = `<button class="chip x">${L('Cerrar','Close')}</button><div>${links.map(([h,t]) => `<a href="${h}">${t}</a>`).join('')}</div><div style="display:flex;justify-content:space-between;align-items:center;gap:16px">${langSw}<span class="mono">Orbit® — Ideas in motion</span></div>`;
 document.body.append(mnav);
+mountDrawer();
+$('.cart-btn', nav).onclick = openDrawer;
 $('.menu', nav).onclick = () => { mnav.hidden = false; $('.menu', nav).setAttribute('aria-expanded','true'); };
 $('.x', mnav).onclick = () => { mnav.hidden = true; $('.menu', nav).setAttribute('aria-expanded','false'); };
 addEventListener('keydown', e => { if (e.key === 'Escape') mnav.hidden = true; });
@@ -257,5 +299,5 @@ const needGate = root.classList.contains('gate-on');
 if (needGate) gate();
 setLang(lang(), false);
 
-window.ORBIT = {C, RM, $, $$, L, tr, lang, setLang, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC};
+window.ORBIT = {C, RM, $, $$, L, tr, lang, setLang, cartAdd, openDrawer, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC};
 })();

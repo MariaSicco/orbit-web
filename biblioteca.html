@@ -6,7 +6,7 @@
 <title>Mi biblioteca — Orbit®</title>
 <meta name="description" content="Tu biblioteca Orbit: descargas, versiones y guías de todo lo que compraste.">
 <meta name="theme-color" content="#0D0D0E">
-<link rel="stylesheet" href="assets/css/orbit.css?v=20">
+<link rel="stylesheet" href="assets/css/orbit.css?v=21">
 <style>
 .lib-head{padding-top:calc(110px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:26px}
 .lib-head .top{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
@@ -25,6 +25,18 @@
 .item .acts .btn{justify-content:center}
 .new{background:var(--blue);color:var(--b);padding:2px 8px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
 .empty2{background:var(--k);padding:clamp(20px,3vw,40px);border:1px dashed var(--k3);display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin-top:2px}
+.tabs{display:flex;gap:8px;margin:clamp(24px,3vw,40px) 0 0}
+.orders{display:flex;flex-direction:column;gap:2px;background:var(--k3);margin-top:clamp(24px,3vw,40px)}
+.order{background:var(--k);padding:clamp(16px,2vw,24px);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}
+.order .code{font-family:var(--mono);font-size:11px;letter-spacing:.08em;opacity:.6}
+.order b{display:block;font-weight:800;font-size:18px;letter-spacing:-.03em;text-transform:uppercase;margin-top:6px}
+.order ul{list-style:none;margin:10px 0 0;padding:0;font-size:14px;opacity:.75}
+.order li{padding:3px 0}
+.order .right{text-align:right;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+.order .amt{font-weight:700;font-size:18px}
+.tag-ok{background:var(--ac);color:var(--k);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px}
+.tag-pend{background:var(--or);color:var(--k);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px}
+@media (max-width:640px){.order{grid-template-columns:1fr}.order .right{align-items:flex-start;text-align:left}}
 .lic{margin-top:clamp(40px,5vw,72px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.6vw,24px)}
 .lic>div{border-top:1px solid var(--k3);padding-top:14px}
 .lic b{display:block;font-size:18px;letter-spacing:-.02em;margin:8px 0 6px}
@@ -44,7 +56,12 @@
   </div>
   <div class="wrap">
     <div class="lib-stats" id="stats"></div>
+    <div class="tabs" id="tabs">
+      <button class="chip" data-tab="lib" aria-pressed="true"><span data-l="es">Mis productos</span><span data-l="en">My products</span></button>
+      <button class="chip" data-tab="ord" aria-pressed="false"><span data-l="es">Mis pedidos</span><span data-l="en">My orders</span></button>
+    </div>
     <div class="items" id="items"></div>
+    <div class="orders" id="orders" hidden></div>
     <div class="empty2">
       <div><span class="mono dim"><span data-l="es">Sumá herramientas</span><span data-l="en">Add more tools</span></span><p style="margin:8px 0 0;font-size:clamp(20px,2.2vw,30px);font-weight:800;letter-spacing:-.035em;text-transform:uppercase;line-height:1"><span data-l="es">Tu órbita puede crecer.</span><span data-l="en">Your orbit can grow.</span></p></div>
       <a class="btn btn-acid" href="productos.html"><span data-l="es">Ver catálogo</span><span data-l="en">See catalog</span> <span class="ar">→</span></a>
@@ -58,8 +75,8 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=20"></script>
-<script src="assets/js/orbit.js?v=20"></script>
+<script src="assets/js/products.js?v=21"></script>
+<script src="assets/js/orbit.js?v=21"></script>
 <script>
 (async () => {
 const {$, $$, L, tr, cover, toast, P, url} = ORBIT;
@@ -92,6 +109,25 @@ $('#items').innerHTML = items.map(({p, date, ver, fresh}) => `<div class="item">
   </div>
   <div class="acts"><button class="btn btn-acid" data-dl="${p.id}">${L('Descargar','Download')} <span class="ar">↓</span></button><a class="btn btn-line" href="${url(p)}">${L('Ver guía','View guide')}</a></div>
 </div>`).join('');
+/* pedidos */
+const ORD = real ? (real.orders || []) : [{id:'OBDEMO01', date:'2026-03-12T10:00:00Z', status:'paid', via:'mercadopago', ars:39000, items:[{id:'ob-001', code:'OB—001', name:'Content System', qty:1}]}];
+const fmtDate = d => new Date(d).toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
+const VIA = {mercadopago:'Mercado Pago', paypal:'PayPal'};
+$('#orders').innerHTML = ORD.length ? ORD.map(o => `<div class="order">
+  <div><span class="code">${o.id} · ${fmtDate(o.paidAt || o.date)} · ${VIA[o.via] || o.via}</span>
+    <b>${o.items.length} ${o.items.length === 1 ? L('producto','product') : L('productos','products')}</b>
+    <ul>${o.items.map(i => `<li>${i.code} ${i.name}${i.qty > 1 ? ` × ${i.qty}` : ''}</li>`).join('')}</ul></div>
+  <div class="right"><span class="${o.status === 'paid' ? 'tag-ok' : 'tag-pend'}">${o.status === 'paid' ? L('Pagado','Paid') : L('Pendiente','Pending')}</span>
+    <span class="amt">${o.via === 'paypal' ? 'USD ' + (o.usd || 0) : 'ARS ' + (o.ars || 0).toLocaleString('es-AR')}</span></div>
+</div>`).join('') : `<div class="order"><span class="code">${L('Sin pedidos todavía','No orders yet')}</span></div>`;
+
+$$('#tabs .chip').forEach(b => b.onclick = () => {
+  const lib = b.dataset.tab === 'lib';
+  $$('#tabs .chip').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+  $('#items').hidden = !lib; $('#orders').hidden = lib;
+  $('.empty2').hidden = !lib; $('.lic').hidden = !lib;
+});
+
 $$('[data-dl]').forEach(b => b.onclick = async () => {
   if (!real) return toast(tr('Demo: la descarga se activa al conectar la plataforma de pago','Demo: downloads turn on once the payment platform is connected'));
   const r = await fetch(`/api/download?id=${b.dataset.dl}`, { redirect: 'follow' });

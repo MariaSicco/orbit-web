@@ -1,31 +1,30 @@
-/* Vuelta desde PayPal: confirma el pago y guarda la compra. */
-import { CATALOG, siteUrl } from './_lib/catalog.js';
+/* Vuelta desde PayPal: confirma el pago y guarda el pedido. */
+import { siteUrl } from './_lib/catalog.js';
 import { paypalBase, paypalToken } from './_lib/paypal.js';
-import { addPurchase } from './_lib/kv.js';
+import { markPaid } from './_lib/orders.js';
 import { setSessionCookie } from './_lib/auth.js';
 
 export default async function handler(req, res) {
   const site = siteUrl(req);
-  const orderId = req.query?.token;
-  if (!orderId) return res.redirect(302, `${site}/productos`);
+  const orderToken = req.query?.token;
+  if (!orderToken) return res.redirect(302, `${site}/productos`);
   try {
     const token = await paypalToken();
-    const r = await fetch(`${paypalBase()}/v2/checkout/orders/${orderId}/capture`, {
+    const r = await fetch(`${paypalBase()}/v2/checkout/orders/${orderToken}/capture`, {
       method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     });
     const data = await r.json();
     const unit = data?.purchase_units?.[0];
-    const [productId, email] = String(unit?.custom_id || '').split('|');
-    const paid = data?.status === 'COMPLETED';
-    if (paid && CATALOG[productId] && email) {
-      await addPurchase(email, {
-        productId, orderId: data.id, via: 'paypal',
-        amount: unit?.payments?.captures?.[0]?.amount?.value, currency: 'USD',
-        date: new Date().toISOString(),
+    const orderId = unit?.custom_id;
+    if (data?.status === 'COMPLETED' && orderId) {
+      const order = await markPaid(orderId, {
+        paymentId: data.id,
+        amount: unit?.payments?.captures?.[0]?.amount?.value,
+        currency: 'USD',
       });
-      setSessionCookie(res, email);
-      return res.redirect(302, `${site}/gracias?via=paypal&p=${productId}`);
+      if (order) setSessionCookie(res, order.email);
+      return res.redirect(302, `${site}/gracias?order=${orderId}`);
     }
   } catch (e) {}
-  res.redirect(302, `${site}/gracias?via=paypal&pending=1`);
+  res.redirect(302, `${site}/gracias?pending=1`);
 }

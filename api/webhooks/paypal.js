@@ -1,6 +1,5 @@
 /* Aviso de PayPal (respaldo del retorno): verifica la firma y guarda la compra. */
-import { CATALOG } from '../_lib/catalog.js';
-import { addPurchase } from '../_lib/kv.js';
+import { markPaid } from '../_lib/orders.js';
 import { paypalBase, paypalToken } from '../_lib/paypal.js';
 
 export const config = { api: { bodyParser: false } };
@@ -29,14 +28,8 @@ export default async function handler(req, res) {
   if (verification_status !== 'SUCCESS') return res.status(400).end();
 
   if (event.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
-    const [productId, email] = String(event.resource?.custom_id || '').split('|');
-    if (CATALOG[productId] && email) {
-      await addPurchase(email, {
-        productId, orderId: event.resource.id, via: 'paypal',
-        amount: event.resource?.amount?.value, currency: event.resource?.amount?.currency_code,
-        date: new Date().toISOString(),
-      });
-    }
+    const orderId = event.resource?.custom_id || event.resource?.invoice_id;
+    if (orderId) await markPaid(orderId, { paymentId: event.resource.id, amount: event.resource?.amount?.value, currency: event.resource?.amount?.currency_code });
   }
   res.status(200).json({ received: true });
 }
