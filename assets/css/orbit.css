@@ -101,6 +101,13 @@ html.gate-on body>main,html.gate-on body>.nav,html.gate-on body>.foot{visibility
 .g-opts button:hover .ar,.g-opts button:focus-visible .ar{transform:translateX(8px)}
 @media (max-width:760px){.g-bot{grid-template-columns:1fr}.g-opts{grid-template-columns:1fr}}
 
+/* volver arriba */
+.totop{position:fixed;right:calc(var(--pad) - 4px);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:45;width:52px;height:52px;border-radius:50%;background:rgba(13,13,14,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(242,239,232,.18);color:var(--b);display:grid;place-items:center;opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .35s var(--ease),transform .35s var(--ease),background .2s}
+.totop.on{opacity:1;transform:none;pointer-events:auto}
+.totop:hover{background:var(--blue)}
+.totop svg{width:26px;height:26px;overflow:visible}
+body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
+
 /* reveal */
 .pre{opacity:0;transform:translateY(34px)}
 .rv{transition:opacity .9s var(--ease),transform .9s var(--ease)}
