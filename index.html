@@ -60,16 +60,41 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 
 /* disciplinas */
 .disc{border-top:1px solid var(--k)}
-.disc a{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,.9fr) 56px;gap:20px;align-items:center;padding:clamp(14px,1.6vw,22px) 0;border-bottom:1px solid var(--k);text-decoration:none;position:relative}
-.disc a::before{content:"";position:absolute;inset:0 calc(-1 * var(--pad));background:var(--k);transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease);z-index:0}
-.disc a>*{position:relative;z-index:1;transition:color .3s}
-.disc a:hover::before,.disc a:focus-visible::before{transform:scaleY(1)}
-.disc a:hover>*,.disc a:focus-visible>*{color:var(--b)}
+.drow{border-bottom:1px solid var(--k);position:relative}
+.dh{width:100%;display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,.9fr) 56px;gap:20px;align-items:center;padding:clamp(14px,1.6vw,22px) 0;text-align:left;position:relative;color:var(--k)}
+.dh::before{content:"";position:absolute;inset:0 calc(-1 * var(--pad));background:var(--k);transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease);z-index:0}
+.dh>*{position:relative;z-index:1;transition:color .3s}
+.dh:hover::before,.dh:focus-visible::before,.drow.open .dh::before{transform:scaleY(1)}
+.dh:hover>*,.dh:focus-visible>*,.drow.open .dh>*{color:var(--b)}
+.dh:focus-visible{outline:none}
 .disc b{font-weight:800;font-size:clamp(32px,5.4vw,92px);letter-spacing:-.05em;text-transform:uppercase;line-height:.9}
-.disc p{margin:0;font-size:15px;opacity:.7}
+.dh p{margin:0;font-size:15px;opacity:.7}
 .disc .s{width:48px;transition:transform .6s var(--ease)}
-.disc a:hover .s{transform:rotate(180deg)}
-.disc a:hover .s circle{fill:var(--ac)}
+.dh:hover .s,.drow.open .s{transform:rotate(180deg)}
+.dh:hover .s circle,.drow.open .s circle{fill:var(--ac)}
+.dpanel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s var(--ease)}
+.drow.open .dpanel{grid-template-rows:1fr}
+.dpanel>div{overflow:hidden;background:var(--k);color:var(--b);margin-inline:calc(-1 * var(--pad));padding-inline:var(--pad)}
+.dtop{display:flex;justify-content:space-between;align-items:center;gap:14px;padding-top:6px}
+.darrows{display:flex;gap:8px}
+.darrows button{width:40px;height:40px;border-radius:50%;border:1px solid rgba(242,239,232,.3);color:var(--b);font-size:16px}
+.darrows button:hover{background:var(--b);color:var(--k)}
+.dslide{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,calc((100% - 42px) / 4));gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:18px 0 30px;scrollbar-width:none}
+.dslide::-webkit-scrollbar{display:none}
+.pv{scroll-snap-align:start;background:var(--b);color:var(--k);text-decoration:none;display:flex;flex-direction:column;justify-content:space-between;gap:18px;padding:18px;min-height:270px;position:relative;overflow:hidden;transition:transform .35s var(--ease)}
+.pv:hover{transform:translateY(-6px)}
+.pv .sy{position:absolute;width:46%;right:-12%;bottom:-14%;opacity:.95}
+.pv .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pv .bd{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:3px 6px;background:var(--k);color:var(--b)}
+.pv h5{margin:0;font-weight:800;font-size:clamp(22px,2vw,30px);letter-spacing:-.04em;text-transform:uppercase;line-height:.92;position:relative;z-index:1}
+.pv p{margin:8px 0 0;font-size:14px;opacity:.7;max-width:26ch;position:relative;z-index:1}
+.pv .f{display:flex;justify-content:space-between;align-items:baseline;position:relative;z-index:1}
+.pv .f b{font-size:18px;letter-spacing:-.02em;font-weight:700;text-transform:none;line-height:1}
+.pv.soon{background:#1b1b1d;color:var(--b);border:1px solid var(--k3)}
+.pv.soon .bd{background:var(--b);color:var(--k)}
+.pv.all{background:transparent;color:var(--b);border:1px solid rgba(242,239,232,.3);justify-content:flex-end}
+.pv.all:hover{background:var(--ac);color:var(--k)}
+@media (max-width:760px){.dh{grid-template-columns:1fr 44px}.dh .mono,.dh p{grid-column:1}.dh .s{grid-row:1/4;grid-column:2}.dslide{grid-auto-columns:78%}}
 @media (max-width:760px){.disc a{grid-template-columns:1fr 44px}.disc a .mono,.disc a p{grid-column:1}.disc a .s{grid-row:1/4;grid-column:2}}
 
 /* cómo funciona */
@@ -435,18 +460,50 @@ if (!RM) (function tick(n) {
 })(performance.now());
 else fills[0].style.transform = 'scaleX(1)';
 
-/* disciplinas */
+/* disciplinas: cada una despliega un deslizador con sus productos */
 const DISC = [
-  ['Diseño','Design','Plantillas, mockups y sistemas visuales','Templates, mockups and visual systems'],
-  ['Contenido','Content','Calendarios, portadas y formatos','Calendars, covers and formats'],
-  ['Negocios','Business','CRM, finanzas y procesos','CRM, finances and processes'],
-  ['Ventas','Sales','Funnels, emails y propuestas','Funnels, emails and proposals'],
-  ['Marketing','Marketing','Campañas, ads y reportes','Campaigns, ads and reports'],
-  ['IA','AI','Workflows y automatizaciones','Workflows and automations'],
-  ['Productividad','Productivity','Planners y sistemas personales','Planners and personal systems'],
-  ['Educación','Education','Workbooks, clases y presentaciones','Workbooks, lessons and decks'],
+  ['Diseño','Design','Plantillas, mockups y sistemas visuales','Templates, mockups and visual systems', [
+    {id:'ob-002'}, {n:'Brand Kit System', d:['Tu identidad lista para aplicar en todo','Your identity, ready to apply everywhere']}, {n:'Mockup Pack', d:['Presentá tu trabajo como un estudio','Present your work like a studio']}]],
+  ['Contenido','Content','Calendarios, portadas y formatos','Calendars, covers and formats', [
+    {id:'ob-001'}, {n:'Reels Script Kit', d:['Guiones y ganchos para videos cortos','Scripts and hooks for short videos']}, {n:'Carousel Templates', d:['Carruseles editables que se guardan','Editable carousels people save']}]],
+  ['Negocios','Business','CRM, finanzas y procesos','CRM, finances and processes', [
+    {id:'ob-003'}, {n:'Client Onboarding Kit', d:['Del “sí” al primer entregable, sin fricción','From “yes” to first delivery, frictionless']}, {n:'Finance Tracker', d:['Ingresos, gastos y proyección simple','Income, expenses and a simple forecast']}]],
+  ['Ventas','Sales','Funnels, emails y propuestas','Funnels, emails and proposals', [
+    {n:'Proposal Kit', d:['Propuestas que se entienden y se aprueban','Proposals that get read and approved']}, {n:'Funnel Map', d:['El recorrido de tu cliente, paso a paso','Your customer journey, step by step']}, {n:'Email Sequences', d:['Secuencias listas para vender','Ready-to-sell email sequences']}]],
+  ['Marketing','Marketing','Campañas, ads y reportes','Campaigns, ads and reports', [
+    {n:'Campaign Planner', d:['Una campaña completa en un tablero','A full campaign on one board']}, {n:'Ads Creative Kit', d:['Piezas para anuncios que convierten','Ad creatives that convert']}, {n:'Monthly Report', d:['Reportes claros para clientes','Clear reports for clients']}]],
+  ['IA','AI','Workflows y automatizaciones','Workflows and automations', [
+    {id:'ob-004'}, {n:'Prompt Library', d:['Prompts probados por disciplina','Tested prompts by discipline']}, {n:'Automation Starter', d:['Tus primeras automatizaciones, guiadas','Your first automations, guided']}]],
+  ['Productividad','Productivity','Planners y sistemas personales','Planners and personal systems', [
+    {n:'Personal OS', d:['Tu semana, tus metas y tus ideas en un lugar','Your week, goals and ideas in one place']}, {n:'Weekly Planner', d:['Planificá en 20 minutos, ejecutá toda la semana','Plan in 20 minutes, execute all week']}, {n:'Habit System', d:['Hábitos que se sostienen','Habits that stick']}]],
+  ['Educación','Education','Workbooks, clases y presentaciones','Workbooks, lessons and decks', [
+    {n:'Course Builder', d:['Estructurá tu curso de principio a fin','Structure your course end to end']}, {n:'Workbook Templates', d:['Cuadernos de trabajo para tus alumnos','Workbooks for your students']}, {n:'Lesson Deck', d:['Presentaciones de clase con estilo editorial','Editorial-style lesson decks']}]],
 ];
-$('#disc').innerHTML = DISC.map(([es,en,des,den],i) => `<a href="productos.html" class="rv"><span class="mono">OB—D0${i+1}</span><b>${L(es,en)}</b><p>${L(des,den)}</p><span class="s">${sym({ring:'currentColor', dot:C.blue, rot:i*45})}</span></a>`).join('');
+const DACC = [C.blue, C.or, C.ac];
+function pvCard(item, i, di) {
+  const p = item.id && P.find(x => x.id === item.id);
+  if (p) {
+    const soon = p.status === 'soon';
+    return `<a class="pv${soon ? ' soon' : ''}" href="${url(p)}"><div class="sy">${sym({ring: soon ? C.b : C.k, dot: DACC[i % 3]})}</div><div class="t"><span class="mono">${p.code}</span><span class="bd">${soon ? L('Próximamente','Coming soon') : L('Disponible','Available')}</span></div><div><h5>${p.name}</h5><p>${L(p.tagline)}</p></div><div class="f"><b>${soon ? L('Pronto','Soon') : money(p.price)}</b><span class="mono">${L('Ver','View')} →</span></div></a>`;
+  }
+  return `<a class="pv soon" href="productos.html"><div class="sy">${sym({ring:C.b, dot:DACC[i % 3]})}</div><div class="t"><span class="mono">OB—D0${di+1}.${i+1}</span><span class="bd">${L('Próximamente','Coming soon')}</span></div><div><h5>${item.n}</h5><p>${L(...item.d)}</p></div><div class="f"><b>${L('Pronto','Soon')}</b><span class="mono dim">${L('En desarrollo','In the works')}</span></div></a>`;
+}
+$('#disc').innerHTML = DISC.map(([es,en,des,den,items],i) => `<div class="drow rv" data-i="${i}">
+  <button class="dh" aria-expanded="false" aria-controls="dp${i}"><span class="mono">OB—D0${i+1}</span><b>${L(es,en)}</b><p>${L(des,den)}</p><span class="s">${sym({ring:'currentColor', dot:C.blue, rot:i*45})}</span></button>
+  <div class="dpanel" id="dp${i}" role="region"><div>
+    <div class="dtop"><span class="mono">${L(es,en)} — ${items.length} ${L('herramientas','tools')}</span><div class="darrows"><button data-dir="-1" aria-label="Anterior">←</button><button data-dir="1" aria-label="Siguiente">→</button></div></div>
+    <div class="dslide">${items.map((it,k) => pvCard(it,k,i)).join('')}<a class="pv all" href="productos.html"><span class="mono">${L('Todo en','All in')} ${L(es,en)}</span><h5>${L('Ver catálogo','See catalog')} →</h5></a></div>
+  </div></div>
+</div>`).join('');
+$$('#disc .drow').forEach(row => {
+  const btn = $('.dh', row);
+  btn.onclick = () => {
+    const open = !row.classList.contains('open');
+    $$('#disc .drow.open').forEach(r => { r.classList.remove('open'); $('.dh', r).setAttribute('aria-expanded','false'); });
+    if (open) { row.classList.add('open'); btn.setAttribute('aria-expanded','true'); setTimeout(() => row.scrollIntoView({behavior: RM ? 'auto' : 'smooth', block:'nearest'}), 300); }
+  };
+  $$('.darrows button', row).forEach(b => b.onclick = () => { const sl = $('.dslide', row); sl.scrollBy({left: +b.dataset.dir * (sl.clientWidth * .8), behavior: RM ? 'auto' : 'smooth'}); });
+});
 
 /* destacado */
 const f = P[0];
