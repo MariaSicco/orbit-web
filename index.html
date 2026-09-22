@@ -60,7 +60,7 @@
 
 /* cómo funciona */
 .flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:var(--k3)}
-.flow>div{background:var(--k);padding:20px;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;transition:background .4s var(--ease),color .4s var(--ease)}
+.flow>div{background:var(--k);padding:20px;min-height:300px;display:flex;flex-direction:column;gap:clamp(28px,4vw,56px);transition:background .4s var(--ease),color .4s var(--ease)}
 .flow>div:hover{background:var(--b);color:var(--k)}
 .flow b{font-weight:800;font-size:clamp(28px,3vw,46px);letter-spacing:-.045em;text-transform:uppercase;line-height:.9}
 .flow .s{width:72px}
@@ -241,7 +241,8 @@
 <!-- CÓMO FUNCIONA -->
 <section class="sec dark">
   <div class="wrap">
-    <div class="shead mono"><div><b><span data-l="es">Cómo funciona</span><span data-l="en">How it works</span></b>From idea to system</div><div style="text-align:right"><span data-l="es">Orbit existe en el espacio<br>entre la idea y el resultado</span><span data-l="en">Orbit lives in the space<br>between idea and result</span></div></div>
+    <div class="shead mono"><div><b><span data-l="es">Cómo comprar</span><span data-l="en">How to buy</span></b><span data-l="es">4 pasos</span><span data-l="en">4 steps</span></div><div style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(44px,6.4vw,104px);max-width:15ch;margin-bottom:clamp(36px,5vw,64px)"><span data-l="es">Comprás hoy. Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today. Use it <span class="it">today.</span></span></h2>
     <div class="flow" id="flow"></div>
   </div>
 </section>
@@ -336,7 +337,7 @@ $('#featInfo').innerHTML = `<span class="mono">${f.code} · ${FAM[f.family][0]}<
 
 $('#homeGrid').innerHTML = P.map(card).join('');
 
-const steps = [['Idea','Idea','Aparece. Todavía no tiene forma.','It appears. It has no shape yet.',140],['Movimiento','Motion','Se conecta con otras. Se desarrolla.','It connects with others. It grows.',90],['Sistema','System','Encuentra una estructura que la ordena.','It finds a structure that holds it.',40],['Resultado','Result','Se ejecuta. Se convierte en algo.','It gets done. It becomes something.',0]];
+const steps = [['Elegí tu sistema','Pick your system','Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.',140],['Pagá una sola vez','Pay once','Pago seguro con tarjeta. Sin suscripciones.','Secure card payment. No subscriptions.',90],['Recibilo al instante','Get it instantly','Te llega un email con la descarga o el acceso.','You get an email with the download or access link.',40],['Usalo desde hoy','Use it today','Licencia comercial y actualizaciones sin cargo.','Commercial license and free updates.',0]];
 $('#flow').innerHTML = steps.map(([t,te,d,de,g],i) => `<div class="rv"><span class="mono">0${i+1}</span><div class="s">${sym({gap:g, ring:'currentColor', dot:i===3?C.blue:'currentColor', dotOn:i>0})}</div><div><b>${L(t,te)}</b><p>${L(d,de)}</p></div></div>`).join('');
 
 /* manifiesto palabra por palabra */
