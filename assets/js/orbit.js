@@ -54,14 +54,37 @@ const P = window.ORBIT_PRODUCTS || [], FAM = window.ORBIT_FAMILIES || {};
 const ACC = {blue:C.blue, or:C.or, ac:C.ac, b:C.k};
 const money = n => `${window.ORBIT_CURRENCY || 'USD'} ${n}`;
 const url = p => `producto.html?id=${p.id}`;
-const cover = p => `<div class="cover">
-  <div class="spine">${wm({color:C.b}, false)}</div>
-  <div class="body">${wm({color:C.k, dot:C.blue})}
-    ${p.status==='soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : ''}
-    <div class="num">${p.n}</div><div class="ttl">${p.name.replace(' ', '<br>')}</div>
-    <div class="art">${sym({ring:C.k, dot:ACC[p.accent]||C.blue, sw:22})}</div>
-    <div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])}<br>${L(p.specs[2][1])}<br>${p.code} · V.01</div>
-  </div></div>`;
+const COVERS = {
+  /* 01 — archivo: bone + lomo negro + anillo recortado */
+  archive: p => `<div class="cover cv-archive">
+    <div class="spine">${wm({color:C.b}, false)}</div>
+    <div class="body">${wm({color:C.k, dot:C.blue})}
+      ${p.status==='soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : ''}
+      <div class="num">${p.n}</div><div class="ttl">${p.name.replace(' ','<br>')}</div>
+      <div class="art">${sym({ring:C.k, dot:C.blue, sw:22})}</div>
+      <div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])}<br>${L(p.specs[2][1])}<br>${p.code} · V.01</div>
+    </div></div>`,
+  /* 02 — poster: naranja, número calado, arcos repetidos */
+  poster: p => `<div class="cover cv-poster">
+    <div class="arcs">${[0,1,2].map(i => `<svg viewBox="0 0 100 100" style="width:100%"><path d="M0 100 A100 100 0 0 1 100 0" fill="none" stroke="${C.k}" stroke-width="${7 - i*2}" opacity="${.9 - i*.25}"/></svg>`).join('')}</div>
+    <div class="t">${wm({color:C.k, dot:C.b})}${p.status==='soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : `<span class="mono">${p.code}</span>`}</div>
+    <div class="mid"><div class="num">${p.n}</div><div class="ttl">${p.name.replace(' ','<br>')}</div></div>
+    <div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])} · ${L(p.specs[2][1])}</div></div>`,
+  /* 03 — grilla: negro + retícula + acento ácido */
+  grid: p => `<div class="cover cv-grid">
+    <div class="lines">${[0,0,0,0,0,0].map(() => '<i></i>').join('')}</div>
+    <div class="t"><span class="mono">${p.code}</span>${p.status==='soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : `<span class="mono">V.01</span>`}</div>
+    <div class="ttl">${p.name.replace(' ','<br>')}</div>
+    <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])}<br>${L(p.specs[2][1])}</div></div>
+    <span class="dot"></span></div>`,
+  /* 04 — trayectoria: azul + líneas curvas + punto ácido */
+  trajectory: p => `<div class="cover cv-tra">
+    <svg class="paths" viewBox="0 0 100 130" preserveAspectRatio="none"><path d="M-5 120 C 30 120 40 30 105 22" fill="none" stroke="${C.b}" stroke-width=".6" opacity=".7"/><path d="M-5 132 C 45 128 60 55 105 48" fill="none" stroke="${C.b}" stroke-width=".6" opacity=".45"/><circle cx="66" cy="34" r="3.4" fill="${C.ac}"/></svg>
+    <div class="t"><span class="mono">${p.code}</span><div class="num">${p.n}</div></div>
+    <div class="b">${p.status==='soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : ''}<div class="ttl">${p.name.replace(' ','<br>')}</div><div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])} · ${L(p.specs[2][1])}</div></div>
+    ${wm({color:C.b, dot:C.ac})}</div>`,
+};
+const cover = p => (COVERS[p.cover] || COVERS.archive)(p);
 const card = p => `<a class="pcard rv" href="${url(p)}" data-fam="${p.family}">${cover(p)}
   <div class="row"><span class="mono">${p.code}</span><span class="mono dim">${(FAM[p.family]||[''])[0]}</span></div>
   <div class="row" style="border:0;padding:0"><h3>${p.name}</h3><span class="price">${p.status==='soon' ? `<span class="mono">${L('Pronto','Soon')}</span>` : money(p.price)}</span></div></a>`;

@@ -17,7 +17,7 @@ const INSTANT = {es: 'Descarga inmediata', en: 'Instant download'};
 
 window.ORBIT_PRODUCTS = [
   {
-    id: 'ob-001', code: 'OB—001', n: '01', name: 'Content System',
+    id: 'ob-001', cover: 'archive', code: 'OB—001', n: '01', name: 'Content System',
     family: 'creator', status: 'available', price: 39, accent: 'blue', checkout: '', photo: 'hands',
     tagline: {es: 'Un sistema completo para planificar, producir y publicar contenido sin empezar de cero.', en: 'A complete system to plan, produce and publish content without starting from scratch.'},
     specs: [
@@ -40,7 +40,7 @@ window.ORBIT_PRODUCTS = [
     ],
   },
   {
-    id: 'ob-002', code: 'OB—002', n: '02', name: 'Creator Library',
+    id: 'ob-002', cover: 'poster', code: 'OB—002', n: '02', name: 'Creator Library',
     family: 'library', status: 'available', price: 49, accent: 'or', checkout: '', photo: 'studio',
     tagline: {es: 'Una biblioteca curada de recursos gráficos listos para usar en proyectos reales.', en: 'A curated library of graphic resources ready to use in real projects.'},
     specs: [
@@ -63,7 +63,7 @@ window.ORBIT_PRODUCTS = [
     ],
   },
   {
-    id: 'ob-003', code: 'OB—003', n: '03', name: 'Business OS',
+    id: 'ob-003', cover: 'grid', code: 'OB—003', n: '03', name: 'Business OS',
     family: 'business', status: 'available', price: 59, accent: 'ac', checkout: '', photo: 'arch',
     tagline: {es: 'El sistema operativo para pequeños negocios: clientes, proyectos, finanzas y procesos en un solo lugar.', en: 'The operating system for small businesses: clients, projects, finances and processes in one place.'},
     specs: [
@@ -86,7 +86,7 @@ window.ORBIT_PRODUCTS = [
     ],
   },
   {
-    id: 'ob-004', code: 'OB—004', n: '04', name: 'AI Workflow System',
+    id: 'ob-004', cover: 'trajectory', code: 'OB—004', n: '04', name: 'AI Workflow System',
     family: 'ai', status: 'soon', price: 69, accent: 'b', checkout: '', photo: 'corridor',
     tagline: {es: 'Workflows de IA probados para investigar, escribir, diseñar y automatizar con criterio.', en: 'Proven AI workflows to research, write, design and automate with judgment.'},
     specs: [

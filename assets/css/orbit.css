@@ -123,17 +123,57 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .ticker i{font-family:var(--serif);font-weight:400;color:var(--blue)}
 @keyframes mq{to{transform:translateX(-50%)}}
 
-/* product cover (packaging front) */
-.cover{position:relative;aspect-ratio:3/4;display:grid;grid-template-columns:15% 1fr;overflow:hidden;background:var(--b);color:var(--k);container-type:inline-size}
-.cover .spine{background:var(--k);color:var(--b);display:flex;align-items:center;justify-content:center;overflow:hidden}
-.cover .spine .wm{transform:rotate(-90deg);font-size:8cqw}
-.cover .body{position:relative;padding:6cqw 6cqw 5cqw;display:flex;flex-direction:column;overflow:hidden}
-.cover .body>.wm{font-size:7cqw}
-.cover .num{font-weight:800;font-size:28cqw;letter-spacing:-.05em;line-height:.8;margin-top:7cqw;position:relative;z-index:2}
-.cover .ttl{font-family:var(--serif);font-size:10cqw;line-height:.95;letter-spacing:-.02em;margin-top:3cqw;text-transform:uppercase;position:relative;z-index:2}
-.cover .art{position:absolute;right:-20%;bottom:-12%;width:72%;z-index:1}
-.cover .meta{margin-top:auto;position:relative;z-index:2;font-size:max(8px,3.6cqw)}
-.cover .badge{position:absolute;top:5cqw;right:5cqw;z-index:3;font-size:max(8px,3.4cqw);background:var(--k);color:var(--b);padding:1.2cqw 2.4cqw}
+/* portadas: un modelo distinto por producto */
+.cover{position:relative;aspect-ratio:3/4;overflow:hidden;container-type:inline-size;display:flex;flex-direction:column;background:var(--b);color:var(--k)}
+.cover .mono{font-size:max(8px,3.4cqw);letter-spacing:.07em}
+.cover .badge{font-size:max(8px,3.2cqw);background:var(--k);color:var(--b);padding:1cqw 2cqw;white-space:nowrap}
+.cover .num{font-weight:800;letter-spacing:-.05em;line-height:.78}
+.cover .ttl{font-family:var(--serif);letter-spacing:-.02em;text-transform:uppercase;line-height:.95}
+
+/* 01 archivo */
+.cv-archive{display:grid;grid-template-columns:15% 1fr}
+.cv-archive .spine{background:var(--k);color:var(--b);display:flex;align-items:center;justify-content:center;overflow:hidden}
+.cv-archive .spine .wm{transform:rotate(-90deg);font-size:8cqw}
+.cv-archive .body{position:relative;padding:6cqw 6cqw 5cqw;display:flex;flex-direction:column;overflow:hidden}
+.cv-archive .body>.wm{font-size:7cqw}
+.cv-archive .badge{position:absolute;top:5cqw;right:5cqw;z-index:3}
+.cv-archive .num{font-size:28cqw;margin-top:7cqw;position:relative;z-index:2}
+.cv-archive .ttl{font-size:10cqw;margin-top:3cqw;position:relative;z-index:2}
+.cv-archive .art{position:absolute;right:-20%;bottom:-12%;width:72%;z-index:1}
+.cv-archive .meta{margin-top:auto;position:relative;z-index:2}
+
+/* 02 poster naranja */
+.cv-poster{background:var(--or);color:var(--k);padding:6cqw;justify-content:space-between}
+.cv-poster .arcs{position:absolute;right:-28%;top:-16%;width:86%;display:grid;gap:3cqw;opacity:.9}
+.cv-poster .t{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;position:relative;z-index:2}
+.cv-poster .t .wm{font-size:7cqw}
+.cv-poster .badge{background:var(--b)}
+.cv-poster .mid{position:relative;z-index:2;margin-top:auto}
+.cv-poster .num{font-size:40cqw;color:transparent;-webkit-text-stroke:1.2cqw var(--k);line-height:.72}
+.cv-poster .ttl{font-size:11cqw;margin-top:-2cqw;font-style:italic;color:var(--b)}
+.cv-poster .meta{position:relative;z-index:2;margin-top:4cqw}
+
+/* 03 grilla negra */
+.cv-grid{background:var(--k);color:var(--b);padding:6cqw;justify-content:space-between}
+.cv-grid .lines{position:absolute;inset:0;display:grid;grid-template-columns:repeat(6,1fr);pointer-events:none}
+.cv-grid .lines i{border-right:1px solid rgba(242,239,232,.12)}
+.cv-grid .t{display:flex;justify-content:space-between;gap:8px;position:relative;z-index:2}
+.cv-grid .badge{background:var(--b);color:var(--k)}
+.cv-grid .ttl{position:relative;z-index:2;font-size:13cqw;margin-top:8cqw;color:var(--b)}
+.cv-grid .b{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;position:relative;z-index:2}
+.cv-grid .num{font-size:36cqw;color:var(--b)}
+.cv-grid .meta{text-align:right}
+.cv-grid .dot{position:absolute;width:14cqw;height:14cqw;border-radius:50%;background:var(--ac);right:8cqw;top:34cqw;z-index:1}
+
+/* 04 trayectoria azul */
+.cv-tra{background:var(--blue);color:var(--b);padding:6cqw;justify-content:space-between}
+.cv-tra .paths{position:absolute;inset:0;width:100%;height:100%}
+.cv-tra .t{display:flex;justify-content:space-between;align-items:flex-start;position:relative;z-index:2}
+.cv-tra .num{font-size:30cqw;color:transparent;-webkit-text-stroke:1.2cqw var(--b);line-height:.7}
+.cv-tra .b{position:relative;z-index:2;display:flex;flex-direction:column;gap:2cqw;align-items:flex-start}
+.cv-tra .badge{background:var(--b);color:var(--k)}
+.cv-tra .ttl{font-size:12cqw;font-style:italic}
+.cv-tra .wm{position:relative;z-index:2;font-size:7cqw;margin-top:4cqw}
 
 .pcard{display:flex;flex-direction:column;gap:14px;text-decoration:none;color:inherit}
 .pcard .cover{transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
