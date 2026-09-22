@@ -81,6 +81,43 @@
 .mani .w.lit{opacity:1}
 .mani .it{text-transform:none}
 
+/* símbolo interactivo */
+.sy-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,3vw,48px);align-items:stretch}
+.sy-stage{position:relative;aspect-ratio:1/1;display:grid;place-items:center;background:var(--k2);color:var(--b);transition:background .5s var(--ease),color .5s var(--ease);overflow:hidden;max-width:100%}
+.sy-stage .code{position:absolute;left:16px;top:14px}
+.sy-stage .code2{position:absolute;right:16px;bottom:14px;text-align:right}
+.sy-panel{display:flex;flex-direction:column;gap:24px}
+.sy-panel h2{font-size:clamp(44px,5.6vw,92px)}
+.ctrl label{display:flex;justify-content:space-between;margin-bottom:8px}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:2px;background:var(--k3);outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--blue);cursor:pointer;border:0}
+input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--blue);cursor:pointer;border:0}
+.sw{display:flex;gap:8px;flex-wrap:wrap}
+.sw button{width:34px;height:34px;border-radius:50%;border:1px solid rgba(242,239,232,.35);position:relative}
+.sw button[aria-pressed="true"]::after{content:"";position:absolute;inset:-5px;border:1px solid var(--b);border-radius:50%}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+.meaning{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.6vw,24px);margin-top:clamp(40px,5vw,80px)}
+.meaning>div{border-top:1px solid var(--k3);padding-top:14px}
+.meaning b{display:block;font-size:clamp(26px,3vw,46px);letter-spacing:-.045em;text-transform:uppercase;font-weight:800;line-height:.95;margin:12px 0 4px}
+.meaning em{font-family:var(--serif);font-size:clamp(20px,2vw,30px);color:var(--ac)}
+.meaning svg{width:56px;height:56px}
+@media (max-width:860px){.sy-grid{grid-template-columns:1fr}.meaning{grid-template-columns:1fr}}
+
+/* laboratorio de posters */
+.posterlab{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(20px,3vw,48px);align-items:start}
+.pl-ctrl{display:flex;flex-direction:column;gap:22px}
+.pl-ctrl .row{display:flex;flex-wrap:wrap;gap:8px}
+.pl-out{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(10px,1.4vw,20px)}
+.poster{aspect-ratio:3/4;position:relative;overflow:hidden;padding:clamp(10px,1.2vw,16px);display:flex;flex-direction:column;justify-content:space-between;transition:background .5s var(--ease),color .5s var(--ease);container-type:inline-size}
+.poster h4{margin:0;position:relative;z-index:2;font-size:17cqw;font-weight:800;text-transform:uppercase;letter-spacing:-.05em;line-height:.84}
+.poster h4 .it{letter-spacing:-.03em}
+.poster .mono{position:relative;z-index:2;font-size:max(8px,3.4cqw)}
+.poster .foot2{display:flex;justify-content:space-between;align-items:flex-end;position:relative;z-index:2}
+.poster .foot2 .wm{font-size:11cqw}
+.poster .shape{position:absolute;inset:0;z-index:1;pointer-events:none}
+.poster .photo{position:absolute;inset:0;z-index:0;opacity:.9}
+@media (max-width:860px){.posterlab{grid-template-columns:1fr}.pl-out{grid-template-columns:1fr 1fr}.pl-out .poster:nth-child(3){display:none}}
+
 .faqgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px)}
 .faqgrid h2{font-size:clamp(44px,5.4vw,90px)}
 @media (max-width:860px){.faqgrid{grid-template-columns:1fr}}
@@ -119,6 +156,40 @@
   <span class="mono meta">Creative tools<br>Real progress<br>OB—001</span>
 </section>
 
+<!-- SÍMBOLO INTERACTIVO -->
+<section class="sec dark" id="simbolo">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">El símbolo</span><span data-l="en">The symbol</span></b>OB—S01</div><div style="text-align:right"><span data-l="es">Círculo incompleto + apertura + punto</span><span data-l="en">Open circle + gap + dot</span></div></div>
+    <div class="sy-grid">
+      <div class="sy-stage rv" id="syStage">
+        <span class="mono code">OB—S01</span>
+        <div id="sySym" style="width:62%;display:grid;place-items:center"></div>
+        <span class="mono code2" id="syRead"></span>
+      </div>
+      <div class="sy-panel rv">
+        <h2 class="display"><span data-l="es">Un símbolo en <span class="it">constante</span> movimiento.</span><span data-l="en">A symbol in <span class="it">constant</span> motion.</span></h2>
+        <p style="margin:0;opacity:.7;max-width:44ch"><span data-l="es">Nace de la O. Se abre, se cierra, rota y su punto recorre la órbita. Probalo.</span><span data-l="en">Born from the O. It opens, closes, rotates, and its dot travels the orbit. Try it.</span></p>
+        <div class="ctrl"><label class="mono" for="rGap"><span><span data-l="es">Apertura</span><span data-l="en">Gap</span></span><span id="vGap">68°</span></label><input type="range" id="rGap" min="0" max="170" value="68"></div>
+        <div class="ctrl"><label class="mono" for="rRot"><span><span data-l="es">Rotación</span><span data-l="en">Rotation</span></span><span id="vRot">0°</span></label><input type="range" id="rRot" min="0" max="360" value="0"></div>
+        <div class="ctrl"><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Punto</span><span data-l="en">Dot</span></span><div class="sw" id="swDot"></div></div>
+        <div class="ctrl"><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Fondo</span><span data-l="en">Background</span></span><div class="sw" id="swBg"></div></div>
+        <div class="acts">
+          <button class="chip" data-a="open"><span data-l="es">Abrir</span><span data-l="en">Open</span></button>
+          <button class="chip" data-a="close"><span data-l="es">Completar</span><span data-l="en">Complete</span></button>
+          <button class="chip" data-a="rotate"><span data-l="es">Rotar</span><span data-l="en">Rotate</span></button>
+          <button class="chip" data-a="travel"><span data-l="es">Recorrer</span><span data-l="en">Travel</span></button>
+          <button class="chip" data-a="reset">Reset</button>
+        </div>
+      </div>
+    </div>
+    <div class="meaning">
+      <div class="rv"><div id="mean1"></div><b><span data-l="es">Sistema</span><span data-l="en">System</span></b><em><span data-l="es">el círculo</span><span data-l="en">the circle</span></em></div>
+      <div class="rv"><div id="mean2"></div><b><span data-l="es">Posibilidad</span><span data-l="en">Possibility</span></b><em><span data-l="es">la apertura</span><span data-l="en">the gap</span></em></div>
+      <div class="rv"><div id="mean3"></div><b><span data-l="es">Acción</span><span data-l="en">Action</span></b><em><span data-l="es">el punto</span><span data-l="en">the dot</span></em></div>
+    </div>
+  </div>
+</section>
+
 <!-- DISCIPLINAS -->
 <section class="sec light" id="disciplinas">
   <div class="wrap">
@@ -153,6 +224,24 @@
   <div class="wrap">
     <div class="shead mono"><div><b><span data-l="es">Cómo funciona</span><span data-l="en">How it works</span></b>From idea to system</div><div style="text-align:right"><span data-l="es">Orbit existe en el espacio<br>entre la idea y el resultado</span><span data-l="en">Orbit lives in the space<br>between idea and result</span></div></div>
     <div class="flow" id="flow"></div>
+  </div>
+</section>
+
+<!-- POSTERS -->
+<section class="sec light" id="posters">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Laboratorio de posters</span><span data-l="en">Poster lab</span></b>Vol.01</div><div style="text-align:right"><span data-l="es">Una cosa grande<br>+ varias pequeñas</span><span data-l="en">One big thing<br>+ a few small ones</span></div></div>
+    <div class="posterlab rv">
+      <div class="pl-ctrl">
+        <h2 class="display" style="font-size:clamp(40px,4.6vw,76px)"><span data-l="es">Armá tu <span class="it">poster.</span></span><span data-l="en">Make your <span class="it">poster.</span></span></h2>
+        <p style="margin:0;max-width:34ch;opacity:.75"><span data-l="es">Combiná titular, color y recurso gráfico. El sistema responde solo.</span><span data-l="en">Mix a headline, a color and a graphic device. The system does the rest.</span></p>
+        <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Titular</span><span data-l="en">Headline</span></span><div class="row" id="plHead"></div></div>
+        <div><span class="mono" style="display:block;margin-bottom:8px">Color</span><div class="row" id="plCol"></div></div>
+        <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Recurso</span><span data-l="en">Device</span></span><div class="row" id="plLay"></div></div>
+        <div><button class="btn btn-line" id="plMix" style="color:var(--k)"><span data-l="es">Mezclar</span><span data-l="en">Shuffle</span> <span class="ar">↻</span></button></div>
+      </div>
+      <div class="pl-out" id="plOut"></div>
+    </div>
   </div>
 </section>
 
@@ -245,6 +334,70 @@ manis.forEach(m => (function split(node) {
 })(m));
 const onScroll = () => manis.forEach(m => { if (!m.offsetParent) return; const r = m.getBoundingClientRect(), ws = $$('.w', m); const p = Math.min(1, Math.max(0, (innerHeight*.85 - r.top) / (r.height + innerHeight*.3))); const n = Math.round(p * ws.length * 1.15); ws.forEach((w,i) => w.classList.toggle('lit', i < n)); });
 if (RM) $$('.mani .w').forEach(w => w.classList.add('lit')); else { addEventListener('scroll', onScroll, {passive:true}); addEventListener('orbit:lang', onScroll); onScroll(); }
+
+/* ---------- símbolo interactivo ---------- */
+const {symInner, wm} = ORBIT;
+const S = {gap:68, rot:0, dot:C.blue, bg:C.k2, ring:C.b, dotOff:0};
+const syEl = $('#sySym'), syStage = $('#syStage');
+const norm = r => Math.round(((r % 360) + 360) % 360);
+const renderSy = () => {
+  syEl.innerHTML = sym({gap:S.gap, rot:S.rot, dot:S.dot, ring:S.ring, dotOff:S.dotOff}, 'sym', 'width:100%;height:auto');
+  $('#vGap').textContent = Math.round(S.gap) + '°'; $('#vRot').textContent = norm(S.rot) + '°';
+  $('#syRead').innerHTML = `${L('Apertura','Gap')} ${Math.round(S.gap)}° · ${L('Rotación','Rotation')} ${norm(S.rot)}°`;
+  $('#rGap').value = S.gap; $('#rRot').value = norm(S.rot);
+};
+$('#rGap').oninput = e => { S.gap = +e.target.value; renderSy(); };
+$('#rRot').oninput = e => { S.rot = +e.target.value; renderSy(); };
+const DOTS = [['Orbit Blue',C.blue],['Solar Orange',C.or],['Signal Acid',C.ac],['Bone',C.b]];
+const BGS = [['Eclipse Black',C.k2,C.b],['Bone',C.b,C.k],['Orbit Blue',C.blue,C.b],['Solar Orange',C.or,C.k]];
+$('#swDot').innerHTML = DOTS.map(([n,c],i) => `<button style="background:${c}" aria-label="${n}" aria-pressed="${i===0}" data-c="${c}"></button>`).join('');
+$('#swBg').innerHTML = BGS.map(([n,c,f],i) => `<button style="background:${c}" aria-label="${n}" aria-pressed="${i===0}" data-c="${c}" data-f="${f}"></button>`).join('');
+$$('#swDot button').forEach(b => b.onclick = () => { $$('#swDot button').forEach(x => x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); S.dot = b.dataset.c; renderSy(); });
+$$('#swBg button').forEach(b => b.onclick = () => { $$('#swBg button').forEach(x => x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true'); S.bg = b.dataset.c; S.ring = b.dataset.f; syStage.style.background = S.bg; syStage.style.color = S.ring; if (S.dot === S.bg) S.dot = S.ring; renderSy(); });
+const ease = t => t<.5 ? 4*t*t*t : 1 - Math.pow(-2*t+2,3)/2;
+function tween(key, to, dur, done) {
+  const from = S[key], t0 = performance.now();
+  if (RM) { S[key] = to; renderSy(); done && done(); return; }
+  const step = now => { const t = Math.min(1,(now-t0)/dur); S[key] = from + (to-from)*ease(t); renderSy(); t<1 ? requestAnimationFrame(step) : done && done(); };
+  requestAnimationFrame(step);
+}
+$$('.acts .chip').forEach(b => b.onclick = () => {
+  const a = b.dataset.a;
+  if (a==='open') tween('gap',150,700,() => setTimeout(() => tween('gap',68,700),350));
+  if (a==='close') tween('gap',0,700,() => setTimeout(() => tween('gap',68,700),450));
+  if (a==='rotate') tween('rot',S.rot+360,1100);
+  if (a==='travel') tween('dotOff',-360,1600,() => { S.dotOff = 0; renderSy(); });
+  if (a==='reset') { Object.assign(S,{gap:68,rot:0,dotOff:0}); renderSy(); }
+});
+renderSy();
+const pt = a => [50 + 39*Math.cos(a*Math.PI/180), 50 + 39*Math.sin(a*Math.PI/180)];
+$('#mean1').innerHTML = sym({gap:0, ring:C.b, dotOn:false, sw:16}, 'sym', 'width:56px;height:56px');
+$('#mean2').innerHTML = `<svg viewBox="0 0 100 100" style="width:56px;height:56px;overflow:visible">${symInner({ring:'rgba(242,239,232,.25)', dotOn:false, sw:16})}<path d="M${pt(50).join(' ')} A39 39 0 0 1 ${pt(118).join(' ')}" fill="none" stroke="${C.ac}" stroke-width="16"/></svg>`;
+$('#mean3').innerHTML = sym({ring:'rgba(242,239,232,.25)', dot:C.blue, sw:16}, 'sym', 'width:56px;height:56px');
+
+/* ---------- laboratorio de posters ---------- */
+const HEADS = [['Enter<br>the<br>orbit.','Enter the orbit'],['Ideas<br>in <span class="it">motion.</span>','Ideas in motion'],['Build<br>what’s <span class="it">next.</span>','Build what’s next'],['Tools<br>that <span class="it">move.</span>','Tools that move'],['Make<br>better <span class="it">things.</span>','Make better things']];
+const COLS = [[L('Negro + azul','Black + blue'),C.k,C.b,C.b,C.blue],[L('Naranja','Orange'),C.or,C.k,C.k,C.b],[L('Negro + ácido','Black + acid'),C.k,C.b,C.ac,C.b],[L('Azul','Blue'),C.blue,C.b,C.k,C.ac],[L('Bone + naranja','Bone + orange'),C.b,C.k,C.or,C.k],['B/N',C.b,C.k,C.k,C.k]];
+const LAYS = [['ring',L('Círculo gigante','Giant circle')],['crop','Crop'],['repeat',L('Repetición','Repetition')],['photo',L('Fotografía','Photo')]];
+const PL = {h:0, c:0, l:0};
+const chipRow = (el, arr, key, li) => { el.innerHTML = arr.map((a,i) => `<button class="chip" data-i="${i}" aria-pressed="${i===PL[key]}">${a[li]}</button>`).join(''); $$('.chip', el).forEach(b => b.onclick = () => { PL[key] = +b.dataset.i; syncPL(); }); };
+function posterHTML(h, c, l, code) {
+  const [, bg, fg, ring, dot] = COLS[c]; const lay = LAYS[l][0];
+  let shape = '', photo = '';
+  if (lay==='ring') shape = sym({ring, dot, sw:20}, 'sym', 'position:absolute;width:105%;right:-38%;bottom:-18%');
+  if (lay==='crop') shape = sym({ring, dot, sw:22, rot:150}, 'sym', 'position:absolute;width:190%;left:-10%;top:-95%');
+  if (lay==='repeat') shape = `<div style="position:absolute;left:6%;right:6%;top:48%;display:grid;grid-template-columns:repeat(4,1fr);gap:4%">${[0,1,2,3,4,5,6,7].map(i => sym({ring, rot:i*45, dot:i===5?dot:ring, sw:22}, 'sym', 'width:100%')).join('')}</div>`;
+  if (lay==='photo') { photo = `<div class="photo" style="background-image:url(assets/img/corridor.jpg)"></div>`; shape = sym({ring:C.blue, dot:C.blue, sw:14, dotOn:false}, 'sym', 'position:absolute;width:90%;right:-45%;top:-12%'); }
+  const txt = lay==='photo' ? C.k : fg;
+  return `<div class="poster" style="background:${bg};color:${txt}">${photo}<div class="shape">${shape}</div><div style="display:flex;justify-content:space-between;position:relative;z-index:2"><span class="mono">${code}</span><span class="mono">Vol.01</span></div><h4 style="${lay==='repeat'?'':'margin-top:auto;margin-bottom:10%'}">${HEADS[h][0]}</h4><div class="foot2">${wm({color:txt, dot: lay==='photo'?C.blue:dot})}<span class="mono" style="text-align:right">Digital goods<br>Est. 2026</span></div></div>`;
+}
+function syncPL() {
+  chipRow($('#plHead'), HEADS, 'h', 1); chipRow($('#plCol'), COLS, 'c', 0); chipRow($('#plLay'), LAYS, 'l', 1);
+  const n = HEADS.length;
+  $('#plOut').innerHTML = posterHTML(PL.h, PL.c, PL.l, 'OB—00' + (PL.h+1)) + posterHTML((PL.h+1)%n, (PL.c+2)%COLS.length, (PL.l+1)%LAYS.length, 'OB—00' + ((PL.h+1)%n+1)) + posterHTML((PL.h+3)%n, (PL.c+4)%COLS.length, (PL.l+3)%LAYS.length, 'OB—00' + ((PL.h+3)%n+1));
+}
+$('#plMix').onclick = () => { PL.h = Math.floor(Math.random()*HEADS.length); PL.c = Math.floor(Math.random()*COLS.length); PL.l = Math.floor(Math.random()*LAYS.length); syncPL(); };
+syncPL();
 
 reveal();
 })();
