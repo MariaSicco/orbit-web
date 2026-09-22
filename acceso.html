@@ -10,7 +10,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <meta name="description" content="Accedé a tu biblioteca Orbit: todos los productos que compraste, siempre disponibles.">
 <meta name="theme-color" content="#0D0D0E">
-<link rel="stylesheet" href="assets/css/orbit.css?v=22">
+<link rel="stylesheet" href="assets/css/orbit.css?v=23">
 <style>
 .acc{min-height:100svh;display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);align-items:stretch}
 .acc .l{padding:calc(100px + env(safe-area-inset-top,0px)) var(--pad) 32px;display:flex;flex-direction:column;justify-content:space-between;gap:32px;background:var(--k)}
@@ -28,6 +28,8 @@
 .pwrap .peye:hover{opacity:1}
 .pwrap .peye svg{width:20px;height:20px}
 .acc .hint{margin:8px 0 0;opacity:.5}
+.check{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:13px;opacity:.85;cursor:pointer}
+.check input{width:18px;height:18px;flex:none;accent-color:var(--blue);margin-top:1px}
 .linkish{margin-top:14px;text-decoration:underline;text-underline-offset:4px;opacity:.7;display:block;text-align:left}
 .linkish:hover{opacity:1;color:var(--ac)}
 .acc .err{color:var(--or);font-size:14px;min-height:1.3em;margin-top:10px}
@@ -57,6 +59,7 @@
         <div id="nameWrap" hidden><label class="mono" for="accName" style="margin-top:14px"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="accName" name="name" autocomplete="name"></div>
         <label class="mono" for="accPass" style="margin-top:14px"><span data-l="es">Contraseña</span><span data-l="en">Password</span></label>
         <div class="pwrap"><input id="accPass" name="password" type="password" autocomplete="current-password" placeholder="••••••••"><button type="button" class="peye" data-eye aria-label="Ver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
+        <label class="check" id="newsWrap" hidden><input type="checkbox" id="accNews" checked><span><span data-l="es">Quiero recibir novedades, lanzamientos y recursos gratis de Orbit.</span><span data-l="en">I want news, launches and free Orbit resources.</span></span></label>
         <p class="hint mono" id="pwHint" hidden><span data-l="es">Mínimo 8 caracteres</span><span data-l="en">At least 8 characters</span></p>
         <button class="btn btn-acid" type="submit" id="accSubmit"><span data-l="es">Entrar</span><span data-l="en">Sign in</span> <span class="ar">→</span></button>
         <p class="err" id="accErr" role="alert"></p>
@@ -73,8 +76,8 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=22"></script>
-<script src="assets/js/orbit.js?v=22"></script>
+<script src="assets/js/products.js?v=23"></script>
+<script src="assets/js/orbit.js?v=23"></script>
 <script>
 (() => {
 const {$, $$, L, tr, cover, toast, P} = ORBIT;
@@ -84,6 +87,7 @@ const setMode = m => {
   mode = m;
   $$('#accTabs .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === m)));
   $('#nameWrap').hidden = m === 'in';
+  $('#newsWrap').hidden = m === 'in';
   $('#pwHint').hidden = m === 'in';
   $('#accPass').setAttribute('autocomplete', m === 'in' ? 'current-password' : 'new-password');
   $('#accSubmit').innerHTML = (m === 'in' ? L('Entrar','Sign in') : L('Crear mi cuenta','Create my account')) + ' <span class="ar">→</span>';
@@ -112,7 +116,7 @@ $('#accForm').addEventListener('submit', async e => {
   try {
     const r = await fetch(`/api/auth/${mode === 'in' ? 'login' : 'register'}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password, name: $('#accName').value.trim() }),
+      body: JSON.stringify({ email, password, name: $('#accName').value.trim(), news: $('#accNews').checked }),
     });
     const data = await r.json();
     if (data.ok) { location.href = 'biblioteca.html'; return; }

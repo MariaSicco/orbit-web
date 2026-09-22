@@ -2,6 +2,8 @@
 import { kvGet, kvSet, addPurchase } from './kv.js';
 import { CATALOG } from './catalog.js';
 import { randomBytes } from 'node:crypto';
+import { sendEmail, emailReady, layout } from './email.js';
+import { upsertContact, listClientes } from './marketing.js';
 
 const key = id => `orbit:order:${id}`;
 const listKey = email => `orbit:orders:${email.toLowerCase()}`;
@@ -47,6 +49,27 @@ export async function markPaid(id, { paymentId, amount, currency }) {
       currency: order.via === 'paypal' ? 'USD' : 'ARS',
       date: order.paidAt,
     });
+  }
+  /* aviso al comprador + alta como cliente */
+  const site = process.env.SITE_URL || 'https://www.orbitando.com.ar';
+  upsertContact({
+    email: order.email,
+    lists: listClientes(),
+    attributes: { CLIENTE: 'si', ULTIMA_COMPRA: order.paidAt.slice(0, 10), PRODUCTOS: order.items.map(i => i.code).join(', ') },
+  }).catch(() => {});
+  if (emailReady()) {
+    sendEmail({
+      to: order.email,
+      subject: `Tu compra en Orbit — ${order.id}`,
+      text: `Gracias por tu compra. Entrá a tu biblioteca: ${site}/biblioteca`,
+      html: layout({
+        eyebrow: `Pedido ${order.id}`,
+        title: '¡Gracias!<br>Ya es tuyo.',
+        body: `<p>Esto es lo que compraste:</p><ul style="padding-left:18px">${order.items.map(i => `<li>${i.code} — ${i.name}${i.qty > 1 ? ` × ${i.qty}` : ''}</li>`).join('')}</ul><p>Entrá a tu biblioteca para descargarlo. Queda guardado ahí para siempre, con las actualizaciones incluidas.</p>`,
+        cta: 'Ir a mi biblioteca →', ctaUrl: `${site}/biblioteca`,
+        foot: 'Licencia de uso comercial · Soporte en hola@orbitando.com.ar',
+      }),
+    }).catch(() => {});
   }
   return order;
 }
