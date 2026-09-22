@@ -102,10 +102,11 @@ html.gate-on body>main,html.gate-on body>.nav,html.gate-on body>.foot{visibility
 @media (max-width:760px){.g-bot{grid-template-columns:1fr}.g-opts{grid-template-columns:1fr}}
 
 /* volver arriba */
-.totop{position:fixed;right:calc(var(--pad) - 4px);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:45;width:52px;height:52px;border-radius:50%;background:rgba(13,13,14,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(242,239,232,.18);color:var(--b);display:grid;place-items:center;opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .35s var(--ease),transform .35s var(--ease),background .2s}
+.totop{position:fixed;right:calc(var(--pad) - 4px);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:45;height:50px;padding:0 18px 0 8px;border-radius:999px;background:rgba(13,13,14,.85);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(242,239,232,.22);color:var(--b);display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .35s var(--ease),transform .35s var(--ease),background .2s,color .2s}
 .totop.on{opacity:1;transform:none;pointer-events:auto}
-.totop:hover{background:var(--blue)}
-.totop svg{width:26px;height:26px;overflow:visible}
+.totop:hover,.totop:focus-visible{background:var(--b);color:var(--k)}
+.totop svg{width:34px;height:34px;flex:none;transition:transform .3s var(--ease)}
+.totop:hover svg{transform:translateY(-3px)}
 body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 
 /* reveal */

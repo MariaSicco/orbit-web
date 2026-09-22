@@ -123,7 +123,7 @@ document.body.append(foot);
 /* ---------- volver arriba ---------- */
 const top = document.createElement('button');
 top.className = 'totop'; top.setAttribute('aria-label', 'Volver arriba / Back to top');
-top.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true">${symInner({ring:'currentColor', dot:C.blue, rot:-140, sw:18})}</svg>`;
+top.innerHTML = `<svg viewBox="0 0 100 100" aria-hidden="true" style="overflow:visible">${symInner({ring:'currentColor', dotOn:false, sw:7, gap:64, rot:-140})}<path d="M50 70 V32 M35 46 L50 31 L65 46" fill="none" stroke="${C.blue}" stroke-width="9" stroke-linecap="square"/></svg>${L('Arriba','Top')}`;
 top.onclick = () => scrollTo({top:0, behavior: RM ? 'auto' : 'smooth'});
 document.body.append(top);
 const topShow = () => top.classList.toggle('on', scrollY > innerHeight * .6);
