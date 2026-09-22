@@ -6,7 +6,7 @@
 <title>Mi biblioteca — Orbit®</title>
 <meta name="description" content="Tu biblioteca Orbit: descargas, versiones y guías de todo lo que compraste.">
 <meta name="theme-color" content="#0D0D0E">
-<link rel="stylesheet" href="assets/css/orbit.css?v=18">
+<link rel="stylesheet" href="assets/css/orbit.css?v=19">
 <style>
 .lib-head{padding-top:calc(110px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:26px}
 .lib-head .top{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
@@ -58,20 +58,26 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=18"></script>
-<script src="assets/js/orbit.js?v=18"></script>
+<script src="assets/js/products.js?v=19"></script>
+<script src="assets/js/orbit.js?v=19"></script>
 <script>
-(() => {
+(async () => {
 const {$, $$, L, tr, cover, toast, P, url} = ORBIT;
-let user = null;
-try { user = localStorage.getItem('orbit-demo-user'); } catch (e) {}
+let user = null, real = null;
+try { const r = await fetch('/api/me'); if (r.ok) real = await r.json(); } catch (e) {}
+if (real) { user = real.email; }
+else { try { user = localStorage.getItem('orbit-demo-user'); } catch (e) {} }
 if (!user) { location.replace('acceso.html'); return; }
 $('#who').textContent = user;
-$('#out').onclick = () => { try { localStorage.removeItem('orbit-demo-user'); } catch (e) {} location.href = 'acceso.html'; };
+$('#out').onclick = async () => { try { await fetch('/api/auth/logout', {method:'POST'}); } catch (e) {} try { localStorage.removeItem('orbit-demo-user'); } catch (e) {} location.href = 'acceso.html'; };
 
-/* demo: compras de ejemplo */
-const owned = [{id:'ob-001', date:'12.03.2026', ver:'V.01', fresh:true}, {id:'ob-003', date:'02.04.2026', ver:'V.01', fresh:false}];
+/* compras reales si hay sesión; si no, ejemplo de demostración */
+const owned = real
+  ? real.purchases.map(x => ({ id: x.productId, date: new Date(x.date).toLocaleDateString('es-AR'), ver: 'V.01', fresh: false, dl: x.downloadable }))
+  : [{id:'ob-001', date:'12.03.2026', ver:'V.01', fresh:true}, {id:'ob-003', date:'02.04.2026', ver:'V.01', fresh:false}];
 const items = owned.map(o => ({...o, p: P.find(x => x.id === o.id)})).filter(x => x.p);
+if (real && !items.length) $('#items').innerHTML = `<div class="item" style="display:block"><span class="mono dim">${L('Todavía no hay compras','No purchases yet')}</span><p style="margin:10px 0 0;font-size:22px;font-weight:800;letter-spacing:-.03em;text-transform:uppercase">${L('Tu biblioteca está lista para el primer sistema.','Your library is ready for its first system.')}</p></div>`;
+if (!real) { const n = document.createElement('p'); n.className = 'mono dim'; n.style.marginTop = '14px'; n.textContent = tr('Vista de demostración con compras de ejemplo.','Demo view with sample purchases.'); $('#items').before(n); }
 $('#stats').innerHTML = [
   [L('Productos','Products'), String(items.length).padStart(2,'0')],
   [L('Assets totales','Total assets'), '128'],
@@ -86,7 +92,13 @@ $('#items').innerHTML = items.map(({p, date, ver, fresh}) => `<div class="item">
   </div>
   <div class="acts"><button class="btn btn-acid" data-dl="${p.id}">${L('Descargar','Download')} <span class="ar">↓</span></button><a class="btn btn-line" href="${url(p)}">${L('Ver guía','View guide')}</a></div>
 </div>`).join('');
-$$('[data-dl]').forEach(b => b.onclick = () => toast(tr('Demo: la descarga se activa al conectar la plataforma de pago','Demo: downloads turn on once the payment platform is connected')));
+$$('[data-dl]').forEach(b => b.onclick = async () => {
+  if (!real) return toast(tr('Demo: la descarga se activa al conectar la plataforma de pago','Demo: downloads turn on once the payment platform is connected'));
+  const r = await fetch(`/api/download?id=${b.dataset.dl}`, { redirect: 'follow' });
+  if (r.ok && r.url) { location.href = r.url; return; }
+  const d = await r.json().catch(() => ({}));
+  toast(d.error === 'file_not_configured' ? tr('Falta subir el archivo de este producto','The file for this product is not uploaded yet') : tr('No pudimos abrir la descarga','We couldn’t start the download'));
+});
 })();
 </script>
 </body>

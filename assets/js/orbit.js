@@ -104,15 +104,59 @@ function toast(m) {
 }
 /* botón de compra */
 function buyBtn(p, cls='btn btn-acid') {
-  if (p.status === 'soon') return `<a class="${cls}" href="#" data-soon="${p.id}">${L('Avisame cuando salga','Notify me')} <span class="ar">→</span></a>`;
-  return `<a class="${cls}" href="${p.checkout || '#'}" data-buy="${p.id}" ${p.checkout ? 'target="_blank" rel="noopener"' : ''}>${L('Comprar','Buy')} — ${money(p.price)} <span class="ar">→</span></a>`;
+  if (p.status === 'soon') return `<button class="${cls}" type="button" data-soon="${p.id}">${L('Avisame cuando salga','Notify me')} <span class="ar">→</span></button>`;
+  return `<button class="${cls}" type="button" data-buy="${p.id}">${L('Comprar','Buy')} — ${money(p.price)} <span class="ar">→</span></button>`;
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-buy]');
-  if (b && b.getAttribute('href') === '#') { e.preventDefault(); toast(tr('El pago todavía no está conectado — agregá el link de checkout en products.js', 'Checkout is not connected yet — add the payment link in products.js')); }
+  if (b) { e.preventDefault(); openCheckout(P.find(p => p.id === b.dataset.buy)); }
   const s = e.target.closest('[data-soon]');
   if (s) { e.preventDefault(); toast(tr('Pronto: acá va el formulario de lista de espera', 'Coming soon: the waitlist form goes here')); }
 });
+
+/* ---------- checkout: Mercado Pago o PayPal ---------- */
+function openCheckout(p) {
+  if (!p) return;
+  const box = document.createElement('div');
+  box.className = 'co'; box.setAttribute('role','dialog'); box.setAttribute('aria-modal','true');
+  box.innerHTML = `<div class="co-box">
+    <div class="co-top"><div><span class="mono">${p.code}</span><h3 style="margin-top:10px">${p.name}</h3></div><button class="chip" data-x>${L('Cerrar','Close')}</button></div>
+    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:1px solid var(--k3);padding-top:14px">
+      <span class="mono dim">${L('Pago único · acceso para siempre','One-time payment · lifetime access')}</span><span class="co-price">${money(p.price)}</span></div>
+    <div><label class="mono" for="coMail">${L('Tu email (ahí llega el acceso)','Your email (where access is sent)')}</label><input id="coMail" type="email" autocomplete="email" placeholder="hola@tuestudio.com"></div>
+    <div class="co-pays">
+      <button class="btn btn-acid" data-pay="mercadopago">${L('Pagar con Mercado Pago','Pay with Mercado Pago')} <span class="ar">→</span></button>
+      <button class="btn btn-line" data-pay="paypal">${L('Pagar con PayPal o tarjeta','Pay with PayPal or card')} <span class="ar">→</span></button>
+    </div>
+    <p class="co-err" id="coErr" role="alert"></p>
+    <p class="co-note">${L('Mercado Pago: tarjeta, débito, cuotas y dinero en cuenta (en pesos). PayPal: tarjeta internacional, en dólares.','Mercado Pago: cards and local methods (ARS). PayPal: international cards, in USD.')}</p>
+  </div>`;
+  document.body.append(box);
+  const close = () => box.remove();
+  $('[data-x]', box).onclick = close;
+  box.addEventListener('click', e => { if (e.target === box) close(); });
+  addEventListener('keydown', function esc(e) { if (e.key === 'Escape') { close(); removeEventListener('keydown', esc); } });
+  $('#coMail', box).focus();
+  $$('[data-pay]', box).forEach(btn => btn.onclick = async () => {
+    const email = $('#coMail', box).value.trim(), err = $('#coErr', box);
+    if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = tr('Escribí un email válido.','Enter a valid email.'); return; }
+    err.textContent = ''; const old = btn.innerHTML; btn.innerHTML = tr('Abriendo…','Opening…');
+    try {
+      const r = await fetch(`/api/checkout/${btn.dataset.pay}`, {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ productId: p.id, email }),
+      });
+      const data = await r.json();
+      if (data.url) { location.href = data.url; return; }
+      err.textContent = data.error === 'not_configured'
+        ? tr('El pago todavía no está activo: faltan las claves de esta plataforma.','Payments are not live yet: platform keys are missing.')
+        : tr('No pudimos abrir el pago. Probá de nuevo o escribinos a hola@orbit.studio','We couldn’t open the payment. Try again or email hola@orbit.studio');
+    } catch (e) {
+      err.textContent = tr('Sin conexión con el servidor de pagos.','No connection to the payment server.');
+    }
+    btn.innerHTML = old;
+  });
+}
 
 /* ---------- nav + footer compartidos ---------- */
 const page = document.body.dataset.page;

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es" data-lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>¡Gracias! — Orbit®</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0D0D0E">
+<link rel="stylesheet" href="assets/css/orbit.css?v=19">
+<style>
+.ty{min-height:100svh;display:flex;flex-direction:column;justify-content:center;gap:clamp(24px,4vw,48px)}
+.ty h1{font-size:clamp(56px,11vw,190px)}
+.ty h1 .it{color:var(--or)}
+.ty .g{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,4vw,64px);align-items:end}
+.ty .steps{list-style:none;margin:0;padding:0}
+.ty .steps li{display:grid;grid-template-columns:40px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--k3)}
+.ty .acts{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+@media (max-width:860px){.ty .g{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="gracias" data-nav-solid data-title-es="¡Gracias! — Orbit®" data-title-en="Thank you! — Orbit®">
+<main>
+<section class="sec dark ty">
+  <div class="wrap"><span class="mono">OB—000 · <span data-l="es">Compra confirmada</span><span data-l="en">Order confirmed</span></span></div>
+  <div class="wrap"><h1 class="display"><span data-l="es">¡Gracias!<br>Ya está en <span class="it">tu órbita.</span></span><span data-l="en">Thank you!<br>It’s in <span class="it">your orbit.</span></span></h1></div>
+  <div class="wrap g">
+    <ol class="steps">
+      <li><span class="mono">01</span><div><b><span data-l="es">Te llega un email</span><span data-l="en">You’ll get an email</span></b><p style="margin:4px 0 0;opacity:.7"><span data-l="es">Con el enlace de acceso a tu biblioteca.</span><span data-l="en">With the access link to your library.</span></p></div></li>
+      <li><span class="mono">02</span><div><b><span data-l="es">Entrás a Mi biblioteca</span><span data-l="en">Open My library</span></b><p style="margin:4px 0 0;opacity:.7"><span data-l="es">Ahí queda todo lo que compres, para siempre.</span><span data-l="en">Everything you buy stays there, forever.</span></p></div></li>
+      <li><span class="mono">03</span><div><b><span data-l="es">Descargás y empezás</span><span data-l="en">Download and start</span></b><p style="margin:4px 0 0;opacity:.7"><span data-l="es">Con licencia comercial y actualizaciones sin cargo.</span><span data-l="en">Commercial license and free updates included.</span></p></div></li>
+    </ol>
+    <div>
+      <p class="mono dim" id="tyMsg"></p>
+      <div class="acts"><a class="btn btn-acid" href="biblioteca.html"><span data-l="es">Ir a mi biblioteca</span><span data-l="en">Go to my library</span> <span class="ar">→</span></a><a class="btn btn-line" href="productos.html"><span data-l="es">Ver catálogo</span><span data-l="en">See catalog</span></a></div>
+    </div>
+  </div>
+</section>
+</main>
+<script src="assets/js/products.js?v=19"></script>
+<script src="assets/js/orbit.js?v=19"></script>
+<script>
+(() => {
+const {$, tr} = ORBIT;
+const q = new URLSearchParams(location.search);
+$('#tyMsg').textContent = q.get('pending')
+  ? tr('El pago quedó pendiente de acreditación. Te avisamos por email en cuanto se confirme.','Payment is pending. We’ll email you as soon as it clears.')
+  : tr('Pago confirmado. Si no ves el email, revisá spam o escribinos a hola@orbit.studio','Payment confirmed. If you don’t see the email, check spam or write to hola@orbit.studio');
+})();
+</script>
+</body>
+</html>

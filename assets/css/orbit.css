@@ -103,6 +103,20 @@ html.gate-on body>main,html.gate-on body>.nav,html.gate-on body>.foot{visibility
 .g-opts button:hover .ar,.g-opts button:focus-visible .ar{transform:translateX(8px)}
 @media (max-width:760px){.g-bot{grid-template-columns:1fr}.g-opts{grid-template-columns:1fr}}
 
+/* checkout */
+.co{position:fixed;inset:0;z-index:90;display:grid;place-items:center;padding:var(--pad);background:rgba(13,13,14,.82);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}
+.co-box{background:var(--k);color:var(--b);border:1px solid var(--k3);width:min(560px,100%);max-height:90svh;overflow:auto;padding:clamp(20px,3vw,34px);display:flex;flex-direction:column;gap:18px}
+.co-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px}
+.co-box h3{margin:0;font-weight:800;font-size:clamp(26px,3vw,40px);letter-spacing:-.04em;text-transform:uppercase;line-height:.95}
+.co-price{font-weight:800;font-size:clamp(22px,2.4vw,32px);letter-spacing:-.03em}
+.co-box label{display:block;margin-bottom:8px}
+.co-box input{width:100%;font:inherit;font-size:16px;padding:13px 15px;background:transparent;border:1px solid var(--k3);color:var(--b)}
+.co-box input:focus{outline:2px solid var(--blue);outline-offset:0}
+.co-pays{display:grid;gap:10px}
+.co-pays .btn{justify-content:space-between;width:100%}
+.co-note{font-size:13px;opacity:.6}
+.co-err{color:var(--or);font-size:14px;min-height:1.2em}
+
 /* volver arriba */
 .totop{position:fixed;right:calc(var(--pad) - 4px);bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:45;height:50px;padding:0 18px 0 8px;border-radius:999px;background:rgba(13,13,14,.85);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(242,239,232,.22);color:var(--b);display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .35s var(--ease),transform .35s var(--ease),background .2s,color .2s}
 .totop.on{opacity:1;transform:none;pointer-events:auto}

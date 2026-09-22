@@ -6,7 +6,7 @@
 <title>Acceso — Orbit®</title>
 <meta name="description" content="Accedé a tu biblioteca Orbit: todos los productos que compraste, siempre disponibles.">
 <meta name="theme-color" content="#0D0D0E">
-<link rel="stylesheet" href="assets/css/orbit.css?v=18">
+<link rel="stylesheet" href="assets/css/orbit.css?v=19">
 <style>
 .acc{min-height:100svh;display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);align-items:stretch}
 .acc .l{padding:calc(100px + env(safe-area-inset-top,0px)) var(--pad) 32px;display:flex;flex-direction:column;justify-content:space-between;gap:32px;background:var(--k)}
@@ -52,20 +52,28 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=18"></script>
-<script src="assets/js/orbit.js?v=18"></script>
+<script src="assets/js/products.js?v=19"></script>
+<script src="assets/js/orbit.js?v=19"></script>
 <script>
 (() => {
 const {$, $$, L, tr, cover, toast, P} = ORBIT;
 $('#accShelf').innerHTML = P.slice(0,3).map(p => cover(p)).join('');
-$('#accForm').addEventListener('submit', e => {
+$('#accForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const mail = $('#accMail').value.trim(), err = $('#accErr');
+  const mail = $('#accMail').value.trim(), err = $('#accErr'), btn = $('#accForm button');
   if (!/^\S+@\S+\.\S+$/.test(mail)) { err.textContent = tr('Escribí un email válido.','Please enter a valid email.'); return; }
-  err.textContent = '';
-  try { localStorage.setItem('orbit-demo-user', mail); } catch (e) {}
-  toast(tr('Demo: entrando a tu biblioteca','Demo: opening your library'));
-  setTimeout(() => location.href = 'biblioteca.html', 700);
+  err.textContent = ''; const old = btn.innerHTML; btn.innerHTML = tr('Enviando…','Sending…');
+  try {
+    const r = await fetch('/api/auth/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: mail }) });
+    const data = await r.json();
+    if (data.ok && data.emailSent) { err.style.color = 'var(--ac)'; err.textContent = tr('Listo: revisá tu email. El enlace vence en 20 minutos.','Done: check your email. The link expires in 20 minutes.'); btn.innerHTML = old; return; }
+    if (data.ok && data.link) { location.href = data.link; return; }          // email todavía no configurado
+    throw new Error(data.error || 'error');
+  } catch (e) {
+    try { localStorage.setItem('orbit-demo-user', mail); } catch (er) {}
+    toast(tr('Modo demostración: el acceso real se activa al cargar las claves','Demo mode: real access turns on once the keys are set'));
+    setTimeout(() => location.href = 'biblioteca.html', 800);
+  }
 });
 })();
 </script>
