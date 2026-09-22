@@ -36,7 +36,7 @@ p{text-wrap:pretty}
 .dark{background:var(--k);color:var(--b)}
 .wrap{max-width:1440px;width:100%;margin-inline:auto;position:relative}
 .shead{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding-top:14px;border-top:1px solid currentColor;margin-bottom:clamp(36px,5vw,72px)}
-.shead .mono b{display:block;font-weight:500}
+.shead b{display:block;font-weight:500}
 
 /* wordmark + symbol */
 .wm{display:inline-flex;align-items:baseline;font-weight:900;letter-spacing:-.03em;line-height:.8;white-space:nowrap;font-family:var(--sans)}
