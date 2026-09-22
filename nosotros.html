@@ -33,9 +33,9 @@
 .chap.on s{background-size:100% .1em}
 .strikes{list-style:none;margin:6px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:6px 18px;font-weight:700;font-size:clamp(18px,1.8vw,26px);letter-spacing:-.02em}
 .strikes li{position:relative;opacity:.55;transition:opacity .4s var(--ease)}
-.strikes li::after{content:"";position:absolute;left:0;top:58%;height:3px;width:0;background:var(--or);transition:width .5s var(--ease)}
+.strikes li::after{content:"";position:absolute;left:0;top:58%;height:3px;width:100%;background:var(--or);transform:scaleX(0);transform-origin:left;transition:transform .5s var(--ease)}
 .chap.on .strikes li{opacity:1}
-.chap.on .strikes li::after{width:100%}
+.chap.on .strikes li::after{transform:scaleX(1)}
 .chap.on .strikes li:nth-child(1)::after{transition-delay:.35s}
 .chap.on .strikes li:nth-child(2)::after{transition-delay:.7s}
 .chap.on .strikes li:nth-child(3)::after{transition-delay:1.05s}
