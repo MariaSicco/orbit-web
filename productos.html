@@ -10,7 +10,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=17">
+<link rel="stylesheet" href="assets/css/orbit.css?v=18">
 <style>
 .cat-head{height:100svh;min-height:620px;padding-top:calc(88px + env(safe-area-inset-top,0px));padding-bottom:28px;display:flex;flex-direction:column;justify-content:space-between;gap:20px}
 .cat-head .top{display:flex;justify-content:space-between;gap:20px}
@@ -26,7 +26,11 @@
 .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;transform:translateZ(.6px)}
 .face *{backface-visibility:hidden;-webkit-backface-visibility:hidden}
 .face.back{transform:rotateY(180deg) translateZ(.6px);background:var(--k);color:var(--b);padding:11% 10% 9%;display:flex;flex-direction:column;justify-content:space-between;gap:14px;container-type:inline-size;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(242,239,232,.14)}
-.face.back .pg{position:absolute;left:0;top:2cqw;bottom:2cqw;width:2.6cqw;background:repeating-linear-gradient(90deg,rgba(242,239,232,.3) 0 1px,rgba(0,0,0,.5) 1px 2.5px)}
+.face.back .pg{position:absolute;left:0;top:1.4cqw;bottom:1.4cqw;width:3.4cqw;z-index:3;background:repeating-linear-gradient(90deg,#efece4 0 1px,rgba(0,0,0,.45) 1px 2.6px);box-shadow:inset -2px 0 4px rgba(0,0,0,.55)}
+/* canto superior de hojas: la línea clara del libro */
+.face.back::before{content:"";position:absolute;left:1.4cqw;right:5cqw;top:0;height:1.6cqw;z-index:3;background:linear-gradient(180deg,#f6f3ec,#cdc9c0 60%,rgba(0,0,0,.55));border-radius:1px}
+/* sombra del lomo, del lado derecho de la contratapa */
+.face.back::after{content:"";position:absolute;right:0;top:0;bottom:0;width:9cqw;z-index:2;background:linear-gradient(270deg,rgba(0,0,0,.65),rgba(0,0,0,0));pointer-events:none}
 .face.back .mono{font-size:max(9px,3.4cqw);letter-spacing:.08em;line-height:1.5}
 .face.back p{margin:0;font-family:var(--serif);font-style:italic;font-size:9cqw;line-height:1.12;letter-spacing:-.02em}
 .face.back ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2cqw;font-size:max(9px,3.2cqw);font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;opacity:.7}
@@ -80,8 +84,8 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=17"></script>
-<script src="assets/js/orbit.js?v=17"></script>
+<script src="assets/js/products.js?v=18"></script>
+<script src="assets/js/orbit.js?v=18"></script>
 <script>
 (() => {
 const {$, $$, L, tr, card, reveal, P, FAM} = ORBIT;

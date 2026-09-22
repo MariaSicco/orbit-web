@@ -139,7 +139,8 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .cover .body{position:relative;padding:6cqw 7cqw 5cqw;display:flex;flex-direction:column;overflow:hidden}
 .cover .body::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6cqw;background:linear-gradient(90deg,rgba(0,0,0,.28),rgba(0,0,0,0));pointer-events:none;z-index:4}
 /* canto de hojas */
-.cover .pages{position:absolute;right:0;top:1.5cqw;bottom:1.5cqw;width:2.6cqw;z-index:5;background:repeating-linear-gradient(90deg,rgba(255,255,255,.75) 0 1px,rgba(0,0,0,.16) 1px 2.5px);box-shadow:inset 1px 0 2px rgba(0,0,0,.3)}
+.cover .pages{position:absolute;right:0;top:1.4cqw;bottom:1.4cqw;width:3.2cqw;z-index:5;background:repeating-linear-gradient(90deg,#efece4 0 1px,rgba(0,0,0,.35) 1px 2.6px);box-shadow:inset 2px 0 4px rgba(0,0,0,.35)}
+.cover::after{content:"";position:absolute;left:5cqw;right:1.4cqw;top:0;height:1.6cqw;z-index:6;background:linear-gradient(180deg,#f6f3ec,#cdc9c0 60%,rgba(0,0,0,.5));border-radius:1px}
 
 /* 01 archivo — tapa bone, lomo negro */
 .cv-archive .spine{background:var(--k);color:var(--b)}
