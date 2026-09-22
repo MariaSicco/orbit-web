@@ -60,7 +60,8 @@ p{text-wrap:pretty}
 .light .chip[aria-pressed="true"],.light .chip:hover{background:var(--k);color:var(--b)}
 
 /* nav */
-.nav{position:fixed;left:0;right:0;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:calc(14px + env(safe-area-inset-top,0px)) var(--pad) 14px;color:#F2EFE8;mix-blend-mode:difference}
+.nav{position:fixed;left:0;right:0;top:0;z-index:50;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:calc(14px + env(safe-area-inset-top,0px)) var(--pad) 14px;color:#F2EFE8;background:transparent;border-bottom:1px solid transparent;transition:background .35s var(--ease),border-color .35s,backdrop-filter .35s}
+.nav.solid{background:rgba(13,13,14,.78);-webkit-backdrop-filter:blur(16px) saturate(1.3);backdrop-filter:blur(16px) saturate(1.3);border-bottom-color:rgba(242,239,232,.08)}
 .nav .logo{text-decoration:none}
 .nav .logo .wm{font-size:24px}
 .nav ul{display:flex;gap:28px;list-style:none;margin:0;padding:0}

@@ -86,7 +86,7 @@ document.addEventListener('click', e => {
 
 /* ---------- nav + footer compartidos ---------- */
 const page = document.body.dataset.page;
-const links = [['index.html',L('Inicio','Home'),'home'],['productos.html',L('Productos','Products'),'productos'],['index.html#a-medida',L('A medida','Custom'),'custom'],['nosotros.html',L('Nosotros','About'),'nosotros']];
+const links = [['index.html',L('Inicio','Home'),'home'],['productos.html',L('Productos','Products'),'productos'],['nosotros.html',L('Nosotros','About'),'nosotros']];
 const langSw = `<div class="langsw" role="group" aria-label="Idioma / Language"><button data-set="es" aria-pressed="${lang()==='es'}">ES</button><span>/</span><button data-set="en" aria-pressed="${lang()==='en'}">EN</button></div>`;
 const nav = document.createElement('header');
 nav.className = 'nav';
@@ -94,6 +94,8 @@ nav.innerHTML = `<a class="logo" href="index.html" aria-label="Orbit">${wm({colo
   <ul>${links.map(([h,t,k]) => `<li><a href="${h}"${k===page?' aria-current="page"':''}>${t}</a></li>`).join('')}</ul>
   <div class="right">${langSw}<button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
 document.body.prepend(nav);
+const navSolid = () => nav.classList.toggle('solid', scrollY > 12);
+addEventListener('scroll', navSolid, {passive:true}); navSolid();
 const mnav = document.createElement('nav');
 mnav.className = 'mnav'; mnav.id = 'mnav'; mnav.hidden = true; mnav.setAttribute('aria-label','Menu');
 mnav.innerHTML = `<button class="chip x">${L('Cerrar','Close')}</button><div>${links.map(([h,t]) => `<a href="${h}">${t}</a>`).join('')}</div><div style="display:flex;justify-content:space-between;align-items:center;gap:16px">${langSw}<span class="mono">Orbit® — Ideas in motion</span></div>`;
@@ -111,7 +113,7 @@ foot.innerHTML = `<div class="wrap">
   <div class="cols">
     <div><span class="mono dim">${L('Productos','Products')}</span>${P.map(p => `<a href="${url(p)}">${p.code} ${p.name}</a>`).join('')}</div>
     <div><span class="mono dim">${L('Familias','Families')}</span>${Object.entries(FAM).map(([k,[n]]) => `<a href="productos.html#${k}">${n}</a>`).join('')}</div>
-    <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
+    <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="index.html#a-medida">${L('Pedidos a medida','Custom requests')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
     <div><span class="mono dim">${L('Contacto','Contact')}</span><a href="mailto:hola@orbit.studio">hola@orbit.studio</a><a href="#">Instagram</a><a href="#">Newsletter</a></div>
   </div>
   <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">Digital goods for creative people.</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>
