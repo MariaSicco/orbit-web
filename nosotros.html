@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Nosotros — Orbit®</title>
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
 <meta name="description" content="Orbit es un universo de herramientas digitales para quienes construyen. Ideas in motion.">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
@@ -12,19 +13,19 @@
 <link rel="stylesheet" href="assets/css/orbit.css">
 <style>
 .ab-hero{padding-top:calc(120px + env(safe-area-inset-top,0px))}
-.ab-hero h1{font-size:clamp(56px,9vw,150px);font-family:var(--serif);font-weight:400;text-transform:none;letter-spacing:-.035em;line-height:.95}
+.ab-hero h1{font-size:clamp(56px,9vw,150px);font-family:var(--serif);font-weight:400;letter-spacing:-.035em;line-height:.95;margin:0}
 .ab-hero .g{display:grid;grid-template-columns:minmax(0,8fr) minmax(0,4fr);gap:24px;align-items:end}
 .ab-photos{display:grid;grid-template-columns:5fr 4fr 3fr;gap:clamp(10px,1.4vw,18px);margin-top:clamp(48px,6vw,90px)}
 .ab-photos .photo{aspect-ratio:3/4}
 .ab-photos .photo:nth-child(2){margin-top:12%}
 .ab-photos .photo:nth-child(3){margin-top:24%}
 .vals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3)}
-.vals div{background:var(--k);padding:22px;min-height:260px;display:flex;flex-direction:column;justify-content:space-between}
+.vals>div{background:var(--k);padding:22px;min-height:260px;display:flex;flex-direction:column;justify-content:space-between}
 .vals .s{width:64px}
 .vals b{display:block;font-size:clamp(28px,3vw,46px);letter-spacing:-.045em;text-transform:uppercase;font-weight:800;line-height:.95}
 .vals em{font-family:var(--serif);font-size:clamp(22px,2vw,30px);color:var(--ac)}
 .pairs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,1.6vw,24px);margin-top:clamp(40px,5vw,72px)}
-.pairs div{border-top:1px solid rgba(13,13,14,.25);padding-top:14px}
+.pairs>div{border-top:1px solid rgba(13,13,14,.25);padding-top:14px}
 .pairs b{display:block;font-size:20px;letter-spacing:-.02em}
 .pairs em{font-family:var(--serif);font-size:22px;opacity:.6}
 .mani{font-size:clamp(32px,5vw,84px);font-weight:800;letter-spacing:-.045em;line-height:1;text-transform:uppercase;max-width:1300px;margin:0}
@@ -37,54 +38,55 @@
 @media (max-width:860px){.ab-hero .g,.contact{grid-template-columns:1fr}.vals{grid-template-columns:1fr}.pairs{grid-template-columns:1fr 1fr}.ab-photos{grid-template-columns:1fr 1fr}.ab-photos .photo:nth-child(3){display:none}}
 </style>
 </head>
-<body data-page="nosotros">
+<body data-page="nosotros" data-title-es="Nosotros — Orbit®" data-title-en="About — Orbit®">
 <main>
 <section class="sec light ab-hero">
   <div class="wrap">
     <div class="g">
-      <h1>Más ideas.<br>Más <span class="it">movimiento.</span></h1>
-      <p class="lead" style="margin:0">Orbit es un universo de productos y herramientas digitales para personas que crean, diseñan, construyen, organizan, venden y experimentan.</p>
+      <h1><span data-l="es">Más ideas.<br>Más <span class="it">movimiento.</span></span><span data-l="en">More ideas.<br>More <span class="it">movement.</span></span></h1>
+      <p class="lead" style="margin:0"><span data-l="es">Orbit es un universo de productos y herramientas digitales para personas que crean, diseñan, construyen, organizan, venden y experimentan — en cualquier disciplina.</span><span data-l="en">Orbit is a universe of digital products and tools for people who create, design, build, organize, sell and experiment — in any discipline.</span></p>
     </div>
     <div class="ab-photos">
-      <div class="photo" data-photo="hands" role="img" aria-label="Manos ordenando impresos"></div>
-      <div class="photo" data-photo="studio" role="img" aria-label="Estudio de noche"></div>
-      <div class="photo" data-photo="arch" role="img" aria-label="Arquitectura de hormigón"></div>
+      <div class="photo" data-photo="hands" role="img" data-aria-es="Manos ordenando impresos" data-aria-en="Hands arranging prints"></div>
+      <div class="photo" data-photo="studio" role="img" data-aria-es="Estudio de noche" data-aria-en="Studio at night"></div>
+      <div class="photo" data-photo="arch" role="img" data-aria-es="Arquitectura de hormigón" data-aria-en="Concrete architecture"></div>
     </div>
   </div>
 </section>
 
 <section class="sec dark">
   <div class="wrap">
-    <div class="shead mono"><div><b>Qué hacemos</b>Idea → movimiento → sistema → resultado</div><div style="text-align:right">No vendemos archivos</div></div>
-    <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:15ch;margin-bottom:clamp(36px,5vw,72px)">Tomamos lo desordenado y lo volvemos <span class="it">accionable.</span></h2>
+    <div class="shead mono"><div><b><span data-l="es">Qué hacemos</span><span data-l="en">What we do</span></b>Idea → motion → system → result</div><div style="text-align:right"><span data-l="es">No vendemos archivos</span><span data-l="en">We don’t sell files</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:15ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Tomamos lo desordenado y lo volvemos <span class="it">accionable.</span></span><span data-l="en">We take what’s messy and make it <span class="it">actionable.</span></span></h2>
     <div class="vals" id="vals"></div>
   </div>
 </section>
 
 <section class="sec light">
   <div class="wrap">
-    <div class="shead mono"><div><b>Cómo somos</b></div><div style="text-align:right">Editorial + brutalista + digital + creativa</div></div>
-    <p class="display rv" style="font-size:clamp(34px,5.6vw,92px);line-height:.95">Creativa. Directa. Contemporánea. Gráfica. Inteligente. Dinámica. Precisa. Cultural. <span class="it">Funcional.</span></p>
+    <div class="shead mono"><div><b><span data-l="es">Cómo somos</span><span data-l="en">Who we are</span></b></div><div style="text-align:right"><span data-l="es">Editorial + brutalista + digital + creativa</span><span data-l="en">Editorial + brutalist + digital + creative</span></div></div>
+    <p class="display rv" style="font-size:clamp(34px,5.6vw,92px);line-height:.95"><span data-l="es">Creativa. Directa. Contemporánea. Gráfica. Inteligente. Dinámica. Precisa. Cultural. <span class="it">Funcional.</span></span><span data-l="en">Creative. Direct. Contemporary. Graphic. Smart. Dynamic. Precise. Cultural. <span class="it">Functional.</span></span></p>
     <div class="pairs">
-      <div class="rv"><b>Tiene actitud.</b><em>Pero no grita.</em></div>
-      <div class="rv"><b>Es experimental.</b><em>Pero no caótica.</em></div>
-      <div class="rv"><b>Es tecnológica.</b><em>Pero no genérica.</em></div>
-      <div class="rv"><b>Es premium.</b><em>Pero no clásica.</em></div>
+      <div class="rv"><b><span data-l="es">Tiene actitud.</span><span data-l="en">Has attitude.</span></b><em><span data-l="es">Pero no grita.</span><span data-l="en">But never shouts.</span></em></div>
+      <div class="rv"><b><span data-l="es">Es experimental.</span><span data-l="en">Experimental.</span></b><em><span data-l="es">Pero no caótica.</span><span data-l="en">Never chaotic.</span></em></div>
+      <div class="rv"><b><span data-l="es">Es tecnológica.</span><span data-l="en">Tech-driven.</span></b><em><span data-l="es">Pero no genérica.</span><span data-l="en">Never generic.</span></em></div>
+      <div class="rv"><b><span data-l="es">Es premium.</span><span data-l="en">Premium.</span></b><em><span data-l="es">Pero no clásica.</span><span data-l="en">Never classic.</span></em></div>
     </div>
   </div>
 </section>
 
 <section class="sec dark" id="manifiesto">
   <div class="wrap">
-    <div class="shead mono"><div><b>Manifiesto</b></div><div style="text-align:right">OB—M15</div></div>
-    <p class="mani" id="mani">Las ideas no necesitan más ruido. Necesitan <span class="it" style="color:var(--blue)">movimiento.</span> Una buena herramienta puede convertir una idea en un sistema. Un sistema puede convertir intención en acción. Y la acción puede convertirse en <span class="it">progreso.</span> Para quienes construyen. Prueban. Crean. Iteran. Hacen. No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></p>
+    <div class="shead mono"><div><b><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></b></div><div style="text-align:right">OB—M15</div></div>
+    <p class="mani" data-l="es">Las ideas no necesitan más ruido. Necesitan <span class="it" style="color:var(--blue)">movimiento.</span> Una buena herramienta puede convertir una idea en un sistema. Un sistema puede convertir intención en acción. Y la acción puede convertirse en <span class="it">progreso.</span> Para quienes construyen. Prueban. Crean. Iteran. Hacen. No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></p>
+    <p class="mani" data-l="en">Ideas don’t need more noise. They need <span class="it" style="color:var(--blue)">movement.</span> A good tool can turn an idea into a system. A system can turn intention into action. And action can become <span class="it">progress.</span> For those who build. Test. Create. Iterate. Make. We’re not here to add more things. We’re here to make the <span class="it">right ones.</span></p>
   </div>
 </section>
 
 <section class="sec light">
   <div class="wrap contact">
-    <div class="rv"><span class="mono">Contacto</span><h2 class="display" style="margin:14px 0 30px;font-size:clamp(44px,6vw,100px)">Hablemos de lo que <span class="it">estás construyendo.</span></h2><a class="big" href="mailto:hola@orbit.studio">hola@orbit.studio</a></div>
-    <div class="rv" style="display:flex;flex-direction:column;gap:14px"><span class="mono dim">Respondemos en 48 h hábiles</span><a class="btn btn-line" href="productos.html" style="justify-content:space-between">Explorar productos <span class="ar">→</span></a></div>
+    <div class="rv"><span class="mono"><span data-l="es">Contacto</span><span data-l="en">Contact</span></span><h2 class="display" style="margin:14px 0 30px;font-size:clamp(44px,6vw,100px)"><span data-l="es">Hablemos de lo que <span class="it">estás construyendo.</span></span><span data-l="en">Let’s talk about what <span class="it">you’re building.</span></span></h2><a class="big" href="mailto:hola@orbit.studio">hola@orbit.studio</a></div>
+    <div class="rv" style="display:flex;flex-direction:column;gap:14px"><span class="mono dim"><span data-l="es">Respondemos en 48 h hábiles</span><span data-l="en">We reply within 2 business days</span></span><a class="btn btn-line" href="productos.html" style="justify-content:space-between"><span data-l="es">Explorar productos</span><span data-l="en">Explore products</span> <span class="ar">→</span></a></div>
   </div>
 </section>
 </main>
@@ -92,19 +94,18 @@
 <script src="assets/js/orbit.js"></script>
 <script>
 (() => {
-const {C, $, $$, sym, reveal, RM} = ORBIT;
-$('#vals').innerHTML = [['Herramientas','para hacer.',{gap:0,dotOn:false}],['Sistemas','para avanzar.',{gap:70}],['Recursos','para volver real una idea.',{gap:70,dot:C.blue}]].map(([b,e,o]) => `<div class="rv"><div class="s">${sym({ring:C.b, dot:C.b, ...o})}</div><div><b>${b}</b><em>${e}</em></div></div>`).join('');
+const {C, $, $$, L, sym, reveal, RM} = ORBIT;
+$('#vals').innerHTML = [[L('Herramientas','Tools'),L('para hacer.','for doing.'),{gap:0,dotOn:false}],[L('Sistemas','Systems'),L('para avanzar.','for moving forward.'),{gap:70}],[L('Recursos','Resources'),L('para volver real una idea.','to make ideas real.'),{gap:70,dot:C.blue}]].map(([b,e,o]) => `<div class="rv"><div class="s">${sym({ring:C.b, dot:C.b, ...o})}</div><div><b>${b}</b><em>${e}</em></div></div>`).join('');
 
-const mani = $('#mani');
-(function split(node) {
+const manis = $$('.mani');
+manis.forEach(m => (function split(node) {
   [...node.childNodes].forEach(n => {
     if (n.nodeType === 3) { const fr = document.createDocumentFragment(); n.textContent.split(/(\s+)/).forEach(w => { if (!w) return; if (/^\s+$/.test(w)) fr.append(w); else { const s = document.createElement('span'); s.className = 'w'; s.textContent = w; fr.append(s); } }); n.replaceWith(fr); }
     else if (n.nodeType === 1) n.classList.add('w');
   });
-})(mani);
-const words = $$('.w', mani);
-const onScroll = () => { const r = mani.getBoundingClientRect(); const p = Math.min(1, Math.max(0, (innerHeight*.85 - r.top) / (r.height + innerHeight*.3))); const n = Math.round(p * words.length * 1.15); words.forEach((w,i) => w.classList.toggle('lit', i < n)); };
-if (RM) words.forEach(w => w.classList.add('lit')); else { addEventListener('scroll', onScroll, {passive:true}); onScroll(); }
+})(m));
+const onScroll = () => manis.forEach(m => { if (!m.offsetParent) return; const r = m.getBoundingClientRect(), ws = $$('.w', m); const p = Math.min(1, Math.max(0, (innerHeight*.85 - r.top) / (r.height + innerHeight*.3))); const n = Math.round(p * ws.length * 1.15); ws.forEach((w,i) => w.classList.toggle('lit', i < n)); });
+if (RM) $$('.mani .w').forEach(w => w.classList.add('lit')); else { addEventListener('scroll', onScroll, {passive:true}); addEventListener('orbit:lang', onScroll); onScroll(); }
 reveal();
 })();
 </script>

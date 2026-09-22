@@ -1,10 +1,11 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Productos — Orbit®</title>
-<meta name="description" content="Catálogo de productos digitales Orbit: sistemas, bibliotecas y workflows para crear, organizar y vender.">
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
+<meta name="description" content="Catálogo Orbit: sistemas, bibliotecas y workflows para diseñar, vender, organizar y automatizar.">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,7 +15,7 @@
 .cat-head{padding-top:calc(120px + env(safe-area-inset-top,0px))}
 .cat-head .top{display:grid;grid-template-columns:minmax(0,8fr) minmax(0,4fr);gap:24px;align-items:end}
 .cat-head h1{font-size:clamp(72px,13vw,220px)}
-.cat-head .ring{position:absolute;right:-6%;top:-40%;width:min(46vw,620px);color:var(--k3);pointer-events:none}
+.cat-head .ring{position:absolute;right:-6%;top:-40%;width:min(46vw,620px);pointer-events:none}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:clamp(28px,4vw,48px)}
 .filters .l{display:flex;flex-wrap:wrap;gap:8px}
 .empty{padding:60px 0;border-top:1px solid var(--k)}
@@ -25,29 +26,29 @@
 @media (max-width:860px){.cat-head .top,.soon{grid-template-columns:1fr}}
 </style>
 </head>
-<body data-page="productos">
+<body data-page="productos" data-title-es="Productos — Orbit®" data-title-en="Products — Orbit®">
 <main>
 <section class="sec dark cat-head">
   <div class="ring" data-sym='{"ring":"#242426","dot":"blue","gap":70}' aria-hidden="true"></div>
   <div class="wrap top">
-    <h1 class="display">Catá<br><span class="it">logo.</span></h1>
-    <div><p class="lead" style="margin:0 0 18px;opacity:.8">Cada producto resuelve algo concreto: ahorra tiempo, ordena un proceso o te ayuda a vender. Numerados como una colección.</p><span class="mono dim" id="count"></span></div>
+    <h1 class="display"><span data-l="es">Catá<br><span class="it">logo.</span></span><span data-l="en">Cata<br><span class="it">log.</span></span></h1>
+    <div><p class="lead" style="margin:0 0 18px;opacity:.8"><span data-l="es">Cada producto resuelve algo concreto: ahorra tiempo, ordena un proceso o ayuda a vender. Numerados como una colección.</span><span data-l="en">Every product solves something specific: it saves time, organizes a process or helps you sell. Numbered like a collection.</span></p><span class="mono dim" id="count"></span></div>
   </div>
 </section>
 
 <section class="sec light">
   <div class="wrap">
-    <div class="filters"><div class="l" id="filt" role="group" aria-label="Filtrar por familia"></div><span class="mono dim">Vol.01 — 2026</span></div>
+    <div class="filters"><div class="l" id="filt" role="group" aria-label="Filtro"></div><span class="mono dim">Vol.01 — 2026</span></div>
     <div class="pgrid" id="grid"></div>
-    <div class="empty" id="empty" hidden><h2 class="display" style="font-size:clamp(36px,5vw,72px)">Esta órbita todavía <span class="it">está vacía.</span></h2><p style="opacity:.7">Estamos construyendo productos para esta familia. Mirá el resto del catálogo mientras tanto.</p></div>
+    <div class="empty" id="empty" hidden><h2 class="display" style="font-size:clamp(36px,5vw,72px)"><span data-l="es">Esta órbita todavía <span class="it">está vacía.</span></span><span data-l="en">This orbit is <span class="it">still empty.</span></span></h2><p style="opacity:.7"><span data-l="es">Estamos construyendo productos para esta familia. Mirá el resto del catálogo mientras tanto.</span><span data-l="en">We’re building products for this family. Explore the rest of the catalog in the meantime.</span></p></div>
 
     <div class="soon rv">
       <div class="t">
         <span class="mono">OB—004 · Orbit AI</span>
         <h2 class="display">New system<br><span class="it">coming soon.</span></h2>
-        <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-acid" href="producto.html?id=ob-004">Ver adelanto <span class="ar">→</span></a></div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-acid" href="producto.html?id=ob-004"><span data-l="es">Ver adelanto</span><span data-l="en">Get a preview</span> <span class="ar">→</span></a></div>
       </div>
-      <div class="photo" data-photo="corridor" role="img" aria-label="Persona caminando en un pasillo"></div>
+      <div class="photo" data-photo="corridor" role="img" data-aria-es="Persona caminando en un pasillo" data-aria-en="Person walking down a corridor"></div>
     </div>
   </div>
 </section>
@@ -56,19 +57,23 @@
 <script src="assets/js/orbit.js"></script>
 <script>
 (() => {
-const {$, $$, card, reveal, P, FAM} = ORBIT;
+const {$, $$, L, tr, card, reveal, P, FAM} = ORBIT;
 const grid = $('#grid'), filt = $('#filt');
-const fams = [['', 'Todo'], ...Object.entries(FAM).map(([k,[n]]) => [k, n.replace('Orbit ','')])];
+const fams = [['', L('Todo','All')], ...Object.entries(FAM).map(([k,[n]]) => [k, n.replace('Orbit ','')])];
 filt.innerHTML = fams.map(([k,n]) => `<button class="chip" data-f="${k}" aria-pressed="false">${n} · ${k ? P.filter(p => p.family===k).length : P.length}</button>`).join('');
+let cur = '';
+function count() { const n = (cur ? P.filter(p => p.family === cur) : P).length; $('#count').textContent = `${n} ${n===1 ? tr('producto','product') : tr('productos','products')}${cur ? ' — ' + FAM[cur][0] : ''}`; }
 function show(k) {
+  cur = k;
   const list = k ? P.filter(p => p.family === k) : P;
   grid.innerHTML = list.map(card).join('');
   $('#empty').hidden = list.length > 0;
-  $('#count').textContent = `${list.length} ${list.length===1?'producto':'productos'}${k ? ' — ' + FAM[k][0] : ''}`;
   $$('.chip', filt).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === k)));
   $$('.rv', grid).forEach(el => el.classList.remove('rv'));
+  count();
 }
 $$('.chip', filt).forEach(b => b.onclick = () => { history.replaceState(null, '', b.dataset.f ? '#' + b.dataset.f : location.pathname); show(b.dataset.f); });
+addEventListener('orbit:lang', count);
 const h = location.hash.slice(1);
 show(FAM[h] ? h : '');
 reveal();

@@ -1,34 +1,42 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Orbit® — Tools that move</title>
-<meta name="description" content="Orbit crea herramientas y productos digitales para personas que crean, construyen y convierten ideas en resultados. Ideas in motion.">
+<title>Orbit® — Ideas in motion</title>
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
+<meta name="description" content="Orbit crea herramientas y productos digitales para convertir ideas en resultados, en cualquier disciplina. Ideas in motion.">
 <meta name="theme-color" content="#0D0D0E">
-<meta property="og:title" content="Orbit® — Tools that move">
-<meta property="og:description" content="Digital goods for creative people. Ideas in motion.">
+<meta property="og:title" content="Orbit® — Ideas in motion">
+<meta property="og:description" content="Digital goods for creative people. Tools that move.">
 <meta property="og:image" content="assets/img/landing.jpg">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/css/orbit.css">
 <style>
-/* hero */
-.hero{min-height:min(900px,100svh);display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);padding:0}
-.hero .l{padding:calc(110px + env(safe-area-inset-top,0px)) var(--pad) 32px;display:flex;flex-direction:column;justify-content:space-between;gap:40px;position:relative;z-index:2}
-.hero h1{font-size:clamp(60px,min(10.4vw,15.5vh),176px)}
-.hero .sub{max-width:34ch;font-size:clamp(17px,1.4vw,20px);opacity:.85;margin:24px 0 0}
-.hero .ctas{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
-.hero .r{position:relative;overflow:hidden;min-height:420px}
-.hero .r .photo{position:absolute;inset:0}
-.hero .r .arc{position:absolute;left:-30%;top:10%;width:120%;color:var(--b);opacity:.9;pointer-events:none}
-.hero .r .meta{position:absolute;right:var(--pad);top:calc(110px + env(safe-area-inset-top,0px));text-align:right;z-index:2}
-.hero .r .meta.b{top:auto;bottom:32px}
-.hero .base{display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
-@media (max-width:860px){.hero{grid-template-columns:1fr}.hero .r{min-height:380px}}
+/* hero — el ORBIT gigante del manual */
+.hero{min-height:min(940px,100svh);display:flex;flex-direction:column;justify-content:space-between;padding-top:calc(96px + env(safe-area-inset-top,0px));padding-bottom:28px}
+.hero .top{display:flex;justify-content:space-between;gap:24px}
+.hero .word{font-size:clamp(84px,25vw,420px);margin:clamp(24px,4vh,48px) 0;cursor:crosshair;user-select:none;line-height:.8}
+.hero .bot{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,3vw,48px);align-items:end}
+.hero .tag{font-size:clamp(34px,4.4vw,74px)}
+.rot{font-weight:800;font-size:clamp(26px,3vw,48px);letter-spacing:-.04em;text-transform:uppercase;line-height:.95;margin:0}
+.rot .it{display:inline-block;color:var(--ac);min-width:5ch;transition:opacity .35s var(--ease),transform .35s var(--ease)}
+.rot .it.swap{opacity:0;transform:translateY(.25em)}
+.hero .sub{margin:14px 0 0;max-width:52ch;opacity:.75}
+.hero .ctas{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.hero .hint{position:absolute;right:0;top:50%;writing-mode:vertical-rl;opacity:.4}
+@media (max-width:860px){.hero .bot{grid-template-columns:1fr}.hero .hint{display:none}}
 
-/* featured */
+/* banda de foto */
+.pband{position:relative;min-height:clamp(420px,62vw,760px);display:flex;align-items:flex-end;padding:var(--pad);overflow:hidden}
+.pband .photo{position:absolute;inset:0}
+.pband .ring{position:absolute;width:min(70vw,900px);right:-14%;top:-24%;color:var(--b);opacity:.92}
+.pband h2{position:relative;z-index:2;font-size:clamp(60px,10vw,170px);color:var(--k)}
+.pband .meta{position:absolute;right:var(--pad);bottom:var(--pad);z-index:2;text-align:right;color:var(--k)}
+
+/* destacado */
 .feat{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,4vw,64px);align-items:center}
 .feat h2{font-size:clamp(46px,6vw,100px)}
 .feat .specs{display:grid;grid-template-columns:1fr 1fr;margin:28px 0}
@@ -36,24 +44,30 @@
 .feat .specs b{display:block;font-size:20px;letter-spacing:-.02em}
 @media (max-width:860px){.feat{grid-template-columns:1fr}}
 
-/* flow */
-.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:rgba(13,13,14,.15)}
-.flow>div{background:var(--b);padding:20px;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;transition:background .4s var(--ease),color .4s var(--ease)}
-.flow>div:hover{background:var(--k);color:var(--b)}
+/* disciplinas */
+.disc{border-top:1px solid var(--k)}
+.disc a{display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,.9fr) 56px;gap:20px;align-items:center;padding:clamp(14px,1.6vw,22px) 0;border-bottom:1px solid var(--k);text-decoration:none;position:relative}
+.disc a::before{content:"";position:absolute;inset:0 calc(-1 * var(--pad));background:var(--k);transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease);z-index:0}
+.disc a>*{position:relative;z-index:1;transition:color .3s}
+.disc a:hover::before,.disc a:focus-visible::before{transform:scaleY(1)}
+.disc a:hover>*,.disc a:focus-visible>*{color:var(--b)}
+.disc b{font-weight:800;font-size:clamp(32px,5.4vw,92px);letter-spacing:-.05em;text-transform:uppercase;line-height:.9}
+.disc p{margin:0;font-size:15px;opacity:.7}
+.disc .s{width:48px;transition:transform .6s var(--ease)}
+.disc a:hover .s{transform:rotate(180deg)}
+.disc a:hover .s circle{fill:var(--ac)}
+@media (max-width:760px){.disc a{grid-template-columns:1fr 44px}.disc a .mono,.disc a p{grid-column:1}.disc a .s{grid-row:1/4;grid-column:2}}
+
+/* cómo funciona */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:var(--k3)}
+.flow>div{background:var(--k);padding:20px;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;transition:background .4s var(--ease),color .4s var(--ease)}
+.flow>div:hover{background:var(--b);color:var(--k)}
 .flow b{font-weight:800;font-size:clamp(28px,3vw,46px);letter-spacing:-.045em;text-transform:uppercase;line-height:.9}
 .flow .s{width:72px}
 .flow p{margin:10px 0 0;font-size:15px;max-width:26ch;opacity:.75}
 @media (max-width:860px){.flow{grid-template-columns:1fr 1fr}.flow>div{min-height:240px}}
 
-/* families */
-.fams{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:var(--k3)}
-.fams a{background:var(--k);padding:18px;min-height:230px;display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;transition:background .3s,color .3s}
-.fams a:hover{background:var(--b);color:var(--k)}
-.fams b{font-weight:800;font-size:22px;letter-spacing:-.03em;text-transform:uppercase;line-height:1.05}
-.fams .s{width:44px}
-@media (max-width:860px){.fams{grid-template-columns:1fr 1fr}}
-
-/* editorial band */
+/* banda editorial */
 .band{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);min-height:620px}
 .band .photo{min-height:460px}
 .band .txt{background:#BDBCB8;color:var(--k);padding:clamp(20px,3vw,44px);display:flex;flex-direction:column;justify-content:space-between;gap:30px}
@@ -61,42 +75,63 @@
 .band .m{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
 @media (max-width:860px){.band{grid-template-columns:1fr}}
 
-.mani{font-size:clamp(32px,4.8vw,78px);font-weight:800;letter-spacing:-.045em;line-height:1;text-transform:uppercase;max-width:1200px;margin:0}
-.mani .it{text-transform:none;color:var(--blue)}
+/* manifiesto */
+.mani{font-size:clamp(32px,5vw,84px);font-weight:800;letter-spacing:-.045em;line-height:1;text-transform:uppercase;max-width:1300px;margin:0}
+.mani .w{opacity:.14;transition:opacity .35s}
+.mani .w.lit{opacity:1}
+.mani .it{text-transform:none}
 
 .faqgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px)}
 .faqgrid h2{font-size:clamp(44px,5.4vw,90px)}
 @media (max-width:860px){.faqgrid{grid-template-columns:1fr}}
 </style>
 </head>
-<body data-page="home">
+<body data-page="home" data-title-es="Orbit® — Ideas in motion" data-title-en="Orbit® — Ideas in motion">
 <main>
 
-<section class="dark hero">
-  <div class="l">
-    <div>
-      <span class="mono">OB—000 · Digital goods for creative people</span>
-    </div>
-    <div>
-      <h1 class="display">Tools<br>that<br><span class="it">move.</span></h1>
-      <p class="sub">Recursos digitales para creadores que quieren convertir ideas en resultados.</p>
-      <div class="ctas"><a class="btn btn-acid" href="productos.html">Explorar productos <span class="ar">→</span></a><a class="btn btn-line" href="#destacado">Ver OB—001</a></div>
-    </div>
-    <div class="base"><span class="mono dim">[ Ideas en movimiento ]</span><span class="mono dim">Est. 2026</span></div>
+<!-- HERO -->
+<section class="sec dark hero">
+  <div class="wrap top">
+    <p class="mono" style="margin:0">Digital tools<br>for a brighter<br>creative tomorrow.</p>
+    <p class="mono" style="margin:0;text-align:right">OB—000<br>Digital goods<br>Est. 2026</p>
   </div>
-  <div class="r">
-    <div class="photo" data-photo="landing" role="img" aria-label="Arquitectura curva de hormigón en blanco y negro"></div>
-    <svg class="arc" id="heroSym" viewBox="0 0 100 100" aria-hidden="true"><g id="heroG" style="color:#F2EFE8"></g></svg>
-    <span class="mono meta">Mejores herramientas<br>Ideas reales<br>Más posibilidades</span>
-    <span class="mono meta b">OB—001<br>Content system</span>
+  <div class="wrap" style="position:relative">
+    <h1 class="word" id="heroWord" aria-label="ORBIT"></h1>
+    <span class="mono hint"><span data-l="es">Mové el cursor — el punto te sigue</span><span data-l="en">Move your cursor — the dot follows</span></span>
+  </div>
+  <div class="wrap bot">
+    <p class="display tag">Ideas<br>in <span class="it">motion.</span></p>
+    <div>
+      <p class="rot"><span data-l="es">Herramientas para</span><span data-l="en">Tools to</span> <span class="it" id="rotWord">crear.</span></p>
+      <p class="sub"><span data-l="es">Productos digitales para diseñar, vender, organizar, automatizar y hacer crecer ideas — en cualquier disciplina.</span><span data-l="en">Digital products to design, sell, organize, automate and grow ideas — in any discipline.</span></p>
+      <div class="ctas"><a class="btn btn-acid" href="productos.html"><span data-l="es">Explorar productos</span><span data-l="en">Explore products</span> <span class="ar">→</span></a><a class="btn btn-line" href="#disciplinas"><span data-l="es">Ver disciplinas</span><span data-l="en">See disciplines</span></a></div>
+    </div>
   </div>
 </section>
 
-<div class="dark" style="padding-block:0"><div class="ticker" data-ticker="Ideas in motion|Tools that move|Build what’s next|Enter the orbit|From idea to system"></div></div>
+<div class="dark"><div class="ticker" data-ticker="Ideas in motion|Tools that move|Build what’s next|Enter the orbit|From idea to system|Make better things"></div></div>
 
+<!-- BANDA FOTO -->
+<section class="pband light">
+  <div class="photo" data-photo="landing" role="img" data-aria-es="Arquitectura curva de hormigón" data-aria-en="Curved concrete architecture"></div>
+  <div class="ring" data-sym='{"ring":"b","dot":"blue","gap":64,"rot":120}' aria-hidden="true"></div>
+  <h2 class="display">Build<br>what’s<br><span class="it">next.</span></h2>
+  <span class="mono meta">Creative tools<br>Real progress<br>OB—001</span>
+</section>
+
+<!-- DISCIPLINAS -->
+<section class="sec light" id="disciplinas">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Disciplinas</span><span data-l="en">Disciplines</span></b><span data-l="es">Un universo, muchas órbitas</span><span data-l="en">One universe, many orbits</span></div><div style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,120px);max-width:15ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Una órbita para cada <span class="it">disciplina.</span></span><span data-l="en">An orbit for every <span class="it">discipline.</span></span></h2>
+    <div class="disc" id="disc"></div>
+  </div>
+</section>
+
+<!-- DESTACADO -->
 <section class="sec dark" id="destacado">
   <div class="wrap">
-    <div class="shead mono"><div><b>Destacado</b>Producto 01</div><div style="text-align:right">Nunca una captura.<br>Siempre un objeto.</div></div>
+    <div class="shead mono"><div><b><span data-l="es">Destacado</span><span data-l="en">Featured</span></b><span data-l="es">Producto 01</span><span data-l="en">Product 01</span></div><div style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></div></div>
     <div class="feat">
       <div class="boxstage rv" id="featBox"></div>
       <div class="rv" id="featInfo"></div>
@@ -104,53 +139,52 @@
   </div>
 </section>
 
+<!-- COLECCIÓN -->
 <section class="sec light" id="coleccion">
   <div class="wrap">
-    <div class="shead mono"><div><b>Colección</b>Vol.01</div><div style="text-align:right"><a href="productos.html">Ver todo el catálogo →</a></div></div>
-    <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:14ch;margin-bottom:clamp(36px,5vw,72px)">Herramientas para <span class="it">hacer.</span></h2>
+    <div class="shead mono"><div><b><span data-l="es">Colección</span><span data-l="en">Collection</span></b>Vol.01</div><div style="text-align:right"><a href="productos.html"><span data-l="es">Ver todo el catálogo →</span><span data-l="en">See the full catalog →</span></a></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:14ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Herramientas para <span class="it">hacer.</span></span><span data-l="en">Tools for <span class="it">doing.</span></span></h2>
     <div class="pgrid" id="homeGrid"></div>
   </div>
 </section>
 
-<section class="sec light" style="padding-top:0">
+<!-- CÓMO FUNCIONA -->
+<section class="sec dark">
   <div class="wrap">
-    <div class="shead mono"><div><b>Cómo funciona</b>From idea to system</div><div style="text-align:right">Orbit existe en el espacio<br>entre la idea y el resultado</div></div>
+    <div class="shead mono"><div><b><span data-l="es">Cómo funciona</span><span data-l="en">How it works</span></b>From idea to system</div><div style="text-align:right"><span data-l="es">Orbit existe en el espacio<br>entre la idea y el resultado</span><span data-l="en">Orbit lives in the space<br>between idea and result</span></div></div>
     <div class="flow" id="flow"></div>
   </div>
 </section>
 
-<section class="sec dark">
-  <div class="wrap">
-    <div class="shead mono"><div><b>Familias</b>Un universo, cinco órbitas</div><div style="text-align:right">Mismo lenguaje.<br>Distintos problemas.</div></div>
-    <div class="fams" id="fams"></div>
-  </div>
-</section>
-
+<!-- BANDA EDITORIAL -->
 <section class="band">
-  <div class="photo" data-photo="figure" role="img" aria-label="Persona de espaldas mirando el cielo"></div>
+  <div class="photo" data-photo="figure" role="img" data-aria-es="Persona de espaldas mirando el cielo" data-aria-en="Person seen from behind looking at the sky"></div>
   <div class="txt">
-    <div class="m"><span class="mono">OB—001</span><span class="mono" style="text-align:right">Creative tools<br>Real progress</span></div>
-    <h2 class="display">Build<br>what’s<br><span class="it">next.</span></h2>
-    <div class="m"><span class="mono">No vendemos archivos.<br>Vendemos herramientas para hacer.</span><a class="btn btn-line" href="nosotros.html" style="color:var(--k)">Conocé Orbit <span class="ar">→</span></a></div>
+    <div class="m"><span class="mono">OB—002</span><span class="mono" style="text-align:right">Same creators.<br>Bigger ideas.<br>New tools.</span></div>
+    <h2 class="display">Enter<br>the<br><span class="it">orbit.</span></h2>
+    <div class="m"><span class="mono"><span data-l="es">No vendemos archivos.<br>Vendemos herramientas para hacer.</span><span data-l="en">We don’t sell files.<br>We make tools for doing.</span></span><a class="btn btn-line" href="nosotros.html" style="color:var(--k)"><span data-l="es">Conocé Orbit</span><span data-l="en">Meet Orbit</span> <span class="ar">→</span></a></div>
   </div>
 </section>
 
+<!-- MANIFIESTO -->
 <section class="sec dark">
   <div class="wrap">
-    <div class="shead mono"><div><b>Manifiesto</b></div><div style="text-align:right">OB—M15</div></div>
-    <p class="mani rv">Las ideas no necesitan más ruido. Necesitan <span class="it">movimiento.</span> No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></p>
+    <div class="shead mono"><div><b><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></b></div><div style="text-align:right">OB—M15</div></div>
+    <p class="mani" data-l="es">Las ideas no necesitan más ruido. Necesitan <span class="it" style="color:var(--blue)">movimiento.</span> No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></p>
+    <p class="mani" data-l="en">Ideas don’t need more noise. They need <span class="it" style="color:var(--blue)">movement.</span> We’re not here to add more things. We’re here to make the <span class="it">right ones.</span></p>
   </div>
 </section>
 
+<!-- FAQ -->
 <section class="sec light">
   <div class="wrap faqgrid">
-    <div class="rv"><span class="mono">Preguntas frecuentes</span><h2 class="display" style="margin-top:14px">Antes de <span class="it">entrar.</span></h2></div>
+    <div class="rv"><span class="mono"><span data-l="es">Preguntas frecuentes</span><span data-l="en">FAQ</span></span><h2 class="display" style="margin-top:14px"><span data-l="es">Antes de <span class="it">entrar.</span></span><span data-l="en">Before you <span class="it">enter.</span></span></h2></div>
     <div class="faq rv">
-      <details><summary>¿Cómo recibo el producto?</summary><p>Apenas se confirma el pago te llega un email con el link de descarga o acceso. Es inmediato, sin esperas.</p></details>
-      <details><summary>¿Puedo usarlo para clientes?</summary><p>Sí. Todos los productos incluyen licencia de uso comercial: podés usarlos en proyectos propios y de clientes. Lo que no podés hacer es revender o redistribuir los archivos originales.</p></details>
-      <details><summary>¿Qué programas necesito?</summary><p>Cada producto indica su formato en la ficha (Figma, Canva, Notion, PNG, SVG). La mayoría funciona con las versiones gratuitas.</p></details>
-      <details><summary>¿Las actualizaciones tienen costo?</summary><p>No. Cuando un producto sube de versión (V.01 → V.02) te llega la actualización sin cargo.</p></details>
-      <details><summary>¿Y si no me sirve?</summary><p>Escribinos a hola@orbit.studio dentro de los 14 días y lo resolvemos.</p></details>
+      <details><summary><span data-l="es">¿Cómo recibo el producto?</span><span data-l="en">How do I get the product?</span></summary><p><span data-l="es">Apenas se confirma el pago te llega un email con el link de descarga o acceso. Es inmediato.</span><span data-l="en">As soon as payment is confirmed you get an email with the download or access link. It’s instant.</span></p></details>
+      <details><summary><span data-l="es">¿Puedo usarlo para clientes?</span><span data-l="en">Can I use it for clients?</span></summary><p><span data-l="es">Sí. Todos los productos incluyen licencia de uso comercial para proyectos propios y de clientes. Lo que no se puede es revender o redistribuir los archivos originales.</span><span data-l="en">Yes. Every product includes a commercial license for your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></details>
+      <details><summary><span data-l="es">¿Qué programas necesito?</span><span data-l="en">What software do I need?</span></summary><p><span data-l="es">Cada producto indica su formato en la ficha (Figma, Canva, Notion, PNG, SVG). La mayoría funciona con las versiones gratuitas.</span><span data-l="en">Each product lists its format (Figma, Canva, Notion, PNG, SVG). Most work with the free versions.</span></p></details>
+      <details><summary><span data-l="es">¿Las actualizaciones tienen costo?</span><span data-l="en">Do updates cost extra?</span></summary><p><span data-l="es">No. Cuando un producto sube de versión (V.01 → V.02) te llega la actualización sin cargo.</span><span data-l="en">No. When a product gets a new version (V.01 → V.02) you get the update for free.</span></p></details>
+      <details><summary><span data-l="es">¿Y si no me sirve?</span><span data-l="en">What if it doesn’t work for me?</span></summary><p><span data-l="es">Escribinos a hola@orbit.studio dentro de los 14 días y lo resolvemos.</span><span data-l="en">Email hola@orbit.studio within 14 days and we’ll sort it out.</span></p></details>
     </div>
   </div>
 </section>
@@ -160,25 +194,57 @@
 <script src="assets/js/orbit.js"></script>
 <script>
 (() => {
-const {C, $, sym, symInner, card, cover, buyBtn, mountBox, follow, reveal, P, FAM, ACC, money, url} = ORBIT;
+const {C, $, $$, L, tr, lang, sym, bigWm, card, buyBtn, mountBox, follow, reveal, P, FAM, url, RM} = ORBIT;
 
-follow($('#heroG'), $('#heroSym'));
+/* hero: ORBIT gigante + punto que sigue al cursor */
+$('#heroWord').innerHTML = bigWm('heroG');
+follow($('#heroG'), $('#heroWord svg'));
 
+/* hero: disciplinas rotando */
+const VERBS = {es:['crear.','diseñar.','vender.','organizar.','automatizar.','enseñar.','construir.','crecer.'], en:['create.','design.','sell.','organize.','automate.','teach.','build.','grow.']};
+const rw = $('#rotWord'); let vi = 0;
+const setVerb = () => rw.textContent = VERBS[lang()][vi % VERBS.es.length];
+setVerb();
+addEventListener('orbit:lang', setVerb);
+if (!RM) setInterval(() => { rw.classList.add('swap'); setTimeout(() => { vi++; setVerb(); rw.classList.remove('swap'); }, 350); }, 2000);
+
+/* disciplinas */
+const DISC = [
+  ['Diseño','Design','Plantillas, mockups y sistemas visuales','Templates, mockups and visual systems'],
+  ['Contenido','Content','Calendarios, portadas y formatos','Calendars, covers and formats'],
+  ['Negocios','Business','CRM, finanzas y procesos','CRM, finances and processes'],
+  ['Ventas','Sales','Funnels, emails y propuestas','Funnels, emails and proposals'],
+  ['Marketing','Marketing','Campañas, ads y reportes','Campaigns, ads and reports'],
+  ['IA','AI','Workflows y automatizaciones','Workflows and automations'],
+  ['Productividad','Productivity','Planners y sistemas personales','Planners and personal systems'],
+  ['Educación','Education','Workbooks, clases y presentaciones','Workbooks, lessons and decks'],
+];
+$('#disc').innerHTML = DISC.map(([es,en,des,den],i) => `<a href="productos.html" class="rv"><span class="mono">OB—D0${i+1}</span><b>${L(es,en)}</b><p>${L(des,den)}</p><span class="s">${sym({ring:'currentColor', dot:C.blue, rot:i*45})}</span></a>`).join('');
+
+/* destacado */
 const f = P[0];
 mountBox($('#featBox'), f);
 $('#featInfo').innerHTML = `<span class="mono">${f.code} · ${FAM[f.family][0]}</span>
   <h2 class="display" style="margin-top:14px">${f.name.split(' ')[0]}<br><span class="it">${f.name.split(' ').slice(1).join(' ').toLowerCase()}.</span></h2>
-  <p class="lead" style="opacity:.8;margin-top:20px">${f.tagline}</p>
-  <div class="specs">${f.specs.slice(0,4).map(([k,v]) => `<div><span class="mono dim">${k}</span><b>${v}</b></div>`).join('')}</div>
-  <div style="display:flex;gap:10px;flex-wrap:wrap">${buyBtn(f)}<a class="btn btn-line" href="${url(f)}">Ver detalle</a></div>`;
+  <p class="lead" style="opacity:.8;margin-top:20px">${L(f.tagline)}</p>
+  <div class="specs">${f.specs.slice(0,4).map(([k,v]) => `<div><span class="mono dim">${L(k)}</span><b>${L(v)}</b></div>`).join('')}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">${buyBtn(f)}<a class="btn btn-line" href="${url(f)}">${L('Ver detalle','See details')}</a></div>`;
 
 $('#homeGrid').innerHTML = P.map(card).join('');
 
-const steps = [['Idea','Aparece. Todavía no tiene forma.',140],['Movimiento','Se conecta con otras. Se desarrolla.',90],['Sistema','Encuentra una estructura que la ordena.',40],['Resultado','Se ejecuta. Se convierte en algo.',0]];
-$('#flow').innerHTML = steps.map(([t,d,g],i) => `<div class="rv"><span class="mono">0${i+1}</span><div class="s">${sym({gap:g, ring:'currentColor', dot:i===3?C.blue:'currentColor', dotOn:i>0})}</div><div><b>${t}</b><p>${d}</p></div></div>`).join('');
+const steps = [['Idea','Idea','Aparece. Todavía no tiene forma.','It appears. It has no shape yet.',140],['Movimiento','Motion','Se conecta con otras. Se desarrolla.','It connects with others. It grows.',90],['Sistema','System','Encuentra una estructura que la ordena.','It finds a structure that holds it.',40],['Resultado','Result','Se ejecuta. Se convierte en algo.','It gets done. It becomes something.',0]];
+$('#flow').innerHTML = steps.map(([t,te,d,de,g],i) => `<div class="rv"><span class="mono">0${i+1}</span><div class="s">${sym({gap:g, ring:'currentColor', dot:i===3?C.blue:'currentColor', dotOn:i>0})}</div><div><b>${L(t,te)}</b><p>${L(d,de)}</p></div></div>`).join('');
 
-const fc = [C.blue, C.or, C.ac, C.b, C.blue];
-$('#fams').innerHTML = Object.entries(FAM).map(([k,[n,d]],i) => { const c = P.filter(p => p.family===k).length; return `<a class="rv" href="productos.html#${k}"><div class="s">${sym({ring:'currentColor', dot:fc[i], rot:i*72})}</div><div><b>${n}</b><p style="margin:6px 0 10px;font-size:14px;opacity:.7">${d}</p><span class="mono dim">${c ? c + (c>1?' productos':' producto') : 'Próximamente'}</span></div></a>`; }).join('');
+/* manifiesto palabra por palabra */
+const manis = $$('.mani');
+manis.forEach(m => (function split(node) {
+  [...node.childNodes].forEach(n => {
+    if (n.nodeType === 3) { const fr = document.createDocumentFragment(); n.textContent.split(/(\s+)/).forEach(w => { if (!w) return; if (/^\s+$/.test(w)) fr.append(w); else { const s = document.createElement('span'); s.className = 'w'; s.textContent = w; fr.append(s); } }); n.replaceWith(fr); }
+    else if (n.nodeType === 1) n.classList.add('w');
+  });
+})(m));
+const onScroll = () => manis.forEach(m => { if (!m.offsetParent) return; const r = m.getBoundingClientRect(), ws = $$('.w', m); const p = Math.min(1, Math.max(0, (innerHeight*.85 - r.top) / (r.height + innerHeight*.3))); const n = Math.round(p * ws.length * 1.15); ws.forEach((w,i) => w.classList.toggle('lit', i < n)); });
+if (RM) $$('.mani .w').forEach(w => w.classList.add('lit')); else { addEventListener('scroll', onScroll, {passive:true}); addEventListener('orbit:lang', onScroll); onScroll(); }
 
 reveal();
 })();

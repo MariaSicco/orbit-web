@@ -1,9 +1,10 @@
 <!doctype html>
-<html lang="es">
+<html lang="es" data-lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Producto — Orbit®</title>
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
 <meta name="description" content="Productos digitales Orbit. Ideas in motion.">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
@@ -22,14 +23,14 @@
 .pd-buy{display:flex;flex-direction:column;gap:10px}
 .pd-buy .btn{justify-content:center;padding:18px 20px;font-size:16px}
 .pd-trust{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:22px}
-.pd-trust span{display:flex;gap:8px;align-items:center}
-.pd-trust span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--blue);flex:none}
+.pd-trust>span{display:flex;gap:8px;align-items:center}
+.pd-trust>span::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--blue);flex:none}
 .pd-gal{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,1.4vw,18px)}
 .pd-gal .boxstage{grid-column:1/-1}
 .pd-gal .photo{aspect-ratio:3/4}
 .pd-gal .tile{aspect-ratio:3/4;background:var(--b2);display:grid;place-items:center;padding:12%}
 .specs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:rgba(13,13,14,.15)}
-.specs div{background:var(--b);padding:18px}
+.specs>div{background:var(--b);padding:18px}
 .specs b{display:block;font-size:clamp(18px,1.8vw,26px);letter-spacing:-.03em;margin-top:10px;line-height:1.1}
 .inc{scroll-margin-top:110px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(14px,2vw,28px);margin-top:clamp(36px,5vw,72px)}
 .inc>div{border-top:2px solid var(--k);padding-top:16px;display:grid;grid-template-columns:48px 1fr;gap:14px}
@@ -46,10 +47,10 @@
 </style>
 </head>
 <body data-page="productos">
-<main id="main">
+<main>
 <section class="sec dark pd">
   <div class="wrap">
-    <nav class="crumb mono" aria-label="Ruta"><a href="productos.html">Productos</a><span class="dim">/</span><span id="crumbCode"></span></nav>
+    <nav class="crumb mono" aria-label="Breadcrumb"><a href="productos.html"><span data-l="es">Productos</span><span data-l="en">Products</span></a><span class="dim">/</span><span id="crumbCode"></span></nav>
     <div class="pd-grid">
       <div class="pd-gal" id="gal"></div>
       <div class="pd-info" id="info"></div>
@@ -59,7 +60,7 @@
 
 <section class="sec light">
   <div class="wrap">
-    <div class="shead mono"><div><b>Especificaciones</b><span id="specCode"></span></div><div style="text-align:right">Qué es, en datos</div></div>
+    <div class="shead mono"><div><b><span data-l="es">Especificaciones</span><span data-l="en">Specs</span></b><span id="specCode"></span></div><div style="text-align:right"><span data-l="es">Qué es, en datos</span><span data-l="en">What it is, in data</span></div></div>
     <div class="specs rv" id="specs"></div>
     <div class="inc" id="inc"></div>
   </div>
@@ -67,14 +68,14 @@
 
 <section class="sec dark">
   <div class="wrap for">
-    <div class="rv"><span class="mono">Para quién</span><h2 class="display" style="margin-top:14px;font-size:clamp(44px,5.4vw,90px)">Hecho para quienes <span class="it">hacen.</span></h2></div>
+    <div class="rv"><span class="mono"><span data-l="es">Para quién</span><span data-l="en">Who it’s for</span></span><h2 class="display" style="margin-top:14px;font-size:clamp(44px,5.4vw,90px)"><span data-l="es">Hecho para quienes <span class="it">hacen.</span></span><span data-l="en">Made for people who <span class="it">make.</span></span></h2></div>
     <ul class="rv" id="for"></ul>
   </div>
 </section>
 
 <section class="sec light">
   <div class="wrap">
-    <div class="shead mono"><div><b>Seguí explorando</b>Otros productos</div><div style="text-align:right"><a href="productos.html">Catálogo completo →</a></div></div>
+    <div class="shead mono"><div><b><span data-l="es">Seguí explorando</span><span data-l="en">Keep exploring</span></b><span data-l="es">Otros productos</span><span data-l="en">Other products</span></div><div style="text-align:right"><a href="productos.html"><span data-l="es">Catálogo completo →</span><span data-l="en">Full catalog →</span></a></div></div>
     <div class="pgrid" id="rel"></div>
   </div>
 </section>
@@ -84,33 +85,35 @@
 <script src="assets/js/orbit.js"></script>
 <script>
 (() => {
-const {C, $, sym, card, buyBtn, mountBox, reveal, P, FAM, ACC, money} = ORBIT;
+const {C, $, L, tr, sym, card, buyBtn, mountBox, reveal, P, FAM, ACC, money} = ORBIT;
 const id = new URLSearchParams(location.search).get('id');
 const p = P.find(x => x.id === id) || P[0];
 const [fam] = FAM[p.family] || [''];
 const acc = ACC[p.accent] || C.blue;
+document.body.dataset.titleEs = document.body.dataset.titleEn = `${p.code} ${p.name} — Orbit®`;
 document.title = `${p.code} ${p.name} — Orbit®`;
-$('meta[name="description"]').setAttribute('content', p.tagline);
+const setDesc = () => $('meta[name="description"]').setAttribute('content', tr(p.tagline));
+setDesc(); addEventListener('orbit:lang', setDesc);
 $('#crumbCode').textContent = `${p.code} ${p.name}`;
 $('#specCode').textContent = p.code;
 
 $('#gal').innerHTML = `<div class="boxstage" id="bx"></div>
-  <div class="photo" data-p="${p.photo}" role="img" aria-label="Fotografía de referencia"></div>
+  <div class="photo" style="background-image:url(assets/img/${p.photo}.jpg)" role="img" aria-label="${p.name}"></div>
   <div class="tile">${sym({ring:C.k, dot:acc === C.k ? C.blue : acc})}</div>`;
 mountBox($('#bx'), p);
-document.querySelectorAll('[data-p]').forEach(el => el.style.backgroundImage = `url(assets/img/${el.dataset.p}.jpg)`);
 
 const [w1, ...rest] = p.name.split(' ');
+const TRUST = [['Descarga inmediata','Instant download'],['Uso comercial','Commercial use'],['Actualizaciones sin cargo','Free updates'],['Soporte por email','Email support']];
 $('#info').innerHTML = `<span class="mono">${p.code} · ${fam}</span>
   <h1 class="display">${w1}<br><span class="it">${rest.join(' ').toLowerCase()}.</span></h1>
-  <p class="lead" style="opacity:.8;margin:22px 0 0">${p.tagline}</p>
-  <div class="pd-price"><b>${p.status==='soon' ? 'Pronto' : money(p.price)}</b><span class="mono dim">${p.status==='soon' ? 'Lanzamiento 2026' : 'Pago único · IVA según país'}</span></div>
-  <div class="pd-buy">${buyBtn(p)}<a class="btn btn-line" href="#inc">Qué incluye</a></div>
-  <div class="pd-trust mono">${['Descarga inmediata','Uso comercial','Actualizaciones sin cargo','Soporte por email'].map(t => `<span>${t}</span>`).join('')}</div>`;
+  <p class="lead" style="opacity:.8;margin:22px 0 0">${L(p.tagline)}</p>
+  <div class="pd-price"><b>${p.status==='soon' ? L('Pronto','Soon') : money(p.price)}</b><span class="mono dim">${p.status==='soon' ? L('Lanzamiento 2026','Launching 2026') : L('Pago único · impuestos según país','One-time payment · taxes by country')}</span></div>
+  <div class="pd-buy">${buyBtn(p)}<a class="btn btn-line" href="#inc">${L('Qué incluye','What’s inside')}</a></div>
+  <div class="pd-trust mono">${TRUST.map(([es,en]) => `<span>${L(es,en)}</span>`).join('')}</div>`;
 
-$('#specs').innerHTML = p.specs.map(([k,v]) => `<div><span class="mono dim">${k}</span><b>${v}</b></div>`).join('');
-$('#inc').innerHTML = p.includes.map(([t,d],i) => `<div class="rv"><div>${sym({ring:C.k, dot:i===0?acc:C.k, rot:i*90, gap:70})}</div><div><span class="mono dim">Incluye 0${i+1}</span><h3 style="margin-top:8px">${t}</h3><p>${d}</p></div></div>`).join('');
-$('#for').innerHTML = p.for.map(t => `<li>${t}</li>`).join('');
+$('#specs').innerHTML = p.specs.map(([k,v]) => `<div><span class="mono dim">${L(k)}</span><b>${L(v)}</b></div>`).join('');
+$('#inc').innerHTML = p.includes.map(([t,d],i) => `<div class="rv"><div>${sym({ring:C.k, dot:i===0?acc:C.k, rot:i*90, gap:70})}</div><div><span class="mono dim">${L('Incluye','Includes')} 0${i+1}</span><h3 style="margin-top:8px">${L(t)}</h3><p>${L(d)}</p></div></div>`).join('');
+$('#for').innerHTML = p.for.map(t => `<li>${L(t)}</li>`).join('');
 $('#rel').innerHTML = P.filter(x => x.id !== p.id).map(card).join('');
 
 const bar = $('#buybar'), info = $('#info');

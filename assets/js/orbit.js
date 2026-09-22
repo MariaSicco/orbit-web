@@ -1,8 +1,24 @@
-/* ORBIT® — núcleo compartido del sitio */
+/* ORBIT® — núcleo compartido del sitio (bilingüe ES / EN) */
 (() => {
 const C = {k:'#0D0D0E', b:'#F2EFE8', blue:'#3047FF', or:'#FF4F2E', ac:'#D9FF45', k2:'#161617', b2:'#E4E0D6'};
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const $ = (s, r=document) => r.querySelector(s), $$ = (s, r=document) => [...r.querySelectorAll(s)];
+const root = document.documentElement;
+
+/* ---------- idioma ---------- */
+const lang = () => root.dataset.lang === 'en' ? 'en' : 'es';
+/* L(): texto bilingüe en HTML — se muestra el que corresponde vía CSS */
+const L = (es, en) => (typeof es === 'object' && es) ? L(es.es, es.en) : (en === undefined ? String(es) : `<span data-l="es">${es}</span><span data-l="en">${en}</span>`);
+/* tr(): texto plano en el idioma actual (títulos, avisos, atributos) */
+const tr = (es, en) => (typeof es === 'object' && es) ? es[lang()] : (lang() === 'en' && en !== undefined ? en : es);
+function store(l) { for (const s of [localStorage, sessionStorage]) { try { s.setItem('orbit-lang', l); } catch (e) {} } }
+function setLang(l) {
+  root.dataset.lang = l; root.lang = l; store(l);
+  const t = document.body.dataset['title' + (l === 'en' ? 'En' : 'Es')]; if (t) document.title = t;
+  $$('[data-aria-es]').forEach(el => el.setAttribute('aria-label', el.dataset['aria' + (l === 'en' ? 'En' : 'Es')]));
+  $$('.langsw button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.set === l)));
+  dispatchEvent(new CustomEvent('orbit:lang', {detail: l}));
+}
 
 /* ---------- símbolo: círculo incompleto + apertura + punto ---------- */
 const R = 39, SW = 22, DOTA = 50;
@@ -20,6 +36,18 @@ function symInner({gap=68, rot=0, dot=C.blue, ring='currentColor', dotOff=0, dot
 }
 const sym = (o={}, cls='sym', style='') => `<svg class="${cls}" viewBox="0 0 100 100" style="overflow:visible;${style}" aria-hidden="true">${symInner(o)}</svg>`;
 const wm = (o={}, reg=true) => `<span class="wm"${o.color?` style="color:${o.color}"`:''}><svg class="o" viewBox="0 0 100 100" aria-hidden="true">${symInner({dot:o.dot||C.blue, ...o})}</svg>RBIT${reg?'<sup>®</sup>':''}</span>`;
+/* wordmark gigante con la O que sigue al cursor */
+const bigWm = id => `<span class="wm"><svg class="o" viewBox="0 0 100 100" aria-hidden="true"><g id="${id}"></g></svg>RBIT<sup>®</sup></span>`;
+
+/* ---------- símbolo que sigue al cursor ---------- */
+function follow(g, target) {
+  g.innerHTML = symInner({ring:'currentColor', dot:C.blue});
+  let rot = 0, tgt = 0, active = false, last = 0, alive = true;
+  const mv = e => { const o = target.getBoundingClientRect(); if (o.bottom < 0 || o.top > innerHeight) return; tgt = Math.atan2(e.clientY - (o.top+o.height/2), e.clientX - (o.left+o.width/2))*180/Math.PI - DOTA; active = true; last = performance.now(); };
+  addEventListener('pointermove', mv);
+  if (!RM) (function f(now) { if (!alive) return; if (!active || now - last > 2600) { active = false; tgt += .12; } rot += (((tgt - rot + 540) % 360) - 180) * .09; g.setAttribute('transform', `rotate(${rot.toFixed(2)} 50 50)`); requestAnimationFrame(f); })(0);
+  return () => { alive = false; removeEventListener('pointermove', mv); };
+}
 
 /* ---------- productos ---------- */
 const P = window.ORBIT_PRODUCTS || [], FAM = window.ORBIT_FAMILIES || {};
@@ -29,84 +57,84 @@ const url = p => `producto.html?id=${p.id}`;
 const cover = p => `<div class="cover">
   <div class="spine">${wm({color:C.b}, false)}</div>
   <div class="body">${wm({color:C.k, dot:C.blue})}
-    ${p.status==='soon' ? '<span class="mono badge">Coming soon</span>' : ''}
+    ${p.status==='soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : ''}
     <div class="num">${p.n}</div><div class="ttl">${p.name.replace(' ', '<br>')}</div>
     <div class="art">${sym({ring:C.k, dot:ACC[p.accent]||C.blue, sw:22})}</div>
-    <div class="mono meta">${p.specs[0][1]} ${p.specs[0][0].toLowerCase()}<br>${p.specs[2][1]}<br>${p.code} · V.01</div>
+    <div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])}<br>${L(p.specs[2][1])}<br>${p.code} · V.01</div>
   </div></div>`;
 const card = p => `<a class="pcard rv" href="${url(p)}" data-fam="${p.family}">${cover(p)}
   <div class="row"><span class="mono">${p.code}</span><span class="mono dim">${(FAM[p.family]||[''])[0]}</span></div>
-  <div class="row" style="border:0;padding:0"><h3>${p.name}</h3><span class="price">${p.status==='soon' ? '<span class="mono">Pronto</span>' : money(p.price)}</span></div></a>`;
+  <div class="row" style="border:0;padding:0"><h3>${p.name}</h3><span class="price">${p.status==='soon' ? `<span class="mono">${L('Pronto','Soon')}</span>` : money(p.price)}</span></div></a>`;
 
 /* ---------- toast ---------- */
 let tT;
 function toast(m) {
   let t = $('.toast'); if (!t) { t = document.createElement('div'); t.className = 'toast mono'; t.setAttribute('role','status'); document.body.append(t); }
-  t.textContent = m; t.classList.add('on'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('on'), 2600);
+  t.textContent = m; t.classList.add('on'); clearTimeout(tT); tT = setTimeout(() => t.classList.remove('on'), 2800);
 }
 /* botón de compra */
 function buyBtn(p, cls='btn btn-acid') {
-  if (p.status === 'soon') return `<a class="${cls}" href="#" data-soon="${p.id}">Avisame cuando salga <span class="ar">→</span></a>`;
-  return `<a class="${cls}" href="${p.checkout || '#'}" data-buy="${p.id}" ${p.checkout ? 'target="_blank" rel="noopener"' : ''}>Comprar — ${money(p.price)} <span class="ar">→</span></a>`;
+  if (p.status === 'soon') return `<a class="${cls}" href="#" data-soon="${p.id}">${L('Avisame cuando salga','Notify me')} <span class="ar">→</span></a>`;
+  return `<a class="${cls}" href="${p.checkout || '#'}" data-buy="${p.id}" ${p.checkout ? 'target="_blank" rel="noopener"' : ''}>${L('Comprar','Buy')} — ${money(p.price)} <span class="ar">→</span></a>`;
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-buy]');
-  if (b && b.getAttribute('href') === '#') { e.preventDefault(); toast('El pago todavía no está conectado — agregá el link de checkout en products.js'); }
+  if (b && b.getAttribute('href') === '#') { e.preventDefault(); toast(tr('El pago todavía no está conectado — agregá el link de checkout en products.js', 'Checkout is not connected yet — add the payment link in products.js')); }
   const s = e.target.closest('[data-soon]');
-  if (s) { e.preventDefault(); toast('Pronto: acá va el formulario de lista de espera'); }
+  if (s) { e.preventDefault(); toast(tr('Pronto: acá va el formulario de lista de espera', 'Coming soon: the waitlist form goes here')); }
 });
 
 /* ---------- nav + footer compartidos ---------- */
 const page = document.body.dataset.page;
-const links = [['index.html','Inicio','home'],['productos.html','Productos','productos'],['nosotros.html','Nosotros','nosotros']];
+const links = [['index.html',L('Inicio','Home'),'home'],['productos.html',L('Productos','Products'),'productos'],['nosotros.html',L('Nosotros','About'),'nosotros']];
+const langSw = `<div class="langsw" role="group" aria-label="Idioma / Language"><button data-set="es" aria-pressed="${lang()==='es'}">ES</button><span>/</span><button data-set="en" aria-pressed="${lang()==='en'}">EN</button></div>`;
 const nav = document.createElement('header');
 nav.className = 'nav';
-nav.innerHTML = `<a class="logo" href="index.html" aria-label="Orbit, inicio">${wm({color:'#F2EFE8'})}</a>
+nav.innerHTML = `<a class="logo" href="index.html" aria-label="Orbit">${wm({color:'#F2EFE8'})}</a>
   <ul>${links.map(([h,t,k]) => `<li><a href="${h}"${k===page?' aria-current="page"':''}>${t}</a></li>`).join('')}</ul>
-  <a class="cta" href="productos.html">Explorar productos →</a>
-  <button class="menu" aria-expanded="false" aria-controls="mnav">Menú</button>`;
+  <div class="right">${langSw}<a class="cta" href="productos.html">${L('Explorar productos','Explore products')} →</a><button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
 document.body.prepend(nav);
 const mnav = document.createElement('nav');
-mnav.className = 'mnav'; mnav.id = 'mnav'; mnav.hidden = true; mnav.setAttribute('aria-label','Menú');
-mnav.innerHTML = `<button class="chip x">Cerrar</button><div>${links.map(([h,t]) => `<a href="${h}">${t}</a>`).join('')}</div><span class="mono">Orbit® — Ideas in motion. Est. 2026</span>`;
+mnav.className = 'mnav'; mnav.id = 'mnav'; mnav.hidden = true; mnav.setAttribute('aria-label','Menu');
+mnav.innerHTML = `<button class="chip x">${L('Cerrar','Close')}</button><div>${links.map(([h,t]) => `<a href="${h}">${t}</a>`).join('')}</div><div style="display:flex;justify-content:space-between;align-items:center;gap:16px">${langSw}<span class="mono">Orbit® — Ideas in motion</span></div>`;
 document.body.append(mnav);
 $('.menu', nav).onclick = () => { mnav.hidden = false; $('.menu', nav).setAttribute('aria-expanded','true'); };
 $('.x', mnav).onclick = () => { mnav.hidden = true; $('.menu', nav).setAttribute('aria-expanded','false'); };
 addEventListener('keydown', e => { if (e.key === 'Escape') mnav.hidden = true; });
+document.addEventListener('click', e => { const b = e.target.closest('.langsw button'); if (b) setLang(b.dataset.set); });
 
 const foot = document.createElement('footer');
 foot.className = 'foot';
 foot.innerHTML = `<div class="wrap">
-  <div style="display:flex;justify-content:space-between;gap:20px"><span class="mono">OB—000</span><span class="mono" style="text-align:right">Ideas<br>Recursos<br>Crecimiento<br>Libertad</span></div>
+  <div style="display:flex;justify-content:space-between;gap:20px"><span class="mono">OB—000</span><span class="mono" style="text-align:right">${L('Ideas<br>Recursos<br>Crecimiento<br>Libertad','Ideas<br>Resources<br>Growth<br>Freedom')}</span></div>
   <h2 class="display" style="margin-top:40px">Enter<br>the orbit.</h2>
   <div class="cols">
-    <div><span class="mono dim">Productos</span>${P.map(p => `<a href="${url(p)}">${p.code} ${p.name}</a>`).join('')}</div>
-    <div><span class="mono dim">Familias</span>${Object.values(FAM).map(([n]) => `<a href="productos.html">${n}</a>`).join('')}</div>
-    <div><span class="mono dim">Orbit</span><a href="nosotros.html">Nosotros</a><a href="nosotros.html#manifiesto">Manifiesto</a><a href="https://mariasicco.github.io/orbit-brand-manual/">Manual de marca</a></div>
-    <div><span class="mono dim">Contacto</span><a href="mailto:hola@orbit.studio">hola@orbit.studio</a><a href="#">Instagram</a><a href="#">Newsletter</a></div>
+    <div><span class="mono dim">${L('Productos','Products')}</span>${P.map(p => `<a href="${url(p)}">${p.code} ${p.name}</a>`).join('')}</div>
+    <div><span class="mono dim">${L('Familias','Families')}</span>${Object.entries(FAM).map(([k,[n]]) => `<a href="productos.html#${k}">${n}</a>`).join('')}</div>
+    <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
+    <div><span class="mono dim">${L('Contacto','Contact')}</span><a href="mailto:hola@orbit.studio">hola@orbit.studio</a><a href="#">Instagram</a><a href="#">Newsletter</a></div>
   </div>
-  <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">Digital goods for creative people.</p></div><span class="mono dim" style="text-align:right">Mismas personas. Más herramientas.<br>Un mejor mañana. — Est. 2026</span></div>
+  <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">Digital goods for creative people.</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>
 </div>`;
 document.body.append(foot);
 
 /* ---------- placeholders declarativos ---------- */
-$$('[data-wm]').forEach(el => el.outerHTML = wm({color: el.dataset.wm || undefined}));
 $$('[data-sym]').forEach(el => { const o = JSON.parse(el.dataset.sym || '{}'); if (o.ring && C[o.ring]) o.ring = C[o.ring]; if (o.dot && C[o.dot]) o.dot = C[o.dot]; el.innerHTML = sym(o, 'sym', 'width:100%;height:auto'); });
 $$('[data-photo]').forEach(el => el.style.backgroundImage = `url(assets/img/${el.dataset.photo}.jpg)`);
 $$('[data-ticker]').forEach(el => { const h = el.dataset.ticker.split('|').map(t => `<span>${t}</span><i>·</i>`).join(''); el.innerHTML = `<div>${h}${h}</div>`; });
 
 /* ---------- reveal (solo lo que está debajo de la primera pantalla) ---------- */
-function reveal(root=document) {
+function reveal(rootEl=document) {
   if (RM || !('IntersectionObserver' in window)) return;
   const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.remove('pre'); io.unobserve(e.target); } }), {rootMargin:'0px 0px -8% 0px'});
-  $$('.rv', root).forEach(el => { if (el.getBoundingClientRect().top > innerHeight) { el.classList.add('pre'); io.observe(el); } });
+  $$('.rv', rootEl).forEach(el => { if (el.getBoundingClientRect().top > innerHeight) { el.classList.add('pre'); io.observe(el); } });
 }
 
 /* ---------- caja 3D ---------- */
 function mountBox(stage, p) {
   stage.innerHTML = `<div class="box"><div class="f front">${cover(p)}</div><div class="f side">${wm({color:C.b}, false)}</div><div class="f lside"></div>
-    <div class="f back"><span class="mono">${p.code}<br>Digital goods</span><span class="it" style="font-size:22px;line-height:1.05">${p.tagline}</span><span class="mono">Orbit® — Ideas in motion<br>Est. 2026</span></div>
-    <div class="f top"></div><div class="f bottom"></div></div><span class="mono hint">Arrastrá para girar</span>`;
+    <div class="f back"><span class="mono">${p.code}<br>Digital goods</span><span class="it" style="font-size:21px;line-height:1.05">${L(p.tagline)}</span><span class="mono">Orbit® — Ideas in motion<br>Est. 2026</span></div>
+    <div class="f top"></div><div class="f bottom"></div></div><span class="mono hint">${L('Arrastrá para girar','Drag to rotate')}</span>`;
   const box = $('.box', stage);
   let ry = -28, rx = -8, drag = null, spin = !RM;
   stage.addEventListener('pointerdown', e => { drag = {x:e.clientX, y:e.clientY, ry, rx}; spin = false; stage.setPointerCapture(e.pointerId); });
@@ -115,14 +143,34 @@ function mountBox(stage, p) {
   (function f() { if (spin && !drag) ry += .15; box.style.transform = `rotateX(${rx}deg) rotateY(${ry}deg)`; requestAnimationFrame(f); })();
 }
 
-/* ---------- símbolo que sigue al cursor ---------- */
-function follow(g, target) {
-  g.innerHTML = symInner({ring:'currentColor', dot:C.blue});
-  let rot = 0, tgt = 0, active = false, last = 0;
-  addEventListener('pointermove', e => { const o = target.getBoundingClientRect(); if (o.bottom < 0 || o.top > innerHeight) return; tgt = Math.atan2(e.clientY - (o.top+o.height/2), e.clientX - (o.left+o.width/2))*180/Math.PI - DOTA; active = true; last = performance.now(); });
-  if (RM) return;
-  (function f(now) { if (!active || now - last > 2600) { active = false; tgt += .12; } rot += (((tgt - rot + 540) % 360) - 180) * .09; g.setAttribute('transform', `rotate(${rot.toFixed(2)} 50 50)`); requestAnimationFrame(f); })(0);
+/* ---------- pantalla de entrada: elegir idioma ---------- */
+function gate() {
+  const g = document.createElement('div');
+  g.className = 'gate'; g.setAttribute('role','dialog'); g.setAttribute('aria-modal','true'); g.setAttribute('aria-label','Elegí tu idioma / Choose your language');
+  g.innerHTML = `<div class="g-top"><span class="mono">OB—000<br>Orbit® — Digital goods</span><span class="mono" style="text-align:right">Ideas in motion<br>Est. 2026</span></div>
+    <div class="g-mid"><div class="g-word" id="gWord">${bigWm('gateG')}</div></div>
+    <div class="g-bot">
+      <p class="mono g-ask">Elegí tu idioma<br><span class="dim">Choose your language</span></p>
+      <div class="g-opts">
+        <button data-pick="es" lang="es"><span class="mono">01</span>Español<span class="ar">→</span></button>
+        <button data-pick="en" lang="en"><span class="mono">02</span>English<span class="ar">→</span></button>
+      </div>
+    </div>`;
+  document.body.append(g);
+  const stop = follow($('#gateG', g), $('#gWord svg', g));
+  $$('[data-pick]', g).forEach(b => b.onclick = () => {
+    setLang(b.dataset.pick);
+    const o = $('#gWord svg', g).getBoundingClientRect();
+    g.style.setProperty('--gx', (o.left + o.width/2) + 'px'); g.style.setProperty('--gy', (o.top + o.height/2) + 'px');
+    root.classList.remove('gate-on');
+    g.classList.add('out');
+    setTimeout(() => { stop(); g.remove(); reveal(); }, RM ? 0 : 1000);
+  });
+  $('[data-pick]', g).focus({preventScroll:true});
 }
+const needGate = root.classList.contains('gate-on');
+if (needGate) gate();
+setLang(lang());
 
-window.ORBIT = {C, RM, $, $$, sym, symInner, wm, cover, card, buyBtn, money, url, toast, reveal, mountBox, follow, P, FAM, ACC};
+window.ORBIT = {C, RM, $, $$, L, tr, lang, setLang, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC};
 })();
