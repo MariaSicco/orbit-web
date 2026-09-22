@@ -12,19 +12,34 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/css/orbit.css?v=13">
 <style>
-.ab-hero{position:relative;height:100svh;min-height:620px;padding:calc(90px + env(safe-area-inset-top,0px)) var(--pad) 28px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;color:var(--b);background:var(--k)}
-.ab-hero .photo{position:absolute;inset:0;z-index:0;background-position:62% 30%}
-.ab-hero::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(13,13,14,.75) 0%,rgba(13,13,14,0) 22%),linear-gradient(90deg,rgba(13,13,14,.92) 0%,rgba(13,13,14,.7) 38%,rgba(13,13,14,.25) 70%,rgba(13,13,14,.45) 100%),linear-gradient(0deg,rgba(13,13,14,.9) 0%,rgba(13,13,14,0) 38%)}
-.ab-hero>*{position:relative;z-index:2}
-.ab-hero .top{display:flex;justify-content:space-between;gap:20px}
-.ab-hero h1{font-family:var(--serif);font-weight:400;font-size:clamp(60px,min(10vw,17vh),190px);letter-spacing:-.04em;line-height:.9;margin:0;max-width:10ch}
-.ab-hero h1 .it{color:var(--or)}
-.ab-hero .bot{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,3vw,48px);align-items:end;border-top:1px solid rgba(242,239,232,.25);padding-top:18px}
-.ab-hero .bot p{margin:0;max-width:44ch;font-size:clamp(15px,1.3vw,19px);opacity:.9}
-.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,2vw,28px)}
-.facts b{display:block;font-weight:800;font-size:clamp(34px,4vw,64px);letter-spacing:-.05em;line-height:.9}
-.facts b .it{font-size:.8em;color:var(--or)}
-@media (max-width:860px){.ab-hero .bot{grid-template-columns:1fr}.ab-hero::after{background:linear-gradient(0deg,rgba(13,13,14,.95) 0%,rgba(13,13,14,.55) 60%,rgba(13,13,14,.35) 100%)}}
+/* origen: relato con scroll */
+.origin{position:relative;height:520svh;background:var(--k);color:var(--b)}
+.origin .stick{position:sticky;top:0;height:100svh;min-height:600px;padding:calc(90px + env(safe-area-inset-top,0px)) var(--pad) 28px;display:grid;grid-template-rows:auto 1fr auto;gap:20px;overflow:hidden}
+.origin .top{display:flex;justify-content:space-between;gap:20px}
+.origin .stage{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);gap:clamp(20px,4vw,72px);align-items:center;min-height:0}
+.origin .symw{position:relative;width:min(100%,62vh);aspect-ratio:1;justify-self:center}
+.origin .symw svg{width:100%;height:100%;overflow:visible}
+.origin .wmo{position:absolute;left:50%;bottom:-6%;transform:translate(-50%,20px);opacity:0;transition:opacity .6s var(--ease),transform .6s var(--ease);font-size:clamp(28px,4vw,56px);white-space:nowrap}
+.origin[data-st="4"] .wmo{opacity:1;transform:translate(-50%,0)}
+.chapters{position:relative;min-height:clamp(260px,40vh,420px)}
+.chap{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:18px;opacity:0;transform:translateY(24px);transition:opacity .55s var(--ease),transform .55s var(--ease);pointer-events:none}
+.chap.on{opacity:1;transform:none;pointer-events:auto}
+.chap h2{margin:0;font-weight:800;font-size:clamp(40px,5.4vw,96px);letter-spacing:-.05em;line-height:.88;text-transform:uppercase}
+.chap h2 .it{text-transform:none;letter-spacing:-.03em}
+.chap p{margin:0;font-size:clamp(16px,1.4vw,20px);max-width:40ch;opacity:.8}
+.chap .t0{font-family:var(--serif);font-weight:400;text-transform:none;font-size:clamp(56px,8vw,150px);letter-spacing:-.04em;line-height:.9}
+.chap .t0 .it{color:var(--or)}
+.chap s{text-decoration:none;background:linear-gradient(var(--or),var(--or)) 0 56%/100% .09em no-repeat}
+.osteps{display:flex;align-items:center;gap:14px}
+.osteps .bars{display:flex;gap:6px;flex:1;max-width:420px}
+.osteps .bars i{flex:1;height:3px;background:var(--k3);position:relative;overflow:hidden}
+.osteps .bars b{position:absolute;inset:0;background:var(--b);transform-origin:left;transform:scaleX(0)}
+.osteps .hint{margin-left:auto;opacity:.5}
+.origin.static{height:auto}
+.origin.static .stick{position:relative;height:auto}
+.origin.static .chapters{min-height:0;display:flex;flex-direction:column;gap:48px}
+.origin.static .chap{position:relative;opacity:1;transform:none}
+@media (max-width:860px){.origin .stage{grid-template-columns:1fr;grid-template-rows:auto 1fr;align-items:start}.origin .symw{width:min(62vw,34vh)}.chap{justify-content:flex-start}}
 .vals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3)}
 .vals>div{background:var(--k);padding:22px;min-height:260px;display:flex;flex-direction:column;justify-content:space-between}
 .vals .s{width:64px}
@@ -60,17 +75,20 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 </head>
 <body data-page="nosotros" data-title-es="Nosotros — Orbit®" data-title-en="About — Orbit®">
 <main>
-<section class="ab-hero">
-  <div class="photo" data-photo="figure" role="img" data-aria-es="Diseñadora armando un sistema en la pared de su estudio" data-aria-en="Designer building a system on her studio wall"></div>
-  <div class="top"><span class="mono"><span data-l="es">Sobre Orbit</span><span data-l="en">About Orbit</span></span><span class="mono" style="text-align:right">OB—000<br>Est. 2026</span></div>
-  <h1><span data-l="es">Más ideas.<br>Más <span class="it">movimiento.</span></span><span data-l="en">More ideas.<br>More <span class="it">movement.</span></span></h1>
-  <div class="bot">
-    <p><span data-l="es">Orbit es un universo de herramientas digitales para personas que crean, diseñan, construyen, organizan y venden — en cualquier disciplina. Tomamos problemas que todos tenemos y los convertimos en sistemas listos para usar.</span><span data-l="en">Orbit is a universe of digital tools for people who create, design, build, organize and sell — in any discipline. We take problems we all share and turn them into ready-to-use systems.</span></p>
-    <div class="facts">
-      <div><span class="mono dim"><span data-l="es">Método</span><span data-l="en">Method</span></span><b>01</b><span class="mono"><span data-l="es">problema → herramienta</span><span data-l="en">problem → tool</span></span></div>
-      <div><span class="mono dim"><span data-l="es">Disciplinas</span><span data-l="en">Disciplines</span></span><b>08</b><span class="mono"><span data-l="es">del diseño a la IA</span><span data-l="en">from design to AI</span></span></div>
-      <div><span class="mono dim"><span data-l="es">Colección</span><span data-l="en">Collection</span></span><b>Vol.01</b><span class="mono"><span data-l="es">4 herramientas</span><span data-l="en">4 tools</span></span></div>
+<section class="origin" id="origen">
+  <div class="stick">
+    <div class="top"><span class="mono"><span data-l="es">Sobre Orbit — el origen</span><span data-l="en">About Orbit — the origin</span></span><span class="mono" style="text-align:right">OB—000<br>Est. 2026</span></div>
+    <div class="stage">
+      <div class="symw"><svg viewBox="-10 -10 120 120" aria-hidden="true"><circle cx="50" cy="50" r="39" fill="none" stroke="rgba(242,239,232,.28)" stroke-width="1" stroke-dasharray="1.5 3" id="oPath"/><g id="oSym" style="color:#F2EFE8"></g></svg><span class="wmo" id="oWm"></span></div>
+      <div class="chapters" id="chapters">
+        <div class="chap" data-c="0"><span class="mono dim"><span data-l="es">Cómo nace</span><span data-l="en">How it began</span></span><h2 class="t0"><span data-l="es">Cómo nace <span class="it">Orbit.</span></span><span data-l="en">How <span class="it">Orbit</span> began.</span></h2><p><span data-l="es">Una historia en cuatro órbitas. Scrolleá.</span><span data-l="en">A story in four orbits. Scroll.</span></p></div>
+        <div class="chap" data-c="1"><span class="mono">01 — <span data-l="es">El problema</span><span data-l="en">The problem</span></span><h2><span data-l="es"><s>Empezar de cero.</s> Otra vez.</span><span data-l="en"><s>Starting from scratch.</s> Again.</span></h2><p><span data-l="es">Todo empezó con un problema que se repetía: cada proyecto arrancaba en una hoja en blanco, con los mismos pasos, las mismas dudas y el mismo desorden.</span><span data-l="en">It started with a problem that kept repeating: every project began on a blank page, with the same steps, the same doubts and the same mess.</span></p></div>
+        <div class="chap" data-c="2"><span class="mono">02 — <span data-l="es">La idea</span><span data-l="en">The idea</span></span><h2><span data-l="es">Si el problema se repite, <span class="it">la solución también.</span></span><span data-l="en">If the problem repeats, <span class="it">so can the solution.</span></span></h2><p><span data-l="es">Ese punto azul es la idea: en vez de resolver lo mismo cada vez, construir una herramienta que lo resuelva siempre.</span><span data-l="en">That blue dot is the idea: instead of solving the same thing every time, build a tool that always solves it.</span></p></div>
+        <div class="chap" data-c="3"><span class="mono">03 — <span data-l="es">El sistema</span><span data-l="en">The system</span></span><h2><span data-l="es">Alrededor de la idea, <span class="it">un sistema.</span></span><span data-l="en">Around the idea, <span class="it">a system.</span></span></h2><p><span data-l="es">Herramientas pensadas como objetos de diseño: claras, visuales, accionables. Que se puedan usar hoy, no algún día.</span><span data-l="en">Tools designed as objects: clear, visual, actionable. Ready to use today, not someday.</span></p></div>
+        <div class="chap" data-c="4"><span class="mono">04 — Orbit</span><h2><span data-l="es">Problema → <span class="it" style="color:var(--or)">herramienta.</span></span><span data-l="en">Problem → <span class="it" style="color:var(--or)">tool.</span></span></h2><p><span data-l="es">Así nace Orbit: un universo de herramientas para quienes crean, diseñan, venden y construyen — en cualquier disciplina. Con la órbita abierta, porque siempre hay una idea más.</span><span data-l="en">That’s how Orbit was born: a universe of tools for people who create, design, sell and build — in any discipline. With the orbit left open, because there’s always one more idea.</span></p></div>
+      </div>
     </div>
+    <div class="osteps"><div class="bars" id="oBars"><i><b></b></i><i><b></b></i><i><b></b></i><i><b></b></i></div><span class="mono" id="oNum">00 / 04</span><span class="mono hint"><span data-l="es">Scroll ↓</span><span data-l="en">Scroll ↓</span></span></div>
   </div>
 </section>
 
@@ -118,6 +136,28 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 (() => {
 const {C, $, $$, L, sym, reveal, RM} = ORBIT;
 $('#vals').innerHTML = [[L('Herramientas','Tools'),L('para hacer.','for doing.'),{gap:0,dotOn:false}],[L('Sistemas','Systems'),L('para avanzar.','for moving forward.'),{gap:70}],[L('Recursos','Resources'),L('para volver real una idea.','to make ideas real.'),{gap:70,dot:C.blue}]].map(([b,e,o]) => `<div class="rv"><div class="s">${sym({ring:C.b, dot:C.b, ...o})}</div><div><b>${b}</b><em>${e}</em></div></div>`).join('');
+
+/* origen: el símbolo se construye con el scroll */
+const org = $('#origen'), oSym = $('#oSym'), chaps = $$('#chapters .chap'), fills = $$('#oBars b');
+$('#oWm').innerHTML = ORBIT.wm({color:C.b});
+const clamp01 = v => Math.max(0, Math.min(1, v));
+function drawOrigin(p) {
+  const st = Math.min(4, Math.floor(p * 5));
+  org.dataset.st = st;
+  chaps.forEach((c,i) => c.classList.toggle('on', i === st));
+  fills.forEach((f,i) => f.style.transform = `scaleX(${clamp01(p * 5 - (i + 1))})`);
+  $('#oNum').textContent = `0${st} / 04`;
+  const dotK = clamp01((p - .4) / .1);            /* aparece la idea */
+  const ringK = clamp01((p - .6) / .25);          /* se dibuja el sistema */
+  const gap = 360 - 292 * ringK;
+  oSym.innerHTML = (dotK > 0 ? '' : '') + ORBIT.symInner({gap: ringK > 0 ? gap : 360, ring:'currentColor', dot:C.blue, dotOn: dotK > 0, dr: 12.5 * (dotK || 0.001)});
+  $('#oPath').style.opacity = String(1 - ringK);
+}
+if (RM) { org.classList.add('static'); drawOrigin(.99); chaps.forEach(c => c.classList.add('on')); }
+else {
+  const onS = () => { const r = org.getBoundingClientRect(); drawOrigin(clamp01(-r.top / (r.height - innerHeight))); };
+  addEventListener('scroll', onS, {passive:true}); addEventListener('resize', onS); onS();
+}
 
 const CH = [[['Idea','Idea'],['Aparece. Todavía no tiene forma.','It appears. It has no shape yet.'],140,false],[['Sistema','System'],['Una buena herramienta la ordena.','A good tool gives it structure.'],90,false],[['Acción','Action'],['El sistema convierte intención en acción.','The system turns intention into action.'],40,false],[['Progreso','Progress'],['Y la acción se vuelve progreso.','And action becomes progress.'],0,true]];
 $('#chain').innerHTML = CH.map(([t,d,g,dot],i) => `<div class="rv"><span class="mono dim">0${i+1}</span><div class="s">${sym({gap:g, ring:C.b, dot:C.blue, dotOn:dot})}</div><div><b>${L(...t)}</b><p>${L(...d)}</p></div></div>`).join('');
