@@ -48,7 +48,7 @@
 .cards>div{background:var(--k2);padding:clamp(18px,2vw,26px);display:flex;flex-direction:column;justify-content:space-between;gap:16px;min-height:150px}
 .cards b{display:block;font-size:clamp(28px,3.4vw,50px);font-weight:800;letter-spacing:-.045em;line-height:.92}
 .cards .sm{font-size:clamp(17px,1.7vw,24px);letter-spacing:-.03em;font-weight:700;text-transform:uppercase;line-height:1.05}
-.cards .foot{font-size:13px;opacity:.55}
+.cards .cfoot{font-size:13px;opacity:.55;line-height:1.4}
 @media (max-width:820px){.cards{grid-template-columns:1fr}}
 
 /* destacado: seguir donde estabas */
@@ -261,7 +261,7 @@ $('#nProd').textContent = String(items.length).padStart(2, '0');
 $('#nOrd').textContent = String(orders.length).padStart(2, '0');
 
 /* ── resumen ── */
-const card = (k, big, foot) => '<div><span class="mono dim">' + k + '</span><div>' + big + '</div><span class="foot">' + (foot || '') + '</span></div>';
+const card = (k, big, foot) => '<div><span class="mono dim">' + k + '</span><div>' + big + '</div><span class="cfoot">' + (foot || '') + '</span></div>';
 function paintCards() {
   $('#cards').innerHTML = [
     card(L('Productos', 'Products'), '<b>' + String(items.length).padStart(2, '0') + '</b>',
