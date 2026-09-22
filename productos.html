@@ -12,13 +12,26 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/css/orbit.css?v=9">
 <style>
-.cat-head{padding-top:calc(120px + env(safe-area-inset-top,0px))}
-.cat-head .top{display:grid;grid-template-columns:minmax(0,8fr) minmax(0,4fr);gap:24px;align-items:end}
-.cat-head h1{font-size:clamp(72px,13vw,220px)}
-.cat-head .ring{position:absolute;right:-6%;top:-40%;width:min(46vw,620px);pointer-events:none}
+.cat-head{height:100svh;min-height:620px;padding-top:calc(88px + env(safe-area-inset-top,0px));padding-bottom:28px;display:flex;flex-direction:column;justify-content:space-between;gap:20px}
+.cat-head .top{display:flex;justify-content:space-between;gap:20px}
+.cat-head h1{font-size:clamp(56px,min(11vw,17vh),200px);margin:0}
+.cat-head h1 .it{color:var(--or)}
+.shelf{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2.4vw,40px);align-items:end;perspective:1600px}
+.shelf a{display:flex;flex-direction:column;gap:14px;text-decoration:none;color:inherit;align-items:flex-start}
+.shelf .cv{width:min(100%,calc(34vh * .75));transform:rotateY(-20deg) rotateX(4deg);transform-origin:left center;transition:transform .6s var(--ease),box-shadow .6s var(--ease);box-shadow:24px 30px 50px -30px rgba(0,0,0,.9)}
+.shelf a:nth-child(2) .cv{transition-delay:.02s}
+.shelf a:hover .cv,.shelf a:focus-visible .cv{transform:rotateY(0) translateY(-14px);box-shadow:0 40px 70px -30px rgba(48,71,255,.5)}
+.shelf .pr{font-family:var(--serif);font-style:italic;font-size:clamp(15px,1.3vw,20px);line-height:1.15;max-width:22ch}
+.shelf .pr s{text-decoration:none;background:linear-gradient(var(--or),var(--or)) 0 58%/100% 2px no-repeat}
+.shelf .to{display:flex;justify-content:space-between;gap:10px;width:100%;border-top:1px solid var(--k3);padding-top:10px}
+.shelf .to b{font-weight:800;letter-spacing:-.03em;text-transform:uppercase;font-size:clamp(14px,1.2vw,18px)}
+.cat-head .base{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;flex-wrap:wrap}
+.cat-head .base .lead{margin:0;opacity:.75;max-width:52ch;font-size:clamp(15px,1.2vw,18px)}
+@media (max-width:860px){.cat-head{height:auto;min-height:100svh}.shelf{grid-template-columns:1fr 1fr;row-gap:28px}.shelf .cv{width:100%}}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:clamp(28px,4vw,48px)}
 .filters .l{display:flex;flex-wrap:wrap;gap:8px}
 .empty{padding:60px 0;border-top:1px solid var(--k)}
+#grid{scroll-margin-top:100px}
 .soon{margin-top:clamp(56px,7vw,110px);display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);background:var(--k);color:var(--b);min-height:360px}
 .soon .t{padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;justify-content:space-between;gap:24px}
 .soon h2{font-size:clamp(46px,6vw,100px)}
@@ -29,11 +42,10 @@
 <body data-page="productos" data-title-es="Productos — Orbit®" data-title-en="Products — Orbit®">
 <main>
 <section class="sec dark cat-head">
-  <div class="ring" data-sym='{"ring":"#242426","dot":"blue","gap":70}' aria-hidden="true"></div>
-  <div class="wrap top">
-    <h1 class="display"><span data-l="es">Catá<br><span class="it">logo.</span></span><span data-l="en">Cata<br><span class="it">log.</span></span></h1>
-    <div><p class="lead" style="margin:0 0 18px;opacity:.8"><span data-l="es">Cada producto resuelve algo concreto: ahorra tiempo, ordena un proceso o ayuda a vender. Numerados como una colección.</span><span data-l="en">Every product solves something specific: it saves time, organizes a process or helps you sell. Numbered like a collection.</span></p><span class="mono dim" id="count"></span></div>
-  </div>
+  <div class="wrap top"><span class="mono">Vol.01 — 2026</span><span class="mono" style="text-align:right" id="count"></span></div>
+  <div class="wrap"><h1 class="display"><span data-l="es">La <span class="it">colección.</span></span><span data-l="en">The <span class="it">collection.</span></span></h1></div>
+  <div class="wrap shelf" id="shelf"></div>
+  <div class="wrap base"><p class="lead"><span data-l="es">Cada herramienta nace de un problema real. Elegí el tuyo.</span><span data-l="en">Every tool starts with a real problem. Pick yours.</span></p><a class="mono" href="#grid" style="text-decoration:none"><span data-l="es">Ver catálogo completo ↓</span><span data-l="en">See full catalog ↓</span></a></div>
 </section>
 
 <section class="sec light">
@@ -58,6 +70,9 @@
 <script>
 (() => {
 const {$, $$, L, tr, card, reveal, P, FAM} = ORBIT;
+const {cover, url, C} = ORBIT;
+const PROB = {'ob-001':['No sé qué publicar esta semana.','I don’t know what to post this week.'],'ob-002':['Empiezo cada diseño de cero.','I start every design from scratch.'],'ob-003':['Mis clientes están en cinco lugares.','My clients live in five places.'],'ob-004':['Pierdo horas en tareas repetidas.','I lose hours on repetitive tasks.']};
+$('#shelf').innerHTML = P.map(p => `<a href="${url(p)}"><div class="cv">${cover(p)}</div><span class="pr"><s>${L(...(PROB[p.id]||['','']))}</s></span><span class="to"><b>→ ${p.name}</b><span class="mono dim">${p.code}</span></span></a>`).join('');
 const grid = $('#grid'), filt = $('#filt');
 const fams = [['', L('Todo','All')], ...Object.entries(FAM).map(([k,[n]]) => [k, n.replace('Orbit ','')])];
 filt.innerHTML = fams.map(([k,n]) => `<button class="chip" data-f="${k}" aria-pressed="false">${n} · ${k ? P.filter(p => p.family===k).length : P.length}</button>`).join('');
