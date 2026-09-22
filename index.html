@@ -193,6 +193,25 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 .cform .err{color:var(--or);font-size:14px;min-height:1.2em}
 @media (max-width:860px){.cus{grid-template-columns:1fr}.cform .two{grid-template-columns:1fr}}
 
+/* lema: problema → herramienta */
+.pband{align-items:stretch}
+.pband .lema{position:relative;z-index:2;width:100%;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,3vw,48px);align-items:end}
+.pband .lema h2{font-size:clamp(52px,8.4vw,150px);color:var(--k)}
+.pband .lema .claim{margin:18px 0 0;max-width:40ch;font-size:clamp(17px,1.5vw,21px);color:var(--k);font-weight:500}
+.p2t{background:var(--b);color:var(--k);padding:clamp(16px,2vw,26px);box-shadow:0 30px 70px -40px rgba(0,0,0,.6)}
+.p2t .row{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:baseline;padding:14px 0;border-top:1px solid rgba(13,13,14,.15)}
+.p2t .prob{font-family:var(--serif);font-style:italic;font-size:clamp(20px,1.9vw,28px);line-height:1.1;position:relative;transition:opacity .4s}
+.p2t .prob s{text-decoration:none;background:linear-gradient(var(--or),var(--or)) 0 55%/0 3px no-repeat;transition:background-size .6s var(--ease) .5s}
+.p2t.go .prob s{background-size:100% 3px}
+.p2t .tool{font-weight:800;font-size:clamp(20px,2vw,30px);letter-spacing:-.035em;text-transform:uppercase;line-height:1;text-decoration:none;display:block;opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease) 1s,transform .5s var(--ease) 1s}
+.p2t.go .tool{opacity:1;transform:none}
+.p2t .tool:hover{color:var(--blue)}
+.p2t .nav2{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:12px;border-top:1px solid rgba(13,13,14,.15)}
+.p2t .dots{display:flex;gap:6px}
+.p2t .dots button{width:9px;height:9px;border-radius:50%;background:rgba(13,13,14,.2);padding:0}
+.p2t .dots button[aria-current="true"]{background:var(--blue)}
+@media (max-width:860px){.pband .lema{grid-template-columns:1fr}.p2t .row{grid-template-columns:1fr;gap:6px}}
+
 .faqgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px)}
 .faqgrid h2{font-size:clamp(44px,5.4vw,90px)}
 @media (max-width:860px){.faqgrid{grid-template-columns:1fr}}
@@ -229,8 +248,14 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 <div class="pband light">
   <div class="photo" data-photo="landing" role="img" data-aria-es="Arquitectura curva de hormigón" data-aria-en="Curved concrete architecture"></div>
   <div class="ring" data-sym='{"ring":"b","dot":"blue","gap":64,"rot":120}' aria-hidden="true"></div>
-  <h2 class="display">Build<br>what’s<br><span class="it">next.</span></h2>
-  <span class="mono meta">Creative tools<br>Real progress<br>OB—001</span>
+  <div class="lema">
+    <div>
+      <span class="mono" style="color:var(--k)"><span data-l="es">Nuestro método</span><span data-l="en">Our method</span> — OB—000</span>
+      <h2 class="display" style="margin-top:14px"><span data-l="es">Problema<br>→ <span class="it">herramienta.</span></span><span data-l="en">Problem<br>→ <span class="it">tool.</span></span></h2>
+      <p class="claim"><span data-l="es">Pensamos en los problemas que todos tenemos y los convertimos en herramientas productivas, listas para usar.</span><span data-l="en">We think about the problems we all share and turn them into productive, ready-to-use tools.</span></p>
+    </div>
+    <div class="p2t" id="p2t" aria-live="polite"></div>
+  </div>
 </div>
 </section>
 
@@ -446,6 +471,26 @@ manis.forEach(m => (function split(node) {
 })(m));
 const onScroll = () => manis.forEach(m => { if (!m.offsetParent) return; const r = m.getBoundingClientRect(), ws = $$('.w', m); const p = Math.min(1, Math.max(0, (innerHeight*.85 - r.top) / (r.height + innerHeight*.3))); const n = Math.round(p * ws.length * 1.15); ws.forEach((w,i) => w.classList.toggle('lit', i < n)); });
 if (RM) $$('.mani .w').forEach(w => w.classList.add('lit')); else { addEventListener('scroll', onScroll, {passive:true}); addEventListener('orbit:lang', onScroll); onScroll(); }
+
+/* ---------- lema: problema → herramienta ---------- */
+const P2T = [
+  [['“No sé qué publicar esta semana.”','“I don’t know what to post this week.”'],'ob-001'],
+  [['“Empiezo cada diseño de cero.”','“I start every design from scratch.”'],'ob-002'],
+  [['“Mis clientes están en cinco lugares distintos.”','“My clients live in five different places.”'],'ob-003'],
+  [['“Pierdo horas en tareas repetidas.”','“I lose hours on repetitive tasks.”'],'ob-004'],
+];
+const p2t = $('#p2t'); let pi = 0, pTimer;
+function renderP2T() {
+  const [prob, id] = P2T[pi], p = P.find(x => x.id === id);
+  p2t.classList.remove('go');
+  p2t.innerHTML = `<div class="row" style="border-top:0;padding-top:0"><span class="mono">${L('Problema','Problem')}</span><span class="prob"><s>${L(...prob)}</s></span></div>
+    <div class="row"><span class="mono">${L('Herramienta','Tool')}</span><a class="tool" href="${url(p)}">${p.code}<br>${p.name} →</a></div>
+    <div class="nav2"><div class="dots">${P2T.map((_,i) => `<button aria-label="${i+1}" aria-current="${i===pi}" data-p2="${i}"></button>`).join('')}</div><span class="mono dim">${String(pi+1).padStart(2,'0')} / ${String(P2T.length).padStart(2,'0')}</span></div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => p2t.classList.add('go')));
+  $$('[data-p2]', p2t).forEach(b => b.onclick = () => { pi = +b.dataset.p2; renderP2T(); restart(); });
+}
+const restart = () => { clearInterval(pTimer); if (!RM) pTimer = setInterval(() => { pi = (pi + 1) % P2T.length; renderP2T(); }, 4200); };
+renderP2T(); restart();
 
 /* ---------- quiz: encontrá tu sistema ---------- */
 const Q = [
