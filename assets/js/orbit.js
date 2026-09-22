@@ -228,7 +228,9 @@ function paintAccount() {
   a.setAttribute('aria-label', label); a.title = label;
   const ini = s && s.name ? s.name.trim()[0] : '';
   a.querySelector('.ini')?.remove();
-  a.querySelector('svg').hidden = Boolean(ini);
+  /* en SVG la propiedad .hidden no existe: hay que usar el atributo */
+  const icon = a.querySelector('svg');
+  if (ini) icon.setAttribute('hidden', ''); else icon.removeAttribute('hidden');
   if (ini) { const b = document.createElement('span'); b.className = 'ini'; b.textContent = ini; a.append(b); }
 }
 paintAccount();
