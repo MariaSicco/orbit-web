@@ -2,7 +2,8 @@ import { createHmac, timingSafeEqual, randomBytes, scryptSync } from 'node:crypt
 
 const SECRET = process.env.SESSION_SECRET || '';
 const COOKIE = 'orbit_session';
-const MAX_AGE = 60 * 60 * 24 * 60; // 60 días
+const HINT = 'orbit_user'; /* pista legible por el sitio: solo dice que hay sesión y con qué nombre */
+const MAX_AGE = 60 * 60 * 24 * 7; /* tope del token firmado; la cookie muere antes, al cerrar el navegador */
 
 const b64 = s => Buffer.from(s).toString('base64url');
 const unb64 = s => Buffer.from(s, 'base64url').toString();
@@ -28,11 +29,20 @@ export function readSession(req) {
     return data.exp > Date.now() ? data : null;
   } catch { return null; }
 }
-export function setSessionCookie(res, email) {
-  res.setHeader('Set-Cookie', `${COOKIE}=${makeSession(email)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${MAX_AGE}`);
+/* Sin Max-Age: son cookies de sesión. Se mantienen mientras navegás y
+   se borran solas cuando cerrás el navegador. */
+export function setSessionCookie(res, email, name = '') {
+  const first = String(name || '').trim().split(/\s+/)[0].slice(0, 24);
+  res.setHeader('Set-Cookie', [
+    `${COOKIE}=${makeSession(email)}; Path=/; HttpOnly; Secure; SameSite=Lax`,
+    `${HINT}=${encodeURIComponent(first) || '1'}; Path=/; Secure; SameSite=Lax`,
+  ]);
 }
 export function clearSessionCookie(res) {
-  res.setHeader('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
+  res.setHeader('Set-Cookie', [
+    `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`,
+    `${HINT}=; Path=/; Secure; SameSite=Lax; Max-Age=0`,
+  ]);
 }
 export const isEmail = v => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && v.length < 200;
 export async function readBody(req) {

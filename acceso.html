@@ -5,25 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Acceso — Orbit®</title>
 <script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
+<script>/* si la sesión sigue abierta, el panel es el destino */(function(){if(/(^|;\s*)orbit_user=/.test(document.cookie)&&!/salir=1/.test(location.search))location.replace('biblioteca.html')})()</script>
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="description" content="Entrá a tu biblioteca Orbit: todo lo que comprás queda guardado, con descargas y actualizaciones para siempre.">
+<meta name="description" content="Entrá a tu cuenta Orbit o creá una nueva.">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=24">
+<link rel="stylesheet" href="assets/css/orbit.css?v=25">
 <style>
-.acc{min-height:100svh;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
-.acc .l{padding:calc(104px + env(safe-area-inset-top,0px)) var(--pad) 36px;display:flex;flex-direction:column;justify-content:space-between;gap:clamp(24px,4vh,48px);background:var(--k)}
-.acc .mid{width:100%;max-width:520px}
-.acc h1{font-size:clamp(40px,min(5.6vw,10.5vh),92px)}
-.acc h1 .it{color:var(--or)}
-.acc .lead{margin:18px 0 0;opacity:.7;font-size:16px;max-width:42ch}
+.auth{min-height:100svh;display:grid;place-items:center;padding:calc(112px + env(safe-area-inset-top,0px)) var(--pad) 48px;position:relative;overflow:hidden}
+.auth .ring{position:absolute;left:50%;top:50%;width:min(150vh,150vw);translate:-50% -50%;color:#161617;pointer-events:none}
+.stack{position:relative;z-index:2;width:min(100%,468px);display:grid;gap:18px}
 
-.tabs2{display:flex;margin:clamp(20px,3vh,32px) 0 22px;border:1px solid var(--k3);padding:4px;gap:4px}
-.tabs2 button{flex:1;padding:11px 8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;transition:background .22s,color .22s;position:relative}
+.card{border:1px solid var(--k3);background:var(--k2);padding:clamp(22px,3.4vw,38px)}
+.card h1{font-size:clamp(34px,4.4vw,52px);margin:14px 0 0}
+.card h1 .it{color:var(--or)}
+.card .lead{margin:14px 0 0;opacity:.65;font-size:15px;line-height:1.45;max-width:38ch}
+
+.tabs2{display:flex;margin:clamp(20px,2.6vw,28px) 0 22px;border:1px solid var(--k3);padding:4px;gap:4px;background:var(--k)}
+.tabs2 button{flex:1;padding:11px 8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;transition:background .22s,color .22s}
 .tabs2 button[aria-pressed="true"]{background:var(--b);color:var(--k)}
 
 .f{display:grid;gap:14px}
@@ -31,10 +34,9 @@
 .f label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
 .f label .aux{text-transform:none;letter-spacing:0;font-family:var(--sans);font-size:12px;opacity:.6;text-decoration:underline;text-underline-offset:3px}
 .f label .aux:hover{opacity:1;color:var(--ac)}
-.f input[type=email],.f input[type=password],.f input[type=text]{width:100%;font:inherit;font-size:16px;padding:15px 16px;background:var(--k2);border:1px solid var(--k3);color:var(--b);transition:border-color .2s,background .2s}
+.f input{width:100%;font:inherit;font-size:16px;padding:15px 16px;background:var(--k);border:1px solid var(--k3);color:var(--b);transition:border-color .2s}
 .f input::placeholder{color:var(--g)}
-.f input:focus{outline:none;border-color:var(--blue);background:var(--k)}
-.f input:disabled{opacity:.5}
+.f input:focus{outline:none;border-color:var(--blue)}
 .pwrap{position:relative}
 .pwrap input{padding-right:52px}
 .pwrap .peye{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:grid;place-items:center;opacity:.5;transition:opacity .2s}
@@ -48,60 +50,48 @@
 .meter.s1 i:nth-child(-n+1)::after,.meter.s2 i:nth-child(-n+2)::after,.meter.s3 i::after{transform:scaleX(1)}
 .mnote{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.55;margin:7px 0 0}
 
-.check{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;opacity:.8;cursor:pointer;line-height:1.4}
+.check{display:flex;gap:11px;align-items:flex-start;font-size:13px;opacity:.75;cursor:pointer;line-height:1.4}
 .check:hover{opacity:1}
 .check input{width:17px;height:17px;flex:none;accent-color:var(--blue);margin-top:1px}
 .f .btn{width:100%;justify-content:center;padding:17px 20px;font-size:16px;margin-top:4px}
-.msg{font-size:14px;min-height:1.35em;line-height:1.35;color:var(--or)}
+.msg{font-size:13.5px;min-height:1.3em;line-height:1.35;color:var(--or);margin:0}
 .msg.ok{color:var(--ac)}
-.alt{display:flex;align-items:center;gap:14px;margin-top:4px}
+.alt{display:flex;align-items:center;gap:14px}
 .alt::before,.alt::after{content:"";height:1px;background:var(--k3);flex:1}
-.alt span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.45}
-.f .btn-line{margin-top:0}
-.note{font-size:12.5px;opacity:.5;line-height:1.5;max-width:46ch;margin:2px 0 0}
-.acc .help{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.5;line-height:1.7}
-.acc .help a{color:var(--ac)}
-
-.acc .r{position:relative;background:var(--k2);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;gap:28px;padding:calc(104px + env(safe-area-inset-top,0px)) var(--pad) 36px}
-.acc .r .ring{position:absolute;width:130%;right:-46%;top:-18%;color:#1D1D1F;pointer-events:none}
-.perks{position:relative;z-index:2;display:grid;gap:2px;background:var(--k3);border-top:1px solid var(--k3);border-bottom:1px solid var(--k3)}
-.perks>div{background:var(--k2);padding:18px 0 18px 0;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}
-.perks b{display:block;font-weight:700;font-size:16px;letter-spacing:-.02em;text-transform:uppercase}
-.perks p{margin:5px 0 0;font-size:13.5px;opacity:.6;line-height:1.45}
-.perks .n{font-family:var(--mono);font-size:10px;letter-spacing:.08em;opacity:.45;padding-top:4px}
-.shelf3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;position:relative;z-index:2;max-width:400px}
-.shelf3 .cover{box-shadow:0 26px 50px -26px rgba(0,0,0,.9)}
-.acc .cap{position:relative;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.45}
-@media (max-width:980px){.acc{grid-template-columns:1fr}.acc .r{padding-top:48px;gap:32px}.acc .r .ring{width:180%;right:-70%}}
+.alt span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.4}
+.foot2{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;opacity:.45;line-height:1.6}
+.foot2 a{color:inherit;text-decoration:underline;text-underline-offset:3px}
+.foot2 a:hover{opacity:1;color:var(--ac)}
 </style>
 </head>
 <body data-page="acceso" data-nav-solid data-title-es="Acceso — Orbit®" data-title-en="Sign in — Orbit®">
 <main>
-<section class="acc dark">
-  <div class="l">
-    <span class="mono dim">OB—000 · <span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></span>
-    <div class="mid">
+<section class="auth dark">
+  <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
+  <div class="stack">
+    <div class="card">
+      <span class="mono dim">OB—000 · <span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></span>
       <h1 class="display" id="accTitle"></h1>
       <p class="lead" id="accLead"></p>
 
-      <div class="tabs2" id="accTabs" role="tablist">
-        <button type="button" data-t="in" aria-pressed="true"><span data-l="es">Ya tengo cuenta</span><span data-l="en">I have an account</span></button>
+      <div class="tabs2" id="accTabs">
+        <button type="button" data-t="in" aria-pressed="true"><span data-l="es">Ingresar</span><span data-l="en">Sign in</span></button>
         <button type="button" data-t="up" aria-pressed="false"><span data-l="es">Crear cuenta</span><span data-l="en">Create account</span></button>
       </div>
 
       <form class="f" id="accForm" novalidate>
         <div class="row" id="nameWrap" hidden>
           <label for="accName"><span data-l="es">Cómo te llamás</span><span data-l="en">Your name</span></label>
-          <input id="accName" name="name" type="text" autocomplete="name" placeholder="Maria">
+          <input id="accName" type="text" autocomplete="name" placeholder="Maria">
         </div>
         <div class="row">
           <label for="accMail">Email</label>
-          <input id="accMail" name="email" type="email" autocomplete="email" placeholder="hola@tuestudio.com" required>
+          <input id="accMail" type="email" autocomplete="email" placeholder="hola@tuestudio.com" required>
         </div>
         <div class="row">
           <label for="accPass"><span><span data-l="es">Contraseña</span><span data-l="en">Password</span></span><button type="button" class="aux" id="forgot"><span data-l="es">Me la olvidé</span><span data-l="en">I forgot it</span></button></label>
           <div class="pwrap">
-            <input id="accPass" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+            <input id="accPass" type="password" autocomplete="current-password" placeholder="••••••••" required>
             <button type="button" class="peye" data-eye aria-label="Ver contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
           </div>
           <div id="meterWrap" hidden>
@@ -109,41 +99,30 @@
             <p class="mnote" id="mnote"></p>
           </div>
         </div>
-        <label class="check" id="newsWrap" hidden><input type="checkbox" id="accNews" checked><span><span data-l="es">Quiero recibir lanzamientos, recursos gratis y novedades de Orbit. Sin spam, se cancela en un clic.</span><span data-l="en">Send me launches, free resources and Orbit news. No spam, one-click unsubscribe.</span></span></label>
+        <label class="check" id="newsWrap" hidden><input type="checkbox" id="accNews" checked><span><span data-l="es">Quiero recibir lanzamientos y recursos gratis. Sin spam.</span><span data-l="en">Send me launches and free resources. No spam.</span></span></label>
         <button class="btn btn-acid" type="submit" id="accSubmit"></button>
         <p class="msg" id="accMsg" role="status" aria-live="polite"></p>
         <div class="alt"><span data-l="es">o</span><span data-l="en">or</span></div>
         <button type="button" class="btn btn-line" id="magicBtn"><span data-l="es">Mandame un enlace por email</span><span data-l="en">Email me a sign-in link</span></button>
-        <p class="note"><span data-l="es">Tus compras se guardan por email. Si comprás sin cuenta y después te registrás con ese mismo email, vas a encontrar todo en tu biblioteca.</span><span data-l="en">Purchases are saved by email. If you buy without an account and register later with that same email, everything shows up in your library.</span></p>
       </form>
     </div>
-    <p class="help"><span data-l="es">¿Compraste y no encontrás tu acceso?</span><span data-l="en">Bought something and can’t find your access?</span><br><a href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a></p>
-  </div>
-
-  <div class="r">
-    <div class="ring" data-sym='{"ring":"#1D1D1F","dot":"#1D1D1F","gap":70}' aria-hidden="true"></div>
-    <div class="perks">
-      <div><span class="n">01</span><div><b><span data-l="es">Descargas para siempre</span><span data-l="en">Downloads forever</span></b><p><span data-l="es">Todo lo que comprás queda disponible en tu biblioteca. Sin suscripción, sin vencimiento.</span><span data-l="en">Everything you buy stays in your library. No subscription, no expiry.</span></p></div></div>
-      <div><span class="n">02</span><div><b><span data-l="es">Versiones nuevas incluidas</span><span data-l="en">New versions included</span></b><p><span data-l="es">Cuando un sistema mejora, lo ves acá etiquetado como nuevo y lo bajás de nuevo.</span><span data-l="en">When a system improves, it shows up tagged as new and you download it again.</span></p></div></div>
-      <div><span class="n">03</span><div><b><span data-l="es">Historial de pedidos</span><span data-l="en">Order history</span></b><p><span data-l="es">Cada compra con su fecha, su medio de pago y su comprobante.</span><span data-l="en">Every purchase with its date, payment method and receipt.</span></p></div></div>
-    </div>
-    <div class="shelf3" id="accShelf"></div>
-    <span class="cap"><span data-l="es">Tu colección, siempre disponible</span><span data-l="en">Your collection, always available</span></span>
+    <p class="foot2">
+      <span data-l="es">La sesión se cierra al cerrar el navegador</span><span data-l="en">Your session ends when you close the browser</span>
+      <a href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a>
+    </p>
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=24"></script>
-<script src="assets/js/orbit.js?v=24"></script>
+<script src="assets/js/products.js?v=25"></script>
+<script src="assets/js/orbit.js?v=25"></script>
 <script>
 (() => {
-const {$, $$, L, tr, cover, P} = ORBIT;
-$('#accShelf').innerHTML = P.slice(0,3).map(p => cover(p)).join('');
-
+const {$, $$, L, tr} = ORBIT;
 const msg = $('#accMsg');
 const say = (text, ok) => { msg.textContent = text; msg.classList.toggle('ok', Boolean(ok)); };
 const ERRORS = {
   bad_credentials: ['Email o contraseña incorrectos. Probá de nuevo o pedí un enlace por email.','Wrong email or password. Try again or request an email link.'],
-  email_taken: ['Ya existe una cuenta con ese email. Entrá desde “Ya tengo cuenta”.','An account with that email already exists. Use “I have an account”.'],
+  email_taken: ['Ya existe una cuenta con ese email. Entrá desde “Ingresar”.','An account with that email already exists. Use “Sign in”.'],
   weak_password: ['La contraseña necesita al menos 8 caracteres.','Password needs at least 8 characters.'],
   invalid_email: ['Escribí un email válido.','Enter a valid email.'],
   too_many_attempts: ['Demasiados intentos. Esperá 15 minutos y volvé a probar.','Too many attempts. Wait 15 minutes and try again.'],
@@ -152,16 +131,21 @@ const ERRORS = {
 const showErr = code => say(tr(...(ERRORS[code] || ['No pudimos completar la acción. Probá de nuevo.','Something went wrong. Please try again.'])), false);
 const validMail = v => /^\S+@\S+\.\S+$/.test(v);
 
-/* ── modo: ingresar / crear cuenta ── */
 let mode = 'in';
 const COPY = {
   in: { t: ['Volvé a tu <span class="it">órbita.</span>','Back to your <span class="it">orbit.</span>'],
-        d: ['Entrá con tu email y contraseña para ver tus descargas, tus pedidos y tus actualizaciones.','Sign in with your email and password to see your downloads, orders and updates.'],
+        d: ['Entrá con tu email y contraseña.','Sign in with your email and password.'],
         b: ['Entrar','Sign in'] },
   up: { t: ['Creá tu <span class="it">cuenta.</span>','Create your <span class="it">account.</span>'],
-        d: ['Treinta segundos. Después, cada compra queda guardada acá para siempre.','Thirty seconds. From then on, every purchase stays saved here forever.'],
+        d: ['Treinta segundos y cada compra queda guardada para siempre.','Thirty seconds, and every purchase stays saved forever.'],
         b: ['Crear mi cuenta','Create my account'] },
 };
+function paint() {
+  const c = COPY[mode];
+  $('#accTitle').innerHTML = tr(...c.t);
+  $('#accLead').textContent = tr(...c.d);
+  $('#accSubmit').innerHTML = tr(...c.b) + ' <span class="ar">→</span>';
+}
 function setMode(m) {
   mode = m;
   $$('#accTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === m)));
@@ -173,19 +157,12 @@ function setMode(m) {
   $('#accPass').setAttribute('autocomplete', up ? 'new-password' : 'current-password');
   paint(); say('');
 }
-function paint() {
-  const c = COPY[mode];
-  $('#accTitle').innerHTML = tr(...c.t);
-  $('#accLead').textContent = tr(...c.d);
-  $('#accSubmit').innerHTML = tr(...c.b) + ' <span class="ar">→</span>';
-}
 $$('#accTabs button').forEach(b => b.onclick = () => setMode(b.dataset.t));
 addEventListener('orbit:lang', paint);
 setMode(new URLSearchParams(location.search).get('nuevo') === '1' ? 'up' : 'in');
 
 $('[data-eye]').onclick = () => { const i = $('#accPass'); i.type = i.type === 'password' ? 'text' : 'password'; i.focus(); };
 
-/* ── fuerza de contraseña ── */
 const LEVELS = [['Muy corta','Too short'],['Aceptable','OK'],['Buena','Good'],['Fuerte','Strong']];
 $('#accPass').addEventListener('input', e => {
   if (mode !== 'up') return;
@@ -198,7 +175,6 @@ $('#accPass').addEventListener('input', e => {
   $('#mnote').textContent = v ? tr(...LEVELS[s]) : tr('Mínimo 8 caracteres','At least 8 characters');
 });
 
-/* ── ingresar / registrarse ── */
 $('#accForm').addEventListener('submit', async e => {
   e.preventDefault();
   const email = $('#accMail').value.trim(), password = $('#accPass').value, btn = $('#accSubmit');
@@ -218,7 +194,6 @@ $('#accForm').addEventListener('submit', async e => {
   btn.innerHTML = old; btn.disabled = false;
 });
 
-/* ── enlace por email (entrar o recuperar) ── */
 async function mailLink(reset) {
   const email = $('#accMail').value.trim();
   if (!validMail(email)) { $('#accMail').focus(); return showErr('invalid_email'); }
@@ -236,7 +211,9 @@ async function mailLink(reset) {
 $('#magicBtn').onclick = () => mailLink(false);
 $('#forgot').onclick = () => mailLink(true);
 
-if (new URLSearchParams(location.search).get('error') === 'expired') say(tr('Ese enlace ya venció. Pedí uno nuevo.','That link expired. Request a new one.'));
+const q = new URLSearchParams(location.search);
+if (q.get('error') === 'expired') say(tr('Ese enlace ya venció. Pedí uno nuevo.','That link expired. Request a new one.'));
+if (q.get('salir') === '1') say(tr('Cerraste la sesión.','You signed out.'), true);
 })();
 </script>
 </body>

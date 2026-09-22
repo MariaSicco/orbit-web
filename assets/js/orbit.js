@@ -198,6 +198,15 @@ function mountDrawer() {
   paintCart();
 }
 
+/* ---------- sesión abierta ---------- */
+/* La cookie orbit_user la pone el servidor al entrar y se borra sola al cerrar el navegador. */
+const readCookie = name => {
+  const hit = document.cookie.split(';').map(c => c.trim()).find(c => c.startsWith(name + '='));
+  if (!hit) return null;
+  try { return decodeURIComponent(hit.slice(name.length + 1)); } catch { return hit.slice(name.length + 1); }
+};
+const session = () => { const v = readCookie('orbit_user'); return v ? { name: v === '1' ? '' : v } : null; };
+
 /* ---------- nav + footer compartidos ---------- */
 const page = document.body.dataset.page;
 const links = [['index.html',L('Inicio','Home'),'home'],['productos.html',L('Productos','Products'),'productos'],['nosotros.html',L('Nosotros','About'),'nosotros']];
@@ -206,8 +215,27 @@ const nav = document.createElement('header');
 nav.className = 'nav';
 nav.innerHTML = `<a class="logo" href="index.html" aria-label="Orbit">${wm({color:'#F2EFE8'})}</a>
   <ul>${links.map(([h,t,k]) => `<li><a href="${h}"${k===page?' aria-current="page"':''}>${t}</a></li>`).join('')}</ul>
-  <div class="right"><button class="cart-btn" type="button" aria-label="${tr('Carrito','Cart')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l1.4 10.2a1.6 1.6 0 0 1-1.6 1.8H7.2a1.6 1.6 0 0 1-1.6-1.8L7 8Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9.3 9.5V7.2a2.7 2.7 0 0 1 5.4 0v2.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><b>0</b></button><a class="acc-link" href="acceso.html" aria-label="${tr('Iniciar sesión','Sign in')}" title="${tr('Iniciar sesión','Sign in')}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.2" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.6 20.2c.7-4 3.7-6.2 7.4-6.2s6.7 2.2 7.4 6.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></a>${langSw}<button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
+  <div class="right"><button class="cart-btn" type="button" aria-label="${tr('Carrito','Cart')}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 8h10l1.4 10.2a1.6 1.6 0 0 1-1.6 1.8H7.2a1.6 1.6 0 0 1-1.6-1.8L7 8Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9.3 9.5V7.2a2.7 2.7 0 0 1 5.4 0v2.3" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg><b>0</b></button><a class="acc-link" href="acceso.html" aria-label="${tr('Iniciar sesión','Sign in')}" title="${tr('Iniciar sesión','Sign in')}" data-acc><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.2" r="3.6" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.6 20.2c.7-4 3.7-6.2 7.4-6.2s6.7 2.2 7.4 6.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg></a>${langSw}<button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
 document.body.prepend(nav);
+
+/* con sesión abierta el icono lleva al panel y muestra la inicial */
+function paintAccount() {
+  const a = $('[data-acc]', nav); if (!a) return;
+  const s = session();
+  a.classList.toggle('on', Boolean(s));
+  a.href = s ? 'biblioteca.html' : 'acceso.html';
+  const label = s ? (s.name ? tr('Mi cuenta', 'My account') + ' — ' + s.name : tr('Mi cuenta', 'My account')) : tr('Iniciar sesión', 'Sign in');
+  a.setAttribute('aria-label', label); a.title = label;
+  const ini = s && s.name ? s.name.trim()[0] : '';
+  a.querySelector('.ini')?.remove();
+  a.querySelector('svg').hidden = Boolean(ini);
+  if (ini) { const b = document.createElement('span'); b.className = 'ini'; b.textContent = ini; a.append(b); }
+}
+paintAccount();
+addEventListener('orbit:lang', paintAccount);
+addEventListener('orbit:session', paintAccount);
+addEventListener('pageshow', paintAccount);
+addEventListener('focus', paintAccount);
 const navSolid = () => nav.classList.toggle('solid', scrollY > 12 || 'navSolid' in document.body.dataset);
 addEventListener('scroll', navSolid, {passive:true}); navSolid();
 const mnav = document.createElement('nav');
@@ -229,7 +257,7 @@ foot.innerHTML = `<div class="wrap">
   <div class="cols">
     <div><span class="mono dim">${L('Productos','Products')}</span>${P.map(p => `<a href="${url(p)}">${p.code} ${p.name}</a>`).join('')}</div>
     <div><span class="mono dim">${L('Familias','Families')}</span>${Object.entries(FAM).map(([k,[n]]) => `<a href="productos.html#${k}">${n}</a>`).join('')}</div>
-    <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="index.html#a-medida">${L('Pedidos a medida','Custom requests')}</a><a href="acceso.html">${L('Mi biblioteca','My library')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
+    <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="index.html#a-medida">${L('Pedidos a medida','Custom requests')}</a><a href="${session() ? 'biblioteca.html' : 'acceso.html'}">${L('Mi cuenta','My account')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
     <div><span class="mono dim">${L('Contacto','Contact')}</span><a href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a><a href="#">Instagram</a><a href="#">Newsletter</a></div>
   </div>
   <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">Digital goods for creative people.</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>

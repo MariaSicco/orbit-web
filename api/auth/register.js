@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     hash: hashPassword(password),
     createdAt: new Date().toISOString(),
   });
-  setSessionCookie(res, email.toLowerCase());
+  setSessionCookie(res, email.toLowerCase(), name);
 
   /* alta en la lista de novedades solo si lo aceptó */
   if (news) await upsertContact({ email, name, lists: listNews(), attributes: { ORIGEN: 'cuenta', IDIOMA: 'es' } }).catch(() => {});

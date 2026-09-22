@@ -11,6 +11,6 @@ export default async function handler(req, res) {
   const user = await getUser(email);
   /* misma respuesta exista o no la cuenta: no revelamos qué emails están registrados */
   if (!user?.hash || !verifyPassword(password, user.hash)) return res.status(401).json({ error: 'bad_credentials' });
-  setSessionCookie(res, user.email);
+  setSessionCookie(res, user.email, user.name);
   res.status(200).json({ ok: true, email: user.email });
 }
