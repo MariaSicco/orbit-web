@@ -19,7 +19,7 @@ export default async function handler(req, res) {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: process.env.RESEND_FROM || 'Orbit <hola@orbit.studio>',
+      from: process.env.RESEND_FROM || 'Orbit <hola@orbitando.com.ar>',
       to: [email],
       subject: 'Tu acceso a Orbit',
       text: `Entrá a tu biblioteca Orbit:\n${link}\n\nEl enlace vence en 20 minutos.\nOrbit® — Ideas in motion`,

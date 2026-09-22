@@ -6,7 +6,7 @@
 <title>¡Gracias! — Orbit®</title>
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0D0D0E">
-<link rel="stylesheet" href="assets/css/orbit.css?v=19">
+<link rel="stylesheet" href="assets/css/orbit.css?v=20">
 <style>
 .ty{min-height:100svh;display:flex;flex-direction:column;justify-content:center;gap:clamp(24px,4vw,48px)}
 .ty h1{font-size:clamp(56px,11vw,190px)}
@@ -36,15 +36,15 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=19"></script>
-<script src="assets/js/orbit.js?v=19"></script>
+<script src="assets/js/products.js?v=20"></script>
+<script src="assets/js/orbit.js?v=20"></script>
 <script>
 (() => {
 const {$, tr} = ORBIT;
 const q = new URLSearchParams(location.search);
 $('#tyMsg').textContent = q.get('pending')
   ? tr('El pago quedó pendiente de acreditación. Te avisamos por email en cuanto se confirme.','Payment is pending. We’ll email you as soon as it clears.')
-  : tr('Pago confirmado. Si no ves el email, revisá spam o escribinos a hola@orbit.studio','Payment confirmed. If you don’t see the email, check spam or write to hola@orbit.studio');
+  : tr('Pago confirmado. Si no ves el email, revisá spam o escribinos a hola@orbitando.com.ar','Payment confirmed. If you don’t see the email, check spam or write to hola@orbitando.com.ar');
 })();
 </script>
 </body>

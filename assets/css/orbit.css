@@ -71,8 +71,9 @@ p{text-wrap:pretty}
 .nav .cta:hover{background:#F2EFE8;color:#0D0D0E}
 .nav .menu{display:none;font-family:var(--mono);font-size:11px;letter-spacing:.08em;border:1px solid currentColor;padding:8px 12px;border-radius:999px}
 .nav .right{display:flex;align-items:center;gap:16px}
-.nav .acc-link{text-decoration:none;font-size:13px;font-weight:500;border-bottom:1px solid transparent}
-.nav .acc-link:hover{border-bottom-color:currentColor}
+.nav .acc-link{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;border:1px solid currentColor;transition:background .2s,color .2s}
+.nav .acc-link svg{width:21px;height:21px}
+.nav .acc-link:hover,.nav .acc-link:focus-visible{background:#F2EFE8;color:#0D0D0E}
 .langsw{display:flex;align-items:center;gap:4px;font-family:var(--mono);font-size:11px;letter-spacing:.08em}
 .langsw span{opacity:.4}
 .langsw button{padding:4px 2px;opacity:.45;transition:opacity .2s}

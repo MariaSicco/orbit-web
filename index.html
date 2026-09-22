@@ -13,7 +13,7 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=19">
+<link rel="stylesheet" href="assets/css/orbit.css?v=20">
 <style>
 /* hero — el ORBIT gigante del manual */
 .hero{height:100svh;min-height:600px;display:flex;flex-direction:column;justify-content:space-between;padding-top:calc(84px + env(safe-area-inset-top,0px));padding-bottom:24px;isolation:isolate}
@@ -409,14 +409,14 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
       <details><summary><span data-l="es">¿Puedo usarlo para clientes?</span><span data-l="en">Can I use it for clients?</span></summary><p><span data-l="es">Sí. Todos los productos incluyen licencia de uso comercial para proyectos propios y de clientes. Lo que no se puede es revender o redistribuir los archivos originales.</span><span data-l="en">Yes. Every product includes a commercial license for your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></details>
       <details><summary><span data-l="es">¿Qué programas necesito?</span><span data-l="en">What software do I need?</span></summary><p><span data-l="es">Cada producto indica su formato en la ficha (Figma, Canva, Notion, PNG, SVG). La mayoría funciona con las versiones gratuitas.</span><span data-l="en">Each product lists its format (Figma, Canva, Notion, PNG, SVG). Most work with the free versions.</span></p></details>
       <details><summary><span data-l="es">¿Las actualizaciones tienen costo?</span><span data-l="en">Do updates cost extra?</span></summary><p><span data-l="es">No. Cuando un producto sube de versión (V.01 → V.02) te llega la actualización sin cargo.</span><span data-l="en">No. When a product gets a new version (V.01 → V.02) you get the update for free.</span></p></details>
-      <details><summary><span data-l="es">¿Y si no me sirve?</span><span data-l="en">What if it doesn’t work for me?</span></summary><p><span data-l="es">Escribinos a hola@orbit.studio dentro de los 14 días y lo resolvemos.</span><span data-l="en">Email hola@orbit.studio within 14 days and we’ll sort it out.</span></p></details>
+      <details><summary><span data-l="es">¿Y si no me sirve?</span><span data-l="en">What if it doesn’t work for me?</span></summary><p><span data-l="es">Escribinos a hola@orbitando.com.ar dentro de los 14 días y lo resolvemos.</span><span data-l="en">Email hola@orbitando.com.ar within 14 days and we’ll sort it out.</span></p></details>
     </div>
   </div>
 </section>
 
 </main>
-<script src="assets/js/products.js?v=19"></script>
-<script src="assets/js/orbit.js?v=19"></script>
+<script src="assets/js/products.js?v=20"></script>
+<script src="assets/js/orbit.js?v=20"></script>
 <script>
 (() => {
 const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow, reveal, toast, money, P, FAM, url, RM} = ORBIT;
@@ -705,7 +705,7 @@ $('#cform').addEventListener('submit', e => {
   err.textContent = '';
   const val = g => pick[g] === null ? '—' : tr(...OPTS[g][pick[g]]);
   const body = `${tr('Nombre','Name')}: ${name}\nEmail: ${mail}\n${tr('Qué necesito','What I need')}: ${val('type')}\n${tr('Presupuesto (USD)','Budget (USD)')}: ${val('budget')}\n${tr('Plazo','Timeline')}: ${val('time')}\n\n${idea}`;
-  location.href = `mailto:hola@orbit.studio?subject=${encodeURIComponent(tr('Pedido a medida — ','Custom request — ') + name)}&body=${encodeURIComponent(body)}`;
+  location.href = `mailto:hola@orbitando.com.ar?subject=${encodeURIComponent(tr('Pedido a medida — ','Custom request — ') + name)}&body=${encodeURIComponent(body)}`;
   toast(tr('Abrimos tu email con el pedido listo para enviar','Opening your email with the request ready to send'));
 });
 
