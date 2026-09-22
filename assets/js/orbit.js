@@ -122,7 +122,7 @@ document.body.append(foot);
 
 /* ---------- placeholders declarativos ---------- */
 $$('[data-sym]').forEach(el => { const o = JSON.parse(el.dataset.sym || '{}'); if (o.ring && C[o.ring]) o.ring = C[o.ring]; if (o.dot && C[o.dot]) o.dot = C[o.dot]; el.innerHTML = sym(o, 'sym', 'width:100%;height:auto'); });
-$$('[data-photo]').forEach(el => el.style.backgroundImage = `url(assets/img/${el.dataset.photo}.jpg)`);
+$$('[data-photo]').forEach(el => el.style.backgroundImage = `url(assets/img/${el.dataset.photo}.jpg?v=9)`);
 $$('[data-ticker]').forEach(el => { const h = el.dataset.ticker.split('|').map(t => `<span>${t}</span><i>·</i>`).join(''); el.innerHTML = `<div>${h}${h}</div>`; });
 
 /* ---------- reveal (solo lo que está debajo de la primera pantalla) ---------- */
