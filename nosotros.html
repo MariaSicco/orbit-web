@@ -10,15 +10,21 @@
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=12">
+<link rel="stylesheet" href="assets/css/orbit.css?v=13">
 <style>
-.ab-hero{padding-top:calc(120px + env(safe-area-inset-top,0px))}
-.ab-hero h1{font-size:clamp(56px,9vw,150px);font-family:var(--serif);font-weight:400;letter-spacing:-.035em;line-height:.95;margin:0}
-.ab-hero .g{display:grid;grid-template-columns:minmax(0,8fr) minmax(0,4fr);gap:24px;align-items:end}
-.ab-photos{display:grid;grid-template-columns:5fr 4fr 3fr;gap:clamp(10px,1.4vw,18px);margin-top:clamp(48px,6vw,90px)}
-.ab-photos .photo{aspect-ratio:3/4}
-.ab-photos .photo:nth-child(2){margin-top:12%}
-.ab-photos .photo:nth-child(3){margin-top:24%}
+.ab-hero{position:relative;height:100svh;min-height:620px;padding:calc(90px + env(safe-area-inset-top,0px)) var(--pad) 28px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;color:var(--b);background:var(--k)}
+.ab-hero .photo{position:absolute;inset:0;z-index:0;background-position:62% 30%}
+.ab-hero::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,rgba(13,13,14,.92) 0%,rgba(13,13,14,.7) 38%,rgba(13,13,14,.1) 70%),linear-gradient(0deg,rgba(13,13,14,.85) 0%,rgba(13,13,14,0) 35%)}
+.ab-hero>*{position:relative;z-index:2}
+.ab-hero .top{display:flex;justify-content:space-between;gap:20px}
+.ab-hero h1{font-family:var(--serif);font-weight:400;font-size:clamp(60px,min(10vw,17vh),190px);letter-spacing:-.04em;line-height:.9;margin:0;max-width:10ch}
+.ab-hero h1 .it{color:var(--or)}
+.ab-hero .bot{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,3vw,48px);align-items:end;border-top:1px solid rgba(242,239,232,.25);padding-top:18px}
+.ab-hero .bot p{margin:0;max-width:44ch;font-size:clamp(15px,1.3vw,19px);opacity:.9}
+.facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,2vw,28px)}
+.facts b{display:block;font-weight:800;font-size:clamp(34px,4vw,64px);letter-spacing:-.05em;line-height:.9}
+.facts b .it{font-size:.8em;color:var(--or)}
+@media (max-width:860px){.ab-hero .bot{grid-template-columns:1fr}.ab-hero::after{background:linear-gradient(0deg,rgba(13,13,14,.95) 0%,rgba(13,13,14,.55) 60%,rgba(13,13,14,.35) 100%)}}
 .vals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3)}
 .vals>div{background:var(--k);padding:22px;min-height:260px;display:flex;flex-direction:column;justify-content:space-between}
 .vals .s{width:64px}
@@ -28,10 +34,24 @@
 .pairs>div{border-top:1px solid rgba(13,13,14,.25);padding-top:14px}
 .pairs b{display:block;font-size:20px;letter-spacing:-.02em}
 .pairs em{font-family:var(--serif);font-size:22px;opacity:.6}
-.mani{font-size:clamp(32px,5vw,84px);font-weight:800;letter-spacing:-.045em;line-height:1;text-transform:uppercase;max-width:1300px;margin:0}
-.mani .w{opacity:.14;transition:opacity .35s}
-.mani .w.lit{opacity:1}
-.mani .it{text-transform:none}
+main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-content:center}
+/* manifiesto editorial */
+.mf-open{font-weight:800;font-size:clamp(46px,7.2vw,124px);letter-spacing:-.05em;line-height:.88;text-transform:uppercase;margin:0;max-width:14ch}
+.mf-open .it{text-transform:none;color:var(--blue);letter-spacing:-.03em}
+.chain{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:var(--k3);margin-top:clamp(48px,6vw,90px)}
+.chain>div{background:var(--k);padding:clamp(16px,2vw,26px);display:flex;flex-direction:column;gap:22px;min-height:250px;position:relative}
+.chain>div:not(:last-child)::after{content:"→";position:absolute;right:-14px;top:50%;transform:translateY(-50%);z-index:2;width:28px;height:28px;border-radius:50%;background:var(--b);color:var(--k);display:grid;place-items:center;font-size:14px}
+.chain .s{width:64px}
+.chain b{display:block;font-weight:800;font-size:clamp(26px,3vw,48px);letter-spacing:-.045em;text-transform:uppercase;line-height:.9}
+.chain p{margin:8px 0 0;font-size:14px;opacity:.65;max-width:24ch}
+.verbs{margin-top:clamp(48px,6vw,90px);display:grid;grid-template-columns:minmax(0,3fr) minmax(0,9fr);gap:24px;align-items:baseline;border-top:1px solid var(--k3);padding-top:20px}
+.verbs ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:0 .35em;font-weight:800;font-size:clamp(34px,5vw,86px);letter-spacing:-.05em;text-transform:uppercase;line-height:1}
+.verbs li:nth-child(odd){color:transparent;-webkit-text-stroke:1.5px var(--b)}
+.verbs li:last-child{color:var(--ac);-webkit-text-stroke:0}
+.mf-close{margin-top:clamp(48px,6vw,90px);display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
+.mf-close p{margin:0;font-family:var(--serif);font-size:clamp(34px,4.6vw,76px);line-height:1;letter-spacing:-.03em;max-width:18ch}
+.mf-close p .it{color:var(--or)}
+@media (max-width:860px){.chain{grid-template-columns:1fr 1fr}.chain>div:nth-child(2)::after{display:none}.verbs{grid-template-columns:1fr}}
 .contact{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,4vw,64px);align-items:end}
 .contact a.big{font-weight:800;font-size:clamp(34px,5vw,80px);letter-spacing:-.05em;text-decoration:none;line-height:1;border-bottom:3px solid var(--blue);word-break:break-all}
 .contact a.big:hover{color:var(--blue)}
@@ -40,16 +60,16 @@
 </head>
 <body data-page="nosotros" data-title-es="Nosotros — Orbit®" data-title-en="About — Orbit®">
 <main>
-<section class="sec light ab-hero">
-  <div class="wrap">
-    <div class="g">
-      <h1><span data-l="es">Más ideas.<br>Más <span class="it">movimiento.</span></span><span data-l="en">More ideas.<br>More <span class="it">movement.</span></span></h1>
-      <p class="lead" style="margin:0"><span data-l="es">Orbit es un universo de productos y herramientas digitales para personas que crean, diseñan, construyen, organizan, venden y experimentan — en cualquier disciplina.</span><span data-l="en">Orbit is a universe of digital products and tools for people who create, design, build, organize, sell and experiment — in any discipline.</span></p>
-    </div>
-    <div class="ab-photos">
-      <div class="photo" data-photo="hands" role="img" data-aria-es="Manos ordenando impresos" data-aria-en="Hands arranging prints"></div>
-      <div class="photo" data-photo="studio" role="img" data-aria-es="Estudio de noche" data-aria-en="Studio at night"></div>
-      <div class="photo" data-photo="arch" role="img" data-aria-es="Arquitectura de hormigón" data-aria-en="Concrete architecture"></div>
+<section class="ab-hero">
+  <div class="photo" data-photo="figure" role="img" data-aria-es="Diseñadora armando un sistema en la pared de su estudio" data-aria-en="Designer building a system on her studio wall"></div>
+  <div class="top"><span class="mono"><span data-l="es">Sobre Orbit</span><span data-l="en">About Orbit</span></span><span class="mono" style="text-align:right">OB—000<br>Est. 2026</span></div>
+  <h1><span data-l="es">Más ideas.<br>Más <span class="it">movimiento.</span></span><span data-l="en">More ideas.<br>More <span class="it">movement.</span></span></h1>
+  <div class="bot">
+    <p><span data-l="es">Orbit es un universo de herramientas digitales para personas que crean, diseñan, construyen, organizan y venden — en cualquier disciplina. Tomamos problemas que todos tenemos y los convertimos en sistemas listos para usar.</span><span data-l="en">Orbit is a universe of digital tools for people who create, design, build, organize and sell — in any discipline. We take problems we all share and turn them into ready-to-use systems.</span></p>
+    <div class="facts">
+      <div><span class="mono dim"><span data-l="es">Método</span><span data-l="en">Method</span></span><b><span data-l="es">Problema <span class="it">→</span></span><span data-l="en">Problem <span class="it">→</span></span></b><span class="mono"><span data-l="es">herramienta</span><span data-l="en">tool</span></span></div>
+      <div><span class="mono dim"><span data-l="es">Disciplinas</span><span data-l="en">Disciplines</span></span><b>08</b><span class="mono"><span data-l="es">del diseño a la IA</span><span data-l="en">from design to AI</span></span></div>
+      <div><span class="mono dim"><span data-l="es">Colección</span><span data-l="en">Collection</span></span><b>Vol.01</b><span class="mono"><span data-l="es">4 herramientas</span><span data-l="en">4 tools</span></span></div>
     </div>
   </div>
 </section>
@@ -78,8 +98,10 @@
 <section class="sec dark" id="manifiesto">
   <div class="wrap">
     <div class="shead mono"><div><b><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></b></div><div style="text-align:right">OB—M15</div></div>
-    <p class="mani" data-l="es">Las ideas no necesitan más ruido. Necesitan <span class="it" style="color:var(--blue)">movimiento.</span> Una buena herramienta puede convertir una idea en un sistema. Un sistema puede convertir intención en acción. Y la acción puede convertirse en <span class="it">progreso.</span> Para quienes construyen. Prueban. Crean. Iteran. Hacen. No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></p>
-    <p class="mani" data-l="en">Ideas don’t need more noise. They need <span class="it" style="color:var(--blue)">movement.</span> A good tool can turn an idea into a system. A system can turn intention into action. And action can become <span class="it">progress.</span> For those who build. Test. Create. Iterate. Make. We’re not here to add more things. We’re here to make the <span class="it">right ones.</span></p>
+    <h2 class="mf-open rv"><span data-l="es">Las ideas no necesitan más ruido. Necesitan <span class="it">movimiento.</span></span><span data-l="en">Ideas don’t need more noise. They need <span class="it">movement.</span></span></h2>
+    <div class="chain" id="chain"></div>
+    <div class="verbs rv"><span class="mono"><span data-l="es">Para quienes</span><span data-l="en">For those who</span></span><ul><li data-l="es">Construyen.</li><li data-l="es">Prueban.</li><li data-l="es">Crean.</li><li data-l="es">Iteran.</li><li data-l="es">Hacen.</li><li data-l="en">Build.</li><li data-l="en">Test.</li><li data-l="en">Create.</li><li data-l="en">Iterate.</li><li data-l="en">Make.</li></ul></div>
+    <div class="mf-close rv"><p><span data-l="es">No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></span><span data-l="en">We’re not here to add more things. We’re here to make the <span class="it">right ones.</span></span></p><span class="mono" style="text-align:right">Orbit®<br>Ideas in motion<br>Est. 2026</span></div>
   </div>
 </section>
 
@@ -90,22 +112,15 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=12"></script>
-<script src="assets/js/orbit.js?v=12"></script>
+<script src="assets/js/products.js?v=13"></script>
+<script src="assets/js/orbit.js?v=13"></script>
 <script>
 (() => {
 const {C, $, $$, L, sym, reveal, RM} = ORBIT;
 $('#vals').innerHTML = [[L('Herramientas','Tools'),L('para hacer.','for doing.'),{gap:0,dotOn:false}],[L('Sistemas','Systems'),L('para avanzar.','for moving forward.'),{gap:70}],[L('Recursos','Resources'),L('para volver real una idea.','to make ideas real.'),{gap:70,dot:C.blue}]].map(([b,e,o]) => `<div class="rv"><div class="s">${sym({ring:C.b, dot:C.b, ...o})}</div><div><b>${b}</b><em>${e}</em></div></div>`).join('');
 
-const manis = $$('.mani');
-manis.forEach(m => (function split(node) {
-  [...node.childNodes].forEach(n => {
-    if (n.nodeType === 3) { const fr = document.createDocumentFragment(); n.textContent.split(/(\s+)/).forEach(w => { if (!w) return; if (/^\s+$/.test(w)) fr.append(w); else { const s = document.createElement('span'); s.className = 'w'; s.textContent = w; fr.append(s); } }); n.replaceWith(fr); }
-    else if (n.nodeType === 1) n.classList.add('w');
-  });
-})(m));
-const onScroll = () => manis.forEach(m => { if (!m.offsetParent) return; const r = m.getBoundingClientRect(), ws = $$('.w', m); const p = Math.min(1, Math.max(0, (innerHeight*.85 - r.top) / (r.height + innerHeight*.3))); const n = Math.round(p * ws.length * 1.15); ws.forEach((w,i) => w.classList.toggle('lit', i < n)); });
-if (RM) $$('.mani .w').forEach(w => w.classList.add('lit')); else { addEventListener('scroll', onScroll, {passive:true}); addEventListener('orbit:lang', onScroll); onScroll(); }
+const CH = [[['Idea','Idea'],['Aparece. Todavía no tiene forma.','It appears. It has no shape yet.'],140,false],[['Sistema','System'],['Una buena herramienta la ordena.','A good tool gives it structure.'],90,false],[['Acción','Action'],['El sistema convierte intención en acción.','The system turns intention into action.'],40,false],[['Progreso','Progress'],['Y la acción se vuelve progreso.','And action becomes progress.'],0,true]];
+$('#chain').innerHTML = CH.map(([t,d,g,dot],i) => `<div class="rv"><span class="mono dim">0${i+1}</span><div class="s">${sym({gap:g, ring:C.b, dot:C.blue, dotOn:dot})}</div><div><b>${L(...t)}</b><p>${L(...d)}</p></div></div>`).join('');
 reveal();
 })();
 </script>
