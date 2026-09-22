@@ -1,4 +1,4 @@
-import { CATALOG, siteUrl } from '../_lib/catalog.js';
+import { siteUrl } from '../_lib/catalog.js';
 import { isEmail, readBody } from '../_lib/auth.js';
 import { normalizeItems, createOrder } from '../_lib/orders.js';
 
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
 
   const body = await readBody(req);
   const email = body?.email;
-  const items = normalizeItems(body?.items || (body?.productId ? [{ id: body.productId, qty: 1 }] : []));
+  const items = await normalizeItems(body?.items || (body?.productId ? [{ id: body.productId, qty: 1 }] : []));
   if (!items.length) return res.status(400).json({ error: 'empty_cart' });
   if (!isEmail(email)) return res.status(400).json({ error: 'invalid_email' });
 

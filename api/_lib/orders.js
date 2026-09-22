@@ -1,18 +1,19 @@
 /* Pedidos: un pedido puede tener varios productos. */
 import { kvGet, kvSet, addPurchase } from './kv.js';
-import { CATALOG } from './catalog.js';
+import { getCatalog } from './catalog.js';
 import { randomBytes } from 'node:crypto';
-import { sendEmail, emailReady, layout } from './email.js';
+import { sendEmail, emailReady, layout, it } from './email.js';
 import { upsertContact, listClientes } from './marketing.js';
 
 const key = id => `orbit:order:${id}`;
 const listKey = email => `orbit:orders:${email.toLowerCase()}`;
 
-export function normalizeItems(items) {
+export async function normalizeItems(items) {
   if (!Array.isArray(items)) return [];
+  const CAT = await getCatalog();
   const out = [];
   for (const it of items.slice(0, 20)) {
-    const p = CATALOG[it?.id];
+    const p = CAT[it?.id];
     const qty = Math.max(1, Math.min(10, parseInt(it?.qty, 10) || 1));
     if (p && !p.soon && !out.some(o => o.id === it.id)) out.push({ id: it.id, qty, name: p.name, code: p.code, usd: p.usd, ars: p.ars });
   }
@@ -58,16 +59,25 @@ export async function markPaid(id, { paymentId, amount, currency }) {
     attributes: { CLIENTE: 'si', ULTIMA_COMPRA: order.paidAt.slice(0, 10), PRODUCTOS: order.items.map(i => i.code).join(', ') },
   }).catch(() => {});
   if (emailReady()) {
+    const money = order.via === 'paypal'
+      ? `USD ${order.usd}`
+      : `ARS ${order.ars.toLocaleString('es-AR')}`;
+    const cuando = new Date(order.paidAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const medio = order.via === 'paypal' ? 'PayPal' : 'Mercado Pago';
     sendEmail({
       to: order.email,
-      subject: `Tu compra en Orbit — ${order.id}`,
-      text: `Gracias por tu compra. Entrá a tu biblioteca: ${site}/biblioteca`,
+      subject: `Ya es tuyo — pedido ${order.id}`,
+      text: `Gracias por tu compra.\n\n${order.items.map(i => `${i.code} — ${i.name}${i.qty > 1 ? ` x${i.qty}` : ''}`).join('\n')}\n\nPedido ${order.id} · ${cuando} · ${medio} · ${money}\n\nDescargalo desde tu cuenta: ${site}/biblioteca`,
       html: layout({
-        eyebrow: `Pedido ${order.id}`,
-        title: '¡Gracias!<br>Ya es tuyo.',
-        body: `<p>Esto es lo que compraste:</p><ul style="padding-left:18px">${order.items.map(i => `<li>${i.code} — ${i.name}${i.qty > 1 ? ` × ${i.qty}` : ''}</li>`).join('')}</ul><p>Entrá a tu biblioteca para descargarlo. Queda guardado ahí para siempre, con las actualizaciones incluidas.</p>`,
-        cta: 'Ir a mi biblioteca →', ctaUrl: `${site}/biblioteca`,
-        foot: 'Licencia de uso comercial · Soporte en hola@orbitando.com.ar',
+        accent: 'blue',
+        preheader: `Pedido ${order.id} confirmado. Ya podés descargarlo desde tu cuenta.`,
+        eyebrow: `Pedido ${order.id} · Confirmado`,
+        title: `Ya es ${it('tuyo.', '#3047FF')}`,
+        body: '<p style="margin:0">Gracias por comprar en Orbit. Esto es lo que se sumó a tu cuenta:</p>',
+        items: order.items,
+        meta: [['Fecha', cuando], ['Medio de pago', medio], ['Total', money]],
+        cta: 'Descargar ahora →', ctaUrl: `${site}/biblioteca`,
+        foot: 'Licencia de uso comercial incluida. Las versiones nuevas te llegan sin cargo y aparecen en tu cuenta. ¿Algo no anda? Respondé este email.',
       }),
     }).catch(() => {});
   }

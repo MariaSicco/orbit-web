@@ -130,7 +130,7 @@
       <div class="id">
         <span class="mail" id="who"></span>
         <span class="mono dim" id="since"></span>
-        <button class="chip" id="out"><span data-l="es">Cerrar sesión</span><span data-l="en">Sign out</span></button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end"><a class="chip" id="adminLink" href="admin.html" hidden>Panel</a><button class="chip" id="out"><span data-l="es">Cerrar sesión</span><span data-l="en">Sign out</span></button></div>
       </div>
     </header>
 
@@ -222,6 +222,7 @@
 </section>
 </main>
 <script src="assets/js/products.js?v=26"></script>
+<script src="/api/catalog"></script>
 <script src="assets/js/orbit.js?v=26"></script>
 <script>
 (async () => {
@@ -244,6 +245,7 @@ const paintHi = () => {
 };
 paintHi(); addEventListener('orbit:lang', paintHi);
 $('#who').textContent = me.email;
+if (me.admin) $('#adminLink').hidden = false;
 const fmt = d => new Date(d).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const fmtLong = d => new Date(d).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'es-AR', { month: 'long', year: 'numeric' });
 if (me.memberSince) $('#since').textContent = tr('Miembro desde ', 'Member since ') + fmtLong(me.memberSince);

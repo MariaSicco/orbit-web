@@ -1,9 +1,11 @@
 /* Diagnóstico: qué falta configurar. No expone ninguna clave. */
 import { hasKV } from './_lib/kv.js';
 import { hasSecret } from './_lib/auth.js';
-import { CATALOG, fileUrl } from './_lib/catalog.js';
+import { getCatalog } from './_lib/catalog.js';
 import { FROM } from './_lib/email.js';
 export default async function handler(req, res) {
+  let CAT = {};
+  try { CAT = await getCatalog(); } catch {}
   res.status(200).json({
     session: hasSecret(), database: hasKV,
     mercadopago: Boolean(process.env.MP_ACCESS_TOKEN),
@@ -14,6 +16,7 @@ export default async function handler(req, res) {
     emailVia: process.env.BREVO_API_KEY ? 'brevo' : (process.env.RESEND_API_KEY ? 'resend' : null),
     emailFrom: FROM(),
     listas: { clientes: Boolean(process.env.BREVO_LIST_CLIENTES), newsletter: Boolean(process.env.BREVO_LIST_NEWSLETTER) },
-    files: Object.fromEntries(Object.keys(CATALOG).map(id => [id, Boolean(fileUrl(id))])),
+    admin: Boolean(process.env.ADMIN_EMAILS),
+    files: Object.fromEntries(Object.entries(CAT).map(([id, p]) => [id, p.file ? p.fileFrom : false])),
   });
 }

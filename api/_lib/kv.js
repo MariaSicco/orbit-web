@@ -29,6 +29,32 @@ export async function kvSet(key, val, ttlSeconds) {
 }
 export async function kvDel(key) { if (!hasKV) { mem.delete(key); return; } await cmd('DEL', key); }
 
+/* Recorrido para los informes del panel: SCAN por patrón + lectura en tandas. */
+export async function kvKeys(pattern, max = 5000) {
+  if (!hasKV) {
+    const re = new RegExp('^' + pattern.split('*').map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$');
+    return [...mem.keys()].filter(k => re.test(k));
+  }
+  const out = [];
+  let cursor = '0', guard = 0;
+  do {
+    const res = await cmd('SCAN', cursor, 'MATCH', pattern, 'COUNT', 500);
+    cursor = String(res?.[0] ?? '0');
+    for (const k of res?.[1] || []) out.push(k);
+  } while (cursor !== '0' && out.length < max && ++guard < 60);
+  return out;
+}
+export async function kvMGet(keys) {
+  if (!keys.length) return [];
+  if (!hasKV) return keys.map(k => { const v = mem.get(k); return v && (!v.exp || v.exp > Date.now()) ? v.val : null; });
+  const out = [];
+  for (let i = 0; i < keys.length; i += 200) {
+    const vals = await cmd('MGET', ...keys.slice(i, i + 200));
+    for (const v of vals || []) { try { out.push(v ? JSON.parse(v) : null); } catch { out.push(null); } }
+  }
+  return out;
+}
+
 /* compras por email */
 const purchasesKey = email => `orbit:purchases:${email.toLowerCase()}`;
 export async function getPurchases(email) { return (await kvGet(purchasesKey(email))) || []; }

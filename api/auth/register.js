@@ -1,7 +1,7 @@
 /* Crear cuenta con email y contraseña. */
 import { isEmail, readBody, hashPassword, passwordProblem, setSessionCookie, hasSecret } from '../_lib/auth.js';
 import { getUser, saveUser } from '../_lib/users.js';
-import { sendEmail, emailReady, layout } from '../_lib/email.js';
+import { sendEmail, emailReady, layout, it } from '../_lib/email.js';
 import { upsertContact, listNews } from '../_lib/marketing.js';
 import { siteUrl } from '../_lib/catalog.js';
 
@@ -18,6 +18,7 @@ export default async function handler(req, res) {
     email: email.toLowerCase(),
     name: typeof name === 'string' ? name.slice(0, 80) : '',
     hash: hashPassword(password),
+    news: news === true,
     createdAt: new Date().toISOString(),
   });
   setSessionCookie(res, email.toLowerCase(), name);
@@ -27,15 +28,22 @@ export default async function handler(req, res) {
 
   if (emailReady()) {
     const site = siteUrl(req);
+    const hola = typeof name === 'string' && name.trim() ? `Hola, ${name.trim().split(/\s+/)[0]}. ` : '';
     sendEmail({
       to: email,
-      subject: 'Bienvenida a Orbit',
-      text: `Tu cuenta ya está creada. Entrá a tu biblioteca: ${site}/biblioteca`,
+      subject: 'Entraste en órbita',
+      text: `${hola}Tu cuenta de Orbit ya está creada.\n\nTodo lo que compres queda guardado en tu cuenta, para siempre y con las actualizaciones incluidas.\n\nTu cuenta: ${site}/biblioteca`,
       html: layout({
+        accent: 'acid',
+        preheader: 'Tu cuenta ya está creada. Todo lo que compres queda guardado ahí.',
         eyebrow: 'OB—000 · Bienvenida',
-        title: 'Entraste<br>en órbita.',
-        body: '<p>Tu cuenta ya está creada. Todo lo que compres queda guardado en tu biblioteca, para siempre y con actualizaciones sin cargo.</p><p style="opacity:.7">Problema → herramienta. Ese es el método.</p>',
-        cta: 'Ver mi biblioteca →', ctaUrl: `${site}/biblioteca`,
+        title: `Entraste<br>en ${it('órbita.', '#D9FF45')}`,
+        body: `<p style="margin:0 0 14px">${hola}Tu cuenta ya está creada.</p>
+               <p style="margin:0 0 14px">Todo lo que compres queda guardado ahí: los archivos, las versiones nuevas y el historial de pedidos. Sin suscripción y sin vencimiento.</p>
+               <p style="margin:0">Cuando quieras entrar, el ícono de cuenta está arriba a la derecha en todo el sitio.</p>`,
+        cta: 'Ver mi cuenta →', ctaUrl: `${site}/biblioteca`,
+        meta: [['Tu email', email.toLowerCase()]],
+        foot: 'Cada herramienta de Orbit nace de un problema real. Si te falta una, escribinos y la armamos.',
       }),
     }).catch(() => {});
   }

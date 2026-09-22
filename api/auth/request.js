@@ -3,7 +3,7 @@
 import { kvSet } from '../_lib/kv.js';
 import { isEmail, newToken, hasSecret, readBody } from '../_lib/auth.js';
 import { siteUrl } from '../_lib/catalog.js';
-import { sendEmail, emailReady, layout } from '../_lib/email.js';
+import { sendEmail, emailReady, layout, it } from '../_lib/email.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
@@ -18,20 +18,24 @@ export default async function handler(req, res) {
   if (!emailReady()) return res.status(200).json({ ok: true, emailSent: false, link });
   const copy = reset === true
     ? {
-        subject: 'Cambiar tu contraseña de Orbit',
-        text: `Entrá con este enlace y elegí una contraseña nueva:\n${link}\n\nVence en 20 minutos.`,
+        subject: 'Elegí una contraseña nueva',
+        text: `Entrá con este enlace y elegí una contraseña nueva:\n${link}\n\nVence en 20 minutos y sirve una sola vez.`,
+        accent: 'fuego',
+        preheader: 'Un enlace de un solo uso para definir tu contraseña nueva.',
         eyebrow: 'OB—000 · Contraseña',
-        title: 'Elegí una contraseña nueva',
-        body: '<p>Entrá con este enlace y definí tu contraseña nueva. Vence en 20 minutos y sirve una sola vez.</p>',
+        title: `Elegí una<br>contraseña ${it('nueva.', '#FF4F2E')}`,
+        body: '<p style="margin:0 0 14px">Tocá el botón y definí tu contraseña nueva.</p><p style="margin:0">Este enlace vence en 20 minutos y sirve una sola vez.</p>',
         cta: 'Cambiar mi contraseña →',
         foot: 'Si no pediste este cambio, ignorá este email: tu contraseña actual sigue funcionando.',
       }
     : {
         subject: 'Tu acceso a Orbit',
-        text: `Entrá a tu cuenta Orbit:\n${link}\n\nEl enlace vence en 20 minutos.`,
+        text: `Entrá a tu cuenta Orbit con este enlace:\n${link}\n\nVence en 20 minutos y sirve una sola vez.`,
+        accent: 'bone',
+        preheader: 'Tu enlace de acceso, válido por 20 minutos.',
         eyebrow: 'OB—000 · Acceso',
-        title: 'Tu acceso a Orbit',
-        body: '<p>Entrá a tu cuenta con este enlace. Vence en 20 minutos y sirve una sola vez.</p>',
+        title: `Tu puerta<br>de ${it('entrada.', '#F2EFE8')}`,
+        body: '<p style="margin:0 0 14px">Tocá el botón y entrás directo a tu cuenta, sin escribir contraseña.</p><p style="margin:0">Este enlace vence en 20 minutos y sirve una sola vez.</p>',
         cta: 'Entrar a mi cuenta →',
         foot: 'Si no pediste este acceso, ignorá este email.',
       };
@@ -40,7 +44,10 @@ export default async function handler(req, res) {
       to: email,
       subject: copy.subject,
       text: copy.text,
-      html: layout({ eyebrow: copy.eyebrow, title: copy.title, body: copy.body, cta: copy.cta, ctaUrl: link, foot: copy.foot }),
+      html: layout({
+        accent: copy.accent, preheader: copy.preheader, eyebrow: copy.eyebrow,
+        title: copy.title, body: copy.body, cta: copy.cta, ctaUrl: link, foot: copy.foot, sign: false,
+      }),
     });
   } catch (e) {
     return res.status(502).json({ error: 'email_error', detail: String(e).slice(0, 200) });
