@@ -92,7 +92,7 @@ const nav = document.createElement('header');
 nav.className = 'nav';
 nav.innerHTML = `<a class="logo" href="index.html" aria-label="Orbit">${wm({color:'#F2EFE8'})}</a>
   <ul>${links.map(([h,t,k]) => `<li><a href="${h}"${k===page?' aria-current="page"':''}>${t}</a></li>`).join('')}</ul>
-  <div class="right">${langSw}<a class="cta" href="productos.html">${L('Explorar productos','Explore products')} →</a><button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
+  <div class="right">${langSw}<button class="menu" aria-expanded="false" aria-controls="mnav">${L('Menú','Menu')}</button></div>`;
 document.body.prepend(nav);
 const mnav = document.createElement('nav');
 mnav.className = 'mnav'; mnav.id = 'mnav'; mnav.hidden = true; mnav.setAttribute('aria-label','Menu');
