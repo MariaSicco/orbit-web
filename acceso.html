@@ -4,9 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Acceso — Orbit®</title>
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <meta name="description" content="Accedé a tu biblioteca Orbit: todos los productos que compraste, siempre disponibles.">
 <meta name="theme-color" content="#0D0D0E">
-<link rel="stylesheet" href="assets/css/orbit.css?v=21">
+<link rel="stylesheet" href="assets/css/orbit.css?v=22">
 <style>
 .acc{min-height:100svh;display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);align-items:stretch}
 .acc .l{padding:calc(100px + env(safe-area-inset-top,0px)) var(--pad) 32px;display:flex;flex-direction:column;justify-content:space-between;gap:32px;background:var(--k)}
@@ -18,6 +22,14 @@
 .acc input:focus{outline:2px solid var(--blue);outline-offset:0;border-color:transparent}
 .acc .btn{margin-top:12px;width:100%;justify-content:center}
 .acc .note{margin:16px 0 0;font-size:13px;opacity:.6;max-width:44ch}
+.tabs2{display:flex;gap:8px;margin-bottom:22px}
+.pwrap{position:relative}
+.pwrap .peye{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:grid;place-items:center;opacity:.55}
+.pwrap .peye:hover{opacity:1}
+.pwrap .peye svg{width:20px;height:20px}
+.acc .hint{margin:8px 0 0;opacity:.5}
+.linkish{margin-top:14px;text-decoration:underline;text-underline-offset:4px;opacity:.7;display:block;text-align:left}
+.linkish:hover{opacity:1;color:var(--ac)}
 .acc .err{color:var(--or);font-size:14px;min-height:1.3em;margin-top:10px}
 .acc .r{position:relative;background:var(--k2);overflow:hidden;display:grid;place-items:center;padding:var(--pad)}
 .acc .r .ring{position:absolute;width:120%;right:-38%;top:-24%;color:var(--k3)}
@@ -35,12 +47,21 @@
     <div>
       <h1 class="display"><span data-l="es">Tu <span class="it">biblioteca.</span></span><span data-l="en">Your <span class="it">library.</span></span></h1>
       <p class="lead" style="opacity:.75;margin:22px 0 30px"><span data-l="es">Todo lo que comprás queda guardado acá: descargas, versiones nuevas y guías. Sin contraseñas: te enviamos un enlace de acceso a tu email.</span><span data-l="en">Everything you buy stays here: downloads, new versions and guides. No passwords: we send an access link to your email.</span></p>
+      <div class="tabs2" id="accTabs">
+        <button class="chip" data-t="in" aria-pressed="true"><span data-l="es">Ingresar</span><span data-l="en">Sign in</span></button>
+        <button class="chip" data-t="up" aria-pressed="false"><span data-l="es">Crear cuenta</span><span data-l="en">Create account</span></button>
+      </div>
       <form class="form" id="accForm" novalidate>
         <label class="mono" for="accMail">Email</label>
-        <input id="accMail" type="email" autocomplete="email" placeholder="hola@tuestudio.com">
-        <button class="btn btn-acid" type="submit"><span data-l="es">Enviarme el enlace</span><span data-l="en">Send me the link</span> <span class="ar">→</span></button>
+        <input id="accMail" name="email" type="email" autocomplete="email" placeholder="hola@tuestudio.com">
+        <div id="nameWrap" hidden><label class="mono" for="accName" style="margin-top:14px"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="accName" name="name" autocomplete="name"></div>
+        <label class="mono" for="accPass" style="margin-top:14px"><span data-l="es">Contraseña</span><span data-l="en">Password</span></label>
+        <div class="pwrap"><input id="accPass" name="password" type="password" autocomplete="current-password" placeholder="••••••••"><button type="button" class="peye" data-eye aria-label="Ver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
+        <p class="hint mono" id="pwHint" hidden><span data-l="es">Mínimo 8 caracteres</span><span data-l="en">At least 8 characters</span></p>
+        <button class="btn btn-acid" type="submit" id="accSubmit"><span data-l="es">Entrar</span><span data-l="en">Sign in</span> <span class="ar">→</span></button>
         <p class="err" id="accErr" role="alert"></p>
-        <p class="note"><span data-l="es">Prototipo: el acceso real se activa cuando conectemos la plataforma de pago. Por ahora podés entrar a la biblioteca de demostración.</span><span data-l="en">Prototype: real access turns on once the payment platform is connected. For now you can enter the demo library.</span></p>
+        <button type="button" class="linkish mono" id="magicBtn"><span data-l="es">Entrar con un enlace por email (sin contraseña)</span><span data-l="en">Sign in with an email link (no password)</span></button>
+        <p class="note"><span data-l="es">Tus compras quedan asociadas a tu email: si comprás sin cuenta y después te registrás con ese mismo email, vas a ver todo en tu biblioteca.</span><span data-l="en">Purchases are tied to your email: if you buy without an account and later register with that same email, everything shows up in your library.</span></p>
       </form>
     </div>
     <div class="mono dim"><span data-l="es">¿Compraste y no encontrás tu acceso? Escribinos a</span><span data-l="en">Bought something and can’t find your access? Email us at</span> hola@orbitando.com.ar</div>
@@ -52,29 +73,65 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=21"></script>
-<script src="assets/js/orbit.js?v=21"></script>
+<script src="assets/js/products.js?v=22"></script>
+<script src="assets/js/orbit.js?v=22"></script>
 <script>
 (() => {
 const {$, $$, L, tr, cover, toast, P} = ORBIT;
 $('#accShelf').innerHTML = P.slice(0,3).map(p => cover(p)).join('');
+let mode = 'in';
+const setMode = m => {
+  mode = m;
+  $$('#accTabs .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === m)));
+  $('#nameWrap').hidden = m === 'in';
+  $('#pwHint').hidden = m === 'in';
+  $('#accPass').setAttribute('autocomplete', m === 'in' ? 'current-password' : 'new-password');
+  $('#accSubmit').innerHTML = (m === 'in' ? L('Entrar','Sign in') : L('Crear mi cuenta','Create my account')) + ' <span class="ar">→</span>';
+  $('#accErr').textContent = '';
+};
+$$('#accTabs .chip').forEach(b => b.onclick = () => setMode(b.dataset.t));
+setMode('in');
+$('[data-eye]').onclick = () => { const i2 = $('#accPass'); i2.type = i2.type === 'password' ? 'text' : 'password'; };
+
+const ERRORS = {
+  bad_credentials: ['Email o contraseña incorrectos.','Wrong email or password.'],
+  email_taken: ['Ya existe una cuenta con ese email. Probá ingresar.','An account with that email already exists. Try signing in.'],
+  weak_password: ['La contraseña necesita al menos 8 caracteres.','Password needs at least 8 characters.'],
+  invalid_email: ['Escribí un email válido.','Enter a valid email.'],
+  too_many_attempts: ['Demasiados intentos. Probá de nuevo en 15 minutos.','Too many attempts. Try again in 15 minutes.'],
+  not_configured: ['El acceso todavía no está activo.','Access is not live yet.'],
+};
+const showErr = code => { $('#accErr').style.color = 'var(--or)'; $('#accErr').textContent = tr(...(ERRORS[code] || ['No pudimos completar la acción. Probá de nuevo.','Something went wrong. Please try again.'])); };
+
 $('#accForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const mail = $('#accMail').value.trim(), err = $('#accErr'), btn = $('#accForm button');
-  if (!/^\S+@\S+\.\S+$/.test(mail)) { err.textContent = tr('Escribí un email válido.','Please enter a valid email.'); return; }
-  err.textContent = ''; const old = btn.innerHTML; btn.innerHTML = tr('Enviando…','Sending…');
+  const email = $('#accMail').value.trim(), password = $('#accPass').value, btn = $('#accSubmit');
+  if (!/^\S+@\S+\.\S+$/.test(email)) return showErr('invalid_email');
+  if (mode === 'up' && password.length < 8) return showErr('weak_password');
+  $('#accErr').textContent = ''; const old = btn.innerHTML; btn.innerHTML = tr('Un momento…','One moment…');
   try {
-    const r = await fetch('/api/auth/request', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ email: mail }) });
+    const r = await fetch(`/api/auth/${mode === 'in' ? 'login' : 'register'}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name: $('#accName').value.trim() }),
+    });
     const data = await r.json();
-    if (data.ok && data.emailSent) { err.style.color = 'var(--ac)'; err.textContent = tr('Listo: revisá tu email. El enlace vence en 20 minutos.','Done: check your email. The link expires in 20 minutes.'); btn.innerHTML = old; return; }
-    if (data.ok && data.link) { location.href = data.link; return; }          // email todavía no configurado
-    throw new Error(data.error || 'error');
-  } catch (e) {
-    try { localStorage.setItem('orbit-demo-user', mail); } catch (er) {}
-    toast(tr('Modo demostración: el acceso real se activa al cargar las claves','Demo mode: real access turns on once the keys are set'));
-    setTimeout(() => location.href = 'biblioteca.html', 800);
-  }
+    if (data.ok) { location.href = 'biblioteca.html'; return; }
+    showErr(data.error);
+  } catch (e) { showErr(); }
+  btn.innerHTML = old;
 });
+
+$('#magicBtn').onclick = async () => {
+  const email = $('#accMail').value.trim(), err = $('#accErr');
+  if (!/^\S+@\S+\.\S+$/.test(email)) return showErr('invalid_email');
+  try {
+    const r = await fetch('/api/auth/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+    const data = await r.json();
+    if (data.ok && data.emailSent) { err.style.color = 'var(--ac)'; err.textContent = tr('Listo: revisá tu email. El enlace vence en 20 minutos.','Done: check your email. The link expires in 20 minutes.'); return; }
+    if (data.ok && data.link) { location.href = data.link; return; }
+    showErr(data.error);
+  } catch (e) { showErr(); }
+};
 })();
 </script>
 </body>

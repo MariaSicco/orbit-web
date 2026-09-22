@@ -10,6 +10,7 @@ export default async function handler(req, res) {
   const data = await kvGet(`orbit:magic:${token}`);
   if (!data?.email) return res.redirect(302, `${site}/acceso?error=expired`);
   await kvDel(`orbit:magic:${token}`);
+  const reset = req.query?.reset === '1';
   setSessionCookie(res, data.email);
-  res.redirect(302, `${site}/biblioteca`);
+  res.redirect(302, reset ? `${site}/cuenta?reset=1` : `${site}/biblioteca`);
 }

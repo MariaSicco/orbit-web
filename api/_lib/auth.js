@@ -1,4 +1,4 @@
-import { createHmac, timingSafeEqual, randomBytes } from 'node:crypto';
+import { createHmac, timingSafeEqual, randomBytes, scryptSync } from 'node:crypto';
 
 const SECRET = process.env.SESSION_SECRET || '';
 const COOKIE = 'orbit_session';
@@ -40,3 +40,25 @@ export async function readBody(req) {
   const chunks = []; for await (const c of req) chunks.push(c);
   try { return JSON.parse(Buffer.concat(chunks).toString() || '{}'); } catch { return {}; }
 }
+
+/* ---------- contraseñas ---------- */
+/* scrypt con sal por usuario: la contraseña nunca se guarda ni se puede recuperar. */
+export function hashPassword(password) {
+  const salt = randomBytes(16).toString('base64url');
+  const hash = scryptSync(password.normalize('NFKC'), salt, 64).toString('base64url');
+  return `scrypt$${salt}$${hash}`;
+}
+export function verifyPassword(password, stored) {
+  try {
+    const [algo, salt, hash] = String(stored).split('$');
+    if (algo !== 'scrypt' || !salt || !hash) return false;
+    const test = scryptSync(String(password).normalize('NFKC'), salt, 64);
+    const a = Buffer.from(hash, 'base64url');
+    return a.length === test.length && timingSafeEqual(a, test);
+  } catch { return false; }
+}
+export const passwordProblem = pw =>
+  typeof pw !== 'string' ? 'invalid'
+  : pw.length < 8 ? 'short'
+  : pw.length > 200 ? 'long'
+  : null;
