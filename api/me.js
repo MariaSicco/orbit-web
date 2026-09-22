@@ -14,6 +14,8 @@ export default async function handler(req, res) {
     email: s.email,
     name: user?.name || '',
     hasPassword: Boolean(user?.hash),
+    news: Boolean(user?.news),
+    memberSince: user?.createdAt || null,
     purchases: purchases.map(p => ({ ...p, name: CATALOG[p.productId]?.name, code: CATALOG[p.productId]?.code, downloadable: Boolean(fileUrl(p.productId)) })),
     orders,
   });

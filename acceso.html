@@ -4,138 +4,239 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Acceso — Orbit®</title>
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="description" content="Accedé a tu biblioteca Orbit: todos los productos que compraste, siempre disponibles.">
+<meta name="description" content="Entrá a tu biblioteca Orbit: todo lo que comprás queda guardado, con descargas y actualizaciones para siempre.">
 <meta name="theme-color" content="#0D0D0E">
-<link rel="stylesheet" href="assets/css/orbit.css?v=23">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/orbit.css?v=24">
 <style>
-.acc{min-height:100svh;display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);align-items:stretch}
-.acc .l{padding:calc(100px + env(safe-area-inset-top,0px)) var(--pad) 32px;display:flex;flex-direction:column;justify-content:space-between;gap:32px;background:var(--k)}
-.acc h1{font-size:clamp(46px,min(6.4vw,12vh),110px)}
+.acc{min-height:100svh;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.acc .l{padding:calc(104px + env(safe-area-inset-top,0px)) var(--pad) 36px;display:flex;flex-direction:column;justify-content:space-between;gap:clamp(24px,4vh,48px);background:var(--k)}
+.acc .mid{width:100%;max-width:520px}
+.acc h1{font-size:clamp(40px,min(5.6vw,10.5vh),92px)}
 .acc h1 .it{color:var(--or)}
-.acc .form{max-width:440px;width:100%}
-.acc label{display:block;margin-bottom:8px}
-.acc input{width:100%;font:inherit;font-size:16px;padding:14px 16px;background:transparent;border:1px solid var(--k3);color:var(--b)}
-.acc input:focus{outline:2px solid var(--blue);outline-offset:0;border-color:transparent}
-.acc .btn{margin-top:12px;width:100%;justify-content:center}
-.acc .note{margin:16px 0 0;font-size:13px;opacity:.6;max-width:44ch}
-.tabs2{display:flex;gap:8px;margin-bottom:22px}
+.acc .lead{margin:18px 0 0;opacity:.7;font-size:16px;max-width:42ch}
+
+.tabs2{display:flex;margin:clamp(20px,3vh,32px) 0 22px;border:1px solid var(--k3);padding:4px;gap:4px}
+.tabs2 button{flex:1;padding:11px 8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;transition:background .22s,color .22s;position:relative}
+.tabs2 button[aria-pressed="true"]{background:var(--b);color:var(--k)}
+
+.f{display:grid;gap:14px}
+.f .row{display:grid;gap:7px}
+.f label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.f label .aux{text-transform:none;letter-spacing:0;font-family:var(--sans);font-size:12px;opacity:.6;text-decoration:underline;text-underline-offset:3px}
+.f label .aux:hover{opacity:1;color:var(--ac)}
+.f input[type=email],.f input[type=password],.f input[type=text]{width:100%;font:inherit;font-size:16px;padding:15px 16px;background:var(--k2);border:1px solid var(--k3);color:var(--b);transition:border-color .2s,background .2s}
+.f input::placeholder{color:var(--g)}
+.f input:focus{outline:none;border-color:var(--blue);background:var(--k)}
+.f input:disabled{opacity:.5}
 .pwrap{position:relative}
-.pwrap .peye{position:absolute;right:10px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:grid;place-items:center;opacity:.55}
+.pwrap input{padding-right:52px}
+.pwrap .peye{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:36px;height:36px;display:grid;place-items:center;opacity:.5;transition:opacity .2s}
 .pwrap .peye:hover{opacity:1}
 .pwrap .peye svg{width:20px;height:20px}
-.acc .hint{margin:8px 0 0;opacity:.5}
-.check{display:flex;gap:10px;align-items:flex-start;margin-top:16px;font-size:13px;opacity:.85;cursor:pointer}
-.check input{width:18px;height:18px;flex:none;accent-color:var(--blue);margin-top:1px}
-.linkish{margin-top:14px;text-decoration:underline;text-underline-offset:4px;opacity:.7;display:block;text-align:left}
-.linkish:hover{opacity:1;color:var(--ac)}
-.acc .err{color:var(--or);font-size:14px;min-height:1.3em;margin-top:10px}
-.acc .r{position:relative;background:var(--k2);overflow:hidden;display:grid;place-items:center;padding:var(--pad)}
-.acc .r .ring{position:absolute;width:120%;right:-38%;top:-24%;color:var(--k3)}
-.acc .shelf3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:min(100%,520px);position:relative;z-index:2;transform:rotateY(-12deg) rotateX(6deg);perspective:900px}
-.acc .shelf3 .cover{box-shadow:0 26px 50px -26px rgba(0,0,0,.9)}
-.acc .cap{position:absolute;left:var(--pad);bottom:var(--pad);z-index:2}
-@media (max-width:860px){.acc{grid-template-columns:1fr}.acc .r{min-height:46svh}}
+
+.meter{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:9px}
+.meter i{height:3px;background:var(--k3);position:relative;overflow:hidden}
+.meter i::after{content:"";position:absolute;inset:0;background:currentColor;transform:scaleX(0);transform-origin:left;transition:transform .35s var(--ease)}
+.meter.s1{color:var(--or)}.meter.s2{color:#FFB800}.meter.s3{color:var(--ac)}
+.meter.s1 i:nth-child(-n+1)::after,.meter.s2 i:nth-child(-n+2)::after,.meter.s3 i::after{transform:scaleX(1)}
+.mnote{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.55;margin:7px 0 0}
+
+.check{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;opacity:.8;cursor:pointer;line-height:1.4}
+.check:hover{opacity:1}
+.check input{width:17px;height:17px;flex:none;accent-color:var(--blue);margin-top:1px}
+.f .btn{width:100%;justify-content:center;padding:17px 20px;font-size:16px;margin-top:4px}
+.msg{font-size:14px;min-height:1.35em;line-height:1.35;color:var(--or)}
+.msg.ok{color:var(--ac)}
+.alt{display:flex;align-items:center;gap:14px;margin-top:4px}
+.alt::before,.alt::after{content:"";height:1px;background:var(--k3);flex:1}
+.alt span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.45}
+.f .btn-line{margin-top:0}
+.note{font-size:12.5px;opacity:.5;line-height:1.5;max-width:46ch;margin:2px 0 0}
+.acc .foot{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.5;line-height:1.7}
+.acc .foot a{color:var(--ac)}
+
+.acc .r{position:relative;background:var(--k2);overflow:hidden;display:flex;flex-direction:column;justify-content:space-between;gap:28px;padding:calc(104px + env(safe-area-inset-top,0px)) var(--pad) 36px}
+.acc .r .ring{position:absolute;width:130%;right:-46%;top:-18%;color:#1D1D1F;pointer-events:none}
+.perks{position:relative;z-index:2;display:grid;gap:2px;background:var(--k3);border-top:1px solid var(--k3);border-bottom:1px solid var(--k3)}
+.perks>div{background:var(--k2);padding:18px 0 18px 0;display:grid;grid-template-columns:34px 1fr;gap:12px;align-items:start}
+.perks b{display:block;font-weight:700;font-size:16px;letter-spacing:-.02em;text-transform:uppercase}
+.perks p{margin:5px 0 0;font-size:13.5px;opacity:.6;line-height:1.45}
+.perks .n{font-family:var(--mono);font-size:10px;letter-spacing:.08em;opacity:.45;padding-top:4px}
+.shelf3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;position:relative;z-index:2;max-width:400px}
+.shelf3 .cover{box-shadow:0 26px 50px -26px rgba(0,0,0,.9)}
+.acc .cap{position:relative;z-index:2;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.45}
+@media (max-width:980px){.acc{grid-template-columns:1fr}.acc .r{padding-top:48px;gap:32px}.acc .r .ring{width:180%;right:-70%}}
 </style>
 </head>
 <body data-page="acceso" data-nav-solid data-title-es="Acceso — Orbit®" data-title-en="Sign in — Orbit®">
 <main>
 <section class="acc dark">
   <div class="l">
-    <div><span class="mono">OB—000 · <span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></span></div>
-    <div>
-      <h1 class="display"><span data-l="es">Tu <span class="it">biblioteca.</span></span><span data-l="en">Your <span class="it">library.</span></span></h1>
-      <p class="lead" style="opacity:.75;margin:22px 0 30px"><span data-l="es">Todo lo que comprás queda guardado acá: descargas, versiones nuevas y guías. Sin contraseñas: te enviamos un enlace de acceso a tu email.</span><span data-l="en">Everything you buy stays here: downloads, new versions and guides. No passwords: we send an access link to your email.</span></p>
-      <div class="tabs2" id="accTabs">
-        <button class="chip" data-t="in" aria-pressed="true"><span data-l="es">Ingresar</span><span data-l="en">Sign in</span></button>
-        <button class="chip" data-t="up" aria-pressed="false"><span data-l="es">Crear cuenta</span><span data-l="en">Create account</span></button>
+    <span class="mono dim">OB—000 · <span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></span>
+    <div class="mid">
+      <h1 class="display" id="accTitle"></h1>
+      <p class="lead" id="accLead"></p>
+
+      <div class="tabs2" id="accTabs" role="tablist">
+        <button type="button" data-t="in" aria-pressed="true"><span data-l="es">Ya tengo cuenta</span><span data-l="en">I have an account</span></button>
+        <button type="button" data-t="up" aria-pressed="false"><span data-l="es">Crear cuenta</span><span data-l="en">Create account</span></button>
       </div>
-      <form class="form" id="accForm" novalidate>
-        <label class="mono" for="accMail">Email</label>
-        <input id="accMail" name="email" type="email" autocomplete="email" placeholder="hola@tuestudio.com">
-        <div id="nameWrap" hidden><label class="mono" for="accName" style="margin-top:14px"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="accName" name="name" autocomplete="name"></div>
-        <label class="mono" for="accPass" style="margin-top:14px"><span data-l="es">Contraseña</span><span data-l="en">Password</span></label>
-        <div class="pwrap"><input id="accPass" name="password" type="password" autocomplete="current-password" placeholder="••••••••"><button type="button" class="peye" data-eye aria-label="Ver"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button></div>
-        <label class="check" id="newsWrap" hidden><input type="checkbox" id="accNews" checked><span><span data-l="es">Quiero recibir novedades, lanzamientos y recursos gratis de Orbit.</span><span data-l="en">I want news, launches and free Orbit resources.</span></span></label>
-        <p class="hint mono" id="pwHint" hidden><span data-l="es">Mínimo 8 caracteres</span><span data-l="en">At least 8 characters</span></p>
-        <button class="btn btn-acid" type="submit" id="accSubmit"><span data-l="es">Entrar</span><span data-l="en">Sign in</span> <span class="ar">→</span></button>
-        <p class="err" id="accErr" role="alert"></p>
-        <button type="button" class="linkish mono" id="magicBtn"><span data-l="es">Entrar con un enlace por email (sin contraseña)</span><span data-l="en">Sign in with an email link (no password)</span></button>
-        <p class="note"><span data-l="es">Tus compras quedan asociadas a tu email: si comprás sin cuenta y después te registrás con ese mismo email, vas a ver todo en tu biblioteca.</span><span data-l="en">Purchases are tied to your email: if you buy without an account and later register with that same email, everything shows up in your library.</span></p>
+
+      <form class="f" id="accForm" novalidate>
+        <div class="row" id="nameWrap" hidden>
+          <label for="accName"><span data-l="es">Cómo te llamás</span><span data-l="en">Your name</span></label>
+          <input id="accName" name="name" type="text" autocomplete="name" placeholder="Maria">
+        </div>
+        <div class="row">
+          <label for="accMail">Email</label>
+          <input id="accMail" name="email" type="email" autocomplete="email" placeholder="hola@tuestudio.com" required>
+        </div>
+        <div class="row">
+          <label for="accPass"><span><span data-l="es">Contraseña</span><span data-l="en">Password</span></span><button type="button" class="aux" id="forgot"><span data-l="es">Me la olvidé</span><span data-l="en">I forgot it</span></button></label>
+          <div class="pwrap">
+            <input id="accPass" name="password" type="password" autocomplete="current-password" placeholder="••••••••" required>
+            <button type="button" class="peye" data-eye aria-label="Ver contraseña"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2.5 12S6 5.8 12 5.8 21.5 12 21.5 12 18 18.2 12 18.2 2.5 12 2.5 12Z" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/></svg></button>
+          </div>
+          <div id="meterWrap" hidden>
+            <div class="meter" id="meter"><i></i><i></i><i></i></div>
+            <p class="mnote" id="mnote"></p>
+          </div>
+        </div>
+        <label class="check" id="newsWrap" hidden><input type="checkbox" id="accNews" checked><span><span data-l="es">Quiero recibir lanzamientos, recursos gratis y novedades de Orbit. Sin spam, se cancela en un clic.</span><span data-l="en">Send me launches, free resources and Orbit news. No spam, one-click unsubscribe.</span></span></label>
+        <button class="btn btn-acid" type="submit" id="accSubmit"></button>
+        <p class="msg" id="accMsg" role="status" aria-live="polite"></p>
+        <div class="alt"><span data-l="es">o</span><span data-l="en">or</span></div>
+        <button type="button" class="btn btn-line" id="magicBtn"><span data-l="es">Mandame un enlace por email</span><span data-l="en">Email me a sign-in link</span></button>
+        <p class="note"><span data-l="es">Tus compras se guardan por email. Si comprás sin cuenta y después te registrás con ese mismo email, vas a encontrar todo en tu biblioteca.</span><span data-l="en">Purchases are saved by email. If you buy without an account and register later with that same email, everything shows up in your library.</span></p>
       </form>
     </div>
-    <div class="mono dim"><span data-l="es">¿Compraste y no encontrás tu acceso? Escribinos a</span><span data-l="en">Bought something and can’t find your access? Email us at</span> hola@orbitando.com.ar</div>
+    <p class="foot"><span data-l="es">¿Compraste y no encontrás tu acceso?</span><span data-l="en">Bought something and can’t find your access?</span><br><a href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a></p>
   </div>
+
   <div class="r">
-    <div class="ring" data-sym='{"ring":"#242426","dot":"blue","gap":70}' aria-hidden="true"></div>
+    <div class="ring" data-sym='{"ring":"#1D1D1F","dot":"#1D1D1F","gap":70}' aria-hidden="true"></div>
+    <div class="perks">
+      <div><span class="n">01</span><div><b><span data-l="es">Descargas para siempre</span><span data-l="en">Downloads forever</span></b><p><span data-l="es">Todo lo que comprás queda disponible en tu biblioteca. Sin suscripción, sin vencimiento.</span><span data-l="en">Everything you buy stays in your library. No subscription, no expiry.</span></p></div></div>
+      <div><span class="n">02</span><div><b><span data-l="es">Versiones nuevas incluidas</span><span data-l="en">New versions included</span></b><p><span data-l="es">Cuando un sistema mejora, lo ves acá etiquetado como nuevo y lo bajás de nuevo.</span><span data-l="en">When a system improves, it shows up tagged as new and you download it again.</span></p></div></div>
+      <div><span class="n">03</span><div><b><span data-l="es">Historial de pedidos</span><span data-l="en">Order history</span></b><p><span data-l="es">Cada compra con su fecha, su medio de pago y su comprobante.</span><span data-l="en">Every purchase with its date, payment method and receipt.</span></p></div></div>
+    </div>
     <div class="shelf3" id="accShelf"></div>
-    <span class="mono cap"><span data-l="es">Tu colección, siempre disponible</span><span data-l="en">Your collection, always available</span></span>
+    <span class="cap"><span data-l="es">Tu colección, siempre disponible</span><span data-l="en">Your collection, always available</span></span>
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=23"></script>
-<script src="assets/js/orbit.js?v=23"></script>
+<script src="assets/js/products.js?v=24"></script>
+<script src="assets/js/orbit.js?v=24"></script>
 <script>
 (() => {
-const {$, $$, L, tr, cover, toast, P} = ORBIT;
+const {$, $$, L, tr, cover, P} = ORBIT;
 $('#accShelf').innerHTML = P.slice(0,3).map(p => cover(p)).join('');
-let mode = 'in';
-const setMode = m => {
-  mode = m;
-  $$('#accTabs .chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === m)));
-  $('#nameWrap').hidden = m === 'in';
-  $('#newsWrap').hidden = m === 'in';
-  $('#pwHint').hidden = m === 'in';
-  $('#accPass').setAttribute('autocomplete', m === 'in' ? 'current-password' : 'new-password');
-  $('#accSubmit').innerHTML = (m === 'in' ? L('Entrar','Sign in') : L('Crear mi cuenta','Create my account')) + ' <span class="ar">→</span>';
-  $('#accErr').textContent = '';
-};
-$$('#accTabs .chip').forEach(b => b.onclick = () => setMode(b.dataset.t));
-setMode('in');
-$('[data-eye]').onclick = () => { const i2 = $('#accPass'); i2.type = i2.type === 'password' ? 'text' : 'password'; };
 
+const msg = $('#accMsg');
+const say = (text, ok) => { msg.textContent = text; msg.classList.toggle('ok', Boolean(ok)); };
 const ERRORS = {
-  bad_credentials: ['Email o contraseña incorrectos.','Wrong email or password.'],
-  email_taken: ['Ya existe una cuenta con ese email. Probá ingresar.','An account with that email already exists. Try signing in.'],
+  bad_credentials: ['Email o contraseña incorrectos. Probá de nuevo o pedí un enlace por email.','Wrong email or password. Try again or request an email link.'],
+  email_taken: ['Ya existe una cuenta con ese email. Entrá desde “Ya tengo cuenta”.','An account with that email already exists. Use “I have an account”.'],
   weak_password: ['La contraseña necesita al menos 8 caracteres.','Password needs at least 8 characters.'],
   invalid_email: ['Escribí un email válido.','Enter a valid email.'],
-  too_many_attempts: ['Demasiados intentos. Probá de nuevo en 15 minutos.','Too many attempts. Try again in 15 minutes.'],
+  too_many_attempts: ['Demasiados intentos. Esperá 15 minutos y volvé a probar.','Too many attempts. Wait 15 minutes and try again.'],
   not_configured: ['El acceso todavía no está activo.','Access is not live yet.'],
 };
-const showErr = code => { $('#accErr').style.color = 'var(--or)'; $('#accErr').textContent = tr(...(ERRORS[code] || ['No pudimos completar la acción. Probá de nuevo.','Something went wrong. Please try again.'])); };
+const showErr = code => say(tr(...(ERRORS[code] || ['No pudimos completar la acción. Probá de nuevo.','Something went wrong. Please try again.'])), false);
+const validMail = v => /^\S+@\S+\.\S+$/.test(v);
 
+/* ── modo: ingresar / crear cuenta ── */
+let mode = 'in';
+const COPY = {
+  in: { t: ['Volvé a tu <span class="it">órbita.</span>','Back to your <span class="it">orbit.</span>'],
+        d: ['Entrá con tu email y contraseña para ver tus descargas, tus pedidos y tus actualizaciones.','Sign in with your email and password to see your downloads, orders and updates.'],
+        b: ['Entrar','Sign in'] },
+  up: { t: ['Creá tu <span class="it">cuenta.</span>','Create your <span class="it">account.</span>'],
+        d: ['Treinta segundos. Después, cada compra queda guardada acá para siempre.','Thirty seconds. From then on, every purchase stays saved here forever.'],
+        b: ['Crear mi cuenta','Create my account'] },
+};
+function setMode(m) {
+  mode = m;
+  $$('#accTabs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === m)));
+  const up = m === 'up';
+  $('#nameWrap').hidden = !up;
+  $('#newsWrap').hidden = !up;
+  $('#meterWrap').hidden = !up;
+  $('#forgot').hidden = up;
+  $('#accPass').setAttribute('autocomplete', up ? 'new-password' : 'current-password');
+  paint(); say('');
+}
+function paint() {
+  const c = COPY[mode];
+  $('#accTitle').innerHTML = tr(...c.t);
+  $('#accLead').textContent = tr(...c.d);
+  $('#accSubmit').innerHTML = tr(...c.b) + ' <span class="ar">→</span>';
+}
+$$('#accTabs button').forEach(b => b.onclick = () => setMode(b.dataset.t));
+addEventListener('orbit:lang', paint);
+setMode(new URLSearchParams(location.search).get('nuevo') === '1' ? 'up' : 'in');
+
+$('[data-eye]').onclick = () => { const i = $('#accPass'); i.type = i.type === 'password' ? 'text' : 'password'; i.focus(); };
+
+/* ── fuerza de contraseña ── */
+const LEVELS = [['Muy corta','Too short'],['Aceptable','OK'],['Buena','Good'],['Fuerte','Strong']];
+$('#accPass').addEventListener('input', e => {
+  if (mode !== 'up') return;
+  const v = e.target.value;
+  let s = 0;
+  if (v.length >= 8) s = 1;
+  if (v.length >= 10 && /[^a-zA-Z]/.test(v)) s = 2;
+  if (v.length >= 12 && /[^a-zA-Z0-9]/.test(v) && /[0-9]/.test(v)) s = 3;
+  $('#meter').className = 'meter s' + s;
+  $('#mnote').textContent = v ? tr(...LEVELS[s]) : tr('Mínimo 8 caracteres','At least 8 characters');
+});
+
+/* ── ingresar / registrarse ── */
 $('#accForm').addEventListener('submit', async e => {
   e.preventDefault();
   const email = $('#accMail').value.trim(), password = $('#accPass').value, btn = $('#accSubmit');
-  if (!/^\S+@\S+\.\S+$/.test(email)) return showErr('invalid_email');
-  if (mode === 'up' && password.length < 8) return showErr('weak_password');
-  $('#accErr').textContent = ''; const old = btn.innerHTML; btn.innerHTML = tr('Un momento…','One moment…');
+  if (!validMail(email)) { $('#accMail').focus(); return showErr('invalid_email'); }
+  if (mode === 'up' && password.length < 8) { $('#accPass').focus(); return showErr('weak_password'); }
+  if (mode === 'in' && !password) { $('#accPass').focus(); return showErr('bad_credentials'); }
+  say(''); const old = btn.innerHTML; btn.innerHTML = tr('Un momento…','One moment…'); btn.disabled = true;
   try {
-    const r = await fetch(`/api/auth/${mode === 'in' ? 'login' : 'register'}`, {
+    const r = await fetch('/api/auth/' + (mode === 'in' ? 'login' : 'register'), {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, name: $('#accName').value.trim(), news: $('#accNews').checked }),
     });
     const data = await r.json();
     if (data.ok) { location.href = 'biblioteca.html'; return; }
     showErr(data.error);
-  } catch (e) { showErr(); }
-  btn.innerHTML = old;
+  } catch (err) { showErr(); }
+  btn.innerHTML = old; btn.disabled = false;
 });
 
-$('#magicBtn').onclick = async () => {
-  const email = $('#accMail').value.trim(), err = $('#accErr');
-  if (!/^\S+@\S+\.\S+$/.test(email)) return showErr('invalid_email');
+/* ── enlace por email (entrar o recuperar) ── */
+async function mailLink(reset) {
+  const email = $('#accMail').value.trim();
+  if (!validMail(email)) { $('#accMail').focus(); return showErr('invalid_email'); }
+  say(tr('Enviando…','Sending…'), true);
   try {
-    const r = await fetch('/api/auth/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) });
+    const r = await fetch('/api/auth/request', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, reset }) });
     const data = await r.json();
-    if (data.ok && data.emailSent) { err.style.color = 'var(--ac)'; err.textContent = tr('Listo: revisá tu email. El enlace vence en 20 minutos.','Done: check your email. The link expires in 20 minutes.'); return; }
+    if (data.ok && data.emailSent) return say(reset
+      ? tr('Listo: te mandamos un enlace para crear una contraseña nueva. Vence en 20 minutos.','Done: we sent a link to set a new password. It expires in 20 minutes.')
+      : tr('Listo: revisá tu email. El enlace vence en 20 minutos.','Done: check your email. The link expires in 20 minutes.'), true);
     if (data.ok && data.link) { location.href = data.link; return; }
     showErr(data.error);
-  } catch (e) { showErr(); }
-};
+  } catch (err) { showErr(); }
+}
+$('#magicBtn').onclick = () => mailLink(false);
+$('#forgot').onclick = () => mailLink(true);
+
+if (new URLSearchParams(location.search).get('error') === 'expired') say(tr('Ese enlace ya venció. Pedí uno nuevo.','That link expired. Request a new one.'));
 })();
 </script>
 </body>

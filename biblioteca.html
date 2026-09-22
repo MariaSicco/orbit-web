@@ -3,142 +3,403 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Mi biblioteca — Orbit®</title>
+<title>Mi cuenta — Orbit®</title>
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="description" content="Tu biblioteca Orbit: descargas, versiones y guías de todo lo que compraste.">
+<meta name="description" content="Tu cuenta Orbit: descargas, pedidos, actualizaciones y datos de acceso.">
 <meta name="theme-color" content="#0D0D0E">
-<link rel="stylesheet" href="assets/css/orbit.css?v=23">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/orbit.css?v=24">
 <style>
-.lib-head{padding-top:calc(110px + env(safe-area-inset-top,0px));display:flex;flex-direction:column;gap:26px}
-.lib-head .top{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-end}
-.lib-head h1{font-size:clamp(44px,7vw,120px)}
-.lib-head h1 .it{color:var(--or)}
-.lib-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3);margin-top:10px}
-.lib-stats>div{background:var(--k);padding:16px}
-.lib-stats b{display:block;font-size:clamp(26px,3vw,44px);font-weight:800;letter-spacing:-.04em;line-height:1;margin-top:8px}
-.items{display:flex;flex-direction:column;gap:2px;background:var(--k3);margin-top:clamp(28px,4vw,48px)}
-.item{background:var(--k);display:grid;grid-template-columns:120px minmax(0,1fr) auto;gap:clamp(16px,2.4vw,36px);align-items:center;padding:clamp(16px,2vw,26px)}
-.item .cover{width:120px}
-.item h3{margin:0 0 6px;font-weight:800;font-size:clamp(22px,2.4vw,34px);letter-spacing:-.035em;text-transform:uppercase;line-height:1}
-.item p{margin:0;opacity:.7;font-size:15px;max-width:52ch}
-.item .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px}
-.item .acts{display:flex;flex-direction:column;gap:8px;min-width:190px}
+.pan{padding-inline:var(--pad);padding-top:calc(104px + env(safe-area-inset-top,0px));padding-bottom:clamp(60px,8vw,120px);min-height:100svh}
+.pan .wrap{max-width:1440px;margin-inline:auto}
+
+/* cabecera */
+.ph{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:24px;align-items:end;padding-bottom:clamp(22px,3vw,36px);border-bottom:1px solid var(--k3)}
+.ph h1{font-size:clamp(40px,6.2vw,104px);margin-top:12px}
+.ph h1 .it{color:var(--or)}
+.ph .id{text-align:right;display:grid;gap:9px;justify-items:end}
+.ph .id .mail{font-family:var(--mono);font-size:11px;letter-spacing:.06em;opacity:.65;word-break:break-all;max-width:30ch}
+@media (max-width:720px){.ph{grid-template-columns:1fr}.ph .id{text-align:left;justify-items:start}}
+
+/* navegación del panel */
+.rail{display:flex;gap:2px;background:var(--k3);margin-top:clamp(26px,3.4vw,44px);overflow-x:auto;scrollbar-width:none}
+.rail::-webkit-scrollbar{display:none}
+.rail button{flex:1;min-width:140px;background:var(--k);padding:15px 16px;text-align:left;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;position:relative;transition:background .22s,color .22s}
+.rail button::after{content:"";position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--ac);transform:scaleX(0);transform-origin:left;transition:transform .34s var(--ease)}
+.rail button:hover{background:var(--k2)}
+.rail button[aria-pressed="true"]{background:var(--k2);color:var(--b)}
+.rail button[aria-pressed="true"]::after{transform:scaleX(1)}
+.rail .num{display:block;font-size:22px;font-weight:800;letter-spacing:-.04em;text-transform:none;margin-top:7px;font-family:var(--sans)}
+
+.pane{padding-top:clamp(30px,4vw,56px)}
+.blk{margin-bottom:clamp(38px,5vw,72px)}
+.blk:last-child{margin-bottom:0}
+.bh{display:flex;justify-content:space-between;align-items:baseline;gap:20px;padding-bottom:13px;border-bottom:1px solid var(--k3);margin-bottom:clamp(16px,2vw,26px);flex-wrap:wrap}
+.bh h2{margin:0;font-weight:800;font-size:clamp(20px,2.1vw,30px);letter-spacing:-.035em;text-transform:uppercase;line-height:1}
+.bh .hint{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.5}
+
+/* tarjetas de resumen */
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3)}
+.cards>div{background:var(--k2);padding:clamp(18px,2vw,26px);display:flex;flex-direction:column;justify-content:space-between;gap:16px;min-height:150px}
+.cards b{display:block;font-size:clamp(28px,3.4vw,50px);font-weight:800;letter-spacing:-.045em;line-height:.92}
+.cards .sm{font-size:clamp(17px,1.7vw,24px);letter-spacing:-.03em;font-weight:700;text-transform:uppercase;line-height:1.05}
+.cards .foot{font-size:13px;opacity:.55}
+@media (max-width:820px){.cards{grid-template-columns:1fr}}
+
+/* destacado: seguir donde estabas */
+.resume{display:grid;grid-template-columns:130px minmax(0,1fr) auto;gap:clamp(18px,2.6vw,40px);align-items:center;background:var(--k2);padding:clamp(18px,2.2vw,30px)}
+.resume .cover{width:130px}
+.resume h3{margin:8px 0 0;font-weight:800;font-size:clamp(24px,2.8vw,40px);letter-spacing:-.04em;text-transform:uppercase;line-height:.95}
+.resume p{margin:9px 0 0;opacity:.65;font-size:15px;max-width:50ch}
+.resume .acts{display:grid;gap:8px;min-width:200px}
+.resume .acts .btn{justify-content:center}
+@media (max-width:860px){.resume{grid-template-columns:96px minmax(0,1fr)}.resume .cover{width:96px}.resume .acts{grid-column:1/-1;grid-auto-flow:column}}
+
+/* productos */
+.items{display:grid;gap:2px;background:var(--k3)}
+.item{background:var(--k2);display:grid;grid-template-columns:118px minmax(0,1fr) auto;gap:clamp(16px,2.4vw,36px);align-items:center;padding:clamp(16px,2vw,26px)}
+.item .cover{width:118px}
+.item h3{margin:8px 0 0;font-weight:800;font-size:clamp(21px,2.3vw,32px);letter-spacing:-.035em;text-transform:uppercase;line-height:1}
+.item p{margin:8px 0 0;opacity:.62;font-size:14.5px;max-width:52ch}
+.item .meta{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.5}
+.item .acts{display:grid;gap:8px;min-width:190px}
 .item .acts .btn{justify-content:center}
-.new{background:var(--blue);color:var(--b);padding:2px 8px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase}
-.empty2{background:var(--k);padding:clamp(20px,3vw,40px);border:1px dashed var(--k3);display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;margin-top:2px}
-.tabs{display:flex;gap:8px;margin:clamp(24px,3vw,40px) 0 0}
-.orders{display:flex;flex-direction:column;gap:2px;background:var(--k3);margin-top:clamp(24px,3vw,40px)}
-.order{background:var(--k);padding:clamp(16px,2vw,24px);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:start}
-.order .code{font-family:var(--mono);font-size:11px;letter-spacing:.08em;opacity:.6}
-.order b{display:block;font-weight:800;font-size:18px;letter-spacing:-.03em;text-transform:uppercase;margin-top:6px}
-.order ul{list-style:none;margin:10px 0 0;padding:0;font-size:14px;opacity:.75}
-.order li{padding:3px 0}
-.order .right{text-align:right;display:flex;flex-direction:column;gap:8px;align-items:flex-end}
-.order .amt{font-weight:700;font-size:18px}
-.tag-ok{background:var(--ac);color:var(--k);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px}
-.tag-pend{background:var(--or);color:var(--k);font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px}
-@media (max-width:640px){.order{grid-template-columns:1fr}.order .right{align-items:flex-start;text-align:left}}
-.lic{margin-top:clamp(40px,5vw,72px);display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.6vw,24px)}
-.lic>div{border-top:1px solid var(--k3);padding-top:14px}
-.lic b{display:block;font-size:18px;letter-spacing:-.02em;margin:8px 0 6px}
-.lic p{margin:0;font-size:14px;opacity:.7}
-@media (max-width:860px){.item{grid-template-columns:90px minmax(0,1fr)}.item .cover{width:90px}.item .acts{grid-column:1/-1;flex-direction:row;flex-wrap:wrap}.lib-stats,.lic{grid-template-columns:1fr}}
+.new{background:var(--blue);color:var(--b);padding:2px 8px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;vertical-align:middle}
+@media (max-width:860px){.item{grid-template-columns:88px minmax(0,1fr)}.item .cover{width:88px}.item .acts{grid-column:1/-1;grid-auto-flow:column}}
+
+/* estados vacíos */
+.zero{background:var(--k2);border:1px dashed var(--k3);padding:clamp(26px,4vw,52px);display:flex;justify-content:space-between;align-items:center;gap:26px;flex-wrap:wrap}
+.zero h3{margin:10px 0 0;font-weight:800;font-size:clamp(24px,3vw,44px);letter-spacing:-.04em;text-transform:uppercase;line-height:.96;max-width:18ch}
+.zero p{margin:12px 0 0;opacity:.6;max-width:44ch;font-size:15px}
+
+/* pedidos */
+.orders{display:grid;gap:2px;background:var(--k3)}
+.order{background:var(--k2);padding:clamp(16px,2vw,26px);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:start}
+.order .code{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.5}
+.order b{display:block;font-weight:800;font-size:19px;letter-spacing:-.03em;text-transform:uppercase;margin-top:7px}
+.order ul{list-style:none;margin:11px 0 0;padding:0;font-size:14px;opacity:.7;display:grid;gap:4px}
+.order li{display:flex;gap:10px}
+.order li span:first-child{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;opacity:.7;padding-top:3px;flex:none}
+.order .right{text-align:right;display:grid;gap:9px;justify-items:end}
+.order .amt{font-weight:800;font-size:20px;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px}
+.tag-ok{background:var(--ac);color:var(--k)}
+.tag-pend{background:var(--or);color:var(--k)}
+@media (max-width:640px){.order{grid-template-columns:1fr}.order .right{justify-items:start;text-align:left}}
+
+/* cuenta */
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:2px;background:var(--k3)}
+.two>form,.two>div{background:var(--k2);padding:clamp(20px,2.4vw,32px)}
+@media (max-width:860px){.two{grid-template-columns:1fr}}
+.fld{display:grid;gap:7px;margin-bottom:14px}
+.fld label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.75}
+.fld input{width:100%;font:inherit;font-size:16px;padding:14px 15px;background:var(--k);border:1px solid var(--k3);color:var(--b);transition:border-color .2s}
+.fld input:focus{outline:none;border-color:var(--blue)}
+.fld input:disabled{opacity:.45;cursor:not-allowed}
+.two h3{margin:0 0 4px;font-weight:800;font-size:19px;letter-spacing:-.03em;text-transform:uppercase}
+.two .sub{margin:0 0 20px;font-size:13.5px;opacity:.55;line-height:1.45;max-width:42ch}
+.two .btn{width:100%;justify-content:center;margin-top:4px}
+.chk{display:flex;gap:11px;align-items:flex-start;font-size:13.5px;opacity:.8;cursor:pointer;line-height:1.45;margin:4px 0 16px}
+.chk:hover{opacity:1}
+.chk input{width:17px;height:17px;flex:none;accent-color:var(--blue);margin-top:1px}
+.fmsg{font-size:13.5px;min-height:1.3em;margin:10px 0 0;color:var(--or)}
+.fmsg.ok{color:var(--ac)}
+.lic{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(14px,2vw,32px)}
+.lic>div{border-top:1px solid var(--k3);padding-top:15px}
+.lic b{display:block;font-size:17px;letter-spacing:-.02em;margin:9px 0 7px;text-transform:uppercase;font-weight:700}
+.lic p{margin:0;font-size:13.5px;opacity:.6;line-height:1.5}
+@media (max-width:860px){.lic{grid-template-columns:1fr}}
+.danger{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;background:var(--k2);padding:clamp(18px,2.2vw,28px);margin-top:2px}
+.skel{opacity:.3}
 </style>
 </head>
-<body data-page="biblioteca" data-nav-solid data-title-es="Mi biblioteca — Orbit®" data-title-en="My library — Orbit®">
+<body data-page="biblioteca" data-nav-solid data-title-es="Mi cuenta — Orbit®" data-title-en="My account — Orbit®">
 <main>
-<section class="sec dark lib-head">
-  <div class="wrap top">
-    <div>
-      <span class="mono">OB—000 · <span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></span>
-      <h1 class="display" style="margin-top:12px"><span data-l="es">Mi <span class="it">biblioteca.</span></span><span data-l="en">My <span class="it">library.</span></span></h1>
-    </div>
-    <div style="text-align:right"><span class="mono dim" id="who"></span><br><button class="chip" id="out" style="margin-top:10px"><span data-l="es">Salir</span><span data-l="en">Sign out</span></button></div>
-  </div>
+<section class="pan dark">
   <div class="wrap">
-    <div class="lib-stats" id="stats"></div>
-    <div class="tabs" id="tabs">
-      <button class="chip" data-tab="lib" aria-pressed="true"><span data-l="es">Mis productos</span><span data-l="en">My products</span></button>
-      <button class="chip" data-tab="ord" aria-pressed="false"><span data-l="es">Mis pedidos</span><span data-l="en">My orders</span></button>
+    <header class="ph">
+      <div>
+        <span class="mono dim">OB—000 · <span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></span>
+        <h1 class="display" id="hi"><span class="skel">············</span></h1>
+      </div>
+      <div class="id">
+        <span class="mail" id="who"></span>
+        <span class="mono dim" id="since"></span>
+        <button class="chip" id="out"><span data-l="es">Cerrar sesión</span><span data-l="en">Sign out</span></button>
+      </div>
+    </header>
+
+    <nav class="rail" id="rail" aria-label="Panel">
+      <button type="button" data-tab="res" aria-pressed="true"><span data-l="es">Resumen</span><span data-l="en">Overview</span></button>
+      <button type="button" data-tab="lib" aria-pressed="false"><span data-l="es">Mis productos</span><span data-l="en">My products</span><span class="num" id="nProd">—</span></button>
+      <button type="button" data-tab="ord" aria-pressed="false"><span data-l="es">Pedidos</span><span data-l="en">Orders</span><span class="num" id="nOrd">—</span></button>
+      <button type="button" data-tab="cta" aria-pressed="false"><span data-l="es">Datos y acceso</span><span data-l="en">Profile &amp; access</span></button>
+    </nav>
+
+    <!-- RESUMEN -->
+    <div class="pane" data-pane="res">
+      <div class="blk">
+        <div class="cards" id="cards"></div>
+      </div>
+      <div class="blk" id="resumeBlk" hidden>
+        <div class="bh"><h2><span data-l="es">Seguí donde estabas</span><span data-l="en">Pick up where you left</span></h2><span class="hint"><span data-l="es">Última compra</span><span data-l="en">Latest purchase</span></span></div>
+        <div id="resume"></div>
+      </div>
+      <div class="blk" id="nextBlk" hidden>
+        <div class="bh"><h2><span data-l="es">Tu próximo paso</span><span data-l="en">Your next step</span></h2><span class="hint"><span data-l="es">Todavía no lo tenés</span><span data-l="en">Not in your library yet</span></span></div>
+        <div id="next"></div>
+      </div>
     </div>
-    <div class="items" id="items"></div>
-    <div class="orders" id="orders" hidden></div>
-    <div class="empty2">
-      <div><span class="mono dim"><span data-l="es">Sumá herramientas</span><span data-l="en">Add more tools</span></span><p style="margin:8px 0 0;font-size:clamp(20px,2.2vw,30px);font-weight:800;letter-spacing:-.035em;text-transform:uppercase;line-height:1"><span data-l="es">Tu órbita puede crecer.</span><span data-l="en">Your orbit can grow.</span></p></div>
-      <a class="btn btn-acid" href="productos.html"><span data-l="es">Ver catálogo</span><span data-l="en">See catalog</span> <span class="ar">→</span></a>
+
+    <!-- PRODUCTOS -->
+    <div class="pane" data-pane="lib" hidden>
+      <div class="blk">
+        <div class="bh"><h2><span data-l="es">Mis productos</span><span data-l="en">My products</span></h2><span class="hint"><span data-l="es">Descargas y guías</span><span data-l="en">Downloads and guides</span></span></div>
+        <div class="items" id="items"></div>
+      </div>
     </div>
-    <div class="lic">
-      <div><span class="mono dim">01</span><b><span data-l="es">Licencia comercial</span><span data-l="en">Commercial license</span></b><p><span data-l="es">Usá los productos en proyectos propios y de clientes. No se pueden revender ni redistribuir los archivos originales.</span><span data-l="en">Use the products in your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></div>
-      <div><span class="mono dim">02</span><b><span data-l="es">Actualizaciones sin cargo</span><span data-l="en">Free updates</span></b><p><span data-l="es">Cuando un producto sube de versión, aparece acá con la etiqueta “Nuevo”.</span><span data-l="en">When a product gets a new version, it shows up here tagged “New”.</span></p></div>
-      <div><span class="mono dim">03</span><b><span data-l="es">Acceso para siempre</span><span data-l="en">Lifetime access</span></b><p><span data-l="es">Tus compras quedan disponibles en esta biblioteca, sin suscripción.</span><span data-l="en">Your purchases stay available in this library, no subscription.</span></p></div>
+
+    <!-- PEDIDOS -->
+    <div class="pane" data-pane="ord" hidden>
+      <div class="blk">
+        <div class="bh"><h2><span data-l="es">Mis pedidos</span><span data-l="en">My orders</span></h2><span class="hint"><span data-l="es">Comprobante por email en cada compra</span><span data-l="en">Receipt emailed on every purchase</span></span></div>
+        <div class="orders" id="orders"></div>
+      </div>
     </div>
-    <p class="mono dim" style="margin-top:28px"><span data-l="es">Vista de demostración: las descargas se activan al conectar la plataforma de pago.</span><span data-l="en">Demo view: downloads turn on once the payment platform is connected.</span></p>
+
+    <!-- CUENTA -->
+    <div class="pane" data-pane="cta" hidden>
+      <div class="blk">
+        <div class="bh"><h2><span data-l="es">Datos y acceso</span><span data-l="en">Profile &amp; access</span></h2><span class="hint"><span data-l="es">Se guarda al instante</span><span data-l="en">Saved instantly</span></span></div>
+        <div class="two">
+          <form id="profForm">
+            <h3><span data-l="es">Tus datos</span><span data-l="en">Your details</span></h3>
+            <p class="sub"><span data-l="es">Usamos tu nombre para los emails de compra y para hablarte como corresponde.</span><span data-l="en">We use your name in purchase emails and to talk to you properly.</span></p>
+            <div class="fld"><label for="pfName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="pfName" type="text" autocomplete="name" placeholder="Maria"></div>
+            <div class="fld"><label for="pfMail">Email</label><input id="pfMail" type="email" disabled></div>
+            <label class="chk"><input type="checkbox" id="pfNews"><span><span data-l="es">Recibir lanzamientos, recursos gratis y novedades. Sin spam.</span><span data-l="en">Get launches, free resources and news. No spam.</span></span></label>
+            <button class="btn btn-acid" type="submit"><span data-l="es">Guardar cambios</span><span data-l="en">Save changes</span></button>
+            <p class="fmsg" id="profMsg" role="status" aria-live="polite"></p>
+          </form>
+          <form id="pwForm">
+            <h3 id="pwTitle"></h3>
+            <p class="sub" id="pwSub"></p>
+            <div class="fld" id="curWrap"><label for="pwCur"><span data-l="es">Contraseña actual</span><span data-l="en">Current password</span></label><input id="pwCur" type="password" autocomplete="current-password" placeholder="••••••••"></div>
+            <div class="fld"><label for="pwNew"><span data-l="es">Contraseña nueva</span><span data-l="en">New password</span></label><input id="pwNew" type="password" autocomplete="new-password" placeholder="••••••••"></div>
+            <button class="btn btn-line" type="submit" id="pwSubmit"></button>
+            <p class="fmsg" id="pwMsg" role="status" aria-live="polite"></p>
+          </form>
+        </div>
+        <div class="danger">
+          <div><span class="mono dim"><span data-l="es">Esta sesión</span><span data-l="en">This session</span></span><p style="margin:8px 0 0;font-size:15px;opacity:.65"><span data-l="es">Cerrá la sesión si estás en una compu que no es tuya.</span><span data-l="en">Sign out if you’re on a computer that isn’t yours.</span></p></div>
+          <button class="btn btn-line" id="out2"><span data-l="es">Cerrar sesión</span><span data-l="en">Sign out</span></button>
+        </div>
+      </div>
+
+      <div class="blk">
+        <div class="bh"><h2><span data-l="es">Tu licencia</span><span data-l="en">Your license</span></h2><span class="hint"><span data-l="es">Qué podés hacer con lo que comprás</span><span data-l="en">What you can do with what you buy</span></span></div>
+        <div class="lic">
+          <div><span class="mono dim">01</span><b><span data-l="es">Uso comercial</span><span data-l="en">Commercial use</span></b><p><span data-l="es">Usalos en proyectos propios y de clientes. No se pueden revender ni redistribuir los archivos originales.</span><span data-l="en">Use them in your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></div>
+          <div><span class="mono dim">02</span><b><span data-l="es">Actualizaciones sin cargo</span><span data-l="en">Free updates</span></b><p><span data-l="es">Cuando un producto sube de versión aparece acá con la etiqueta “Nuevo”.</span><span data-l="en">When a product gets a new version it shows up here tagged “New”.</span></p></div>
+          <div><span class="mono dim">03</span><b><span data-l="es">Acceso para siempre</span><span data-l="en">Lifetime access</span></b><p><span data-l="es">Tus compras quedan disponibles en esta cuenta, sin suscripción.</span><span data-l="en">Your purchases stay available in this account, no subscription.</span></p></div>
+        </div>
+      </div>
+
+      <div class="blk">
+        <div class="bh"><h2><span data-l="es">¿Necesitás una mano?</span><span data-l="en">Need a hand?</span></h2></div>
+        <div class="zero">
+          <div><span class="mono dim"><span data-l="es">Soporte</span><span data-l="en">Support</span></span><h3><span data-l="es">Escribinos y te respondemos.</span><span data-l="en">Write to us and we’ll answer.</span></h3><p><span data-l="es">Problemas con una descarga, con un pago o con un archivo: contanos y lo resolvemos.</span><span data-l="en">Trouble with a download, a payment or a file: tell us and we’ll sort it out.</span></p></div>
+          <a class="btn btn-acid" href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar <span class="ar">→</span></a>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=23"></script>
-<script src="assets/js/orbit.js?v=23"></script>
+<script src="assets/js/products.js?v=24"></script>
+<script src="assets/js/orbit.js?v=24"></script>
 <script>
 (async () => {
 const {$, $$, L, tr, cover, toast, P, url} = ORBIT;
-let user = null, real = null;
-try { const r = await fetch('/api/me'); if (r.ok) real = await r.json(); } catch (e) {}
-if (real) { user = real.email; }
-else { try { user = localStorage.getItem('orbit-demo-user'); } catch (e) {} }
-if (!user) { location.replace('acceso.html'); return; }
-$('#who').textContent = user;
-$('#out').onclick = async () => { try { await fetch('/api/auth/logout', {method:'POST'}); } catch (e) {} try { localStorage.removeItem('orbit-demo-user'); } catch (e) {} location.href = 'acceso.html'; };
 
-/* compras reales si hay sesión; si no, ejemplo de demostración */
-const owned = real
-  ? real.purchases.map(x => ({ id: x.productId, date: new Date(x.date).toLocaleDateString('es-AR'), ver: 'V.01', fresh: false, dl: x.downloadable }))
-  : [{id:'ob-001', date:'12.03.2026', ver:'V.01', fresh:true}, {id:'ob-003', date:'02.04.2026', ver:'V.01', fresh:false}];
-const items = owned.map(o => ({...o, p: P.find(x => x.id === o.id)})).filter(x => x.p);
-if (real && !items.length) $('#items').innerHTML = `<div class="item" style="display:block"><span class="mono dim">${L('Todavía no hay compras','No purchases yet')}</span><p style="margin:10px 0 0;font-size:22px;font-weight:800;letter-spacing:-.03em;text-transform:uppercase">${L('Tu biblioteca está lista para el primer sistema.','Your library is ready for its first system.')}</p></div>`;
-if (!real) { const n = document.createElement('p'); n.className = 'mono dim'; n.style.marginTop = '14px'; n.textContent = tr('Vista de demostración con compras de ejemplo.','Demo view with sample purchases.'); $('#items').before(n); }
-$('#stats').innerHTML = [
-  [L('Productos','Products'), String(items.length).padStart(2,'0')],
-  [L('Assets totales','Total assets'), '128'],
-  [L('Última actualización','Last update'), '02.04.2026'],
-].map(([k,v]) => `<div><span class="mono dim">${k}</span><b>${v}</b></div>`).join('');
-$('#items').innerHTML = items.map(({p, date, ver, fresh}) => `<div class="item">
-  <div>${cover(p)}</div>
-  <div><span class="mono dim">${p.code} · ${L('Comprado','Purchased')} ${date}</span>
-    <h3 style="margin-top:8px">${p.name} ${fresh ? `<span class="new">${L('Nuevo','New')}</span>` : ''}</h3>
-    <p>${L(p.tagline)}</p>
-    <div class="meta mono dim">${p.specs.slice(0,3).map(([k,v]) => `<span>${L(k)}: ${L(v)}</span>`).join('')}<span>${ver}</span></div>
-  </div>
-  <div class="acts"><button class="btn btn-acid" data-dl="${p.id}">${L('Descargar','Download')} <span class="ar">↓</span></button><a class="btn btn-line" href="${url(p)}">${L('Ver guía','View guide')}</a></div>
-</div>`).join('');
-/* pedidos */
-const ORD = real ? (real.orders || []) : [{id:'OBDEMO01', date:'2026-03-12T10:00:00Z', status:'paid', via:'mercadopago', ars:39000, items:[{id:'ob-001', code:'OB—001', name:'Content System', qty:1}]}];
-const fmtDate = d => new Date(d).toLocaleDateString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric'});
-const VIA = {mercadopago:'Mercado Pago', paypal:'PayPal'};
-$('#orders').innerHTML = ORD.length ? ORD.map(o => `<div class="order">
-  <div><span class="code">${o.id} · ${fmtDate(o.paidAt || o.date)} · ${VIA[o.via] || o.via}</span>
-    <b>${o.items.length} ${o.items.length === 1 ? L('producto','product') : L('productos','products')}</b>
-    <ul>${o.items.map(i => `<li>${i.code} ${i.name}${i.qty > 1 ? ` × ${i.qty}` : ''}</li>`).join('')}</ul></div>
-  <div class="right"><span class="${o.status === 'paid' ? 'tag-ok' : 'tag-pend'}">${o.status === 'paid' ? L('Pagado','Paid') : L('Pendiente','Pending')}</span>
-    <span class="amt">${o.via === 'paypal' ? 'USD ' + (o.usd || 0) : 'ARS ' + (o.ars || 0).toLocaleString('es-AR')}</span></div>
-</div>`).join('') : `<div class="order"><span class="code">${L('Sin pedidos todavía','No orders yet')}</span></div>`;
+/* ── sesión ── */
+let me = null;
+try { const r = await fetch('/api/me'); if (r.ok) me = await r.json(); } catch (e) {}
+if (!me || !me.email) { location.replace('acceso.html'); return; }
 
-$$('#tabs .chip').forEach(b => b.onclick = () => {
-  const lib = b.dataset.tab === 'lib';
-  $$('#tabs .chip').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
-  $('#items').hidden = !lib; $('#orders').hidden = lib;
-  $('.empty2').hidden = !lib; $('.lic').hidden = !lib;
+const first = (me.name || '').trim().split(/\s+/)[0];
+const paintHi = () => {
+  $('#hi').innerHTML = first
+    ? tr('Hola, ', 'Hi, ') + '<span class="it">' + first.replace(/[<>&]/g, '') + '.</span>'
+    : tr('Tu <span class="it">biblioteca.</span>', 'Your <span class="it">library.</span>');
+};
+paintHi(); addEventListener('orbit:lang', paintHi);
+$('#who').textContent = me.email;
+const fmt = d => new Date(d).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+const fmtLong = d => new Date(d).toLocaleDateString(document.documentElement.lang === 'en' ? 'en-GB' : 'es-AR', { month: 'long', year: 'numeric' });
+if (me.memberSince) $('#since').textContent = tr('Miembro desde ', 'Member since ') + fmtLong(me.memberSince);
+
+const signOut = async () => {
+  try { await fetch('/api/auth/logout', { method: 'POST' }); } catch (e) {}
+  location.href = 'index.html';
+};
+$('#out').onclick = signOut; $('#out2').onclick = signOut;
+
+/* ── datos ── */
+const purchases = (me.purchases || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
+const orders = me.orders || [];
+const items = purchases.map(x => ({ ...x, p: P.find(y => y.id === x.productId) })).filter(x => x.p);
+const ownedIds = new Set(items.map(x => x.productId));
+const lastOrder = orders.find(o => o.status === 'paid') || orders[0];
+
+$('#nProd').textContent = String(items.length).padStart(2, '0');
+$('#nOrd').textContent = String(orders.length).padStart(2, '0');
+
+/* ── resumen ── */
+const card = (k, big, foot) => '<div><span class="mono dim">' + k + '</span><div>' + big + '</div><span class="foot">' + (foot || '') + '</span></div>';
+function paintCards() {
+  $('#cards').innerHTML = [
+    card(L('Productos', 'Products'), '<b>' + String(items.length).padStart(2, '0') + '</b>',
+      items.length ? L('Disponibles para descargar', 'Ready to download') : L('Todavía ninguno', 'None yet')),
+    card(L('Pedidos', 'Orders'), '<b>' + String(orders.length).padStart(2, '0') + '</b>',
+      lastOrder ? L('Último: ', 'Latest: ') + fmt(lastOrder.paidAt || lastOrder.date) : L('Sin compras todavía', 'No purchases yet')),
+    card(L('Última incorporación', 'Latest addition'),
+      items.length ? '<span class="sm">' + items[0].p.name + '</span>' : '<span class="sm">—</span>',
+      items.length ? items[0].p.code + ' · ' + fmt(items[0].date) : L('Tu biblioteca está vacía', 'Your library is empty')),
+  ].join('');
+}
+paintCards();
+
+const zeroLib = '<div class="zero"><div><span class="mono dim">' + L('Biblioteca vacía', 'Empty library') + '</span>'
+  + '<h3>' + L('Tu primer sistema entra acá.', 'Your first system lands here.') + '</h3>'
+  + '<p>' + L('Elegí un producto del catálogo: en cuanto se acredita el pago aparece en esta pantalla, listo para descargar.', 'Pick a product from the catalog: as soon as the payment clears it shows up on this screen, ready to download.') + '</p></div>'
+  + '<a class="btn btn-acid" href="productos.html">' + L('Ver catálogo', 'See catalog') + ' <span class="ar">→</span></a></div>';
+
+if (items.length) {
+  const it = items[0];
+  $('#resumeBlk').hidden = false;
+  $('#resume').innerHTML = '<div class="resume"><div>' + cover(it.p) + '</div>'
+    + '<div><span class="mono dim">' + it.p.code + ' · ' + L('Comprado', 'Purchased') + ' ' + fmt(it.date) + '</span>'
+    + '<h3>' + it.p.name + '</h3><p>' + L(it.p.tagline) + '</p></div>'
+    + '<div class="acts"><button class="btn btn-acid" data-dl="' + it.productId + '">' + L('Descargar', 'Download') + ' <span class="ar">↓</span></button>'
+    + '<a class="btn btn-line" href="' + url(it.p) + '">' + L('Ver guía', 'View guide') + '</a></div></div>';
+}
+const suggest = P.find(p => !ownedIds.has(p.id) && p.status !== 'soon');
+if (suggest) {
+  $('#nextBlk').hidden = false;
+  $('#next').innerHTML = '<div class="resume"><div>' + cover(suggest) + '</div>'
+    + '<div><span class="mono dim">' + suggest.code + '</span><h3>' + suggest.name + '</h3><p>' + L(suggest.tagline) + '</p></div>'
+    + '<div class="acts"><a class="btn btn-line" href="' + url(suggest) + '">' + L('Ver producto', 'See product') + ' <span class="ar">→</span></a></div></div>';
+}
+
+/* ── productos ── */
+$('#items').innerHTML = items.length ? items.map(({ p, date, downloadable }) =>
+  '<div class="item"><div>' + cover(p) + '</div>'
+  + '<div><span class="mono dim">' + p.code + ' · ' + L('Comprado', 'Purchased') + ' ' + fmt(date) + '</span>'
+  + '<h3>' + p.name + '</h3><p>' + L(p.tagline) + '</p>'
+  + '<div class="meta">' + p.specs.slice(0, 3).map(([k, v]) => '<span>' + L(k) + ': ' + L(v) + '</span>').join('')
+  + '<span>' + (downloadable ? L('Listo para descargar', 'Ready to download') : L('Archivo en preparación', 'File in preparation')) + '</span></div></div>'
+  + '<div class="acts"><button class="btn btn-acid" data-dl="' + p.id + '">' + L('Descargar', 'Download') + ' <span class="ar">↓</span></button>'
+  + '<a class="btn btn-line" href="' + url(p) + '">' + L('Ver guía', 'View guide') + '</a></div></div>').join('')
+  : zeroLib;
+
+/* ── pedidos ── */
+const VIA = { mercadopago: 'Mercado Pago', paypal: 'PayPal' };
+const amount = o => o.via === 'paypal' ? 'USD ' + (o.usd || 0) : 'ARS ' + (o.ars || 0).toLocaleString('es-AR');
+$('#orders').innerHTML = orders.length ? orders.map(o =>
+  '<div class="order"><div><span class="code">' + o.id + ' · ' + fmt(o.paidAt || o.date) + ' · ' + (VIA[o.via] || o.via) + '</span>'
+  + '<b>' + o.items.length + ' ' + (o.items.length === 1 ? L('producto', 'product') : L('productos', 'products')) + '</b>'
+  + '<ul>' + o.items.map(i => '<li><span>' + i.code + '</span><span>' + i.name + (i.qty > 1 ? ' × ' + i.qty : '') + '</span></li>').join('') + '</ul></div>'
+  + '<div class="right"><span class="tag ' + (o.status === 'paid' ? 'tag-ok' : 'tag-pend') + '">' + (o.status === 'paid' ? L('Pagado', 'Paid') : L('Pendiente', 'Pending')) + '</span>'
+  + '<span class="amt">' + amount(o) + '</span></div></div>').join('')
+  : '<div class="zero"><div><span class="mono dim">' + L('Sin pedidos', 'No orders') + '</span>'
+    + '<h3>' + L('Acá va a quedar cada compra.', 'Every purchase will be listed here.') + '</h3>'
+    + '<p>' + L('Con su fecha, su medio de pago y su total. El comprobante también te llega por email.', 'With its date, payment method and total. The receipt also arrives by email.') + '</p></div>'
+    + '<a class="btn btn-acid" href="productos.html">' + L('Ver catálogo', 'See catalog') + ' <span class="ar">→</span></a></div>';
+
+/* ── descargas ── */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-dl]');
+  if (!b) return;
+  const old = b.innerHTML; b.innerHTML = tr('Preparando…', 'Preparing…');
+  try {
+    const r = await fetch('/api/download?id=' + b.dataset.dl, { redirect: 'follow' });
+    if (r.ok && r.url && !r.url.includes('/api/download')) { location.href = r.url; b.innerHTML = old; return; }
+    const d = await r.json().catch(() => ({}));
+    toast(d.error === 'file_not_configured'
+      ? tr('Ese archivo todavía no está subido. Escribinos y te lo mandamos.', 'That file isn’t uploaded yet. Write to us and we’ll send it.')
+      : tr('No pudimos abrir la descarga.', 'We couldn’t start the download.'));
+  } catch (err) { toast(tr('No pudimos abrir la descarga.', 'We couldn’t start the download.')); }
+  b.innerHTML = old;
 });
 
-$$('[data-dl]').forEach(b => b.onclick = async () => {
-  if (!real) return toast(tr('Demo: la descarga se activa al conectar la plataforma de pago','Demo: downloads turn on once the payment platform is connected'));
-  const r = await fetch(`/api/download?id=${b.dataset.dl}`, { redirect: 'follow' });
-  if (r.ok && r.url) { location.href = r.url; return; }
-  const d = await r.json().catch(() => ({}));
-  toast(d.error === 'file_not_configured' ? tr('Falta subir el archivo de este producto','The file for this product is not uploaded yet') : tr('No pudimos abrir la descarga','We couldn’t start the download'));
+/* ── pestañas ── */
+const show = t => {
+  $$('#rail button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.tab === t)));
+  $$('[data-pane]').forEach(p => p.hidden = p.dataset.pane !== t);
+  if (location.hash.slice(1) !== t) history.replaceState(null, '', '#' + t);
+};
+$$('#rail button').forEach(b => b.onclick = () => show(b.dataset.tab));
+
+/* ── perfil ── */
+$('#pfName').value = me.name || '';
+$('#pfMail').value = me.email;
+$('#pfNews').checked = Boolean(me.news);
+$('#profForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const m = $('#profMsg'); m.classList.remove('ok'); m.textContent = tr('Guardando…', 'Saving…');
+  try {
+    const r = await fetch('/api/auth/profile', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: $('#pfName').value.trim(), news: $('#pfNews').checked }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+    m.classList.add('ok'); m.textContent = tr('Listo, guardado.', 'Saved.');
+  } catch (err) { m.textContent = tr('No pudimos guardar. Probá de nuevo.', 'We couldn’t save. Try again.'); }
 });
+
+/* ── contraseña ── */
+const reset = new URLSearchParams(location.search).get('reset') === '1';
+const hasPw = Boolean(me.hasPassword) && !reset;
+function paintPw() {
+  $('#pwTitle').textContent = hasPw ? tr('Cambiar contraseña', 'Change password')
+    : reset ? tr('Elegí una contraseña nueva', 'Choose a new password') : tr('Crear una contraseña', 'Set a password');
+  $('#pwSub').textContent = hasPw ? tr('Elegí una nueva de al menos 8 caracteres.', 'Pick a new one with at least 8 characters.')
+    : reset ? tr('Entraste con el enlace del email. Definí tu contraseña nueva para la próxima vez.', 'You came in with the email link. Set your new password for next time.')
+    : tr('Así entrás sin depender del email. Mínimo 8 caracteres.', 'So you can sign in without needing your email. At least 8 characters.');
+  $('#pwSubmit').innerHTML = (hasPw ? tr('Cambiar contraseña', 'Change password') : tr('Guardar contraseña', 'Save password')) + ' <span class="ar">→</span>';
+  $('#curWrap').hidden = !hasPw;
+}
+paintPw(); addEventListener('orbit:lang', paintPw);
+const PWERR = {
+  bad_current: ['La contraseña actual no coincide.', 'Current password doesn’t match.'],
+  weak_password: ['Necesita al menos 8 caracteres.', 'It needs at least 8 characters.'],
+};
+$('#pwForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const m = $('#pwMsg'); m.classList.remove('ok');
+  const password = $('#pwNew').value;
+  if (password.length < 8) { m.textContent = tr(...PWERR.weak_password); return; }
+  m.textContent = tr('Guardando…', 'Saving…');
+  try {
+    const r = await fetch('/api/auth/password', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password, current: $('#pwCur').value }) });
+    const d = await r.json();
+    if (!d.ok) { m.textContent = tr(...(PWERR[d.error] || ['No pudimos guardarla. Probá de nuevo.', 'We couldn’t save it. Try again.'])); return; }
+    m.classList.add('ok'); m.textContent = tr('Listo: ya podés entrar con esa contraseña.', 'Done: you can sign in with that password now.');
+    $('#pwNew').value = ''; $('#pwCur').value = '';
+    me.hasPassword = true;
+  } catch (err) { m.textContent = tr('No pudimos guardarla. Probá de nuevo.', 'We couldn’t save it. Try again.'); }
+});
+
+/* ── estado inicial ── */
+const initial = reset ? 'cta' : (location.hash.slice(1) || (items.length ? 'res' : 'res'));
+show(['res', 'lib', 'ord', 'cta'].includes(initial) ? initial : 'res');
+if (reset) { $('#pwNew').focus(); history.replaceState(null, '', 'biblioteca.html#cta'); }
 })();
 </script>
 </body>
