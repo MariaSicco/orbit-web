@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Productos — Orbit®</title>
+<meta name="description" content="Catálogo de productos digitales Orbit: sistemas, bibliotecas y workflows para crear, organizar y vender.">
+<meta name="theme-color" content="#0D0D0E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/orbit.css">
+<style>
+.cat-head{padding-top:calc(120px + env(safe-area-inset-top,0px))}
+.cat-head .top{display:grid;grid-template-columns:minmax(0,8fr) minmax(0,4fr);gap:24px;align-items:end}
+.cat-head h1{font-size:clamp(72px,13vw,220px)}
+.cat-head .ring{position:absolute;right:-6%;top:-40%;width:min(46vw,620px);color:var(--k3);pointer-events:none}
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:clamp(28px,4vw,48px)}
+.filters .l{display:flex;flex-wrap:wrap;gap:8px}
+.empty{padding:60px 0;border-top:1px solid var(--k)}
+.soon{margin-top:clamp(56px,7vw,110px);display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);background:var(--k);color:var(--b);min-height:360px}
+.soon .t{padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;justify-content:space-between;gap:24px}
+.soon h2{font-size:clamp(46px,6vw,100px)}
+.soon .photo{min-height:300px}
+@media (max-width:860px){.cat-head .top,.soon{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="productos">
+<main>
+<section class="sec dark cat-head">
+  <div class="ring" data-sym='{"ring":"#242426","dot":"blue","gap":70}' aria-hidden="true"></div>
+  <div class="wrap top">
+    <h1 class="display">Catá<br><span class="it">logo.</span></h1>
+    <div><p class="lead" style="margin:0 0 18px;opacity:.8">Cada producto resuelve algo concreto: ahorra tiempo, ordena un proceso o te ayuda a vender. Numerados como una colección.</p><span class="mono dim" id="count"></span></div>
+  </div>
+</section>
+
+<section class="sec light">
+  <div class="wrap">
+    <div class="filters"><div class="l" id="filt" role="group" aria-label="Filtrar por familia"></div><span class="mono dim">Vol.01 — 2026</span></div>
+    <div class="pgrid" id="grid"></div>
+    <div class="empty" id="empty" hidden><h2 class="display" style="font-size:clamp(36px,5vw,72px)">Esta órbita todavía <span class="it">está vacía.</span></h2><p style="opacity:.7">Estamos construyendo productos para esta familia. Mirá el resto del catálogo mientras tanto.</p></div>
+
+    <div class="soon rv">
+      <div class="t">
+        <span class="mono">OB—004 · Orbit AI</span>
+        <h2 class="display">New system<br><span class="it">coming soon.</span></h2>
+        <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-acid" href="producto.html?id=ob-004">Ver adelanto <span class="ar">→</span></a></div>
+      </div>
+      <div class="photo" data-photo="corridor" role="img" aria-label="Persona caminando en un pasillo"></div>
+    </div>
+  </div>
+</section>
+</main>
+<script src="assets/js/products.js"></script>
+<script src="assets/js/orbit.js"></script>
+<script>
+(() => {
+const {$, $$, card, reveal, P, FAM} = ORBIT;
+const grid = $('#grid'), filt = $('#filt');
+const fams = [['', 'Todo'], ...Object.entries(FAM).map(([k,[n]]) => [k, n.replace('Orbit ','')])];
+filt.innerHTML = fams.map(([k,n]) => `<button class="chip" data-f="${k}" aria-pressed="false">${n} · ${k ? P.filter(p => p.family===k).length : P.length}</button>`).join('');
+function show(k) {
+  const list = k ? P.filter(p => p.family === k) : P;
+  grid.innerHTML = list.map(card).join('');
+  $('#empty').hidden = list.length > 0;
+  $('#count').textContent = `${list.length} ${list.length===1?'producto':'productos'}${k ? ' — ' + FAM[k][0] : ''}`;
+  $$('.chip', filt).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === k)));
+  $$('.rv', grid).forEach(el => el.classList.remove('rv'));
+}
+$$('.chip', filt).forEach(b => b.onclick = () => { history.replaceState(null, '', b.dataset.f ? '#' + b.dataset.f : location.pathname); show(b.dataset.f); });
+const h = location.hash.slice(1);
+show(FAM[h] ? h : '');
+reveal();
+})();
+</script>
+</body>
+</html>

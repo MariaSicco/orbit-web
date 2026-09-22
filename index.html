@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orbit® — Tools that move</title>
+<meta name="description" content="Orbit crea herramientas y productos digitales para personas que crean, construyen y convierten ideas en resultados. Ideas in motion.">
+<meta name="theme-color" content="#0D0D0E">
+<meta property="og:title" content="Orbit® — Tools that move">
+<meta property="og:description" content="Digital goods for creative people. Ideas in motion.">
+<meta property="og:image" content="assets/img/landing.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='24' fill='%230D0D0E'/%3E%3Cpath d='M38 77 A30 30 0 1 1 72 66' fill='none' stroke='%23F2EFE8' stroke-width='16'/%3E%3Ccircle cx='70' cy='68' r='10' fill='%233047FF'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/orbit.css">
+<style>
+/* hero */
+.hero{min-height:min(900px,100svh);display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);padding:0}
+.hero .l{padding:calc(110px + env(safe-area-inset-top,0px)) var(--pad) 32px;display:flex;flex-direction:column;justify-content:space-between;gap:40px;position:relative;z-index:2}
+.hero h1{font-size:clamp(72px,10.4vw,176px)}
+.hero .sub{max-width:34ch;font-size:clamp(17px,1.4vw,20px);opacity:.85;margin:24px 0 0}
+.hero .ctas{display:flex;gap:10px;flex-wrap:wrap;margin-top:28px}
+.hero .r{position:relative;overflow:hidden;min-height:420px}
+.hero .r .photo{position:absolute;inset:0}
+.hero .r .arc{position:absolute;left:-30%;top:10%;width:120%;color:var(--b);opacity:.9;pointer-events:none}
+.hero .r .meta{position:absolute;right:var(--pad);top:calc(110px + env(safe-area-inset-top,0px));text-align:right;z-index:2}
+.hero .r .meta.b{top:auto;bottom:32px}
+.hero .base{display:flex;justify-content:space-between;align-items:flex-end;gap:20px}
+@media (max-width:860px){.hero{grid-template-columns:1fr}.hero .r{min-height:380px}}
+
+/* featured */
+.feat{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,4vw,64px);align-items:center}
+.feat h2{font-size:clamp(46px,6vw,100px)}
+.feat .specs{display:grid;grid-template-columns:1fr 1fr;margin:28px 0}
+.feat .specs div{border-top:1px solid var(--k3);padding:12px 0}
+.feat .specs b{display:block;font-size:20px;letter-spacing:-.02em}
+@media (max-width:860px){.feat{grid-template-columns:1fr}}
+
+/* flow */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:rgba(13,13,14,.15)}
+.flow>div{background:var(--b);padding:20px;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden;transition:background .4s var(--ease),color .4s var(--ease)}
+.flow>div:hover{background:var(--k);color:var(--b)}
+.flow b{font-weight:800;font-size:clamp(28px,3vw,46px);letter-spacing:-.045em;text-transform:uppercase;line-height:.9}
+.flow .s{width:72px}
+.flow p{margin:10px 0 0;font-size:15px;max-width:26ch;opacity:.75}
+@media (max-width:860px){.flow{grid-template-columns:1fr 1fr}.flow>div{min-height:240px}}
+
+/* families */
+.fams{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:var(--k3)}
+.fams a{background:var(--k);padding:18px;min-height:230px;display:flex;flex-direction:column;justify-content:space-between;text-decoration:none;transition:background .3s,color .3s}
+.fams a:hover{background:var(--b);color:var(--k)}
+.fams b{font-weight:800;font-size:22px;letter-spacing:-.03em;text-transform:uppercase;line-height:1.05}
+.fams .s{width:44px}
+@media (max-width:860px){.fams{grid-template-columns:1fr 1fr}}
+
+/* editorial band */
+.band{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);min-height:620px}
+.band .photo{min-height:460px}
+.band .txt{background:#BDBCB8;color:var(--k);padding:clamp(20px,3vw,44px);display:flex;flex-direction:column;justify-content:space-between;gap:30px}
+.band h2{font-size:clamp(64px,9vw,150px)}
+.band .m{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+@media (max-width:860px){.band{grid-template-columns:1fr}}
+
+.mani{font-size:clamp(32px,4.8vw,78px);font-weight:800;letter-spacing:-.045em;line-height:1;text-transform:uppercase;max-width:1200px;margin:0}
+.mani .it{text-transform:none;color:var(--blue)}
+
+.faqgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px)}
+.faqgrid h2{font-size:clamp(44px,5.4vw,90px)}
+@media (max-width:860px){.faqgrid{grid-template-columns:1fr}}
+</style>
+</head>
+<body data-page="home">
+<main>
+
+<section class="dark hero">
+  <div class="l">
+    <div>
+      <span class="mono">OB—000 · Digital goods for creative people</span>
+    </div>
+    <div>
+      <h1 class="display">Tools<br>that<br><span class="it">move.</span></h1>
+      <p class="sub">Recursos digitales para creadores que quieren convertir ideas en resultados.</p>
+      <div class="ctas"><a class="btn btn-acid" href="productos.html">Explorar productos <span class="ar">→</span></a><a class="btn btn-line" href="#destacado">Ver OB—001</a></div>
+    </div>
+    <div class="base"><span class="mono dim">[ Ideas en movimiento ]</span><span class="mono dim">Est. 2026</span></div>
+  </div>
+  <div class="r">
+    <div class="photo" data-photo="landing" role="img" aria-label="Arquitectura curva de hormigón en blanco y negro"></div>
+    <svg class="arc" id="heroSym" viewBox="0 0 100 100" aria-hidden="true"><g id="heroG" style="color:#F2EFE8"></g></svg>
+    <span class="mono meta">Mejores herramientas<br>Ideas reales<br>Más posibilidades</span>
+    <span class="mono meta b">OB—001<br>Content system</span>
+  </div>
+</section>
+
+<div class="dark" style="padding-block:0"><div class="ticker" data-ticker="Ideas in motion|Tools that move|Build what’s next|Enter the orbit|From idea to system"></div></div>
+
+<section class="sec dark" id="destacado">
+  <div class="wrap">
+    <div class="shead mono"><div><b>Destacado</b>Producto 01</div><div style="text-align:right">Nunca una captura.<br>Siempre un objeto.</div></div>
+    <div class="feat">
+      <div class="boxstage rv" id="featBox"></div>
+      <div class="rv" id="featInfo"></div>
+    </div>
+  </div>
+</section>
+
+<section class="sec light" id="coleccion">
+  <div class="wrap">
+    <div class="shead mono"><div><b>Colección</b>Vol.01</div><div style="text-align:right"><a href="productos.html">Ver todo el catálogo →</a></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:14ch;margin-bottom:clamp(36px,5vw,72px)">Herramientas para <span class="it">hacer.</span></h2>
+    <div class="pgrid" id="homeGrid"></div>
+  </div>
+</section>
+
+<section class="sec light" style="padding-top:0">
+  <div class="wrap">
+    <div class="shead mono"><div><b>Cómo funciona</b>From idea to system</div><div style="text-align:right">Orbit existe en el espacio<br>entre la idea y el resultado</div></div>
+    <div class="flow" id="flow"></div>
+  </div>
+</section>
+
+<section class="sec dark">
+  <div class="wrap">
+    <div class="shead mono"><div><b>Familias</b>Un universo, cinco órbitas</div><div style="text-align:right">Mismo lenguaje.<br>Distintos problemas.</div></div>
+    <div class="fams" id="fams"></div>
+  </div>
+</section>
+
+<section class="band">
+  <div class="photo" data-photo="figure" role="img" aria-label="Persona de espaldas mirando el cielo"></div>
+  <div class="txt">
+    <div class="m"><span class="mono">OB—001</span><span class="mono" style="text-align:right">Creative tools<br>Real progress</span></div>
+    <h2 class="display">Build<br>what’s<br><span class="it">next.</span></h2>
+    <div class="m"><span class="mono">No vendemos archivos.<br>Vendemos herramientas para hacer.</span><a class="btn btn-line" href="nosotros.html" style="color:var(--k)">Conocé Orbit <span class="ar">→</span></a></div>
+  </div>
+</section>
+
+<section class="sec dark">
+  <div class="wrap">
+    <div class="shead mono"><div><b>Manifiesto</b></div><div style="text-align:right">OB—M15</div></div>
+    <p class="mani rv">Las ideas no necesitan más ruido. Necesitan <span class="it">movimiento.</span> No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></p>
+  </div>
+</section>
+
+<section class="sec light">
+  <div class="wrap faqgrid">
+    <div class="rv"><span class="mono">Preguntas frecuentes</span><h2 class="display" style="margin-top:14px">Antes de <span class="it">entrar.</span></h2></div>
+    <div class="faq rv">
+      <details><summary>¿Cómo recibo el producto?</summary><p>Apenas se confirma el pago te llega un email con el link de descarga o acceso. Es inmediato, sin esperas.</p></details>
+      <details><summary>¿Puedo usarlo para clientes?</summary><p>Sí. Todos los productos incluyen licencia de uso comercial: podés usarlos en proyectos propios y de clientes. Lo que no podés hacer es revender o redistribuir los archivos originales.</p></details>
+      <details><summary>¿Qué programas necesito?</summary><p>Cada producto indica su formato en la ficha (Figma, Canva, Notion, PNG, SVG). La mayoría funciona con las versiones gratuitas.</p></details>
+      <details><summary>¿Las actualizaciones tienen costo?</summary><p>No. Cuando un producto sube de versión (V.01 → V.02) te llega la actualización sin cargo.</p></details>
+      <details><summary>¿Y si no me sirve?</summary><p>Escribinos a hola@orbit.studio dentro de los 14 días y lo resolvemos.</p></details>
+    </div>
+  </div>
+</section>
+
+</main>
+<script src="assets/js/products.js"></script>
+<script src="assets/js/orbit.js"></script>
+<script>
+(() => {
+const {C, $, sym, symInner, card, cover, buyBtn, mountBox, follow, reveal, P, FAM, ACC, money, url} = ORBIT;
+
+follow($('#heroG'), $('#heroSym'));
+
+const f = P[0];
+mountBox($('#featBox'), f);
+$('#featInfo').innerHTML = `<span class="mono">${f.code} · ${FAM[f.family][0]}</span>
+  <h2 class="display" style="margin-top:14px">${f.name.split(' ')[0]}<br><span class="it">${f.name.split(' ').slice(1).join(' ').toLowerCase()}.</span></h2>
+  <p class="lead" style="opacity:.8;margin-top:20px">${f.tagline}</p>
+  <div class="specs">${f.specs.slice(0,4).map(([k,v]) => `<div><span class="mono dim">${k}</span><b>${v}</b></div>`).join('')}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">${buyBtn(f)}<a class="btn btn-line" href="${url(f)}">Ver detalle</a></div>`;
+
+$('#homeGrid').innerHTML = P.map(card).join('');
+
+const steps = [['Idea','Aparece. Todavía no tiene forma.',140],['Movimiento','Se conecta con otras. Se desarrolla.',90],['Sistema','Encuentra una estructura que la ordena.',40],['Resultado','Se ejecuta. Se convierte en algo.',0]];
+$('#flow').innerHTML = steps.map(([t,d,g],i) => `<div class="rv"><span class="mono">0${i+1}</span><div class="s">${sym({gap:g, ring:'currentColor', dot:i===3?C.blue:'currentColor', dotOn:i>0})}</div><div><b>${t}</b><p>${d}</p></div></div>`).join('');
+
+const fc = [C.blue, C.or, C.ac, C.b, C.blue];
+$('#fams').innerHTML = Object.entries(FAM).map(([k,[n,d]],i) => { const c = P.filter(p => p.family===k).length; return `<a class="rv" href="productos.html#${k}"><div class="s">${sym({ring:'currentColor', dot:fc[i], rot:i*72})}</div><div><b>${n}</b><p style="margin:6px 0 10px;font-size:14px;opacity:.7">${d}</p><span class="mono dim">${c ? c + (c>1?' productos':' producto') : 'Próximamente'}</span></div></a>`; }).join('');
+
+reveal();
+})();
+</script>
+</body>
+</html>
