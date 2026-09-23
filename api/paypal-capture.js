@@ -38,7 +38,7 @@ export default async function handler(req, res) {
 
     if (completo && orderId) {
       const order = await markPaid(orderId, { paymentId: data.id, amount: montoDe(data), currency: 'USD' });
-      if (order) setSessionCookie(res, order.email, order.nombre);
+      if (order) setSessionCookie(res, order.email);
       return res.redirect(302, `${site}/gracias?order=${orderId}`);
     }
     /* si el cobro salió bien pero no encontramos el número, el aviso de
