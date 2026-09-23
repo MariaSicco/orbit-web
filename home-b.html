@@ -175,11 +175,12 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 /* el cuerpo de la tarjeta entra cuando la diapositiva queda a la vista */
 /* El dibujo cuenta el problema sin palabras y se resuelve con el mismo gesto:
    las piezas entran desparramadas y se acomodan al llegar al centro. */
-.m-slide .dia{height:clamp(104px,17vh,146px);width:100%}
+.m-slide .dia{height:clamp(122px,19vh,168px);width:100%}
 .m-slide .dia svg{width:100%;height:100%;overflow:visible}
 .m-slide .dia .pz{transform-box:fill-box;transform-origin:50% 50%;will-change:transform;
   transform:translate(calc(var(--dx,0) * var(--caos) * 1px),calc(var(--dy,0) * var(--caos) * 1px))
-            rotate(calc(var(--rot,0) * var(--caos) * 1deg))}
+            rotate(calc(var(--rot,0) * var(--caos) * 1deg));
+  opacity:calc(.5 + .5 * var(--orden))}
 /* lo que solo existe cuando ya hay orden */
 .m-slide .dia .ap{opacity:calc((var(--orden) - .45) * 1.9)}
 /* lo que solo existe mientras hay desorden */
@@ -397,74 +398,82 @@ if (document.documentElement.classList.contains('gate-on')) {
 } else setTimeout(arrancar, 50);
 
 /* ---- método: un problema por diapositiva ---- */
-/* Cada tarjeta cuenta un tipo de problema con un dibujo, la frase de quien
-   lo sufre y la clase de herramienta que lo arregla. Sin nombres propios,
-   así la sección sirve igual cuando cambie el catálogo. */
+/* Cuatro problemas concretos y muy comunes. Cada tarjeta muestra el desorden
+   real —las piezas sueltas de ese problema— y esas mismas piezas se acomodan
+   dentro de una tapa: el producto terminado. El problema no se reemplaza por
+   la herramienta, se convierte en ella. */
 const PROB = [
-  { rubro:['Rutina','Routine'], dibujo:'hoja',
-    cita:['Empiezo de cero cada vez que tengo que publicar.', 'I start from zero every time I have to publish.'],
-    arregla:['Un sistema con las decisiones ya tomadas', 'A system with the decisions already made'] },
-  { rubro:['Entregas','Deliveries'], dibujo:'grilla',
-    cita:['Busco recursos media hora antes de entregar.', 'I hunt for assets half an hour before the deadline.'],
-    arregla:['Una biblioteca ordenada y lista para usar', 'A tidy library, ready to use'] },
-  { rubro:['Herramientas','Tools'], dibujo:'islas',
-    cita:['Tengo todo en varias apps y ninguna se habla.', 'Everything lives in several apps and none of them talk.'],
-    arregla:['Un solo tablero donde todo se cruza', 'One board where everything meets'] },
-  { rubro:['Tiempo','Time'], dibujo:'repes',
-    cita:['Pierdo horas en tareas repetidas.', 'I lose hours on repetitive tasks.'],
-    arregla:['Un flujo que hace solo la parte mecánica', 'A workflow that handles the mechanical part'] },
+  { rubro:['Finanzas','Money'], dibujo:'finanzas',
+    cita:['Las cuentas del estudio están en cinco lugares distintos.',
+          'The studio books live in five different places.'],
+    arregla:['Un tablero donde entra y sale todo', 'One board where everything comes in and out'] },
+  { rubro:['Contenido','Content'], dibujo:'calendario',
+    cita:['Publico cuando me acuerdo, no cuando corresponde.',
+          'I post when I remember, not when I should.'],
+    arregla:['Un calendario que ya viene armado', 'A calendar that arrives already built'] },
+  { rubro:['Marca','Brand'], dibujo:'marca',
+    cita:['Cada pieza sale con un color y una tipografía distinta.',
+          'Every piece ships with a different colour and typeface.'],
+    arregla:['Un manual con las reglas en un solo lugar', 'A manual with every rule in one place'] },
+  { rubro:['Proyectos','Projects'], dibujo:'tablero',
+    cita:['No sé en qué estado está cada trabajo hasta que pregunto.',
+          'I don’t know where each job stands until I ask.'],
+    arregla:['Un tablero con el estado de cada proyecto', 'A board with the state of every project'] },
 ];
 
-/* cada palabra y cada pieza arrancan corridas y torcidas, siempre igual: el
-   desvío sale de su posición y no del azar, así la tarjeta se ve idéntica
-   en cada visita */
+const esc = t => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+
+/* el desvío de cada pieza sale de su posición y no del azar: la tarjeta se ve
+   idéntica en cada visita */
 const ruido = n => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); };
 const desvio = (n, ax, ay, ar) =>
   `--dx:${((ruido(n * 3 + 1) - .5) * ax).toFixed(1)};--dy:${((ruido(n * 3 + 2) - .5) * ay).toFixed(1)};`
   + `--rot:${((ruido(n * 3 + 3) - .5) * ar).toFixed(1)}`;
-const esc = t => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
-/* ---- los dibujos: geometría simple que pasa del desorden al orden ----
-   Todos hablan el mismo idioma: rectángulos al aire sobre el fondo claro. */
-const T = 'rgba(13,13,14,'; /* tinta */
-const caja = (x, y, an, al, o, n, ax = 34, ay = 26, ar = 16) =>
-  `<rect class="pz" x="${x}" y="${y}" width="${an}" height="${al}" rx="1.5" fill="${T}${o})" style="${desvio(n, ax, ay, ar)}"/>`;
+/* ---- los dibujos: el desorden de cada problema entrando en su tapa ----
+   Mismo lenguaje en los cuatro: rectángulos al aire, tinta sobre el fondo
+   claro y un acento naranja en la pieza que ordena. */
+const T = 'rgba(13,13,14,';
+let sem = 0;
+/* una pieza suelta que termina en su lugar dentro de la tapa */
+const pz = (x, y, an, al, o, r = 1.5) =>
+  `<rect class="pz" x="${x}" y="${y}" width="${an}" height="${al}" rx="${r}" fill="${o}" style="${desvio(++sem, 104, 74, 46)}"/>`;
+/* la tapa: aparece recién cuando las piezas ya encontraron su lugar */
+const tapa = () => `<g class="ap">
+  <rect x="42" y="5" width="76" height="94" rx="2.5" fill="${T}.035)" stroke="${T}.32)" stroke-width="1.4"/>
+  <rect x="42" y="5" width="5" height="94" rx="2.5" fill="${T}.18)"/>
+  <rect x="97" y="90" width="13" height="2.2" rx="1.1" fill="${T}.3)"/></g>`;
 
 const DIBUJOS = {
-  /* una hoja en blanco que se llena de estructura */
-  hoja: () => `<svg viewBox="0 0 160 96" aria-hidden="true">
-    <rect x="46" y="4" width="68" height="88" rx="2" fill="none" stroke="${T}.3)" stroke-width="1.4"/>
-    <g class="ap">
-      <rect x="54" y="13" width="34" height="7" rx="1" fill="${T}.85)"/>
-      <rect x="54" y="27" width="52" height="3.5" rx="1.75" fill="${T}.3)"/>
-      <rect x="54" y="35" width="52" height="3.5" rx="1.75" fill="${T}.3)"/>
-      <rect x="54" y="43" width="38" height="3.5" rx="1.75" fill="${T}.3)"/>
-      <rect x="54" y="56" width="24" height="26" rx="1.5" fill="var(--or)" opacity=".85"/>
-      <rect x="82" y="56" width="24" height="26" rx="1.5" fill="${T}.16)"/>
-    </g>
-    <g class="des"><rect x="60" y="44" width="40" height="1.4" fill="${T}.22)"/></g></svg>`,
+  /* números y comprobantes sueltos que terminan siendo un tablero de cuentas */
+  finanzas: () => `<svg viewBox="0 0 160 104" aria-hidden="true">${tapa()}
+    ${pz(56, 15, 30, 6, T + '.85)', 1)}
+    ${[0,1,2].map(k => pz(56 + k * 19, 29, 16, 11, T + (k === 0 ? '.22)' : '.14)'))).join('')}
+    ${[14, 24, 9, 29].map((h, k) => pz(56 + k * 13, 82 - h, 9, h, k === 3 ? 'var(--or)' : T + '.3)', 1)).join('')}
+    <line class="ap" x1="56" y1="82" x2="110" y2="82" stroke="${T}.3)" stroke-width="1.2"/></svg>`,
 
-  /* nueve piezas sueltas que caen en una grilla */
-  grilla: () => `<svg viewBox="0 0 160 96" aria-hidden="true">${
-    [0,1,2,3,4,5,6,7,8].map(k => caja(44 + (k % 3) * 26, 12 + Math.floor(k / 3) * 26,
-      20, 20, k === 4 ? .85 : .2, k + 7, 58, 40, 26)).join('')}</svg>`,
+  /* publicaciones sueltas que caen en un calendario */
+  calendario: () => `<svg viewBox="0 0 160 104" aria-hidden="true">${tapa()}
+    ${pz(56, 15, 24, 6, T + '.85)', 1)}
+    ${[0,1,2,3,4,5,6,7,8,9,10,11].map(k => {
+      const c = k % 4, f = (k / 4) | 0;
+      return pz(56 + c * 14, 30 + f * 15, 11, 11, k === 6 ? 'var(--or)' : T + (f === 0 ? '.24)' : '.14)'));
+    }).join('')}</svg>`,
 
-  /* islas separadas que terminan en un solo tablero */
-  islas: () => `<svg viewBox="0 0 160 96" aria-hidden="true">
-    <rect class="ap" x="30" y="30" width="100" height="36" rx="2" fill="none" stroke="${T}.3)" stroke-width="1.4"/>
-    <line class="ap" x1="38" y1="48" x2="122" y2="48" stroke="${T}.18)" stroke-width="1.2"/>
-    ${caja(38, 38, 22, 20, .85, 21, 62, 46, 22)}
-    ${caja(69, 38, 22, 20, .2,  22, 62, 46, 22)}
-    ${caja(100, 38, 22, 20, .2, 23, 62, 46, 22)}</svg>`,
+  /* colores y letras sueltas que terminan en un manual de marca */
+  marca: () => `<svg viewBox="0 0 160 104" aria-hidden="true">${tapa()}
+    <g class="pz" style="${desvio(++sem, 104, 74, 46)}"><circle cx="66" cy="24" r="8.5" fill="none"
+      stroke="${T}.85)" stroke-width="5" stroke-dasharray="40 14" transform="rotate(-40 66 24)"/></g>
+    ${[0,1,2,3].map(k => pz(56 + k * 14, 44, 11, 11, k === 1 ? 'var(--or)' : T + (k === 0 ? '.8)' : '.2)'))).join('')}
+    ${[42, 34, 26].map((an, k) => pz(56, 64 + k * 8, an, 4, T + '.24)', 2)).join('')}</svg>`,
 
-  /* lo mismo hecho cinco veces, que se vuelve una sola */
-  repes: () => `<svg viewBox="0 0 160 96" aria-hidden="true">
-    ${[0,1,2,3].map(k => `<rect class="pz des" x="48" y="30" width="36" height="36" rx="2"
-        fill="none" stroke="${T}.28)" stroke-width="1.4"
-        style="--dx:${(k + 1) * 17};--dy:${(k + 1) * 5};--rot:${(k + 1) * 3}"/>`).join('')}
-    <rect x="48" y="30" width="36" height="36" rx="2" fill="${T}.85)"/>
-    <g class="ap"><path d="M90 48h22m-6-5 6 5-6 5" fill="none" stroke="var(--or)" stroke-width="1.8"
-      stroke-linecap="round" stroke-linejoin="round"/></g></svg>`,
+  /* trabajos sueltos que terminan en columnas con estado */
+  tablero: () => `<svg viewBox="0 0 160 104" aria-hidden="true">${tapa()}
+    ${[0,1,2].map(c => pz(56 + c * 19, 15, 16, 4, T + '.5)', 2)).join('')}
+    ${[[0,0],[0,1],[1,0],[1,1],[1,2],[2,0]].map(([c, f]) =>
+      pz(56 + c * 19, 25 + f * 15, 16, 11, (c === 2 && f === 0) ? 'var(--or)' : T + '.16)')).join('')}
+    ${[0,1,2].map(c => `<line class="ap" x1="${56 + c * 19}" y1="88" x2="${72 + c * 19}" y2="88"
+      stroke="${T}.22)" stroke-width="1.2"/>`).join('')}</svg>`,
 };
 
 $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
