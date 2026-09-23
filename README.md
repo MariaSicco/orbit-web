@@ -1,6 +1,6 @@
 # ORBIT® — Sitio web
 
-Digital goods for creative people. Ideas in motion.
+Orden en movimiento. Ideas in motion.
 
 Sitio estático (HTML/CSS/JS, sin build) publicado con GitHub Pages.
 

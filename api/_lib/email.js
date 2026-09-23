@@ -122,7 +122,7 @@ export const layout = ({
      ${sign ? `<p style="margin:0 0 10px;font-family:${SERIF};font-style:italic;font-size:16px;line-height:1.4;color:${BONE};opacity:.9">Problema &rarr; herramienta.</p>` : ''}
      ${foot ? `<p style="margin:0 0 12px;font-family:${SANS};font-size:13px;line-height:1.55;color:${GREY}">${foot}</p>` : ''}
      <p style="margin:0;font-family:${MONO};font-size:10px;line-height:1.7;letter-spacing:1.2px;text-transform:uppercase;color:${GREY}">
-       ORBIT® &mdash; Digital goods for creative people<br>
+       ORBIT® &mdash; Orden en movimiento<br>
        <a href="${url}" style="color:${GREY};text-decoration:none">orbitando.com.ar</a> &nbsp;·&nbsp;
        <a href="mailto:hola@orbitando.com.ar" style="color:${GREY};text-decoration:none">hola@orbitando.com.ar</a>
      </p>
