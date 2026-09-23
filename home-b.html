@@ -34,10 +34,10 @@
 }
 @media (prefers-reduced-motion:reduce){ html{scroll-snap-type:none} }
 
-/* svh es el alto con toda la barra del navegador desplegada; en Safari,
-   con la barra compacta, la pantalla es más alta y asomaba la sección de
-   abajo. dvh sigue el alto real en todo momento. */
-.pant{min-height:100svh;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,34px);
+/* Ni svh ni dvh alcanzan en Safari: la franja clara de abajo aparecía igual.
+   --vh lo mide el JS con el alto real de la ventana y lo corrige cada vez
+   que cambia. Las unidades quedan solo de respaldo. */
+.pant{min-height:100svh;min-height:100dvh;min-height:var(--vh,100dvh);display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,34px);
   padding:calc(96px + env(safe-area-inset-top,0px)) var(--pad) calc(78px + env(safe-area-inset-bottom,0px));position:relative;overflow:hidden}
 .pant .eti{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;--op:.5;opacity:var(--op,1)}
 .pant h2{font-size:clamp(44px,11.5vw,120px);margin:0}
@@ -162,14 +162,14 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
    dedo: no es una animación que se dispara y termina, es el desorden
    resolviéndose en tiempo real. --caos es su complemento. */
 .m-slide{--orden:0;--caos:1}
-.m-slide .prob{font-family:var(--serif);font-style:italic;font-size:clamp(23px,6vw,34px);line-height:1.16;margin:0}
-.m-slide .prob s{text-decoration:none}
-.m-slide .w{display:inline-block;will-change:transform;
-  transform:translate(calc(var(--dx) * var(--caos) * 1px),calc(var(--dy) * var(--caos) * 1px))
-            rotate(calc(var(--rot) * var(--caos) * 1deg));
-  opacity:calc(.3 + .7 * var(--orden));
-  /* cada palabra se tacha sola cuando ya está en su lugar */
-  background:linear-gradient(var(--or),var(--or)) 0 58%/calc(var(--orden) * 100%) 2.5px no-repeat}
+/* La frase no se tacha: llega cifrada y se descifra a medida que la tarjeta
+   entra. Monoespaciada para que ningún carácter cambie de ancho mientras
+   se resuelve y el bloque no se mueva ni un píxel. */
+.m-slide .prob{display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start;margin:0}
+.m-slide .prob .flecha{font-family:var(--mono);font-size:14px;line-height:1.55;color:var(--or);opacity:.9}
+.m-slide .prob .dec{font-family:var(--mono);font-size:clamp(13.5px,3.7vw,16px);line-height:1.55;
+  letter-spacing:.02em;text-transform:uppercase;word-break:break-word;
+  color:rgba(13,13,14,calc(.42 + .58 * var(--orden)))}
 .m-slide .cab{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
 .m-slide .tipo{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.45;text-align:right}
 /* el cuerpo de la tarjeta entra cuando la diapositiva queda a la vista */
@@ -232,7 +232,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   /* en pantallas grandes las secciones dejan de ser de alto completo, pero la
      portada sí tiene que llenar la pantalla: si no, asoma la sección clara
      de abajo y la portada se ve cortada */
-  .p-entrada{min-height:100vh;min-height:100dvh;padding-block:calc(104px + 2vh) calc(80px + 2vh)}
+  .p-entrada{min-height:100vh;min-height:var(--vh,100dvh);padding-block:calc(104px + 2vh) calc(80px + 2vh)}
   .riel>*{flex:0 0 min(40%,380px)}
   .avance{display:none}
 }
@@ -402,16 +402,16 @@ if (document.documentElement.classList.contains('gate-on')) {
    así la sección sirve igual cuando cambie el catálogo. */
 const PROB = [
   { rubro:['Rutina','Routine'], dibujo:'hoja',
-    cita:['“Empiezo de cero cada vez que tengo que publicar.”', '“I start from zero every time I have to publish.”'],
+    cita:['Empiezo de cero cada vez que tengo que publicar.', 'I start from zero every time I have to publish.'],
     arregla:['Un sistema con las decisiones ya tomadas', 'A system with the decisions already made'] },
   { rubro:['Entregas','Deliveries'], dibujo:'grilla',
-    cita:['“Busco recursos media hora antes de entregar.”', '“I hunt for assets half an hour before the deadline.”'],
+    cita:['Busco recursos media hora antes de entregar.', 'I hunt for assets half an hour before the deadline.'],
     arregla:['Una biblioteca ordenada y lista para usar', 'A tidy library, ready to use'] },
   { rubro:['Herramientas','Tools'], dibujo:'islas',
-    cita:['“Tengo todo en varias apps y ninguna se habla.”', '“Everything lives in several apps and none of them talk.”'],
+    cita:['Tengo todo en varias apps y ninguna se habla.', 'Everything lives in several apps and none of them talk.'],
     arregla:['Un solo tablero donde todo se cruza', 'One board where everything meets'] },
   { rubro:['Tiempo','Time'], dibujo:'repes',
-    cita:['“Pierdo horas en tareas repetidas.”', '“I lose hours on repetitive tasks.”'],
+    cita:['Pierdo horas en tareas repetidas.', 'I lose hours on repetitive tasks.'],
     arregla:['Un flujo que hace solo la parte mecánica', 'A workflow that handles the mechanical part'] },
 ];
 
@@ -422,11 +422,7 @@ const ruido = n => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math
 const desvio = (n, ax, ay, ar) =>
   `--dx:${((ruido(n * 3 + 1) - .5) * ax).toFixed(1)};--dy:${((ruido(n * 3 + 2) - .5) * ay).toFixed(1)};`
   + `--rot:${((ruido(n * 3 + 3) - .5) * ar).toFixed(1)}`;
-const troce = frase => frase.split(' ').map((palabra, j) =>
-  `<i class="w" style="${desvio(j, 30, 30, 11)}">${palabra}</i>`).join(' ');
-/* L() devuelve las dos lenguas ya marcadas, así que hay que partir cada una
-   por separado: partir su salida rompería las etiquetas */
-const desarmar = (es, en) => L(troce(es), troce(en));
+const esc = t => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 
 /* ---- los dibujos: geometría simple que pasa del desorden al orden ----
    Todos hablan el mismo idioma: rectángulos al aire sobre el fondo claro. */
@@ -477,20 +473,42 @@ $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
     <span class="tipo">${L(...q.rubro)}</span>
   </div>
   <div class="dia">${DIBUJOS[q.dibujo]()}</div>
-  <p class="prob"><s>${desarmar(...q.cita)}</s></p>
+  <p class="prob"><span class="flecha">&gt;</span><span>
+    <span class="dec" data-l="es" data-txt="${esc(q.cita[0])}"></span><span class="dec" data-l="en" data-txt="${esc(q.cita[1])}"></span>
+  </span></p>
   <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
 </article>`).join('');
 
 /* El dedo manda: --orden de cada tarjeta sale de lo cerca que está del
    centro del riel. Se actualiza en cada cuadro mientras se desliza, así el
    orden se arma y se desarma siguiendo el gesto. */
+const GLIFOS = 'ABCDEF0123456789#%&/\\<>[]{}*+=·';
+/* Descifra de izquierda a derecha: lo ya resuelto se lee, en el borde va un
+   bloque que hace de cabezal y lo que falta es ruido que se renueva solo. */
+function descifrar(tarjeta, p) {
+  tarjeta.querySelectorAll('.dec').forEach(el => {
+    const real = el.dataset.txt || '';
+    if (!real) return;
+    if (p >= .999) { if (el.textContent !== real) el.textContent = real; return; }
+    const corte = Math.round(p * real.length);
+    let salida = '';
+    for (let i = 0; i < real.length; i++) {
+      if (i < corte) salida += real[i];
+      else if (i === corte) salida += '▉';
+      else salida += real[i] === ' ' ? ' ' : GLIFOS[(Math.random() * GLIFOS.length) | 0];
+    }
+    el.textContent = salida;
+  });
+}
+
+/* El dedo manda: --orden de cada tarjeta sale de lo cerca que está del
+   centro del riel. Se actualiza en cada cuadro mientras se desliza, así el
+   descifrado y el dibujo se arman y se desarman siguiendo el gesto. */
 (function ordenarConElDedo() {
   const riel = $('#rielM'), tarjetas = $$('.m-slide', riel);
   if (!tarjetas.length) return;
-  if (RM) { tarjetas.forEach(t => { t.style.setProperty('--orden', 1); t.style.setProperty('--caos', 0); }); return; }
-  let pedido = false;
+
   function medir() {
-    pedido = false;
     const centro = riel.scrollLeft + riel.clientWidth / 2;
     tarjetas.forEach(t => {
       const suyo = t.offsetLeft + t.offsetWidth / 2;
@@ -499,11 +517,32 @@ $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
       const suave = p * p * (3 - 2 * p);
       t.style.setProperty('--orden', suave.toFixed(3));
       t.style.setProperty('--caos', (1 - suave).toFixed(3));
+      descifrar(t, suave);
     });
   }
-  const pedir = () => { if (!pedido) { pedido = true; requestAnimationFrame(medir); } };
+
+  if (RM) {
+    tarjetas.forEach(t => {
+      t.style.setProperty('--orden', 1); t.style.setProperty('--caos', 0); descifrar(t, 1);
+    });
+    return;
+  }
+
+  let pedido = false;
+  const pedir = () => { if (!pedido) { pedido = true; requestAnimationFrame(() => { pedido = false; medir(); }); } };
   riel.addEventListener('scroll', pedir, {passive:true});
   addEventListener('resize', pedir);
+
+  /* el ruido de lo que falta descifrar se renueva solo, para que se vea vivo
+     y no congelado, pero únicamente mientras la sección está a la vista */
+  let vivo = false, reloj = 0;
+  const latir = () => { if (!vivo) return; medir(); reloj = setTimeout(latir, 70); };
+  new IntersectionObserver(([e]) => {
+    vivo = e.isIntersecting;
+    clearTimeout(reloj);
+    if (vivo) latir();
+  }, {rootMargin:'160px'}).observe($('#metodo'));
+
   medir();
 })();
 
@@ -537,6 +576,19 @@ seguirRiel('#rielC', '#cN', '#cB');
 /* ---- la O viaja del wordmark al indicador de avance ----
    Va en un elemento fijo aparte, no en la O del wordmark: esa vive dentro
    de una sección con recorte, y al salir de ella se cortaría. */
+/* el alto real de la ventana, medido y no declarado */
+(function altoReal() {
+  /* Safari informa distinto según tenga la barra desplegada o compacta, así
+     que nos quedamos con el mayor de los dos: la pantalla nunca queda corta
+     y no vuelve a asomar la sección de abajo. */
+  const fijar = () => document.documentElement.style.setProperty('--vh',
+    Math.max(innerHeight, (window.visualViewport && visualViewport.height) || 0) + 'px');
+  fijar();
+  addEventListener('resize', fijar);
+  addEventListener('orientationchange', () => setTimeout(fijar, 120));
+  if (window.visualViewport) visualViewport.addEventListener('resize', fijar);
+})();
+
 (function viajeDeLaO() {
   const viajero = document.createElement('div');
   viajero.className = 'viajero'; viajero.setAttribute('aria-hidden', 'true');
