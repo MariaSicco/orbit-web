@@ -36,7 +36,7 @@
 
 .pant{min-height:100svh;display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,34px);
   padding:calc(96px + env(safe-area-inset-top,0px)) var(--pad) calc(78px + env(safe-area-inset-bottom,0px));position:relative;overflow:hidden}
-.pant .eti{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.pant .eti{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;--op:.5;opacity:var(--op,1)}
 .pant h2{font-size:clamp(44px,11.5vw,120px);margin:0}
 .luz{background:var(--b);color:var(--k)}
 .luz .pant .eti{opacity:.55}
@@ -55,53 +55,52 @@
 .p-entrada .marca{font-size:clamp(58px,19vw,210px);line-height:.78;letter-spacing:-.05em}
 .p-entrada .sub{font-size:clamp(27px,7.6vw,52px);font-weight:800;letter-spacing:-.045em;text-transform:uppercase;line-height:1;max-width:12ch;margin:0}
 .p-entrada .sub .it{color:var(--ac)}
-.p-entrada p{margin:0;max-width:30ch;font-size:15.5px;line-height:1.5;opacity:.65}
+.p-entrada p{margin:0;max-width:30ch;font-size:15.5px;line-height:1.5;--op:.65}
+.p-entrada .sub{--op:1}
 .p-entrada .foto{position:absolute;inset:0;background:url(assets/img/landing.jpg) center/cover;opacity:.3;z-index:0}
 .p-entrada>*:not(.foto){position:relative;z-index:1}
 .p-entrada .foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--k),rgba(13,13,14,.4) 45%,var(--k))}
 
 
-/* ---- 01 entrada: coreografía ----
-   Todo entra en tiempos distintos. El arco se dibuja, el punto llega
-   orbitando hasta su lugar, las letras suben una por una y recién
-   después aparece el texto. Solo se animan transformaciones y opacidad. */
-.p-entrada .foto{opacity:0;transform:scale(1.16);transition:opacity 1.4s ease,transform 3s cubic-bezier(.2,.8,.2,1)}
+/* ---- 01 entrada: intro en tres actos ----
+   ACTO 1  el símbolo solo, grande y centrado. El arco se carga de punta a punta
+           y el punto llega orbitando.
+   ACTO 2  el símbolo viaja a su lugar como la O y ORBIT se escribe letra por letra.
+   ACTO 3  entra el resto: la foto, el eslogan, el texto y el botón.
+   Los dos primeros actos los maneja el JS con animaciones explícitas: dependen de
+   una medida que solo se conoce en pantalla. El tercero es CSS puro. */
+
+.p-entrada .foto{opacity:0;transform:scale(1.14);transition:opacity 1.6s ease 2.8s,transform 4.2s cubic-bezier(.2,.8,.2,1) 2.8s}
 .go .p-entrada .foto{opacity:.3;transform:none}
 
-.p-entrada .marca{display:inline-flex;align-items:baseline;white-space:nowrap}
-.p-entrada .marca .o{width:.745em;height:.745em;margin-right:.03em;transform:translateY(.012em);overflow:visible;flex:none}
-.p-entrada .marca .o path{stroke-dasharray:var(--arco);stroke-dashoffset:var(--arco);
-  transition:stroke-dashoffset 1.1s cubic-bezier(.65,0,.2,1) .2s}
-.go .p-entrada .marca .o path{stroke-dashoffset:0}
-.p-entrada .marca .o circle{transform-box:fill-box;transform-origin:50% 50%;opacity:0;
-  transition:opacity .35s ease .95s}
-.go .p-entrada .marca .o circle{opacity:1}
-.p-entrada .marca .o g{transform:rotate(-168deg);transform-origin:50px 50px;
-  transition:transform 1.15s cubic-bezier(.22,1,.3,1) .85s}
-.go .p-entrada .marca .o g{transform:none}
-.p-entrada .marca .l{display:inline-block;opacity:0;transform:translateY(.4em);
-  transition:opacity .5s ease calc(.52s + var(--i) * .075s),transform .65s cubic-bezier(.2,.9,.25,1) calc(.52s + var(--i) * .075s)}
-.go .p-entrada .marca .l{opacity:1;transform:none}
-.p-entrada .marca sup{font-size:.16em;font-weight:600;letter-spacing:0;align-self:flex-start;margin-left:.12em;margin-top:.05em;line-height:1;
-  opacity:0;transition:opacity .5s ease 1.25s}
+.p-entrada .marca .o{transform-origin:50% 50%}
+.p-entrada .marca .gira,.p-entrada .marca .orb{transform-origin:50px 50px}
+
+/* ACTO 2 — ORBIT se escribe, una letra por vez */
+.p-entrada .marca .l{display:inline-block;opacity:0;transition:opacity .01s linear calc(2.4s + var(--i) * .11s)}
+.go .p-entrada .marca .l{opacity:1}
+.p-entrada .marca sup{opacity:0;transition:opacity .45s ease 2.92s}
 .go .p-entrada .marca sup{opacity:1}
 
-/* el resto entra escalonado */
-.ent{opacity:0;transform:translateY(16px);
-  transition:opacity .65s ease var(--d,0s),transform .8s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
-.go .ent{opacity:1;transform:none}
+/* ACTO 3 — el resto. Cada uno recupera su propia opacidad de reposo.
+   La barra de arriba también espera: el acto 1 pasa sobre negro, sin nada más. */
+body .nav{opacity:0;transition:opacity .8s ease 3.05s}
+body.go .nav{opacity:1}
+.p-entrada .ent{opacity:0;transform:translateY(18px);
+  transition:opacity .7s ease var(--d,0s),transform .85s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
+.go .p-entrada .ent{opacity:var(--op,1);transform:none}
 
-/* una vez que aterrizó, el símbolo sigue girando muy despacio */
+/* ya en reposo, el símbolo gira muy despacio */
 @keyframes orbitar{to{transform:rotate(360deg)}}
-.go .p-entrada .marca .o{animation:orbitar 72s linear 2.4s infinite}
+.go .p-entrada .marca .gira{animation:orbitar 80s linear 3.8s infinite}
+
+/* quien ya vio la intro en esta visita entra directo */
+body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .l,
+.directo .p-entrada .marca sup,.directo .p-entrada .ent{transition:none!important}
 
 @media (prefers-reduced-motion:reduce){
-  .p-entrada .foto,.p-entrada .marca .o path,.p-entrada .marca .o circle,
-  .p-entrada .marca .o g,.p-entrada .marca .l,.p-entrada .marca sup,.ent{transition:none!important;animation:none!important}
-  .p-entrada .foto{opacity:.3;transform:none}
-  .p-entrada .marca .o path{stroke-dashoffset:0}
-  .p-entrada .marca .o circle,.p-entrada .marca sup,.ent{opacity:1}
-  .p-entrada .marca .o g,.p-entrada .marca .l,.ent{transform:none}
+  body .nav,.p-entrada .foto,.p-entrada .marca .l,.p-entrada .marca sup,
+  .p-entrada .ent,.p-entrada .marca .gira{transition:none!important;animation:none!important}
 }
 
 /* ---- deslizables ---- */
@@ -173,13 +172,13 @@
 <!-- 01 ENTRADA -->
 <section class="pant p-entrada dark">
   <div class="foto" aria-hidden="true"></div>
-  <div class="eti ent" style="--d:.1s"><span>OB—000</span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
+  <div class="eti ent" style="--d:2.98s"><span>OB—000</span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)">
     <div class="marca wm" id="bWm" aria-label="Orbit"></div>
-    <p class="sub ent" style="--d:1.15s"><span data-l="es">Orden en <span class="it">movimiento.</span></span><span data-l="en">Order in <span class="it">motion.</span></span></p>
-    <p class="ent" style="--d:1.4s"><span data-l="es">Cuatro sistemas digitales. Cada uno nació de un problema que tenías vos.</span><span data-l="en">Four digital systems. Each one born from a problem you already had.</span></p>
+    <p class="sub ent" style="--d:3.1s"><span data-l="es">Orden en <span class="it">movimiento.</span></span><span data-l="en">Order in <span class="it">motion.</span></span></p>
+    <p class="ent" style="--d:3.24s"><span data-l="es">Cuatro sistemas digitales. Cada uno nació de un problema que tenías vos.</span><span data-l="en">Four digital systems. Each one born from a problem you already had.</span></p>
   </div>
-  <div class="acts ent" style="--d:1.6s">
+  <div class="acts ent" style="--d:3.38s">
     <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver los cuatro</span><span data-l="en">See all four</span> <span class="ar">↓</span></a>
   </div>
 </section>
@@ -247,23 +246,65 @@
 <script>
 (() => {
 const {$, $$, L, cover, buyBtn, money, url, wm, P} = ORBIT;
-/* wordmark animable: el símbolo con su arco y su punto agrupados,
-   y cada letra por separado para que suban una detrás de otra */
+/* wordmark animable: arco, punto y letras por separado,
+   para poder darle a cada uno su momento */
 const simbolo = ORBIT.symInner({dot:'#3047FF', ring:'#F2EFE8'});
+const arcoSVG = (simbolo.match(/<path[^>]*>/) || [''])[0].replace('<path', '<path class="arco"');
+const puntoSVG = (simbolo.match(/<circle[^>]*>/) || [''])[0];
 $('#bWm').innerHTML =
-  `<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><path${simbolo.match(/<path([^>]*)>/)[1]}></path>`
-  + `<g>${simbolo.match(/<circle[^>]*>/)[0]}</g></svg>`
+  `<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><g class="gira">${arcoSVG}<g class="orb">${puntoSVG}</g></g></svg>`
   + 'RBIT'.split('').map((c,i) => `<span class="l" style="--i:${i}">${c}</span>`).join('')
   + '<sup>®</sup>';
 
-/* longitud real del trazo, para poder dibujarlo */
-const trazo = $('#bWm path');
-if (trazo) $('#bWm').style.setProperty('--arco', Math.ceil(trazo.getTotalLength()));
+const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
+let visto = false;
+try { visto = sessionStorage.getItem('orbit-intro') === '1'; } catch (e) {}
 
-/* arranca cuando la página ya es visible (el selector de idioma puede taparla) */
-const arrancar = () => requestAnimationFrame(() => document.body.classList.add('go'));
-if (document.documentElement.classList.contains('gate-on')) addEventListener('orbit:lang', arrancar, {once:true});
-else setTimeout(arrancar, 60);
+/* ACTOS 1 y 2: el símbolo entra solo, grande y centrado en la pantalla; carga su
+   arco de punta a punta, recibe el punto y recién entonces viaja a su lugar.
+   Va con animaciones explícitas porque el punto de partida depende de una medida. */
+function simboloEntra() {
+  const o = $('#bWm .o'), arco = $('#bWm .arco'), orb = $('#bWm .orb'), marca = $('#bWm');
+  if (!o || !arco) return;
+  const caja = o.getBoundingClientRect(), an = innerWidth, al = innerHeight;
+  if (caja.width < 4 || !an) return;
+
+  /* de su tamaño final al tamaño de presentación, y del centro de la pantalla a su lugar */
+  const escala = Math.max(1.6, Math.min(an * .46, al * .30) / caja.width);
+  const dx = an / 2 - (caja.left + caja.width / 2);
+  const dy = al / 2 - (caja.top + caja.height / 2);
+  const reposo = `translateY(${(parseFloat(getComputedStyle(marca).fontSize) * .012).toFixed(2)}px)`;
+
+  const largo = Math.ceil(arco.getTotalLength());
+  arco.style.strokeDasharray = largo;
+  arco.style.strokeDashoffset = largo;
+
+  o.animate([{transform:`translate(${dx}px,${dy}px) scale(${escala})`}, {transform:reposo}],
+    {duration:820, delay:1550, easing:'cubic-bezier(.76,0,.16,1)', fill:'both'});
+  arco.animate([{strokeDashoffset:largo}, {strokeDashoffset:0}],
+    {duration:900, delay:120, easing:'cubic-bezier(.62,0,.2,1)', fill:'both'});
+  orb.animate([{transform:'rotate(-175deg)', opacity:0}, {opacity:1, offset:.28}, {transform:'rotate(0deg)', opacity:1}],
+    {duration:800, delay:650, easing:'cubic-bezier(.2,1,.28,1)', fill:'both'});
+}
+
+function arrancar(intento) {
+  const o = $('#bWm .o');
+  /* si todavía no hay layout, esperamos un cuadro más */
+  if ((!o || o.getBoundingClientRect().width < 4) && (intento || 0) < 40)
+    return requestAnimationFrame(() => arrancar((intento || 0) + 1));
+  if (visto || RM) document.body.classList.add('directo');
+  else { simboloEntra(); try { sessionStorage.setItem('orbit-intro','1'); } catch (e) {} }
+  requestAnimationFrame(() => document.body.classList.add('go'));
+}
+
+/* con portada de idioma esperamos a que termine de abrirse:
+   la intro es el primer acto de la página, no un telón de fondo */
+if (document.documentElement.classList.contains('gate-on')) {
+  addEventListener('orbit:lang', () => {
+    const esperar = () => document.querySelector('.gate') ? setTimeout(esperar, 60) : arrancar();
+    esperar();
+  }, {once:true});
+} else setTimeout(arrancar, 50);
 
 /* ---- método: un problema por diapositiva ---- */
 const PROB = [
