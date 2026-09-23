@@ -79,17 +79,19 @@
 .p-entrada .marca .o{transform-origin:50% 50%}
 .p-entrada .marca .gira,.p-entrada .marca .orb{transform-origin:50px 50px}
 
-/* ACTO 2 — ORBIT se escribe, una letra por vez, con el cursor adelante */
+/* ACTO 2 — ORBIT se escribe: la rayita verde barre y las letras van
+   quedando atrás. Antes aparecían de golpe, una por una, y saltaba. */
 .p-entrada .marca{position:relative}
-.p-entrada .marca .cur{position:absolute;left:0;top:50%;width:.055em;height:.58em;margin-top:-.3em;
+.p-entrada .marca .pal{display:inline-block;clip-path:inset(-.28em 100% -.28em 0)}
+.go .p-entrada .marca .pal{clip-path:inset(-.28em -.14em -.28em 0);
+  transition:clip-path .56s cubic-bezier(.45,.02,.25,1) 2.4s}
+.p-entrada .marca .cur{position:absolute;left:0;top:50%;width:.05em;height:.6em;margin-top:-.31em;
   background:var(--ac);opacity:0;pointer-events:none}
-.go .p-entrada .marca .cur{animation:tipear 1.2s steps(1,end) 2.26s 1 both}
+.go .p-entrada .marca .cur{animation:tipear 1.16s steps(1,end) 2.32s 1 both}
 @keyframes tipear{
-  0%{opacity:0} 4%{opacity:1} 60%{opacity:1}
-  64%{opacity:0} 72%{opacity:1} 80%{opacity:0} 88%{opacity:1} 94%{opacity:0} 100%{opacity:0}}
-.p-entrada .marca .l{display:inline-block;opacity:0;transition:opacity .01s linear calc(2.4s + var(--i) * .11s)}
-.go .p-entrada .marca .l{opacity:1}
-.p-entrada .marca sup{opacity:0;transition:opacity .45s ease 2.92s}
+  0%{opacity:0} 5%{opacity:1} 56%{opacity:1}
+  60%{opacity:0} 70%{opacity:1} 80%{opacity:0} 90%{opacity:1} 96%{opacity:0} 100%{opacity:0}}
+.p-entrada .marca sup{opacity:0;transition:opacity .45s ease 3.02s}
 .go .p-entrada .marca sup{opacity:1}
 
 /* ACTO 3 — el resto. Cada uno recupera su propia opacidad de reposo.
@@ -103,39 +105,30 @@ body.go .nav{opacity:1}
 /* ---- la portada nunca se queda del todo quieta ----
    Tres movimientos lentos, que se notan pero no piden atención. */
 
-/* el punto no para de orbitar la O. Arranca justo cuando termina de entrar,
-   así el relevo entre la animación de entrada y esta no se ve. */
+/* el punto no para de orbitar la O, y deja una cola detrás. Arranca justo
+   cuando termina de entrar, así el relevo con la entrada no se ve. */
 @keyframes orbitar{to{transform:rotate(360deg)}}
 .go .p-entrada .marca .orb{animation:orbitar 6.5s linear 1.45s infinite}
+/* la cola aparece recién cuando el punto empieza a moverse: quieta sería
+   una mancha, en movimiento se lee como velocidad */
+.p-entrada .marca .estela{opacity:0}
+.go .p-entrada .marca .estela{opacity:1;transition:opacity .9s ease 1.6s}
+.directo .p-entrada .marca .estela{transition:none}
 
 /* la foto respira: empieza donde la dejó la entrada, así no hay salto */
 @keyframes respirar{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
 .go .p-entrada .foto{animation:respirar 26s ease-in-out 7.2s infinite}
 
-/* la tira de categorías corre sin cortes: el contenido va duplicado
-   y el recorrido es exactamente la mitad */
-@keyframes correr{to{transform:translateX(-50%)}}
-.p-entrada .tira{overflow:hidden;margin:0 calc(var(--pad) * -1);
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
-          mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
-/* de contorno: corre fuerte pero no le pelea el peso al eslogan */
-.p-entrada .tira-in{display:flex;width:max-content;font-size:clamp(26px,7.4vw,46px);font-weight:800;
-  text-transform:uppercase;letter-spacing:-.02em;line-height:1.16;color:transparent;
-  -webkit-text-stroke:1.2px rgba(242,239,232,.42);will-change:transform}
-.p-entrada .tira-in span{display:flex;align-items:center;gap:.42em;padding-right:.42em;white-space:nowrap}
-.p-entrada .tira-in i{width:.14em;height:.14em;border-radius:50%;background:var(--ac);flex:none;
-  -webkit-text-stroke:0}
-.go .p-entrada .tira-in{animation:correr 26s linear infinite}
-
 /* con movimiento reducido, sin intro: todo aparece ya puesto */
-body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .l,
+body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .directo .p-entrada .marca sup,.directo .p-entrada .ent{transition:none!important}
 .directo .p-entrada .marca .orb,.directo .p-entrada .foto{animation-delay:0s}
 .directo .p-entrada .marca .cur{display:none}
 
 @media (prefers-reduced-motion:reduce){
-  body .nav,.p-entrada .foto,.p-entrada .marca .l,.p-entrada .marca sup,
-  .p-entrada .ent,.p-entrada .marca .orb,.p-entrada .tira-in{transition:none!important;animation:none!important}
+  body .nav,.p-entrada .foto,.p-entrada .marca .pal,.p-entrada .marca sup,
+  .p-entrada .ent,.p-entrada .marca .orb{transition:none!important;animation:none!important}
+  .p-entrada .marca .estela{display:none}
   .p-entrada .marca .cur{display:none}
 }
 
@@ -214,8 +207,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .l,
     <p class="sub ent" style="--d:3.1s"><span data-l="es">Orden en <span class="it">movimiento.</span></span><span data-l="en">Order in <span class="it">motion.</span></span></p>
     <p class="ent" style="--d:3.24s"><span data-l="es">Sistemas digitales listos para usar. Para que nada empiece de cero.</span><span data-l="en">Digital systems, ready to use. So nothing ever starts from zero.</span></p>
   </div>
-  <div class="tira ent" style="--d:3.34s" aria-hidden="true"><div class="tira-in" id="bTira"></div></div>
-  <div class="acts ent" style="--d:3.46s">
+  <div class="acts ent" style="--d:3.4s">
     <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver la colección</span><span data-l="en">See the collection</span> <span class="ar">↓</span></a>
   </div>
 </section>
@@ -287,11 +279,14 @@ const {$, $$, L, cover, buyBtn, money, url, wm, P} = ORBIT;
    para poder darle a cada uno su momento */
 const simbolo = ORBIT.symInner({dot:'#3047FF', ring:'#F2EFE8'});
 const arcoSVG = (simbolo.match(/<path[^>]*>/) || [''])[0].replace('<path', '<path class="arco"');
+/* la cola del punto: va dentro del mismo grupo que gira, así lo sigue sin cuentas */
+const DEGRADE = '<linearGradient id="obEstela" gradientUnits="userSpaceOnUse" x1="87.84" y1="59.43" x2="78.05" y2="77.09"><stop offset="0" stop-color="#3047FF" stop-opacity="0"/><stop offset="1" stop-color="#3047FF" stop-opacity=".78"/></linearGradient>';
+const COLA = '<path class="estela" d="M87.84 59.43 A39 39 0 0 1 78.05 77.09" fill="none" stroke="url(#obEstela)" stroke-width="11" stroke-linecap="round"/>';
 const puntoSVG = (simbolo.match(/<circle[^>]*>/) || [''])[0];
 $('#bWm').innerHTML =
-  `<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><g class="gira">${arcoSVG}<g class="orb">${puntoSVG}</g></g></svg>`
-  + 'RBIT'.split('').map((c,i) => `<span class="l" style="--i:${i}">${c}</span>`).join('')
-  + '<sup>®</sup><i class="cur" aria-hidden="true"></i>';
+  `<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><defs>${DEGRADE}</defs>`
+  + `<g class="gira">${arcoSVG}<g class="orb">${COLA}${puntoSVG}</g></g></svg>`
+  + '<span class="pal">RBIT</span><sup>®</sup><i class="cur" aria-hidden="true"></i>';
 
 const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
 /* la intro se juega cada vez que se carga la página */
@@ -325,18 +320,12 @@ function simboloEntra() {
      desde el mismo ángulo en el que quedó */
   entraPunto.finished.then(() => entraPunto.cancel()).catch(() => {});
 
-  /* el cursor va delante de lo que se escribe: medimos dónde termina cada letra
-     y lo hacemos saltar de a pasos, al mismo compás con el que aparecen */
-  const cur = $('#bWm .cur'), letras = [...marca.querySelectorAll('.l')];
-  if (cur && letras.length) {
-    const paradas = [letras[0].offsetLeft, ...letras.map(l => l.offsetLeft + l.offsetWidth)];
-    const salto = 110, largo = paradas.length * salto;
-    /* el corte va en cada fotograma: puesto en las opciones se aplicaría
-       al efecto entero y el cursor no se movería nunca */
-    cur.animate(paradas.map((x, i) => (
-        {transform:`translateX(${Math.round(x)}px)`, offset:i / paradas.length, easing:'steps(1,end)'})),
-      {duration:largo, delay:2400 - salto, fill:'both'});
-  }
+  /* la rayita acompaña al barrido: va del principio al final de la palabra
+     con la misma curva, así siempre queda sobre el borde de lo que se revela */
+  const cur = $('#bWm .cur'), pal = $('#bWm .pal');
+  if (cur && pal) cur.animate(
+    [{transform:`translateX(${pal.offsetLeft}px)`}, {transform:`translateX(${pal.offsetLeft + pal.offsetWidth}px)`}],
+    {duration:560, delay:2400, easing:'cubic-bezier(.45,.02,.25,1)', fill:'both'});
 }
 
 function arrancar(intento) {
@@ -357,21 +346,6 @@ if (document.documentElement.classList.contains('gate-on')) {
     esperar();
   }, {once:true});
 } else setTimeout(arrancar, 50);
-
-/* ---- la tira que corre: lo que te llevás, sin contar productos ---- */
-const RUBROS = [
-  ['Entrega inmediata',      'Instant delivery'],
-  ['Licencia comercial',     'Commercial license'],
-  ['Actualizaciones gratis', 'Free updates'],
-  ['Sin suscripción',        'No subscription'],
-];
-function pintarTira() {
-  const t = $('#bTira'); if (!t) return;
-  const media = RUBROS.map(([es,en]) => `<span>${L(es,en)}<i></i></span>`).join('');
-  t.innerHTML = media + media;   /* duplicada: el ciclo corre media vuelta y empalma */
-}
-pintarTira();
-addEventListener('orbit:lang', pintarTira);
 
 /* ---- método: un problema por diapositiva ---- */
 const PROB = [
