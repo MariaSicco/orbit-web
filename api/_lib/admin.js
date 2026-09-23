@@ -4,9 +4,9 @@
 import { readSession } from './auth.js';
 
 export const adminEmails = () =>
-  (process.env.ADMIN_EMAILS || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+  (process.env.ADMIN_EMAILS || '').split(/[,;\n]+/).map(s => s.replace(/\s+/g, '').toLowerCase()).filter(Boolean);
 export const adminReady = () => adminEmails().length > 0;
-export const isAdmin = email => Boolean(email) && adminEmails().includes(String(email).toLowerCase());
+export const isAdmin = email => Boolean(email) && adminEmails().includes(String(email).replace(/\s+/g, '').toLowerCase());
 
 /* Devuelve la sesión si es administradora; si no, responde y devuelve null. */
 export function requireAdmin(req, res) {

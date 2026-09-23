@@ -1,5 +1,5 @@
 /* Crear cuenta con email y contraseña. */
-import { isEmail, readBody, hashPassword, passwordProblem, setSessionCookie, hasSecret } from '../_lib/auth.js';
+import { isEmail, cleanEmail, readBody, hashPassword, passwordProblem, setSessionCookie, hasSecret } from '../_lib/auth.js';
 import { getUser, saveUser } from '../_lib/users.js';
 import { sendEmail, emailReady, layout, it } from '../_lib/email.js';
 import { upsertContact, listNews } from '../_lib/marketing.js';
@@ -8,7 +8,9 @@ import { siteUrl } from '../_lib/catalog.js';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   if (!hasSecret()) return res.status(503).json({ error: 'not_configured' });
-  const { email, password, name, news } = await readBody(req);
+  const body = await readBody(req);
+  const email = cleanEmail(body.email);
+  const { password, name, news } = body;
   if (!isEmail(email)) return res.status(400).json({ error: 'invalid_email' });
   const pw = passwordProblem(password);
   if (pw) return res.status(400).json({ error: 'weak_password', reason: pw });

@@ -1,14 +1,16 @@
 /* Pide el enlace de acceso: token de un solo uso enviado por email.
    Con reset:true el enlace además habilita definir una contraseña nueva. */
 import { kvSet } from '../_lib/kv.js';
-import { isEmail, newToken, hasSecret, readBody } from '../_lib/auth.js';
+import { isEmail, cleanEmail, newToken, hasSecret, readBody } from '../_lib/auth.js';
 import { siteUrl } from '../_lib/catalog.js';
 import { sendEmail, emailReady, layout, it } from '../_lib/email.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   if (!hasSecret()) return res.status(503).json({ error: 'not_configured', message: 'Falta SESSION_SECRET' });
-  const { email, reset } = await readBody(req);
+  const body = await readBody(req);
+  const email = cleanEmail(body.email);
+  const reset = body.reset;
   if (!isEmail(email)) return res.status(400).json({ error: 'invalid_email' });
 
   const token = newToken();

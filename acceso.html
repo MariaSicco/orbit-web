@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=26">
+<link rel="stylesheet" href="assets/css/orbit.css?v=27">
 <style>
 .auth{min-height:100svh;display:grid;place-items:center;padding:calc(112px + env(safe-area-inset-top,0px)) var(--pad) 48px;position:relative;overflow:hidden}
 .auth .ring{position:absolute;left:50%;top:50%;width:min(150vh,150vw);translate:-50% -50%;color:#161617;pointer-events:none}
@@ -113,9 +113,9 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=26"></script>
+<script src="assets/js/products.js?v=27"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=26"></script>
+<script src="assets/js/orbit.js?v=27"></script>
 <script>
 (() => {
 const {$, $$, L, tr} = ORBIT;
@@ -130,7 +130,15 @@ const ERRORS = {
   not_configured: ['El acceso todavía no está activo.','Access is not live yet.'],
 };
 const showErr = code => say(tr(...(ERRORS[code] || ['No pudimos completar la acción. Probá de nuevo.','Something went wrong. Please try again.'])), false);
-const validMail = v => /^\S+@\S+\.\S+$/.test(v);
+/* Los gestores de contraseñas y el autocompletado del teléfono suelen meter
+   espacios en el email. Los sacamos antes de validar, en vez de rechazarlo. */
+const limpiar = v => String(v || '').replace(/\s+/g, '').replace(/^mailto:/i, '');
+const leerMail = () => {
+  const i = $('#accMail'), v = limpiar(i.value);
+  if (i.value !== v) i.value = v;   /* que vea el email ya corregido */
+  return v;
+};
+const validMail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
 
 let mode = 'in';
 const COPY = {
@@ -162,6 +170,9 @@ $$('#accTabs button').forEach(b => b.onclick = () => setMode(b.dataset.t));
 addEventListener('orbit:lang', paint);
 setMode(new URLSearchParams(location.search).get('nuevo') === '1' ? 'up' : 'in');
 
+$('#accMail').addEventListener('blur', leerMail);
+$('#accMail').addEventListener('paste', () => setTimeout(leerMail, 0));
+
 $('[data-eye]').onclick = () => { const i = $('#accPass'); i.type = i.type === 'password' ? 'text' : 'password'; i.focus(); };
 
 const LEVELS = [['Muy corta','Too short'],['Aceptable','OK'],['Buena','Good'],['Fuerte','Strong']];
@@ -178,7 +189,7 @@ $('#accPass').addEventListener('input', e => {
 
 $('#accForm').addEventListener('submit', async e => {
   e.preventDefault();
-  const email = $('#accMail').value.trim(), password = $('#accPass').value, btn = $('#accSubmit');
+  const email = leerMail(), password = $('#accPass').value, btn = $('#accSubmit');
   if (!validMail(email)) { $('#accMail').focus(); return showErr('invalid_email'); }
   if (mode === 'up' && password.length < 8) { $('#accPass').focus(); return showErr('weak_password'); }
   if (mode === 'in' && !password) { $('#accPass').focus(); return showErr('bad_credentials'); }
@@ -196,7 +207,7 @@ $('#accForm').addEventListener('submit', async e => {
 });
 
 async function mailLink(reset) {
-  const email = $('#accMail').value.trim();
+  const email = leerMail();
   if (!validMail(email)) { $('#accMail').focus(); return showErr('invalid_email'); }
   say(tr('Enviando…','Sending…'), true);
   try {

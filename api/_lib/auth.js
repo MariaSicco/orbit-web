@@ -44,6 +44,8 @@ export function clearSessionCookie(res) {
     `${HINT}=; Path=/; Secure; SameSite=Lax; Max-Age=0`,
   ]);
 }
+/* Saca espacios que meten los gestores de contraseñas y el autocompletado. */
+export const cleanEmail = v => String(v == null ? '' : v).replace(/\s+/g, '').replace(/^mailto:/i, '').toLowerCase();
 export const isEmail = v => typeof v === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) && v.length < 200;
 export async function readBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
