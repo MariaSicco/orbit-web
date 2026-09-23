@@ -62,7 +62,10 @@ export async function markPaid(id, { paymentId, amount, currency }) {
     const money = order.via === 'paypal'
       ? `USD ${order.usd}`
       : `ARS ${order.ars.toLocaleString('es-AR')}`;
-    const cuando = new Date(order.paidAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    /* el servidor trabaja en UTC: sin la zona horaria, una compra de la
+       noche se fecha al día siguiente */
+    const ZONA = process.env.ORBIT_TZ || 'America/Argentina/Buenos_Aires';
+    const cuando = new Date(order.paidAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: ZONA });
     const medio = order.via === 'paypal' ? 'PayPal' : 'Mercado Pago';
     sendEmail({
       to: order.email,
