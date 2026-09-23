@@ -94,7 +94,7 @@ body.go .nav{opacity:1}
 @keyframes orbitar{to{transform:rotate(360deg)}}
 .go .p-entrada .marca .gira{animation:orbitar 80s linear 3.8s infinite}
 
-/* quien ya vio la intro en esta visita entra directo */
+/* con movimiento reducido, sin intro: todo aparece ya puesto */
 body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .l,
 .directo .p-entrada .marca sup,.directo .p-entrada .ent{transition:none!important}
 
@@ -257,10 +257,7 @@ $('#bWm').innerHTML =
   + '<sup>®</sup>';
 
 const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
-/* la intro se juega una vez por visita; con ?intro en la dirección se repite siempre */
-const repetir = /[?&]intro\b/.test(location.search);
-let visto = false;
-try { visto = !repetir && sessionStorage.getItem('orbit-intro') === '1'; } catch (e) {}
+/* la intro se juega cada vez que se carga la página */
 
 /* ACTOS 1 y 2: el símbolo entra solo, grande y centrado en la pantalla; carga su
    arco de punta a punta, recibe el punto y recién entonces viaja a su lugar.
@@ -294,8 +291,8 @@ function arrancar(intento) {
   /* si todavía no hay layout, esperamos un cuadro más */
   if ((!o || o.getBoundingClientRect().width < 4) && (intento || 0) < 40)
     return requestAnimationFrame(() => arrancar((intento || 0) + 1));
-  if (visto || RM) document.body.classList.add('directo');
-  else { simboloEntra(); try { sessionStorage.setItem('orbit-intro','1'); } catch (e) {} }
+  if (RM) document.body.classList.add('directo');
+  else simboloEntra();
   requestAnimationFrame(() => document.body.classList.add('go'));
 }
 
