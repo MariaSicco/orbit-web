@@ -256,9 +256,9 @@ $('#bWm').innerHTML =
   + 'RBIT'.split('').map((c,i) => `<span class="l" style="--i:${i}">${c}</span>`).join('')
   + '<sup>®</sup>';
 
-/* longitud real del arco, para poder dibujarlo */
-const arco = $('#bWm path');
-$('#bWm').style.setProperty('--arco', Math.ceil(arco.getTotalLength()));
+/* longitud real del trazo, para poder dibujarlo */
+const trazo = $('#bWm path');
+if (trazo) $('#bWm').style.setProperty('--arco', Math.ceil(trazo.getTotalLength()));
 
 /* arranca cuando la página ya es visible (el selector de idioma puede taparla) */
 const arrancar = () => requestAnimationFrame(() => document.body.classList.add('go'));
