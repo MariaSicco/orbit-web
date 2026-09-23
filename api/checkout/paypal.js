@@ -30,10 +30,14 @@ export default async function handler(req, res) {
         amount: { currency_code: 'USD', value: total, breakdown: { item_total: { currency_code: 'USD', value: total } } },
         items: items.map(i => ({ name: `${i.code} ${i.name}`.slice(0, 127), quantity: String(i.qty), unit_amount: { currency_code: 'USD', value: i.usd.toFixed(2) }, category: 'DIGITAL_GOODS' })),
       }],
-      payment_source: { paypal: { experience_context: {
+      /* Sin payment_source fijo: PayPal muestra su billetera y además deja
+         pagar con tarjeta sin tener cuenta, que es como compra mucha gente. */
+      application_context: {
         brand_name: 'Orbit', user_action: 'PAY_NOW',
+        shipping_preference: 'NO_SHIPPING',   /* son productos digitales */
+        landing_page: 'NO_PREFERENCE',
         return_url: `${site}/api/paypal-capture`, cancel_url: `${site}/productos`,
-      } } },
+      },
     }),
   });
   const data = await r.json();
