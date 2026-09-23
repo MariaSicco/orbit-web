@@ -157,10 +157,20 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .m-slide .prob{font-family:var(--serif);font-style:italic;font-size:clamp(23px,6vw,34px);line-height:1.16;margin:0}
 .m-slide .prob s{text-decoration:none;background:linear-gradient(var(--or),var(--or)) 0 58%/0 3px no-repeat;transition:background-size .8s var(--ease)}
 .m-slide.vis .prob s{background-size:100% 3px}
-.m-slide a{text-decoration:none;display:grid;gap:4px;opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease) .25s,transform .5s var(--ease) .25s}
-.m-slide.vis a{opacity:1;transform:none}
-.m-slide a b{font-weight:800;font-size:clamp(20px,5vw,28px);letter-spacing:-.04em;text-transform:uppercase;line-height:1}
-.m-slide a span{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.5}
+.m-slide .cab{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
+.m-slide .tipo{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.45;text-align:right}
+/* el cuerpo de la tarjeta entra cuando la diapositiva queda a la vista */
+.m-slide .cuerpo{display:grid;gap:14px;opacity:0;transform:translateY(10px);
+  transition:opacity .5s var(--ease) .25s,transform .5s var(--ease) .25s}
+.m-slide.vis .cuerpo{opacity:1;transform:none}
+.m-slide .tit{font-weight:800;font-size:clamp(21px,5.4vw,30px);letter-spacing:-.04em;
+  text-transform:uppercase;line-height:1;margin:0}
+.m-slide .porque{margin:0;font-size:14.5px;line-height:1.5;opacity:.7;max-width:34ch}
+.m-slide .arregla{margin:0;padding-top:13px;border-top:1px solid rgba(13,13,14,.18);
+  display:grid;gap:3px}
+.m-slide .arregla i{font-family:var(--mono);font-size:10px;letter-spacing:.11em;
+  text-transform:uppercase;opacity:.45;font-style:normal}
+.m-slide .arregla b{font-weight:700;font-size:15.5px;letter-spacing:-.01em;line-height:1.25}
 
 /* colección */
 .c-slide{display:flex;flex-direction:column;gap:14px}
@@ -362,18 +372,55 @@ if (document.documentElement.classList.contains('gate-on')) {
 } else setTimeout(arrancar, 50);
 
 /* ---- método: un problema por diapositiva ---- */
+/* Cada tarjeta cuenta un tipo de problema, no un producto: qué se dice, qué
+   pasa en realidad y con qué clase de herramienta se arregla. Sin nombres
+   propios, así la sección sirve igual cuando cambie el catálogo. */
 const PROB = [
-  ['“Empiezo de cero cada vez que tengo que publicar.”', '“I start from zero every time I have to publish.”', 'ob-001'],
-  ['“Busco recursos media hora antes de entregar.”',     '“I hunt for assets half an hour before the deadline.”', 'ob-002'],
-  ['“Tengo todo en cuatro apps y ninguna se habla.”',    '“Everything lives in four apps and none of them talk.”', 'ob-003'],
-  ['“Pierdo horas en tareas repetidas.”',                '“I lose hours on repetitive tasks.”', 'ob-004'],
+  {
+    rubro:['Rutina','Routine'],
+    tit:['Empezar de cero','Starting from zero'],
+    cita:['“Empiezo de cero cada vez que tengo que publicar.”', '“I start from zero every time I have to publish.”'],
+    porque:['Cada pieza arranca en una hoja en blanco. El formato, el tono y la estructura se vuelven a decidir todas las veces, y el trabajo de ayer no le sirve al de hoy.',
+            'Every piece starts on a blank page. Format, tone and structure get decided again each time, and yesterday’s work never carries over.'],
+    arregla:['Un sistema con las decisiones ya tomadas', 'A system with the decisions already made'],
+  },
+  {
+    rubro:['Entregas','Deliveries'],
+    tit:['Buscar en vez de crear','Hunting instead of making'],
+    cita:['“Busco recursos media hora antes de entregar.”', '“I hunt for assets half an hour before the deadline.”'],
+    porque:['El archivo existe, pero nadie sabe dónde. Se va más tiempo en encontrar la tipografía, el color o la plantilla que en usarlos.',
+            'The file exists, but nobody knows where. More time goes into finding the typeface, the colour or the template than into using them.'],
+    arregla:['Una biblioteca ordenada y lista para usar', 'A tidy library, ready to use'],
+  },
+  {
+    rubro:['Herramientas','Tools'],
+    tit:['Todo disperso','Scattered everywhere'],
+    cita:['“Tengo todo en varias apps y ninguna se habla.”', '“Everything lives in several apps and none of them talk.”'],
+    porque:['Las notas en un lado, los archivos en otro, el calendario en un tercero. Nada está perdido del todo, pero tampoco está junto.',
+            'Notes in one place, files in another, the calendar in a third. Nothing is quite lost, but nothing is together either.'],
+    arregla:['Un solo tablero donde todo se cruza', 'One board where everything meets'],
+  },
+  {
+    rubro:['Tiempo','Time'],
+    tit:['Hacer lo mismo dos veces','Doing the same thing twice'],
+    cita:['“Pierdo horas en tareas repetidas.”', '“I lose hours on repetitive tasks.”'],
+    porque:['Renombrar, exportar, adaptar al formato de cada canal. Tareas que no se piensan, solo se hacen, y se comen las horas buenas del día.',
+            'Renaming, exporting, resizing for every channel. Tasks that need no thinking, only doing, and they eat the good hours of the day.'],
+    arregla:['Un flujo que hace solo la parte mecánica', 'A workflow that handles the mechanical part'],
+  },
 ];
-$('#rielM').innerHTML = PROB.map(([es,en,id],i) => {
-  const p = P.find(x => x.id === id); if (!p) return '';
-  return `<article class="m-slide"><span class="n">${String(i+1).padStart(2,'0')} / ${String(PROB.length).padStart(2,'0')}</span>
-    <p class="prob"><s>${L(es,en)}</s></p>
-    <a href="${url(p)}"><span>${p.code}</span><b>${p.name} →</b></a></article>`;
-}).join('');
+$('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
+  <div class="cab">
+    <span class="n">${String(i+1).padStart(2,'0')} / ${String(PROB.length).padStart(2,'0')}</span>
+    <span class="tipo">${L(...q.rubro)}</span>
+  </div>
+  <p class="prob"><s>${L(...q.cita)}</s></p>
+  <div class="cuerpo">
+    <h3 class="tit">${L(...q.tit)}</h3>
+    <p class="porque">${L(...q.porque)}</p>
+    <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
+  </div>
+</article>`).join('');
 
 /* ---- colección: un libro por diapositiva ---- */
 $('#rielC').innerHTML = P.map(p => `<article class="c-slide">
