@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=27">
+<link rel="stylesheet" href="assets/css/orbit.css?v=28">
 <style>
 body{padding:0}
 .top{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px var(--pad);background:rgba(13,13,14,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--k3)}
@@ -77,6 +77,17 @@ td .mono{opacity:.55}
 .pmsg{font-size:13px;min-height:1.2em;color:var(--or)}
 .pmsg.ok{color:var(--ac)}
 .btn.sm{padding:12px 18px;font-size:14px}
+.drop{border:1px dashed var(--k3);background:var(--k);padding:18px;display:grid;gap:5px;cursor:pointer;transition:border-color .2s,background .2s}
+.drop:hover,.drop.over{border-color:var(--ac);background:#121213}
+.drop b{font-weight:700;font-size:15px;letter-spacing:-.02em}
+.drop .tip{font-size:12px;opacity:.45;line-height:1.4}
+.prog{height:3px;background:var(--k3);margin-top:10px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--ac);transform:scaleX(0);transform-origin:left;transition:transform .18s linear}
+.fstate{font-size:12px;opacity:.55;line-height:1.45}
+.fstate.ok{color:var(--ac);opacity:1}
+.fstate.err{color:var(--or);opacity:1}
+.alt-url{font-size:12px;opacity:.5;cursor:pointer;text-decoration:underline;text-underline-offset:3px;justify-self:start}
+.alt-url:hover{opacity:1;color:var(--ac)}
 
 .gate{min-height:70svh;display:grid;place-items:center;text-align:center}
 .gate .box{max-width:560px;display:grid;gap:16px;justify-items:center}
@@ -244,9 +255,83 @@ $('#prods').innerHTML = cat.productos.map(p => `
     </div>
     <div class="fld"><label>Bajada en español</label><textarea name="tes" maxlength="300">${esc(p.tagline?.es || '')}</textarea><span class="tip">Dejala vacía para usar el texto que ya está en el sitio</span></div>
     <div class="fld"><label>Bajada en inglés</label><textarea name="ten" maxlength="300">${esc(p.tagline?.en || '')}</textarea></div>
-    <div class="fld"><label>Archivo que se descarga</label><input name="file" value="${esc(p.file || '')}" placeholder="https://…/content-system.zip"><span class="tip">Pegá acá la URL del .zip. ${p.fileFrom === 'vercel' ? 'Ahora viene de la variable ' + esc(p.env) + ' en Vercel.' : 'Solo lo ve quien compró el producto.'}</span></div>
+    <div class="fld">
+      <label>Archivo que se descarga</label>
+      <div class="drop" data-drop tabindex="0" role="button" aria-label="Subir archivo">
+        <input type="file" class="fpick" hidden>
+        <b class="dtitle">Arrastrá el archivo acá, o hacé clic para elegirlo</b>
+        <span class="tip">Va directo a tu almacenamiento privado. Solo lo puede descargar quien compró el producto.</span>
+        <div class="prog" hidden><i></i></div>
+      </div>
+      <span class="fstate${p.file ? ' ok' : ''}">${p.file ? (p.file.startsWith('blob:') ? 'Archivo subido: ' + esc(p.file.split('/').pop()) : 'Ahora usa una URL pegada a mano' + (p.fileFrom === 'vercel' ? ' (variable ' + esc(p.env) + ' en Vercel)' : '')) : 'Todavía no hay archivo cargado'}</span>
+      <button type="button" class="alt-url">…o pegar una URL</button>
+      <input name="file" value="${esc(p.file || '')}" placeholder="https://…/content-system.zip"${p.file && !p.file.startsWith('blob:') ? '' : ' hidden'}>
+    </div>
     <div class="row-end"><p class="pmsg"></p><button class="btn btn-acid sm" type="submit">Guardar cambios <span class="ar">→</span></button></div>
   </form>`).join('');
+
+/* ---- subir el archivo de un producto ---- */
+const peso = b => b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
+
+async function subir(f, file) {
+  const st = f.querySelector('.fstate'), prog = f.querySelector('.prog'), barra = f.querySelector('.prog i');
+  const drop = f.querySelector('[data-drop]'), titulo = f.querySelector('.dtitle');
+  st.className = 'fstate'; st.textContent = 'Preparando…';
+  prog.hidden = false; barra.style.transform = 'scaleX(0)';
+  try {
+    const r = await fetch('/api/admin/upload', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: f.dataset.id, filename: file.name, size: file.size }),
+    });
+    const d = await r.json();
+    if (!d.ok) {
+      prog.hidden = true;
+      st.className = 'fstate err';
+      st.textContent = d.error === 'blob_no_configurado'
+        ? 'Falta crear el almacenamiento de archivos en Vercel (Storage → Create → Blob). Mientras tanto podés pegar una URL.'
+        : d.error === 'archivo_muy_grande' ? 'El archivo pasa los 2 GB.'
+        : 'No pudimos preparar la subida.';
+      return;
+    }
+    titulo.textContent = 'Subiendo ' + file.name + ' (' + peso(file.size) + ')';
+    await new Promise((ok, fail) => {
+      const x = new XMLHttpRequest();
+      x.open('PUT', d.url, true);
+      x.setRequestHeader('content-type', file.type || 'application/octet-stream');
+      x.upload.onprogress = ev => {
+        if (!ev.lengthComputable) return;
+        const p = ev.loaded / ev.total;
+        barra.style.transform = 'scaleX(' + p + ')';
+        st.textContent = Math.round(p * 100) + '% subido';
+      };
+      x.onload = () => (x.status >= 200 && x.status < 300) ? ok() : fail(new Error('PUT ' + x.status + ' ' + x.responseText.slice(0, 120)));
+      x.onerror = () => fail(new Error('red'));
+      x.send(file);
+    });
+    barra.style.transform = 'scaleX(1)';
+    f.querySelector('[name="file"]').value = d.ref;
+    titulo.textContent = 'Arrastrá otro archivo para reemplazarlo';
+    st.className = 'fstate ok'; st.textContent = 'Subido: ' + file.name + ' (' + peso(file.size) + '). Guardando…';
+    f.requestSubmit();
+    setTimeout(() => { prog.hidden = true; }, 900);
+  } catch (err) {
+    prog.hidden = true;
+    st.className = 'fstate err';
+    st.textContent = 'La subida falló. Probá de nuevo o pegá una URL. (' + String(err.message || err).slice(0, 80) + ')';
+  }
+  drop.classList.remove('over');
+}
+
+$$('#prods form').forEach(f => {
+  const drop = f.querySelector('[data-drop]'), pick = f.querySelector('.fpick');
+  drop.onclick = () => pick.click();
+  drop.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick.click(); } };
+  pick.onchange = () => { if (pick.files[0]) subir(f, pick.files[0]); };
+  ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); if (ev === 'dragleave') drop.classList.remove('over'); }));
+  drop.addEventListener('drop', e => { const file = e.dataTransfer?.files?.[0]; if (file) subir(f, file); });
+  f.querySelector('.alt-url').onclick = () => { const i = f.querySelector('[name="file"]'); i.hidden = !i.hidden; if (!i.hidden) i.focus(); };
+});
 
 $$('#prods form').forEach(f => f.addEventListener('submit', async e => {
   e.preventDefault();
@@ -265,6 +350,8 @@ $$('#prods form').forEach(f => f.addEventListener('submit', async e => {
     const tag = f.querySelector('.head .tag');
     tag.className = 'tag ' + (d.producto.file ? 'tag-ok' : 'tag-pend');
     tag.textContent = d.producto.file ? 'Archivo cargado' : 'Sin archivo';
+    const st = f.querySelector('.fstate');
+    if (d.producto.file) { st.className = 'fstate ok'; st.textContent = d.producto.file.startsWith('blob:') ? 'Archivo subido: ' + d.producto.file.split('/').pop() : 'Usa una URL pegada a mano'; }
   } catch (err) { m.textContent = 'No pudimos guardar. Probá de nuevo.'; }
   btn.disabled = false;
 }));

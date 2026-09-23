@@ -2,6 +2,7 @@
 import { hasKV } from './_lib/kv.js';
 import { hasSecret } from './_lib/auth.js';
 import { getCatalog } from './_lib/catalog.js';
+import { blobReady } from './_lib/blob.js';
 import { FROM } from './_lib/email.js';
 export default async function handler(req, res) {
   let CAT = {};
@@ -17,6 +18,7 @@ export default async function handler(req, res) {
     emailFrom: FROM(),
     listas: { clientes: Boolean(process.env.BREVO_LIST_CLIENTES), newsletter: Boolean(process.env.BREVO_LIST_NEWSLETTER) },
     admin: Boolean(process.env.ADMIN_EMAILS),
+    archivos: blobReady(),
     files: Object.fromEntries(Object.entries(CAT).map(([id, p]) => [id, p.file ? p.fileFrom : false])),
   });
 }
