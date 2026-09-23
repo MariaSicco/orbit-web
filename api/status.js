@@ -20,16 +20,18 @@ export default async function handler(req, res) {
       const url = await signedPut(ruta, { maxBytes: 1024 * 1024, minutes: 2 });
       const put = await fetch(url, { method: 'PUT', headers: { 'content-type': 'application/zip' }, body: bytes });
       if (!put.ok) throw new Error(`subida ${put.status} ${(await put.text()).slice(0, 120)}`);
-      const leer = await fetch(await signedGet(ruta, { minutes: 2 }));
-      const vuelta = new Uint8Array(await leer.arrayBuffer());
+      /* la misma URL firmada, usada dos veces seguidas: así sabemos si
+         se gasta en el primer uso, que es lo que rompía la descarga */
+      const urlGet = await signedGet(ruta, { minutes: 2 });
+      const uno = await fetch(urlGet);
+      const vuelta = new Uint8Array(await uno.arrayBuffer());
+      const dos = await fetch(urlGet);
+      const vuelta2 = new Uint8Array(await dos.arrayBuffer());
       await borrarPrueba(ruta);
       archivosProbado = {
         subidos: bytes.length,
-        recibidos: vuelta.length,
-        iguales: hash(bytes) === hash(vuelta),
-        tipo: leer.headers.get('content-type'),
-        disposicion: leer.headers.get('content-disposition'),
-        estadoLectura: leer.status,
+        primerUso: { estado: uno.status, bytes: vuelta.length, iguales: hash(bytes) === hash(vuelta), tipo: uno.headers.get('content-type') },
+        segundoUso: { estado: dos.status, bytes: vuelta2.length, iguales: hash(bytes) === hash(vuelta2) },
       };
     } catch (e) {
       archivosProbado = String(e).slice(0, 200);
