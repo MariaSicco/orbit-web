@@ -232,15 +232,36 @@ $('#tGente').innerHTML = '<thead><tr><th>Email</th><th>Nombre</th><th>Alta</th><
 
 /* ── pedidos ── */
 $('#pCount').textContent = pe.total + ' en total · ' + pe.pagados + ' pagados';
-$('#tPed').innerHTML = '<thead><tr><th>Pedido</th><th>Cliente</th><th>Productos</th><th>Medio</th><th>Estado</th><th class="num">Total</th></tr></thead><tbody>'
+$('#tPed').innerHTML = '<thead><tr><th>Pedido</th><th>Cliente</th><th>Productos</th><th>Medio</th><th>Estado</th><th>Comprobante</th><th class="num">Total</th></tr></thead><tbody>'
   + (data.ultimosPedidos.length ? data.ultimosPedidos.map(o => '<tr>'
     + '<td><span class="mono">' + esc(o.id) + '</span><br><span class="mono">' + fecha(o.fecha) + '</span></td>'
     + '<td>' + esc(o.email) + '</td>'
     + '<td>' + o.items.map(i => '<span class="mono">' + esc(i.code) + '</span> ' + esc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join('<br>') + '</td>'
     + '<td><span class="mono">' + (o.via === 'paypal' ? 'PayPal' : 'Mercado Pago') + '</span></td>'
     + '<td>' + (o.status === 'paid' ? '<span class="tag tag-ok">Pagado</span>' : '<span class="tag tag-pend">Pendiente</span>') + '</td>'
+    + '<td>' + (o.status !== 'paid' ? '<span class="mono">—</span>'
+        : '<span class="tag ' + (o.mail === 'ok' ? 'tag-ok' : o.mail ? 'tag-pend' : 'tag-soft') + '">'
+          + (o.mail === 'ok' ? 'Enviado' : o.mail ? 'Falló' : 'Sin dato') + '</span>'
+          + '<br><button class="alt-url" data-reenviar="' + esc(o.id) + '">Reenviar</button>'
+          + '<span class="rmsg mono" data-para="' + esc(o.id) + '"></span>') + '</td>'
     + '<td class="num">' + (o.via === 'paypal' ? usd(o.usd) : ars(o.ars)) + '</td>'
-    + '</tr>').join('') : '<tr><td colspan="6" style="opacity:.5">Todavía no hay pedidos.</td></tr>') + '</tbody>';
+    + '</tr>').join('') : '<tr><td colspan="7" style="opacity:.5">Todavía no hay pedidos.</td></tr>') + '</tbody>';
+
+/* reenviar el comprobante de una compra */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-reenviar]');
+  if (!b) return;
+  const aviso = document.querySelector('.rmsg[data-para="' + b.dataset.reenviar + '"]');
+  const antes = b.textContent;
+  b.textContent = 'Enviando…'; b.disabled = true;
+  try {
+    const r = await fetch('/api/admin/reenviar', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId: b.dataset.reenviar }) });
+    const d = await r.json();
+    if (aviso) { aviso.textContent = d.ok ? ' Enviado a ' + d.para : ' ' + (d.resultado || d.error || 'falló'); aviso.style.color = d.ok ? 'var(--ac)' : 'var(--or)'; }
+  } catch (err) { if (aviso) { aviso.textContent = ' no se pudo'; aviso.style.color = 'var(--or)'; } }
+  b.textContent = antes; b.disabled = false;
+});
 
 /* ── productos editables ── */
 const cat = await (await fetch('/api/admin/catalog')).json();
