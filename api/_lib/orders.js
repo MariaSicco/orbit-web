@@ -51,23 +51,37 @@ export async function markPaid(id, { paymentId, amount, currency }) {
       date: order.paidAt,
     });
   }
-  /* aviso al comprador + alta como cliente */
-  const site = process.env.SITE_URL || 'https://www.orbitando.com.ar';
-  upsertContact({
+  /* Aviso al comprador y alta como cliente.
+     Los dos se esperan: en Vercel, lo que queda pendiente cuando la función
+     responde se muere con ella, y el correo no llegaba a salir. */
+  const marca = await upsertContact({
     email: order.email,
     lists: listClientes(),
     attributes: { CLIENTE: 'si', ULTIMA_COMPRA: order.paidAt.slice(0, 10), PRODUCTOS: order.items.map(i => i.code).join(', ') },
-  }).catch(() => {});
-  if (emailReady()) {
-    const money = order.via === 'paypal'
-      ? `USD ${order.usd}`
-      : `ARS ${order.ars.toLocaleString('es-AR')}`;
-    /* el servidor trabaja en UTC: sin la zona horaria, una compra de la
-       noche se fecha al día siguiente */
-    const ZONA = process.env.ORBIT_TZ || 'America/Argentina/Buenos_Aires';
-    const cuando = new Date(order.paidAt).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: ZONA });
-    const medio = order.via === 'paypal' ? 'PayPal' : 'Mercado Pago';
-    sendEmail({
+  }).catch(() => ({ ok: false }));
+
+  order.contacto = marca && marca.ok ? 'ok' : 'error';
+  order.mail = await enviarComprobante(order);
+  order.mailAt = new Date().toISOString();
+  await kvSet(key(id), order, 60 * 60 * 24 * 365 * 3);
+  return order;
+}
+
+/* Manda el comprobante de compra y cuenta qué pasó, para poder verlo en el
+   panel y reintentarlo. Nunca tira error hacia afuera. */
+export async function enviarComprobante(order) {
+  if (!emailReady()) return 'sin servicio de email';
+  const site = process.env.SITE_URL || 'https://www.orbitando.com.ar';
+  const money = order.via === 'paypal'
+    ? `USD ${order.usd}`
+    : `ARS ${(order.ars || 0).toLocaleString('es-AR')}`;
+  /* el servidor trabaja en UTC: sin la zona horaria, una compra de la
+     noche se fecha al día siguiente */
+  const ZONA = process.env.ORBIT_TZ || 'America/Argentina/Buenos_Aires';
+  const cuando = new Date(order.paidAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: ZONA });
+  const medio = order.via === 'paypal' ? 'PayPal' : 'Mercado Pago';
+  try {
+    await sendEmail({
       to: order.email,
       subject: `Ya es tuyo — pedido ${order.id}`,
       text: `Gracias por tu compra.\n\n${order.items.map(i => `${i.code} — ${i.name}${i.qty > 1 ? ` x${i.qty}` : ''}`).join('\n')}\n\nPedido ${order.id} · ${cuando} · ${medio} · ${money}\n\nDescargalo desde tu cuenta: ${site}/biblioteca`,
@@ -82,9 +96,11 @@ export async function markPaid(id, { paymentId, amount, currency }) {
         cta: 'Descargar ahora →', ctaUrl: `${site}/biblioteca`,
         foot: 'Licencia de uso comercial incluida. Las versiones nuevas te llegan sin cargo y aparecen en tu cuenta. ¿Algo no anda? Respondé este email.',
       }),
-    }).catch(() => {});
+    });
+    return 'ok';
+  } catch (e) {
+    return String(e).slice(0, 180);
   }
-  return order;
 }
 export async function listOrders(email) {
   const ids = (await kvGet(listKey(email))) || [];

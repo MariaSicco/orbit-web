@@ -60,7 +60,7 @@ export default async function handler(req, res) {
       .map(u => ({ email: u.email, name: u.name || '', createdAt: u.createdAt || null, news: Boolean(u.news), conClave: Boolean(u.hash) })),
     ultimosPedidos: pedidos.slice(0, 25).map(o => ({
       id: o.id, email: o.email, via: o.via, status: o.status,
-      fecha: o.paidAt || o.date, ars: o.ars || 0, usd: o.usd || 0,
+      fecha: o.paidAt || o.date, ars: o.ars || 0, usd: o.usd || 0, mail: o.mail || null,
       items: (o.items || []).map(i => ({ code: i.code, name: i.name, qty: i.qty || 1 })),
     })),
   });
