@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="es" data-lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>A · Reordenada — Orbit®</title>
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
+<meta name="description" content="Orbit crea herramientas y productos digitales para convertir ideas en resultados, en cualquier disciplina. Ideas in motion.">
+
+<link rel="canonical" href="https://www.orbitando.com.ar/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Orbit®">
+<meta property="og:locale" content="es_AR">
+<meta property="og:url" content="https://www.orbitando.com.ar/">
+<meta property="og:title" content="Orbit® — Orden en movimiento">
+<meta property="og:description" content="Sistemas y herramientas digitales para convertir ideas en resultados, en cualquier disciplina.">
+<meta property="og:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Orbit® — Orden en movimiento">
+<meta name="twitter:description" content="Sistemas y herramientas digitales para convertir ideas en resultados, en cualquier disciplina.">
+<meta name="twitter:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0D0D0E">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/orbit.css?v=45">
+<style>
+/* hero — el ORBIT gigante del manual */
+.hero{height:100svh;min-height:600px;display:flex;flex-direction:column;justify-content:space-between;padding-top:calc(84px + env(safe-area-inset-top,0px));padding-bottom:24px;isolation:isolate}
+.hero-bg{position:absolute;inset:0;z-index:-1;overflow:hidden;background:var(--k)}
+.hero-bg .slide{position:absolute;inset:0;background:center/cover no-repeat;filter:grayscale(1) contrast(1.1);opacity:0;transform:scale(1.1);transition:opacity 1.4s var(--ease),transform 6s linear}
+.hero-bg .slide.on{opacity:.5;transform:scale(1)}
+.hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,13,14,.75) 0%,rgba(13,13,14,.2) 30%,rgba(13,13,14,.3) 55%,rgba(13,13,14,.94) 100%)}
+.hprog{display:flex;align-items:center;gap:16px;margin-top:20px;flex-wrap:wrap}
+.hprog .bars{display:flex;gap:5px;width:min(240px,50%)}
+.hprog .bars button{flex:1;height:14px;display:flex;align-items:center;padding:0}
+.hprog .bars i{display:block;width:100%;height:2px;background:rgba(242,239,232,.28);position:relative;overflow:hidden}
+.hprog .bars b{position:absolute;inset:0;background:var(--b);transform-origin:left;transform:scaleX(0)}
+.hprog a{text-decoration:none;transition:color .2s}
+.hprog a:hover{color:var(--ac)}
+.screen2{min-height:100svh;display:flex;flex-direction:column}
+.screen2 .pband{flex:1}
+main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column;justify-content:center}
+.hero .top{display:flex;justify-content:space-between;gap:24px}
+.hero .word{font-size:clamp(60px,min(25vw,34vh),420px);margin:clamp(12px,3vh,40px) 0;cursor:crosshair;user-select:none;line-height:.8}
+.hero .bot{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,3vw,48px);align-items:end}
+.hero .tag{font-size:clamp(34px,4.4vw,74px)}
+.rot{font-weight:800;font-size:clamp(26px,3vw,48px);letter-spacing:-.04em;text-transform:uppercase;line-height:.95;margin:0}
+.rot .it{display:inline-block;color:var(--ac);min-width:5ch;transition:opacity .35s var(--ease),transform .35s var(--ease)}
+.rot .it.swap{opacity:0;transform:translateY(.25em)}
+.hero .sub{margin:14px 0 0;max-width:52ch;opacity:.75}
+.hero .ctas{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.hero .hint{position:absolute;right:0;top:50%;writing-mode:vertical-rl;opacity:.4}
+@media (max-width:860px){.hero .bot{grid-template-columns:1fr}.hero .hint{display:none}}
+
+/* banda de foto */
+.pband{position:relative;min-height:clamp(420px,62vw,760px);display:flex;align-items:flex-end;padding:var(--pad);overflow:hidden}
+.pband .photo{position:absolute;inset:0}
+.pband .ring{position:absolute;width:min(70vw,900px);right:-14%;top:-24%;color:var(--b);opacity:.92}
+.pband h2{position:relative;z-index:2;font-size:clamp(60px,10vw,170px);color:var(--k)}
+.pband .meta{position:absolute;right:var(--pad);bottom:var(--pad);z-index:2;text-align:right;color:var(--k)}
+
+/* destacado */
+.feat{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,4vw,64px);align-items:center}
+.feat h2{font-size:clamp(46px,6vw,100px)}
+.feat .specs{display:grid;grid-template-columns:1fr 1fr;margin:28px 0}
+.feat .specs div{border-top:1px solid var(--k3);padding:12px 0}
+.feat .specs b{display:block;font-size:20px;letter-spacing:-.02em}
+@media (max-width:860px){.feat{grid-template-columns:1fr}}
+
+/* disciplinas */
+.disc{border-top:1px solid var(--k)}
+.drow{border-bottom:1px solid var(--k);position:relative}
+.dh{width:100%;display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,.9fr) 56px;gap:20px;align-items:center;padding:clamp(14px,1.6vw,22px) 0;text-align:left;position:relative;color:var(--k)}
+.dh::before{content:"";position:absolute;inset:0 calc(-1 * var(--pad));background:var(--k);transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease);z-index:0}
+.dh>*{position:relative;z-index:1;transition:color .3s}
+.dh:hover::before,.dh:focus-visible::before,.drow.open .dh::before{transform:scaleY(1)}
+.dh:hover>*,.dh:focus-visible>*,.drow.open .dh>*{color:var(--b)}
+.dh:focus-visible{outline:none}
+.disc b{font-weight:800;font-size:clamp(32px,5.4vw,92px);letter-spacing:-.05em;text-transform:uppercase;line-height:.9}
+.dh p{margin:0;font-size:15px;opacity:.7}
+.disc .s{width:48px;transition:transform .6s var(--ease)}
+.dh:hover .s,.drow.open .s{transform:rotate(180deg)}
+.dh:hover .s circle,.drow.open .s circle{fill:var(--ac)}
+.dpanel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s var(--ease)}
+.drow.open .dpanel{grid-template-rows:1fr}
+.dpanel>div{overflow:hidden;background:var(--k);color:var(--b);margin-inline:calc(-1 * var(--pad));padding-inline:var(--pad)}
+.dtop{display:flex;justify-content:space-between;align-items:center;gap:14px;padding-top:6px}
+.darrows{display:flex;gap:8px}
+.darrows button{width:40px;height:40px;border-radius:50%;border:1px solid rgba(242,239,232,.3);color:var(--b);font-size:16px}
+.darrows button:hover{background:var(--b);color:var(--k)}
+.dslide{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,calc((100% - 42px) / 4));gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:18px 0 30px;scrollbar-width:none}
+.dslide::-webkit-scrollbar{display:none}
+.pv{scroll-snap-align:start;background:var(--b);color:var(--k);text-decoration:none;display:flex;flex-direction:column;justify-content:space-between;gap:18px;padding:18px;min-height:270px;position:relative;overflow:hidden;transition:transform .35s var(--ease)}
+.pv:hover{transform:translateY(-6px)}
+.pv .sy{position:absolute;width:46%;right:-12%;bottom:-14%;opacity:.95}
+.pv .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pv .bd{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:3px 6px;background:var(--k);color:var(--b)}
+.pv h5{margin:0;font-weight:800;font-size:clamp(22px,2vw,30px);letter-spacing:-.04em;text-transform:uppercase;line-height:.92;position:relative;z-index:1}
+.pv p{margin:8px 0 0;font-size:14px;opacity:.7;max-width:26ch;position:relative;z-index:1}
+.pv .f{display:flex;justify-content:space-between;align-items:baseline;position:relative;z-index:1}
+.pv .f b{font-size:18px;letter-spacing:-.02em;font-weight:700;text-transform:none;line-height:1}
+.pv.soon{background:#1b1b1d;color:var(--b);border:1px solid var(--k3)}
+.pv.soon .bd{background:var(--b);color:var(--k)}
+.pv.all{background:transparent;color:var(--b);border:1px solid rgba(242,239,232,.3);justify-content:flex-end}
+.pv.all:hover{background:var(--ac);color:var(--k)}
+@media (max-width:760px){.dh{grid-template-columns:1fr 44px}.dh .mono,.dh p{grid-column:1}.dh .s{grid-row:1/4;grid-column:2}.dslide{grid-auto-columns:78%}}
+@media (max-width:760px){.disc a{grid-template-columns:1fr 44px}.disc a .mono,.disc a p{grid-column:1}.disc a .s{grid-row:1/4;grid-column:2}}
+
+/* cómo funciona */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:var(--k3)}
+.flow>div{background:var(--k);padding:20px;min-height:300px;display:flex;flex-direction:column;gap:clamp(28px,4vw,56px);transition:background .4s var(--ease),color .4s var(--ease)}
+.flow>div:hover{background:var(--b);color:var(--k)}
+.flow b{font-weight:800;font-size:clamp(28px,3vw,46px);letter-spacing:-.045em;text-transform:uppercase;line-height:.9}
+.flow .s{width:72px}
+.flow p{margin:10px 0 0;font-size:15px;max-width:26ch;opacity:.75}
+@media (max-width:860px){.flow{grid-template-columns:1fr 1fr}.flow>div{min-height:240px}}
+
+/* banda editorial */
+.band{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);min-height:100svh}
+.band .photo{min-height:460px}
+.band .txt{background:#BDBCB8;color:var(--k);padding:clamp(20px,3vw,44px);display:flex;flex-direction:column;justify-content:space-between;gap:30px}
+.band h2{font-size:clamp(64px,9vw,150px)}
+.band .m{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+@media (max-width:860px){.band{grid-template-columns:1fr}}
+
+/* manifiesto */
+.mani{font-size:clamp(32px,5vw,84px);font-weight:800;letter-spacing:-.045em;line-height:1;text-transform:uppercase;max-width:1300px;margin:0}
+.mani .w{opacity:.14;transition:opacity .35s}
+.mani .w.lit{opacity:1}
+.mani .it{text-transform:none}
+
+/* quiz: encontrá tu sistema */
+.quiz{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px);align-items:start}
+.quiz h2{font-size:clamp(44px,6vw,100px)}
+.qbox{border-top:1px solid var(--b);padding-top:18px;min-height:420px}
+.qprog{display:flex;gap:6px;margin:14px 0 26px}
+.qprog i{flex:1;height:3px;background:var(--k3)}
+.qprog i.on{background:var(--ac)}
+.qq{font-weight:800;font-size:clamp(28px,3.2vw,52px);letter-spacing:-.045em;text-transform:uppercase;line-height:.95;margin:0 0 22px}
+.qopts{display:flex;flex-direction:column}
+.qopts button{display:grid;grid-template-columns:40px 1fr auto;gap:14px;align-items:baseline;text-align:left;padding:16px 0;border-top:1px solid var(--k3);font-size:clamp(18px,1.6vw,22px);font-weight:600;letter-spacing:-.02em;transition:color .2s}
+.qopts button:last-child{border-bottom:1px solid var(--k3)}
+.qopts button:hover,.qopts button:focus-visible{color:var(--ac);outline:none}
+.qopts button .ar{opacity:0;transition:opacity .2s,transform .3s var(--ease)}
+.qopts button:hover .ar,.qopts button:focus-visible .ar{opacity:1;transform:translateX(6px)}
+.qres{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(16px,2.4vw,32px);align-items:start}
+.qres h3{margin:10px 0 12px;font-size:clamp(36px,4vw,64px)}
+.qres ul{list-style:none;margin:16px 0 22px;padding:0}
+.qres li{padding:8px 0;border-top:1px solid var(--k3);display:flex;gap:10px}
+.qres li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--blue);flex:none;margin-top:8px}
+.qres .acts2{display:flex;gap:10px;flex-wrap:wrap}
+.qback{margin-top:22px}
+@media (max-width:860px){.quiz,.qres{grid-template-columns:1fr}.qres .cover{max-width:280px}}
+
+/* mirá por dentro */
+.peek{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(20px,3vw,48px);align-items:start}
+.ptabs{display:flex;flex-direction:column}
+.ptabs button{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:baseline;text-align:left;padding:16px 0;border-top:1px solid var(--k)}
+.ptabs button:last-child{border-bottom:1px solid var(--k)}
+.ptabs button b{font-weight:800;font-size:clamp(20px,2vw,30px);letter-spacing:-.035em;text-transform:uppercase;line-height:1}
+.ptabs button[aria-selected="true"] b{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:6px;text-decoration-color:var(--blue)}
+.win{background:#fff;border:1px solid rgba(13,13,14,.15);box-shadow:0 30px 70px -40px rgba(0,0,0,.45);overflow:hidden}
+.win .bar{display:flex;align-items:center;gap:7px;padding:10px 14px;background:var(--k);color:var(--b)}
+.win .bar i{width:9px;height:9px;border-radius:50%;background:#444}
+.win .bar span{margin-left:10px}
+.win .body{padding:clamp(14px,2vw,24px);min-height:400px}
+.win .foot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:14px clamp(14px,2vw,24px);border-top:1px solid rgba(13,13,14,.1);background:var(--b)}
+.win .foot .price{font-weight:800;font-size:24px;letter-spacing:-.03em}
+.dhead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:14px}
+.dhead b{font-size:20px;letter-spacing:-.02em}
+/* calendario */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .d{min-height:170px;background:#f6f4ef;padding:6px;display:flex;flex-direction:column;gap:6px}
+.cal .d>span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;opacity:.6}
+.post{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:6px;font-size:12px;line-height:1.2;display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:transform .2s}
+.post:hover{transform:translateY(-2px)}
+.post .st{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;align-self:flex-start}
+@media (max-width:860px){.cal{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:560px){.cal{grid-template-columns:repeat(2,minmax(0,1fr))}.cal .d{min-height:130px}}
+/* kanban */
+.kan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.kan{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kan .col{background:#f6f4ef;padding:8px;min-height:250px;display:flex;flex-direction:column;gap:6px}
+.kan .col>span{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:4px}
+.deal{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:8px;font-size:13px;line-height:1.25;cursor:pointer;transition:transform .2s}
+.deal:hover{transform:translateY(-2px)}
+.deal b{display:block}
+.deal small{font-family:var(--mono);font-size:10px;opacity:.6}
+.kbar{height:8px;background:#eee;margin-top:14px;overflow:hidden}
+.kbar i{display:block;height:100%;background:var(--blue);transform-origin:left;transition:transform .5s var(--ease)}
+@media (max-width:640px){.kan{grid-template-columns:1fr 1fr}}
+/* biblioteca */
+.lib{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.lib{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.asset{aspect-ratio:1/1;position:relative;overflow:hidden;cursor:pointer;display:grid;place-items:center;container-type:inline-size}
+.asset .tag{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.85);color:var(--k);padding:2px 5px}
+.asset .ok{position:absolute;right:6px;top:6px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:12px;transform:scale(0);transition:transform .25s var(--ease)}
+.asset.sel .ok{transform:scale(1)}
+@media (max-width:640px){.lib{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* workflow IA */
+.wf{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:14px}
+.wf .steps{display:flex;flex-direction:column;gap:6px}
+.wf .steps button{text-align:left;padding:10px;background:#f6f4ef;display:flex;gap:10px;align-items:baseline;font-weight:600;font-size:14px}
+.wf .steps button[aria-pressed="true"]{background:var(--k);color:var(--b)}
+.wf label{display:block;margin-bottom:6px}
+.wf input{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px solid rgba(13,13,14,.25);background:#fff;color:var(--k);margin-bottom:12px}
+.wf input:focus{outline:2px solid var(--blue);outline-offset:0}
+.prompt{background:var(--k);color:var(--b);padding:14px;font-family:var(--mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;min-height:180px}
+.prompt mark{background:none;color:var(--ac)}
+@media (max-width:640px){.wf{grid-template-columns:1fr}}
+@media (max-width:860px){.peek{grid-template-columns:1fr}}
+
+/* a medida */
+.cus{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,4vw,72px);align-items:start}
+.cus h2{font-size:clamp(46px,6.4vw,108px)}
+.cus-steps{list-style:none;margin:32px 0 0;padding:0}
+.cus-steps li{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--k3)}
+.cus-steps li:last-child{border-bottom:1px solid var(--k3)}
+.cus-steps b{display:block;font-size:19px;letter-spacing:-.02em}
+.cus-steps p{margin:2px 0 0;font-size:14px;opacity:.65}
+.cform{background:var(--b);color:var(--k);padding:clamp(18px,2.6vw,36px);display:flex;flex-direction:column;gap:20px}
+.cform .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cform label{display:block;margin-bottom:8px}
+.cform input,.cform textarea{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1px solid rgba(13,13,14,.25);background:#fff;color:var(--k);border-radius:0}
+.cform textarea{min-height:120px;resize:vertical}
+.cform input:focus,.cform textarea:focus{outline:2px solid var(--blue);outline-offset:0}
+.cform .opts{display:flex;flex-wrap:wrap;gap:8px}
+.cform .opts .chip{color:var(--k)}
+.cform .send{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid rgba(13,13,14,.15);padding-top:18px}
+.cform .err{color:var(--or);font-size:14px;min-height:1.2em}
+@media (max-width:860px){.cus{grid-template-columns:1fr}.cform .two{grid-template-columns:1fr}}
+
+/* lema: problema → herramienta */
+.pband{align-items:stretch}
+.pband .lema{position:relative;z-index:2;width:100%;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,3vw,48px);align-items:end}
+.pband .lema h2{font-size:clamp(44px,6.2vw,116px);color:var(--k)}
+.pband .lema h2 .it{color:var(--or)}
+.pband .lema .claim{margin:18px 0 0;max-width:40ch;font-size:clamp(17px,1.5vw,21px);color:var(--k);font-weight:500}
+.p2t{background:var(--b);color:var(--k);padding:clamp(16px,2vw,26px);box-shadow:0 30px 70px -40px rgba(0,0,0,.6)}
+.p2t .row{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:baseline;padding:14px 0;border-top:1px solid rgba(13,13,14,.15)}
+.p2t .prob{font-family:var(--serif);font-style:italic;font-size:clamp(20px,1.9vw,28px);line-height:1.1;position:relative;transition:opacity .4s}
+.p2t .prob s{text-decoration:none;background:linear-gradient(var(--or),var(--or)) 0 55%/0 3px no-repeat;transition:background-size .6s var(--ease) .5s}
+.p2t.go .prob s{background-size:100% 3px}
+.p2t .tool{font-weight:800;font-size:clamp(20px,2vw,30px);letter-spacing:-.035em;text-transform:uppercase;line-height:1;text-decoration:none;display:block;opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease) 1s,transform .5s var(--ease) 1s}
+.p2t.go .tool{opacity:1;transform:none}
+.p2t .tool:hover{color:var(--blue)}
+.p2t .nav2{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:12px;border-top:1px solid rgba(13,13,14,.15)}
+.p2t .dots{display:flex;gap:6px}
+.p2t .dots button{width:9px;height:9px;border-radius:50%;background:rgba(13,13,14,.2);padding:0}
+.p2t .dots button[aria-current="true"]{background:var(--blue)}
+@media (max-width:860px){.pband .lema{grid-template-columns:1fr}.p2t .row{grid-template-columns:1fr;gap:6px}}
+
+.faqgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px)}
+.faqgrid h2{font-size:clamp(44px,5.4vw,90px)}
+@media (max-width:860px){.faqgrid{grid-template-columns:1fr}}
+
+/* ---- versión A: el método a pantalla completa, sin foto ni cinta compitiendo ---- */
+.metodo{min-height:100svh;display:flex;align-items:center;padding-inline:var(--pad);padding-block:clamp(80px,12vh,140px)}
+.metodo .wrap{max-width:1440px;width:100%;margin-inline:auto}
+.metodo h2{font-size:clamp(52px,11vw,150px);margin:16px 0 0}
+.metodo h2 .it{color:var(--or)}
+.metodo .claim{margin:22px 0 clamp(34px,5vh,60px);max-width:38ch;font-size:clamp(17px,1.6vw,21px);opacity:.7}
+.metodo .p2t{background:var(--k2);color:var(--b);box-shadow:none;border:1px solid var(--k3);padding:clamp(20px,3vw,34px)}
+.metodo .p2t .row,.metodo .p2t .nav2{border-top-color:var(--k3)}
+.metodo .p2t .prob,.metodo .p2t .tool{font-size:clamp(23px,3.4vw,34px)}
+.metodo .p2t .dots button{background:var(--k3)}
+.metodo .p2t .dots button[aria-current="true"]{background:var(--ac)}
+@media (max-width:860px){.metodo{min-height:auto;padding-block:clamp(60px,9vh,90px)}}
+</style>
+</head>
+<body data-page="home" data-title-es="Orbit® — Orden en movimiento" data-title-en="Orbit® — Order in motion">
+<main>
+
+<!-- HERO -->
+<section class="sec dark hero">
+  <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
+  <div class="wrap top">
+    <p class="mono" style="margin:0"><span data-l="es">Herramientas digitales<br>para un mañana<br>más creativo.</span><span data-l="en">Digital tools<br>for a brighter<br>creative tomorrow.</span></p>
+    <p class="mono" style="margin:0;text-align:right">OB—000<br><span data-l="es">Productos digitales<br>Desde 2026</span><span data-l="en">Digital goods<br>Est. 2026</span></p>
+  </div>
+  <div class="wrap" style="position:relative">
+    <h1 class="word" id="heroWord" aria-label="ORBIT"></h1>
+    <span class="mono hint"><span data-l="es">Mové el cursor — el punto te sigue</span><span data-l="en">Move your cursor — the dot follows</span></span>
+  </div>
+  <div class="wrap bot">
+    <p class="display tag"><span data-l="es">Ideas<br>en <span class="it">movimiento.</span></span><span data-l="en">Ideas<br>in <span class="it">motion.</span></span></p>
+    <div>
+      <p class="rot"><span data-l="es">Herramientas para</span><span data-l="en">Tools to</span> <span class="it" id="rotWord">crear.</span></p>
+      <p class="sub"><span data-l="es">Productos digitales para diseñar, vender, organizar, automatizar y hacer crecer ideas — en cualquier disciplina.</span><span data-l="en">Digital products to design, sell, organize, automate and grow ideas — in any discipline.</span></p>
+      <div class="ctas"><a class="btn btn-acid" href="productos.html"><span data-l="es">Explorar productos</span><span data-l="en">Explore products</span> <span class="ar">→</span></a><a class="btn btn-line" href="#disciplinas"><span data-l="es">Ver disciplinas</span><span data-l="en">See disciplines</span></a></div>
+      <div class="hprog"><div class="bars" id="hBars"></div><span class="mono dim"><span data-l="es">En órbita</span><span data-l="en">In orbit</span></span><a class="mono" id="hNow" href="productos.html"></a></div>
+    </div>
+  </div>
+</section>
+
+<!-- SEGUNDA PANTALLA: franja + banda foto -->
+
+<!-- MÉTODO -->
+<section class="metodo dark">
+  <div class="wrap">
+    <span class="mono dim"><span data-l="es">Nuestro método</span><span data-l="en">Our method</span> — OB—000</span>
+    <h2 class="display"><span data-l="es">Problema<br>&rarr; <span class="it">herramienta.</span></span><span data-l="en">Problem<br>&rarr; <span class="it">tool.</span></span></h2>
+    <p class="claim"><span data-l="es">Cada producto de Orbit nace de un problema real. Estos son los cuatro.</span><span data-l="en">Every Orbit product starts from a real problem. These are the four.</span></p>
+    <div class="p2t" id="p2t" aria-live="polite"></div>
+  </div>
+</section>
+<!-- COLECCIÓN -->
+<section class="sec light" id="coleccion">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Colección</span><span data-l="en">Collection</span></b>Vol.01</div><div style="text-align:right"><a href="productos.html"><span data-l="es">Ver todo el catálogo →</span><span data-l="en">See the full catalog →</span></a></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:14ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Herramientas para <span class="it">hacer.</span></span><span data-l="en">Tools for <span class="it">doing.</span></span></h2>
+    <div class="pgrid" id="homeGrid"></div>
+  </div>
+</section>
+
+<!-- DESTACADO -->
+<section class="sec dark" id="destacado">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Destacado</span><span data-l="en">Featured</span></b><span data-l="es">Producto 01</span><span data-l="en">Product 01</span></div><div style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></div></div>
+    <div class="feat">
+      <div class="boxstage rv" id="featBox"></div>
+      <div class="rv" id="featInfo"></div>
+    </div>
+  </div>
+</section>
+
+<!-- DISCIPLINAS -->
+<section class="sec light" id="disciplinas">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Disciplinas</span><span data-l="en">Disciplines</span></b><span data-l="es">Un universo, muchas órbitas</span><span data-l="en">One universe, many orbits</span></div><div style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,120px);max-width:15ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Una órbita para cada <span class="it">disciplina.</span></span><span data-l="en">An orbit for every <span class="it">discipline.</span></span></h2>
+    <div class="disc" id="disc"></div>
+  </div>
+</section>
+
+<!-- MIRÁ POR DENTRO -->
+<section class="sec light" id="por-dentro">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Mirá por dentro</span><span data-l="en">Look inside</span></b><span data-l="es">Vista previa interactiva</span><span data-l="en">Interactive preview</span></div><div style="text-align:right"><span data-l="es">Probalo antes<br>de comprarlo</span><span data-l="en">Try it before<br>you buy it</span></div></div>
+    <div class="peek">
+      <div class="rv">
+        <h2 class="display" style="font-size:clamp(40px,4.8vw,80px);margin-bottom:28px"><span data-l="es">Probá cómo <span class="it">funciona.</span></span><span data-l="en">See how it <span class="it">works.</span></span></h2>
+        <div class="ptabs" role="tablist" id="ptabs"></div>
+      </div>
+      <div class="win rv" id="win"></div>
+    </div>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section class="sec dark">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Cómo comprar</span><span data-l="en">How to buy</span></b><span data-l="es">4 pasos</span><span data-l="en">4 steps</span></div><div style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(44px,6.4vw,104px);max-width:15ch;margin-bottom:clamp(36px,5vw,64px)"><span data-l="es">Comprás hoy. Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today. Use it <span class="it">today.</span></span></h2>
+    <div class="flow" id="flow"></div>
+  </div>
+</section>
+
+<!-- QUIZ -->
+<section class="sec dark" id="encontra">
+  <div class="wrap quiz">
+    <div class="rv">
+      <span class="mono"><span data-l="es">3 preguntas · 20 segundos</span><span data-l="en">3 questions · 20 seconds</span></span>
+      <h2 class="display" style="margin-top:14px"><span data-l="es">Encontrá tu <span class="it">sistema.</span></span><span data-l="en">Find your <span class="it">system.</span></span></h2>
+      <p class="lead" style="opacity:.75;margin-top:20px"><span data-l="es">Contanos qué querés resolver y te decimos qué herramienta de Orbit te sirve.</span><span data-l="en">Tell us what you want to solve and we’ll point you to the right Orbit tool.</span></p>
+    </div>
+    <div class="qbox rv" id="qbox" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- A MEDIDA -->
+<section class="sec dark" id="a-medida">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">A medida</span><span data-l="en">Custom</span></b>OB—X00</div><div style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></div></div>
+    <div class="cus">
+      <div class="rv">
+        <h2 class="display"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
+        <p class="lead" style="opacity:.75;margin-top:22px"><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA pensados para tu negocio, con el mismo cuidado que cada producto Orbit.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows built for your business, with the same care as every Orbit product.</span></p>
+        <ol class="cus-steps">
+          <li><span class="mono">01</span><div><b><span data-l="es">Brief</span><span data-l="en">Brief</span></b><p><span data-l="es">Nos contás la idea en este formulario.</span><span data-l="en">Tell us the idea in this form.</span></p></div></li>
+          <li><span class="mono">02</span><div><b><span data-l="es">Propuesta</span><span data-l="en">Proposal</span></b><p><span data-l="es">En 48 h hábiles te enviamos alcance, plazo y precio.</span><span data-l="en">Within 2 business days we send scope, timeline and price.</span></p></div></li>
+          <li><span class="mono">03</span><div><b><span data-l="es">Diseño</span><span data-l="en">Design</span></b><p><span data-l="es">Construimos el sistema con revisiones incluidas.</span><span data-l="en">We build the system, revisions included.</span></p></div></li>
+          <li><span class="mono">04</span><div><b><span data-l="es">Entrega</span><span data-l="en">Delivery</span></b><p><span data-l="es">Listo para usar, con guía y soporte.</span><span data-l="en">Ready to use, with a guide and support.</span></p></div></li>
+        </ol>
+      </div>
+      <form class="cform rv" id="cform" novalidate>
+        <div class="two">
+          <div><label class="mono" for="cName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="cName" name="name" autocomplete="name"></div>
+          <div><label class="mono" for="cMail">Email</label><input id="cMail" name="email" type="email" autocomplete="email"></div>
+        </div>
+        <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span><div class="opts" data-group="type"></div></div>
+        <div><label class="mono" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label><textarea id="cIdea" name="idea"></textarea></div>
+        <div class="two">
+          <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Presupuesto (USD)</span><span data-l="en">Budget (USD)</span></span><div class="opts" data-group="budget"></div></div>
+          <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Plazo</span><span data-l="en">Timeline</span></span><div class="opts" data-group="time"></div></div>
+        </div>
+        <div class="send"><span class="err" id="cErr" role="alert"></span><button class="btn btn-blue" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- MANIFIESTO -->
+<section class="sec dark">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></b></div><div style="text-align:right">OB—M15</div></div>
+    <p class="mani" data-l="es">Las ideas no necesitan más ruido. Necesitan <span class="it" style="color:var(--blue)">movimiento.</span> No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></p>
+    <p class="mani" data-l="en">Ideas don’t need more noise. They need <span class="it" style="color:var(--blue)">movement.</span> We’re not here to add more things. We’re here to make the <span class="it">right ones.</span></p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec light">
+  <div class="wrap faqgrid">
+    <div class="rv"><span class="mono"><span data-l="es">Preguntas frecuentes</span><span data-l="en">FAQ</span></span><h2 class="display" style="margin-top:14px"><span data-l="es">Antes de <span class="it">entrar.</span></span><span data-l="en">Before you <span class="it">enter.</span></span></h2></div>
+    <div class="faq rv">
+      <details><summary><span data-l="es">¿Cómo recibo el producto?</span><span data-l="en">How do I get the product?</span></summary><p><span data-l="es">Apenas se confirma el pago te llega un email con el link de descarga o acceso. Es inmediato.</span><span data-l="en">As soon as payment is confirmed you get an email with the download or access link. It’s instant.</span></p></details>
+      <details><summary><span data-l="es">¿Puedo usarlo para clientes?</span><span data-l="en">Can I use it for clients?</span></summary><p><span data-l="es">Sí. Todos los productos incluyen licencia de uso comercial para proyectos propios y de clientes. Lo que no se puede es revender o redistribuir los archivos originales.</span><span data-l="en">Yes. Every product includes a commercial license for your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></details>
+      <details><summary><span data-l="es">¿Qué programas necesito?</span><span data-l="en">What software do I need?</span></summary><p><span data-l="es">Cada producto indica su formato en la ficha (Figma, Canva, Notion, PNG, SVG). La mayoría funciona con las versiones gratuitas.</span><span data-l="en">Each product lists its format (Figma, Canva, Notion, PNG, SVG). Most work with the free versions.</span></p></details>
+      <details><summary><span data-l="es">¿Las actualizaciones tienen costo?</span><span data-l="en">Do updates cost extra?</span></summary><p><span data-l="es">No. Cuando un producto sube de versión (V.01 → V.02) te llega la actualización sin cargo.</span><span data-l="en">No. When a product gets a new version (V.01 → V.02) you get the update for free.</span></p></details>
+      <details><summary><span data-l="es">¿Y si no me sirve?</span><span data-l="en">What if it doesn’t work for me?</span></summary><p><span data-l="es">Escribinos a hola@orbitando.com.ar dentro de los 14 días y lo resolvemos.</span><span data-l="en">Email hola@orbitando.com.ar within 14 days and we’ll sort it out.</span></p></details>
+    </div>
+  </div>
+</section>
+
+</main>
+<script src="assets/js/products.js?v=45"></script>
+<script src="/api/catalog"></script>
+<script src="assets/js/orbit.js?v=45"></script>
+<script>
+(() => {
+const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow, reveal, toast, money, P, FAM, url, RM} = ORBIT;
+
+/* hero: ORBIT gigante + punto que sigue al cursor */
+$('#heroWord').innerHTML = bigWm('heroG');
+follow($('#heroG'), $('#heroWord svg'));
+
+/* hero: fotos + palabra + producto, sincronizados */
+const SLIDES = [
+  {ph:'hands', v:['crear.','create.'], id:'ob-001'},
+  {ph:'studio', v:['diseñar.','design.'], id:'ob-002'},
+  {ph:'arch', v:['organizar.','organize.'], id:'ob-003'},
+  {ph:'corridor', v:['automatizar.','automate.'], id:'ob-004'},
+  {ph:'figure', v:['crecer.','grow.'], id:null},
+];
+const DUR = 4200;
+const bg = $('#heroBg'), rw = $('#rotWord'), now = $('#hNow'), bars = $('#hBars');
+bg.innerHTML = SLIDES.map(x => `<div class="slide" style="background-image:url(assets/img/${x.ph}.jpg?v=12)"></div>`).join('');
+bars.innerHTML = SLIDES.map((x,i) => `<button aria-label="${i+1}"><i><b></b></i></button>`).join('');
+const slides = $$('.slide', bg), fills = $$('b', bars);
+let si = 0, t0 = performance.now();
+function showSlide(i) {
+  si = (i + SLIDES.length) % SLIDES.length; t0 = performance.now();
+  slides.forEach((el,k) => el.classList.toggle('on', k === si));
+  const x = SLIDES[si], p = x.id && P.find(q => q.id === x.id);
+  rw.classList.add('swap');
+  setTimeout(() => { rw.textContent = tr(...x.v); rw.classList.remove('swap'); }, RM ? 0 : 300);
+  now.innerHTML = p ? `${p.code} ${p.name} →` : L('Toda la colección →','The full collection →');
+  now.href = p ? url(p) : 'productos.html';
+  fills.forEach((f,k) => f.style.transform = `scaleX(${k < si ? 1 : 0})`);
+}
+$$('button', bars).forEach((b,i) => b.onclick = () => showSlide(i));
+addEventListener('orbit:lang', () => { rw.textContent = tr(...SLIDES[si].v); });
+showSlide(0);
+if (!RM) (function tick(n) {
+  const k = Math.min(1, (n - t0) / DUR);
+  fills[si].style.transform = `scaleX(${k})`;
+  if (k >= 1) showSlide(si + 1);
+  requestAnimationFrame(tick);
+})(performance.now());
+else fills[0].style.transform = 'scaleX(1)';
+
+/* disciplinas: cada una despliega un deslizador con sus productos */
+const DISC = [
+  ['Diseño','Design','Plantillas, mockups y sistemas visuales','Templates, mockups and visual systems', [
+    {id:'ob-002'}, {n:'Brand Kit System', d:['Tu identidad lista para aplicar en todo','Your identity, ready to apply everywhere']}, {n:'Mockup Pack', d:['Presentá tu trabajo como un estudio','Present your work like a studio']}]],
+  ['Contenido','Content','Calendarios, portadas y formatos','Calendars, covers and formats', [
+    {id:'ob-001'}, {n:'Reels Script Kit', d:['Guiones y ganchos para videos cortos','Scripts and hooks for short videos']}, {n:'Carousel Templates', d:['Carruseles editables que se guardan','Editable carousels people save']}]],
+  ['Negocios','Business','CRM, finanzas y procesos','CRM, finances and processes', [
+    {id:'ob-003'}, {n:'Client Onboarding Kit', d:['Del “sí” al primer entregable, sin fricción','From “yes” to first delivery, frictionless']}, {n:'Finance Tracker', d:['Ingresos, gastos y proyección simple','Income, expenses and a simple forecast']}]],
+  ['Ventas','Sales','Funnels, emails y propuestas','Funnels, emails and proposals', [
+    {n:'Proposal Kit', d:['Propuestas que se entienden y se aprueban','Proposals that get read and approved']}, {n:'Funnel Map', d:['El recorrido de tu cliente, paso a paso','Your customer journey, step by step']}, {n:'Email Sequences', d:['Secuencias listas para vender','Ready-to-sell email sequences']}]],
+  ['Marketing','Marketing','Campañas, ads y reportes','Campaigns, ads and reports', [
+    {n:'Campaign Planner', d:['Una campaña completa en un tablero','A full campaign on one board']}, {n:'Ads Creative Kit', d:['Piezas para anuncios que convierten','Ad creatives that convert']}, {n:'Monthly Report', d:['Reportes claros para clientes','Clear reports for clients']}]],
+  ['IA','AI','Workflows y automatizaciones','Workflows and automations', [
+    {id:'ob-004'}, {n:'Prompt Library', d:['Prompts probados por disciplina','Tested prompts by discipline']}, {n:'Automation Starter', d:['Tus primeras automatizaciones, guiadas','Your first automations, guided']}]],
+  ['Productividad','Productivity','Planners y sistemas personales','Planners and personal systems', [
+    {n:'Personal OS', d:['Tu semana, tus metas y tus ideas en un lugar','Your week, goals and ideas in one place']}, {n:'Weekly Planner', d:['Planificá en 20 minutos, ejecutá toda la semana','Plan in 20 minutes, execute all week']}, {n:'Habit System', d:['Hábitos que se sostienen','Habits that stick']}]],
+  ['Educación','Education','Workbooks, clases y presentaciones','Workbooks, lessons and decks', [
+    {n:'Course Builder', d:['Estructurá tu curso de principio a fin','Structure your course end to end']}, {n:'Workbook Templates', d:['Cuadernos de trabajo para tus alumnos','Workbooks for your students']}, {n:'Lesson Deck', d:['Presentaciones de clase con estilo editorial','Editorial-style lesson decks']}]],
+];
+const DACC = [C.blue, C.or, C.ac];
+function pvCard(item, i, di) {
+  const p = item.id && P.find(x => x.id === item.id);
+  if (p) {
+    const soon = p.status === 'soon';
+    return `<a class="pv${soon ? ' soon' : ''}" href="${url(p)}"><div class="sy">${sym({ring: soon ? C.b : C.k, dot: DACC[i % 3]})}</div><div class="t"><span class="mono">${p.code}</span><span class="bd">${soon ? L('Próximamente','Coming soon') : L('Disponible','Available')}</span></div><div><h5>${p.name}</h5><p>${L(p.tagline)}</p></div><div class="f"><b>${soon ? L('Pronto','Soon') : money(p.price)}</b><span class="mono">${L('Ver','View')} →</span></div></a>`;
+  }
+  return `<a class="pv soon" href="productos.html"><div class="sy">${sym({ring:C.b, dot:DACC[i % 3]})}</div><div class="t"><span class="mono">OB—D0${di+1}.${i+1}</span><span class="bd">${L('Próximamente','Coming soon')}</span></div><div><h5>${item.n}</h5><p>${L(...item.d)}</p></div><div class="f"><b>${L('Pronto','Soon')}</b><span class="mono dim">${L('En desarrollo','In the works')}</span></div></a>`;
+}
+$('#disc').innerHTML = DISC.map(([es,en,des,den,items],i) => `<div class="drow rv" data-i="${i}">
+  <button class="dh" aria-expanded="false" aria-controls="dp${i}"><span class="mono">OB—D0${i+1}</span><b>${L(es,en)}</b><p>${L(des,den)}</p><span class="s">${sym({ring:'currentColor', dot:C.blue, rot:i*45})}</span></button>
+  <div class="dpanel" id="dp${i}" role="region"><div>
+    <div class="dtop"><span class="mono">${L(es,en)} — ${items.length} ${L('herramientas','tools')}</span><div class="darrows"><button data-dir="-1" aria-label="Anterior">←</button><button data-dir="1" aria-label="Siguiente">→</button></div></div>
+    <div class="dslide">${items.map((it,k) => pvCard(it,k,i)).join('')}<a class="pv all" href="productos.html"><span class="mono">${L('Todo en','All in')} ${L(es,en)}</span><h5>${L('Ver catálogo','See catalog')} →</h5></a></div>
+  </div></div>
+</div>`).join('');
+$$('#disc .drow').forEach(row => {
+  const btn = $('.dh', row);
+  btn.onclick = () => {
+    const open = !row.classList.contains('open');
+    $$('#disc .drow.open').forEach(r => { r.classList.remove('open'); $('.dh', r).setAttribute('aria-expanded','false'); });
+    if (open) { row.classList.add('open'); btn.setAttribute('aria-expanded','true'); setTimeout(() => row.scrollIntoView({behavior: RM ? 'auto' : 'smooth', block:'nearest'}), 300); }
+  };
+  $$('.darrows button', row).forEach(b => b.onclick = () => { const sl = $('.dslide', row); sl.scrollBy({left: +b.dataset.dir * (sl.clientWidth * .8), behavior: RM ? 'auto' : 'smooth'}); });
+});
+
+/* destacado */
+const f = P[0];
+mountBox($('#featBox'), f);
+$('#featInfo').innerHTML = `<span class="mono">${f.code} · ${FAM[f.family][0]}</span>
+  <h2 class="display" style="margin-top:14px">${f.name.split(' ')[0]}<br><span class="it">${f.name.split(' ').slice(1).join(' ').toLowerCase()}.</span></h2>
+  <p class="lead" style="opacity:.8;margin-top:20px">${L(f.tagline)}</p>
+  <div class="specs">${f.specs.slice(0,4).map(([k,v]) => `<div><span class="mono dim">${L(k)}</span><b>${L(v)}</b></div>`).join('')}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">${buyBtn(f)}<a class="btn btn-line" href="${url(f)}">${L('Ver detalle','See details')}</a></div>`;
+
+$('#homeGrid').innerHTML = P.map(card).join('');
+
+const steps = [['Elegí tu sistema','Pick your system','Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.',140],['Pagá una sola vez','Pay once','Pago seguro con tarjeta. Sin suscripciones.','Secure card payment. No subscriptions.',90],['Recibilo al instante','Get it instantly','Te llega un email con la descarga o el acceso.','You get an email with the download or access link.',40],['Usalo desde hoy','Use it today','Licencia comercial y actualizaciones sin cargo.','Commercial license and free updates.',0]];
+$('#flow').innerHTML = steps.map(([t,te,d,de,g],i) => `<div class="rv"><span class="mono">0${i+1}</span><div class="s">${sym({gap:g, ring:'currentColor', dot:i===3?C.blue:'currentColor', dotOn:i>0})}</div><div><b>${L(t,te)}</b><p>${L(d,de)}</p></div></div>`).join('');
+
+/* manifiesto palabra por palabra */
+const manis = $$('.mani');
+manis.forEach(m => (function split(node) {
+  [...node.childNodes].forEach(n => {
+    if (n.nodeType === 3) { const fr = document.createDocumentFragment(); n.textContent.split(/(\s+)/).forEach(w => { if (!w) return; if (/^\s+$/.test(w)) fr.append(w); else { const s = document.createElement('span'); s.className = 'w'; s.textContent = w; fr.append(s); } }); n.replaceWith(fr); }
+    else if (n.nodeType === 1) n.classList.add('w');
+  });
+})(m));
+const onScroll = () => manis.forEach(m => { if (!m.offsetParent) return; const r = m.getBoundingClientRect(), ws = $$('.w', m); const p = Math.min(1, Math.max(0, (innerHeight*.85 - r.top) / (r.height + innerHeight*.3))); const n = Math.round(p * ws.length * 1.15); ws.forEach((w,i) => w.classList.toggle('lit', i < n)); });
+if (RM) $$('.mani .w').forEach(w => w.classList.add('lit')); else { addEventListener('scroll', onScroll, {passive:true}); addEventListener('orbit:lang', onScroll); onScroll(); }
+
+/* ---------- lema: problema → herramienta ---------- */
+const P2T = [
+  [['“No sé qué publicar esta semana.”','“I don’t know what to post this week.”'],'ob-001'],
+  [['“Empiezo cada diseño de cero.”','“I start every design from scratch.”'],'ob-002'],
+  [['“Mis clientes están en cinco lugares distintos.”','“My clients live in five different places.”'],'ob-003'],
+  [['“Pierdo horas en tareas repetidas.”','“I lose hours on repetitive tasks.”'],'ob-004'],
+];
+const p2t = $('#p2t'); let pi = 0, pTimer;
+function renderP2T() {
+  const [prob, id] = P2T[pi], p = P.find(x => x.id === id);
+  p2t.classList.remove('go');
+  p2t.innerHTML = `<div class="row" style="border-top:0;padding-top:0"><span class="mono">${L('Problema','Problem')}</span><span class="prob"><s>${L(...prob)}</s></span></div>
+    <div class="row"><span class="mono">${L('Herramienta','Tool')}</span><a class="tool" href="${url(p)}">${p.code}<br>${p.name} →</a></div>
+    <div class="nav2"><div class="dots">${P2T.map((_,i) => `<button aria-label="${i+1}" aria-current="${i===pi}" data-p2="${i}"></button>`).join('')}</div><span class="mono dim">${String(pi+1).padStart(2,'0')} / ${String(P2T.length).padStart(2,'0')}</span></div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => p2t.classList.add('go')));
+  $$('[data-p2]', p2t).forEach(b => b.onclick = () => { pi = +b.dataset.p2; renderP2T(); restart(); });
+}
+const restart = () => { clearInterval(pTimer); if (!RM) pTimer = setInterval(() => { pi = (pi + 1) % P2T.length; renderP2T(); }, 4200); };
+renderP2T(); restart();
+
+/* ---------- quiz: encontrá tu sistema ---------- */
+const Q = [
+  {q:['¿Qué querés resolver?','What do you want to solve?'], o:[
+    [['Publicar contenido con constancia','Publish content consistently'], {'ob-001':3}],
+    [['Tener recursos gráficos listos para usar','Have ready-to-use graphic resources'], {'ob-002':3}],
+    [['Ordenar mi negocio: clientes, proyectos, plata','Organize my business: clients, projects, money'], {'ob-003':3}],
+    [['Trabajar mejor y más rápido con IA','Work better and faster with AI'], {'ob-004':3}],
+  ]},
+  {q:['¿Cómo trabajás hoy?','How do you work today?'], o:[
+    [['Solo/a, con mi propia marca','Solo, on my own brand'], {'ob-001':1,'ob-004':1}],
+    [['Con un equipo chico','With a small team'], {'ob-003':1,'ob-004':1}],
+    [['Para clientes','For clients'], {'ob-002':1,'ob-003':1}],
+  ]},
+  {q:['¿Qué herramienta usás más?','Which tool do you use most?'], o:[
+    [['Notion','Notion'], {'ob-003':1,'ob-001':1,'ob-004':1}],
+    [['Figma','Figma'], {'ob-002':1,'ob-001':1}],
+    [['Canva','Canva'], {'ob-001':1,'ob-002':1}],
+    [['Todavía ninguna','None yet'], {'ob-001':1,'ob-004':1}],
+  ]},
+];
+const WHY = {
+  'ob-001': [['Planificás un mes de contenido en una tarde','Plan a month of content in one afternoon'],['Plantillas que mantienen tu marca consistente','Templates that keep your brand consistent'],['Un calendario que muestra qué está listo','A calendar that shows what’s ready']],
+  'ob-002': [['Recursos listos para cualquier proyecto','Resources ready for any project'],['Presentás trabajo como un estudio','Present work like a studio'],['Licencia comercial para clientes','Commercial license for client work']],
+  'ob-003': [['Clientes, proyectos y cobros en un solo lugar','Clients, projects and payments in one place'],['Sabés qué entra y qué sale cada mes','Know what comes in and goes out each month'],['Procesos que no dependen de tu memoria','Processes that don’t depend on your memory']],
+  'ob-004': [['Workflows probados, no prompts sueltos','Proven workflows, not random prompts'],['Producís más sin perder tu voz','Produce more without losing your voice'],['Automatizás lo repetitivo','Automate the repetitive work']],
+};
+let qi = 0, score = {};
+const qbox = $('#qbox');
+function renderQ() {
+  const prog = `<div class="qprog">${Q.map((_,i) => `<i class="${i<=qi?'on':''}"></i>`).join('')}</div>`;
+  if (qi < Q.length) {
+    const it = Q[qi];
+    qbox.innerHTML = `<span class="mono">${L('Pregunta','Question')} ${qi+1} / ${Q.length}</span>${prog}<p class="qq">${L(...it.q)}</p>
+      <div class="qopts">${it.o.map(([t],i) => `<button data-i="${i}"><span class="mono">0${i+1}</span><span>${L(...t)}</span><span class="ar">→</span></button>`).join('')}</div>
+      ${qi ? `<button class="chip qback" data-back>${L('← Atrás','← Back')}</button>` : ''}`;
+    $$('.qopts button', qbox).forEach(b => b.onclick = () => { const w = it.o[+b.dataset.i][1]; hist.push(w); for (const k in w) score[k] = (score[k]||0) + w[k]; qi++; renderQ(); });
+    const back = $('[data-back]', qbox); if (back) back.onclick = () => { const w = hist.pop(); for (const k in w) score[k] -= w[k]; qi--; renderQ(); };
+    return;
+  }
+  const rank = P.map(p => [p, score[p.id]||0]).sort((a,b) => b[1]-a[1]);
+  const [best] = rank[0], alt = rank[1][0];
+  qbox.innerHTML = `<span class="mono">${L('Tu órbita','Your orbit')}</span>${prog}
+    <div class="qres"><div>${cover(best)}</div><div>
+      <span class="mono">${best.code} · ${FAM[best.family][0]}</span>
+      <h3 class="display">${best.name}</h3>
+      <p style="margin:0;opacity:.8">${L(best.tagline)}</p>
+      <ul>${WHY[best.id].map(w => `<li>${L(...w)}</li>`).join('')}</ul>
+      <div class="acts2">${buyBtn(best)}<a class="btn btn-line" href="${url(best)}">${L('Ver detalle','See details')}</a></div>
+      <p class="mono dim" style="margin-top:18px">${L('También te puede servir','You might also like')}: <a href="${url(alt)}">${alt.code} ${alt.name} →</a></p>
+    </div></div>
+    <button class="chip qback" data-restart>${L('↻ Empezar de nuevo','↻ Start over')}</button>`;
+  $('[data-restart]', qbox).onclick = () => { qi = 0; score = {}; hist.length = 0; renderQ(); };
+}
+const hist = [];
+renderQ();
+
+/* ---------- mirá por dentro ---------- */
+const win = $('#win');
+const DAYS = [['Lun','Mon'],['Mar','Tue'],['Mié','Wed'],['Jue','Thu'],['Vie','Fri'],['Sáb','Sat'],['Dom','Sun']];
+const STAT = [[['Idea','Idea'],'#e8e5dd',C.k],[['Producción','In progress'],C.or,C.k],[['Listo','Ready'],C.ac,C.k],[['Publicado','Published'],C.blue,C.b]];
+const POSTS = [[0,['Carrusel: 5 errores','Carousel: 5 mistakes'],2],[1,['Reel detrás de escena','Behind-the-scenes reel'],1],[2,['Post: caso de cliente','Post: client case'],3],[3,['Story: encuesta','Story: poll'],0],[4,['Carrusel: guía rápida','Carousel: quick guide'],1],[5,['Reel: tip semanal','Reel: weekly tip'],0],[6,['Post: frase de marca','Post: brand quote'],2]].map(([d,t,s]) => ({d,t,s}));
+const DEALS = [{n:'Estudio Norte',v:1200,c:0},{n:'Café Lumen',v:800,c:0},{n:'Atlas Arq.',v:2400,c:1},{n:'Nómade Co.',v:950,c:1},{n:'Río Films',v:1800,c:2},{n:'Plano Studio',v:600,c:3}];
+const COLS_K = [['Contacto','Lead'],['Propuesta','Proposal'],['En curso','In progress'],['Cobrado','Paid']];
+const LIBF = [['all',['Todo','All']],['shape',['Formas','Shapes']],['tex',['Texturas','Textures']],['type',['Tipografía','Type']],['mock',['Mockups','Mockups']]];
+const ASSETS = [
+  ['shape', `<div style="width:100%;height:100%;background:${C.k};display:grid;place-items:center">${sym({ring:C.b,dot:C.blue},'sym','width:60%')}</div>`],
+  ['tex', `<div class="photo" style="position:absolute;inset:0;background-image:url(assets/img/arch.jpg)"></div>`],
+  ['type', `<div style="width:100%;height:100%;background:${C.b};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:30cqw;letter-spacing:-.05em">Aa</div>`],
+  ['shape', `<svg viewBox="0 0 100 100" style="width:100%;height:100%;background:${C.or}"><path d="M-10 90 A80 80 0 0 1 70 10" stroke="${C.k}" stroke-width="12" fill="none"/></svg>`],
+  ['mock', `<div style="width:100%;height:100%;background:#ddd9cf;display:grid;place-items:center"><div style="width:60%;aspect-ratio:3/4;background:${C.k};box-shadow:6px 8px 0 rgba(0,0,0,.2)"></div></div>`],
+  ['tex', `<div class="photo" style="position:absolute;inset:0;background-image:url(assets/img/landing.jpg)"></div>`],
+  ['type', `<div style="width:100%;height:100%;background:${C.k};color:${C.b};display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:26cqw">next.</div>`],
+  ['shape', `<div style="width:100%;height:100%;background:${C.ac};display:grid;grid-template-columns:1fr 1fr;gap:8%;padding:16%">${[0,1,2,3].map(i => sym({ring:C.k,dot:C.k,rot:i*90},'sym','width:100%')).join('')}</div>`],
+  ['mock', `<div style="width:100%;height:100%;background:${C.blue};display:grid;place-items:center"><div style="width:70%;aspect-ratio:16/10;background:${C.b};border-radius:4px"></div></div>`],
+  ['tex', `<div class="photo" style="position:absolute;inset:0;background-image:url(assets/img/corridor.jpg)"></div>`],
+  ['type', `<div style="width:100%;height:100%;background:${C.or};display:flex;align-items:flex-end;padding:10%;font-weight:800;font-size:16cqw;line-height:.85;letter-spacing:-.05em;text-transform:uppercase">Tools<br>that move</div>`],
+  ['mock', `<div style="width:100%;height:100%;background:#ddd9cf;display:grid;place-items:center"><div style="width:44%;aspect-ratio:9/19;background:${C.k};border-radius:10px"></div></div>`],
+];
+const TAGN = {shape:['Forma','Shape'], tex:['Textura','Texture'], type:['Tipo','Type'], mock:['Mockup','Mockup']};
+const WF = [
+  [['Investigar','Research'], ['Actuá como investigador. Sobre el tema «{t}», armá un resumen con: 5 ideas clave, 3 datos verificables con su fuente, 3 preguntas que se hace mi audiencia y 2 ángulos poco explorados.','Act as a researcher. On the topic “{t}”, give me: 5 key ideas, 3 verifiable facts with sources, 3 questions my audience asks and 2 underexplored angles.']],
+  [['Estructurar','Structure'], ['Con este material sobre «{t}», proponé 3 estructuras distintas (lista, historia, paso a paso). Para cada una: título, gancho de una línea y 5 secciones.','Using this material on “{t}”, propose 3 different structures (list, story, step-by-step). For each: title, one-line hook and 5 sections.']],
+  [['Escribir','Write'], ['Escribí el borrador de la estructura elegida sobre «{t}». Frases cortas, tono directo, sin clichés ni lenguaje de gurú. Marcá con [DATO] donde falte un dato real.','Write the draft of the chosen structure on “{t}”. Short sentences, direct tone, no clichés or guru language. Mark [FACT] where a real fact is missing.']],
+  [['Revisar','Review'], ['Revisá este texto sobre «{t}» como editor exigente: señalá lo que sobra, lo que no se entiende y 3 cambios que lo harían más claro. No lo reescribas entero.','Review this text on “{t}” like a demanding editor: point out what’s extra, what’s unclear and 3 changes that would make it clearer. Don’t rewrite it all.']],
+];
+let wfStep = 0, wfTopic = '';
+const libSel = new Set(); let libF = 'all';
+
+function demo(p) {
+  if (p.id === 'ob-001') {
+    const done = POSTS.filter(x => x.s === 3).length;
+    return `<div class="dhead"><b>${L('Calendario editorial — Semana 12','Editorial calendar — Week 12')}</b><span class="mono dim">${L('Tocá una pieza para avanzarla','Tap a post to move it forward')} · ${done}/7 ${L('publicadas','published')}</span></div>
+      <div class="cal">${DAYS.map((d,i) => `<div class="d"><span>${L(...d)}</span>${POSTS.filter(x => x.d===i).map(x => { const [n,bg,fg] = STAT[x.s]; return `<button class="post" data-post="${POSTS.indexOf(x)}"><span class="st" style="background:${bg};color:${fg}">${L(...n)}</span>${L(...x.t)}</button>`; }).join('')}</div>`).join('')}</div>`;
+  }
+  if (p.id === 'ob-003') {
+    const paid = DEALS.filter(d => d.c === 3).reduce((a,d) => a + d.v, 0), total = DEALS.reduce((a,d) => a + d.v, 0);
+    return `<div class="dhead"><b>${L('Pipeline de clientes','Client pipeline')}</b><span class="mono dim">${L('Tocá un cliente para avanzarlo','Tap a client to move it forward')}</span></div>
+      <div class="kan">${COLS_K.map((c,i) => { const ds = DEALS.filter(d => d.c === i); return `<div class="col"><span>${L(...c)}<span>${ds.length}</span></span>${ds.map(d => `<button class="deal" data-deal="${DEALS.indexOf(d)}"><b>${d.n}</b><small>USD ${d.v.toLocaleString('en-US')}</small></button>`).join('')}</div>`; }).join('')}</div>
+      <div class="dhead" style="margin:16px 0 0"><span class="mono">${L('Cobrado este mes','Paid this month')}</span><b>USD ${paid.toLocaleString('en-US')} <span class="mono dim">/ ${total.toLocaleString('en-US')}</span></b></div>
+      <div class="kbar"><i style="transform:scaleX(${(paid/total).toFixed(3)})"></i></div>`;
+  }
+  if (p.id === 'ob-002') {
+    return `<div class="dhead"><b>${L('Biblioteca — Vol.01','Library — Vol.01')}</b><span class="mono dim">${L('Elegí recursos para tu tablero','Pick resources for your board')} · ${libSel.size} ${L('elegidos','selected')}</span></div>
+      <div class="sw2" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${LIBF.map(([k,n]) => `<button class="chip" data-libf="${k}" aria-pressed="${k===libF}" style="color:var(--k)">${L(...n)}</button>`).join('')}</div>
+      <div class="lib">${ASSETS.map(([k,h],i) => (libF==='all'||libF===k) ? `<button class="asset${libSel.has(i)?' sel':''}" data-asset="${i}" aria-pressed="${libSel.has(i)}">${h}<span class="tag">${L(...TAGN[k])}</span><span class="ok">✓</span></button>` : '').join('')}</div>`;
+  }
+  const topic = wfTopic || tr('lanzar un producto digital','launching a digital product');
+  const text = tr(...WF[wfStep][1]).replace('{t}', `<mark>${topic.replace(/[<>&]/g,'')}</mark>`);
+  return `<div class="dhead"><b>${L('Workflow: de idea a texto publicado','Workflow: from idea to published text')}</b><span class="mono dim">${L('Muestra gratis — copiala y usala','Free sample — copy it and use it')}</span></div>
+    <div class="wf"><div class="steps">${WF.map(([n],i) => `<button data-wf="${i}" aria-pressed="${i===wfStep}"><span class="mono">0${i+1}</span>${L(...n)}</button>`).join('')}</div>
+    <div><label class="mono" for="wfTopic">${L('Tu tema','Your topic')}</label><input id="wfTopic" value="${wfTopic.replace(/"/g,'&quot;')}" placeholder="${tr('ej: lanzar un producto digital','e.g. launching a digital product')}">
+    <div class="prompt" id="wfOut">${text}</div>
+    <div style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap"><span class="mono dim">${L('Paso','Step')} ${wfStep+1} / 4</span><button class="chip" data-copy style="color:var(--k)">${L('Copiar prompt','Copy prompt')}</button></div></div></div>`;
+}
+let cur = P[0];
+function renderWin() {
+  win.innerHTML = `<div class="bar"><i></i><i></i><i></i><span class="mono">${cur.code} — ${cur.name}</span><span class="mono dim" style="margin-left:auto">${L('Vista previa','Preview')}</span></div>
+    <div class="body" id="wbody">${demo(cur)}</div>
+    <div class="foot"><div><span class="mono dim">${L('Versión completa','Full version')}: ${L(cur.specs[0][1])} ${L(cur.specs[0][0])}</span><div class="price">${cur.status==='soon' ? L('Pronto','Soon') : money(cur.price)}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${buyBtn(cur)}<a class="btn btn-line" href="${url(cur)}" style="color:var(--k)">${L('Ver detalle','See details')}</a></div></div>`;
+  $$('#ptabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.id === cur.id)));
+}
+$('#ptabs').innerHTML = P.map(p => `<button role="tab" data-id="${p.id}" aria-selected="${p===cur}"><span class="mono">${p.code}</span><b>${p.name}</b></button>`).join('');
+$$('#ptabs button').forEach(b => b.onclick = () => { cur = P.find(p => p.id === b.dataset.id); renderWin(); });
+win.addEventListener('click', e => {
+  const t = e.target;
+  const po = t.closest('[data-post]'); if (po) { const x = POSTS[+po.dataset.post]; x.s = (x.s + 1) % 4; renderWin(); return; }
+  const de = t.closest('[data-deal]'); if (de) { const d = DEALS[+de.dataset.deal]; d.c = (d.c + 1) % 4; renderWin(); return; }
+  const lf = t.closest('[data-libf]'); if (lf) { libF = lf.dataset.libf; renderWin(); return; }
+  const as = t.closest('[data-asset]'); if (as) { const i = +as.dataset.asset; libSel.has(i) ? libSel.delete(i) : libSel.add(i); renderWin(); return; }
+  const wf = t.closest('[data-wf]'); if (wf) { wfStep = +wf.dataset.wf; renderWin(); return; }
+  if (t.closest('[data-copy]')) { const txt = $('#wfOut').innerText; (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast(tr('Prompt copiado','Prompt copied')), () => toast(tr('Seleccioná el texto para copiarlo','Select the text to copy it'))); }
+});
+win.addEventListener('input', e => { if (e.target.id === 'wfTopic') { wfTopic = e.target.value; const topic = wfTopic || tr('lanzar un producto digital','launching a digital product'); $('#wfOut').innerHTML = tr(...WF[wfStep][1]).replace('{t}', `<mark>${topic.replace(/[<>&]/g,'')}</mark>`); } });
+addEventListener('orbit:lang', () => { if (cur.id === 'ob-004') renderWin(); });
+renderWin();
+
+/* ---------- a medida ---------- */
+const OPTS = {
+  type: [['Sistema en Notion','Notion system'],['Plantillas de marca','Brand templates'],['Kit de contenido','Content kit'],['Workflow de IA','AI workflow'],['Otra idea','Something else']],
+  budget: [['< 500','< 500'],['500 – 1.500','500 – 1,500'],['1.500 +','1,500 +'],['No sé','Not sure']],
+  time: [['Sin apuro','No rush'],['1 mes','1 month'],['Urgente','Urgent']],
+};
+const pick = {type:null, budget:null, time:null};
+$$('.cform .opts').forEach(box => {
+  const g = box.dataset.group;
+  box.innerHTML = OPTS[g].map((o,i) => `<button type="button" class="chip" data-i="${i}" aria-pressed="false">${L(...o)}</button>`).join('');
+  $$('.chip', box).forEach(b => b.onclick = () => { pick[g] = +b.dataset.i; $$('.chip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+});
+$('#cform').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#cName').value.trim(), mail = $('#cMail').value.trim(), idea = $('#cIdea').value.trim(), err = $('#cErr');
+  if (!name || !/^\S+@\S+\.\S+$/.test(mail) || !idea) { err.textContent = tr('Completá nombre, un email válido y la idea.', 'Please add your name, a valid email and the idea.'); return; }
+  err.textContent = '';
+  const val = g => pick[g] === null ? '—' : tr(...OPTS[g][pick[g]]);
+  const body = `${tr('Nombre','Name')}: ${name}\nEmail: ${mail}\n${tr('Qué necesito','What I need')}: ${val('type')}\n${tr('Presupuesto (USD)','Budget (USD)')}: ${val('budget')}\n${tr('Plazo','Timeline')}: ${val('time')}\n\n${idea}`;
+  location.href = `mailto:hola@orbitando.com.ar?subject=${encodeURIComponent(tr('Pedido a medida — ','Custom request — ') + name)}&body=${encodeURIComponent(body)}`;
+  toast(tr('Abrimos tu email con el pedido listo para enviar','Opening your email with the request ready to send'));
+});
+
+reveal();
+})();
+</script>
+</body>
+</html>
