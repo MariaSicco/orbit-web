@@ -22,7 +22,12 @@ export default async function handler(req, res) {
 
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=20, s-maxage=60, stale-while-revalidate=300');
+  /* PayPal solo se ofrece si está en producción: en modo prueba el botón
+     mandaría al comprador a sandbox.paypal.com, donde no puede pagar. */
+  const paypalListo = Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET && process.env.PAYPAL_ENV === 'live');
+
   res.status(200).send(
+    `window.ORBIT_PAYPAL=${paypalListo};` +
     `(function(){var p=${JSON.stringify(patch)},L=window.ORBIT_PRODUCTS||[];` +
     `for(var i=0;i<L.length;i++){var o=p[L[i].id];if(!o)continue;` +
     `for(var k in o){if(k==='tagline'){L[i].tagline=Object.assign({},L[i].tagline,o.tagline)}else{L[i][k]=o[k]}}}})();`

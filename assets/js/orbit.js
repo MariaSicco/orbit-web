@@ -165,7 +165,7 @@ function mountDrawer() {
       <div class="tot"><span class="mono">${L('Total','Total')}</span><b id="cartTotal"></b></div>
       <div><label class="mono" for="cartMail" style="display:block;margin-bottom:8px">${L('Tu email (ahí llega el acceso)','Your email (where access is sent)')}</label><input id="cartMail" type="email" autocomplete="email" placeholder="hola@tuestudio.com"></div>
       <button class="btn btn-acid" data-pay="mercadopago">${L('Pagar con Mercado Pago','Pay with Mercado Pago')} <span class="ar">→</span></button>
-      <button class="btn btn-line" data-pay="paypal">${L('Pagar con PayPal o tarjeta','Pay with PayPal or card')} <span class="ar">→</span></button>
+      ${window.ORBIT_PAYPAL === false ? '' : `<button class="btn btn-line" data-pay="paypal">${L('Pagar con PayPal o tarjeta','Pay with PayPal or card')} <span class="ar">→</span></button>`}
       <p class="err" id="cartErr" role="alert"></p>
       <p class="note">${L('Mercado Pago cobra en pesos; PayPal, en dólares. Pago único, acceso para siempre.','Mercado Pago charges in ARS; PayPal in USD. One-time payment, lifetime access.')}</p>
     </div></div>`;
