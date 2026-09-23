@@ -9,191 +9,189 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="robots" content="noindex">
-<meta name="description" content="Orden en movimiento. Sistemas digitales que nacen de problemas reales.">
+<meta name="description" content="Orden en movimiento.">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/css/orbit.css?v=45">
 <style>
-/* =========================================================
-   VERSIÓN B — pensada desde el celular.
-   Siete pantallas en vez de doce, cada una con su propio
-   ritmo: una calma, una de golpe, una de catálogo, una de
-   datos, una de pasos, una de formulario y un cierre.
-   ========================================================= */
+/* ============================================================
+   VERSIÓN B — pensada como pantallas, no como página.
 
-/* 01 · APERTURA ------------------------------------------------ */
-.b-hero{min-height:100svh;display:grid;grid-template-rows:auto 1fr auto;padding:calc(88px + env(safe-area-inset-top,0px)) var(--pad) calc(24px + env(safe-area-inset-bottom,0px));position:relative;overflow:hidden}
-.b-hero .foto{position:absolute;inset:0;background-size:cover;background-position:center;opacity:.28}
-.b-hero .foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--k) 0%,rgba(13,13,14,.45) 40%,var(--k) 100%)}
-.b-hero>*{position:relative;z-index:2}
-.b-hero .arriba{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;opacity:.55;line-height:1.7}
-.b-hero .centro{display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,30px)}
-.b-hero .wm{font-size:clamp(54px,17vw,200px);line-height:.8}
-.b-hero h1{font-size:clamp(38px,9.5vw,96px);max-width:16ch}
-.b-hero h1 .it{color:var(--ac)}
-.b-hero p{margin:0;max-width:34ch;font-size:clamp(16px,1.6vw,19px);line-height:1.5;opacity:.72}
-.b-hero .acts{display:flex;gap:10px;flex-wrap:wrap}
-.b-hero .abajo{display:flex;justify-content:space-between;align-items:end;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;opacity:.45}
+   Tres decisiones:
+   1. Cada sección ocupa una pantalla y el scroll aterriza en ella.
+      No hay "medio bloque" nunca.
+   2. El método y la colección se recorren con el dedo, de costado.
+      En un teléfono deslizar es más natural que leer una lista.
+   3. El símbolo de Orbit sigue el avance: se completa a medida que
+      bajás. La marca haciendo un trabajo, no decorando.
+   ============================================================ */
 
-/* 02 · EL MÉTODO ----------------------------------------------- */
-.b-metodo{background:var(--b);color:var(--k);padding:clamp(70px,12vh,140px) var(--pad)}
-.b-metodo .tope{display:flex;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid rgba(13,13,14,.16);font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;opacity:.55}
-.b-metodo h2{font-size:clamp(46px,12vw,140px);margin:clamp(26px,4vh,48px) 0 0}
-.b-metodo h2 .it{color:var(--or)}
-.b-pares{margin-top:clamp(34px,6vh,70px);display:grid;gap:0}
-.b-par{padding:clamp(22px,4vw,34px) 0;border-top:1px solid rgba(13,13,14,.16)}
-.b-par:last-child{border-bottom:1px solid rgba(13,13,14,.16)}
-.b-par .p{font-family:var(--serif);font-style:italic;font-size:clamp(21px,5.2vw,34px);line-height:1.18;margin:0}
-.b-par .p s{text-decoration:none;background:linear-gradient(var(--or),var(--or)) 0 58%/0 3px no-repeat;transition:background-size .7s var(--ease)}
-.b-par.vis .p s{background-size:100% 3px}
-.b-par a{display:flex;align-items:baseline;gap:10px;margin-top:12px;text-decoration:none;font-weight:800;font-size:clamp(19px,4.6vw,28px);letter-spacing:-.035em;text-transform:uppercase;line-height:1;
-  opacity:0;transform:translateY(8px);transition:opacity .5s var(--ease) .18s,transform .5s var(--ease) .18s,color .2s}
-.b-par.vis a{opacity:1;transform:none}
-.b-par a:hover{color:var(--blue)}
-.b-par a .cod{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;opacity:.5;font-weight:400;flex:none}
-
-/* 03 · LA COLECCIÓN -------------------------------------------- */
-.b-col{padding:clamp(70px,12vh,140px) var(--pad)}
-.b-col .tope{display:flex;justify-content:space-between;gap:20px;padding-bottom:18px;border-bottom:1px solid var(--k3);font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;opacity:.55}
-.b-col h2{font-size:clamp(46px,12vw,140px);margin:clamp(26px,4vh,48px) 0 clamp(34px,6vh,64px)}
-.b-col h2 .it{color:var(--ac)}
-.b-items{display:grid;gap:clamp(40px,7vw,72px)}
-.b-item{display:grid;gap:clamp(16px,3vw,26px)}
-.b-item .cover{width:100%;max-width:420px;box-shadow:0 40px 80px -50px rgba(0,0,0,.95)}
-.b-item .datos{display:grid;gap:10px}
-.b-item .cod{font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;opacity:.5}
-.b-item h3{margin:0;font-weight:800;font-size:clamp(28px,7vw,44px);letter-spacing:-.04em;text-transform:uppercase;line-height:.98}
-.b-item p{margin:0;opacity:.68;font-size:15.5px;line-height:1.55;max-width:46ch}
-.b-item .pie{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding-top:6px}
-.b-item .precio{font-weight:800;font-size:clamp(26px,6vw,38px);letter-spacing:-.04em;font-variant-numeric:tabular-nums}
-@media (min-width:900px){
-  .b-items{grid-template-columns:1fr 1fr;gap:clamp(48px,5vw,80px)}
-  .b-item{grid-template-columns:200px minmax(0,1fr);align-items:start}
+@media (max-width:900px){
+  html{scroll-snap-type:y mandatory;scroll-padding-top:0}
+  .pant{scroll-snap-align:start;scroll-snap-stop:always}
+  .foot{scroll-snap-align:start}
 }
+@media (prefers-reduced-motion:reduce){ html{scroll-snap-type:none} }
 
-/* 04 · QUÉ TE LLEVÁS ------------------------------------------- */
-.b-datos{background:var(--b);color:var(--k);padding:clamp(60px,10vh,120px) var(--pad)}
-.b-datos .grid{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:rgba(13,13,14,.16);border:1px solid rgba(13,13,14,.16)}
-.b-datos .c{background:var(--b);padding:clamp(20px,4vw,32px);display:grid;gap:8px;align-content:start;min-height:130px}
-.b-datos .c b{font-size:clamp(30px,8vw,52px);font-weight:800;letter-spacing:-.05em;line-height:.9}
-.b-datos .c span{font-family:var(--mono);font-size:10px;letter-spacing:.09em;text-transform:uppercase;opacity:.55}
-.b-datos .c small{font-size:13.5px;line-height:1.45;opacity:.6}
-@media (max-width:480px){.b-datos .grid{grid-template-columns:1fr}}
+.pant{min-height:100svh;display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,34px);
+  padding:calc(96px + env(safe-area-inset-top,0px)) var(--pad) calc(78px + env(safe-area-inset-bottom,0px));position:relative;overflow:hidden}
+.pant .eti{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.pant h2{font-size:clamp(44px,11.5vw,120px);margin:0}
+.luz{background:var(--b);color:var(--k)}
+.luz .pant .eti{opacity:.55}
 
-/* 05 · CÓMO FUNCIONA ------------------------------------------- */
-.b-pasos{padding:clamp(70px,12vh,140px) var(--pad)}
-.b-pasos h2{font-size:clamp(40px,10vw,110px);margin:0 0 clamp(30px,5vh,56px)}
-.b-pasos h2 .it{color:var(--or)}
-.b-pasos ol{list-style:none;margin:0;padding:0;display:grid;gap:0}
-.b-pasos li{display:grid;grid-template-columns:56px 1fr;gap:16px;padding:clamp(20px,4vw,30px) 0;border-top:1px solid var(--k3)}
-.b-pasos li:last-child{border-bottom:1px solid var(--k3)}
-.b-pasos li .n{font-family:var(--mono);font-size:11px;letter-spacing:.09em;opacity:.45;padding-top:5px}
-.b-pasos li b{display:block;font-weight:800;font-size:clamp(19px,4.6vw,26px);letter-spacing:-.035em;text-transform:uppercase;line-height:1.05}
-.b-pasos li p{margin:8px 0 0;opacity:.65;font-size:15px;line-height:1.55;max-width:44ch}
+/* ---- avance orbital, fijo ---- */
+.avance{position:fixed;left:var(--pad);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:40;width:46px;height:46px;pointer-events:none;
+  opacity:0;transition:opacity .4s var(--ease)}
+.avance.on{opacity:1}
+.avance svg{width:100%;height:100%;transform:rotate(-90deg)}
+.avance circle{fill:none;stroke-width:6}
+.avance .pista{stroke:currentColor;opacity:.18}
+.avance .arco{stroke:var(--ac);stroke-linecap:round;transition:stroke-dashoffset .12s linear}
+.avance b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;font-weight:400;opacity:.7}
 
-/* 06 · A MEDIDA ------------------------------------------------ */
-.b-medida{background:var(--b);color:var(--k);padding:clamp(70px,12vh,140px) var(--pad)}
-.b-medida h2{font-size:clamp(40px,10vw,110px);margin:0}
-.b-medida h2 .it{color:var(--or)}
-.b-medida p{margin:20px 0 clamp(26px,4vh,40px);max-width:40ch;font-size:clamp(16px,1.6vw,19px);line-height:1.55;opacity:.7}
+/* ---- 01 entrada ---- */
+.p-entrada .marca{font-size:clamp(58px,19vw,210px);line-height:.78;letter-spacing:-.05em}
+.p-entrada .sub{font-size:clamp(19px,5vw,34px);font-weight:800;letter-spacing:-.04em;text-transform:uppercase;line-height:1.05;max-width:14ch}
+.p-entrada .sub .it{color:var(--ac)}
+.p-entrada p{margin:0;max-width:30ch;font-size:15.5px;line-height:1.5;opacity:.65}
+.p-entrada .foto{position:absolute;inset:0;background:url(assets/img/landing.jpg) center/cover;opacity:.22;z-index:-1}
+.p-entrada .foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--k),rgba(13,13,14,.4) 45%,var(--k))}
 
-/* 07 · CIERRE -------------------------------------------------- */
-.b-cierre{min-height:78svh;display:flex;align-items:center;padding:clamp(70px,12vh,140px) var(--pad);position:relative;overflow:hidden}
-.b-cierre .ring{position:absolute;left:50%;top:50%;width:min(150vh,160vw);translate:-50% -50%;color:#161617;pointer-events:none}
-.b-cierre .wrap{position:relative;z-index:2;max-width:1440px;margin-inline:auto;width:100%}
-.b-cierre h2{font-size:clamp(40px,10vw,120px);max-width:16ch}
-.b-cierre h2 .it{color:var(--ac)}
-.b-cierre p{margin:24px 0 clamp(28px,4vh,44px);max-width:40ch;font-size:clamp(16px,1.6vw,19px);line-height:1.55;opacity:.7}
+/* ---- deslizables ---- */
+.riel{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
+  margin-inline:calc(var(--pad) * -1);padding-inline:var(--pad);scroll-padding-inline:var(--pad)}
+.riel::-webkit-scrollbar{display:none}
+.riel>*{scroll-snap-align:start;flex:0 0 min(82%,420px)}
+.pista-x{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.pista-x .barra{flex:1;height:2px;background:currentColor;opacity:.18;position:relative;overflow:hidden}
+.pista-x .barra i{position:absolute;inset:0;background:var(--blue);transform-origin:left;transform:scaleX(.25);transition:transform .25s var(--ease)}
 
-.b-wrap{max-width:1440px;margin-inline:auto;width:100%}
+/* método */
+.m-slide{border:1px solid rgba(13,13,14,.18);padding:clamp(20px,5vw,30px);display:flex;flex-direction:column;justify-content:space-between;gap:20px;min-height:clamp(300px,46vh,420px)}
+.m-slide .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.45}
+.m-slide .prob{font-family:var(--serif);font-style:italic;font-size:clamp(23px,6vw,34px);line-height:1.16;margin:0}
+.m-slide .prob s{text-decoration:none;background:linear-gradient(var(--or),var(--or)) 0 58%/0 3px no-repeat;transition:background-size .8s var(--ease)}
+.m-slide.vis .prob s{background-size:100% 3px}
+.m-slide a{text-decoration:none;display:grid;gap:4px;opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease) .25s,transform .5s var(--ease) .25s}
+.m-slide.vis a{opacity:1;transform:none}
+.m-slide a b{font-weight:800;font-size:clamp(20px,5vw,28px);letter-spacing:-.04em;text-transform:uppercase;line-height:1}
+.m-slide a span{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.5}
+
+/* colección */
+.c-slide{display:flex;flex-direction:column;gap:14px}
+.c-slide .cover{width:100%;box-shadow:0 40px 70px -46px rgba(0,0,0,.95)}
+.c-slide .fila{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.c-slide h3{margin:0;font-weight:800;font-size:clamp(20px,5vw,28px);letter-spacing:-.04em;text-transform:uppercase;line-height:1}
+.c-slide .precio{font-weight:800;font-size:clamp(18px,4.6vw,24px);letter-spacing:-.03em;white-space:nowrap}
+.c-slide .btn{justify-content:center}
+
+/* ---- 04 números ---- */
+.p-datos .fila{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;padding:clamp(14px,3vh,22px) 0;border-top:1px solid rgba(13,13,14,.18)}
+.p-datos .fila:last-child{border-bottom:1px solid rgba(13,13,14,.18)}
+.p-datos .fila b{font-size:clamp(34px,10vw,64px);font-weight:800;letter-spacing:-.05em;line-height:.85;min-width:3.2ch}
+.p-datos .fila div{display:grid;gap:3px}
+.p-datos .fila span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.p-datos .fila small{font-size:14px;line-height:1.4;opacity:.7}
+
+/* ---- 05 pasos ---- */
+.p-pasos ol{list-style:none;margin:0;padding:0}
+.p-pasos li{display:grid;grid-template-columns:44px 1fr;gap:14px;padding:clamp(12px,2.6vh,20px) 0;border-top:1px solid var(--k3)}
+.p-pasos li:last-child{border-bottom:1px solid var(--k3)}
+.p-pasos li i{font-style:normal;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.45;padding-top:4px}
+.p-pasos li b{font-weight:800;font-size:clamp(17px,4.4vw,23px);letter-spacing:-.035em;text-transform:uppercase;line-height:1.05;display:block}
+.p-pasos li p{margin:5px 0 0;font-size:14px;line-height:1.45;opacity:.6}
+
+/* ---- 06 y 07 ---- */
+.p-medida p,.p-cierre p{margin:0;max-width:34ch;font-size:15.5px;line-height:1.5;opacity:.68}
+.p-cierre .ring{position:absolute;left:50%;top:50%;width:min(140vh,150vw);translate:-50% -50%;color:#161617;z-index:-1}
+
+.pant .acts{display:flex;gap:10px;flex-wrap:wrap}
+@media (min-width:900px){
+  .pant{min-height:auto;padding-block:clamp(90px,11vh,150px)}
+  .riel>*{flex:0 0 min(40%,380px)}
+  .avance{display:none}
+}
 </style>
 </head>
 <body data-page="home" data-title-es="B · Rediseñada — Orbit®" data-title-en="B · Redesigned — Orbit®">
+
+<div class="avance" id="avance" aria-hidden="true">
+  <svg viewBox="0 0 48 48"><circle class="pista" cx="24" cy="24" r="20"></circle><circle class="arco" id="arco" cx="24" cy="24" r="20"></circle></svg>
+  <b id="avanceN">01</b>
+</div>
+
 <main>
 
-<!-- 01 · APERTURA -->
-<section class="b-hero dark">
-  <div class="foto" id="bFoto" aria-hidden="true"></div>
-  <div class="arriba">
-    <span><span data-l="es">Herramientas digitales<br>para un mañana<br>más creativo.</span><span data-l="en">Digital tools<br>for a brighter<br>creative tomorrow.</span></span>
-    <span style="text-align:right">OB—000<br><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></span>
+<!-- 01 ENTRADA -->
+<section class="pant p-entrada dark">
+  <div class="foto" aria-hidden="true"></div>
+  <div class="eti"><span>OB—000</span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)">
+    <div class="marca wm" id="bWm" aria-label="Orbit"></div>
+    <p class="sub"><span data-l="es">Orden en <span class="it">movimiento.</span></span><span data-l="en">Order in <span class="it">motion.</span></span></p>
+    <p><span data-l="es">Cuatro sistemas digitales. Cada uno nació de un problema que tenías vos.</span><span data-l="en">Four digital systems. Each one born from a problem you already had.</span></p>
   </div>
-  <div class="centro">
-    <div class="wm" id="bWm" aria-label="Orbit"></div>
-    <h1 class="display"><span data-l="es">Orden en <span class="it">movimiento.</span></span><span data-l="en">Order in <span class="it">motion.</span></span></h1>
-    <p><span data-l="es">Sistemas digitales que nacen de problemas reales. Los usás el mismo día que los comprás.</span><span data-l="en">Digital systems born from real problems. You use them the same day you buy them.</span></p>
-    <div class="acts">
-      <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver los cuatro</span><span data-l="en">See all four</span> <span class="ar">↓</span></a>
-      <a class="btn btn-line" href="#metodo"><span data-l="es">Cómo los pensamos</span><span data-l="en">How we make them</span></a>
-    </div>
-  </div>
-  <div class="abajo">
-    <span data-l="es">Deslizá</span><span data-l="en">Scroll</span>
-    <span>01 / 07</span>
+  <div class="acts">
+    <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver los cuatro</span><span data-l="en">See all four</span> <span class="ar">↓</span></a>
   </div>
 </section>
 
-<!-- 02 · EL MÉTODO -->
-<section class="b-metodo" id="metodo">
-  <div class="b-wrap">
-    <div class="tope"><span><span data-l="es">Nuestro método</span><span data-l="en">Our method</span></span><span>OB—000</span></div>
-    <h2 class="display"><span data-l="es">Problema<br>&rarr; <span class="it">herramienta.</span></span><span data-l="en">Problem<br>&rarr; <span class="it">tool.</span></span></h2>
-    <div class="b-pares" id="bPares"></div>
+<!-- 02 MÉTODO -->
+<section class="pant luz" id="metodo">
+  <div class="eti"><span><span data-l="es">Nuestro método</span><span data-l="en">Our method</span></span><span data-l="es">Deslizá →</span><span data-l="en">Swipe →</span></div>
+  <h2 class="display"><span data-l="es">Problema<br>→ <span class="it" style="color:var(--or)">herramienta.</span></span><span data-l="en">Problem<br>→ <span class="it" style="color:var(--or)">tool.</span></span></h2>
+  <div class="riel" id="rielM"></div>
+  <div class="pista-x"><span id="mN">01 / 04</span><span class="barra"><i id="mB"></i></span></div>
+</section>
+
+<!-- 03 COLECCIÓN -->
+<section class="pant dark" id="coleccion">
+  <div class="eti"><span><span data-l="es">La colección</span><span data-l="en">The collection</span></span><span>VOL.01</span></div>
+  <h2 class="display"><span data-l="es">Cuatro <span class="it" style="color:var(--ac)">sistemas.</span></span><span data-l="en">Four <span class="it" style="color:var(--ac)">systems.</span></span></h2>
+  <div class="riel" id="rielC"></div>
+  <div class="pista-x"><span id="cN">01 / 04</span><span class="barra"><i id="cB"></i></span></div>
+</section>
+
+<!-- 04 NÚMEROS -->
+<section class="pant luz p-datos">
+  <div class="eti"><span><span data-l="es">Qué te llevás</span><span data-l="en">What you get</span></span><span>04</span></div>
+  <div>
+    <div class="fila"><b>0'</b><div><span data-l="es">Entrega</span><span data-l="en">Delivery</span><small><span data-l="es">Se acredita el pago y ya está en tu cuenta.</span><span data-l="en">Payment clears and it is already in your account.</span></small></div></div>
+    <div class="fila"><b>∞</b><div><span data-l="es">Licencia</span><span data-l="en">License</span><small><span data-l="es">Uso comercial, en tus proyectos y en los de tus clientes.</span><span data-l="en">Commercial use, in your projects and your clients&rsquo;.</span></small></div></div>
+    <div class="fila"><b>$0</b><div><span data-l="es">Actualizaciones</span><span data-l="en">Updates</span><small><span data-l="es">Cuando un sistema mejora, lo bajás de nuevo sin pagar.</span><span data-l="en">When a system improves, you download it again for free.</span></small></div></div>
+    <div class="fila"><b>&infin;</b><div><span data-l="es">Acceso</span><span data-l="en">Access</span><small><span data-l="es">Sin suscripción y sin vencimiento.</span><span data-l="en">No subscription, no expiry.</span></small></div></div>
   </div>
 </section>
 
-<!-- 03 · LA COLECCIÓN -->
-<section class="b-col dark" id="coleccion">
-  <div class="b-wrap">
-    <div class="tope"><span><span data-l="es">La colección</span><span data-l="en">The collection</span></span><span>VOL.01 — 2026</span></div>
-    <h2 class="display"><span data-l="es">Cuatro <span class="it">sistemas.</span></span><span data-l="en">Four <span class="it">systems.</span></span></h2>
-    <div class="b-items" id="bItems"></div>
-  </div>
+<!-- 05 PASOS -->
+<section class="pant dark p-pasos">
+  <div class="eti"><span><span data-l="es">Cómo funciona</span><span data-l="en">How it works</span></span><span>05</span></div>
+  <h2 class="display" style="font-size:clamp(36px,9vw,90px)"><span data-l="es">Del clic a <span class="it" style="color:var(--or)">usarlo.</span></span><span data-l="en">From click to <span class="it" style="color:var(--or)">using it.</span></span></h2>
+  <ol>
+    <li><i>01</i><div><b><span data-l="es">Elegís</span><span data-l="en">You choose</span></b><p><span data-l="es">Cada ficha dice qué incluye y para qué herramientas sirve.</span><span data-l="en">Each page says what is included and which tools it works with.</span></p></div></li>
+    <li><i>02</i><div><b><span data-l="es">Pagás</span><span data-l="en">You pay</span></b><p><span data-l="es">Mercado Pago en pesos o tarjeta en dólares.</span><span data-l="en">Mercado Pago in pesos or card in dollars.</span></p></div></li>
+    <li><i>03</i><div><b><span data-l="es">Descargás</span><span data-l="en">You download</span></b><p><span data-l="es">Aparece en tu cuenta al instante.</span><span data-l="en">It shows up in your account instantly.</span></p></div></li>
+    <li><i>04</i><div><b><span data-l="es">Lo hacés tuyo</span><span data-l="en">You make it yours</span></b><p><span data-l="es">Lo adaptás y lo usás las veces que quieras.</span><span data-l="en">Adapt it and use it as often as you want.</span></p></div></li>
+  </ol>
 </section>
 
-<!-- 04 · QUÉ TE LLEVÁS -->
-<section class="b-datos">
-  <div class="b-wrap">
-    <div class="grid">
-      <div class="c"><span data-l="es">Entrega</span><span data-l="en">Delivery</span><b>0 min</b><small><span data-l="es">Se acredita el pago y ya está en tu cuenta.</span><span data-l="en">Payment clears and it is already in your account.</span></small></div>
-      <div class="c"><span data-l="es">Licencia</span><span data-l="en">License</span><b>∞</b><small><span data-l="es">Uso comercial en tus proyectos y en los de tus clientes.</span><span data-l="en">Commercial use in your projects and your clients&rsquo;.</span></small></div>
-      <div class="c"><span data-l="es">Actualizaciones</span><span data-l="en">Updates</span><b>$0</b><small><span data-l="es">Cuando un sistema mejora, lo bajás de nuevo sin pagar.</span><span data-l="en">When a system improves, you download it again for free.</span></small></div>
-      <div class="c"><span data-l="es">Acceso</span><span data-l="en">Access</span><b><span data-l="es">Siempre</span><span data-l="en">Forever</span></b><small><span data-l="es">Sin suscripción y sin vencimiento.</span><span data-l="en">No subscription, no expiry.</span></small></div>
-    </div>
-  </div>
+<!-- 06 A MEDIDA -->
+<section class="pant luz p-medida" id="a-medida">
+  <div class="eti"><span><span data-l="es">A medida</span><span data-l="en">Custom</span></span><span>OB—X00</span></div>
+  <h2 class="display"><span data-l="es">¿No está lo que<br>necesitás?<br><span class="it" style="color:var(--or)">Lo diseñamos.</span></span><span data-l="en">Not what<br>you need?<br><span class="it" style="color:var(--or)">We design it.</span></span></h2>
+  <p><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows.</span></p>
+  <div class="acts"><a class="btn btn-blue" href="mailto:hola@orbitando.com.ar?subject=Pedido%20a%20medida"><span data-l="es">Contanos qué necesitás</span><span data-l="en">Tell us what you need</span> <span class="ar">→</span></a></div>
 </section>
 
-<!-- 05 · CÓMO FUNCIONA -->
-<section class="b-pasos dark">
-  <div class="b-wrap">
-    <h2 class="display"><span data-l="es">Del clic<br>a <span class="it">usarlo.</span></span><span data-l="en">From click<br>to <span class="it">using it.</span></span></h2>
-    <ol>
-      <li><span class="n">01</span><div><b><span data-l="es">Elegís</span><span data-l="en">You choose</span></b><p><span data-l="es">Cada ficha dice qué incluye, en qué formato viene y para qué herramientas sirve.</span><span data-l="en">Each page says what is included, the format and which tools it works with.</span></p></div></li>
-      <li><span class="n">02</span><div><b><span data-l="es">Pagás</span><span data-l="en">You pay</span></b><p><span data-l="es">Mercado Pago en pesos o tarjeta en dólares. Tus datos nunca pasan por acá.</span><span data-l="en">Mercado Pago in pesos or card in dollars. Your details never pass through here.</span></p></div></li>
-      <li><span class="n">03</span><div><b><span data-l="es">Descargás</span><span data-l="en">You download</span></b><p><span data-l="es">Aparece en tu cuenta al instante y te llega el comprobante por email.</span><span data-l="en">It appears in your account instantly and the receipt arrives by email.</span></p></div></li>
-      <li><span class="n">04</span><div><b><span data-l="es">Lo hacés tuyo</span><span data-l="en">You make it yours</span></b><p><span data-l="es">Lo adaptás a tu marca y lo usás las veces que quieras, sin pagar de nuevo.</span><span data-l="en">Adapt it to your brand and use it as often as you want, without paying again.</span></p></div></li>
-    </ol>
-  </div>
-</section>
-
-<!-- 06 · A MEDIDA -->
-<section class="b-medida" id="a-medida">
-  <div class="b-wrap">
-    <h2 class="display"><span data-l="es">¿No está lo<br>que necesitás?<br><span class="it">Lo diseñamos.</span></span><span data-l="en">Not what<br>you need?<br><span class="it">We design it.</span></span></h2>
-    <p><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA, con el mismo cuidado que cada producto Orbit.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows, with the same care as every Orbit product.</span></p>
-    <a class="btn btn-blue" href="mailto:hola@orbitando.com.ar?subject=Pedido%20a%20medida"><span data-l="es">Contanos qué necesitás</span><span data-l="en">Tell us what you need</span> <span class="ar">→</span></a>
-  </div>
-</section>
-
-<!-- 07 · CIERRE -->
-<section class="b-cierre dark">
+<!-- 07 CIERRE -->
+<section class="pant dark p-cierre">
   <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
-  <div class="wrap">
-    <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it">A brighter tomorrow.</span></span></h2>
-    <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
-    <a class="btn btn-acid" href="#coleccion"><span data-l="es">Empezar por un sistema</span><span data-l="en">Start with one system</span> <span class="ar">↑</span></a>
-  </div>
+  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>07</span></div>
+  <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it" style="color:var(--ac)">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it" style="color:var(--ac)">A brighter tomorrow.</span></span></h2>
+  <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
+  <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir un sistema</span><span data-l="en">Pick a system</span> <span class="ar">↑</span></a></div>
 </section>
 
 </main>
@@ -202,42 +200,66 @@
 <script src="assets/js/orbit.js?v=45"></script>
 <script>
 (() => {
-const {$, $$, L, tr, cover, buyBtn, money, url, wm, P} = ORBIT;
-
-/* apertura: wordmark y foto */
+const {$, $$, L, cover, buyBtn, money, url, wm, P} = ORBIT;
 $('#bWm').innerHTML = wm({color:'#F2EFE8'});
-$('#bFoto').style.backgroundImage = 'url(assets/img/landing.jpg)';
 
-/* el método: un problema tachado por producto */
-const PARES = [
-  ['“Empiezo de cero cada vez que tengo que publicar.”', 'ob-001'],
-  ['“Busco recursos media hora antes de entregar.”',     'ob-002'],
-  ['“Tengo todo en cuatro apps y ninguna se habla.”',    'ob-003'],
-  ['“Pierdo horas en tareas repetidas.”',                'ob-004'],
+/* ---- método: un problema por diapositiva ---- */
+const PROB = [
+  ['“Empiezo de cero cada vez que tengo que publicar.”', '“I start from zero every time I have to publish.”', 'ob-001'],
+  ['“Busco recursos media hora antes de entregar.”',     '“I hunt for assets half an hour before the deadline.”', 'ob-002'],
+  ['“Tengo todo en cuatro apps y ninguna se habla.”',    '“Everything lives in four apps and none of them talk.”', 'ob-003'],
+  ['“Pierdo horas en tareas repetidas.”',                '“I lose hours on repetitive tasks.”', 'ob-004'],
 ];
-$('#bPares').innerHTML = PARES.map(([prob, id]) => {
+$('#rielM').innerHTML = PROB.map(([es,en,id],i) => {
   const p = P.find(x => x.id === id); if (!p) return '';
-  return `<div class="b-par"><p class="p"><s>${prob}</s></p>
-    <a href="${url(p)}"><span class="cod">${p.code}</span>${p.name} <span class="ar">→</span></a></div>`;
+  return `<article class="m-slide"><span class="n">${String(i+1).padStart(2,'0')} / 04</span>
+    <p class="prob"><s>${L(es,en)}</s></p>
+    <a href="${url(p)}"><span>${p.code}</span><b>${p.name} →</b></a></article>`;
 }).join('');
 
-/* la colección: portada grande, precio y compra directa */
-$('#bItems').innerHTML = P.map(p => `<div class="b-item">
-  <div>${cover(p)}</div>
-  <div class="datos">
-    <span class="cod">${p.code} · ${p.status === 'soon' ? L('Próximamente','Coming soon') : L('Disponible','Available')}</span>
-    <h3>${p.name}</h3>
-    <p>${L(p.tagline)}</p>
-    <div class="pie">
-      <span class="precio">${p.status === 'soon' ? L('Pronto','Soon') : money(p.price)}</span>
-      ${buyBtn(p, 'btn btn-acid')}
-    </div>
-  </div>
-</div>`).join('');
+/* ---- colección: un libro por diapositiva ---- */
+$('#rielC').innerHTML = P.map(p => `<article class="c-slide">
+  ${cover(p)}
+  <div class="fila"><h3>${p.name}</h3><span class="precio">${p.status==='soon' ? L('Pronto','Soon') : money(p.price)}</span></div>
+  ${buyBtn(p, 'btn btn-acid')}
+</article>`).join('');
 
-/* los problemas se tachan al entrar en pantalla */
-const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add('vis')), {threshold:.4});
-$$('.b-par').forEach(e => io.observe(e));
+/* ---- los problemas se tachan al entrar en pantalla ---- */
+const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add('vis')), {threshold:.55});
+$$('.m-slide').forEach(e => io.observe(e));
+
+/* ---- posición dentro de cada riel ---- */
+function seguirRiel(riel, etiqueta, barra) {
+  const el = $(riel), n = $(etiqueta), b = $(barra);
+  if (!el) return;
+  const total = el.children.length;
+  const ver = () => {
+    const paso = el.scrollWidth / total;
+    const i = Math.min(total, Math.round(el.scrollLeft / paso) + 1);
+    n.textContent = String(i).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+    b.style.transform = 'scaleX(' + (i/total) + ')';
+  };
+  el.addEventListener('scroll', ver, {passive:true}); ver();
+}
+seguirRiel('#rielM', '#mN', '#mB');
+seguirRiel('#rielC', '#cN', '#cB');
+
+/* ---- el símbolo de Orbit marca el avance ---- */
+const arco = $('#arco'), avance = $('#avance'), avanceN = $('#avanceN');
+const L2 = 2 * Math.PI * 20;
+arco.style.strokeDasharray = L2;
+const pantallas = $$('.pant');
+function avanzar() {
+  const alto = document.documentElement.scrollHeight - innerHeight;
+  const p = alto > 0 ? Math.min(1, Math.max(0, scrollY / alto)) : 0;
+  arco.style.strokeDashoffset = L2 * (1 - p);
+  avance.classList.toggle('on', scrollY > 80);
+  let i = 1;
+  pantallas.forEach((s, k) => { if (s.getBoundingClientRect().top <= innerHeight * .5) i = k + 1; });
+  avanceN.textContent = String(i).padStart(2,'0');
+  avance.style.color = getComputedStyle(pantallas[i-1] || document.body).color;
+}
+addEventListener('scroll', avanzar, {passive:true}); avanzar();
 })();
 </script>
 </body>
