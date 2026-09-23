@@ -10,7 +10,7 @@
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=29">
+<link rel="stylesheet" href="assets/css/orbit.css?v=30">
 <style>
 body{padding:0}
 .top{position:sticky;top:0;z-index:30;display:flex;justify-content:space-between;align-items:center;gap:18px;padding:14px var(--pad);background:rgba(13,13,14,.92);backdrop-filter:blur(14px);border-bottom:1px solid var(--k3)}
@@ -164,6 +164,7 @@ const esc = s => String(s == null ? '' : s).replace(/[<>&"]/g, c => ({'<':'&lt;'
 const ars = n => 'ARS ' + Number(n || 0).toLocaleString('es-AR');
 const usd = n => 'USD ' + Number(n || 0).toLocaleString('es-AR');
 const fecha = d => d ? new Date(d).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—';
+const peso = b => !b ? '0 KB' : b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
 const hora = d => d ? new Date(d).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : '';
 
 function gate(title, body, extra) {
@@ -263,7 +264,7 @@ $('#prods').innerHTML = cat.productos.map(p => `
         <span class="tip">Va directo a tu almacenamiento privado. Solo lo puede descargar quien compró el producto.</span>
         <div class="prog" hidden><i></i></div>
       </div>
-      <span class="fstate${p.file ? ' ok' : ''}">${p.file ? (p.file.startsWith('blob:') ? 'Archivo subido: ' + esc(p.file.split('/').pop()) : 'Ahora usa una URL pegada a mano' + (p.fileFrom === 'vercel' ? ' (variable ' + esc(p.env) + ' en Vercel)' : '')) : 'Todavía no hay archivo cargado'}</span>
+      <span class="fstate${p.file ? ' ok' : ''}">${p.file ? (p.file.startsWith('blob:') ? 'Archivo subido: ' + esc(p.file.split('/').pop()) + (p.archivo ? (p.archivo.error ? ' — no lo encontramos en el almacenamiento' : ' · ' + peso(p.archivo.bytes) + ' · ' + esc(p.archivo.tipo || '')) : '') : 'Ahora usa una URL pegada a mano' + (p.fileFrom === 'vercel' ? ' (variable ' + esc(p.env) + ' en Vercel)' : '')) : 'Todavía no hay archivo cargado'}</span>
       <button type="button" class="alt-url">…o pegar una URL</button>
       <input name="file" value="${esc(p.file || '')}" placeholder="https://…/content-system.zip"${p.file && !p.file.startsWith('blob:') ? '' : ' hidden'}>
     </div>
@@ -271,7 +272,6 @@ $('#prods').innerHTML = cat.productos.map(p => `
   </form>`).join('');
 
 /* ---- subir el archivo de un producto ---- */
-const peso = b => b > 1048576 ? (b / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(b / 1024)) + ' KB';
 
 async function subir(f, file) {
   const st = f.querySelector('.fstate'), prog = f.querySelector('.prog'), barra = f.querySelector('.prog i');

@@ -5,7 +5,7 @@
    navegador a Vercel sin pasar por nuestras funciones (así no hay
    límite de tamaño). Para descargar, /api/download firma una URL que
    vive unos minutos y solo se la da a quien compró el producto. */
-import { issueSignedToken, presignUrl, del } from '@vercel/blob';
+import { issueSignedToken, presignUrl, del, head } from '@vercel/blob';
 import { randomBytes } from 'node:crypto';
 
 /* Hay dos formas de autenticarse: el token clásico, o —lo que arma Vercel
@@ -50,4 +50,15 @@ export async function signedGet(pathname, { minutes = 15 } = {}) {
 /* Limpieza del archivo que deja el diagnóstico. */
 export async function borrarPrueba(pathname) {
   try { await del(pathname); } catch { /* si no llegó a existir, no importa */ }
+}
+
+/* Qué quedó realmente guardado: tamaño y tipo. Sirve para comparar con el
+   archivo original y saber si una subida llegó completa. */
+export async function datosDe(pathname) {
+  try {
+    const b = await head(pathname);
+    return { bytes: b.size, tipo: b.contentType, subido: b.uploadedAt || null };
+  } catch (e) {
+    return { error: String(e).slice(0, 140) };
+  }
 }
