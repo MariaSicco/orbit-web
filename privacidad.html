@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es" data-lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Política de privacidad — Orbit®</title>
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="description" content="Qué datos guarda Orbit, para qué los usa y cómo pedir que los borre. Sin analítica ni rastreadores.">
+<meta name="theme-color" content="#0D0D0E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/orbit.css?v=36">
+<style>
+.lg{padding-top:calc(104px + env(safe-area-inset-top,0px))}
+.lg .head{padding-bottom:clamp(24px,3vw,40px);border-bottom:1px solid var(--k3)}
+.lg h1{font-size:clamp(46px,8vw,120px);margin:14px 0 0}
+.lg h1 .it{color:var(--or)}
+.lg .sub{margin:18px 0 0;opacity:.6;max-width:52ch;font-size:16px;line-height:1.5}
+.lg .body{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(24px,4vw,64px);margin-top:clamp(34px,4.5vw,64px)}
+.lg .toc{position:sticky;top:calc(96px + env(safe-area-inset-top,0px));align-self:start;display:grid;gap:2px}
+.lg .toc a{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;text-decoration:none;opacity:.5;padding:7px 0;border-top:1px solid var(--k3);transition:opacity .2s,color .2s}
+.lg .toc a:hover{opacity:1;color:var(--ac)}
+.lg section{scroll-margin-top:110px;padding-bottom:clamp(28px,3.4vw,48px)}
+.lg section h2{margin:0 0 14px;font-weight:800;font-size:clamp(21px,2.3vw,32px);letter-spacing:-.035em;text-transform:uppercase;line-height:1.02}
+.lg section h2 .n{font-family:var(--mono);font-size:11px;letter-spacing:.08em;opacity:.4;display:block;margin-bottom:9px;font-weight:400}
+.lg p{margin:0 0 13px;line-height:1.62;opacity:.78;max-width:62ch}
+.lg ul{margin:0 0 14px;padding-left:0;list-style:none;max-width:62ch}
+.lg li{padding:9px 0 9px 20px;border-top:1px solid var(--k3);line-height:1.55;opacity:.78;position:relative}
+.lg li::before{content:"";position:absolute;left:0;top:17px;width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.lg b,.lg strong{opacity:1;font-weight:700;color:var(--b)}
+.lg a.link{color:var(--ac);text-decoration:underline;text-underline-offset:3px}
+.lg .box{background:var(--k2);border:1px solid var(--k3);padding:clamp(18px,2.2vw,28px);margin:0 0 16px}
+.lg .box p:last-child{margin-bottom:0}
+.lg .stamp{margin-top:clamp(30px,4vw,56px);padding-top:16px;border-top:1px solid var(--k3);font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;opacity:.4;line-height:1.7}
+@media (max-width:900px){.lg .body{grid-template-columns:1fr}.lg .toc{position:static;display:flex;flex-wrap:wrap;gap:0 16px}.lg .toc a{border-top:0}}
+</style>
+</head>
+<body data-page="privacidad" data-nav-solid data-title-es="Política de privacidad — Orbit®" data-title-en="Privacy policy — Orbit®">
+<main>
+<section class="sec dark lg">
+  <div class="wrap">
+    <header class="head">
+      <span class="mono dim"><span data-l="es">OB—000 · Legal</span><span data-l="en">OB—000 · Legal</span></span>
+      <h1 class="display"><span data-l="es">Política de <span class="it">privacidad.</span></span><span data-l="en">Privacy <span class="it">policy.</span></span></h1>
+      <p class="sub"><span data-l="es">Qué guardamos, para qué, quién más lo ve y cómo pedirnos que lo borremos.</span><span data-l="en">What we store, what for, who else sees it and how to ask us to delete it.</span></p>
+    </header>
+    <div class="body">
+      <nav class="toc"><a href="#resumen"><span data-l="es">En dos líneas</span><span data-l="en">In two lines</span></a><a href="#datos"><span data-l="es">Qué guardamos</span><span data-l="en">What we store</span></a><a href="#tarjeta"><span data-l="es">Lo que nunca tocamos</span><span data-l="en">What we never touch</span></a><a href="#uso"><span data-l="es">Para qué los usamos</span><span data-l="en">What we use them for</span></a><a href="#terceros"><span data-l="es">Quién más los ve</span><span data-l="en">Who else sees them</span></a><a href="#cookies"><span data-l="es">Cookies</span><span data-l="en">Cookies</span></a><a href="#tiempo"><span data-l="es">Cuánto tiempo</span><span data-l="en">How long</span></a><a href="#derechos"><span data-l="es">Tus derechos</span><span data-l="en">Your rights</span></a><a href="#menores"><span data-l="es">Menores de edad</span><span data-l="en">Minors</span></a><a href="#contacto"><span data-l="es">Cambios y contacto</span><span data-l="en">Changes and contact</span></a></nav>
+      <div class="cont">
+        <section id="resumen">
+          <h2><span class="n">01</span><span data-l="es">En dos líneas</span><span data-l="en">In two lines</span></h2>
+
+          <div class="box"><p><span data-l="es">Guardamos tu email, tu nombre si lo cargaste, y qué compraste. <b>Nada más.</b> No tenemos analítica, no hay rastreadores de publicidad, no vendemos ni cedemos tus datos a nadie, y nunca vemos los datos de tu tarjeta.</span><span data-l="en">We store your email, your name if you entered one, and what you bought. <b>Nothing else.</b> We have no analytics, no advertising trackers, we never sell or hand your data to anyone, and we never see your card details.</span></p></div>
+        </section>
+        <section id="datos">
+          <h2><span class="n">02</span><span data-l="es">Qué guardamos</span><span data-l="en">What we store</span></h2>
+
+          <ul><li><span data-l="es"><b>Tu email.</b> Es lo único obligatorio. Sirve para asociarte la compra, mandarte el comprobante y dejarte entrar a tu cuenta.</span><span data-l="en"><b>Your email.</b> The only required field. It ties your purchase to you, sends your receipt and lets you sign in.</span></li><li><span data-l="es"><b>Tu nombre</b>, si lo cargaste. Es opcional y solo lo usamos para hablarte por tu nombre en los emails.</span><span data-l="en"><b>Your name</b>, if you entered one. It's optional and we only use it to address you by name in emails.</span></li><li><span data-l="es"><b>Tu contraseña, cifrada.</b> Se guarda transformada con un algoritmo que no tiene vuelta atrás. Ni nosotros podemos leerla: si la perdés, se genera una nueva, no se recupera la vieja.</span><span data-l="en"><b>Your password, encrypted.</b> It's stored through a one-way algorithm. Not even we can read it: if you lose it, a new one is created, the old one isn't recovered.</span></li><li><span data-l="es"><b>Tus pedidos y compras:</b> qué producto, qué día, con qué medio de pago y por cuánto. Lo necesitamos para darte acceso a lo que pagaste y por obligaciones contables.</span><span data-l="en"><b>Your orders and purchases:</b> which product, which day, which payment method and how much. We need this to give you access to what you paid for and for accounting obligations.</span></li></ul>
+        </section>
+        <section id="tarjeta">
+          <h2><span class="n">03</span><span data-l="es">Lo que nunca tocamos</span><span data-l="en">What we never touch</span></h2>
+
+          <p><span data-l="es"><b>Los datos de tu tarjeta no pasan por este sitio.</b> Cuando pagás, te enviamos a Mercado Pago o a PayPal, y ahí ocurre todo el pago. Nosotros solo recibimos el aviso de que se acreditó y un número de operación. Nunca vemos, ni guardamos, ni podríamos ver tu número de tarjeta.</span><span data-l="en"><b>Your card details never pass through this site.</b> When you pay, we send you to Mercado Pago or PayPal, and the whole payment happens there. We only receive confirmation that it cleared and a transaction number. We never see, store, or could see your card number.</span></p>
+        </section>
+        <section id="uso">
+          <h2><span class="n">04</span><span data-l="es">Para qué los usamos</span><span data-l="en">What we use them for</span></h2>
+
+          <ul><li><span data-l="es">Para darte lo que compraste y que puedas descargarlo cuando quieras.</span><span data-l="en">To give you what you bought and let you download it whenever you want.</span></li><li><span data-l="es">Para mandarte el comprobante de compra y los enlaces de acceso a tu cuenta. Estos emails son parte del servicio: si comprás, te llegan.</span><span data-l="en">To send your purchase receipt and account access links. These emails are part of the service: if you buy, you get them.</span></li><li><span data-l="es">Para mandarte novedades y lanzamientos, <b>solo si lo pediste</b> marcando la casilla. Podés darte de baja desde cualquiera de esos emails, en un clic, y no afecta tus compras.</span><span data-l="en">To send you news and launches, <b>only if you asked</b> by ticking the box. You can unsubscribe from any of those emails in one click, and it doesn't affect your purchases.</span></li><li><span data-l="es">Para saber cuánto vendimos y de qué producto. Eso lo miramos en conjunto, no persona por persona.</span><span data-l="en">To know how much we sold and of which product. We look at that in aggregate, not person by person.</span></li></ul>
+        </section>
+        <section id="terceros">
+          <h2><span class="n">05</span><span data-l="es">Quién más los ve</span><span data-l="en">Who else sees them</span></h2>
+
+          <p><span data-l="es">No vendemos ni cedemos tus datos. Para que el sitio funcione, algunos servicios los procesan por nosotros:</span><span data-l="en">We don't sell or hand over your data. For the site to work, some services process it on our behalf:</span></p>
+          <ul><li><span data-l="es"><b>Vercel</b> aloja el sitio, la base de datos donde viven tu cuenta y tus compras, y los archivos que descargás.</span><span data-l="en"><b>Vercel</b> hosts the site, the database where your account and purchases live, and the files you download.</span></li><li><span data-l="es"><b>Brevo</b> envía los emails. Ve tu email y tu nombre para poder mandártelos.</span><span data-l="en"><b>Brevo</b> sends the emails. It sees your email and name in order to deliver them.</span></li><li><span data-l="es"><b>Mercado Pago</b> y <b>PayPal</b> procesan los pagos. Ellos manejan tus datos de pago con sus propias políticas, no las nuestras.</span><span data-l="en"><b>Mercado Pago</b> and <b>PayPal</b> process payments. They handle your payment data under their own policies, not ours.</span></li></ul>
+          <p><span data-l="es">Algunos de estos servicios tienen servidores fuera de Argentina, así que tus datos pueden almacenarse en otros países.</span><span data-l="en">Some of these services have servers outside Argentina, so your data may be stored in other countries.</span></p>
+        </section>
+        <section id="cookies">
+          <h2><span class="n">06</span><span data-l="es">Cookies</span><span data-l="en">Cookies</span></h2>
+
+          <p><span data-l="es">Usamos lo mínimo para que el sitio funcione. <b>No hay cookies de publicidad ni de seguimiento</b>, y por eso tampoco vas a ver un cartel pidiéndote que aceptes nada.</span><span data-l="en">We use the bare minimum for the site to work. <b>There are no advertising or tracking cookies</b>, which is why you won't see a banner asking you to accept anything.</span></p>
+          <ul><li><span data-l="es"><b>Dos cookies de sesión</b> que recuerdan que iniciaste sesión. No tienen fecha de vencimiento propia: se borran solas cuando cerrás el navegador.</span><span data-l="en"><b>Two session cookies</b> that remember you signed in. They have no expiry of their own: they delete themselves when you close the browser.</span></li><li><span data-l="es"><b>Memoria del navegador</b> para tu carrito y el idioma que elegiste. Eso queda en tu computadora y nunca llega a nuestros servidores.</span><span data-l="en"><b>Browser storage</b> for your cart and your chosen language. That stays on your computer and never reaches our servers.</span></li></ul>
+          <p><span data-l="es">Mercado Pago y PayPal pueden poner sus propias cookies cuando entrás a pagar, dentro de sus sitios.</span><span data-l="en">Mercado Pago and PayPal may set their own cookies when you enter their payment pages.</span></p>
+        </section>
+        <section id="tiempo">
+          <h2><span class="n">07</span><span data-l="es">Cuánto tiempo</span><span data-l="en">How long</span></h2>
+
+          <ul><li><span data-l="es">Tu cuenta y tus compras quedan mientras quieras seguir accediendo a lo que pagaste. Si pedís que borremos la cuenta, la borramos.</span><span data-l="en">Your account and purchases stay as long as you want to keep accessing what you paid for. If you ask us to delete the account, we delete it.</span></li><li><span data-l="es">Los registros de las ventas los conservamos el tiempo que exige la ley contable argentina, aunque hayas borrado tu cuenta. En ese caso guardamos el pedido, no tu perfil.</span><span data-l="en">Sales records are kept for as long as Argentine accounting law requires, even if you deleted your account. In that case we keep the order, not your profile.</span></li></ul>
+        </section>
+        <section id="derechos">
+          <h2><span class="n">08</span><span data-l="es">Tus derechos</span><span data-l="en">Your rights</span></h2>
+
+          <p><span data-l="es">Sobre tus datos personales podés, en cualquier momento y gratis:</span><span data-l="en">Regarding your personal data, at any time and free of charge, you can:</span></p>
+          <ul><li><span data-l="es"><b>Ver</b> qué tenemos tuyo.</span><span data-l="en"><b>See</b> what we hold about you.</span></li><li><span data-l="es"><b>Corregir</b> lo que esté mal. El nombre y la suscripción a novedades los cambiás vos misma desde tu cuenta.</span><span data-l="en"><b>Correct</b> anything wrong. You can change your name and newsletter preference yourself from your account.</span></li><li><span data-l="es"><b>Pedir que borremos</b> tu cuenta y tus datos.</span><span data-l="en"><b>Ask us to delete</b> your account and data.</span></li></ul>
+          <p><span data-l="es">Escribinos a <a class="link" href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a> y lo resolvemos. Si considerás que no te respondimos como corresponde, podés reclamar ante la <b>Agencia de Acceso a la Información Pública</b>, que controla el cumplimiento de la Ley 25.326 de Protección de Datos Personales: <a class="link" href="https://www.argentina.gob.ar/aaip" target="_blank" rel="noopener">argentina.gob.ar/aaip</a>.</span><span data-l="en">Write to <a class="link" href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a> and we'll handle it. If you believe we didn't respond properly, you may complain to Argentina's data protection authority (AAIP), which enforces Personal Data Protection Law 25.326: <a class="link" href="https://www.argentina.gob.ar/aaip" target="_blank" rel="noopener">argentina.gob.ar/aaip</a>.</span></p>
+        </section>
+        <section id="menores">
+          <h2><span class="n">09</span><span data-l="es">Menores de edad</span><span data-l="en">Minors</span></h2>
+
+          <p><span data-l="es">El sitio está pensado para mayores de 18 años. No pedimos ni buscamos datos de menores. Si sos madre, padre o tutor y creés que un menor a tu cargo creó una cuenta, escribinos y la damos de baja.</span><span data-l="en">The site is intended for people over 18. We don't request or seek data from minors. If you're a parent or guardian and believe a minor in your care created an account, write to us and we'll remove it.</span></p>
+        </section>
+        <section id="contacto">
+          <h2><span class="n">10</span><span data-l="es">Cambios y contacto</span><span data-l="en">Changes and contact</span></h2>
+
+          <p><span data-l="es">Si cambiamos esta política, actualizamos la fecha de abajo. Para cualquier cosa relacionada con tus datos, escribinos a <a class="link" href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a>.</span><span data-l="en">If we change this policy, we update the date below. For anything related to your data, write to <a class="link" href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a>.</span></p>
+        </section>
+        <p class="stamp"><span data-l="es">Última actualización: 23 de septiembre de 2026</span><span data-l="en">Last updated: 23 September 2026</span><br>Orbit® · orbitando.com.ar · hola@orbitando.com.ar</p>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+<script src="assets/js/products.js?v=36"></script>
+<script src="/api/catalog"></script>
+<script src="assets/js/orbit.js?v=36"></script>
+</body>
+</html>
