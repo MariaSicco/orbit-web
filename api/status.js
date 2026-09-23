@@ -2,11 +2,17 @@
 import { hasKV } from './_lib/kv.js';
 import { hasSecret } from './_lib/auth.js';
 import { getCatalog } from './_lib/catalog.js';
-import { blobReady } from './_lib/blob.js';
+import { blobReady, signedPut, newPath } from './_lib/blob.js';
 import { FROM } from './_lib/email.js';
 export default async function handler(req, res) {
   let CAT = {};
   try { CAT = await getCatalog(); } catch {}
+  /* con ?check=blob probamos de verdad que se pueda firmar una subida */
+  let archivosProbado = null;
+  if (req.query?.check === 'blob' && blobReady()) {
+    try { await signedPut(newPath('prueba', 'prueba.txt'), { maxBytes: 1024, minutes: 1 }); archivosProbado = 'ok'; }
+    catch (e) { archivosProbado = String(e).slice(0, 160); }
+  }
   res.status(200).json({
     session: hasSecret(), database: hasKV,
     mercadopago: Boolean(process.env.MP_ACCESS_TOKEN),
@@ -19,6 +25,7 @@ export default async function handler(req, res) {
     listas: { clientes: Boolean(process.env.BREVO_LIST_CLIENTES), newsletter: Boolean(process.env.BREVO_LIST_NEWSLETTER) },
     admin: Boolean(process.env.ADMIN_EMAILS),
     archivos: blobReady(),
+    ...(archivosProbado ? { archivosProbado } : {}),
     files: Object.fromEntries(Object.entries(CAT).map(([id, p]) => [id, p.file ? p.fileFrom : false])),
   });
 }

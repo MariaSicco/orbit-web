@@ -8,7 +8,9 @@
 import { issueSignedToken, presignUrl } from '@vercel/blob';
 import { randomBytes } from 'node:crypto';
 
-export const blobReady = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
+/* Hay dos formas de autenticarse: el token clásico, o —lo que arma Vercel
+   hoy al conectar el store— el id del store más la identidad del proyecto. */
+export const blobReady = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN || process.env.BLOB_STORE_ID);
 
 /* Cómo guardamos la referencia en el catálogo: blob:<ruta dentro del store> */
 export const BLOB_PREFIX = 'blob:';
