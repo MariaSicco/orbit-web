@@ -4,6 +4,7 @@ import { hasSecret } from './_lib/auth.js';
 import { getCatalog } from './_lib/catalog.js';
 import { blobReady, signedPut, signedGet, newPath, borrarPrueba } from './_lib/blob.js';
 import { paypalBase, paypalToken } from './_lib/paypal.js';
+import { layout } from './_lib/email.js';
 import { createHash } from 'node:crypto';
 import { FROM } from './_lib/email.js';
 export default async function handler(req, res) {
@@ -122,6 +123,7 @@ export default async function handler(req, res) {
     ...(pp ? { pp } : {}),
     email: Boolean(process.env.BREVO_API_KEY || process.env.RESEND_API_KEY),
     emailVia: process.env.BREVO_API_KEY ? 'brevo' : (process.env.RESEND_API_KEY ? 'resend' : null),
+    emailTema: layout({}).includes('bgcolor="#0D0D0E"') ? 'oscuro' : 'claro',
     ...(brevo ? { brevo } : {}),
     emailFrom: FROM(),
     listas: { clientes: Boolean(process.env.BREVO_LIST_CLIENTES), newsletter: Boolean(process.env.BREVO_LIST_NEWSLETTER) },
