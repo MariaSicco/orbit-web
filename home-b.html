@@ -132,42 +132,15 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   .p-entrada .marca .cur{display:none}
 }
 
-/* ---- cuatro variantes de movimiento, para elegir una ----
-   Se prenden con ?anim=1..4 y conviven con la intro: cada una agrega
-   una capa, ninguna reemplaza lo que ya está. */
-
-/* 01 · la O viaja hasta la esquina y se vuelve el indicador de avance */
+/* ---- la O deja el wordmark y se vuelve el indicador de avance ----
+   Al bajar, la O se despega de ORBIT, viaja hasta la esquina y se
+   convierte en el anillo que marca en qué parte de la página estás:
+   el logo y el indicador terminan siendo la misma pieza. */
 .viajero{position:fixed;left:0;top:0;z-index:41;pointer-events:none;opacity:0;transform-origin:0 0}
 .viajero svg{width:100%;height:100%;overflow:visible}
-.v1.viaja .p-entrada .marca .o{opacity:0}
-.v1 .avance svg{opacity:0;transition:opacity .3s ease}
-.v1.llego .avance svg{opacity:1}
-
-/* 02 · la foto se ve a través del eslogan */
-.v2 .p-entrada .sub{
-  background-image:linear-gradient(rgba(242,239,232,.3),rgba(242,239,232,.3)),url(assets/img/landing.jpg);
-  background-size:100% 100%,155% auto;background-position:0 0,6% 26%;background-repeat:no-repeat;
-  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent}
-.v2 .p-entrada .sub .it{color:var(--ac);-webkit-text-fill-color:var(--ac)}
-.go.v2 .p-entrada .sub{animation:deriva 24s ease-in-out 3.6s infinite alternate}
-@keyframes deriva{to{background-position:0 0,62% 54%}}
-
-/* 03 · la portada se corre con el dedo */
-.v3 .p-entrada .foto{translate:var(--px,0) var(--py,0)}
-.v3 .p-entrada .marca{translate:var(--px,0) var(--py,0)}
-
-/* 04 · la abertura del anillo se abre y se cierra */
-@keyframes respirarArco{0%,100%{stroke-dashoffset:0}50%{stroke-dashoffset:var(--respiro,0)}}
-.go.v4 .p-entrada .marca .arco{animation:respirarArco 8s ease-in-out 2.8s infinite}
-
-/* selector de variantes: esto es para probar, no va en la home final */
-.selv{position:fixed;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;
-  display:flex;gap:4px;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
-  text-transform:uppercase;background:rgba(13,13,14,.86);border:1px solid rgba(242,239,232,.2);
-  border-radius:999px;padding:5px 7px;color:var(--b);backdrop-filter:blur(8px)}
-.selv b{opacity:.45;font-weight:400;padding:0 3px}
-.selv a{color:inherit;opacity:.5;text-decoration:none;padding:3px 7px;border-radius:999px;line-height:1}
-.selv a.on{opacity:1;background:var(--ac);color:var(--k)}
+.viaja .p-entrada .marca .o{opacity:0}
+.avance svg{opacity:0;transition:opacity .3s ease}
+.llego .avance svg{opacity:1}
 
 /* ---- deslizables ---- */
 .riel{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
@@ -349,13 +322,8 @@ function simboloEntra() {
 
   o.animate([{transform:`translate(${dx}px,${dy}px) scale(${escala})`}, {transform:reposo}],
     {duration:820, delay:1550, easing:'cubic-bezier(.76,0,.16,1)', fill:'both'});
-  const dibuja = arco.animate([{strokeDashoffset:largo}, {strokeDashoffset:0}],
+  arco.animate([{strokeDashoffset:largo}, {strokeDashoffset:0}],
     {duration:900, delay:120, easing:'cubic-bezier(.62,0,.2,1)', fill:'both'});
-  /* variante 04: al terminar de dibujarse, el trazo queda libre para respirar */
-  if (document.body.classList.contains('v4')) {
-    arco.style.setProperty('--respiro', Math.round(largo * .2));
-    dibuja.finished.then(() => { dibuja.cancel(); arco.style.strokeDashoffset = 0; }).catch(() => {});
-  }
   const entraPunto = orb.animate([{transform:'rotate(-175deg)', opacity:0}, {opacity:1, offset:.28}, {transform:'rotate(0deg)', opacity:1}],
     {duration:800, delay:650, easing:'cubic-bezier(.2,1,.28,1)', fill:'both'});
   /* al terminar la soltamos, para que la órbita continua del CSS tome el control
@@ -430,58 +398,38 @@ function seguirRiel(riel, etiqueta, barra) {
 seguirRiel('#rielM', '#mN', '#mB');
 seguirRiel('#rielC', '#cN', '#cB');
 
-/* ---- cuatro variantes de movimiento, para comparar ---- */
-const V = Math.min(4, Math.max(1, +(new URLSearchParams(location.search).get('anim')) || 1));
-document.body.classList.add('v' + V);
-document.body.insertAdjacentHTML('beforeend',
-  '<div class="selv">' + L('<b>Mov.</b>','<b>Mot.</b>') +
-  [1,2,3,4].map(n => `<a href="?anim=${n}" class="${n === V ? 'on' : ''}">0${n}</a>`).join('') + '</div>');
-
-/* 01 · la O deja el wordmark y se convierte en el anillo de avance */
-if (V === 1) {
+/* ---- la O viaja del wordmark al indicador de avance ----
+   Va en un elemento fijo aparte, no en la O del wordmark: esa vive dentro
+   de una sección con recorte, y al salir de ella se cortaría. */
+(function viajeDeLaO() {
   const viajero = document.createElement('div');
   viajero.className = 'viajero'; viajero.setAttribute('aria-hidden', 'true');
   viajero.innerHTML = `<svg viewBox="0 0 100 100">${ORBIT.symInner({dot:'#3047FF', ring:'#F2EFE8'})}</svg>`;
   document.body.append(viajero);
+
   const meta = $('#avance'), mezcla = (a, b, t) => a + (b - a) * t;
   let origen = null;
-  /* el punto de partida solo se puede medir arriba de todo */
+  /* el punto de partida solo se puede medir arriba de todo y con la intro terminada */
   const medir = () => { if (scrollY < 4) { const r = $('#bWm .o').getBoundingClientRect(); if (r.width > 4) origen = r; } };
+
   function viajar() {
-    if (!origen) { medir(); if (!origen) return; }
     const m = meta.getBoundingClientRect();
+    /* sin indicador a la vista (pantalla grande) no hay viaje posible */
+    if (!m.width) { viajero.style.opacity = 0; document.body.classList.remove('viaja', 'llego'); return; }
+    if (!origen) { medir(); if (!origen) return; }
     const t = Math.min(1, Math.max(0, scrollY / (innerHeight * .62))), e = t * t * (3 - 2 * t);
     viajero.style.width = origen.width + 'px'; viajero.style.height = origen.height + 'px';
     viajero.style.transform = `translate(${mezcla(origen.left, m.left, e).toFixed(1)}px,`
       + `${mezcla(origen.top, m.top, e).toFixed(1)}px) scale(${(mezcla(origen.width, m.width, e) / origen.width).toFixed(4)})`;
-    viajero.style.opacity = t > .002 && t < .998 ? 1 : 0;
-    document.body.classList.toggle('viaja', t > .002 && t < .998);
+    const viajando = t > .002 && t < .998;
+    viajero.style.opacity = viajando ? 1 : 0;
+    document.body.classList.toggle('viaja', viajando);
     document.body.classList.toggle('llego', t >= .998);
   }
   addEventListener('scroll', viajar, {passive:true});
   addEventListener('resize', () => { origen = null; viajar(); });
-  /* recién cuando la intro dejó la O en su lugar se puede medir de dónde sale */
   setTimeout(() => { medir(); viajar(); }, 3000);
-}
-
-/* 03 · la foto y la marca se corren con el dedo, y a solas van solas */
-if (V === 3 && !RM) {
-  const foto = $('.p-entrada .foto'), marca = $('#bWm');
-  let dx = 0, dy = 0, tx = 0, ty = 0, tocado = false, ultimo = 0;
-  addEventListener('pointermove', e => {
-    tx = (e.clientX / innerWidth - .5) * 2; ty = (e.clientY / innerHeight - .5) * 2;
-    tocado = true; ultimo = performance.now();
-  }, {passive:true});
-  (function lazo(ahora) {
-    if (!tocado || ahora - ultimo > 2600) { tocado = false; tx = Math.cos(ahora / 4200) * .55; ty = Math.sin(ahora / 5600) * .45; }
-    dx += (tx - dx) * .055; dy += (ty - dy) * .055;
-    foto.style.setProperty('--px', (-dx * 17).toFixed(1) + 'px');
-    foto.style.setProperty('--py', (-dy * 13).toFixed(1) + 'px');
-    marca.style.setProperty('--px', (dx * 7).toFixed(1) + 'px');
-    marca.style.setProperty('--py', (dy * 5).toFixed(1) + 'px');
-    requestAnimationFrame(lazo);
-  })(0);
-}
+})();
 
 /* ---- el símbolo de Orbit marca el avance ---- */
 const arco = $('#arco'), avance = $('#avance'), avanceN = $('#avanceN');
