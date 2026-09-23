@@ -11,6 +11,10 @@ export default async function handler(req, res) {
   const raw = Buffer.concat(chunks).toString();
   let event; try { event = JSON.parse(raw); } catch { return res.status(400).end(); }
 
+  /* si el evento no es el del cobro, cortamos acá: no gastamos dos llamadas
+     a PayPal verificando algo que igual íbamos a ignorar */
+  if (event.event_type !== 'PAYMENT.CAPTURE.COMPLETED') return res.status(200).json({ ignorado: event.event_type });
+
   const token = await paypalToken();
   const v = await fetch(`${paypalBase()}/v1/notifications/verify-webhook-signature`, {
     method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -27,9 +31,7 @@ export default async function handler(req, res) {
   const { verification_status } = await v.json();
   if (verification_status !== 'SUCCESS') return res.status(400).end();
 
-  if (event.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
-    const orderId = event.resource?.custom_id || event.resource?.invoice_id;
-    if (orderId) await markPaid(orderId, { paymentId: event.resource.id, amount: event.resource?.amount?.value, currency: event.resource?.amount?.currency_code });
-  }
+  const orderId = event.resource?.custom_id || event.resource?.invoice_id;
+  if (orderId) await markPaid(orderId, { paymentId: event.resource.id, amount: event.resource?.amount?.value, currency: event.resource?.amount?.currency_code });
   res.status(200).json({ received: true });
 }
