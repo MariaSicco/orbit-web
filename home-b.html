@@ -154,15 +154,25 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 /* método */
 .m-slide{border:1px solid rgba(13,13,14,.18);padding:clamp(20px,5vw,30px);display:flex;flex-direction:column;justify-content:space-between;gap:20px;min-height:clamp(300px,46vh,420px)}
 .m-slide .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.45}
+/* El problema entra desarmado y se acomoda a medida que la tarjeta llega al
+   centro del riel. Todo cuelga de --orden, que el JS mueve de 0 a 1 con el
+   dedo: no es una animación que se dispara y termina, es el desorden
+   resolviéndose en tiempo real. --caos es su complemento. */
+.m-slide{--orden:0;--caos:1}
 .m-slide .prob{font-family:var(--serif);font-style:italic;font-size:clamp(23px,6vw,34px);line-height:1.16;margin:0}
-.m-slide .prob s{text-decoration:none;background:linear-gradient(var(--or),var(--or)) 0 58%/0 3px no-repeat;transition:background-size .8s var(--ease)}
-.m-slide.vis .prob s{background-size:100% 3px}
+.m-slide .prob s{text-decoration:none}
+.m-slide .w{display:inline-block;will-change:transform;
+  transform:translate(calc(var(--dx) * var(--caos) * 1px),calc(var(--dy) * var(--caos) * 1px))
+            rotate(calc(var(--rot) * var(--caos) * 1deg));
+  opacity:calc(.3 + .7 * var(--orden));
+  /* cada palabra se tacha sola cuando ya está en su lugar */
+  background:linear-gradient(var(--or),var(--or)) 0 58%/calc(var(--orden) * 100%) 2.5px no-repeat}
 .m-slide .cab{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
 .m-slide .tipo{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.45;text-align:right}
 /* el cuerpo de la tarjeta entra cuando la diapositiva queda a la vista */
-.m-slide .cuerpo{display:grid;gap:14px;opacity:0;transform:translateY(10px);
-  transition:opacity .5s var(--ease) .25s,transform .5s var(--ease) .25s}
-.m-slide.vis .cuerpo{opacity:1;transform:none}
+/* la herramienta aparece recién cuando el problema terminó de ordenarse */
+.m-slide .cuerpo{display:grid;gap:14px;opacity:calc((var(--orden) - .55) * 2.6);
+  transform:translateY(calc(var(--caos) * 14px))}
 .m-slide .tit{font-weight:800;font-size:clamp(21px,5.4vw,30px);letter-spacing:-.04em;
   text-transform:uppercase;line-height:1;margin:0}
 .m-slide .porque{margin:0;font-size:14.5px;line-height:1.5;opacity:.7;max-width:34ch}
@@ -171,6 +181,10 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .m-slide .arregla i{font-family:var(--mono);font-size:10px;letter-spacing:.11em;
   text-transform:uppercase;opacity:.45;font-style:normal}
 .m-slide .arregla b{font-weight:700;font-size:15.5px;letter-spacing:-.01em;line-height:1.25}
+@media (prefers-reduced-motion:reduce){
+  .m-slide{--orden:1;--caos:0}
+  .m-slide .w{transform:none}
+}
 
 /* colección */
 .c-slide{display:flex;flex-direction:column;gap:14px}
@@ -409,18 +423,55 @@ const PROB = [
     arregla:['Un flujo que hace solo la parte mecánica', 'A workflow that handles the mechanical part'],
   },
 ];
+/* cada palabra arranca corrida y torcida, siempre igual: el desvío sale de
+   su posición, no del azar, así la tarjeta se ve idéntica en cada visita */
+const ruido = n => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); };
+const troce = frase => frase.split(' ').map((palabra, j) =>
+  `<i class="w" style="--dx:${((ruido(j * 3 + 1) - .5) * 30).toFixed(1)};`
+  + `--dy:${((ruido(j * 3 + 2) - .5) * 30).toFixed(1)};`
+  + `--rot:${((ruido(j * 3 + 3) - .5) * 11).toFixed(1)}">${palabra}</i>`).join(' ');
+/* L() devuelve las dos lenguas ya marcadas, así que hay que partir cada una
+   por separado: partir su salida rompería las etiquetas */
+const desarmar = (es, en) => L(troce(es), troce(en));
+
 $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
   <div class="cab">
     <span class="n">${String(i+1).padStart(2,'0')} / ${String(PROB.length).padStart(2,'0')}</span>
     <span class="tipo">${L(...q.rubro)}</span>
   </div>
-  <p class="prob"><s>${L(...q.cita)}</s></p>
+  <p class="prob"><s>${desarmar(...q.cita)}</s></p>
   <div class="cuerpo">
     <h3 class="tit">${L(...q.tit)}</h3>
     <p class="porque">${L(...q.porque)}</p>
     <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
   </div>
 </article>`).join('');
+
+/* El dedo manda: --orden de cada tarjeta sale de lo cerca que está del
+   centro del riel. Se actualiza en cada cuadro mientras se desliza, así el
+   orden se arma y se desarma siguiendo el gesto. */
+(function ordenarConElDedo() {
+  const riel = $('#rielM'), tarjetas = $$('.m-slide', riel);
+  if (!tarjetas.length) return;
+  if (RM) { tarjetas.forEach(t => { t.style.setProperty('--orden', 1); t.style.setProperty('--caos', 0); }); return; }
+  let pedido = false;
+  function medir() {
+    pedido = false;
+    const centro = riel.scrollLeft + riel.clientWidth / 2;
+    tarjetas.forEach(t => {
+      const suyo = t.offsetLeft + t.offsetWidth / 2;
+      /* 1 en el centro, 0 a una tarjeta de distancia */
+      const p = Math.min(1, Math.max(0, 1 - Math.abs(suyo - centro) / (t.offsetWidth * .82)));
+      const suave = p * p * (3 - 2 * p);
+      t.style.setProperty('--orden', suave.toFixed(3));
+      t.style.setProperty('--caos', (1 - suave).toFixed(3));
+    });
+  }
+  const pedir = () => { if (!pedido) { pedido = true; requestAnimationFrame(medir); } };
+  riel.addEventListener('scroll', pedir, {passive:true});
+  addEventListener('resize', pedir);
+  medir();
+})();
 
 /* ---- colección: un libro por diapositiva ---- */
 $('#rielC').innerHTML = P.map(p => `<article class="c-slide">
