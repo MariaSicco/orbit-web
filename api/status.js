@@ -3,6 +3,7 @@ import { hasKV } from './_lib/kv.js';
 import { hasSecret } from './_lib/auth.js';
 import { getCatalog } from './_lib/catalog.js';
 import { blobReady, signedPut, signedGet, newPath, borrarPrueba } from './_lib/blob.js';
+import { paypalBase, paypalToken } from './_lib/paypal.js';
 import { createHash } from 'node:crypto';
 import { FROM } from './_lib/email.js';
 export default async function handler(req, res) {
@@ -79,6 +80,29 @@ export default async function handler(req, res) {
     } catch (e) { brevo = { error: String(e).slice(0, 160) }; }
   }
 
+  /* con ?check=paypal probamos que las credenciales entren y que el webhook
+     registrado sea el que tenemos configurado. Nunca devolvemos el secreto. */
+  let pp = null;
+  if (req.query?.check === 'paypal' && process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET) {
+    pp = { entorno: process.env.PAYPAL_ENV === 'live' ? 'produccion' : 'prueba (sandbox)' };
+    try {
+      const token = await paypalToken();
+      pp.credenciales = 'ok';
+      const r = await fetch(`${paypalBase()}/v1/notifications/webhooks`, { headers: { Authorization: `Bearer ${token}` } });
+      const d = await r.json();
+      if (r.ok) {
+        const mios = (d.webhooks || []).map(w => ({ id: w.id, url: w.url, eventos: (w.event_types || []).map(e => e.name) }));
+        pp.webhooks = mios;
+        const esperado = process.env.PAYPAL_WEBHOOK_ID;
+        const elegido = mios.find(w => w.id === esperado);
+        pp.webhookConfigurado = !esperado ? 'falta PAYPAL_WEBHOOK_ID'
+          : !elegido ? 'el id cargado no figura en esta cuenta'
+          : elegido.eventos.includes('PAYMENT.CAPTURE.COMPLETED') || elegido.eventos.includes('*') ? 'ok'
+          : 'le falta el evento PAYMENT.CAPTURE.COMPLETED';
+      } else pp.webhooks = { error: `${r.status}` };
+    } catch (e) { pp.credenciales = 'fallaron: ' + String(e).slice(0, 120); }
+  }
+
   res.status(200).json({
     session: hasSecret(), database: hasKV,
     mercadopago: Boolean(process.env.MP_ACCESS_TOKEN),
@@ -86,6 +110,7 @@ export default async function handler(req, res) {
     paypal: Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET),
     paypalEnv: process.env.PAYPAL_ENV || 'sandbox',
     paypalWebhook: Boolean(process.env.PAYPAL_WEBHOOK_ID),
+    ...(pp ? { pp } : {}),
     email: Boolean(process.env.BREVO_API_KEY || process.env.RESEND_API_KEY),
     emailVia: process.env.BREVO_API_KEY ? 'brevo' : (process.env.RESEND_API_KEY ? 'resend' : null),
     ...(brevo ? { brevo } : {}),
