@@ -24,9 +24,30 @@ export default async function handler(req, res) {
       await borrarPrueba(ruta);
     }
   }
+  /* con ?check=mp decimos si el token de Mercado Pago es de prueba o de
+     producción, y a qué cuenta pertenece. Nunca devolvemos el token. */
+  let mp = null;
+  const mpToken = process.env.MP_ACCESS_TOKEN || '';
+  if (req.query?.check === 'mp' && mpToken) {
+    mp = { modo: mpToken.startsWith('TEST-') ? 'prueba' : 'produccion' };
+    try {
+      const r = await fetch('https://api.mercadopago.com/users/me', { headers: { Authorization: `Bearer ${mpToken}` } });
+      const u = await r.json();
+      if (r.ok) {
+        mp.cuenta = u.nickname || null;
+        mp.pais = u.site_id || null;
+        mp.email = u.email || null;
+        mp.esUsuarioDePrueba = String(u.nickname || '').toUpperCase().startsWith('TEST');
+      } else {
+        mp.error = `${r.status} ${String(u.message || '').slice(0, 120)}`;
+      }
+    } catch (e) { mp.error = String(e).slice(0, 120); }
+  }
+
   res.status(200).json({
     session: hasSecret(), database: hasKV,
     mercadopago: Boolean(process.env.MP_ACCESS_TOKEN),
+    ...(mp ? { mp } : {}),
     paypal: Boolean(process.env.PAYPAL_CLIENT_ID && process.env.PAYPAL_SECRET),
     paypalEnv: process.env.PAYPAL_ENV || 'sandbox',
     paypalWebhook: Boolean(process.env.PAYPAL_WEBHOOK_ID),
