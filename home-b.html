@@ -53,13 +53,16 @@
 
 /* ---- 01 entrada ---- */
 .p-entrada .marca{font-size:clamp(58px,19vw,210px);line-height:.78;letter-spacing:-.05em}
-.p-entrada .sub{font-size:clamp(27px,7.6vw,52px);font-weight:800;letter-spacing:-.045em;text-transform:uppercase;line-height:1;max-width:12ch;margin:0}
+.p-entrada .sub{font-size:clamp(33px,9.2vw,60px);font-weight:800;letter-spacing:-.045em;text-transform:uppercase;line-height:.98;max-width:11ch;margin:0}
 .p-entrada .sub .it{color:var(--ac)}
-.p-entrada p{margin:0;max-width:30ch;font-size:15.5px;line-height:1.5;--op:.65}
+.p-entrada p{margin:0;max-width:32ch;font-size:16.5px;line-height:1.5;--op:.72}
 .p-entrada .sub{--op:1}
-.p-entrada .foto{position:absolute;inset:0;background:url(assets/img/landing.jpg) center/cover;opacity:.3;z-index:0}
+/* el encuadre busca la curva de la foto, que rima con el símbolo;
+   centrada, en un teléfono se recorta justo en la parte plana */
+.p-entrada .foto{position:absolute;inset:0;background:url(assets/img/landing.jpg) 26% 58%/cover;opacity:.46;z-index:0}
+@media (min-width:900px){.p-entrada .foto{background-position:center}}
 .p-entrada>*:not(.foto){position:relative;z-index:1}
-.p-entrada .foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--k),rgba(13,13,14,.4) 45%,var(--k))}
+.p-entrada .foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--k) 6%,rgba(13,13,14,.82) 40%,rgba(13,13,14,.3) 72%,var(--k) 97%)}
 
 
 /* ---- 01 entrada: intro en tres actos ----
@@ -71,12 +74,19 @@
    una medida que solo se conoce en pantalla. El tercero es CSS puro. */
 
 .p-entrada .foto{opacity:0;transform:scale(1.14);transition:opacity 1.6s ease 2.8s,transform 4.2s cubic-bezier(.2,.8,.2,1) 2.8s}
-.go .p-entrada .foto{opacity:.3;transform:none}
+.go .p-entrada .foto{opacity:.46;transform:none}
 
 .p-entrada .marca .o{transform-origin:50% 50%}
 .p-entrada .marca .gira,.p-entrada .marca .orb{transform-origin:50px 50px}
 
-/* ACTO 2 — ORBIT se escribe, una letra por vez */
+/* ACTO 2 — ORBIT se escribe, una letra por vez, con el cursor adelante */
+.p-entrada .marca{position:relative}
+.p-entrada .marca .cur{position:absolute;left:0;top:50%;width:.055em;height:.58em;margin-top:-.3em;
+  background:var(--ac);opacity:0;pointer-events:none}
+.go .p-entrada .marca .cur{animation:tipear 1.2s steps(1,end) 2.26s 1 both}
+@keyframes tipear{
+  0%{opacity:0} 4%{opacity:1} 60%{opacity:1}
+  64%{opacity:0} 72%{opacity:1} 80%{opacity:0} 88%{opacity:1} 94%{opacity:0} 100%{opacity:0}}
 .p-entrada .marca .l{display:inline-block;opacity:0;transition:opacity .01s linear calc(2.4s + var(--i) * .11s)}
 .go .p-entrada .marca .l{opacity:1}
 .p-entrada .marca sup{opacity:0;transition:opacity .45s ease 2.92s}
@@ -84,23 +94,49 @@
 
 /* ACTO 3 — el resto. Cada uno recupera su propia opacidad de reposo.
    La barra de arriba también espera: el acto 1 pasa sobre negro, sin nada más. */
-body .nav{opacity:0;transition:opacity .8s ease 3.05s}
+body .nav{opacity:0;transition:opacity .8s ease 3.15s}
 body.go .nav{opacity:1}
 .p-entrada .ent{opacity:0;transform:translateY(18px);
   transition:opacity .7s ease var(--d,0s),transform .85s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
 .go .p-entrada .ent{opacity:var(--op,1);transform:none}
 
-/* ya en reposo, el símbolo gira muy despacio */
+/* ---- la portada nunca se queda del todo quieta ----
+   Tres movimientos lentos, que se notan pero no piden atención. */
+
+/* el punto no para de orbitar la O. Arranca justo cuando termina de entrar,
+   así el relevo entre la animación de entrada y esta no se ve. */
 @keyframes orbitar{to{transform:rotate(360deg)}}
-.go .p-entrada .marca .gira{animation:orbitar 80s linear 3.8s infinite}
+.go .p-entrada .marca .orb{animation:orbitar 6.5s linear 1.45s infinite}
+
+/* la foto respira: empieza donde la dejó la entrada, así no hay salto */
+@keyframes respirar{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
+.go .p-entrada .foto{animation:respirar 26s ease-in-out 7.2s infinite}
+
+/* la tira de categorías corre sin cortes: el contenido va duplicado
+   y el recorrido es exactamente la mitad */
+@keyframes correr{to{transform:translateX(-50%)}}
+.p-entrada .tira{overflow:hidden;margin:0 calc(var(--pad) * -1);
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);
+          mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+/* de contorno: corre fuerte pero no le pelea el peso al eslogan */
+.p-entrada .tira-in{display:flex;width:max-content;font-size:clamp(26px,7.4vw,46px);font-weight:800;
+  text-transform:uppercase;letter-spacing:-.02em;line-height:1.16;color:transparent;
+  -webkit-text-stroke:1.2px rgba(242,239,232,.42);will-change:transform}
+.p-entrada .tira-in span{display:flex;align-items:center;gap:.42em;padding-right:.42em;white-space:nowrap}
+.p-entrada .tira-in i{width:.14em;height:.14em;border-radius:50%;background:var(--ac);flex:none;
+  -webkit-text-stroke:0}
+.go .p-entrada .tira-in{animation:correr 26s linear infinite}
 
 /* con movimiento reducido, sin intro: todo aparece ya puesto */
 body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .l,
 .directo .p-entrada .marca sup,.directo .p-entrada .ent{transition:none!important}
+.directo .p-entrada .marca .orb,.directo .p-entrada .foto{animation-delay:0s}
+.directo .p-entrada .marca .cur{display:none}
 
 @media (prefers-reduced-motion:reduce){
   body .nav,.p-entrada .foto,.p-entrada .marca .l,.p-entrada .marca sup,
-  .p-entrada .ent,.p-entrada .marca .gira{transition:none!important;animation:none!important}
+  .p-entrada .ent,.p-entrada .marca .orb,.p-entrada .tira-in{transition:none!important;animation:none!important}
+  .p-entrada .marca .cur{display:none}
 }
 
 /* ---- deslizables ---- */
@@ -176,10 +212,11 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .l,
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)">
     <div class="marca wm" id="bWm" aria-label="Orbit"></div>
     <p class="sub ent" style="--d:3.1s"><span data-l="es">Orden en <span class="it">movimiento.</span></span><span data-l="en">Order in <span class="it">motion.</span></span></p>
-    <p class="ent" style="--d:3.24s"><span data-l="es">Cuatro sistemas digitales. Cada uno nació de un problema que tenías vos.</span><span data-l="en">Four digital systems. Each one born from a problem you already had.</span></p>
+    <p class="ent" style="--d:3.24s"><span data-l="es">Sistemas digitales listos para usar. Para que nada empiece de cero.</span><span data-l="en">Digital systems, ready to use. So nothing ever starts from zero.</span></p>
   </div>
-  <div class="acts ent" style="--d:3.38s">
-    <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver los cuatro</span><span data-l="en">See all four</span> <span class="ar">↓</span></a>
+  <div class="tira ent" style="--d:3.34s" aria-hidden="true"><div class="tira-in" id="bTira"></div></div>
+  <div class="acts ent" style="--d:3.46s">
+    <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver la colección</span><span data-l="en">See the collection</span> <span class="ar">↓</span></a>
   </div>
 </section>
 
@@ -188,15 +225,15 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .l,
   <div class="eti"><span><span data-l="es">Nuestro método</span><span data-l="en">Our method</span></span><span data-l="es">Deslizá →</span><span data-l="en">Swipe →</span></div>
   <h2 class="display"><span data-l="es">Problema<br>→ <span class="it" style="color:var(--or)">herramienta.</span></span><span data-l="en">Problem<br>→ <span class="it" style="color:var(--or)">tool.</span></span></h2>
   <div class="riel" id="rielM"></div>
-  <div class="pista-x"><span id="mN">01 / 04</span><span class="barra"><i id="mB"></i></span></div>
+  <div class="pista-x"><span id="mN"></span><span class="barra"><i id="mB"></i></span></div>
 </section>
 
 <!-- 03 COLECCIÓN -->
 <section class="pant dark" id="coleccion">
   <div class="eti"><span><span data-l="es">La colección</span><span data-l="en">The collection</span></span><span>VOL.01</span></div>
-  <h2 class="display"><span data-l="es">Cuatro <span class="it" style="color:var(--ac)">sistemas.</span></span><span data-l="en">Four <span class="it" style="color:var(--ac)">systems.</span></span></h2>
+  <h2 class="display"><span data-l="es">Listos para <span class="it" style="color:var(--ac)">usar.</span></span><span data-l="en">Ready to <span class="it" style="color:var(--ac)">use.</span></span></h2>
   <div class="riel" id="rielC"></div>
-  <div class="pista-x"><span id="cN">01 / 04</span><span class="barra"><i id="cB"></i></span></div>
+  <div class="pista-x"><span id="cN"></span><span class="barra"><i id="cB"></i></span></div>
 </section>
 
 <!-- 04 NÚMEROS -->
@@ -254,7 +291,7 @@ const puntoSVG = (simbolo.match(/<circle[^>]*>/) || [''])[0];
 $('#bWm').innerHTML =
   `<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><g class="gira">${arcoSVG}<g class="orb">${puntoSVG}</g></g></svg>`
   + 'RBIT'.split('').map((c,i) => `<span class="l" style="--i:${i}">${c}</span>`).join('')
-  + '<sup>®</sup>';
+  + '<sup>®</sup><i class="cur" aria-hidden="true"></i>';
 
 const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
 /* la intro se juega cada vez que se carga la página */
@@ -282,8 +319,24 @@ function simboloEntra() {
     {duration:820, delay:1550, easing:'cubic-bezier(.76,0,.16,1)', fill:'both'});
   arco.animate([{strokeDashoffset:largo}, {strokeDashoffset:0}],
     {duration:900, delay:120, easing:'cubic-bezier(.62,0,.2,1)', fill:'both'});
-  orb.animate([{transform:'rotate(-175deg)', opacity:0}, {opacity:1, offset:.28}, {transform:'rotate(0deg)', opacity:1}],
+  const entraPunto = orb.animate([{transform:'rotate(-175deg)', opacity:0}, {opacity:1, offset:.28}, {transform:'rotate(0deg)', opacity:1}],
     {duration:800, delay:650, easing:'cubic-bezier(.2,1,.28,1)', fill:'both'});
+  /* al terminar la soltamos, para que la órbita continua del CSS tome el control
+     desde el mismo ángulo en el que quedó */
+  entraPunto.finished.then(() => entraPunto.cancel()).catch(() => {});
+
+  /* el cursor va delante de lo que se escribe: medimos dónde termina cada letra
+     y lo hacemos saltar de a pasos, al mismo compás con el que aparecen */
+  const cur = $('#bWm .cur'), letras = [...marca.querySelectorAll('.l')];
+  if (cur && letras.length) {
+    const paradas = [letras[0].offsetLeft, ...letras.map(l => l.offsetLeft + l.offsetWidth)];
+    const salto = 110, largo = paradas.length * salto;
+    /* el corte va en cada fotograma: puesto en las opciones se aplicaría
+       al efecto entero y el cursor no se movería nunca */
+    cur.animate(paradas.map((x, i) => (
+        {transform:`translateX(${Math.round(x)}px)`, offset:i / paradas.length, easing:'steps(1,end)'})),
+      {duration:largo, delay:2400 - salto, fill:'both'});
+  }
 }
 
 function arrancar(intento) {
@@ -305,6 +358,21 @@ if (document.documentElement.classList.contains('gate-on')) {
   }, {once:true});
 } else setTimeout(arrancar, 50);
 
+/* ---- la tira que corre: lo que te llevás, sin contar productos ---- */
+const RUBROS = [
+  ['Entrega inmediata',      'Instant delivery'],
+  ['Licencia comercial',     'Commercial license'],
+  ['Actualizaciones gratis', 'Free updates'],
+  ['Sin suscripción',        'No subscription'],
+];
+function pintarTira() {
+  const t = $('#bTira'); if (!t) return;
+  const media = RUBROS.map(([es,en]) => `<span>${L(es,en)}<i></i></span>`).join('');
+  t.innerHTML = media + media;   /* duplicada: el ciclo corre media vuelta y empalma */
+}
+pintarTira();
+addEventListener('orbit:lang', pintarTira);
+
 /* ---- método: un problema por diapositiva ---- */
 const PROB = [
   ['“Empiezo de cero cada vez que tengo que publicar.”', '“I start from zero every time I have to publish.”', 'ob-001'],
@@ -314,7 +382,7 @@ const PROB = [
 ];
 $('#rielM').innerHTML = PROB.map(([es,en,id],i) => {
   const p = P.find(x => x.id === id); if (!p) return '';
-  return `<article class="m-slide"><span class="n">${String(i+1).padStart(2,'0')} / 04</span>
+  return `<article class="m-slide"><span class="n">${String(i+1).padStart(2,'0')} / ${String(PROB.length).padStart(2,'0')}</span>
     <p class="prob"><s>${L(es,en)}</s></p>
     <a href="${url(p)}"><span>${p.code}</span><b>${p.name} →</b></a></article>`;
 }).join('');
