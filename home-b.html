@@ -257,8 +257,10 @@ $('#bWm').innerHTML =
   + '<sup>®</sup>';
 
 const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
+/* la intro se juega una vez por visita; con ?intro en la dirección se repite siempre */
+const repetir = /[?&]intro\b/.test(location.search);
 let visto = false;
-try { visto = sessionStorage.getItem('orbit-intro') === '1'; } catch (e) {}
+try { visto = !repetir && sessionStorage.getItem('orbit-intro') === '1'; } catch (e) {}
 
 /* ACTOS 1 y 2: el símbolo entra solo, grande y centrado en la pantalla; carga su
    arco de punta a punta, recibe el punto y recién entonces viaja a su lugar.
