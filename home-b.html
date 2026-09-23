@@ -29,8 +29,7 @@
 .b-hero>*{position:relative;z-index:2}
 .b-hero .arriba{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;opacity:.55;line-height:1.7}
 .b-hero .centro{display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,30px)}
-.b-hero .wm{width:100%}
-.b-hero .wm svg{display:block}
+.b-hero .wm{font-size:clamp(54px,17vw,200px);line-height:.8}
 .b-hero h1{font-size:clamp(38px,9.5vw,96px);max-width:16ch}
 .b-hero h1 .it{color:var(--ac)}
 .b-hero p{margin:0;max-width:34ch;font-size:clamp(16px,1.6vw,19px);line-height:1.5;opacity:.72}
@@ -203,10 +202,10 @@
 <script src="assets/js/orbit.js?v=45"></script>
 <script>
 (() => {
-const {$, $$, L, tr, cover, buyBtn, money, url, bigWm, P} = ORBIT;
+const {$, $$, L, tr, cover, buyBtn, money, url, wm, P} = ORBIT;
 
 /* apertura: wordmark y foto */
-$('#bWm').innerHTML = bigWm ? bigWm({color:'#F2EFE8'}) : '';
+$('#bWm').innerHTML = wm({color:'#F2EFE8'});
 $('#bFoto').style.backgroundImage = 'url(assets/img/landing.jpg)';
 
 /* el método: un problema tachado por producto */
