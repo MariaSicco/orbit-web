@@ -13,30 +13,52 @@
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=37">
+<link rel="stylesheet" href="assets/css/orbit.css?v=38">
 <style>
-.lg{padding-top:calc(104px + env(safe-area-inset-top,0px))}
-.lg .head{padding-bottom:clamp(24px,3vw,40px);border-bottom:1px solid var(--k3)}
-.lg h1{font-size:clamp(46px,8vw,120px);margin:14px 0 0}
+.lg{padding-top:calc(110px + env(safe-area-inset-top,0px));padding-bottom:0}
+.lg .head{padding-bottom:clamp(40px,6vw,88px)}
+.lg h1{font-size:clamp(52px,9vw,148px);margin:16px 0 0}
 .lg h1 .it{color:var(--or)}
-.lg .sub{margin:18px 0 0;opacity:.6;max-width:52ch;font-size:16px;line-height:1.5}
-.lg .body{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(24px,4vw,64px);margin-top:clamp(34px,4.5vw,64px)}
-.lg .toc{position:sticky;top:calc(96px + env(safe-area-inset-top,0px));align-self:start;display:grid;gap:2px}
-.lg .toc a{font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;text-decoration:none;opacity:.5;padding:7px 0;border-top:1px solid var(--k3);transition:opacity .2s,color .2s}
-.lg .toc a:hover{opacity:1;color:var(--ac)}
-.lg section{scroll-margin-top:110px;padding-bottom:clamp(28px,3.4vw,48px)}
-.lg section h2{margin:0 0 14px;font-weight:800;font-size:clamp(21px,2.3vw,32px);letter-spacing:-.035em;text-transform:uppercase;line-height:1.02}
-.lg section h2 .n{font-family:var(--mono);font-size:11px;letter-spacing:.08em;opacity:.4;display:block;margin-bottom:9px;font-weight:400}
-.lg p{margin:0 0 13px;line-height:1.62;opacity:.78;max-width:62ch}
-.lg ul{margin:0 0 14px;padding-left:0;list-style:none;max-width:62ch}
-.lg li{padding:9px 0 9px 20px;border-top:1px solid var(--k3);line-height:1.55;opacity:.78;position:relative}
-.lg li::before{content:"";position:absolute;left:0;top:17px;width:7px;height:7px;border-radius:50%;background:var(--blue)}
+.lg .sub{margin:clamp(22px,3vw,38px) 0 0;opacity:.62;max-width:34ch;font-size:clamp(17px,1.5vw,20px);line-height:1.55}
+
+/* índice arriba, como tabla de contenidos */
+.indice{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:0 clamp(20px,3vw,48px);border-top:1px solid var(--k3)}
+.indice a{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:baseline;padding:15px 0;border-bottom:1px solid var(--k3);text-decoration:none;font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;opacity:.55;transition:opacity .2s,color .2s}
+.indice a:hover{opacity:1;color:var(--ac)}
+.indice a i{font-style:normal;opacity:.5}
+@media (max-width:900px){.indice{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.indice{grid-template-columns:1fr}}
+
+/* cada artículo respira: número grande a la izquierda, texto a la derecha */
+.lg section{scroll-margin-top:110px;display:grid;grid-template-columns:minmax(0,3fr) minmax(0,9fr);gap:clamp(20px,4vw,72px);
+  border-top:1px solid var(--k3);padding-block:clamp(46px,7vw,110px)}
+.lg section:first-of-type{border-top:0}
+.lg .marca{position:sticky;top:calc(104px + env(safe-area-inset-top,0px));align-self:start}
+.lg .marca .num{display:block;font-weight:800;font-size:clamp(40px,5vw,80px);letter-spacing:-.05em;line-height:.82;color:var(--k3)}
+.lg .marca h2{margin:16px 0 0;font-weight:800;font-size:clamp(23px,2.6vw,38px);letter-spacing:-.04em;text-transform:uppercase;line-height:1.02;max-width:14ch}
+.lg .texto{max-width:64ch;padding-top:clamp(6px,1vw,14px)}
+.lg .texto>*:first-child{margin-top:0}
+.lg p{margin:0 0 20px;line-height:1.72;font-size:clamp(16px,1.35vw,18px);opacity:.82}
+.lg p:last-child{margin-bottom:0}
+.lg ul{margin:0 0 20px;padding:0;list-style:none}
+.lg ul:last-child{margin-bottom:0}
+.lg li{padding:18px 0 18px 26px;border-top:1px solid var(--k3);line-height:1.62;font-size:clamp(15.5px,1.3vw,17px);opacity:.82;position:relative}
+.lg li:last-child{border-bottom:1px solid var(--k3)}
+.lg li::before{content:"";position:absolute;left:0;top:27px;width:8px;height:8px;border-radius:50%;background:var(--blue)}
 .lg b,.lg strong{opacity:1;font-weight:700;color:var(--b)}
-.lg a.link{color:var(--ac);text-decoration:underline;text-underline-offset:3px}
-.lg .box{background:var(--k2);border:1px solid var(--k3);padding:clamp(18px,2.2vw,28px);margin:0 0 16px}
+.lg a.link{color:var(--ac);text-decoration:underline;text-underline-offset:4px}
+.lg .box{background:var(--k2);border-left:3px solid var(--ac);padding:clamp(22px,2.6vw,34px);margin:0 0 24px}
+.lg .box p{opacity:1}
 .lg .box p:last-child{margin-bottom:0}
-.lg .stamp{margin-top:clamp(30px,4vw,56px);padding-top:16px;border-top:1px solid var(--k3);font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;opacity:.4;line-height:1.7}
-@media (max-width:900px){.lg .body{grid-template-columns:1fr}.lg .toc{position:static;display:flex;flex-wrap:wrap;gap:0 16px}.lg .toc a{border-top:0}}
+.lg .box .btn{margin-top:6px}
+.lg .stamp{border-top:1px solid var(--k3);padding:clamp(30px,4vw,56px) 0 clamp(60px,8vw,110px);
+  font-family:var(--mono);font-size:11px;letter-spacing:.07em;text-transform:uppercase;opacity:.4;line-height:1.9;margin:0}
+@media (max-width:860px){
+  .lg section{grid-template-columns:1fr;gap:20px;padding-block:clamp(40px,8vw,64px)}
+  .lg .marca{position:static;display:flex;align-items:baseline;gap:14px}
+  .lg .marca .num{font-size:30px}
+  .lg .marca h2{margin:0;max-width:none}
+}
 </style>
 </head>
 <body data-page="terminos" data-nav-solid data-title-es="Términos y condiciones — Orbit®" data-title-en="Terms and conditions — Orbit®">
@@ -48,77 +70,96 @@
       <h1 class="display"><span data-l="es">Términos y <span class="it">condiciones.</span></span><span data-l="en">Terms and <span class="it">conditions.</span></span></h1>
       <p class="sub"><span data-l="es">Qué comprás, cómo lo recibís, qué podés hacer con ello y cómo arrepentirte si cambiás de idea. Sin letra chica.</span><span data-l="en">What you buy, how you get it, what you can do with it and how to cancel if you change your mind. No fine print.</span></p>
     </header>
-    <div class="body">
-      <nav class="toc"><a href="#quienes"><span data-l="es">Quién te vende</span><span data-l="en">Who you're buying from</span></a><a href="#productos"><span data-l="es">Qué estás comprando</span><span data-l="en">What you're buying</span></a><a href="#precios"><span data-l="es">Precios y pagos</span><span data-l="en">Prices and payment</span></a><a href="#entrega"><span data-l="es">Cómo lo recibís</span><span data-l="en">How you get it</span></a><a href="#licencia"><span data-l="es">Qué podés hacer con lo que comprás</span><span data-l="en">What you can do with it</span></a><a href="#arrepentimiento"><span data-l="es">Botón de arrepentimiento</span><span data-l="en">Right to cancel</span></a><a href="#problemas"><span data-l="es">Si algo no funciona</span><span data-l="en">If something doesn't work</span></a><a href="#cuenta"><span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></a><a href="#cambios"><span data-l="es">Cambios en estos términos</span><span data-l="en">Changes to these terms</span></a><a href="#ley"><span data-l="es">Ley aplicable</span><span data-l="en">Governing law</span></a></nav>
+    
+      <nav class="indice"><a href="quienes"><i>01</i><span data-l="es">Quién te vende</span><span data-l="en">Who you're buying from</span></a><a href="productos"><i>02</i><span data-l="es">Qué estás comprando</span><span data-l="en">What you're buying</span></a><a href="precios"><i>03</i><span data-l="es">Precios y pagos</span><span data-l="en">Prices and payment</span></a><a href="entrega"><i>04</i><span data-l="es">Cómo lo recibís</span><span data-l="en">How you get it</span></a><a href="licencia"><i>05</i><span data-l="es">Qué podés hacer con lo que comprás</span><span data-l="en">What you can do with it</span></a><a href="arrepentimiento"><i>06</i><span data-l="es">Botón de arrepentimiento</span><span data-l="en">Right to cancel</span></a><a href="problemas"><i>07</i><span data-l="es">Si algo no funciona</span><span data-l="en">If something doesn't work</span></a><a href="cuenta"><i>08</i><span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></a><a href="cambios"><i>09</i><span data-l="es">Cambios en estos términos</span><span data-l="en">Changes to these terms</span></a><a href="ley"><i>10</i><span data-l="es">Ley aplicable</span><span data-l="en">Governing law</span></a></nav>
       <div class="cont">
         <section id="quienes">
-          <h2><span class="n">01</span><span data-l="es">Quién te vende</span><span data-l="en">Who you're buying from</span></h2>
+          <div class="marca"><span class="num">01</span><h2><span data-l="es">Quién te vende</span><span data-l="en">Who you're buying from</span></h2></div>
+          <div class="texto">
 
           <p><span data-l="es">Orbit es un proyecto de <b>orbit studio</b>, con domicilio en Argentina. Vendemos productos digitales a través de este sitio, orbitando.com.ar.</span><span data-l="en">Orbit is a project by <b>orbit studio</b>, based in Argentina. We sell digital products through this site, orbitando.com.ar.</span></p>
           <ul><li><span data-l="es">Para cualquier consulta, reclamo o pedido: <a class="link" href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a>. Contestamos todos los mensajes.</span><span data-l="en">For any question, claim or request: <a class="link" href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a>. We answer every message.</span></li><li><span data-l="es">Al comprar en este sitio aceptás estos términos. Están escritos para que se entiendan, no para esconder nada.</span><span data-l="en">By purchasing on this site you accept these terms. They're written to be understood, not to hide anything.</span></li></ul>
+        </div>
         </section>
         <section id="productos">
-          <h2><span class="n">02</span><span data-l="es">Qué estás comprando</span><span data-l="en">What you're buying</span></h2>
+          <div class="marca"><span class="num">02</span><h2><span data-l="es">Qué estás comprando</span><span data-l="en">What you're buying</span></h2></div>
+          <div class="texto">
 
           <p><span data-l="es">Productos digitales: plantillas, sistemas y recursos que se descargan. <b>No hay envío físico</b> y no vas a recibir nada por correo postal.</span><span data-l="en">Digital products: templates, systems and resources that you download. <b>Nothing ships physically</b> and you won't receive anything by post.</span></p>
           <ul><li><span data-l="es">En la página de cada producto figura qué incluye, en qué formato viene y para qué herramientas sirve. Leelo antes de comprar: es la descripción que nos obliga.</span><span data-l="en">Each product page lists what's included, the format and which tools it works with. Read it before buying: that description is what binds us.</span></li><li><span data-l="es">Para usar la mayoría de los productos necesitás las aplicaciones que se indican, por ejemplo Notion, Figma o Canva. Esas cuentas corren por tu cuenta y no están incluidas en el precio.</span><span data-l="en">Most products require the apps listed on their page, for example Notion, Figma or Canva. Those accounts are yours to get and are not included in the price.</span></li><li><span data-l="es">Podemos mejorar o actualizar un producto después de que lo compraste. Esas versiones nuevas te llegan sin cargo.</span><span data-l="en">We may improve or update a product after you bought it. Those new versions reach you at no extra cost.</span></li></ul>
+        </div>
         </section>
         <section id="precios">
-          <h2><span class="n">03</span><span data-l="es">Precios y pagos</span><span data-l="en">Prices and payment</span></h2>
+          <div class="marca"><span class="num">03</span><h2><span data-l="es">Precios y pagos</span><span data-l="en">Prices and payment</span></h2></div>
+          <div class="texto">
 
           <ul><li><span data-l="es">Cobramos en <b>pesos argentinos por Mercado Pago</b> y en <b>dólares por PayPal</b>, con tarjeta incluso si no tenés cuenta de PayPal.</span><span data-l="en">We charge in <b>Argentine pesos through Mercado Pago</b> and in <b>US dollars through PayPal</b>, by card even if you don't have a PayPal account.</span></li><li><span data-l="es">El precio que ves es el que pagás. Los impuestos, percepciones o cargos que aplique tu país, tu banco o el medio de pago corren por fuera y no los definimos nosotros.</span><span data-l="en">The price you see is the price you pay. Any taxes, levies or fees applied by your country, your bank or the payment provider are outside that and not set by us.</span></li><li><span data-l="es"><b>Nunca vemos los datos de tu tarjeta.</b> El pago ocurre entero dentro de Mercado Pago o PayPal; nosotros solo recibimos el aviso de que se acreditó.</span><span data-l="en"><b>We never see your card details.</b> The payment happens entirely inside Mercado Pago or PayPal; we only receive confirmation that it cleared.</span></li><li><span data-l="es">Podemos cambiar los precios cuando queramos, pero nunca sobre una compra ya hecha: pagás el precio que figuraba al momento de comprar.</span><span data-l="en">We may change prices at any time, but never on a purchase already made: you pay the price shown when you bought.</span></li></ul>
+        </div>
         </section>
         <section id="entrega">
-          <h2><span class="n">04</span><span data-l="es">Cómo lo recibís</span><span data-l="en">How you get it</span></h2>
+          <div class="marca"><span class="num">04</span><h2><span data-l="es">Cómo lo recibís</span><span data-l="en">How you get it</span></h2></div>
+          <div class="texto">
 
           <ul><li><span data-l="es">Apenas se acredita el pago, el producto aparece en tu cuenta y te llega un email con el detalle de la compra. Suele ser inmediato; si el medio de pago demora en confirmar, puede tardar unos minutos.</span><span data-l="en">As soon as the payment clears, the product appears in your account and you get an email with the order details. It's usually instant; if the payment provider takes time to confirm, it can take a few minutes.</span></li><li><span data-l="es">Las compras quedan asociadas al <b>email que usaste al pagar</b>. Si comprás sin cuenta y después te registrás con ese mismo email, vas a encontrar todo ahí.</span><span data-l="en">Purchases are tied to <b>the email you used when paying</b>. If you buy without an account and later register with that same email, everything will be there.</span></li><li><span data-l="es">El acceso no vence ni requiere suscripción. Si alguna vez tuviéramos que dar de baja el sitio, te avisaríamos con tiempo para que descargues todo.</span><span data-l="en">Access doesn't expire and requires no subscription. If we ever had to shut the site down, we'd warn you with enough time to download everything.</span></li></ul>
+        </div>
         </section>
         <section id="licencia">
-          <h2><span class="n">05</span><span data-l="es">Qué podés hacer con lo que comprás</span><span data-l="en">What you can do with it</span></h2>
+          <div class="marca"><span class="num">05</span><h2><span data-l="es">Qué podés hacer con lo que comprás</span><span data-l="en">What you can do with it</span></h2></div>
+          <div class="texto">
 
           <div class="box"><p><span data-l="es">Comprás una <b>licencia de uso comercial</b>, no la propiedad del producto. La propiedad intelectual sigue siendo de Orbit.</span><span data-l="en">You're buying a <b>commercial use license</b>, not ownership of the product. The intellectual property remains Orbit's.</span></p></div>
           <p><b><span data-l="es">Podés:</span><span data-l="en">You can:</span></b></p>
           <ul><li><span data-l="es">Usarlo en tus proyectos y en los de tus clientes, las veces que quieras, sin pagar de nuevo.</span><span data-l="en">Use it in your own projects and your clients' projects, as many times as you want, without paying again.</span></li><li><span data-l="es">Modificarlo, adaptarlo a tu marca y combinarlo con tu propio trabajo.</span><span data-l="en">Modify it, adapt it to your brand and combine it with your own work.</span></li></ul>
           <p><b><span data-l="es">No podés:</span><span data-l="en">You can't:</span></b></p>
           <ul><li><span data-l="es">Revender, regalar ni compartir los archivos originales, ni subirlos a otro sitio o a un grupo.</span><span data-l="en">Resell, give away or share the original files, or upload them to another site or group.</span></li><li><span data-l="es">Vender el producto como si fuera tuyo, ni incluirlo en otro producto que se venda como plantilla o recurso.</span><span data-l="en">Sell the product as your own, or include it in another product sold as a template or resource.</span></li><li><span data-l="es">Compartir tu acceso con otras personas para que descarguen sin comprar.</span><span data-l="en">Share your access so other people can download without buying.</span></li></ul>
+        </div>
         </section>
         <section id="arrepentimiento">
-          <h2><span class="n">06</span><span data-l="es">Botón de arrepentimiento</span><span data-l="en">Right to cancel</span></h2>
+          <div class="marca"><span class="num">06</span><h2><span data-l="es">Botón de arrepentimiento</span><span data-l="en">Right to cancel</span></h2></div>
+          <div class="texto">
 
           <div class="box"><p><span data-l="es">Si comprás a distancia tenés <b>diez días corridos</b> desde la compra para arrepentirte y pedir la devolución del dinero, sin tener que explicar por qué. Es un derecho que te da el artículo 34 de la Ley 24.240 de Defensa del Consumidor.</span><span data-l="en">When buying at a distance you have <b>ten calendar days</b> from purchase to cancel and get your money back, without having to explain why. This right comes from article 34 of Argentina's Consumer Protection Law 24.240.</span></p>
           <p style="margin-top:12px"><a class="btn btn-acid" href="mailto:hola@orbitando.com.ar?subject=Boton%20de%20arrepentimiento&amp;body=Quiero%20arrepentirme%20de%20mi%20compra.%0A%0ANumero%20de%20pedido%3A%20%0AEmail%20de%20la%20compra%3A%20%0A"><span data-l="es">Quiero arrepentirme de mi compra</span><span data-l="en">I want to cancel my purchase</span> <span class="ar">&rarr;</span></a></p></div>
           <ul><li><span data-l="es">Escribinos desde ese botón o a <a class="link" href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a> con tu número de pedido. No hace falta ningún formulario ni trámite: alcanza con que lo pidas.</span><span data-l="en">Write from that button or to <a class="link" href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a> with your order number. No form or paperwork needed: asking is enough.</span></li><li><span data-l="es">Te devolvemos el importe por el mismo medio con el que pagaste, dentro de los diez días de recibido el pedido. Damos de baja tu acceso al producto y te pedimos que borres los archivos que hayas descargado.</span><span data-l="en">We refund through the same method you paid with, within ten days of receiving your request. We remove your access to the product and ask you to delete any files you downloaded.</span></li><li><span data-l="es">Las comisiones que hayan cobrado Mercado Pago o PayPal las absorbemos nosotros: vos recibís lo que pagaste.</span><span data-l="en">Any fees charged by Mercado Pago or PayPal are on us: you get back what you paid.</span></li></ul>
+        </div>
         </section>
         <section id="problemas">
-          <h2><span class="n">07</span><span data-l="es">Si algo no funciona</span><span data-l="en">If something doesn't work</span></h2>
+          <div class="marca"><span class="num">07</span><h2><span data-l="es">Si algo no funciona</span><span data-l="en">If something doesn't work</span></h2></div>
+          <div class="texto">
 
           <p><span data-l="es">Aparte del derecho de arrepentimiento, si un producto está roto, incompleto o no es lo que decía su descripción, queremos saberlo y resolverlo.</span><span data-l="en">Beyond the cancellation right, if a product is broken, incomplete or isn't what its description said, we want to know and fix it.</span></p>
           <ul><li><span data-l="es">Escribinos contando qué pasó. Primero intentamos arreglarlo o mandarte el archivo que falta. Si no tiene arreglo, te devolvemos la plata.</span><span data-l="en">Write to us explaining what happened. First we try to fix it or send you the missing file. If it can't be fixed, we refund you.</span></li><li><span data-l="es">Si el producto funciona pero no era lo que esperabas, contanos igual: los diez días de arrepentimiento siguen valiendo, y tu comentario nos sirve para escribir mejor las descripciones.</span><span data-l="en">If the product works but wasn't what you expected, tell us anyway: the ten-day cancellation window still applies, and your feedback helps us describe things better.</span></li></ul>
+        </div>
         </section>
         <section id="cuenta">
-          <h2><span class="n">08</span><span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></h2>
+          <div class="marca"><span class="num">08</span><h2><span data-l="es">Tu cuenta</span><span data-l="en">Your account</span></h2></div>
+          <div class="texto">
 
           <ul><li><span data-l="es">Podés crear una cuenta con email y contraseña, o entrar con un enlace que te mandamos por email. Tu contraseña se guarda cifrada y <b>nadie, ni nosotros, puede leerla</b>.</span><span data-l="en">You can create an account with email and password, or sign in with a link we email you. Your password is stored encrypted and <b>nobody, not even us, can read it</b>.</span></li><li><span data-l="es">Cuidá tu contraseña: todo lo que se haga desde tu cuenta se considera hecho por vos. Si creés que alguien más entró, escribinos y la damos de baja.</span><span data-l="en">Keep your password safe: anything done from your account is considered done by you. If you think someone else got in, write to us and we'll shut it down.</span></li><li><span data-l="es">Podemos cerrar una cuenta que use el sitio para revender productos, compartir archivos o atacar el servicio. Antes de hacerlo, preguntamos.</span><span data-l="en">We may close an account that uses the site to resell products, share files or attack the service. Before doing so, we ask.</span></li></ul>
+        </div>
         </section>
         <section id="cambios">
-          <h2><span class="n">09</span><span data-l="es">Cambios en estos términos</span><span data-l="en">Changes to these terms</span></h2>
+          <div class="marca"><span class="num">09</span><h2><span data-l="es">Cambios en estos términos</span><span data-l="en">Changes to these terms</span></h2></div>
+          <div class="texto">
 
           <p><span data-l="es">Podemos actualizar estos términos cuando cambie cómo funciona el sitio. La fecha de la última versión está abajo de todo. Los cambios valen para las compras que hagas después de publicarlos, nunca sobre las anteriores.</span><span data-l="en">We may update these terms when how the site works changes. The date of the latest version is at the bottom. Changes apply to purchases made after they're published, never retroactively.</span></p>
+        </div>
         </section>
         <section id="ley">
-          <h2><span class="n">10</span><span data-l="es">Ley aplicable</span><span data-l="en">Governing law</span></h2>
+          <div class="marca"><span class="num">10</span><h2><span data-l="es">Ley aplicable</span><span data-l="en">Governing law</span></h2></div>
+          <div class="texto">
 
           <p><span data-l="es">Estos términos se rigen por las leyes de la <b>República Argentina</b>. Ante cualquier conflicto, son competentes los tribunales ordinarios de la ciudad donde vivas, si sos consumidor.</span><span data-l="en">These terms are governed by the laws of <b>Argentina</b>. In case of dispute, the ordinary courts of the city where you live have jurisdiction, if you are a consumer.</span></p>
           <p><span data-l="es">Como consumidor también podés hacer un reclamo ante Defensa del Consumidor, en <a class="link" href="https://www.argentina.gob.ar/produccion/defensadelconsumidor" target="_blank" rel="noopener">argentina.gob.ar/defensadelconsumidor</a>.</span><span data-l="en">As a consumer you may also file a claim with Argentina's consumer protection authority at <a class="link" href="https://www.argentina.gob.ar/produccion/defensadelconsumidor" target="_blank" rel="noopener">argentina.gob.ar/defensadelconsumidor</a>.</span></p>
+        </div>
         </section>
         <p class="stamp"><span data-l="es">Última actualización: 23 de septiembre de 2026</span><span data-l="en">Last updated: 23 September 2026</span><br>Orbit® · orbitando.com.ar · hola@orbitando.com.ar</p>
       </div>
-    </div>
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=37"></script>
+<script src="assets/js/products.js?v=38"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=37"></script>
+<script src="assets/js/orbit.js?v=38"></script>
 </body>
 </html>
