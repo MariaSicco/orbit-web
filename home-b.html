@@ -156,32 +156,40 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 
 /* método */
 .m-slide{border:1px solid rgba(13,13,14,.18);padding:clamp(17px,4.4vw,26px);display:flex;flex-direction:column;justify-content:space-between;gap:clamp(12px,2vh,18px)}
+.m-slide .cab{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
 .m-slide .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.45}
+.m-slide .tipo{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;opacity:.45;text-align:right}
 /* El problema entra desarmado y se acomoda a medida que la tarjeta llega al
    centro del riel. Todo cuelga de --orden, que el JS mueve de 0 a 1 con el
    dedo: no es una animación que se dispara y termina, es el desorden
    resolviéndose en tiempo real. --caos es su complemento. */
 .m-slide{--orden:0;--caos:1}
-/* El problema se cuenta: tres frases cortas que van apareciendo una detrás
-   de otra mientras la tarjeta entra. Cuando termina de contarse, el libro
-   gira y te da la tapa: el problema se convirtió en la herramienta. */
-.m-slide .relato{margin:0;display:grid;gap:3px}
+/* ---- las palabras se convierten en el libro ----
+   No son dos cosas apiladas: ocupan el mismo lugar. Primero se cuenta el
+   problema, frase por frase. Después esas mismas frases se juntan hacia el
+   centro, se achican y se apagan, y desde ese punto crece el libro y gira
+   hasta darte la tapa. Un solo movimiento, manejado por el dedo:
+   --cuenta es la primera mitad (se cuenta), --fin es la segunda (se vuelve). */
+.m-slide .escena{position:relative;display:grid;place-items:center;
+  height:clamp(198px,27vh,256px);perspective:820px;perspective-origin:50% 46%}
+.m-slide .escena > *{grid-area:1 / 1;width:100%}
+
+.m-slide .relato{margin:0;display:grid;gap:4px;will-change:transform,opacity}
 .m-slide .relato .l{display:block;font-family:var(--serif);font-style:italic;
-  font-size:clamp(16px,4.4vw,21px);line-height:1.26;
-  opacity:calc(.11 + (var(--orden) - .02 - var(--i) * .16) * 4.5);
-  transform:translateY(calc(var(--caos) * 9px))}
+  font-size:clamp(16px,4.4vw,21px);line-height:1.26;transform-origin:50% 50%;
+  opacity:calc((.1 + (var(--cuenta,0) - .02 - var(--i) * .22) * 4.5) * (1 - var(--fin,0)));
+  transform:translateY(calc(var(--dir) * var(--fin,0) * 32px)) scale(calc(1 - .36 * var(--fin,0)))}
 /* la última frase es la que duele: queda en el color de la marca */
 .m-slide .relato .l:last-child{color:var(--or)}
-.m-slide .cab{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
-.m-slide .tipo{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.45;text-align:right}
-/* el cuerpo de la tarjeta entra cuando la diapositiva queda a la vista */
-/* El libro de verdad, el mismo del resto del sitio. Entra de canto y gira
-   hasta darte la tapa: el ángulo sale de --orden, así que lo maneja el dedo. */
-.m-slide .escena{height:clamp(126px,17.5vh,176px);display:grid;place-items:center;
-  perspective:800px;perspective-origin:50% 45%}
-.m-slide .escena .box{--w:92px;--h:122px;--d:23px;will-change:transform;
-  transform:rotateX(-7deg) rotateY(calc(-71deg + 47deg * var(--orden)));
-  filter:drop-shadow(0 14px 26px rgba(13,13,14,calc(.06 + .12 * var(--orden))))}
+
+/* el libro es el mismo objeto del resto del sitio: la tapa de verdad, con su
+   lomo y su código. Crece desde donde estaban las palabras. */
+.m-slide .escena .box{--w:96px;--h:126px;--d:24px;width:var(--w);justify-self:center;
+  will-change:transform,opacity;opacity:var(--fin,0);
+  transform:rotateX(-7deg) rotateY(calc(-64deg + 40deg * var(--fin,0)))
+            scale(calc(.52 + .48 * var(--fin,0)));
+  filter:drop-shadow(0 12px 24px rgba(13,13,14,calc(.04 + .12 * var(--fin,0))))}
 .m-slide .escena .box .side{background:#131314}
 .m-slide .escena .box .side .wm{font-size:12px}
 
@@ -193,8 +201,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   text-transform:uppercase;opacity:.45;font-style:normal}
 .m-slide .arregla b{font-weight:700;font-size:15.5px;letter-spacing:-.015em;line-height:1.3}
 @media (prefers-reduced-motion:reduce){
-  .m-slide{--orden:1;--caos:0}
-  .m-slide .w{transform:none}
+  .m-slide{--orden:1;--caos:0;--cuenta:1;--fin:1}
 }
 
 /* colección */
@@ -439,9 +446,11 @@ $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
     <span class="n">${String(i+1).padStart(2,'0')} / ${String(PROB.length).padStart(2,'0')}</span>
     <span class="tipo">${L(...q.rubro)}</span>
   </div>
-  <p class="relato">${q.relato.map(([es, en], j) =>
-    `<span class="l" style="--i:${j}">${L(es, en)}</span>`).join('')}</p>
-  <div class="escena">${P[i] ? libro(P[i]) : ''}</div>
+  <div class="escena">
+    <p class="relato">${q.relato.map(([es, en], j) =>
+      `<span class="l" style="--i:${j};--dir:${1 - j}">${L(es, en)}</span>`).join('')}</p>
+    ${P[i] ? libro(P[i]) : ''}
+  </div>
   <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
 </article>`).join('');
 
@@ -452,29 +461,53 @@ $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
   const riel = $('#rielM'), tarjetas = $$('.m-slide', riel);
   if (!tarjetas.length) return;
 
-  function medir() {
-    const centro = riel.scrollLeft + riel.clientWidth / 2;
-    tarjetas.forEach(t => {
-      const suyo = t.offsetLeft + t.offsetWidth / 2;
-      /* 1 en el centro, 0 a una tarjeta de distancia */
-      const p = Math.min(1, Math.max(0, 1 - Math.abs(suyo - centro) / (t.offsetWidth * .82)));
-      const suave = p * p * (3 - 2 * p);
-      t.style.setProperty('--orden', suave.toFixed(3));
-      t.style.setProperty('--caos', (1 - suave).toFixed(3));
-    });
+  /* una sola variable manda: 0 es el problema sin contar, 1 es el libro.
+     --cuenta es la primera mitad (se cuenta), --fin la segunda (se vuelve). */
+  function aplicar(t, v) {
+    t.style.setProperty('--orden', v.toFixed(3));
+    t.style.setProperty('--caos', (1 - v).toFixed(3));
+    t.style.setProperty('--cuenta', Math.min(1, v / .56).toFixed(3));
+    t.style.setProperty('--fin', Math.max(0, (v - .56) / .44).toFixed(3));
   }
 
-  if (RM) {
+  if (RM) { tarjetas.forEach(t => aplicar(t, 1)); return; }
+
+  let contando = false;
+  function medir() {
+    if (contando) return;
+    /* la referencia es la posición de encastre, no el centro del riel: las
+       tarjetas encastran por el borde izquierdo, así que medido desde el
+       centro la tarjeta en reposo nunca llegaba a estar del todo resuelta */
+    const sangria = parseFloat(getComputedStyle(riel).paddingLeft) || 0;
     tarjetas.forEach(t => {
-      t.style.setProperty('--orden', 1); t.style.setProperty('--caos', 0);
+      const lejos = Math.abs((t.offsetLeft - riel.scrollLeft) - sangria);
+      /* 1 encastrada, 0 a una tarjeta de distancia */
+      const p = Math.min(1, Math.max(0, 1 - lejos / (t.offsetWidth * .78)));
+      aplicar(t, p * p * (3 - 2 * p));
     });
-    return;
   }
 
   let pedido = false;
   const pedir = () => { if (!pedido) { pedido = true; requestAnimationFrame(() => { pedido = false; medir(); }); } };
   riel.addEventListener('scroll', pedir, {passive:true});
   addEventListener('resize', pedir);
+
+  /* La primera vez que se llega a la sección, la tarjeta se cuenta sola:
+     si no, se entra viendo el libro ya resuelto y nadie se entera de que
+     antes había un problema. Después manda el dedo. */
+  let presentado = false;
+  new IntersectionObserver(([e], obs) => {
+    if (!e.isIntersecting || presentado || riel.scrollLeft > 4) return;
+    presentado = true; obs.disconnect(); contando = true;
+    const arranque = performance.now(), largo = 2100;
+    aplicar(tarjetas[0], 0);
+    (function paso(ahora) {
+      const k = Math.min(1, (ahora - arranque) / largo);
+      aplicar(tarjetas[0], k * k * (3 - 2 * k));
+      if (k < 1) requestAnimationFrame(paso);
+      else { contando = false; medir(); }
+    })(arranque);
+  }, {threshold:.55}).observe($('#metodo'));
 
   medir();
 })();
