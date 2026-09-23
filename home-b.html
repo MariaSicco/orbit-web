@@ -155,44 +155,43 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .pista-x .barra i{position:absolute;inset:0;background:var(--blue);transform-origin:left;transform:scaleX(.25);transition:transform .25s var(--ease)}
 
 /* método */
-.m-slide{border:1px solid rgba(13,13,14,.18);padding:clamp(20px,5vw,30px);display:flex;flex-direction:column;justify-content:space-between;gap:20px;min-height:clamp(300px,46vh,420px)}
+.m-slide{border:1px solid rgba(13,13,14,.18);padding:clamp(17px,4.4vw,26px);display:flex;flex-direction:column;justify-content:space-between;gap:clamp(12px,2vh,18px)}
 .m-slide .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.45}
 /* El problema entra desarmado y se acomoda a medida que la tarjeta llega al
    centro del riel. Todo cuelga de --orden, que el JS mueve de 0 a 1 con el
    dedo: no es una animación que se dispara y termina, es el desorden
    resolviéndose en tiempo real. --caos es su complemento. */
 .m-slide{--orden:0;--caos:1}
-/* La frase no se tacha: llega cifrada y se descifra a medida que la tarjeta
-   entra. Monoespaciada para que ningún carácter cambie de ancho mientras
-   se resuelve y el bloque no se mueva ni un píxel. */
-.m-slide .prob{display:grid;grid-template-columns:auto 1fr;gap:9px;align-items:start;margin:0}
-.m-slide .prob .flecha{font-family:var(--mono);font-size:14px;line-height:1.55;color:var(--or);opacity:.9}
-.m-slide .prob .dec{font-family:var(--mono);font-size:clamp(13.5px,3.7vw,16px);line-height:1.55;
-  letter-spacing:.02em;text-transform:uppercase;word-break:break-word;
-  color:rgba(13,13,14,calc(.42 + .58 * var(--orden)))}
+/* El problema se cuenta: tres frases cortas que van apareciendo una detrás
+   de otra mientras la tarjeta entra. Cuando termina de contarse, el libro
+   gira y te da la tapa: el problema se convirtió en la herramienta. */
+.m-slide .relato{margin:0;display:grid;gap:3px}
+.m-slide .relato .l{display:block;font-family:var(--serif);font-style:italic;
+  font-size:clamp(16px,4.4vw,21px);line-height:1.26;
+  opacity:calc(.11 + (var(--orden) - .02 - var(--i) * .16) * 4.5);
+  transform:translateY(calc(var(--caos) * 9px))}
+/* la última frase es la que duele: queda en el color de la marca */
+.m-slide .relato .l:last-child{color:var(--or)}
 .m-slide .cab{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
 .m-slide .tipo{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.45;text-align:right}
 /* el cuerpo de la tarjeta entra cuando la diapositiva queda a la vista */
-/* El dibujo cuenta el problema sin palabras y se resuelve con el mismo gesto:
-   las piezas entran desparramadas y se acomodan al llegar al centro. */
-.m-slide .dia{height:clamp(122px,19vh,168px);width:100%}
-.m-slide .dia svg{width:100%;height:100%;overflow:visible}
-.m-slide .dia .pz{transform-box:fill-box;transform-origin:50% 50%;will-change:transform;
-  transform:translate(calc(var(--dx,0) * var(--caos) * 1px),calc(var(--dy,0) * var(--caos) * 1px))
-            rotate(calc(var(--rot,0) * var(--caos) * 1deg));
-  opacity:calc(.5 + .5 * var(--orden))}
-/* lo que solo existe cuando ya hay orden */
-.m-slide .dia .ap{opacity:calc((var(--orden) - .45) * 1.9)}
-/* lo que solo existe mientras hay desorden */
-.m-slide .dia .des{opacity:calc(var(--caos) * 1.1 - .1)}
+/* El libro de verdad, el mismo del resto del sitio. Entra de canto y gira
+   hasta darte la tapa: el ángulo sale de --orden, así que lo maneja el dedo. */
+.m-slide .escena{height:clamp(126px,17.5vh,176px);display:grid;place-items:center;
+  perspective:800px;perspective-origin:50% 45%}
+.m-slide .escena .box{--w:92px;--h:122px;--d:23px;will-change:transform;
+  transform:rotateX(-7deg) rotateY(calc(-71deg + 47deg * var(--orden)));
+  filter:drop-shadow(0 14px 26px rgba(13,13,14,calc(.06 + .12 * var(--orden))))}
+.m-slide .escena .box .side{background:#131314}
+.m-slide .escena .box .side .wm{font-size:12px}
 
 /* la herramienta aparece recién cuando el problema terminó de ordenarse */
-.m-slide .arregla{margin:0;padding-top:14px;border-top:1px solid rgba(13,13,14,.18);
+.m-slide .arregla{margin:0;padding-top:12px;border-top:1px solid rgba(13,13,14,.18);
   display:grid;gap:4px;opacity:calc((var(--orden) - .55) * 2.6);
   transform:translateY(calc(var(--caos) * 12px))}
 .m-slide .arregla i{font-family:var(--mono);font-size:10px;letter-spacing:.11em;
   text-transform:uppercase;opacity:.45;font-style:normal}
-.m-slide .arregla b{font-weight:700;font-size:16.5px;letter-spacing:-.015em;line-height:1.3}
+.m-slide .arregla b{font-weight:700;font-size:15.5px;letter-spacing:-.015em;line-height:1.3}
 @media (prefers-reduced-motion:reduce){
   .m-slide{--orden:1;--caos:0}
   .m-slide .w{transform:none}
@@ -403,116 +402,52 @@ if (document.documentElement.classList.contains('gate-on')) {
    dentro de una tapa: el producto terminado. El problema no se reemplaza por
    la herramienta, se convierte en ella. */
 const PROB = [
-  { rubro:['Finanzas','Money'], dibujo:'finanzas',
-    cita:['Las cuentas del estudio están en cinco lugares distintos.',
-          'The studio books live in five different places.'],
-    arregla:['Un tablero donde entra y sale todo', 'One board where everything comes in and out'] },
-  { rubro:['Contenido','Content'], dibujo:'calendario',
-    cita:['Publico cuando me acuerdo, no cuando corresponde.',
-          'I post when I remember, not when I should.'],
-    arregla:['Un calendario que ya viene armado', 'A calendar that arrives already built'] },
-  { rubro:['Marca','Brand'], dibujo:'marca',
-    cita:['Cada pieza sale con un color y una tipografía distinta.',
-          'Every piece ships with a different colour and typeface.'],
-    arregla:['Un manual con las reglas en un solo lugar', 'A manual with every rule in one place'] },
-  { rubro:['Proyectos','Projects'], dibujo:'tablero',
-    cita:['No sé en qué estado está cada trabajo hasta que pregunto.',
-          'I don’t know where each job stands until I ask.'],
-    arregla:['Un tablero con el estado de cada proyecto', 'A board with the state of every project'] },
+  { rubro:['Contenido','Content'],
+    relato:[['Abrís un documento en blanco.', 'You open a blank document.'],
+            ['Volvés a decidir el formato, el tono, la estructura.', 'You decide the format, the tone, the structure. Again.'],
+            ['Otra vez, desde cero.', 'Once more, from zero.']],
+    arregla:['Un sistema de contenido que ya viene armado', 'A content system that arrives already built'] },
+  { rubro:['Recursos','Assets'],
+    relato:[['Abrís tres carpetas.', 'You open three folders.'],
+            ['Ninguna tiene la tipografía que buscabas.', 'None of them has the typeface you were after.'],
+            ['Faltan veinte minutos para entregar.', 'Twenty minutes to the deadline.']],
+    arregla:['Una biblioteca ordenada y lista para usar', 'A tidy library, ready to use'] },
+  { rubro:['Estudio','Studio'],
+    relato:[['Las cuentas en una planilla.', 'The books in one spreadsheet.'],
+            ['Los proyectos en otra.', 'The projects in another.'],
+            ['El estado real, en tu cabeza.', 'The real state of things, in your head.']],
+    arregla:['Un solo tablero donde entra y sale todo', 'One board where everything comes in and out'] },
+  { rubro:['Tiempo','Time'],
+    relato:[['Renombrás. Exportás. Adaptás.', 'Rename. Export. Resize.'],
+            ['Otra vez, para el canal que sigue.', 'Again, for the next channel.'],
+            ['Se fue la mañana.', 'There went the morning.']],
+    arregla:['Un flujo que hace solo la parte mecánica', 'A workflow that handles the mechanical part'] },
 ];
 
-const esc = t => t.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
-
-/* el desvío de cada pieza sale de su posición y no del azar: la tarjeta se ve
-   idéntica en cada visita */
-const ruido = n => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); };
-const desvio = (n, ax, ay, ar) =>
-  `--dx:${((ruido(n * 3 + 1) - .5) * ax).toFixed(1)};--dy:${((ruido(n * 3 + 2) - .5) * ay).toFixed(1)};`
-  + `--rot:${((ruido(n * 3 + 3) - .5) * ar).toFixed(1)}`;
-
-/* ---- los dibujos: el desorden de cada problema entrando en su tapa ----
-   Mismo lenguaje en los cuatro: rectángulos al aire, tinta sobre el fondo
-   claro y un acento naranja en la pieza que ordena. */
-const T = 'rgba(13,13,14,';
-let sem = 0;
-/* una pieza suelta que termina en su lugar dentro de la tapa */
-const pz = (x, y, an, al, o, r = 1.5) =>
-  `<rect class="pz" x="${x}" y="${y}" width="${an}" height="${al}" rx="${r}" fill="${o}" style="${desvio(++sem, 104, 74, 46)}"/>`;
-/* la tapa: aparece recién cuando las piezas ya encontraron su lugar */
-const tapa = () => `<g class="ap">
-  <rect x="42" y="5" width="76" height="94" rx="2.5" fill="${T}.035)" stroke="${T}.32)" stroke-width="1.4"/>
-  <rect x="42" y="5" width="5" height="94" rx="2.5" fill="${T}.18)"/>
-  <rect x="97" y="90" width="13" height="2.2" rx="1.1" fill="${T}.3)"/></g>`;
-
-const DIBUJOS = {
-  /* números y comprobantes sueltos que terminan siendo un tablero de cuentas */
-  finanzas: () => `<svg viewBox="0 0 160 104" aria-hidden="true">${tapa()}
-    ${pz(56, 15, 30, 6, T + '.85)', 1)}
-    ${[0,1,2].map(k => pz(56 + k * 19, 29, 16, 11, T + (k === 0 ? '.22)' : '.14)'))).join('')}
-    ${[14, 24, 9, 29].map((h, k) => pz(56 + k * 13, 82 - h, 9, h, k === 3 ? 'var(--or)' : T + '.3)', 1)).join('')}
-    <line class="ap" x1="56" y1="82" x2="110" y2="82" stroke="${T}.3)" stroke-width="1.2"/></svg>`,
-
-  /* publicaciones sueltas que caen en un calendario */
-  calendario: () => `<svg viewBox="0 0 160 104" aria-hidden="true">${tapa()}
-    ${pz(56, 15, 24, 6, T + '.85)', 1)}
-    ${[0,1,2,3,4,5,6,7,8,9,10,11].map(k => {
-      const c = k % 4, f = (k / 4) | 0;
-      return pz(56 + c * 14, 30 + f * 15, 11, 11, k === 6 ? 'var(--or)' : T + (f === 0 ? '.24)' : '.14)'));
-    }).join('')}</svg>`,
-
-  /* colores y letras sueltas que terminan en un manual de marca */
-  marca: () => `<svg viewBox="0 0 160 104" aria-hidden="true">${tapa()}
-    <g class="pz" style="${desvio(++sem, 104, 74, 46)}"><circle cx="66" cy="24" r="8.5" fill="none"
-      stroke="${T}.85)" stroke-width="5" stroke-dasharray="40 14" transform="rotate(-40 66 24)"/></g>
-    ${[0,1,2,3].map(k => pz(56 + k * 14, 44, 11, 11, k === 1 ? 'var(--or)' : T + (k === 0 ? '.8)' : '.2)'))).join('')}
-    ${[42, 34, 26].map((an, k) => pz(56, 64 + k * 8, an, 4, T + '.24)', 2)).join('')}</svg>`,
-
-  /* trabajos sueltos que terminan en columnas con estado */
-  tablero: () => `<svg viewBox="0 0 160 104" aria-hidden="true">${tapa()}
-    ${[0,1,2].map(c => pz(56 + c * 19, 15, 16, 4, T + '.5)', 2)).join('')}
-    ${[[0,0],[0,1],[1,0],[1,1],[1,2],[2,0]].map(([c, f]) =>
-      pz(56 + c * 19, 25 + f * 15, 16, 11, (c === 2 && f === 0) ? 'var(--or)' : T + '.16)')).join('')}
-    ${[0,1,2].map(c => `<line class="ap" x1="${56 + c * 19}" y1="88" x2="${72 + c * 19}" y2="88"
-      stroke="${T}.22)" stroke-width="1.2"/>`).join('')}</svg>`,
-};
+/* El libro es el mismo objeto que en el resto del sitio: la tapa de verdad,
+   con su lomo, su código y su contratapa. No un dibujo que se le parezca.
+   Entra de canto, mostrando el lomo, y gira hasta darte la tapa a medida que
+   la tarjeta llega al centro: del problema al producto, con el mismo gesto. */
+const libro = p => `<div class="box">
+  <div class="f front">${ORBIT.cover(p)}</div>
+  <div class="f side">${ORBIT.wm({color:'#F2EFE8'}, false)}</div>
+  <div class="f lside"></div>
+  <div class="f top"></div><div class="f bottom"></div></div>`;
 
 $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
   <div class="cab">
     <span class="n">${String(i+1).padStart(2,'0')} / ${String(PROB.length).padStart(2,'0')}</span>
     <span class="tipo">${L(...q.rubro)}</span>
   </div>
-  <div class="dia">${DIBUJOS[q.dibujo]()}</div>
-  <p class="prob"><span class="flecha">&gt;</span><span>
-    <span class="dec" data-l="es" data-txt="${esc(q.cita[0])}"></span><span class="dec" data-l="en" data-txt="${esc(q.cita[1])}"></span>
-  </span></p>
+  <p class="relato">${q.relato.map(([es, en], j) =>
+    `<span class="l" style="--i:${j}">${L(es, en)}</span>`).join('')}</p>
+  <div class="escena">${P[i] ? libro(P[i]) : ''}</div>
   <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
 </article>`).join('');
 
 /* El dedo manda: --orden de cada tarjeta sale de lo cerca que está del
    centro del riel. Se actualiza en cada cuadro mientras se desliza, así el
-   orden se arma y se desarma siguiendo el gesto. */
-const GLIFOS = 'ABCDEF0123456789#%&/\\<>[]{}*+=·';
-/* Descifra de izquierda a derecha: lo ya resuelto se lee, en el borde va un
-   bloque que hace de cabezal y lo que falta es ruido que se renueva solo. */
-function descifrar(tarjeta, p) {
-  tarjeta.querySelectorAll('.dec').forEach(el => {
-    const real = el.dataset.txt || '';
-    if (!real) return;
-    if (p >= .999) { if (el.textContent !== real) el.textContent = real; return; }
-    const corte = Math.round(p * real.length);
-    let salida = '';
-    for (let i = 0; i < real.length; i++) {
-      if (i < corte) salida += real[i];
-      else if (i === corte) salida += '▉';
-      else salida += real[i] === ' ' ? ' ' : GLIFOS[(Math.random() * GLIFOS.length) | 0];
-    }
-    el.textContent = salida;
-  });
-}
-
-/* El dedo manda: --orden de cada tarjeta sale de lo cerca que está del
-   centro del riel. Se actualiza en cada cuadro mientras se desliza, así el
-   descifrado y el dibujo se arman y se desarman siguiendo el gesto. */
+   relato y el libro se arman y se desarman siguiendo el gesto. */
 (function ordenarConElDedo() {
   const riel = $('#rielM'), tarjetas = $$('.m-slide', riel);
   if (!tarjetas.length) return;
@@ -526,13 +461,12 @@ function descifrar(tarjeta, p) {
       const suave = p * p * (3 - 2 * p);
       t.style.setProperty('--orden', suave.toFixed(3));
       t.style.setProperty('--caos', (1 - suave).toFixed(3));
-      descifrar(t, suave);
     });
   }
 
   if (RM) {
     tarjetas.forEach(t => {
-      t.style.setProperty('--orden', 1); t.style.setProperty('--caos', 0); descifrar(t, 1);
+      t.style.setProperty('--orden', 1); t.style.setProperty('--caos', 0);
     });
     return;
   }
@@ -541,16 +475,6 @@ function descifrar(tarjeta, p) {
   const pedir = () => { if (!pedido) { pedido = true; requestAnimationFrame(() => { pedido = false; medir(); }); } };
   riel.addEventListener('scroll', pedir, {passive:true});
   addEventListener('resize', pedir);
-
-  /* el ruido de lo que falta descifrar se renueva solo, para que se vea vivo
-     y no congelado, pero únicamente mientras la sección está a la vista */
-  let vivo = false, reloj = 0;
-  const latir = () => { if (!vivo) return; medir(); reloj = setTimeout(latir, 70); };
-  new IntersectionObserver(([e]) => {
-    vivo = e.isIntersecting;
-    clearTimeout(reloj);
-    if (vivo) latir();
-  }, {rootMargin:'160px'}).observe($('#metodo'));
 
   medir();
 })();
