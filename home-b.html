@@ -53,10 +53,11 @@
 
 /* ---- 01 entrada ---- */
 .p-entrada .marca{font-size:clamp(58px,19vw,210px);line-height:.78;letter-spacing:-.05em}
-.p-entrada .sub{font-size:clamp(19px,5vw,34px);font-weight:800;letter-spacing:-.04em;text-transform:uppercase;line-height:1.05;max-width:14ch}
+.p-entrada .sub{font-size:clamp(27px,7.6vw,52px);font-weight:800;letter-spacing:-.045em;text-transform:uppercase;line-height:1;max-width:12ch;margin:0}
 .p-entrada .sub .it{color:var(--ac)}
 .p-entrada p{margin:0;max-width:30ch;font-size:15.5px;line-height:1.5;opacity:.65}
-.p-entrada .foto{position:absolute;inset:0;background:url(assets/img/landing.jpg) center/cover;opacity:.22;z-index:-1}
+.p-entrada .foto{position:absolute;inset:0;background:url(assets/img/landing.jpg) center/cover;opacity:.3;z-index:0}
+.p-entrada>*:not(.foto){position:relative;z-index:1}
 .p-entrada .foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--k),rgba(13,13,14,.4) 45%,var(--k))}
 
 /* ---- deslizables ---- */
@@ -105,7 +106,8 @@
 
 /* ---- 06 y 07 ---- */
 .p-medida p,.p-cierre p{margin:0;max-width:34ch;font-size:15.5px;line-height:1.5;opacity:.68}
-.p-cierre .ring{position:absolute;left:50%;top:50%;width:min(140vh,150vw);translate:-50% -50%;color:#161617;z-index:-1}
+.p-cierre .ring{position:absolute;left:50%;top:50%;width:min(140vh,150vw);translate:-50% -50%;color:#161617;z-index:0}
+.p-cierre>*:not(.ring){position:relative;z-index:1}
 
 .pant .acts{display:flex;gap:10px;flex-wrap:wrap}
 @media (min-width:900px){
