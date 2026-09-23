@@ -58,6 +58,27 @@ export default async function handler(req, res) {
     } catch (e) { mp.error = String(e).slice(0, 120); }
   }
 
+  /* con ?check=brevo miramos el plan y los remitentes dados de alta.
+     Nunca devolvemos la clave. */
+  let brevo = null;
+  if (req.query?.check === 'brevo' && process.env.BREVO_API_KEY) {
+    const pedir = async ruta => {
+      const r = await fetch(`https://api.brevo.com/v3/${ruta}`, { headers: { 'api-key': process.env.BREVO_API_KEY, accept: 'application/json' } });
+      return r.ok ? r.json() : { error: `${r.status}` };
+    };
+    try {
+      const [cuenta, remitentes, bloqueados] = await Promise.all([
+        pedir('account'), pedir('senders'), pedir('smtp/blockedContacts?limit=50'),
+      ]);
+      brevo = {
+        empresa: cuenta?.companyName || null,
+        plan: (cuenta?.plan || []).map(p => `${p.type}${p.credits != null ? ` (${p.credits})` : ''}`),
+        remitentes: (remitentes?.senders || []).map(x => ({ nombre: x.name, email: x.email, activo: x.active })),
+        bloqueadosTransaccionales: (bloqueados?.contacts || []).map(c => ({ email: c.email, motivo: c.reason?.code || null })),
+      };
+    } catch (e) { brevo = { error: String(e).slice(0, 160) }; }
+  }
+
   res.status(200).json({
     session: hasSecret(), database: hasKV,
     mercadopago: Boolean(process.env.MP_ACCESS_TOKEN),
@@ -67,6 +88,7 @@ export default async function handler(req, res) {
     paypalWebhook: Boolean(process.env.PAYPAL_WEBHOOK_ID),
     email: Boolean(process.env.BREVO_API_KEY || process.env.RESEND_API_KEY),
     emailVia: process.env.BREVO_API_KEY ? 'brevo' : (process.env.RESEND_API_KEY ? 'resend' : null),
+    ...(brevo ? { brevo } : {}),
     emailFrom: FROM(),
     listas: { clientes: Boolean(process.env.BREVO_LIST_CLIENTES), newsletter: Boolean(process.env.BREVO_LIST_NEWSLETTER) },
     admin: Boolean(process.env.ADMIN_EMAILS),
