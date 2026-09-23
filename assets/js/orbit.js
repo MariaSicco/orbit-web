@@ -198,6 +198,16 @@ function mountDrawer() {
   paintCart();
 }
 
+/* ---------- medición anónima de visitas ----------
+   Cuenta páginas vistas sin cookies, sin identificadores y sin seguir a
+   nadie entre sitios. Por eso no hace falta pedir consentimiento. */
+window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };
+(() => {
+  const m = document.createElement('script');
+  m.defer = true; m.src = '/_vercel/insights/script.js';
+  document.head.append(m);
+})();
+
 /* ---------- sesión abierta ---------- */
 /* La cookie orbit_user la pone el servidor al entrar y se borra sola al cerrar el navegador. */
 const readCookie = name => {
