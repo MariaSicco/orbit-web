@@ -3,6 +3,7 @@ import { hasKV } from './_lib/kv.js';
 import { hasSecret } from './_lib/auth.js';
 import { getCatalog } from './_lib/catalog.js';
 import { blobReady, signedPut, signedGet, newPath, borrarPrueba } from './_lib/blob.js';
+import { createHash } from 'node:crypto';
 import { FROM } from './_lib/email.js';
 export default async function handler(req, res) {
   let CAT = {};
@@ -12,13 +13,24 @@ export default async function handler(req, res) {
   if (req.query?.check === 'blob' && blobReady()) {
     const ruta = newPath('prueba', 'prueba.txt');
     try {
-      const url = await signedPut(ruta, { maxBytes: 4096, minutes: 2 });
-      const put = await fetch(url, { method: 'PUT', headers: { 'content-type': 'text/plain' }, body: 'orbit ok' });
+      /* subimos bytes binarios de verdad y comparamos el resultado byte a byte */
+      const bytes = new Uint8Array(64 * 1024);
+      for (let i = 0; i < bytes.length; i++) bytes[i] = (i * 31 + 7) & 0xff;
+      const hash = b => createHash('sha256').update(b).digest('hex').slice(0, 16);
+      const url = await signedPut(ruta, { maxBytes: 1024 * 1024, minutes: 2 });
+      const put = await fetch(url, { method: 'PUT', headers: { 'content-type': 'application/zip' }, body: bytes });
       if (!put.ok) throw new Error(`subida ${put.status} ${(await put.text()).slice(0, 120)}`);
       const leer = await fetch(await signedGet(ruta, { minutes: 2 }));
-      const texto = (await leer.text()).trim();
+      const vuelta = new Uint8Array(await leer.arrayBuffer());
       await borrarPrueba(ruta);
-      archivosProbado = texto === 'orbit ok' ? 'ok' : `leyó "${texto.slice(0, 40)}"`;
+      archivosProbado = {
+        subidos: bytes.length,
+        recibidos: vuelta.length,
+        iguales: hash(bytes) === hash(vuelta),
+        tipo: leer.headers.get('content-type'),
+        disposicion: leer.headers.get('content-disposition'),
+        estadoLectura: leer.status,
+      };
     } catch (e) {
       archivosProbado = String(e).slice(0, 200);
       await borrarPrueba(ruta);
