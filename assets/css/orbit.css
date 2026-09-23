@@ -255,7 +255,7 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .pcard .price{font-weight:600;font-size:18px;font-variant-numeric:tabular-nums}
 .pgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2vw,28px)}
 @media (max-width:1000px){.pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media (max-width:480px){.pgrid{grid-template-columns:1fr}}
+@media (max-width:620px){.pgrid{grid-template-columns:1fr}}
 
 /* 3D box */
 .boxstage{perspective:1400px;display:grid;place-items:center;min-height:clamp(420px,46vw,600px);cursor:grab;touch-action:pan-y;position:relative;background:radial-gradient(60% 60% at 50% 55%,#2a2a2d 0,var(--k) 70%)}

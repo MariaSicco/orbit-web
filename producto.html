@@ -13,7 +13,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=44">
+<link rel="stylesheet" href="assets/css/orbit.css?v=45">
 <style>
 .pd{padding-top:calc(100px + env(safe-area-inset-top,0px))}
 .crumb{display:flex;gap:10px;margin-bottom:24px}
@@ -23,6 +23,8 @@
 .pd-info h1{font-size:clamp(52px,6.6vw,110px);margin:14px 0 0}
 .pd-price{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:26px 0 18px;padding-top:16px;border-top:1px solid var(--k3)}
 .pd-price b{font-size:clamp(34px,3.4vw,52px);font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+/* en el celular el precio va en su renglón: al competir con la aclaración se partía */
+@media (max-width:620px){.pd-price{flex-direction:column;align-items:flex-start;gap:6px}.pd-price b{white-space:nowrap}}
 .pd-buy{display:flex;flex-direction:column;gap:10px}
 .pd-buy .btn{justify-content:center;padding:18px 20px;font-size:16px}
 .pd-trust{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin-top:22px}
@@ -84,9 +86,9 @@
 </section>
 </main>
 <div class="buybar" id="buybar" aria-hidden="true"></div>
-<script src="assets/js/products.js?v=44"></script>
+<script src="assets/js/products.js?v=45"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=44"></script>
+<script src="assets/js/orbit.js?v=45"></script>
 <script>
 (() => {
 const {C, $, L, tr, sym, card, buyBtn, mountBox, reveal, P, FAM, ACC, money} = ORBIT;
