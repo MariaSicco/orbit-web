@@ -1,0 +1,11 @@
+# orbitando.com.ar
+User-agent: *
+Allow: /
+
+# páginas privadas o sin sentido para buscadores
+Disallow: /admin
+Disallow: /biblioteca
+Disallow: /gracias
+Disallow: /api/
+
+Sitemap: https://www.orbitando.com.ar/sitemap.xml

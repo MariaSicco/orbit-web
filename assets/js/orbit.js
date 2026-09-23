@@ -53,7 +53,7 @@ function follow(g, target) {
 const P = window.ORBIT_PRODUCTS || [], FAM = window.ORBIT_FAMILIES || {};
 const ACC = {blue:C.blue, or:C.or, ac:C.ac, b:C.k};
 const money = n => `${window.ORBIT_CURRENCY || 'USD'} ${n}`;
-const url = p => `producto.html?id=${p.id}`;
+const url = p => `/p/${p.id}`;
 const bookSpine = (p, wmColor) => `<div class="spine">${wm({color:wmColor}, false)}<span class="mono sp-code">${p.code}</span></div>`;
 const pages = '<span class="pages" aria-hidden="true"></span>';
 const soonBadge = p => p.status === 'soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : '';

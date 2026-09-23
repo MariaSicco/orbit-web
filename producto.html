@@ -13,7 +13,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=42">
+<link rel="stylesheet" href="assets/css/orbit.css?v=43">
 <style>
 .pd{padding-top:calc(100px + env(safe-area-inset-top,0px))}
 .crumb{display:flex;gap:10px;margin-bottom:24px}
@@ -84,13 +84,14 @@
 </section>
 </main>
 <div class="buybar" id="buybar" aria-hidden="true"></div>
-<script src="assets/js/products.js?v=42"></script>
+<script src="assets/js/products.js?v=43"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=42"></script>
+<script src="assets/js/orbit.js?v=43"></script>
 <script>
 (() => {
 const {C, $, L, tr, sym, card, buyBtn, mountBox, reveal, P, FAM, ACC, money} = ORBIT;
-const id = new URLSearchParams(location.search).get('id');
+const id = window.ORBIT_ID || new URLSearchParams(location.search).get('id')
+  || (location.pathname.match(/\/p\/([\w-]+)/) || [])[1];
 const p = P.find(x => x.id === id) || P[0];
 const [fam] = FAM[p.family] || [''];
 const acc = ACC[p.accent] || C.blue;

@@ -8,10 +8,14 @@
 import { kvGet, kvSet } from './kv.js';
 
 export const CATALOG = {
-  'ob-001': { code: 'OB—001', name: 'Content System',     usd: 39, ars: 39000 },
-  'ob-002': { code: 'OB—002', name: 'Creator Library',    usd: 49, ars: 49000 },
-  'ob-003': { code: 'OB—003', name: 'Business OS',        usd: 59, ars: 59000 },
-  'ob-004': { code: 'OB—004', name: 'AI Workflow System', usd: 69, ars: 69000, soon: true },
+  'ob-001': { code: 'OB—001', name: 'Content System',     usd: 39, ars: 39000, foto: 'hands',
+    bajada: 'Un sistema completo para planificar, producir y publicar contenido sin empezar de cero.' },
+  'ob-002': { code: 'OB—002', name: 'Creator Library',    usd: 49, ars: 49000, foto: 'studio',
+    bajada: 'Una biblioteca curada de recursos gráficos listos para usar en proyectos reales.' },
+  'ob-003': { code: 'OB—003', name: 'Business OS',        usd: 59, ars: 59000, foto: 'arch',
+    bajada: 'El sistema operativo para pequeños negocios: clientes, proyectos, finanzas y procesos en un solo lugar.' },
+  'ob-004': { code: 'OB—004', name: 'AI Workflow System', usd: 69, ars: 69000, soon: true, foto: 'corridor',
+    bajada: 'Workflows de IA probados para investigar, escribir, diseñar y automatizar con criterio.' },
 };
 
 const OVER_KEY = 'orbit:catalog';
