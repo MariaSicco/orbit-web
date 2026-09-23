@@ -35,7 +35,7 @@ export default async function handler(req, res) {
       application_context: {
         brand_name: 'Orbit', user_action: 'PAY_NOW',
         shipping_preference: 'NO_SHIPPING',   /* son productos digitales */
-        landing_page: 'NO_PREFERENCE',
+        landing_page: 'GUEST_CHECKOUT',
         return_url: `${site}/api/paypal-capture`, cancel_url: `${site}/productos`,
       },
     }),
