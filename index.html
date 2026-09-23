@@ -16,7 +16,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=33">
+<link rel="stylesheet" href="assets/css/orbit.css?v=34">
 <style>
 /* hero — el ORBIT gigante del manual */
 .hero{height:100svh;min-height:600px;display:flex;flex-direction:column;justify-content:space-between;padding-top:calc(84px + env(safe-area-inset-top,0px));padding-bottom:24px;isolation:isolate}
@@ -253,8 +253,8 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 <section class="sec dark hero">
   <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
   <div class="wrap top">
-    <p class="mono" style="margin:0">Digital tools<br>for a brighter<br>creative tomorrow.</p>
-    <p class="mono" style="margin:0;text-align:right">OB—000<br>Digital goods<br>Est. 2026</p>
+    <p class="mono" style="margin:0"><span data-l="es">Herramientas digitales<br>para un mañana<br>más creativo.</span><span data-l="en">Digital tools<br>for a brighter<br>creative tomorrow.</span></p>
+    <p class="mono" style="margin:0;text-align:right">OB—000<br><span data-l="es">Productos digitales<br>Desde 2026</span><span data-l="en">Digital goods<br>Est. 2026</span></p>
   </div>
   <div class="wrap" style="position:relative">
     <h1 class="word" id="heroWord" aria-label="ORBIT"></h1>
@@ -273,7 +273,7 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 
 <!-- SEGUNDA PANTALLA: franja + banda foto -->
 <section class="screen2">
-<div class="dark"><div class="ticker" data-ticker="Ideas in motion|Tools that move|Build what’s next|Enter the orbit|From idea to system|Make better things"></div></div>
+<div class="dark"><div class="ticker" data-ticker-es="Orden en movimiento|Ideas que se mueven|Construí lo que sigue|Entrá en órbita|De la idea al sistema|Hacer mejores cosas" data-ticker-en="Order in motion|Ideas that move|Build what’s next|Enter the orbit|From idea to system|Make better things"></div></div>
 <div class="pband light">
   <div class="photo" data-photo="landing" role="img" data-aria-es="Arquitectura curva de hormigón" data-aria-en="Curved concrete architecture"></div>
   <div class="ring" data-sym='{"ring":"b","dot":"blue","gap":64,"rot":120}' aria-hidden="true"></div>
@@ -388,8 +388,8 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 <section class="band">
   <div class="photo" data-photo="figure" role="img" data-aria-es="Diseñadora armando un sistema en la pared de su estudio" data-aria-en="Designer building a system on her studio wall"></div>
   <div class="txt">
-    <div class="m"><span class="mono">OB—002</span><span class="mono" style="text-align:right">Same creators.<br>Bigger ideas.<br>New tools.</span></div>
-    <h2 class="display">Enter<br>the<br><span class="it">orbit.</span></h2>
+    <div class="m"><span class="mono">OB—002</span><span class="mono" style="text-align:right"><span data-l="es">Mismas personas.<br>Ideas más grandes.<br>Herramientas nuevas.</span><span data-l="en">Same creators.<br>Bigger ideas.<br>New tools.</span></span></div>
+    <h2 class="display"><span data-l="es">Entrá<br>en<br><span class="it">órbita.</span></span><span data-l="en">Enter<br>the<br><span class="it">orbit.</span></span></h2>
     <div class="m"><span class="mono"><span data-l="es">No vendemos archivos.<br>Vendemos herramientas para hacer.</span><span data-l="en">We don’t sell files.<br>We make tools for doing.</span></span><a class="btn btn-line" href="nosotros.html" style="color:var(--k)"><span data-l="es">Conocé Orbit</span><span data-l="en">Meet Orbit</span> <span class="ar">→</span></a></div>
   </div>
 </section>
@@ -418,9 +418,9 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 </section>
 
 </main>
-<script src="assets/js/products.js?v=33"></script>
+<script src="assets/js/products.js?v=34"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=33"></script>
+<script src="assets/js/orbit.js?v=34"></script>
 <script>
 (() => {
 const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow, reveal, toast, money, P, FAM, url, RM} = ORBIT;

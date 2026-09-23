@@ -255,14 +255,14 @@ const foot = document.createElement('footer');
 foot.className = 'foot';
 foot.innerHTML = `<div class="wrap">
   <div style="display:flex;justify-content:space-between;gap:20px"><span class="mono">OB—000</span><span class="mono" style="text-align:right">${L('Ideas<br>Recursos<br>Crecimiento<br>Libertad','Ideas<br>Resources<br>Growth<br>Freedom')}</span></div>
-  <h2 class="display" style="margin-top:40px">Enter<br>the orbit.</h2>
+  <h2 class="display" style="margin-top:40px">${L('Entrá<br>en órbita.','Enter<br>the orbit.')}</h2>
   <div class="cols">
     <div><span class="mono dim">${L('Productos','Products')}</span>${P.map(p => `<a href="${url(p)}">${p.code} ${p.name}</a>`).join('')}</div>
     <div><span class="mono dim">${L('Familias','Families')}</span>${Object.entries(FAM).map(([k,[n]]) => `<a href="productos.html#${k}">${n}</a>`).join('')}</div>
     <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="index.html#a-medida">${L('Pedidos a medida','Custom requests')}</a><a href="${session() ? 'biblioteca.html' : 'acceso.html'}">${L('Mi cuenta','My account')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
     <div><span class="mono dim">${L('Contacto','Contact')}</span><a href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a><a href="#">Instagram</a><a href="#">Newsletter</a></div>
   </div>
-  <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">Orden en movimiento.</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>
+  <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">${L('Orden en movimiento.','Order in motion.')}</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>
 </div>`;
 document.body.append(foot);
 
@@ -278,7 +278,15 @@ addEventListener('scroll', topShow, {passive:true}); topShow();
 /* ---------- placeholders declarativos ---------- */
 $$('[data-sym]').forEach(el => { const o = JSON.parse(el.dataset.sym || '{}'); if (o.ring && C[o.ring]) o.ring = C[o.ring]; if (o.dot && C[o.dot]) o.dot = C[o.dot]; el.innerHTML = sym(o, 'sym', 'width:100%;height:auto'); });
 $$('[data-photo]').forEach(el => el.style.backgroundImage = `url(assets/img/${el.dataset.photo}.jpg?v=12)`);
-$$('[data-ticker]').forEach(el => { const h = el.dataset.ticker.split('|').map(t => `<span>${t}</span><i>·</i>`).join(''); el.innerHTML = `<div>${h}${h}</div>`; });
+function pintarTickers() {
+  $$('[data-ticker], [data-ticker-es]').forEach(el => {
+    const frases = el.dataset['ticker' + (lang() === 'en' ? 'En' : 'Es')] || el.dataset.ticker || '';
+    const h = frases.split('|').map(t => `<span>${t}</span><i>·</i>`).join('');
+    el.innerHTML = `<div>${h}${h}</div>`;
+  });
+}
+pintarTickers();
+addEventListener('orbit:lang', pintarTickers);
 
 /* ---------- reveal (solo lo que está debajo de la primera pantalla) ---------- */
 function reveal(rootEl=document) {
