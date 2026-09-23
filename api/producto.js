@@ -44,7 +44,12 @@ export default async function handler(req, res) {
 <script>window.ORBIT_ID=${JSON.stringify(id)}</script>
 `;
 
+  /* La página se sirve en /p/<id>, una carpeta más abajo, así que todas
+     las rutas relativas —estilos, scripts y los enlaces que arma el
+     JavaScript— dejarían de resolver. <base> las ancla a la raíz. */
   html = html
+    .replace('<head>', '<head>\n<base href="/">')
+    .replace(/href="#/g, `href="/p/${id}#`)
     .replace(/<title>.*?<\/title>/, `<title>${esc(titulo)}</title>`)
     .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(bajada)}">`)
     .replace('<meta name="theme-color"', meta + '<meta name="theme-color"');
