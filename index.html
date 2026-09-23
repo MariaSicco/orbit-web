@@ -26,7 +26,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=43">
+<link rel="stylesheet" href="assets/css/orbit.css?v=44">
 <style>
 /* hero — el ORBIT gigante del manual */
 .hero{height:100svh;min-height:600px;display:flex;flex-direction:column;justify-content:space-between;padding-top:calc(84px + env(safe-area-inset-top,0px));padding-bottom:24px;isolation:isolate}
@@ -179,9 +179,11 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 .post{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:6px;font-size:12px;line-height:1.2;display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:transform .2s}
 .post:hover{transform:translateY(-2px)}
 .post .st{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;align-self:flex-start}
-@media (max-width:640px){.cal{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:860px){.cal{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:560px){.cal{grid-template-columns:repeat(2,minmax(0,1fr))}.cal .d{min-height:130px}}
 /* kanban */
 .kan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.kan{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .kan .col{background:#f6f4ef;padding:8px;min-height:250px;display:flex;flex-direction:column;gap:6px}
 .kan .col>span{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:4px}
 .deal{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:8px;font-size:13px;line-height:1.25;cursor:pointer;transition:transform .2s}
@@ -193,6 +195,7 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 @media (max-width:640px){.kan{grid-template-columns:1fr 1fr}}
 /* biblioteca */
 .lib{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.lib{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .asset{aspect-ratio:1/1;position:relative;overflow:hidden;cursor:pointer;display:grid;place-items:center;container-type:inline-size}
 .asset .tag{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.85);color:var(--k);padding:2px 5px}
 .asset .ok{position:absolute;right:6px;top:6px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:12px;transform:scale(0);transition:transform .25s var(--ease)}
@@ -428,9 +431,9 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 </section>
 
 </main>
-<script src="assets/js/products.js?v=43"></script>
+<script src="assets/js/products.js?v=44"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=43"></script>
+<script src="assets/js/orbit.js?v=44"></script>
 <script>
 (() => {
 const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow, reveal, toast, money, P, FAM, url, RM} = ORBIT;

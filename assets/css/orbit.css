@@ -26,6 +26,8 @@ svg{display:block}
 .it{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.02em;text-transform:none}
 .dim{opacity:.55}
 .display{font-weight:800;text-transform:uppercase;letter-spacing:-.05em;line-height:.84;text-wrap:balance;margin:0}
+/* con líneas apiladas y poco ancho, .84 le come la tilde a la Ñ y los signos de apertura */
+@media (max-width:760px){.display{line-height:.94}}
 .display .it{letter-spacing:-.03em}
 .lead{font-size:clamp(17px,1.5vw,20px);line-height:1.45;max-width:46ch;text-wrap:pretty}
 p{text-wrap:pretty}
@@ -160,6 +162,12 @@ html.gate-on body>main,html.gate-on body>.nav,html.gate-on body>.foot{visibility
 .totop:hover,.totop:focus-visible{background:var(--b);color:var(--k)}
 .totop svg{width:34px;height:34px;flex:none;transition:transform .3s var(--ease)}
 .totop:hover svg{transform:translateY(-3px)}
+/* en el celular queda solo el círculo: la etiqueta tapaba texto */
+@media (max-width:760px){
+  .totop{height:44px;width:44px;padding:0;justify-content:center;bottom:calc(14px + env(safe-area-inset-bottom,0px))}
+  .totop span{display:none}
+  .totop svg{width:26px;height:26px}
+}
 body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 
 /* reveal */
