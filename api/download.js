@@ -16,12 +16,17 @@ export default async function handler(req, res) {
   const file = await fileUrlFor(id);
   if (!file) return res.status(503).json({ error: 'file_not_configured', message: `Falta cargar el archivo de ${id} (panel de administración o ${envFileName(id)})` });
 
+  /* con ?url=1 devolvemos el destino en JSON: así el navegador pide el
+     archivo una sola vez, en vez de gastar la URL firmada verificando. */
+  const soloUrl = req.query?.url === '1';
+
   if (isBlobRef(file)) {
     try {
-      return res.redirect(302, await signedGet(refPath(file)));
+      const url = await signedGet(refPath(file));
+      return soloUrl ? res.status(200).json({ ok: true, url }) : res.redirect(302, url);
     } catch (e) {
       return res.status(500).json({ error: 'no_pudimos_firmar', detail: String(e).slice(0, 200) });
     }
   }
-  res.redirect(302, file);
+  return soloUrl ? res.status(200).json({ ok: true, url: file }) : res.redirect(302, file);
 }

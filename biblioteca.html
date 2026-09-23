@@ -13,7 +13,7 @@
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=28">
+<link rel="stylesheet" href="assets/css/orbit.css?v=29">
 <style>
 .pan{padding-inline:var(--pad);padding-top:calc(104px + env(safe-area-inset-top,0px));padding-bottom:clamp(60px,8vw,120px);min-height:100svh}
 .pan .wrap{max-width:1440px;margin-inline:auto}
@@ -221,9 +221,9 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=28"></script>
+<script src="assets/js/products.js?v=29"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=28"></script>
+<script src="assets/js/orbit.js?v=29"></script>
 <script>
 (async () => {
 const {$, $$, L, tr, cover, toast, P, url} = ORBIT;
@@ -338,9 +338,9 @@ document.addEventListener('click', async e => {
   if (!b) return;
   const old = b.innerHTML; b.innerHTML = tr('Preparando…', 'Preparing…');
   try {
-    const r = await fetch('/api/download?id=' + b.dataset.dl, { redirect: 'follow' });
-    if (r.ok && r.url && !r.url.includes('/api/download')) { location.href = r.url; b.innerHTML = old; return; }
+    const r = await fetch('/api/download?url=1&id=' + b.dataset.dl);
     const d = await r.json().catch(() => ({}));
+    if (r.ok && d.ok && d.url) { location.href = d.url; b.innerHTML = old; return; }
     toast(d.error === 'file_not_configured'
       ? tr('Ese archivo todavía no está subido. Escribinos y te lo mandamos.', 'That file isn’t uploaded yet. Write to us and we’ll send it.')
       : tr('No pudimos abrir la descarga.', 'We couldn’t start the download.'));
