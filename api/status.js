@@ -100,6 +100,15 @@ export default async function handler(req, res) {
           : elegido.eventos.includes('PAYMENT.CAPTURE.COMPLETED') || elegido.eventos.includes('*') ? 'ok'
           : 'le falta el evento PAYMENT.CAPTURE.COMPLETED';
       } else pp.webhooks = { error: `${r.status}` };
+      /* con &captura=<id> miramos un cobro puntual: si trae el número de
+         pedido, el problema no está en lo que manda PayPal */
+      if (req.query?.captura) {
+        const c = await fetch(`${paypalBase()}/v2/payments/captures/${String(req.query.captura).slice(0, 40)}`, { headers: { Authorization: `Bearer ${token}` } });
+        const cd = await c.json();
+        pp.captura = c.ok
+          ? { estado: cd.status, monto: cd.amount?.value, moneda: cd.amount?.currency_code, custom_id: cd.custom_id || null, invoice_id: cd.invoice_id || null, fecha: cd.create_time }
+          : { error: `${c.status} ${String(cd.name || '').slice(0, 60)}` };
+      }
     } catch (e) { pp.credenciales = 'fallaron: ' + String(e).slice(0, 120); }
   }
 
