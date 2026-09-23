@@ -34,7 +34,10 @@
 }
 @media (prefers-reduced-motion:reduce){ html{scroll-snap-type:none} }
 
-.pant{min-height:100svh;display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,34px);
+/* svh es el alto con toda la barra del navegador desplegada; en Safari,
+   con la barra compacta, la pantalla es más alta y asomaba la sección de
+   abajo. dvh sigue el alto real en todo momento. */
+.pant{min-height:100svh;min-height:100dvh;display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,34px);
   padding:calc(96px + env(safe-area-inset-top,0px)) var(--pad) calc(78px + env(safe-area-inset-bottom,0px));position:relative;overflow:hidden}
 .pant .eti{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;--op:.5;opacity:var(--op,1)}
 .pant h2{font-size:clamp(44px,11.5vw,120px);margin:0}
@@ -170,17 +173,25 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .m-slide .cab{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
 .m-slide .tipo{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.45;text-align:right}
 /* el cuerpo de la tarjeta entra cuando la diapositiva queda a la vista */
+/* El dibujo cuenta el problema sin palabras y se resuelve con el mismo gesto:
+   las piezas entran desparramadas y se acomodan al llegar al centro. */
+.m-slide .dia{height:clamp(104px,17vh,146px);width:100%}
+.m-slide .dia svg{width:100%;height:100%;overflow:visible}
+.m-slide .dia .pz{transform-box:fill-box;transform-origin:50% 50%;will-change:transform;
+  transform:translate(calc(var(--dx,0) * var(--caos) * 1px),calc(var(--dy,0) * var(--caos) * 1px))
+            rotate(calc(var(--rot,0) * var(--caos) * 1deg))}
+/* lo que solo existe cuando ya hay orden */
+.m-slide .dia .ap{opacity:calc((var(--orden) - .45) * 1.9)}
+/* lo que solo existe mientras hay desorden */
+.m-slide .dia .des{opacity:calc(var(--caos) * 1.1 - .1)}
+
 /* la herramienta aparece recién cuando el problema terminó de ordenarse */
-.m-slide .cuerpo{display:grid;gap:14px;opacity:calc((var(--orden) - .55) * 2.6);
-  transform:translateY(calc(var(--caos) * 14px))}
-.m-slide .tit{font-weight:800;font-size:clamp(21px,5.4vw,30px);letter-spacing:-.04em;
-  text-transform:uppercase;line-height:1;margin:0}
-.m-slide .porque{margin:0;font-size:14.5px;line-height:1.5;opacity:.7;max-width:34ch}
-.m-slide .arregla{margin:0;padding-top:13px;border-top:1px solid rgba(13,13,14,.18);
-  display:grid;gap:3px}
+.m-slide .arregla{margin:0;padding-top:14px;border-top:1px solid rgba(13,13,14,.18);
+  display:grid;gap:4px;opacity:calc((var(--orden) - .55) * 2.6);
+  transform:translateY(calc(var(--caos) * 12px))}
 .m-slide .arregla i{font-family:var(--mono);font-size:10px;letter-spacing:.11em;
   text-transform:uppercase;opacity:.45;font-style:normal}
-.m-slide .arregla b{font-weight:700;font-size:15.5px;letter-spacing:-.01em;line-height:1.25}
+.m-slide .arregla b{font-weight:700;font-size:16.5px;letter-spacing:-.015em;line-height:1.3}
 @media (prefers-reduced-motion:reduce){
   .m-slide{--orden:1;--caos:0}
   .m-slide .w{transform:none}
@@ -221,7 +232,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   /* en pantallas grandes las secciones dejan de ser de alto completo, pero la
      portada sí tiene que llenar la pantalla: si no, asoma la sección clara
      de abajo y la portada se ve cortada */
-  .p-entrada{min-height:100vh;padding-block:calc(104px + 2vh) calc(80px + 2vh)}
+  .p-entrada{min-height:100vh;min-height:100dvh;padding-block:calc(104px + 2vh) calc(80px + 2vh)}
   .riel>*{flex:0 0 min(40%,380px)}
   .avance{display:none}
 }
@@ -386,65 +397,88 @@ if (document.documentElement.classList.contains('gate-on')) {
 } else setTimeout(arrancar, 50);
 
 /* ---- método: un problema por diapositiva ---- */
-/* Cada tarjeta cuenta un tipo de problema, no un producto: qué se dice, qué
-   pasa en realidad y con qué clase de herramienta se arregla. Sin nombres
-   propios, así la sección sirve igual cuando cambie el catálogo. */
+/* Cada tarjeta cuenta un tipo de problema con un dibujo, la frase de quien
+   lo sufre y la clase de herramienta que lo arregla. Sin nombres propios,
+   así la sección sirve igual cuando cambie el catálogo. */
 const PROB = [
-  {
-    rubro:['Rutina','Routine'],
-    tit:['Empezar de cero','Starting from zero'],
+  { rubro:['Rutina','Routine'], dibujo:'hoja',
     cita:['“Empiezo de cero cada vez que tengo que publicar.”', '“I start from zero every time I have to publish.”'],
-    porque:['Cada pieza arranca en una hoja en blanco. El formato, el tono y la estructura se vuelven a decidir todas las veces, y el trabajo de ayer no le sirve al de hoy.',
-            'Every piece starts on a blank page. Format, tone and structure get decided again each time, and yesterday’s work never carries over.'],
-    arregla:['Un sistema con las decisiones ya tomadas', 'A system with the decisions already made'],
-  },
-  {
-    rubro:['Entregas','Deliveries'],
-    tit:['Buscar en vez de crear','Hunting instead of making'],
+    arregla:['Un sistema con las decisiones ya tomadas', 'A system with the decisions already made'] },
+  { rubro:['Entregas','Deliveries'], dibujo:'grilla',
     cita:['“Busco recursos media hora antes de entregar.”', '“I hunt for assets half an hour before the deadline.”'],
-    porque:['El archivo existe, pero nadie sabe dónde. Se va más tiempo en encontrar la tipografía, el color o la plantilla que en usarlos.',
-            'The file exists, but nobody knows where. More time goes into finding the typeface, the colour or the template than into using them.'],
-    arregla:['Una biblioteca ordenada y lista para usar', 'A tidy library, ready to use'],
-  },
-  {
-    rubro:['Herramientas','Tools'],
-    tit:['Todo disperso','Scattered everywhere'],
+    arregla:['Una biblioteca ordenada y lista para usar', 'A tidy library, ready to use'] },
+  { rubro:['Herramientas','Tools'], dibujo:'islas',
     cita:['“Tengo todo en varias apps y ninguna se habla.”', '“Everything lives in several apps and none of them talk.”'],
-    porque:['Las notas en un lado, los archivos en otro, el calendario en un tercero. Nada está perdido del todo, pero tampoco está junto.',
-            'Notes in one place, files in another, the calendar in a third. Nothing is quite lost, but nothing is together either.'],
-    arregla:['Un solo tablero donde todo se cruza', 'One board where everything meets'],
-  },
-  {
-    rubro:['Tiempo','Time'],
-    tit:['Hacer lo mismo dos veces','Doing the same thing twice'],
+    arregla:['Un solo tablero donde todo se cruza', 'One board where everything meets'] },
+  { rubro:['Tiempo','Time'], dibujo:'repes',
     cita:['“Pierdo horas en tareas repetidas.”', '“I lose hours on repetitive tasks.”'],
-    porque:['Renombrar, exportar, adaptar al formato de cada canal. Tareas que no se piensan, solo se hacen, y se comen las horas buenas del día.',
-            'Renaming, exporting, resizing for every channel. Tasks that need no thinking, only doing, and they eat the good hours of the day.'],
-    arregla:['Un flujo que hace solo la parte mecánica', 'A workflow that handles the mechanical part'],
-  },
+    arregla:['Un flujo que hace solo la parte mecánica', 'A workflow that handles the mechanical part'] },
 ];
-/* cada palabra arranca corrida y torcida, siempre igual: el desvío sale de
-   su posición, no del azar, así la tarjeta se ve idéntica en cada visita */
+
+/* cada palabra y cada pieza arrancan corridas y torcidas, siempre igual: el
+   desvío sale de su posición y no del azar, así la tarjeta se ve idéntica
+   en cada visita */
 const ruido = n => { const x = Math.sin(n * 127.1) * 43758.5453; return x - Math.floor(x); };
+const desvio = (n, ax, ay, ar) =>
+  `--dx:${((ruido(n * 3 + 1) - .5) * ax).toFixed(1)};--dy:${((ruido(n * 3 + 2) - .5) * ay).toFixed(1)};`
+  + `--rot:${((ruido(n * 3 + 3) - .5) * ar).toFixed(1)}`;
 const troce = frase => frase.split(' ').map((palabra, j) =>
-  `<i class="w" style="--dx:${((ruido(j * 3 + 1) - .5) * 30).toFixed(1)};`
-  + `--dy:${((ruido(j * 3 + 2) - .5) * 30).toFixed(1)};`
-  + `--rot:${((ruido(j * 3 + 3) - .5) * 11).toFixed(1)}">${palabra}</i>`).join(' ');
+  `<i class="w" style="${desvio(j, 30, 30, 11)}">${palabra}</i>`).join(' ');
 /* L() devuelve las dos lenguas ya marcadas, así que hay que partir cada una
    por separado: partir su salida rompería las etiquetas */
 const desarmar = (es, en) => L(troce(es), troce(en));
+
+/* ---- los dibujos: geometría simple que pasa del desorden al orden ----
+   Todos hablan el mismo idioma: rectángulos al aire sobre el fondo claro. */
+const T = 'rgba(13,13,14,'; /* tinta */
+const caja = (x, y, an, al, o, n, ax = 34, ay = 26, ar = 16) =>
+  `<rect class="pz" x="${x}" y="${y}" width="${an}" height="${al}" rx="1.5" fill="${T}${o})" style="${desvio(n, ax, ay, ar)}"/>`;
+
+const DIBUJOS = {
+  /* una hoja en blanco que se llena de estructura */
+  hoja: () => `<svg viewBox="0 0 160 96" aria-hidden="true">
+    <rect x="46" y="4" width="68" height="88" rx="2" fill="none" stroke="${T}.3)" stroke-width="1.4"/>
+    <g class="ap">
+      <rect x="54" y="13" width="34" height="7" rx="1" fill="${T}.85)"/>
+      <rect x="54" y="27" width="52" height="3.5" rx="1.75" fill="${T}.3)"/>
+      <rect x="54" y="35" width="52" height="3.5" rx="1.75" fill="${T}.3)"/>
+      <rect x="54" y="43" width="38" height="3.5" rx="1.75" fill="${T}.3)"/>
+      <rect x="54" y="56" width="24" height="26" rx="1.5" fill="var(--or)" opacity=".85"/>
+      <rect x="82" y="56" width="24" height="26" rx="1.5" fill="${T}.16)"/>
+    </g>
+    <g class="des"><rect x="60" y="44" width="40" height="1.4" fill="${T}.22)"/></g></svg>`,
+
+  /* nueve piezas sueltas que caen en una grilla */
+  grilla: () => `<svg viewBox="0 0 160 96" aria-hidden="true">${
+    [0,1,2,3,4,5,6,7,8].map(k => caja(44 + (k % 3) * 26, 12 + Math.floor(k / 3) * 26,
+      20, 20, k === 4 ? .85 : .2, k + 7, 58, 40, 26)).join('')}</svg>`,
+
+  /* islas separadas que terminan en un solo tablero */
+  islas: () => `<svg viewBox="0 0 160 96" aria-hidden="true">
+    <rect class="ap" x="30" y="30" width="100" height="36" rx="2" fill="none" stroke="${T}.3)" stroke-width="1.4"/>
+    <line class="ap" x1="38" y1="48" x2="122" y2="48" stroke="${T}.18)" stroke-width="1.2"/>
+    ${caja(38, 38, 22, 20, .85, 21, 62, 46, 22)}
+    ${caja(69, 38, 22, 20, .2,  22, 62, 46, 22)}
+    ${caja(100, 38, 22, 20, .2, 23, 62, 46, 22)}</svg>`,
+
+  /* lo mismo hecho cinco veces, que se vuelve una sola */
+  repes: () => `<svg viewBox="0 0 160 96" aria-hidden="true">
+    ${[0,1,2,3].map(k => `<rect class="pz des" x="48" y="30" width="36" height="36" rx="2"
+        fill="none" stroke="${T}.28)" stroke-width="1.4"
+        style="--dx:${(k + 1) * 17};--dy:${(k + 1) * 5};--rot:${(k + 1) * 3}"/>`).join('')}
+    <rect x="48" y="30" width="36" height="36" rx="2" fill="${T}.85)"/>
+    <g class="ap"><path d="M90 48h22m-6-5 6 5-6 5" fill="none" stroke="var(--or)" stroke-width="1.8"
+      stroke-linecap="round" stroke-linejoin="round"/></g></svg>`,
+};
 
 $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
   <div class="cab">
     <span class="n">${String(i+1).padStart(2,'0')} / ${String(PROB.length).padStart(2,'0')}</span>
     <span class="tipo">${L(...q.rubro)}</span>
   </div>
+  <div class="dia">${DIBUJOS[q.dibujo]()}</div>
   <p class="prob"><s>${desarmar(...q.cita)}</s></p>
-  <div class="cuerpo">
-    <h3 class="tit">${L(...q.tit)}</h3>
-    <p class="porque">${L(...q.porque)}</p>
-    <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
-  </div>
+  <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
 </article>`).join('');
 
 /* El dedo manda: --orden de cada tarjeta sale de lo cerca que está del
