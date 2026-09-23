@@ -2,16 +2,27 @@
 import { hasKV } from './_lib/kv.js';
 import { hasSecret } from './_lib/auth.js';
 import { getCatalog } from './_lib/catalog.js';
-import { blobReady, signedPut, newPath } from './_lib/blob.js';
+import { blobReady, signedPut, signedGet, newPath, borrarPrueba } from './_lib/blob.js';
 import { FROM } from './_lib/email.js';
 export default async function handler(req, res) {
   let CAT = {};
   try { CAT = await getCatalog(); } catch {}
-  /* con ?check=blob probamos de verdad que se pueda firmar una subida */
+  /* con ?check=blob hacemos el recorrido completo: firmar, subir, leer y borrar */
   let archivosProbado = null;
   if (req.query?.check === 'blob' && blobReady()) {
-    try { await signedPut(newPath('prueba', 'prueba.txt'), { maxBytes: 1024, minutes: 1 }); archivosProbado = 'ok'; }
-    catch (e) { archivosProbado = String(e).slice(0, 160); }
+    const ruta = newPath('prueba', 'prueba.txt');
+    try {
+      const url = await signedPut(ruta, { maxBytes: 4096, minutes: 2 });
+      const put = await fetch(url, { method: 'PUT', headers: { 'content-type': 'text/plain' }, body: 'orbit ok' });
+      if (!put.ok) throw new Error(`subida ${put.status} ${(await put.text()).slice(0, 120)}`);
+      const leer = await fetch(await signedGet(ruta, { minutes: 2 }));
+      const texto = (await leer.text()).trim();
+      await borrarPrueba(ruta);
+      archivosProbado = texto === 'orbit ok' ? 'ok' : `leyó "${texto.slice(0, 40)}"`;
+    } catch (e) {
+      archivosProbado = String(e).slice(0, 200);
+      await borrarPrueba(ruta);
+    }
   }
   res.status(200).json({
     session: hasSecret(), database: hasKV,
