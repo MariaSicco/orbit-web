@@ -28,10 +28,9 @@
    ============================================================ */
 
 @media (max-width:900px){
-  html{scroll-snap-type:y proximity;scroll-padding-top:0}
-  .pant{scroll-snap-align:start}
-  .pant.alta{scroll-snap-align:none}
-  .foot{scroll-snap-align:start}
+  /* Sin enganche: el scroll es libre. Con secciones de alto distinto,
+     cualquier snap termina peleando contra el dedo. */
+  html{scroll-padding-top:0}
 }
 @media (prefers-reduced-motion:reduce){ html{scroll-snap-type:none} }
 
@@ -314,106 +313,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
    es `.alta`, para las que no entran en una sola pantalla.
    ============================================================ */
 .pant.alta{justify-content:flex-start;height:auto}
-@media (max-width:900px){ .pant.alta{scroll-snap-stop:normal} }
 .pant.alta > .disc,.pant.alta > .peek,.pant.alta > .cus{margin-top:clamp(16px,2.6vh,30px)}
-
-/* mirá por dentro en la home: la ventana vive dentro de la lista, colgada
-   de la solapa abierta, y la demo va más apretada para no comerse dos pantallas */
-#por-dentro .peek{display:block}
-#por-dentro .pista2{margin:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
-  text-transform:uppercase;opacity:.45}
-#por-dentro .ptabs{display:block}
-#por-dentro .pfila{border-top:1px solid var(--k)}
-#por-dentro .pfila:last-child{border-bottom:1px solid var(--k)}
-#por-dentro .pfila button{border:0;width:100%;padding:clamp(11px,2vh,16px) 0;
-  grid-template-columns:70px 1fr auto;align-items:center}
-#por-dentro .pfila .sig{font-family:var(--mono);font-size:18px;line-height:1;opacity:.4;
-  transition:transform .35s var(--ease),opacity .3s ease}
-#por-dentro .pfila.abierta .sig{transform:rotate(45deg);opacity:1}
-#por-dentro .pfila.abierta button b{text-decoration:underline;text-decoration-thickness:3px;
-  text-underline-offset:6px;text-decoration-color:var(--blue)}
-#por-dentro .phueco:not(:empty){padding:0 0 clamp(14px,2.4vh,22px)}
-#por-dentro .win .body{min-height:0;padding:clamp(12px,3vw,20px);
-  max-height:min(46vh,430px);overflow:auto;overscroll-behavior:contain}
-/* El cuerpo scrollea solo, así que achicar las tarjetas no acorta la sección:
-   dos columnas y los títulos entran enteros. El pie se apila recién en
-   pantallas muy angostas, donde el botón y el precio sí se pisaban. */
-/* `.foot` es también la clase del pie del sitio, que pinta el texto en
-   hueso: adentro de la ventana, que es blanca, quedaba invisible. */
-#por-dentro .win .foot{gap:10px;padding:10px clamp(12px,3vw,20px);color:var(--k)}
-/* y el botón de compra venía como grilla y se le montaban el texto y el precio */
-#por-dentro .win .foot .btn{display:inline-flex;flex-wrap:wrap;gap:6px 10px;
-  white-space:normal;padding:11px 16px;font-size:14px}
-#por-dentro .win .foot > div:first-child{display:flex;align-items:baseline;gap:10px}
-#por-dentro .win .foot .price{font-size:18px}
-@media (max-width:400px){
-  #por-dentro .win .foot{flex-direction:column;align-items:stretch}
-  #por-dentro .win .foot .btn{width:100%;justify-content:center;text-align:center}
-}
-#por-dentro .win .bar{padding:8px 12px}
-#por-dentro .win .foot{padding:11px clamp(12px,3vw,20px)}
-#por-dentro .win .foot .price{font-size:20px}
-#por-dentro .cal{gap:5px}
-#por-dentro .cal .d{min-height:0;padding:7px;gap:5px}
-#por-dentro .cal .d .pz{padding:8px 9px}
-
-/* mirá por dentro */
-.peek{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(20px,3vw,48px);align-items:start}
-.ptabs{display:flex;flex-direction:column}
-.ptabs button{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:baseline;text-align:left;padding:16px 0;border-top:1px solid var(--k)}
-.ptabs button:last-child{border-bottom:1px solid var(--k)}
-.ptabs button b{font-weight:800;font-size:clamp(20px,2vw,30px);letter-spacing:-.035em;text-transform:uppercase;line-height:1}
-.ptabs button[aria-selected="true"] b{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:6px;text-decoration-color:var(--blue)}
-.win{background:#fff;border:1px solid rgba(13,13,14,.15);box-shadow:0 30px 70px -40px rgba(0,0,0,.45);overflow:hidden}
-.win .bar{display:flex;align-items:center;gap:7px;padding:10px 14px;background:var(--k);color:var(--b)}
-.win .bar i{width:9px;height:9px;border-radius:50%;background:#444}
-.win .bar span{margin-left:10px}
-.win .body{padding:clamp(14px,2vw,24px);min-height:400px}
-.win .foot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:14px clamp(14px,2vw,24px);border-top:1px solid rgba(13,13,14,.1);background:var(--b)}
-.win .foot .price{font-weight:800;font-size:24px;letter-spacing:-.03em}
-.dhead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:14px}
-.dhead b{font-size:20px;letter-spacing:-.02em}
-/* calendario */
-.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
-.cal .d{min-height:170px;background:#f6f4ef;padding:6px;display:flex;flex-direction:column;gap:6px}
-.cal .d>span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;opacity:.6}
-.post{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:6px;font-size:12px;line-height:1.2;display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:transform .2s}
-.post:hover{transform:translateY(-2px)}
-.post .st{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;align-self:flex-start}
-@media (max-width:860px){.cal{grid-template-columns:repeat(4,minmax(0,1fr))}}
-@media (max-width:560px){.cal{grid-template-columns:repeat(2,minmax(0,1fr))}.cal .d{min-height:130px}}
-/* kanban */
-.kan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-@media (max-width:560px){.kan{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.kan .col{background:#f6f4ef;padding:8px;min-height:250px;display:flex;flex-direction:column;gap:6px}
-.kan .col>span{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:4px}
-.deal{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:8px;font-size:13px;line-height:1.25;cursor:pointer;transition:transform .2s}
-.deal:hover{transform:translateY(-2px)}
-.deal b{display:block}
-.deal small{font-family:var(--mono);font-size:10px;opacity:.6}
-.kbar{height:8px;background:#eee;margin-top:14px;overflow:hidden}
-.kbar i{display:block;height:100%;background:var(--blue);transform-origin:left;transition:transform .5s var(--ease)}
-@media (max-width:640px){.kan{grid-template-columns:1fr 1fr}}
-/* biblioteca */
-.lib{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-@media (max-width:560px){.lib{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.asset{aspect-ratio:1/1;position:relative;overflow:hidden;cursor:pointer;display:grid;place-items:center;container-type:inline-size}
-.asset .tag{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.85);color:var(--k);padding:2px 5px}
-.asset .ok{position:absolute;right:6px;top:6px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:12px;transform:scale(0);transition:transform .25s var(--ease)}
-.asset.sel .ok{transform:scale(1)}
-@media (max-width:640px){.lib{grid-template-columns:repeat(3,minmax(0,1fr))}}
-/* workflow IA */
-.wf{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:14px}
-.wf .steps{display:flex;flex-direction:column;gap:6px}
-.wf .steps button{text-align:left;padding:10px;background:#f6f4ef;display:flex;gap:10px;align-items:baseline;font-weight:600;font-size:14px}
-.wf .steps button[aria-pressed="true"]{background:var(--k);color:var(--b)}
-.wf label{display:block;margin-bottom:6px}
-.wf input{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px solid rgba(13,13,14,.25);background:#fff;color:var(--k);margin-bottom:12px}
-.wf input:focus{outline:2px solid var(--blue);outline-offset:0}
-.prompt{background:var(--k);color:var(--b);padding:14px;font-family:var(--mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;min-height:180px}
-.prompt mark{background:none;color:var(--ac)}
-@media (max-width:640px){.wf{grid-template-columns:1fr}}
-@media (max-width:860px){.peek{grid-template-columns:1fr}}
 
 /* disciplinas */
 .disc{border-top:1px solid var(--k)}
@@ -477,20 +377,31 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .qback{margin-top:22px}
 @media (max-width:860px){.quiz,.qres{grid-template-columns:1fr}.qres .cover{max-width:280px}}
 
-/* a medida en la home: el mismo formulario, apretado para que entre de un saque */
-#a-medida .cus{gap:clamp(18px,3vw,56px)}
+/* a medida: el formulario deja de ser un bloque blanco pegado abajo.
+   Va sobre el mismo fondo oscuro y los campos se dibujan a línea, como
+   el resto de la página. */
+#a-medida{gap:clamp(16px,2.8vh,30px)}
+#a-medida .cus{gap:clamp(20px,3.4vw,60px)}
 #a-medida .lead{margin-top:14px;font-size:clamp(14px,3.7vw,16px);line-height:1.42;max-width:40ch}
 #a-medida .ruta{margin:14px 0 0;font-family:var(--mono);font-size:11px;letter-spacing:.04em;
-  line-height:1.7;opacity:.55;max-width:36ch}
-#a-medida .cform{gap:13px;padding:clamp(14px,3.4vw,30px)}
-#a-medida .cform .two{grid-template-columns:1fr 1fr;gap:10px}
-#a-medida .cform label,#a-medida .cform .mono{font-size:9.5px;letter-spacing:.1em}
-#a-medida .cform label{margin-bottom:5px}
-#a-medida .cform input,#a-medida .cform textarea{padding:9px 11px;font-size:16px}
-#a-medida .cform textarea{min-height:64px}
-#a-medida .cform .opts{gap:6px}
-#a-medida .cform .opts .chip{padding:6px 10px;font-size:9.5px;letter-spacing:.06em}
-#a-medida .cform .send{padding-top:11px}
+  line-height:1.7;opacity:.5;max-width:36ch}
+#a-medida .cform{background:none;color:inherit;padding:0;gap:clamp(15px,2.4vh,24px)}
+#a-medida .cform .two{grid-template-columns:1fr 1fr;gap:clamp(12px,3.4vw,20px)}
+#a-medida .cform label,#a-medida .cform .mono{font-size:9.5px;letter-spacing:.11em;opacity:.5}
+#a-medida .cform label{margin-bottom:3px}
+#a-medida .cform input,#a-medida .cform textarea{background:none;color:var(--b);
+  border:0;border-bottom:1px solid rgba(242,239,232,.28);border-radius:0;
+  padding:8px 0;font-size:16px}
+#a-medida .cform input:focus,#a-medida .cform textarea:focus{outline:none;
+  border-bottom-color:var(--ac)}
+#a-medida .cform textarea{min-height:56px}
+#a-medida .cform .opts{gap:7px}
+#a-medida .cform .opts .chip{color:var(--b);border-color:rgba(242,239,232,.28);
+  padding:7px 11px;font-size:9.5px;letter-spacing:.07em}
+#a-medida .cform .opts .chip[aria-pressed="true"]{background:var(--ac);color:var(--k);
+  border-color:var(--ac)}
+#a-medida .cform .send{border-top:1px solid rgba(242,239,232,.16);padding-top:clamp(12px,2vh,18px)}
+
 
 /* a medida */
 .cus{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,4vw,72px);align-items:start}
@@ -560,25 +471,14 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   </div>
 </section>
 
-<!-- 06 MIRÁ POR DENTRO -->
-<section class="pant luz alta p-dentro" id="por-dentro">
-  <div class="eti"><span><span data-l="es">Mirá por dentro<br>Vista previa interactiva</span><span data-l="en">Look inside<br>Interactive preview</span></span><span style="text-align:right"><span data-l="es">Probalo antes<br>de comprarlo</span><span data-l="en">Try it before<br>you buy it</span></span></div>
-  <h2 class="display" style="font-size:clamp(34px,8.6vw,84px);margin:0"><span data-l="es">Probá cómo <span class="it">funciona.</span></span><span data-l="en">See how it <span class="it">works.</span></span></h2>
-  <p class="pista2"><span data-l="es">Tocá un producto y probalo acá mismo.</span><span data-l="en">Tap a product and try it right here.</span></p>
-  <div class="peek">
-    <div class="ptabs" role="tablist" id="ptabs"></div>
-    <div class="win" id="win"></div>
-  </div>
-</section>
-
-<!-- 07 CÓMO COMPRAR -->
+<!-- 06 CÓMO COMPRAR -->
 <section class="pant dark p-comprar">
   <div class="eti"><span><span data-l="es">Cómo comprar<br>4 pasos</span><span data-l="en">How to buy<br>4 steps</span></span><span style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></span></div>
   <h2 class="display"><span data-l="es">Comprás hoy.<br>Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today.<br>Use it <span class="it">today.</span></span></h2>
   <div class="flow4" id="flow4"></div>
 </section>
 
-<!-- 08 A MEDIDA -->
+<!-- 07 A MEDIDA -->
 <section class="pant dark alta p-medida" id="a-medida">
   <div class="eti"><span><span data-l="es">A medida<br>OB—X00</span><span data-l="en">Custom<br>OB—X00</span></span><span style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></span></div>
   <div class="cus">
@@ -603,10 +503,10 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   </div>
 </section>
 
-<!-- 09 CIERRE -->
+<!-- 08 CIERRE -->
 <section class="pant dark p-cierre">
   <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
-  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>09</span></div>
+  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>08</span></div>
   <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it" style="color:var(--ac)">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it" style="color:var(--ac)">A brighter tomorrow.</span></span></h2>
   <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
   <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir un sistema</span><span data-l="en">Pick a system</span> <span class="ar">↑</span></a></div>
