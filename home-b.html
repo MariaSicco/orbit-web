@@ -207,7 +207,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   text-transform:uppercase;opacity:.5;margin-top:4px}
 #metodo .util .ar{font-size:18px;opacity:.4}
 /* el puente: la frase del catálogo que explica por qué esa herramienta */
-#metodo .puente{margin:0;font-size:clamp(13px,3.5vw,15px);line-height:1.38;opacity:.62}
+#metodo .puente{display:block;margin-top:7px;font-size:clamp(13px,3.5vw,15px);line-height:1.38;opacity:.62}
 #metodo .muda{transition:opacity .3s ease,transform .38s var(--ease)}
 #metodo .muda.sale{opacity:0;transform:translateY(-8px)}
 #metodo .barra2{display:flex;align-items:center;justify-content:space-between;gap:12px}
@@ -239,6 +239,8 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .b2 #metodo .fondo::after{background:linear-gradient(180deg,rgba(13,13,14,1) 0,rgba(13,13,14,.45) 55%,rgba(13,13,14,.86) 100%)}
 
 /* ---------- C · los cuatro a la vista, uno abierto ---------- */
+.c2m #metodo .fondo i.on{opacity:.24}
+.c2m #metodo .fondo::after{background:linear-gradient(180deg,rgba(13,13,14,.88) 0,rgba(13,13,14,.7) 40%,rgba(13,13,14,.94) 100%)}
 .c2m #metodo .lista{display:grid;flex:1;align-content:center}
 .c2m #metodo .lista li{list-style:none;border-top:1px solid rgba(242,239,232,.16)}
 .c2m #metodo .lista li:last-child{border-bottom:1px solid rgba(242,239,232,.16)}
@@ -611,8 +613,8 @@ const M2 = ({'1':'a2','2':'b2','3':'c2m'})[new URLSearchParams(location.search).
       <div class="linea"></div>
       <div class="muda">
         <span class="rotulo">${L('Herramienta','Tool')}</span>
-        <a class="util" href="#"><span class="tapa"></span><span><b></b><small></small></span><span class="ar">→</span></a>
-        ${conPuente ? '<p class="puente"></p>' : ''}
+        <a class="util" href="#"><span class="tapa"></span><span><b></b><small></small>${
+          conPuente ? '<span class="puente"></span>' : ''}</span><span class="ar">→</span></a>
       </div>
       <div class="linea"></div>${barra}
     </div>`;
@@ -685,7 +687,7 @@ const M2 = ({'1':'a2','2':'b2','3':'c2m'})[new URLSearchParams(location.search).
       const relleno = b.firstElementChild;           /* reinicia el relleno */
       relleno.style.animation = 'none'; void relleno.offsetWidth; relleno.style.animation = '';
     });
-    cuenta.textContent = num(i + 1);
+    cuenta.textContent = num(i);
   }
   /* la tarjeta entera se cruza: nunca queda una fila dibujada y vacía */
   function poner(i) {
