@@ -168,108 +168,179 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .pista-x .barra i{position:absolute;inset:0;background:var(--blue);transform-origin:left;transform:scaleX(.25);transition:transform .25s var(--ease)}
 
 /* =========================================================
-   SEGUNDA PANTALLA — tres caminos para comparar (?m2=1..3)
-   A la prueba llena el hueco · B la tarjeta sube y aparece el puente
-   C los cuatro problemas a la vista, uno abierto
-   En las tres: la rotación se frena al tocar y no se cuenta cuántos hay.
+   SEGUNDA PANTALLA — siete versiones distintas (?m2=1..7)
+   1 estante · 2 fábrica · 3 buscador · 4 elegí · 5 lomos · 6 color · 7 número
+   Cada una resuelve la misma pregunta —de qué problema nace cada
+   herramienta— con un mecanismo propio, no con otro acomodo del mismo bloque.
    ========================================================= */
-#metodo{background:var(--k);color:var(--b);overflow:hidden;gap:clamp(12px,2vh,22px)}
+#metodo{background:var(--k);color:var(--b);overflow:hidden}
 #metodo h2{margin:0}
-#metodo .lead{margin:0;font-size:clamp(15.5px,4.1vw,19px);line-height:1.42;max-width:36ch;opacity:.7}
-#metodo .fondo{position:absolute;inset:0;z-index:0}
-#metodo .fondo i{position:absolute;inset:0;background-size:cover;background-position:center;
-  opacity:0;transition:opacity 1.1s ease;transform:scale(1.06)}
-#metodo .fondo i.on{opacity:.5}
-#metodo .fondo::after{content:"";position:absolute;inset:0;
-  background:linear-gradient(180deg,rgba(13,13,14,.82) 0,rgba(13,13,14,.42) 38%,rgba(13,13,14,.9) 100%)}
-#metodo .simbolo{position:absolute;right:-13%;top:-14%;width:min(54vw,290px);z-index:0;
-  color:var(--b);opacity:.17;pointer-events:none}
-#metodo > *:not(.fondo):not(.simbolo){position:relative;z-index:1}
+#metodo .dicho{margin:0;font-family:var(--serif);font-style:italic;line-height:1.1;
+  font-size:clamp(26px,7.4vw,46px);letter-spacing:-.015em;max-width:15ch}
 #metodo .ent2{opacity:0;transform:translateY(14px);
   transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
 .cuenta #metodo .ent2{opacity:1;transform:none}
-.cuenta #metodo .lead.ent2{opacity:.7}
+#metodo .cambia{transition:opacity .28s ease,transform .36s var(--ease)}
+#metodo .cambia.sale{opacity:0;transform:translateY(-10px)}
 
-/* la tarjeta, compartida por A y B */
-#metodo .tarjeta{background:var(--b);color:var(--k);padding:clamp(14px,3.4vw,20px);
-  display:grid;gap:clamp(9px,1.5vh,13px);box-shadow:0 30px 70px -40px rgba(0,0,0,.85)}
-#metodo .tarjeta .rotulo{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
-  text-transform:uppercase;opacity:.45;display:block;margin-bottom:5px}
-#metodo .tarjeta .dicho{margin:0;font-family:var(--serif);font-style:italic;
-  font-size:clamp(18px,4.8vw,24px);line-height:1.16}
-#metodo .tarjeta .linea{height:1px;background:rgba(13,13,14,.16)}
+/* pasos: cuatro rayitas, la del turno se llena sola */
+#metodo .pasos{display:flex;gap:6px;align-items:center}
+#metodo .pasos button{flex:1;height:2px;padding:0;border:0;cursor:pointer;position:relative;
+  background:rgba(242,239,232,.22);overflow:hidden}
+#metodo .pasos button i{position:absolute;inset:0;background:var(--b);transform:scaleX(0);transform-origin:left}
+#metodo .pasos button[aria-current="true"] i{animation:llenar 5s linear forwards}
+#metodo.quieto .pasos button i{animation-play-state:paused}
+@keyframes llenar{to{transform:scaleX(1)}}
+
+/* el renglón de la herramienta, compartido por varias versiones */
 #metodo .util{display:grid;grid-template-columns:auto 1fr auto;gap:clamp(12px,3.4vw,18px);
   align-items:center;text-decoration:none;color:inherit}
-#metodo .util .cover{width:clamp(48px,13vw,62px);box-shadow:0 8px 18px -10px rgba(13,13,14,.8)}
-#metodo .util b{font-weight:800;font-size:clamp(16px,4.3vw,20px);letter-spacing:-.03em;
-  line-height:1.05;text-transform:uppercase;display:block}
-#metodo .util small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
-  text-transform:uppercase;opacity:.5;margin-top:4px}
-#metodo .util .ar{font-size:18px;opacity:.4}
-/* el puente: la frase del catálogo que explica por qué esa herramienta */
-#metodo .puente{display:block;margin-top:7px;font-size:clamp(13px,3.5vw,15px);line-height:1.38;opacity:.62}
-#metodo .muda{transition:opacity .3s ease,transform .38s var(--ease)}
-#metodo .muda.sale{opacity:0;transform:translateY(-8px)}
-#metodo .barra2{display:flex;align-items:center;justify-content:space-between;gap:12px}
-#metodo .puntos{display:flex;gap:7px}
-#metodo .puntos button{width:9px;height:9px;border-radius:50%;padding:0;border:0;cursor:pointer;
-  background:rgba(13,13,14,.2);position:relative;overflow:hidden}
-#metodo .puntos button i{position:absolute;inset:0;background:var(--blue);transform:scaleX(0);
-  transform-origin:left;border-radius:50%}
-#metodo .puntos button[aria-current="true"] i{animation:llenar 5s linear forwards}
-#metodo.quieto .puntos button i{animation-play-state:paused}
-@keyframes llenar{to{transform:scaleX(1)}}
-#metodo .barra2 .cuenta{font-family:var(--mono);font-size:10px;letter-spacing:.1em;opacity:.45}
+#metodo .util .tapa{width:clamp(46px,12.5vw,60px);display:block}
+#metodo .util b{font-weight:800;font-size:clamp(15px,4.2vw,19px);letter-spacing:-.03em;
+  line-height:1.06;text-transform:uppercase;display:block}
+#metodo .util small{display:block;font-size:clamp(12.5px,3.4vw,14px);line-height:1.36;
+  opacity:.62;margin-top:5px}
+#metodo .util .ar{font-size:18px;opacity:.45}
+#metodo .util.sinfoto{grid-template-columns:1fr auto}
 
-/* ---------- A · la prueba llena el hueco ---------- */
-.a2 #metodo .prueba{flex:1;display:grid;place-items:center;min-height:clamp(160px,24vh,240px);
-  border:1px solid rgba(242,239,232,.2);position:relative;overflow:hidden}
-.a2 #metodo .prueba span{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;opacity:.4;text-align:center;padding:0 24px;line-height:1.6}
-.a2 #metodo .prueba::before,.a2 #metodo .prueba::after{content:"";position:absolute;
-  background:rgba(242,239,232,.14)}
-.a2 #metodo .prueba::before{left:0;right:0;top:50%;height:1px}
-.a2 #metodo .prueba::after{top:0;bottom:0;left:50%;width:1px}
-.a2 #metodo .tarjeta{margin-top:0}
+/* ---------- 1 · el estante que se llena ---------- */
+.m2-estante #metodo{justify-content:flex-start;gap:clamp(14px,2.4vh,26px)}
+.m2-estante #metodo .medio{flex:1;display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(12px,2vh,20px)}
+.m2-estante #metodo .quien{display:flex;align-items:center;gap:10px;font-family:var(--mono);
+  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.m2-estante #metodo .quien b{font-weight:400}
+.m2-estante #metodo .quien s{width:26px;height:1px;background:var(--ac);flex:none;display:block}
+.m2-estante #metodo .estante{display:grid;gap:0}
+.m2-estante #metodo .libros{display:flex;align-items:flex-end;gap:clamp(7px,2.2vw,13px)}
+.m2-estante #metodo .libros > a{display:block;flex:1 1 0;min-width:0;opacity:0;
+  transform:translateY(22px) rotate(-3deg);transform-origin:bottom center;
+  transition:opacity .45s ease,transform .7s cubic-bezier(.2,1.1,.3,1),flex-grow .55s var(--ease)}
+.m2-estante #metodo .libros > a.puesto{opacity:.46;transform:none}
+.m2-estante #metodo .libros > a.viva{opacity:1;flex-grow:1.7;transform:translateY(-12px)}
+.m2-estante #metodo .tabla{height:3px;background:var(--b);opacity:.85;
+  box-shadow:0 12px 26px -14px rgba(0,0,0,.9)}
+.m2-estante #metodo .apoyo{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;opacity:.4;padding-top:9px}
 
-/* ---------- B · la tarjeta sube y aparece el puente ---------- */
-.b2 #metodo .tarjeta{margin-top:0}
-.b2 #metodo .resto{flex:1;min-height:clamp(60px,12vh,120px)}
-.b2 #metodo .fondo{top:auto;height:42%}
-.b2 #metodo .fondo::after{background:linear-gradient(180deg,rgba(13,13,14,1) 0,rgba(13,13,14,.45) 55%,rgba(13,13,14,.86) 100%)}
+/* ---------- 2 · la tapa se fabrica sola ---------- */
+.m2-fabrica #metodo{justify-content:flex-start;gap:clamp(12px,2.2vh,22px)}
+.m2-fabrica #metodo .taller{flex:1;position:relative;display:grid;place-items:center;
+  border:1px solid rgba(242,239,232,.14);min-height:0}
+.m2-fabrica #metodo .taller::before,.m2-fabrica #metodo .taller::after{content:"";position:absolute;
+  background:rgba(242,239,232,.1)}
+.m2-fabrica #metodo .taller::before{left:0;right:0;top:50%;height:1px}
+.m2-fabrica #metodo .taller::after{top:0;bottom:0;left:50%;width:1px}
+.m2-fabrica #metodo .pieza{width:min(46vw,200px);position:relative;z-index:2}
+.m2-fabrica #metodo .pieza.arma{animation:armar .9s cubic-bezier(.4,0,.1,1) forwards}
+@keyframes armar{from{clip-path:inset(100% 0 0 0)}to{clip-path:inset(0)}}
+.m2-fabrica #metodo .escaner{position:absolute;left:0;right:0;height:2px;background:var(--ac);
+  opacity:0;z-index:3;box-shadow:0 0 22px 4px rgba(217,255,69,.45)}
+.m2-fabrica #metodo .escaner.pasa{animation:escanear .9s cubic-bezier(.4,0,.1,1)}
+@keyframes escanear{0%{top:100%;opacity:1}99%{opacity:1}100%{top:0;opacity:0}}
+.m2-fabrica #metodo .sello{position:absolute;left:12px;top:12px;font-family:var(--mono);
+  font-size:10px;letter-spacing:.14em;opacity:.5;z-index:3}
 
-/* ---------- C · los cuatro a la vista, uno abierto ---------- */
-.c2m #metodo .fondo i.on{opacity:.24}
-.c2m #metodo .fondo::after{background:linear-gradient(180deg,rgba(13,13,14,.88) 0,rgba(13,13,14,.7) 40%,rgba(13,13,14,.94) 100%)}
-.c2m #metodo .lista{display:grid;flex:1;align-content:center}
-.c2m #metodo .lista li{list-style:none;border-top:1px solid rgba(242,239,232,.16)}
-.c2m #metodo .lista li:last-child{border-bottom:1px solid rgba(242,239,232,.16)}
-.c2m #metodo .lista .fila4{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;
-  width:100%;appearance:none;background:none;border:0;padding:clamp(11px,2vh,16px) 0;
-  font:inherit;color:inherit;text-align:left;cursor:pointer}
-.c2m #metodo .lista .nn{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;opacity:.45}
-.c2m #metodo .lista .qq{font-family:var(--serif);font-style:italic;font-size:clamp(16px,4.3vw,20px);
-  line-height:1.2;transition:opacity .3s ease}
-.c2m #metodo .lista li:not(.on) .qq{opacity:.42}
-.c2m #metodo .cajon4{display:grid;grid-template-rows:0fr;transition:grid-template-rows .5s cubic-bezier(.3,0,.15,1)}
-.c2m #metodo .lista li.on .cajon4{grid-template-rows:1fr}
-.c2m #metodo .cajon4 > div{overflow:hidden;min-height:0}
-.c2m #metodo .dentro4{display:grid;grid-template-columns:auto 1fr;gap:clamp(12px,3.4vw,16px);
-  align-items:center;padding:0 0 clamp(13px,2.2vh,18px);text-decoration:none;color:inherit}
-.c2m #metodo .dentro4 .cover{width:clamp(44px,12vw,58px);box-shadow:0 8px 18px -10px rgba(0,0,0,.9)}
-.c2m #metodo .dentro4 b{font-weight:800;font-size:clamp(14px,3.8vw,17px);letter-spacing:-.025em;
-  text-transform:uppercase;line-height:1.1;display:block}
-.c2m #metodo .dentro4 small{display:block;font-size:clamp(12px,3.3vw,13.5px);line-height:1.35;
-  opacity:.6;margin-top:4px}
+/* ---------- 3 · buscador ---------- */
+.m2-buscador #metodo{justify-content:center;gap:clamp(16px,3vh,30px)}
+.m2-buscador #metodo .campo{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;
+  border-bottom:1px solid rgba(242,239,232,.3);padding-bottom:clamp(12px,2.2vh,18px)}
+.m2-buscador #metodo .campo .fl{font-family:var(--mono);font-size:clamp(16px,4.4vw,22px);
+  color:var(--ac);line-height:1.18}
+.m2-buscador #metodo .campo p{margin:0;font-family:var(--serif);font-style:italic;
+  font-size:clamp(22px,6.4vw,38px);line-height:1.16;letter-spacing:-.015em}
+.m2-buscador #metodo .cur{display:inline-block;width:.5em;height:1em;background:var(--ac);
+  vertical-align:-.12em;margin-left:.06em;animation:latir 1s steps(1,end) infinite}
+@keyframes latir{50%{opacity:0}}
+.m2-buscador #metodo .resu{opacity:0;transform:translateY(12px);
+  transition:opacity .4s ease,transform .5s var(--ease);display:grid;gap:clamp(11px,2vh,16px)}
+.m2-buscador #metodo .resu.on{opacity:1;transform:none}
+.m2-buscador #metodo .resu .rot{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  text-transform:uppercase;opacity:.45}
+.m2-buscador #metodo .resu .util{background:rgba(242,239,232,.06);padding:clamp(12px,3vw,16px);
+  border:1px solid rgba(242,239,232,.14)}
 
-/* selector de versiones de la segunda pantalla */
+/* ---------- 4 · ¿cuál de estos sos? ---------- */
+.m2-elegi #metodo{justify-content:flex-start;gap:clamp(14px,2.4vh,24px)}
+.m2-elegi #metodo h2{font-size:clamp(30px,8.4vw,56px);letter-spacing:-.035em;line-height:1.02}
+.m2-elegi #metodo h2 .it{color:var(--ac)}
+.m2-elegi #metodo .opciones{flex:1;display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(8px,1.4vh,14px);min-height:0}
+.m2-elegi #metodo .opciones button{appearance:none;background:none;color:inherit;font:inherit;
+  text-align:left;cursor:pointer;border:1px solid rgba(242,239,232,.2);border-radius:2px;
+  padding:clamp(13px,2.4vh,20px) clamp(13px,3.4vw,18px);
+  font-family:var(--serif);font-style:italic;font-size:clamp(16px,4.4vw,21px);line-height:1.18;
+  transition:background .25s ease,border-color .25s ease,opacity .3s ease}
+.m2-elegi #metodo .opciones button:hover{border-color:rgba(242,239,232,.5)}
+.m2-elegi #metodo.elegido .opciones{flex:none}
+.m2-elegi #metodo.elegido .opciones button{display:none}
+.m2-elegi #metodo.elegido .opciones button.mia{display:block;background:var(--ac);color:var(--k);
+  border-color:var(--ac)}
+.m2-elegi #metodo .salida{display:none;flex:1;flex-direction:column;justify-content:center;
+  gap:clamp(13px,2.4vh,20px);min-height:0}
+.m2-elegi #metodo.elegido .salida{display:flex}
+.m2-elegi #metodo .salida .grande{width:min(40vw,170px);align-self:flex-start}
+.m2-elegi #metodo .salida b{display:block;font-weight:800;text-transform:uppercase;
+  font-size:clamp(20px,5.6vw,30px);letter-spacing:-.035em;line-height:1.04}
+.m2-elegi #metodo .salida p{margin:0;font-size:clamp(14px,3.8vw,16px);line-height:1.4;opacity:.66;max-width:34ch}
+.m2-elegi #metodo .salida .irr{font-family:var(--mono);font-size:11px;letter-spacing:.1em;
+  text-transform:uppercase;color:var(--ac);text-decoration:none;display:inline-flex;gap:8px}
+.m2-elegi #metodo .devuelta{appearance:none;background:none;border:0;color:inherit;cursor:pointer;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.45;
+  padding:0;text-align:left;display:none}
+.m2-elegi #metodo.elegido .devuelta{display:block}
+
+/* ---------- 5 · lomos de biblioteca ---------- */
+.m2-lomos #metodo{justify-content:flex-start;gap:clamp(12px,2.2vh,22px)}
+.m2-lomos #metodo .biblio{flex:1;display:flex;gap:clamp(5px,1.4vw,9px);min-height:0;align-items:stretch}
+.m2-lomos #metodo .lomo{appearance:none;border:0;padding:0;cursor:pointer;position:relative;
+  flex:1 1 0;min-width:0;background:rgba(242,239,232,.07);color:var(--b);overflow:hidden;
+  transition:flex-grow .6s var(--ease),background .4s ease}
+.m2-lomos #metodo .lomo.viva{flex-grow:5.2;background:none}
+.m2-lomos #metodo .lomo .vert{position:absolute;inset:0;display:flex;align-items:center;
+  justify-content:center;transition:opacity .3s ease}
+.m2-lomos #metodo .lomo .vert span{writing-mode:vertical-rl;transform:rotate(180deg);
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  white-space:nowrap;opacity:.72}
+.m2-lomos #metodo .lomo.viva .vert{opacity:0}
+.m2-lomos #metodo .lomo .cara{position:absolute;inset:0;display:grid;place-items:center;
+  padding:clamp(8px,2vw,14px);opacity:0;transition:opacity .45s ease .12s}
+.m2-lomos #metodo .lomo.viva .cara{opacity:1}
+.m2-lomos #metodo .lomo .cara .env{display:block;width:100%}
+.m2-lomos #metodo .pie{display:grid;gap:8px}
+
+/* ---------- 6 · la pantalla cambia de color ---------- */
+.m2-color #metodo{background:var(--fondo,var(--k));color:var(--tinta,var(--b));
+  transition:background-color .7s var(--ease),color .7s var(--ease);
+  justify-content:flex-start;gap:clamp(14px,2.4vh,26px)}
+.m2-color #metodo .eti{opacity:.6}
+.m2-color #metodo .dicho{font-size:clamp(30px,8.8vw,60px);max-width:13ch;flex:none}
+.m2-color #metodo .escena{flex:1;display:flex;align-items:flex-end;justify-content:flex-end;min-height:0}
+.m2-color #metodo .obj{width:min(52vw,230px);transform:rotate(3deg);
+  transition:transform .7s var(--ease)}
+.m2-color #metodo .pasos button{background:currentColor;opacity:.25}
+.m2-color #metodo .pasos button i{background:currentColor}
+.m2-color #metodo .pasos button[aria-current="true"]{opacity:1}
+.m2-color #metodo .util small{opacity:.7}
+
+/* ---------- 7 · el número ---------- */
+.m2-numero #metodo{justify-content:flex-start;gap:clamp(12px,2vh,20px)}
+.m2-numero #metodo .dicho{font-size:clamp(19px,5.2vw,26px);opacity:.62;max-width:22ch}
+.m2-numero #metodo .cifra{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+.m2-numero #metodo .cifra b{font-weight:800;letter-spacing:-.06em;line-height:.8;
+  font-size:clamp(96px,38vw,220px);font-variant-numeric:tabular-nums;display:block}
+.m2-numero #metodo .cifra span{font-family:var(--mono);font-size:clamp(11px,3vw,13px);
+  letter-spacing:.16em;text-transform:uppercase;opacity:.5;margin-top:clamp(8px,1.6vh,14px);display:block}
+.m2-numero #metodo .cifra em{color:var(--ac);font-style:normal}
+
+/* selector temporal para comparar las siete */
 .selm2{position:fixed;right:10px;bottom:calc(56px + env(safe-area-inset-bottom,0px));z-index:60;
-  display:flex;gap:4px;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
-  text-transform:uppercase;background:rgba(13,13,14,.86);border:1px solid rgba(242,239,232,.2);
-  border-radius:999px;padding:5px 7px;color:var(--b);backdrop-filter:blur(8px)}
-.selm2 b{opacity:.45;font-weight:400;padding:0 3px}
-.selm2 a{color:inherit;opacity:.5;text-decoration:none;padding:3px 7px;border-radius:999px;line-height:1}
-.selm2 a.on{opacity:1;background:var(--or);color:var(--k)}
+  display:flex;gap:2px;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.04em;
+  background:rgba(13,13,14,.88);border:1px solid rgba(242,239,232,.2);
+  border-radius:999px;padding:4px 6px;color:#F2EFE8;backdrop-filter:blur(8px)}
+.selm2 b{opacity:.45;font-weight:400;padding:0 4px 0 2px}
+.selm2 a{color:inherit;opacity:.5;text-decoration:none;padding:3px 6px;border-radius:999px;line-height:1}
+.selm2 a.on{opacity:1;background:var(--or);color:#0D0D0E}
 
 /* =========================================================
    COLECCIÓN — cuatro formas de mostrarla (?c=1..4)
@@ -550,11 +621,11 @@ if (document.documentElement.classList.contains('gate-on')) {
 })();
 
 /* =========================================================
-   SEGUNDA PANTALLA — tres caminos para comparar (?m2=1..3)
-   1 · A la prueba llena el hueco   2 · B la tarjeta sube y aparece el puente
-   3 · C los cuatro problemas a la vista, uno abierto
-   El puente (por qué esa herramienta resuelve ese problema) sale del
-   `tagline` que ya está escrito en el catálogo y hasta ahora no se usaba.
+   SEGUNDA PANTALLA — siete versiones distintas (?m2=1..7)
+   1 estante · 2 fábrica · 3 buscador · 4 elegí · 5 lomos · 6 color · 7 número
+   Todas cuentan lo mismo —de qué problema nace cada herramienta— pero cada
+   una con un mecanismo propio. Los datos salen del catálogo real: el nombre,
+   el código, la tapa, la frase del `tagline` y el primer dato de `specs`.
    ========================================================= */
 const metodo = $('#metodo');
 const num = i => String(i + 1).padStart(2, '0');
@@ -567,10 +638,13 @@ const ENCASTELLANO = {
 };
 const enCastellano = p => L(...(ENCASTELLANO[p.id] || [p.name, p.name]));
 const puenteDe = p => (p.tagline ? L(p.tagline.es, p.tagline.en) : '');
-const formatoDe = p => {
-  const f = (p.specs || []).find(([et]) => et && et.es === 'Formato');
-  return f ? f[1] : '';
+/* el primer spec de cada producto es siempre una cantidad: 120 assets, 8 módulos… */
+const cifraDe = p => {
+  const s = (p.specs || [])[0];
+  if (!s) return ['', ''];
+  return [String(s[1]), typeof s[0] === 'string' ? s[0] : L(s[0].es, s[0].en)];
 };
+const idioma = () => (typeof ORBIT.lang === 'function' ? ORBIT.lang() : ORBIT.lang) || 'es';
 
 const ESCENAS = [
   [['No sé qué publicar esta semana.','I don’t know what to post this week.'], 'ob-001'],
@@ -578,164 +652,310 @@ const ESCENAS = [
   [['Mis clientes están en cinco lugares distintos.','My clients live in five different places.'], 'ob-003'],
   [['Pierdo horas en tareas repetidas.','I lose hours on repetitive tasks.'], 'ob-004'],
 ];
-const M2 = ({'1':'a2','2':'b2','3':'c2m'})[new URLSearchParams(location.search).get('m2')] || 'a2';
+const VERSIONES = ['estante','fabrica','buscador','elegi','lomos','color','numero'];
+const M2 = VERSIONES[(parseInt(new URLSearchParams(location.search).get('m2'), 10) || 1) - 1] || 'estante';
 
 (function segundaPantalla() {
   if (!metodo) return;
-  const fichas = ESCENAS.map(([, id]) => P.find(x => x.id === id)).filter(Boolean);
-  if (!fichas.length) return;
-  document.body.classList.add(M2);
+  const F = ESCENAS.map(([, id]) => P.find(x => x.id === id)).filter(Boolean);
+  if (!F.length) return;
+  document.body.classList.add('m2-' + M2);
+  metodo.className = 'pant';
 
-  const cabeza = `
-    <div class="fondo">${fichas.map((p, i) =>
-      `<i data-f="${i}" style="background-image:url(assets/img/${p.photo || 'arch'}.jpg)"></i>`).join('')}</div>
-    <div class="simbolo">${ORBIT.sym({ring:'currentColor', dot:'currentColor', gap:66}, 'sym')}</div>
-    <div class="eti ent2" style="--d:0s"><span>${L('Nuestro método','Our method')} — OB—000</span><span>${L('Caso por caso','Case by case')}</span></div>
-    <h2 class="display ent2" style="--d:.08s">${L('Problema<br>→ <span class="it" style="color:var(--or)">herramienta.</span>',
-                                                  'Problem<br>→ <span class="it" style="color:var(--or)">tool.</span>')}</h2>
-    <p class="lead ent2" style="--d:.16s">${L(
-      'Cada herramienta de Orbit nace de un problema real.',
-      'Every Orbit tool starts from a real problem.')}</p>`;
+  const frase = i => L(...ESCENAS[i][0]);
+  const fraseLisa = i => ESCENAS[i][0][idioma() === 'en' ? 1 : 0];
+  const precio = p => (p.status === 'soon' ? L('Pronto','Soon') : ORBIT.money(p.price));
+  const eti = der => `<div class="eti ent2" style="--d:0s"><span>${
+    L('Nuestro método','Our method')} — OB—000</span><span>${der}</span></div>`;
+  const pasos = `<div class="pasos ent2" style="--d:.3s">${F.map((_, i) =>
+    `<button type="button" aria-label="${i + 1}" data-e="${i}"><i></i></button>`).join('')}</div>`;
 
-  const barra = `
-      <div class="barra2">
-        <span class="puntos">${fichas.map((_, i) =>
-          `<button type="button" aria-label="${i + 1}" data-e="${i}"><i></i></button>`).join('')}</span>
-        <span class="cuenta"></span>
-      </div>`;
+  let cual = -1, reloj = 0, tocado = false, ir = () => {};
 
-  const tarjeta = conPuente => `
-    <div class="tarjeta ent2" style="--d:.26s">
-      <div class="muda">
-        <span class="rotulo">${L('Problema','Problem')}</span>
-        <p class="dicho"></p>
-      </div>
-      <div class="linea"></div>
-      <div class="muda">
-        <span class="rotulo">${L('Herramienta','Tool')}</span>
-        <a class="util" href="#"><span class="tapa"></span><span><b></b><small></small>${
-          conPuente ? '<span class="puente"></span>' : ''}</span><span class="ar">→</span></a>
-      </div>
-      <div class="linea"></div>${barra}
-    </div>`;
-
-  if (M2 === 'a2') {
-    metodo.className = 'pant';
-    metodo.innerHTML = cabeza + `
-      <div class="prueba ent2" style="--d:.22s"><span></span></div>` + tarjeta(false);
-  } else if (M2 === 'b2') {
-    metodo.className = 'pant';
-    metodo.innerHTML = cabeza + tarjeta(true) + '<div class="resto"></div>';
-  } else {
-    metodo.className = 'pant';
-    metodo.innerHTML = cabeza + `
-      <ul class="lista ent2" style="--d:.24s">${fichas.map((p, i) => `
-        <li data-e="${i}">
-          <button type="button" class="fila4">
-            <span class="nn">${num(i)}</span>
-            <span class="qq">${L(...ESCENAS[i][0])}</span>
-          </button>
-          <div class="cajon4"><div>
-            <a class="dentro4" href="${ORBIT.url(p)}">
-              <span class="tapa4">${ORBIT.cover(p)}</span>
-              <span>
-                <b>${enCastellano(p)}</b>
-                <small>${puenteDe(p)}</small>
-              </span>
-            </a>
-          </div></div>
-        </li>`).join('')}</ul>`;
-  }
-
-  const fondos = $$('.fondo i', metodo);
-  let cual = -1, reloj = 0, ocupado = false, tocado = false;
-
-  /* ---------- C: lista, sin rotación ---------- */
-  if (M2 === 'c2m') {
-    const items = $$('.lista li', metodo);
-    const abrir = i => items.forEach((li, k) => {
-      li.classList.toggle('on', k === i);
-      fondos[k] && fondos[k].classList.toggle('on', k === i);
-    });
-    items.forEach((li, i) => $('.fila4', li).onclick = () => abrir(i));
-    abrir(0);
-    presentar();
-    return;
-  }
-
-  /* ---------- A y B: la tarjeta que rota ---------- */
-  const mudas = $$('.muda', metodo),
-        dicho = $('.dicho', metodo), util = $('.util', metodo),
-        tapa = $('.util .tapa', metodo), nom = $('.util b', metodo), sub = $('.util small', metodo),
-        puente = $('.puente', metodo), prueba = $('.prueba span', metodo),
-        puntos = $$('.puntos button', metodo), cuenta = $('.cuenta', metodo);
-
-  function pintar(i) {
-    const p = fichas[i];
-    dicho.innerHTML = '“' + L(...ESCENAS[i][0]) + '”';
-    tapa.innerHTML = ORBIT.cover(p);
-    nom.innerHTML = enCastellano(p);
-    sub.innerHTML = `${p.code} · ${p.status === 'soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}`;
-    util.href = ORBIT.url(p);
-    if (puente) puente.innerHTML = puenteDe(p);
-    if (prueba) prueba.innerHTML =
-      L('Acá va la captura real del producto','Real product screenshot goes here') +
-      '<br><br>' + formatoDe(p);
-    fondos.forEach((f, k) => f.classList.toggle('on', k === i));
-    puntos.forEach((b, k) => {
+  function marcar(i) {
+    $$('.pasos button', metodo).forEach((b, k) => {
       b.setAttribute('aria-current', k === i ? 'true' : 'false');
-      const relleno = b.firstElementChild;           /* reinicia el relleno */
-      relleno.style.animation = 'none'; void relleno.offsetWidth; relleno.style.animation = '';
+      const r = b.firstElementChild;                 /* reinicia el relleno */
+      r.style.animation = 'none'; void r.offsetWidth; r.style.animation = '';
     });
-    cuenta.textContent = num(i);
   }
-  /* la tarjeta entera se cruza: nunca queda una fila dibujada y vacía */
-  function poner(i) {
-    if (i === cual || ocupado) return;
-    if (cual === -1) { cual = i; return pintar(i); }
-    cual = i; ocupado = true;
-    mudas.forEach(m => m.classList.add('sale'));
-    setTimeout(() => {
-      pintar(i);
-      mudas.forEach(m => m.classList.remove('sale'));
-      ocupado = false;
-    }, 320);
-  }
-  /* rota sola hasta que la persona toca algo: ahí manda ella */
-  const rodar = () => { clearInterval(reloj); if (!RM && !tocado) reloj = setInterval(() => poner((cual + 1) % fichas.length), 5000); };
   const frenar = () => { tocado = true; clearInterval(reloj); metodo.classList.add('quieto'); };
-  puntos.forEach((b, i) => b.onclick = () => { frenar(); poner(i); });
-  poner(0); rodar();
+  const rodar = ms => { clearInterval(reloj); if (!RM && !tocado) reloj = setInterval(() => ir((cual + 1) % F.length), ms || 5000); };
+  /* el texto nunca se dibuja a medias: sale entero y entra entero */
+  function cruzar(hacer) {
+    const cs = $$('.cambia', metodo);
+    if (!cs.length) return hacer();
+    cs.forEach(c => c.classList.add('sale'));
+    setTimeout(() => { hacer(); cs.forEach(c => c.classList.remove('sale')); }, 300);
+  }
+  function conElDedo() {
+    let x0 = null;
+    metodo.addEventListener('pointerdown', e => x0 = e.clientX);
+    metodo.addEventListener('pointerup', e => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0; x0 = null;
+      if (Math.abs(dx) > 46) { frenar(); ir((cual + (dx < 0 ? 1 : F.length - 1)) % F.length); }
+    });
+    $$('.pasos button', metodo).forEach((b, i) => b.onclick = () => { frenar(); ir(i); });
+  }
 
-  /* también se pasa con el dedo */
-  const t = $('.tarjeta', metodo);
-  let x0 = null;
-  t.addEventListener('pointerdown', e => x0 = e.clientX);
-  t.addEventListener('pointerup', e => {
-    if (x0 === null) return;
-    const dx = e.clientX - x0; x0 = null;
-    if (Math.abs(dx) > 46) { frenar(); poner((cual + (dx < 0 ? 1 : fichas.length - 1)) % fichas.length); }
-  });
-  presentar();
+  /* ---------- 1 · el estante que se llena ---------- */
+  function estante() {
+    metodo.innerHTML = eti(L('Un problema, un libro','One problem, one book')) + `
+      <div class="medio">
+        <p class="dicho cambia ent2" style="--d:.1s"></p>
+        <div class="quien cambia ent2" style="--d:.18s"><s></s><b></b></div>
+      </div>
+      <div class="estante ent2" style="--d:.24s">
+        <div class="libros">${F.map(p =>
+          `<a href="${ORBIT.url(p)}" aria-label="${p.name}">${ORBIT.cover(p)}</a>`).join('')}</div>
+        <div class="tabla"></div>
+        <div class="apoyo">${L('Así se arma la colección','This is how the collection grows')}</div>
+      </div>` + pasos;
+    const libros = $$('.libros > a', metodo), dicho = $('.dicho', metodo), quien = $('.quien b', metodo);
+    ir = i => {
+      if (i === cual) return;
+      cruzar(() => {
+        cual = i;
+        dicho.innerHTML = '“' + frase(i) + '”';
+        quien.innerHTML = enCastellano(F[i]) + ' · ' + F[i].code;
+        libros.forEach((l, k) => {
+          l.classList.toggle('puesto', k <= i);
+          l.classList.toggle('viva', k === i);
+        });
+      });
+      marcar(i); rodar();
+    };
+    ir(0); rodar(); conElDedo();
+  }
+
+  /* ---------- 2 · la tapa se fabrica sola ---------- */
+  function fabrica() {
+    metodo.innerHTML = eti(L('Así se arma','How it is built')) + `
+      <p class="dicho cambia ent2" style="--d:.1s"></p>
+      <div class="taller ent2" style="--d:.2s">
+        <span class="sello"></span>
+        <div class="pieza"></div>
+        <span class="escaner"></span>
+      </div>
+      <a class="util sinfoto cambia ent2" style="--d:.3s" href="#"><span><b></b><small></small></span><span class="ar">→</span></a>` + pasos;
+    const dicho = $('.dicho', metodo), pieza = $('.pieza', metodo), sello = $('.sello', metodo),
+          escaner = $('.escaner', metodo), util = $('.util', metodo),
+          nom = $('.util b', metodo), sub = $('.util small', metodo);
+    ir = i => {
+      if (i === cual) return;
+      cual = i;
+      const p = F[i];
+      cruzar(() => {
+        dicho.innerHTML = '“' + frase(i) + '”';
+        nom.innerHTML = enCastellano(p);
+        sub.innerHTML = puenteDe(p);
+        util.href = ORBIT.url(p);
+      });
+      sello.textContent = p.code;
+      pieza.innerHTML = ORBIT.cover(p);
+      pieza.classList.remove('arma'); escaner.classList.remove('pasa');
+      void pieza.offsetWidth;
+      pieza.classList.add('arma'); escaner.classList.add('pasa');
+      marcar(i); rodar();
+    };
+    ir(0); rodar(); conElDedo();
+  }
+
+  /* ---------- 3 · buscador ---------- */
+  function buscador() {
+    metodo.innerHTML = eti(L('Decilo con tus palabras','Say it in your own words')) + `
+      <div class="campo ent2" style="--d:.08s"><span class="fl">?</span><p></p></div>
+      <div class="resu ent2" style="--d:.16s">
+        <span class="rot">${L('Orbit responde','Orbit answers')}</span>
+        <a class="util" href="#"><span class="tapa"></span><span><b></b><small></small></span><span class="ar">→</span></a>
+      </div>` + pasos;
+    const linea = $('.campo p', metodo), resu = $('.resu', metodo), util = $('.util', metodo),
+          tapa = $('.util .tapa', metodo), nom = $('.util b', metodo), sub = $('.util small', metodo);
+    const cursor = document.createElement('span'); cursor.className = 'cur';
+    let tecla = 0, espera = 0;
+
+    ir = i => {
+      clearInterval(tecla); clearTimeout(espera); clearInterval(reloj);
+      cual = i; marcar(i);
+      resu.classList.remove('on');
+      const p = F[i], texto = fraseLisa(i);
+      let k = 0;
+      linea.textContent = ''; linea.appendChild(cursor);
+      tecla = setInterval(() => {
+        k++;
+        linea.textContent = texto.slice(0, k);
+        linea.appendChild(cursor);
+        if (k >= texto.length) {
+          clearInterval(tecla);
+          tapa.innerHTML = ORBIT.cover(p);
+          nom.innerHTML = enCastellano(p);
+          sub.innerHTML = puenteDe(p);
+          util.href = ORBIT.url(p);
+          espera = setTimeout(() => {
+            resu.classList.add('on');
+            if (!RM && !tocado) espera = setTimeout(() => ir((cual + 1) % F.length), 3400);
+          }, 240);
+        }
+      }, RM ? 0 : 34);
+    };
+    const pararTodo = frenar;
+    $$('.pasos button', metodo).forEach((b, i) => b.onclick = () => { pararTodo(); clearTimeout(espera); ir(i); });
+    let x0 = null;
+    metodo.addEventListener('pointerdown', e => x0 = e.clientX);
+    metodo.addEventListener('pointerup', e => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0; x0 = null;
+      if (Math.abs(dx) > 46) { pararTodo(); clearTimeout(espera); ir((cual + (dx < 0 ? 1 : F.length - 1)) % F.length); }
+    });
+    ir(0);
+  }
+
+  /* ---------- 4 · ¿cuál de estos sos? ---------- */
+  function elegi() {
+    metodo.innerHTML = eti(L('Para quién es','Who it is for')) + `
+      <h2 class="display ent2" style="--d:.06s">${L(
+        '¿Cuál de estos<br><span class="it">sos vos?</span>',
+        'Which one<br><span class="it">are you?</span>')}</h2>
+      <div class="opciones ent2" style="--d:.16s">${F.map((_, i) =>
+        `<button type="button" data-e="${i}">“${frase(i)}”</button>`).join('')}</div>
+      <div class="salida">
+        <div class="grande"></div>
+        <div><b></b><p></p></div>
+        <a class="irr" href="#">${L('Ver la herramienta','See the tool')} <span>→</span></a>
+      </div>
+      <button class="devuelta" type="button">← ${L('Elegir otro','Pick another')}</button>`;
+    const botones = $$('.opciones button', metodo), grande = $('.grande', metodo),
+          nom = $('.salida b', metodo), texto = $('.salida p', metodo), irr = $('.irr', metodo);
+    botones.forEach((b, i) => b.onclick = () => {
+      const p = F[i];
+      botones.forEach((o, k) => o.classList.toggle('mia', k === i));
+      grande.innerHTML = ORBIT.cover(p);
+      nom.innerHTML = enCastellano(p);
+      texto.innerHTML = puenteDe(p);
+      irr.href = ORBIT.url(p);
+      metodo.classList.add('elegido');
+    });
+    $('.devuelta', metodo).onclick = () => {
+      metodo.classList.remove('elegido');
+      botones.forEach(o => o.classList.remove('mia'));
+    };
+  }
+
+  /* ---------- 5 · lomos de biblioteca ---------- */
+  function lomos() {
+    metodo.innerHTML = eti(L('La biblioteca','The library')) + `
+      <p class="dicho cambia ent2" style="--d:.1s"></p>
+      <div class="biblio ent2" style="--d:.2s">${F.map((p, i) => `
+        <button class="lomo" type="button" data-e="${i}" aria-label="${p.name}">
+          <span class="vert"><span>${p.code} · ${enCastellano(p)}</span></span>
+          <span class="cara"><span class="env">${ORBIT.cover(p)}</span></span>
+        </button>`).join('')}</div>
+      <div class="pie ent2" style="--d:.3s">
+        <a class="util sinfoto cambia" href="#"><span><b></b><small></small></span><span class="ar">→</span></a>
+      </div>` + pasos;
+    const tomos = $$('.lomo', metodo), dicho = $('.dicho', metodo), util = $('.util', metodo),
+          nom = $('.util b', metodo), sub = $('.util small', metodo);
+    ir = i => {
+      if (i === cual) return;
+      const p = F[i];
+      cruzar(() => {
+        cual = i;
+        dicho.innerHTML = '“' + frase(i) + '”';
+        nom.innerHTML = enCastellano(p);
+        sub.innerHTML = puenteDe(p);
+        util.href = ORBIT.url(p);
+      });
+      tomos.forEach((t, k) => t.classList.toggle('viva', k === i));
+      marcar(i); rodar();
+    };
+    tomos.forEach((t, i) => t.onclick = () => { frenar(); ir(i); });
+    ir(0); rodar(); conElDedo();
+  }
+
+  /* ---------- 6 · la pantalla cambia de color ---------- */
+  function color() {
+    metodo.innerHTML = eti(L('Una por una','One by one')) + `
+      <p class="dicho cambia ent2" style="--d:.1s"></p>
+      <div class="escena ent2" style="--d:.2s"><div class="obj"></div></div>
+      <a class="util sinfoto cambia ent2" style="--d:.3s" href="#"><span><b></b><small></small></span><span class="ar">→</span></a>` + pasos;
+    const dicho = $('.dicho', metodo), obj = $('.obj', metodo), util = $('.util', metodo),
+          nom = $('.util b', metodo), sub = $('.util small', metodo);
+    const ACC = ORBIT.ACC, C = ORBIT.C;
+    ir = i => {
+      if (i === cual) return;
+      const p = F[i];
+      metodo.style.setProperty('--fondo', ACC[p.accent] || C.k);
+      metodo.style.setProperty('--tinta', p.accent === 'ac' ? C.k : C.b);
+      cruzar(() => {
+        cual = i;
+        dicho.innerHTML = '“' + frase(i) + '”';
+        obj.innerHTML = ORBIT.cover(p);
+        nom.innerHTML = enCastellano(p);
+        sub.innerHTML = `${p.code} · ${precio(p)}`;
+        util.href = ORBIT.url(p);
+      });
+      marcar(i); rodar();
+    };
+    ir(0); rodar(); conElDedo();
+  }
+
+  /* ---------- 7 · el número ---------- */
+  function numero() {
+    metodo.innerHTML = eti(L('En números','In numbers')) + `
+      <p class="dicho cambia ent2" style="--d:.1s"></p>
+      <div class="cifra ent2" style="--d:.18s"><b>0</b><span></span></div>
+      <a class="util cambia ent2" style="--d:.3s" href="#"><span class="tapa"></span><span><b></b><small></small></span><span class="ar">→</span></a>` + pasos;
+    const dicho = $('.dicho', metodo), grande = $('.cifra b', metodo), rotulo = $('.cifra span', metodo),
+          util = $('.util', metodo), tapa = $('.util .tapa', metodo),
+          nom = $('.util b', metodo), sub = $('.util small', metodo);
+    let cuadro = 0;
+    ir = i => {
+      if (i === cual) return;
+      const p = F[i], [valor, etiqueta] = cifraDe(p), tope = parseInt(valor, 10) || 0;
+      cruzar(() => {
+        cual = i;
+        dicho.innerHTML = '“' + frase(i) + '”';
+        rotulo.innerHTML = etiqueta + ' <em>' + L('listos para usar','ready to use') + '</em>';
+        tapa.innerHTML = ORBIT.cover(p);
+        nom.innerHTML = enCastellano(p);
+        sub.innerHTML = `${p.code} · ${precio(p)}`;
+        util.href = ORBIT.url(p);
+      });
+      cancelAnimationFrame(cuadro);
+      if (RM) { grande.textContent = tope; }
+      else {
+        const desde = performance.now();
+        const correr = ahora => {
+          const t = Math.min(1, (ahora - desde) / 760);
+          grande.textContent = Math.round(tope * (1 - Math.pow(1 - t, 3)));
+          if (t < 1) cuadro = requestAnimationFrame(correr);
+        };
+        cuadro = requestAnimationFrame(correr);
+      }
+      marcar(i); rodar();
+    };
+    ir(0); rodar(); conElDedo();
+  }
+
+  ({estante, fabrica, buscador, elegi, lomos, color, numero})[M2]();
 
   /* se presenta sola al llegar, y queda legible para siempre */
-  function presentar() {
-    if (RM) return document.body.classList.add('cuenta');
-    new IntersectionObserver(([e], obs) => {
-      if (e.isIntersecting) { document.body.classList.add('cuenta'); obs.disconnect(); }
-    }, {threshold:.3}).observe(metodo);
-  }
+  if (RM) document.body.classList.add('cuenta');
+  else new IntersectionObserver(([e], obs) => {
+    if (e.isIntersecting) { document.body.classList.add('cuenta'); obs.disconnect(); }
+  }, {threshold:.25}).observe(metodo);
 })();
 
-/* selector temporal para comparar los tres caminos de la 02 */
+/* selector temporal para comparar las siete versiones de la 02 */
 (function selectorM2() {
-  const q = new URLSearchParams(location.search);
-  const hoy = q.get('m2') || '1';
+  const hoy = new URLSearchParams(location.search).get('m2') || '1';
   const caja = document.createElement('div');
   caja.className = 'selm2';
-  caja.innerHTML = '<b>02</b>' + [['1','A'],['2','B'],['3','C']].map(([n, t]) => {
+  caja.innerHTML = '<b>02</b>' + VERSIONES.map((_, k) => {
+    const n = String(k + 1);
     const u = new URLSearchParams(location.search); u.set('m2', n);
-    return `<a href="?${u}#metodo" class="${n === hoy ? 'on' : ''}">${t}</a>`;
+    return `<a href="?${u}#metodo" class="${n === hoy ? 'on' : ''}">${n}</a>`;
   }).join('');
   document.body.appendChild(caja);
 })();
