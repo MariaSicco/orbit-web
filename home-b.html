@@ -211,7 +211,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
 .m2-estante #metodo .quien b{font-weight:400}
 .m2-estante #metodo .quien s{width:26px;height:1px;background:var(--ac);flex:none;display:block}
-.m2-estante #metodo .estante{display:grid;gap:0}
+.m2-estante #metodo .repisa{display:grid;gap:0}
 .m2-estante #metodo .libros{display:flex;align-items:flex-end;gap:clamp(7px,2.2vw,13px)}
 .m2-estante #metodo .libros > a{display:block;flex:1 1 0;min-width:0;opacity:.11;
   transform:translateY(14px);transform-origin:bottom center;
@@ -711,7 +711,7 @@ const M2 = VERSIONES[(parseInt(new URLSearchParams(location.search).get('m2'), 1
         <p class="dicho cambia ent2" style="--d:.1s"></p>
         <div class="quien cambia ent2" style="--d:.18s"><s></s><b></b></div>
       </div>
-      <div class="estante ent2" style="--d:.24s">
+      <div class="repisa ent2" style="--d:.24s">
         <div class="libros">${F.map(p =>
           `<a href="${ORBIT.url(p)}" aria-label="${p.name}">${ORBIT.cover(p)}</a>`).join('')}</div>
         <div class="tabla"></div>
