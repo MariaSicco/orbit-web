@@ -338,7 +338,12 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 /* El cuerpo scrollea solo, así que achicar las tarjetas no acorta la sección:
    dos columnas y los títulos entran enteros. El pie se apila recién en
    pantallas muy angostas, donde el botón y el precio sí se pisaban. */
-#por-dentro .win .foot{gap:10px;padding:10px clamp(12px,3vw,20px)}
+/* `.foot` es también la clase del pie del sitio, que pinta el texto en
+   hueso: adentro de la ventana, que es blanca, quedaba invisible. */
+#por-dentro .win .foot{gap:10px;padding:10px clamp(12px,3vw,20px);color:var(--k)}
+/* y el botón de compra venía como grilla y se le montaban el texto y el precio */
+#por-dentro .win .foot .btn{display:inline-flex;flex-wrap:wrap;gap:6px 10px;
+  white-space:normal;padding:11px 16px;font-size:14px}
 #por-dentro .win .foot > div:first-child{display:flex;align-items:baseline;gap:10px}
 #por-dentro .win .foot .price{font-size:18px}
 @media (max-width:400px){
