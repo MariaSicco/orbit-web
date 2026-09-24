@@ -56,10 +56,23 @@
 
 /* ---- 01 entrada ---- */
 .p-entrada .marca{font-size:clamp(58px,19vw,210px);line-height:.78;letter-spacing:-.05em}
-.p-entrada .sub{font-size:clamp(33px,9.2vw,60px);font-weight:800;letter-spacing:-.045em;text-transform:uppercase;line-height:.98;max-width:11ch;margin:0}
-.p-entrada .sub .it{color:var(--ac)}
+/* El titular explica qué es; la firma de marca pasa a la etiqueta de arriba.
+   Antes lo más pesado de la pantalla era el nombre y un claim poético, y lo
+   único que decía qué se vende era el texto más chico y más apagado. */
+.p-entrada h1{font-size:clamp(25px,6.9vw,44px);font-weight:800;letter-spacing:-.035em;
+  line-height:1.04;max-width:17ch;margin:0;--op:1}
+.p-entrada h1 .it{color:var(--ac)}
 .p-entrada p{margin:0;max-width:32ch;font-size:16.5px;line-height:1.5;--op:.72}
-.p-entrada .sub{--op:1}
+
+/* las puertas: qué vas a encontrar, sin cerrarle la puerta a nadie */
+.p-entrada .puertas{display:grid;gap:9px;padding-top:clamp(12px,2vh,17px);
+  border-top:1px solid rgba(242,239,232,.16)}
+.p-entrada .puertas i{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.45;font-style:normal}
+.p-entrada .puertas nav{display:flex;flex-wrap:wrap;gap:7px}
+.p-entrada .puertas a{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;text-decoration:none;color:inherit;opacity:.72;
+  border:1px solid rgba(242,239,232,.24);border-radius:999px;padding:6px 11px}
 /* el encuadre busca la curva de la foto, que rima con el símbolo;
    centrada, en un teléfono se recorta justo en la parte plana */
 .p-entrada .foto{position:absolute;inset:0;background:url(assets/img/landing.jpg) 26% 58%/cover;opacity:.46;z-index:0}
@@ -336,15 +349,16 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 <!-- 01 ENTRADA -->
 <section class="pant p-entrada dark">
   <div class="foto" aria-hidden="true"></div>
-  <div class="eti ent" style="--d:2.98s"><span>OB—000</span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
+  <div class="eti ent" style="--d:2.98s"><span>OB—000 · <span data-l="es">Orden en movimiento</span><span data-l="en">Order in motion</span></span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)">
     <div class="marca wm" id="bWm" aria-label="Orbit"></div>
-    <p class="sub ent" style="--d:3.1s"><span data-l="es">Orden en <span class="it">movimiento.</span></span><span data-l="en">Order in <span class="it">motion.</span></span></p>
-    <p class="ent" style="--d:3.24s"><span data-l="es">Sistemas digitales listos para usar. Para que nada empiece de cero.</span><span data-l="en">Digital systems, ready to use. So nothing ever starts from zero.</span></p>
+    <h1 class="ent" style="--d:3.1s"><span data-l="es">Sistemas y herramientas digitales, <span class="it">listos para usar.</span></span><span data-l="en">Digital systems and tools, <span class="it">ready to use.</span></span></h1>
+    <p class="ent" style="--d:3.24s"><span data-l="es">Para que nada empiece de cero.</span><span data-l="en">So nothing ever starts from zero.</span></p>
   </div>
   <div class="acts ent" style="--d:3.4s">
     <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver la colección</span><span data-l="en">See the collection</span> <span class="ar">↓</span></a>
   </div>
+  <div class="puertas ent" style="--d:3.52s" id="bPuertas"></div>
 </section>
 
 <!-- 02 MÉTODO — el contenido lo arma el JS según la versión elegida -->
@@ -478,6 +492,18 @@ if (document.documentElement.classList.contains('gate-on')) {
    con su lomo, su código y su contratapa. No un dibujo que se le parezca.
    Entra de canto, mostrando el lomo, y gira hasta darte la tapa a medida que
    la tarjeta llega al centro: del problema al producto, con el mismo gesto. */
+/* ---- las puertas de la portada: qué vas a encontrar ----
+   Salen de las familias que hoy tienen productos, así que se actualizan
+   solas cuando cambie el catálogo. No limitan a un público: dicen qué hay. */
+(function puertas() {
+  const caja = $('#bPuertas');
+  if (!caja) return;
+  const vivas = Object.keys(FAM).filter(f => P.some(p => p.family === f));
+  if (!vivas.length) return;
+  caja.innerHTML = `<i>${L('Qué vas a encontrar','What you will find')}</i><nav>${
+    vivas.map(f => `<a href="productos.html#${f}">${FAM[f][0].replace(/^Orbit /, '')}</a>`).join('')}</nav>`;
+})();
+
 /* =========================================================
    SEGUNDA PANTALLA — problema → herramienta
    Cuatro casos reales, uno por producto. La tarjeta entera se cruza de

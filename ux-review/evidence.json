@@ -1,0 +1,1355 @@
+{
+  "url": "https://www.orbitando.com.ar/home-b?lang=es",
+  "capturedAt": "2026-09-24T16:19:54.562Z",
+  "viewports": {
+    "desktop": {
+      "title": "B · Rediseñada — Orbit®",
+      "metaDescription": "Orden en movimiento.",
+      "lang": "es",
+      "hreflang": [],
+      "ogTitle": null,
+      "headings": [
+        {
+          "tag": "h2",
+          "text": "PROBLEMA\n→ herramienta."
+        },
+        {
+          "tag": "h2",
+          "text": "LISTOS PARA usar."
+        },
+        {
+          "tag": "h2",
+          "text": "DEL CLIC A usarlo."
+        },
+        {
+          "tag": "h2",
+          "text": "¿NO ESTÁ LO QUE\nNECESITÁS?\nLo diseñamos."
+        },
+        {
+          "tag": "h2",
+          "text": "MISMAS PERSONAS.\nMÁS HERRAMIENTAS.\nUn mejor mañana."
+        },
+        {
+          "tag": "h3",
+          "text": "CARRITO"
+        },
+        {
+          "tag": "h2",
+          "text": "ENTRÁ\nEN ÓRBITA."
+        }
+      ],
+      "h1Count": 0,
+      "foldByWeight": [
+        {
+          "tag": "span",
+          "text": "RBIT",
+          "fontSize": 210,
+          "fontWeight": 900,
+          "color": "rgb(242, 239, 232)",
+          "top": 254,
+          "left": 219,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 3685
+        },
+        {
+          "tag": "span",
+          "text": "PROBLEMA\n→ herramienta.",
+          "fontSize": 120,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 1010,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 1130.9
+        },
+        {
+          "tag": "span",
+          "text": "ORDEN EN movimiento.",
+          "fontSize": 60,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 434,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 809.6
+        },
+        {
+          "tag": "span",
+          "text": "LISTOS PARA usar.",
+          "fontSize": 120,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 1814,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 795.9
+        },
+        {
+          "tag": "span",
+          "text": "ENTRÁ\nEN ÓRBITA.",
+          "fontSize": 201.6,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 5579,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 560.1
+        },
+        {
+          "tag": "span",
+          "text": "¿NO ESTÁ LO QUE\nNECESITÁS?\nLo diseñamos.",
+          "fontSize": 120,
+          "fontWeight": 800,
+          "color": "rgb(13, 13, 14)",
+          "top": 4099,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 432.1
+        },
+        {
+          "tag": "span",
+          "text": "usar.",
+          "fontSize": 120,
+          "fontWeight": 400,
+          "color": "rgb(217, 255, 69)",
+          "top": 1800,
+          "left": 761,
+          "aboveFold": true,
+          "contrast": 16.97,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 400
+        },
+        {
+          "tag": "span",
+          "text": "movimiento.",
+          "fontSize": 60,
+          "fontWeight": 400,
+          "color": "rgb(217, 255, 69)",
+          "top": 489,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.97,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 388.8
+        },
+        {
+          "tag": "span",
+          "text": "MISMAS PERSONAS.\nMÁS HERRAMIENTAS.\nUn mejor mañana.",
+          "fontSize": 120,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 4800,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 378.9
+        },
+        {
+          "tag": "span",
+          "text": "DEL CLIC A usarlo.",
+          "fontSize": 90,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 3399,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 376.8
+        },
+        {
+          "tag": "span",
+          "text": "herramienta.",
+          "fontSize": 120,
+          "fontWeight": 400,
+          "color": "rgb(255, 79, 46)",
+          "top": 1104,
+          "left": 187,
+          "aboveFold": true,
+          "contrast": 5.93,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 319.6
+        },
+        {
+          "tag": "span",
+          "text": "Un mejor mañana.",
+          "fontSize": 120,
+          "fontWeight": 400,
+          "color": "rgb(217, 255, 69)",
+          "top": 4995,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.97,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 183.2
+        },
+        {
+          "tag": "span",
+          "text": "BIBLIOTECA DE RECURSOS",
+          "fontSize": 21,
+          "fontWeight": 800,
+          "color": "rgb(13, 13, 14)",
+          "top": 1464,
+          "left": 156,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 159.9
+        },
+        {
+          "tag": "span",
+          "text": "RBIT\n®",
+          "fontSize": 44,
+          "fontWeight": 900,
+          "color": "rgb(242, 239, 232)",
+          "top": 6306,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 123.6
+        },
+        {
+          "tag": "a",
+          "text": "Ver la colección\n↓",
+          "fontSize": 15,
+          "fontWeight": 600,
+          "color": "rgb(13, 13, 14)",
+          "top": 752,
+          "left": 56,
+          "aboveFold": true,
+          "contrast": 16.97,
+          "contrastPass": true,
+          "large": false,
+          "visualWeight": 122.6
+        }
+      ],
+      "ctas": [
+        {
+          "text": "RBIT\n®",
+          "aboveFold": true,
+          "w": 72,
+          "h": 24,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Inicio",
+          "aboveFold": true,
+          "w": 32,
+          "h": 17,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Productos",
+          "aboveFold": true,
+          "w": 63,
+          "h": 17,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Nosotros",
+          "aboveFold": true,
+          "w": 56,
+          "h": 17,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "0",
+          "aboveFold": true,
+          "w": 38,
+          "h": 38,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "ES",
+          "aboveFold": true,
+          "w": 17,
+          "h": 25,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "EN",
+          "aboveFold": true,
+          "w": 17,
+          "h": 25,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Ver la colección\n↓",
+          "aboveFold": true,
+          "w": 170,
+          "h": 51,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—002\nRBIT\n®\n02\nCREATOR\nLIBRARY\n340 ASSETS · USO COMER",
+          "aboveFold": true,
+          "w": 1288,
+          "h": 83,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—001\nRBIT\n®\n01\nCONTENT\nSYSTEM\n120 ASSETS\nUSO COMERCIA",
+          "aboveFold": true,
+          "w": 1328,
+          "h": 111,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—003\nRBIT\n®\nBUSINESS\nOS\n03\n8 MÓDULOS\nUSO COMERCIAL\nOR",
+          "aboveFold": true,
+          "w": 1328,
+          "h": 111,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—004\nRBIT\n®\nPRÓXIMAMENTE\n04\nAI\nWORKFLOW SYSTEM\n36 WOR",
+          "aboveFold": true,
+          "w": 1328,
+          "h": 111,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—002\nRBIT\n®\n02\nCREATOR\nLIBRARY\n340 ASSETS · USO COMER",
+          "aboveFold": true,
+          "w": 1328,
+          "h": 112,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "VER TODO →",
+          "aboveFold": true,
+          "w": 70,
+          "h": 15,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Contanos qué necesitás\n→",
+          "aboveFold": true,
+          "w": 228,
+          "h": 51,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "Elegir un sistema\n↑",
+          "aboveFold": true,
+          "w": 178,
+          "h": 51,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "CERRAR",
+          "aboveFold": true,
+          "w": 75,
+          "h": 33,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Ver catálogo",
+          "aboveFold": true,
+          "w": 127,
+          "h": 53,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "OB—001 Content System",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "OB—002 Creator Library",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "OB—003 Business OS",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "OB—004 AI Workflow System",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Orbit Creator",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Orbit Business",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Orbit AI",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Orbit Library",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Orbit Systems",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Nosotros",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Pedidos a medida",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Mi cuenta",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Manifiesto",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Manual de marca",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "hola@orbitando.com.ar",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Instagram",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Newsletter",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Términos y condiciones",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Política de privacidad",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Botón de arrepentimiento",
+          "aboveFold": true,
+          "w": 246,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "ARRIBA",
+          "aboveFold": true,
+          "w": 118,
+          "h": 50,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "01",
+          "aboveFold": true,
+          "w": 27,
+          "h": 16,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "02",
+          "aboveFold": true,
+          "w": 27,
+          "h": 16,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "03",
+          "aboveFold": true,
+          "w": 27,
+          "h": 16,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "04",
+          "aboveFold": true,
+          "w": 27,
+          "h": 16,
+          "tooSmallForTouch": true
+        }
+      ],
+      "imagesWithoutAlt": [],
+      "contrastFailures": [
+        {
+          "text": "Lo diseñamos.",
+          "contrast": 2.85,
+          "color": "rgb(255, 79, 46)",
+          "fontSize": 120,
+          "required": 3
+        }
+      ],
+      "wordsAboveFold": 625,
+      "sections": [
+        {
+          "index": 1,
+          "tag": "section",
+          "id": null,
+          "className": "pant p-entrada dark",
+          "heading": "",
+          "text": "OB—000 DESDE 2026 RBIT ® ORDEN EN movimiento. Sistemas digitales listos para usar. Para que nada empiece de cero. Ver la colección ↓",
+          "ctas": [
+            "Ver la colección\n↓"
+          ],
+          "top": 0,
+          "height": 900,
+          "screenshot": "secciones/desktop-01.png"
+        },
+        {
+          "index": 2,
+          "tag": "section",
+          "id": "metodo",
+          "className": "pant",
+          "heading": "PROBLEMA\n→ herramienta.",
+          "text": "NUESTRO MÉTODO — OB—000 CUATRO CASOS PROBLEMA → herramienta. Cada herramienta de Orbit nace de un problema real. Estos son cuatro. PROBLEMA “No sé qué publicar esta semana.” HERRAMIENTA RBIT OB—001 RBIT ® 01 CONTENT SYSTEM 120 ASSETS USO COMERCIAL V.01 SISTEMA DE CONTENIDO OB—001 · USD 2 → 01 / 04",
+          "ctas": [
+            "RBIT\nOB—001\nRBIT\n®\n01\nCONTENT\nSYSTEM\n120 ASSETS\nUSO COMERCIAL\nV.01\nSISTEMA DE CONTENIDO\nOB—001 · USD 2\n→"
+          ],
+          "top": 900,
+          "height": 788,
+          "screenshot": "secciones/desktop-02.png"
+        },
+        {
+          "index": 3,
+          "tag": "section",
+          "id": "coleccion",
+          "className": "pant dark",
+          "heading": "LISTOS PARA usar.",
+          "text": "LA COLECCIÓN VOL.01 LISTOS PARA usar. RBIT OB—001 RBIT ® 01 CONTENT SYSTEM 120 ASSETS USO COMERCIAL V.01 ORBIT CREATOR Recursos para crear y publicar 1 sistema · desde USD 2 RBIT OB—003 RBIT ® BUSINESS OS 03 8 MÓDULOS USO COMERCIAL ORBIT BUSINESS Sistemas para pequeños negocios 1 sistema · desde USD 59 RBIT OB—004 RBIT ® PRÓXIMAMENTE 04 AI WORKFLOW SYSTEM 36 WORKFLOWS · USO COMERCIAL ORBIT AI Workflows y herramientas de IA 1 sistema · desde USD 69 RBIT OB—002 RBIT ® 02 CREATOR LIBRARY 340 ASSETS · USO COMERCIAL ORBIT LIBRARY Assets comerciales 1 sistema · desde USD 49 TOCÁ PARA VER LA FICHA VE",
+          "ctas": [
+            "RBIT\nOB—001\nRBIT\n®\n01\nCONTENT\nSYSTEM\n120 ASSETS\nUSO COMERCIAL\nV.01\nORBIT CREATOR\nRecursos para crear y publicar\n1 sistema · desde USD 2",
+            "RBIT\nOB—003\nRBIT\n®\nBUSINESS\nOS\n03\n8 MÓDULOS\nUSO COMERCIAL\nORBIT BUSINESS\nSistemas para pequeños negocios\n1 sistema · desde USD 59",
+            "RBIT\nOB—004\nRBIT\n®\nPRÓXIMAMENTE\n04\nAI\nWORKFLOW SYSTEM\n36 WORKFLOWS · USO COMERCIAL\nORBIT AI\nWorkflows y herramientas de IA\n1 sistema · desde USD 69",
+            "RBIT\nOB—002\nRBIT\n®\n02\nCREATOR\nLIBRARY\n340 ASSETS · USO COMERCIAL\nORBIT LIBRARY\nAssets comerciales\n1 sistema · desde USD 49",
+            "VER TODO →"
+          ],
+          "top": 1688,
+          "height": 854,
+          "screenshot": "secciones/desktop-03.png"
+        },
+        {
+          "index": 4,
+          "tag": "section",
+          "id": null,
+          "className": "pant luz p-datos",
+          "heading": "",
+          "text": "QUÉ TE LLEVÁS 04 0' ENTREGA SE ACREDITA EL PAGO Y YA ESTÁ EN TU CUENTA. ∞ LICENCIA USO COMERCIAL, EN TUS PROYECTOS Y EN LOS DE TUS CLIENTES. $0 ACTUALIZACIONES CUANDO UN SISTEMA MEJORA, LO BAJÁS DE NUEVO SIN PAGAR. ∞ ACCESO SIN SUSCRIPCIÓN Y SIN VENCIMIENTO.",
+          "ctas": [],
+          "top": 2542,
+          "height": 728,
+          "screenshot": "secciones/desktop-04.png"
+        },
+        {
+          "index": 5,
+          "tag": "section",
+          "id": null,
+          "className": "pant dark p-pasos",
+          "heading": "DEL CLIC A usarlo.",
+          "text": "CÓMO FUNCIONA 05 DEL CLIC A usarlo. 01 ELEGÍS Cada ficha dice qué incluye y para qué herramientas sirve. 02 PAGÁS Mercado Pago en pesos o tarjeta en dólares. 03 DESCARGÁS Aparece en tu cuenta al instante. 04 LO HACÉS TUYO Lo adaptás y lo usás las veces que quieras.",
+          "ctas": [],
+          "top": 3270,
+          "height": 710,
+          "screenshot": "secciones/desktop-05.png"
+        },
+        {
+          "index": 6,
+          "tag": "section",
+          "id": "a-medida",
+          "className": "pant luz p-medida",
+          "heading": "¿NO ESTÁ LO QUE\nNECESITÁS?\nLo diseñamos.",
+          "text": "A MEDIDA OB—X00 ¿NO ESTÁ LO QUE NECESITÁS? Lo diseñamos. Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA. Contanos qué necesitás →",
+          "ctas": [
+            "Contanos qué necesitás\n→"
+          ],
+          "top": 3980,
+          "height": 701,
+          "screenshot": "secciones/desktop-06.png"
+        },
+        {
+          "index": 7,
+          "tag": "section",
+          "id": null,
+          "className": "pant dark p-cierre",
+          "heading": "MISMAS PERSONAS.\nMÁS HERRAMIENTAS.\nUn mejor mañana.",
+          "text": "MANIFIESTO 07 MISMAS PERSONAS. MÁS HERRAMIENTAS. Un mejor mañana. Las ideas no necesitan más ruido. Necesitan movimiento. Elegir un sistema ↑",
+          "ctas": [
+            "Elegir un sistema\n↑"
+          ],
+          "top": 4681,
+          "height": 701,
+          "screenshot": "secciones/desktop-07.png"
+        },
+        {
+          "index": 8,
+          "tag": "footer",
+          "id": null,
+          "className": "foot",
+          "heading": "ENTRÁ\nEN ÓRBITA.",
+          "text": "OB—000 IDEAS RECURSOS CRECIMIENTO LIBERTAD ENTRÁ EN ÓRBITA. PRODUCTOS OB—001 Content System OB—002 Creator Library OB—003 Business OS OB—004 AI Workflow System FAMILIAS Orbit Creator Orbit Business Orbit AI Orbit Library Orbit Systems ORBIT Nosotros Pedidos a medida Mi cuenta Manifiesto Manual de marca CONTACTO hola@orbitando.com.ar Instagram Newsletter LEGAL Términos y condiciones Política de privacidad Botón de arrepentimiento RBIT ® ORDEN EN MOVIMIENTO. MISMAS PERSONAS. MÁS HERRAMIENTAS. UN MEJOR MAÑANA. — EST. 2026",
+          "ctas": [
+            "OB—001 Content System",
+            "OB—002 Creator Library",
+            "OB—003 Business OS",
+            "OB—004 AI Workflow System",
+            "Orbit Creator",
+            "Orbit Business",
+            "Orbit AI",
+            "Orbit Library"
+          ],
+          "top": 5382,
+          "height": 1017,
+          "screenshot": "secciones/desktop-08.png"
+        }
+      ]
+    },
+    "mobile": {
+      "title": "B · Rediseñada — Orbit®",
+      "metaDescription": "Orden en movimiento.",
+      "lang": "es",
+      "hreflang": [],
+      "ogTitle": null,
+      "headings": [
+        {
+          "tag": "h2",
+          "text": "PROBLEMA\n→ herramienta."
+        },
+        {
+          "tag": "h2",
+          "text": "LISTOS PARA usar."
+        },
+        {
+          "tag": "h2",
+          "text": "DEL CLIC A usarlo."
+        },
+        {
+          "tag": "h2",
+          "text": "¿NO ESTÁ LO QUE\nNECESITÁS?\nLo diseñamos."
+        },
+        {
+          "tag": "h2",
+          "text": "MISMAS PERSONAS.\nMÁS HERRAMIENTAS.\nUn mejor mañana."
+        },
+        {
+          "tag": "h3",
+          "text": "CARRITO"
+        },
+        {
+          "tag": "h2",
+          "text": "ENTRÁ\nEN ÓRBITA."
+        }
+      ],
+      "h1Count": 0,
+      "foldByWeight": [
+        {
+          "tag": "span",
+          "text": "RBIT",
+          "fontSize": 74.1,
+          "fontWeight": 900,
+          "color": "rgb(242, 239, 232)",
+          "top": 302,
+          "left": 73,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 1227.9
+        },
+        {
+          "tag": "span",
+          "text": "ORDEN EN movimiento.",
+          "fontSize": 35.88,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 377,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 496
+        },
+        {
+          "tag": "span",
+          "text": "PROBLEMA\n→ herramienta.",
+          "fontSize": 44.85,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 967,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 418
+        },
+        {
+          "tag": "span",
+          "text": "LISTOS PARA usar.",
+          "fontSize": 44.85,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 1822,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 284
+        },
+        {
+          "tag": "span",
+          "text": "movimiento.",
+          "fontSize": 35.88,
+          "fontWeight": 400,
+          "color": "rgb(217, 255, 69)",
+          "top": 410,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.97,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 241.5
+        },
+        {
+          "tag": "span",
+          "text": "ENTRÁ\nEN ÓRBITA.",
+          "fontSize": 64,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 6076,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 156.1
+        },
+        {
+          "tag": "span",
+          "text": "usar.",
+          "fontSize": 44.85,
+          "fontWeight": 400,
+          "color": "rgb(217, 255, 69)",
+          "top": 1816,
+          "left": 279,
+          "aboveFold": true,
+          "contrast": 16.97,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 142.3
+        },
+        {
+          "tag": "span",
+          "text": "¿NO ESTÁ LO QUE\nNECESITÁS?\nLo diseñamos.",
+          "fontSize": 44.85,
+          "fontWeight": 800,
+          "color": "rgb(13, 13, 14)",
+          "top": 4527,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 141
+        },
+        {
+          "tag": "span",
+          "text": "DEL CLIC A usarlo.",
+          "fontSize": 36,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 3614,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 136.3
+        },
+        {
+          "tag": "span",
+          "text": "BIBLIOTECA DE RECURSOS",
+          "fontSize": 17.94,
+          "fontWeight": 800,
+          "color": "rgb(13, 13, 14)",
+          "top": 1500,
+          "left": 94,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": false,
+          "visualWeight": 129.2
+        },
+        {
+          "tag": "span",
+          "text": "MISMAS PERSONAS.\nMÁS HERRAMIENTAS.\nUn mejor mañana.",
+          "fontSize": 44.85,
+          "fontWeight": 800,
+          "color": "rgb(242, 239, 232)",
+          "top": 5329,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 122.6
+        },
+        {
+          "tag": "a",
+          "text": "Ver la colección\n↓",
+          "fontSize": 15,
+          "fontWeight": 600,
+          "color": "rgb(13, 13, 14)",
+          "top": 716,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.97,
+          "contrastPass": true,
+          "large": false,
+          "visualWeight": 121.7
+        },
+        {
+          "tag": "span",
+          "text": "herramienta.",
+          "fontSize": 44.85,
+          "fontWeight": 400,
+          "color": "rgb(255, 79, 46)",
+          "top": 1006,
+          "left": 65,
+          "aboveFold": true,
+          "contrast": 5.93,
+          "contrastPass": true,
+          "large": true,
+          "visualWeight": 121.3
+        },
+        {
+          "tag": "span",
+          "text": "Ver la colección",
+          "fontSize": 15,
+          "fontWeight": 600,
+          "color": "rgb(13, 13, 14)",
+          "top": 730,
+          "left": 36,
+          "aboveFold": true,
+          "contrast": 16.97,
+          "contrastPass": true,
+          "large": false,
+          "visualWeight": 120.6
+        },
+        {
+          "tag": "span",
+          "text": "Sistemas digitales listos para usar. Para que nada empiece de cero.",
+          "fontSize": 16.5,
+          "fontWeight": 400,
+          "color": "rgb(242, 239, 232)",
+          "top": 478,
+          "left": 16,
+          "aboveFold": true,
+          "contrast": 16.92,
+          "contrastPass": true,
+          "large": false,
+          "visualWeight": 105.3
+        }
+      ],
+      "ctas": [
+        {
+          "text": "RBIT\n®",
+          "aboveFold": true,
+          "w": 72,
+          "h": 24,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "0",
+          "aboveFold": true,
+          "w": 38,
+          "h": 38,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "ES",
+          "aboveFold": true,
+          "w": 17,
+          "h": 25,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "EN",
+          "aboveFold": true,
+          "w": 17,
+          "h": 25,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Menú",
+          "aboveFold": true,
+          "w": 56,
+          "h": 35,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Ver la colección\n↓",
+          "aboveFold": true,
+          "w": 170,
+          "h": 51,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—002\nRBIT\n®\n02\nCREATOR\nLIBRARY\n340 ASSETS · USO COMER",
+          "aboveFold": true,
+          "w": 330,
+          "h": 68,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—001\nRBIT\n®\n01\nCONTENT\nSYSTEM\n120 ASSETS\nUSO COMERCIA",
+          "aboveFold": true,
+          "w": 358,
+          "h": 97,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—003\nRBIT\n®\nBUSINESS\nOS\n03\n8 MÓDULOS\nUSO COMERCIAL\nOR",
+          "aboveFold": true,
+          "w": 358,
+          "h": 97,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—004\nRBIT\n®\nPRÓXIMAMENTE\n04\nAI\nWORKFLOW SYSTEM\n36 WOR",
+          "aboveFold": true,
+          "w": 358,
+          "h": 97,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "RBIT\nOB—002\nRBIT\n®\n02\nCREATOR\nLIBRARY\n340 ASSETS · USO COMER",
+          "aboveFold": true,
+          "w": 358,
+          "h": 98,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "VER TODO →",
+          "aboveFold": true,
+          "w": 70,
+          "h": 15,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Contanos qué necesitás\n→",
+          "aboveFold": true,
+          "w": 228,
+          "h": 51,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "Elegir un sistema\n↑",
+          "aboveFold": true,
+          "w": 178,
+          "h": 51,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "CERRAR",
+          "aboveFold": true,
+          "w": 75,
+          "h": 33,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Ver catálogo",
+          "aboveFold": true,
+          "w": 127,
+          "h": 53,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "OB—001 Content System",
+          "aboveFold": true,
+          "w": 167,
+          "h": 56,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "OB—002 Creator Library",
+          "aboveFold": true,
+          "w": 167,
+          "h": 56,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "OB—003 Business OS",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "OB—004 AI Workflow System",
+          "aboveFold": true,
+          "w": 167,
+          "h": 56,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "Orbit Creator",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Orbit Business",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Orbit AI",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Orbit Library",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Orbit Systems",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Nosotros",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Pedidos a medida",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Mi cuenta",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Manifiesto",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Manual de marca",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "hola@orbitando.com.ar",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Instagram",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Newsletter",
+          "aboveFold": true,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Términos y condiciones",
+          "aboveFold": false,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Política de privacidad",
+          "aboveFold": false,
+          "w": 167,
+          "h": 32,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "Botón de arrepentimiento",
+          "aboveFold": false,
+          "w": 167,
+          "h": 56,
+          "tooSmallForTouch": false
+        },
+        {
+          "text": "01",
+          "aboveFold": true,
+          "w": 27,
+          "h": 16,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "02",
+          "aboveFold": true,
+          "w": 27,
+          "h": 16,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "03",
+          "aboveFold": true,
+          "w": 27,
+          "h": 16,
+          "tooSmallForTouch": true
+        },
+        {
+          "text": "04",
+          "aboveFold": true,
+          "w": 27,
+          "h": 16,
+          "tooSmallForTouch": true
+        }
+      ],
+      "imagesWithoutAlt": [],
+      "contrastFailures": [
+        {
+          "text": "Lo diseñamos.",
+          "contrast": 2.85,
+          "color": "rgb(255, 79, 46)",
+          "fontSize": 44.85,
+          "required": 3
+        }
+      ],
+      "wordsAboveFold": 594,
+      "sections": [
+        {
+          "index": 1,
+          "tag": "section",
+          "id": null,
+          "className": "pant p-entrada dark",
+          "heading": "",
+          "text": "OB—000 DESDE 2026 RBIT ® ORDEN EN movimiento. Sistemas digitales listos para usar. Para que nada empiece de cero. Ver la colección ↓",
+          "ctas": [
+            "Ver la colección\n↓"
+          ],
+          "top": 0,
+          "height": 844,
+          "screenshot": "secciones/mobile-01.png"
+        },
+        {
+          "index": 2,
+          "tag": "section",
+          "id": "metodo",
+          "className": "pant",
+          "heading": "PROBLEMA\n→ herramienta.",
+          "text": "NUESTRO MÉTODO — OB—000 CUATRO CASOS PROBLEMA → herramienta. Cada herramienta de Orbit nace de un problema real. Estos son cuatro. PROBLEMA “No sé qué publicar esta semana.” HERRAMIENTA RBIT OB—001 RBIT ® 01 CONTENT SYSTEM 120 ASSETS USO COMERCIAL V.01 SISTEMA DE CONTENIDO OB—001 · USD 2 → 01 / 04",
+          "ctas": [
+            "RBIT\nOB—001\nRBIT\n®\n01\nCONTENT\nSYSTEM\n120 ASSETS\nUSO COMERCIAL\nV.01\nSISTEMA DE CONTENIDO\nOB—001 · USD 2\n→"
+          ],
+          "top": 844,
+          "height": 844,
+          "screenshot": "secciones/mobile-02.png"
+        },
+        {
+          "index": 3,
+          "tag": "section",
+          "id": "coleccion",
+          "className": "pant dark",
+          "heading": "LISTOS PARA usar.",
+          "text": "LA COLECCIÓN VOL.01 LISTOS PARA usar. RBIT OB—001 RBIT ® 01 CONTENT SYSTEM 120 ASSETS USO COMERCIAL V.01 ORBIT CREATOR Recursos para crear y publicar 1 sistema · desde USD 2 RBIT OB—003 RBIT ® BUSINESS OS 03 8 MÓDULOS USO COMERCIAL ORBIT BUSINESS Sistemas para pequeños negocios 1 sistema · desde USD 59 RBIT OB—004 RBIT ® PRÓXIMAMENTE 04 AI WORKFLOW SYSTEM 36 WORKFLOWS · USO COMERCIAL ORBIT AI Workflows y herramientas de IA 1 sistema · desde USD 69 RBIT OB—002 RBIT ® 02 CREATOR LIBRARY 340 ASSETS · USO COMERCIAL ORBIT LIBRARY Assets comerciales 1 sistema · desde USD 49 TOCÁ PARA VER LA FICHA VE",
+          "ctas": [
+            "RBIT\nOB—001\nRBIT\n®\n01\nCONTENT\nSYSTEM\n120 ASSETS\nUSO COMERCIAL\nV.01\nORBIT CREATOR\nRecursos para crear y publicar\n1 sistema · desde USD 2",
+            "RBIT\nOB—003\nRBIT\n®\nBUSINESS\nOS\n03\n8 MÓDULOS\nUSO COMERCIAL\nORBIT BUSINESS\nSistemas para pequeños negocios\n1 sistema · desde USD 59",
+            "RBIT\nOB—004\nRBIT\n®\nPRÓXIMAMENTE\n04\nAI\nWORKFLOW SYSTEM\n36 WORKFLOWS · USO COMERCIAL\nORBIT AI\nWorkflows y herramientas de IA\n1 sistema · desde USD 69",
+            "RBIT\nOB—002\nRBIT\n®\n02\nCREATOR\nLIBRARY\n340 ASSETS · USO COMERCIAL\nORBIT LIBRARY\nAssets comerciales\n1 sistema · desde USD 49",
+            "VER TODO →"
+          ],
+          "top": 1688,
+          "height": 844,
+          "screenshot": "secciones/mobile-03.png"
+        },
+        {
+          "index": 4,
+          "tag": "section",
+          "id": null,
+          "className": "pant luz p-datos",
+          "heading": "",
+          "text": "QUÉ TE LLEVÁS 04 0' ENTREGA SE ACREDITA EL PAGO Y YA ESTÁ EN TU CUENTA. ∞ LICENCIA USO COMERCIAL, EN TUS PROYECTOS Y EN LOS DE TUS CLIENTES. $0 ACTUALIZACIONES CUANDO UN SISTEMA MEJORA, LO BAJÁS DE NUEVO SIN PAGAR. ∞ ACCESO SIN SUSCRIPCIÓN Y SIN VENCIMIENTO.",
+          "ctas": [],
+          "top": 2532,
+          "height": 844,
+          "screenshot": "secciones/mobile-04.png"
+        },
+        {
+          "index": 5,
+          "tag": "section",
+          "id": null,
+          "className": "pant dark p-pasos",
+          "heading": "DEL CLIC A usarlo.",
+          "text": "CÓMO FUNCIONA 05 DEL CLIC A usarlo. 01 ELEGÍS Cada ficha dice qué incluye y para qué herramientas sirve. 02 PAGÁS Mercado Pago en pesos o tarjeta en dólares. 03 DESCARGÁS Aparece en tu cuenta al instante. 04 LO HACÉS TUYO Lo adaptás y lo usás las veces que quieras.",
+          "ctas": [],
+          "top": 3376,
+          "height": 844,
+          "screenshot": "secciones/mobile-05.png"
+        },
+        {
+          "index": 6,
+          "tag": "section",
+          "id": "a-medida",
+          "className": "pant luz p-medida",
+          "heading": "¿NO ESTÁ LO QUE\nNECESITÁS?\nLo diseñamos.",
+          "text": "A MEDIDA OB—X00 ¿NO ESTÁ LO QUE NECESITÁS? Lo diseñamos. Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA. Contanos qué necesitás →",
+          "ctas": [
+            "Contanos qué necesitás\n→"
+          ],
+          "top": 4220,
+          "height": 844,
+          "screenshot": "secciones/mobile-06.png"
+        },
+        {
+          "index": 7,
+          "tag": "section",
+          "id": null,
+          "className": "pant dark p-cierre",
+          "heading": "MISMAS PERSONAS.\nMÁS HERRAMIENTAS.\nUn mejor mañana.",
+          "text": "MANIFIESTO 07 MISMAS PERSONAS. MÁS HERRAMIENTAS. Un mejor mañana. Las ideas no necesitan más ruido. Necesitan movimiento. Elegir un sistema ↑",
+          "ctas": [
+            "Elegir un sistema\n↑"
+          ],
+          "top": 5064,
+          "height": 844,
+          "screenshot": "secciones/mobile-07.png"
+        },
+        {
+          "index": 8,
+          "tag": "footer",
+          "id": null,
+          "className": "foot",
+          "heading": "ENTRÁ\nEN ÓRBITA.",
+          "text": "OB—000 IDEAS RECURSOS CRECIMIENTO LIBERTAD ENTRÁ EN ÓRBITA. PRODUCTOS OB—001 Content System OB—002 Creator Library OB—003 Business OS OB—004 AI Workflow System FAMILIAS Orbit Creator Orbit Business Orbit AI Orbit Library Orbit Systems ORBIT Nosotros Pedidos a medida Mi cuenta Manifiesto Manual de marca CONTACTO hola@orbitando.com.ar Instagram Newsletter LEGAL Términos y condiciones Política de privacidad Botón de arrepentimiento RBIT ® ORDEN EN MOVIMIENTO. MISMAS PERSONAS. MÁS HERRAMIENTAS. UN MEJOR MAÑANA. — EST. 2026",
+          "ctas": [
+            "OB—001 Content System",
+            "OB—002 Creator Library",
+            "OB—003 Business OS",
+            "OB—004 AI Workflow System",
+            "Orbit Creator",
+            "Orbit Business",
+            "Orbit AI",
+            "Orbit Library"
+          ],
+          "top": 5908,
+          "height": 1157,
+          "screenshot": "secciones/mobile-08.png"
+        }
+      ]
+    }
+  }
+}
