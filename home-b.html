@@ -261,35 +261,55 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .m3 .indice li.on .met-libro{transform:rotateX(-6deg) rotateY(-26deg);opacity:1}
 
 /* ---------- 04 · MAZO ----------
-   Un mazo de naipes. El de adelante tiene el problema; lo das vuelta y del
-   otro lado está el producto. Lo tirás y aparece el que sigue. */
+   Un mazo de naipes. El de adelante tiene el dolor escrito; se da vuelta
+   solo y del otro lado está la tapa del producto, a página completa. */
 .m4 .mazo{position:relative;flex:1;display:grid;place-items:center;
-  min-height:clamp(340px,48vh,480px);perspective:1200px}
-.m4 .naipe{grid-area:1 / 1;width:min(78vw,300px);aspect-ratio:3 / 4;position:relative;
+  min-height:clamp(288px,39vh,364px);perspective:1400px}
+.m4 .naipe{grid-area:1 / 1;width:min(64vw,238px);aspect-ratio:3 / 4;position:relative;
   transform-style:preserve-3d;cursor:pointer;
-  transform:translateY(calc(var(--k) * 10px)) scale(calc(1 - var(--k) * .05)) rotate(calc(var(--g) * 1deg));
-  transition:transform .6s cubic-bezier(.3,0,.15,1),opacity .45s ease}
+  transform:translateY(calc(var(--nivel) * 9px)) scale(calc(1 - var(--nivel) * .045)) rotate(calc(var(--giro) * 1deg));
+  transition:transform .7s cubic-bezier(.3,0,.15,1),opacity .45s ease}
 .m4 .naipe.dado{transform:rotateY(180deg)}
-.m4 .naipe.ido{transform:translate(-130%,-14%) rotate(-16deg);opacity:0;pointer-events:none}
-.m4 .cara{position:absolute;inset:0;backface-visibility:hidden;border-radius:4px;
-  padding:clamp(20px,5vw,28px);display:flex;flex-direction:column;justify-content:space-between;
-  box-shadow:0 18px 40px -20px rgba(13,13,14,.45)}
-.m4 .frente{background:var(--b);border:1px solid rgba(13,13,14,.16)}
-.m4 .dorso{background:var(--k);color:var(--b);transform:rotateY(180deg);align-items:stretch}
-.m4 .cara .arriba{display:flex;justify-content:space-between;font-family:var(--mono);
+.m4 .naipe.ido{transform:translate(-128%,-12%) rotate(-15deg);opacity:0;pointer-events:none}
+/* el de adelante respira, para que se note que hay que tocarlo */
+@keyframes convidar{0%,100%{translate:0 0}50%{translate:0 -5px}}
+.m4 .naipe.arriba:not(.dado){animation:convidar 2.6s ease-in-out infinite}
+
+.m4 .cara{position:absolute;inset:0;backface-visibility:hidden;border-radius:4px;overflow:hidden;
+  box-shadow:0 20px 44px -22px rgba(13,13,14,.5)}
+.m4 .frente{background:var(--b);border:1px solid rgba(13,13,14,.16);
+  padding:clamp(17px,4.2vw,23px);display:flex;flex-direction:column;justify-content:space-between}
+.m4 .frente .arriba{display:flex;justify-content:space-between;font-family:var(--mono);
   font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
-.m4 .frente .dicho{display:grid;gap:3px}
+.m4 .frente .dicho{display:grid;gap:4px}
 .m4 .frente .dicho p{margin:0;font-family:var(--serif);font-style:italic;
-  font-size:clamp(18px,4.8vw,23px);line-height:1.22}
+  font-size:clamp(16px,4.3vw,20px);line-height:1.22}
 .m4 .frente .dicho p:last-child{color:var(--or)}
-.m4 .frente .pie,.m4 .dorso .pie{font-family:var(--mono);font-size:10px;letter-spacing:.11em;
-  text-transform:uppercase;opacity:.45}
-.m4 .dorso .esc{flex:1;display:grid;place-items:center;perspective:800px}
-.m4 .dorso .met-libro{--w:96px;--h:126px;--d:23px;
-  transform:rotateX(-7deg) rotateY(-26deg);filter:drop-shadow(0 16px 26px rgba(0,0,0,.6))}
-.m4 .dorso b{font-weight:700;font-size:clamp(15px,4vw,18px);letter-spacing:-.015em;line-height:1.3;display:block}
-.m4 .ayuda{display:flex;align-items:center;justify-content:space-between;gap:16px;
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.55}
+.m4 .frente .toca{display:flex;align-items:center;gap:8px;font-family:var(--mono);
+  font-size:10px;letter-spacing:.11em;text-transform:uppercase;opacity:.55}
+.m4 .frente .toca .giro{display:inline-block;width:13px;height:13px;border-radius:50%;
+  border:1px solid currentColor;position:relative}
+.m4 .frente .toca .giro::after{content:"";position:absolute;left:50%;top:1.5px;width:1px;height:5px;
+  background:currentColor;translate:-50% 0}
+
+/* el reverso es la tapa, a página completa: es lo que se viene a ver */
+.m4 .dorso{transform:rotateY(180deg);background:var(--k);color:var(--b)}
+.m4 .dorso .tapa{position:absolute;inset:0}
+.m4 .dorso .tapa .cover{width:100%;box-shadow:none}
+/* la solución va debajo del mazo, no encima de la tapa */
+.m4 .leyenda{display:grid;gap:3px;min-height:clamp(44px,6.4vh,58px);
+  opacity:0;transform:translateY(8px);transition:opacity .4s ease .18s,transform .5s var(--ease) .18s}
+.m4 .leyenda.on{opacity:1;transform:none}
+.m4 .leyenda i{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.45;font-style:normal}
+.m4 .leyenda b{font-weight:700;font-size:clamp(16px,4.3vw,19px);letter-spacing:-.015em;line-height:1.28}
+
+.m4 .ayuda{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.m4 .ayuda .cuenta{opacity:.45}
+.m4 .ayuda .sig{appearance:none;border:1px solid rgba(13,13,14,.25);background:none;font:inherit;
+  color:inherit;padding:8px 14px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:8px}
+.m4 .ayuda .sig:disabled{opacity:.3;cursor:default}
 
 /* selector de versiones: es para probar, sale cuando esté elegida */
 .selm{position:fixed;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;
@@ -501,25 +521,32 @@ if (document.documentElement.classList.contains('gate-on')) {
    la herramienta, se convierte en ella. */
 const PROB = [
   { rubro:['Contenido','Content'],
-    relato:[['Abrís un documento en blanco.', 'You open a blank document.'],
-            ['Volvés a decidir el formato, el tono, la estructura.', 'You decide the format, the tone, the structure. Again.'],
-            ['Otra vez, desde cero.', 'Once more, from zero.']],
-    arregla:['Un sistema de contenido que ya viene armado', 'A content system that arrives already built'] },
+    relato:[['Son las once de la noche.', 'It is eleven at night.'],
+            ['Todavía no sabés qué publicás mañana.', 'You still don’t know what you’re posting tomorrow.'],
+            ['Y mañana hay que publicar.', 'And tomorrow you have to post.']],
+    arregla:['Un sistema donde el próximo post ya está empezado',
+             'A system where the next post is already started'] },
   { rubro:['Recursos','Assets'],
-    relato:[['Abrís tres carpetas.', 'You open three folders.'],
-            ['Ninguna tiene la tipografía que buscabas.', 'None of them has the typeface you were after.'],
-            ['Faltan veinte minutos para entregar.', 'Twenty minutes to the deadline.']],
-    arregla:['Una biblioteca ordenada y lista para usar', 'A tidy library, ready to use'] },
-  { rubro:['Estudio','Studio'],
-    relato:[['Las cuentas en una planilla.', 'The books in one spreadsheet.'],
-            ['Los proyectos en otra.', 'The projects in another.'],
-            ['El estado real, en tu cabeza.', 'The real state of things, in your head.']],
-    arregla:['Un solo tablero donde entra y sale todo', 'One board where everything comes in and out'] },
+    relato:[['Faltan veinte minutos para entregar.', 'Twenty minutes to the deadline.'],
+            ['La tipografía que usaste la última vez no está en ninguna carpeta.',
+             'The typeface you used last time is in none of the folders.'],
+            ['Empezás a buscar.', 'So you start hunting.']],
+    arregla:['Todo lo que usás, en un solo lugar y listo para usar',
+             'Everything you use, in one place and ready to go'] },
+  { rubro:['Negocio','Business'],
+    relato:[['La plata del estudio está en cinco lugares distintos.',
+             'The studio’s money lives in five different places.'],
+            ['Cobraste, pagaste, facturaste.', 'You charged, you paid, you invoiced.'],
+            ['No sabés cuánto ganaste.', 'You have no idea what you made.']],
+    arregla:['Un tablero con la plata, los proyectos y los clientes',
+             'One board with the money, the projects and the clients'] },
   { rubro:['Tiempo','Time'],
-    relato:[['Renombrás. Exportás. Adaptás.', 'Rename. Export. Resize.'],
-            ['Otra vez, para el canal que sigue.', 'Again, for the next channel.'],
-            ['Se fue la mañana.', 'There went the morning.']],
-    arregla:['Un flujo que hace solo la parte mecánica', 'A workflow that handles the mechanical part'] },
+    relato:[['Tres horas renombrando, exportando, adaptando.',
+             'Three hours renaming, exporting, resizing.'],
+            ['Lo mismo que la semana pasada.', 'The same as last week.'],
+            ['Lo mismo que la semana que viene.', 'The same as next week.']],
+    arregla:['Un flujo que hace solo la parte mecánica',
+             'A workflow that handles the mechanical part'] },
 ];
 
 /* El libro es el mismo objeto que en el resto del sitio: la tapa de verdad,
@@ -532,7 +559,7 @@ const PROB = [
    Las cuatro cuentan lo mismo y usan el mismo libro de verdad;
    cambian el fondo, el efecto y la transición.
    ========================================================= */
-const MV = Math.min(4, Math.max(1, +(new URLSearchParams(location.search).get('m')) || 1));
+const MV = Math.min(4, Math.max(1, +(new URLSearchParams(location.search).get('m')) || 4));
 document.body.classList.add('m' + MV);
 document.body.insertAdjacentHTML('beforeend',
   '<div class="selm">' + L('<b>Método</b>','<b>Method</b>') +
@@ -639,38 +666,69 @@ function mazo() {
   metodo.className = 'pant luz p-met';
   metodo.innerHTML = cabecera() + `
     <div class="mazo">${PROB.map((q, i) => `
-      <article class="naipe" data-i="${i}" style="--k:${i};--g:${(i % 2 ? 1 : -1) * (i + 1) * 1.6}">
+      <article class="naipe" data-i="${i}" style="--nivel:${i};--giro:${(i % 2 ? 1 : -1) * (i + 1) * 1.5}">
         <div class="cara frente">
           <div class="arriba"><span>${num(i)} / ${num(PROB.length - 1)}</span><span>${L(...q.rubro)}</span></div>
           <div class="dicho">${frases(q)}</div>
-          <span class="pie">${L('Tocá para darlo vuelta','Tap to turn it over')}</span>
+          <span class="toca"><i class="giro"></i>${L('Se da vuelta solo','It turns over by itself')}</span>
         </div>
-        <div class="cara dorso">
-          <div class="arriba"><span>${P[i] ? P[i].code : ''}</span><span>${L('La herramienta','The tool')}</span></div>
-          <div class="esc">${P[i] ? caras(P[i]) : ''}</div>
-          <div><span class="pie" style="display:block;margin-bottom:4px">${L('Lo arregla','The fix')}</span><b>${L(...q.arregla)}</b></div>
-        </div>
+        <div class="cara dorso"><div class="tapa">${P[i] ? ORBIT.cover(P[i]) : ''}</div></div>
       </article>`).join('')}</div>
-    <div class="ayuda"><span id="mazoN"></span><span>${L('Tocá para dar vuelta','Tap to turn over')}</span></div>`;
-  const naipes = $$('.naipe', metodo), cuenta = $('#mazoN', metodo);
-  let arriba = 0;
-  const marcar = () => cuenta.textContent = `${num(Math.min(arriba, naipes.length - 1))} / ${num(naipes.length - 1)}`;
+    <p class="leyenda"><i>${L('Lo arregla','The fix')}</i><b></b></p>
+    <div class="ayuda">
+      <span class="cuenta"></span>
+      <button class="sig" type="button">${L('Siguiente','Next')} <span class="ar">→</span></button>
+    </div>`;
+
+  const naipes = $$('.naipe', metodo), cuenta = $('.cuenta', metodo), sig = $('.sig', metodo),
+        leyenda = $('.leyenda', metodo), leyendaTxt = $('.leyenda b', metodo);
+  let arriba = 0, reloj = 0, ala = false;
+
+  const marcar = () => {
+    cuenta.textContent = `${num(arriba)} / ${num(naipes.length - 1)}`;
+    sig.disabled = false;
+  };
   const ordenar = () => naipes.forEach((n, i) => {
-    n.style.setProperty('--k', Math.max(0, i - arriba));
+    n.style.setProperty('--nivel', Math.max(0, i - arriba));
     n.style.zIndex = naipes.length - Math.max(0, i - arriba);
     n.classList.toggle('ido', i < arriba);
+    n.classList.toggle('arriba', i === arriba);
   });
+
+  /* se da vuelta sola: no hay que adivinar que se puede tocar */
+  function presentar() {
+    clearTimeout(reloj);
+    if (RM || !ala) return;
+    reloj = setTimeout(dar, 1700);
+  }
+  const dar = () => {
+    clearTimeout(reloj);
+    if (!naipes[arriba]) return;
+    naipes[arriba].classList.add('dado');
+    leyendaTxt.innerHTML = L(...PROB[arriba].arregla);
+    leyenda.classList.add('on');
+  };
+  function siguiente() {
+    clearTimeout(reloj);
+    if (arriba >= naipes.length - 1) {          /* se terminó: se vuelve a armar */
+      naipes.forEach(n => n.classList.remove('dado', 'ido'));
+      arriba = 0;
+    } else arriba++;
+    leyenda.classList.remove('on');
+    ordenar(); marcar(); presentar();
+  }
+
   naipes.forEach((n, i) => n.onclick = () => {
     if (i !== arriba) return;
-    if (!n.classList.contains('dado')) { n.classList.add('dado'); return; }
-    arriba = (arriba + 1) % (naipes.length + 1);
-    if (arriba > naipes.length - 1) {            /* se terminó: vuelve a armarse */
-      naipes.forEach(x => x.classList.remove('dado', 'ido'));
-      arriba = 0;
-    }
-    ordenar(); marcar();
+    n.classList.contains('dado') ? siguiente() : dar();
   });
+  sig.onclick = siguiente;
+
   ordenar(); marcar();
+  new IntersectionObserver(([e]) => {
+    ala = e.isIntersecting;
+    if (ala) presentar(); else clearTimeout(reloj);
+  }, {threshold:.45}).observe(metodo);
 }
 
 /* las caras del libro, que usan las cuatro versiones. La clase con la medida
