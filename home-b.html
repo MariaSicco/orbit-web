@@ -208,6 +208,111 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   text-transform:uppercase;opacity:.4;padding-top:9px}
 
 /* =========================================================
+   TERCERA PANTALLA — la escala (?e=1..5)
+   De una plantilla a un sistema entero. No nombra ningún producto ni
+   cuenta cuántos hay: cuenta qué TIPO de cosa hace Orbit, así la
+   sección sigue siendo verdad cuando el catálogo crezca.
+   1 tipográfica · 2 bloques · 3 de una pieza a muchas
+   4 escalera dibujada · 5 la palabra que cambia
+   ========================================================= */
+#escala{background:var(--k);color:var(--b);overflow:hidden;
+  justify-content:flex-start;gap:clamp(14px,2.4vh,26px)}
+#escala h2{margin:0;font-size:clamp(27px,7.4vw,46px);font-weight:800;
+  letter-spacing:-.035em;line-height:1.04;max-width:16ch}
+#escala h2 .it{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ac)}
+#escala .lead{margin:0;font-size:clamp(14.5px,3.9vw,17px);line-height:1.44;
+  max-width:34ch;opacity:.6}
+#escala .en3{opacity:0;transform:translateY(14px);
+  transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
+.escalado #escala .en3{opacity:1;transform:none}
+.escalado #escala .lead.en3{opacity:.6}
+#escala .nn3{font-family:var(--mono);font-size:10px;letter-spacing:.12em;opacity:.45}
+
+/* ---------- 1 · escalera tipográfica ---------- */
+.e1 #escala .tipo{flex:1;display:flex;flex-direction:column;justify-content:center;
+  list-style:none;margin:0;padding:0;min-height:0}
+.e1 #escala .tipo li{border-top:1px solid rgba(242,239,232,.18);
+  padding:clamp(11px,2vh,18px) 0;display:grid;gap:5px}
+.e1 #escala .tipo li:last-child{border-bottom:1px solid rgba(242,239,232,.18)}
+.e1 #escala .tipo b{display:block;font-weight:800;text-transform:uppercase;
+  letter-spacing:-.045em;line-height:.94;font-size:var(--tam)}
+.e1 #escala .tipo li:nth-child(1){--tam:clamp(25px,6.8vw,38px)}
+.e1 #escala .tipo li:nth-child(2){--tam:clamp(35px,9.6vw,56px)}
+.e1 #escala .tipo li:nth-child(3){--tam:clamp(48px,13.4vw,80px)}
+.e1 #escala .tipo li:nth-child(3) b{color:var(--ac)}
+.e1 #escala .tipo p{margin:0;font-size:clamp(13px,3.5vw,15px);line-height:1.4;
+  opacity:.55;max-width:38ch}
+
+/* ---------- 2 · bloques que crecen ---------- */
+.e2 #escala .barras{flex:1;display:flex;flex-direction:column;gap:clamp(7px,1.4vh,12px);min-height:0}
+.e2 #escala .bloque{display:flex;flex-direction:column;justify-content:flex-end;
+  gap:5px;padding:clamp(11px,2.2vw,16px);border:1px solid rgba(242,239,232,.26)}
+.e2 #escala .bloque b{display:block;font-weight:800;text-transform:uppercase;
+  letter-spacing:-.035em;line-height:1;font-size:clamp(17px,4.8vw,26px)}
+.e2 #escala .bloque p{margin:0;font-size:clamp(12.5px,3.3vw,14px);line-height:1.38;opacity:.6;max-width:40ch}
+.e2 #escala .bloque:nth-child(1){flex:1;width:52%}
+.e2 #escala .bloque:nth-child(2){flex:1.3;width:76%;background:rgba(242,239,232,.07)}
+.e2 #escala .bloque:nth-child(3){flex:1.7;width:100%;background:var(--ac);color:var(--k);border-color:var(--ac)}
+.e2 #escala .bloque:nth-child(3) p{opacity:.72}
+.e2 #escala .bloque:nth-child(3) .nn3{opacity:.6}
+
+/* ---------- 3 · de una pieza a muchas ---------- */
+.e3 #escala .malla{flex:1;display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(13px,2.4vh,22px);min-height:0}
+.e3 #escala .fila3{display:grid;grid-template-columns:clamp(52px,15vw,68px) 1fr;
+  gap:clamp(13px,3.6vw,20px);align-items:center;
+  border-top:1px solid rgba(242,239,232,.18);padding-top:clamp(11px,2vh,17px)}
+.e3 #escala .fila3:last-child{border-bottom:1px solid rgba(242,239,232,.18);
+  padding-bottom:clamp(11px,2vh,17px)}
+.e3 #escala .dibujo{aspect-ratio:1;display:grid;gap:2px;width:100%}
+.e3 #escala .dibujo u{display:block;background:var(--b);opacity:.85}
+.e3 #escala .fila3:nth-child(3) .dibujo u{background:var(--ac)}
+.e3 #escala .fila3 b{display:block;font-weight:800;text-transform:uppercase;
+  letter-spacing:-.035em;font-size:clamp(17px,4.8vw,25px);line-height:1}
+.e3 #escala .fila3 p{margin:5px 0 0;font-size:clamp(12.5px,3.3vw,14px);line-height:1.38;
+  opacity:.55;max-width:38ch}
+
+/* ---------- 4 · escalera dibujada ---------- */
+.e4 #escala .peldanos{flex:1;display:flex;flex-direction:column;justify-content:center;
+  min-height:0;padding-right:4%}
+.e4 #escala .escalon{border-left:2px solid var(--b);border-top:2px solid var(--b);
+  padding:clamp(9px,1.7vh,15px) 0 clamp(15px,2.8vh,26px) clamp(12px,3.4vw,18px)}
+.e4 #escala .escalon:nth-child(2){margin-left:13%}
+.e4 #escala .escalon:nth-child(3){margin-left:26%;border-color:var(--ac)}
+.e4 #escala .escalon:nth-child(3) b{color:var(--ac)}
+.e4 #escala .escalon b{display:block;font-weight:800;text-transform:uppercase;
+  letter-spacing:-.035em;font-size:clamp(17px,4.8vw,26px);line-height:1;margin-top:4px}
+.e4 #escala .escalon p{margin:5px 0 0;font-size:clamp(12.5px,3.3vw,14px);line-height:1.38;
+  opacity:.55;max-width:32ch}
+
+/* ---------- 5 · la palabra que cambia ---------- */
+.e5 #escala{justify-content:center;gap:clamp(16px,3vh,30px);touch-action:pan-y}
+.e5 #escala .frase{margin:0;font-weight:800;letter-spacing:-.04em;line-height:.98;
+  font-size:clamp(32px,9vw,62px)}
+.e5 #escala .frase .chica{display:block;font-family:var(--serif);font-style:italic;
+  font-weight:400;letter-spacing:-.01em;opacity:.55;font-size:.44em;margin-bottom:.22em}
+.e5 #escala .palabra{display:block;color:var(--ac);transition:opacity .22s ease,transform .32s var(--ease)}
+.e5 #escala .palabra.sale{opacity:0;transform:translateY(-12px)}
+.e5 #escala .detalle{margin:0;font-size:clamp(14px,3.8vw,17px);line-height:1.44;
+  max-width:32ch;opacity:.62;transition:opacity .22s ease,transform .32s var(--ease)}
+.e5 #escala .detalle.sale{opacity:0;transform:translateY(-10px)}
+.e5 #escala .tres{display:flex;gap:7px}
+.e5 #escala .tres button{flex:1;height:2px;padding:0;border:0;cursor:pointer;
+  background:rgba(242,239,232,.22)}
+.e5 #escala .tres button[aria-current="true"]{background:var(--ac)}
+.e5 #escala .aviso{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;opacity:.38}
+
+/* selector temporal de la 03 */
+.sel3{position:fixed;right:10px;bottom:calc(96px + env(safe-area-inset-bottom,0px));z-index:60;
+  display:flex;gap:2px;align-items:center;font-family:var(--mono);font-size:10px;
+  background:rgba(13,13,14,.88);border:1px solid rgba(242,239,232,.2);
+  border-radius:999px;padding:4px 6px;color:#F2EFE8;backdrop-filter:blur(8px)}
+.sel3 b{opacity:.45;font-weight:400;padding:0 4px 0 2px}
+.sel3 a{color:inherit;opacity:.5;text-decoration:none;padding:3px 6px;border-radius:999px;line-height:1}
+.sel3 a.on{opacity:1;background:var(--ac);color:#0D0D0E}
+
+/* =========================================================
    COLECCIÓN — cuatro formas de mostrarla (?c=1..4)
    01 estantes por categoría · 02 los cuatro libros a la vista
    03 índice de categorías   · 04 mosaico de categorías
@@ -345,7 +450,10 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 <!-- 02 MÉTODO — el contenido lo arma el JS según la versión elegida -->
 <section class="pant luz" id="metodo"></section>
 
-<!-- 03 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
+<!-- 03 LA ESCALA — el contenido lo arma el JS según la versión elegida -->
+<section class="pant dark" id="escala"></section>
+
+<!-- 04 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
 <section class="pant dark" id="coleccion"></section>
 
 <!-- 04 NÚMEROS -->
@@ -587,6 +695,153 @@ const ESCENAS = [
   else new IntersectionObserver(([e], obs) => {
     if (e.isIntersecting) { document.body.classList.add('cuenta'); obs.disconnect(); }
   }, {threshold:.25}).observe(metodo);
+})();
+
+/* =========================================================
+   TERCERA PANTALLA — la escala (?e=1..5)
+   Cuenta qué tipo de cosa hace Orbit, de lo más chico a lo más grande.
+   No nombra productos ni dice cuántos hay: sigue siendo verdad cuando
+   el catálogo crezca.
+   ========================================================= */
+const escala = $('#escala');
+const PELDANOS = [
+  [['Plantillas','Templates'],
+   ['Una pieza lista. La abrís, le ponés lo tuyo, la usás hoy.',
+    'One ready piece. Open it, make it yours, use it today.'],
+   ['una plantilla','one template']],
+  [['Herramientas','Tools'],
+   ['Bibliotecas y flujos de trabajo. No una pieza: la forma de hacerlas todas.',
+    'Libraries and workflows. Not one piece: the way to make them all.'],
+   ['una herramienta','one tool']],
+  [['Sistemas','Systems'],
+   ['Tu trabajo entero en un solo lugar. Clientes, proyectos, plata, procesos.',
+    'Your whole practice in one place. Clients, projects, money, processes.'],
+   ['un sistema entero','a whole system']],
+];
+const E3 = ['tipo','bloques','piezas','peldanos','palabra'];
+const VE = (parseInt(new URLSearchParams(location.search).get('e'), 10) || 1);
+const E = E3[VE - 1] || 'tipo';
+
+(function terceraPantalla() {
+  if (!escala) return;
+  document.body.classList.add('e' + (E3.indexOf(E) + 1));
+  escala.className = 'pant';
+
+  const nn = i => String(i + 1).padStart(2, '0');
+  const nombre = i => L(...PELDANOS[i][0]);
+  const texto  = i => L(...PELDANOS[i][1]);
+  const cabeza = (conTitulo) => `
+    <div class="eti en3" style="--d:0s"><span>${L('La escala','The scale')} — OB—000</span><span>${
+      L('De lo más chico a lo más grande','From smallest to largest')}</span></div>` +
+    (conTitulo ? `<h2 class="en3" style="--d:.08s">${L(
+      'De una plantilla<br>a un <span class="it">sistema entero.</span>',
+      'From one template<br>to a <span class="it">whole system.</span>')}</h2>` : '') + `
+    <p class="lead en3" style="--d:.16s">${L(
+      'Todo lo que hace Orbit entra en uno de estos tres escalones.',
+      'Everything Orbit makes fits one of these three steps.')}</p>`;
+
+  /* ---------- 1 · escalera tipográfica ---------- */
+  if (E === 'tipo') {
+    escala.innerHTML = cabeza(false) + `
+      <ol class="tipo en3" style="--d:.24s">${PELDANOS.map((_, i) => `
+        <li><span class="nn3">${nn(i)}</span><b>${nombre(i)}</b><p>${texto(i)}</p></li>`).join('')}</ol>`;
+  }
+
+  /* ---------- 2 · bloques que crecen ---------- */
+  if (E === 'bloques') {
+    escala.innerHTML = cabeza(true) + `
+      <div class="barras en3" style="--d:.24s">${PELDANOS.map((_, i) => `
+        <div class="bloque"><span class="nn3">${nn(i)}</span><b>${nombre(i)}</b><p>${texto(i)}</p></div>`).join('')}</div>`;
+  }
+
+  /* ---------- 3 · de una pieza a muchas ---------- */
+  if (E === 'piezas') {
+    const cuadros = [1, 3, 6];                      /* 1 pieza, 9 piezas, 36 piezas */
+    escala.innerHTML = cabeza(true) + `
+      <div class="malla en3" style="--d:.24s">${PELDANOS.map((_, i) => {
+        const n = cuadros[i];
+        return `<div class="fila3">
+          <span class="dibujo" aria-hidden="true" style="grid-template-columns:repeat(${n},1fr)">${
+            '<u></u>'.repeat(n * n)}</span>
+          <span><span class="nn3">${nn(i)}</span><b>${nombre(i)}</b><p>${texto(i)}</p></span>
+        </div>`;
+      }).join('')}</div>`;
+  }
+
+  /* ---------- 4 · escalera dibujada ---------- */
+  if (E === 'peldanos') {
+    escala.innerHTML = cabeza(false) + `
+      <div class="peldanos en3" style="--d:.24s">${PELDANOS.map((_, i) => `
+        <div class="escalon"><span class="nn3">${nn(i)}</span><b>${nombre(i)}</b><p>${texto(i)}</p></div>`).join('')}</div>`;
+  }
+
+  /* ---------- 5 · la palabra que cambia ---------- */
+  if (E === 'palabra') {
+    escala.innerHTML = `
+      <div class="eti en3" style="--d:0s"><span>${L('La escala','The scale')} — OB—000</span><span>${
+        L('De lo más chico a lo más grande','From smallest to largest')}</span></div>
+      <p class="frase en3" style="--d:.1s">
+        <span class="chica">${L('Orbit puede ser','Orbit can be')}</span>
+        <span class="palabra"></span>
+      </p>
+      <p class="detalle en3" style="--d:.2s"></p>
+      <div class="tres en3" style="--d:.28s">${PELDANOS.map((_, i) =>
+        `<button type="button" aria-label="${i + 1}" data-p="${i}"></button>`).join('')}</div>
+      <span class="aviso en3" style="--d:.34s">${L('Deslizá','Swipe')}</span>`;
+
+    const palabra = $('.palabra', escala), detalle = $('.detalle', escala),
+          tres = $$('.tres button', escala);
+    let cual = -1, mudando = false;
+    function ir(i) {
+      if (i === cual || mudando) return;
+      cual = i; mudando = true;
+      palabra.classList.add('sale'); detalle.classList.add('sale');
+      setTimeout(() => {
+        palabra.innerHTML = L(...PELDANOS[i][2]) + '.';
+        detalle.innerHTML = texto(i);
+        palabra.classList.remove('sale'); detalle.classList.remove('sale');
+        mudando = false;
+      }, RM ? 0 : 220);
+      tres.forEach((b, k) => b.setAttribute('aria-current', k === i ? 'true' : 'false'));
+    }
+    tres.forEach((b, i) => b.onclick = () => ir(i));
+    let x0 = null, y0 = null, tirando = false;
+    escala.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; tirando = false; });
+    escala.addEventListener('pointermove', e => {
+      if (x0 === null) return;
+      const dx = e.clientX - x0, dy = e.clientY - y0;
+      if (!tirando && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) tirando = true;
+      if (tirando) e.preventDefault();
+    });
+    function soltar(e) {
+      if (x0 === null) return;
+      const dx = (e.clientX === undefined ? x0 : e.clientX) - x0;
+      x0 = null;
+      if (tirando && Math.abs(dx) > 34) ir((cual + (dx < 0 ? 1 : PELDANOS.length - 1)) % PELDANOS.length);
+      setTimeout(() => tirando = false, 0);
+    }
+    escala.addEventListener('pointerup', soltar);
+    escala.addEventListener('pointercancel', soltar);
+    ir(0);
+  }
+
+  /* se presenta sola al llegar, y queda legible para siempre */
+  if (RM) document.body.classList.add('escalado');
+  else new IntersectionObserver(([e], obs) => {
+    if (e.isIntersecting) { document.body.classList.add('escalado'); obs.disconnect(); }
+  }, {threshold:.25}).observe(escala);
+})();
+
+/* selector temporal para comparar las cinco versiones de la 03 */
+(function selector3() {
+  const caja = document.createElement('div');
+  caja.className = 'sel3';
+  caja.innerHTML = '<b>03</b>' + E3.map((_, k) => {
+    const n = String(k + 1);
+    const u = new URLSearchParams(location.search); u.set('e', n);
+    return `<a href="?${u}#escala" class="${n === String(VE) ? 'on' : ''}">${n}</a>`;
+  }).join('');
+  document.body.appendChild(caja);
 })();
 
 /* =========================================================
