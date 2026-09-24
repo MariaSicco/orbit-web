@@ -349,6 +349,46 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 @keyframes empujar{0%,100%{transform:translateX(0)}55%{transform:translateX(-6px)}}
 .m4 .ayuda .pista .ar{animation:empujar 2.4s ease-in-out infinite}
 
+/* ---------- 05 · PANORAMA ----------
+   Un pantallazo: en cinco segundos y sin tocar nada se entiende qué vende
+   Orbit, cuántos hay, en qué formato y desde cuánto. Se cuenta solo una vez
+   —la frase, después el estante, después las promesas— pero queda todo a la
+   vista, que es lo que necesita una segunda pantalla. */
+.m5 .pano{display:flex;flex-direction:column;gap:clamp(16px,2.8vh,26px);flex:1}
+.m5 .pano .lead{margin:0;font-size:clamp(16px,4.3vw,20px);line-height:1.4;max-width:34ch;
+  opacity:0;transform:translateY(10px);transition:opacity .6s ease .15s,transform .7s var(--ease) .15s}
+.m5.cuenta .pano .lead{opacity:.72;transform:none}
+
+/* el estante: las cuatro tapas de verdad, juntas */
+.m5 .estante{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(8px,2.4vw,14px)}
+.m5 .pieza{display:flex;flex-direction:column;gap:7px;text-decoration:none;color:inherit;
+  opacity:0;transform:translateY(16px) scale(.96);
+  transition:opacity .5s ease var(--d),transform .6s cubic-bezier(.2,.9,.25,1) var(--d)}
+.m5.cuenta .pieza{opacity:1;transform:none}
+.m5 .pieza .cover{width:100%;box-shadow:0 10px 22px -14px rgba(13,13,14,.7)}
+.m5 .pieza .qn{font-family:var(--mono);font-size:9px;letter-spacing:.1em;opacity:.45}
+.m5 .pieza .qs{font-weight:700;font-size:clamp(10.5px,2.9vw,12.5px);letter-spacing:-.01em;line-height:1.2}
+.m5 .pieza .qp{font-family:var(--mono);font-size:10px;letter-spacing:.06em;opacity:.55}
+.m5 .pieza[data-pronto="1"] .cover{filter:grayscale(1) opacity(.55)}
+
+/* las promesas: lo que se lleva quien compra */
+.m5 .promesas{margin-top:auto;border-top:1px solid rgba(13,13,14,.18);padding-top:clamp(13px,2.2vh,18px);
+  display:grid;gap:clamp(10px,1.8vh,15px)}
+.m5 .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,3vw,20px)}
+.m5 .trio div{display:grid;gap:2px;opacity:0;transform:translateY(10px);
+  transition:opacity .5s ease var(--d),transform .6s var(--ease) var(--d)}
+.m5.cuenta .trio div{opacity:1;transform:none}
+.m5 .trio b{font-weight:800;font-size:clamp(20px,5.6vw,28px);letter-spacing:-.04em;line-height:1}
+.m5 .trio span{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.m5 .formatos{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  opacity:0;transition:opacity .6s ease .95s}
+.m5.cuenta .formatos{opacity:.45}
+.m5 .sigue{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10.5px;
+  letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .6s ease 1.15s}
+.m5.cuenta .sigue{opacity:.5}
+@keyframes bajar{0%,100%{transform:translateY(0)}55%{transform:translateY(4px)}}
+.m5 .sigue .ar{animation:bajar 2.4s ease-in-out infinite}
+
 /* selector de versiones: es para probar, sale cuando esté elegida */
 .selm{position:fixed;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;
   display:flex;gap:4px;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
@@ -597,11 +637,11 @@ const PROB = [
    Las cuatro cuentan lo mismo y usan el mismo libro de verdad;
    cambian el fondo, el efecto y la transición.
    ========================================================= */
-const MV = Math.min(4, Math.max(1, +(new URLSearchParams(location.search).get('m')) || 4));
+const MV = Math.min(5, Math.max(1, +(new URLSearchParams(location.search).get('m')) || 5));
 document.body.classList.add('m' + MV);
 document.body.insertAdjacentHTML('beforeend',
   '<div class="selm">' + L('<b>Método</b>','<b>Method</b>') +
-  [1,2,3,4].map(n => `<a href="?m=${n}" class="${n === MV ? 'on' : ''}">0${n}</a>`).join('') + '</div>');
+  [1,2,3,4,5].map(n => `<a href="?m=${n}" class="${n === MV ? 'on' : ''}">0${n}</a>`).join('') + '</div>');
 
 const metodo = $('#metodo');
 const cabecera = () => `
@@ -642,6 +682,49 @@ function cine() {
   riel.addEventListener('scroll', marcar, {passive:true});
   marcar();
   avanzarRiel(tarjetas);
+}
+
+/* ---------- 05 · PANORAMA ------------------------------------------------
+   Qué es Orbit y qué vas a encontrar, de un vistazo. */
+const ENCASTELLANO = {
+  'ob-001': ['Sistema de contenido', 'Content system'],
+  'ob-002': ['Biblioteca de recursos', 'Asset library'],
+  'ob-003': ['Sistema del estudio', 'Studio system'],
+  'ob-004': ['Flujos con IA', 'AI workflows'],
+};
+function panorama() {
+  metodo.className = 'pant luz p-met';
+  const piezas = P.slice(0, 4);
+  metodo.innerHTML = `
+    <div class="eti"><span>${L('Qué es Orbit','What Orbit is')}</span><span>${L('De un vistazo','At a glance')}</span></div>
+    <h2 class="display">${L('Todo lo que ya<br>está <span class="it" style="color:var(--or)">armado.</span>',
+                            'Everything that is<br>already <span class="it" style="color:var(--or)">built.</span>')}</h2>
+    <div class="pano">
+      <p class="lead">${L('Sistemas, plantillas y kits que abrís en las herramientas que ya usás, adaptás a tu marca y usás las veces que quieras.',
+                          'Systems, templates and kits you open in the tools you already use, adapt to your brand and use as often as you like.')}</p>
+      <div class="estante">${piezas.map((p, i) => {
+        const pronto = p.status === 'soon';
+        return `<a class="pieza" href="${ORBIT.url(p)}" data-pronto="${pronto ? 1 : 0}" style="--d:${(.25 + i * .09).toFixed(2)}s">
+          ${ORBIT.cover(p)}
+          <span class="qn">${p.code}</span>
+          <span class="qs">${L(...(ENCASTELLANO[p.id] || [p.name, p.name]))}</span>
+          <span class="qp">${pronto ? L('Pronto','Soon') : ORBIT.money(p.price)}</span>
+        </a>`;
+      }).join('')}</div>
+      <div class="promesas">
+        <div class="trio">
+          <div style="--d:.62s"><b>0&#39;</b><span>${L('Entrega','Delivery')}</span></div>
+          <div style="--d:.72s"><b>$0</b><span>${L('Actualizaciones','Updates')}</span></div>
+          <div style="--d:.82s"><b>&infin;</b><span>${L('Licencia','License')}</span></div>
+        </div>
+        <span class="formatos">Notion · Figma · Canva · PNG · SVG · PDF</span>
+        <span class="sigue">${L('Abajo: cada sistema por dentro','Below: every system in detail')} <span class="ar">&#8595;</span></span>
+      </div>
+    </div>`;
+  const contar = () => document.body.classList.add('cuenta');
+  if (RM) return contar();
+  new IntersectionObserver(([e], obs) => { if (e.isIntersecting) { contar(); obs.disconnect(); } },
+    {threshold:.35}).observe(metodo);
 }
 
 function corte() {
@@ -858,7 +941,7 @@ function avanzarRiel(tarjetas) {
   setTimeout(() => { if (actual === -1) tarjetas.forEach((t, k) => aplicar(t, k === 0 ? 1 : 0)); }, 6000);
 }
 
-[cine, corte, indice, mazo][MV - 1]();
+[cine, corte, indice, mazo, panorama][MV - 1]();
 
 /* ---- colección: un libro por diapositiva ---- */
 $('#rielC').innerHTML = P.map(p => `<article class="c-slide">
