@@ -79,7 +79,11 @@
 /* Cada sección mide la pantalla donde se está viendo —el alto lo mide el
    JS en --sv, porque svh y dvh mienten en Safari— y el contenido va
    centrado. Así no queda una franja de fondo vacío entre una y otra. */
-[data-page="nosotros"] .sec{min-height:var(--sv,100svh);display:flex;align-items:center;
+/* `lvh` es la pantalla con la barra del navegador RETRAÍDA, que es el alto
+   que de verdad tenés cuando estás scrolleando. Medirlo al cargar no sirve:
+   al cargar la barra está desplegada, la ventana es más baja, y cuando la
+   barra se esconde la sección queda corta y asoma la de abajo. */
+[data-page="nosotros"] .sec{min-height:100vh;min-height:100lvh;display:flex;align-items:center;
   padding-block:calc(78px + env(safe-area-inset-top,0px)) clamp(40px,6vw,110px)}
 [data-page="nosotros"] .sec > .wrap{width:100%}
 /* El scroll frena en el borde de cada sección, así nunca quedás a mitad de
