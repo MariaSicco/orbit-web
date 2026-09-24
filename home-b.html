@@ -38,7 +38,7 @@
    --vh lo mide el JS con el alto real de la ventana y lo corrige cada vez
    que cambia. Las unidades quedan solo de respaldo. */
 .pant{min-height:100svh;min-height:100dvh;min-height:var(--vh,100dvh);display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,34px);
-  padding:calc(96px + env(safe-area-inset-top,0px)) var(--pad) calc(78px + env(safe-area-inset-bottom,0px));position:relative;overflow:hidden}
+  padding:calc(88px + env(safe-area-inset-top,0px)) var(--pad) calc(56px + env(safe-area-inset-bottom,0px));position:relative;overflow:hidden}
 .pant .eti{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;--op:.5;opacity:var(--op,1)}
 .pant h2{font-size:clamp(44px,11.5vw,120px);margin:0}
 .luz{background:var(--b);color:var(--k)}
@@ -247,20 +247,20 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .p-destacado{gap:clamp(12px,2.2vh,24px)}
 .p-destacado .feat2{flex:1;min-height:0;display:flex;flex-direction:column;
   gap:clamp(14px,2.4vh,26px)}
-.p-destacado .boxstage{flex:1;min-height:clamp(230px,32vh,340px);overflow:hidden;
+.p-destacado .boxstage{flex:1;min-height:clamp(250px,33vh,360px);overflow:hidden;
   background:radial-gradient(58% 58% at 50% 52%,#2a2a2d 0,var(--k) 70%)}
-.p-destacado .box{--w:clamp(120px,32vw,230px);--h:calc(var(--w) * 1.32);--d:calc(var(--w) * .256)}
+.p-destacado .box{--w:clamp(158px,44vw,250px);--h:calc(var(--w) * 1.32);--d:calc(var(--w) * .256)}
 .p-destacado .boxstage .hint{position:absolute;left:0;bottom:6px;font-size:9.5px;
   letter-spacing:.12em;text-transform:uppercase;opacity:.35}
-.p-destacado .info2{display:grid;gap:clamp(9px,1.6vh,15px)}
+.p-destacado .info2{display:grid;gap:clamp(7px,1.2vh,12px)}
 .p-destacado .info2 .cod{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
   text-transform:uppercase;opacity:.5}
 .p-destacado .info2 h2{margin:0;font-size:clamp(28px,7.6vw,74px);letter-spacing:-.04em;line-height:.96}
 .p-destacado .info2 h2 .it{font-family:var(--serif);font-style:italic;font-weight:400}
-.p-destacado .info2 .tag2{margin:0;font-size:clamp(13.5px,3.6vw,16px);line-height:1.4;
-  opacity:.68;max-width:38ch}
+.p-destacado .info2 .tag2{margin:0;font-size:clamp(12.5px,3.3vw,15px);line-height:1.36;
+  opacity:.62;max-width:40ch}
 .p-destacado .specs2{display:grid;grid-template-columns:1fr 1fr;gap:0 clamp(12px,3.4vw,24px)}
-.p-destacado .specs2 > div{border-top:1px solid rgba(242,239,232,.16);padding:clamp(7px,1.2vh,11px) 0}
+.p-destacado .specs2 > div{border-top:1px solid rgba(242,239,232,.16);padding:clamp(5px,.9vh,9px) 0}
 .p-destacado .specs2 small{display:block;font-family:var(--mono);font-size:9.5px;
   letter-spacing:.1em;text-transform:uppercase;opacity:.45}
 .p-destacado .specs2 b{display:block;font-weight:700;font-size:clamp(13.5px,3.7vw,18px);
@@ -377,30 +377,44 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .qback{margin-top:22px}
 @media (max-width:860px){.quiz,.qres{grid-template-columns:1fr}.qres .cover{max-width:280px}}
 
-/* a medida: el formulario deja de ser un bloque blanco pegado abajo.
-   Va sobre el mismo fondo oscuro y los campos se dibujan a línea, como
-   el resto de la página. */
-#a-medida{gap:clamp(16px,2.8vh,30px)}
-#a-medida .cus{gap:clamp(20px,3.4vw,60px)}
-#a-medida .lead{margin-top:14px;font-size:clamp(14px,3.7vw,16px);line-height:1.42;max-width:40ch}
-#a-medida .ruta{margin:14px 0 0;font-family:var(--mono);font-size:11px;letter-spacing:.04em;
-  line-height:1.7;opacity:.5;max-width:36ch}
-#a-medida .cform{background:none;color:inherit;padding:0;gap:clamp(15px,2.4vh,24px)}
-#a-medida .cform .two{grid-template-columns:1fr 1fr;gap:clamp(12px,3.4vw,20px)}
-#a-medida .cform label,#a-medida .cform .mono{font-size:9.5px;letter-spacing:.11em;opacity:.5}
-#a-medida .cform label{margin-bottom:3px}
-#a-medida .cform input,#a-medida .cform textarea{background:none;color:var(--b);
-  border:0;border-bottom:1px solid rgba(242,239,232,.28);border-radius:0;
-  padding:8px 0;font-size:16px}
-#a-medida .cform input:focus,#a-medida .cform textarea:focus{outline:none;
-  border-bottom-color:var(--ac)}
-#a-medida .cform textarea{min-height:56px}
-#a-medida .cform .opts{gap:7px}
-#a-medida .cform .opts .chip{color:var(--b);border-color:rgba(242,239,232,.28);
-  padding:7px 11px;font-size:9.5px;letter-spacing:.07em}
-#a-medida .cform .opts .chip[aria-pressed="true"]{background:var(--ac);color:var(--k);
-  border-color:var(--ac)}
-#a-medida .cform .send{border-top:1px solid rgba(242,239,232,.16);padding-top:clamp(12px,2vh,18px)}
+/* a medida: una pregunta por vez, avanzando de costado. Todo entra en
+   una pantalla y nadie ve ocho campos apilados. */
+#a-medida{gap:clamp(14px,2.4vh,26px)}
+#a-medida h2{margin:0;font-size:clamp(26px,6.6vw,92px);letter-spacing:-.04em;line-height:1.02}
+#a-medida h2 .it{font-family:var(--serif);font-style:italic;font-weight:400}
+#a-medida .cform{display:flex;flex-direction:column;gap:clamp(12px,2vh,20px);
+  background:none;color:inherit;padding:0;flex:1;min-height:0;justify-content:flex-end}
+#a-medida .barra4{display:flex;align-items:center;gap:14px}
+#a-medida .cuenta4{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.5;white-space:nowrap}
+#a-medida .tramos{display:flex;gap:5px;flex:1}
+#a-medida .tramos i{flex:1;height:2px;background:rgba(242,239,232,.22)}
+#a-medida .tramos i.on{background:var(--ac)}
+#a-medida .pista4{overflow:hidden}
+#a-medida .via4{display:flex;align-items:flex-start;
+  transition:transform .45s cubic-bezier(.3,0,.15,1)}
+#a-medida .paso4{flex:0 0 100%;min-width:100%;display:flex;flex-direction:column;
+  gap:9px;min-height:clamp(150px,25vh,210px)}
+#a-medida .rot4{display:block;font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;opacity:.5}
+#a-medida .opts{display:flex;flex-wrap:wrap;gap:7px}
+#a-medida .opts .chip{color:var(--b);border-color:rgba(242,239,232,.28);
+  padding:8px 12px;font-size:10px;letter-spacing:.07em}
+#a-medida .opts .chip[aria-pressed="true"]{background:var(--ac);color:var(--k);border-color:var(--ac)}
+#a-medida .two{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,3.4vw,20px)}
+#a-medida input,#a-medida textarea{width:100%;font:inherit;font-size:16px;background:none;
+  color:var(--b);border:0;border-bottom:1px solid rgba(242,239,232,.28);border-radius:0;padding:8px 0}
+#a-medida textarea{min-height:clamp(96px,16vh,150px);resize:none}
+#a-medida input:focus,#a-medida textarea:focus{outline:none;border-bottom-color:var(--ac)}
+#a-medida .mandos{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  border-top:1px solid rgba(242,239,232,.16);padding-top:clamp(11px,1.8vh,16px)}
+#a-medida .atras{appearance:none;background:none;border:0;color:inherit;cursor:pointer;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  opacity:.5;padding:0}
+#a-medida .atras[hidden],#a-medida .sigue[hidden],#a-medida .manda[hidden]{display:none}
+#a-medida .err{color:var(--or);font-size:12.5px;flex:1;min-height:1.2em}
+#a-medida .sigue,#a-medida .manda{margin-left:auto}
+
+
 
 
 /* a medida */
@@ -479,28 +493,43 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 </section>
 
 <!-- 07 A MEDIDA -->
-<section class="pant dark alta p-medida" id="a-medida">
+<section class="pant dark p-medida" id="a-medida">
   <div class="eti"><span><span data-l="es">A medida<br>OB—X00</span><span data-l="en">Custom<br>OB—X00</span></span><span style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></span></div>
-  <div class="cus">
-    <div>
-      <h2 class="display" style="font-size:clamp(26px,6.6vw,92px);margin:0"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
-      <p class="lead" style="opacity:.75;margin-top:20px"><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA, hechos para tu negocio.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows, built for your business.</span></p>
-      <p class="ruta"><span data-l="es">Brief → propuesta en 48 h hábiles → diseño con revisiones → entrega lista para usar.</span><span data-l="en">Brief → proposal in 2 business days → design with revisions → delivery, ready to use.</span></p>
+  <h2 class="display"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
+  <form class="cform" id="cform" novalidate>
+    <div class="barra4">
+      <span class="cuenta4"></span>
+      <span class="tramos"><i></i><i></i><i></i><i></i></span>
     </div>
-    <form class="cform" id="cform" novalidate>
-      <div class="two">
-        <div><label class="mono" for="cName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="cName" name="name" autocomplete="name"></div>
-        <div><label class="mono" for="cMail">Email</label><input id="cMail" name="email" type="email" autocomplete="email"></div>
+    <div class="pista4"><div class="via4">
+      <div class="paso4">
+        <span class="mono rot4"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span>
+        <div class="opts" data-group="type"></div>
       </div>
-      <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span><div class="opts" data-group="type"></div></div>
-      <div><label class="mono" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label><textarea id="cIdea" name="idea"></textarea></div>
-      <div class="two">
-        <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Presupuesto (USD)</span><span data-l="en">Budget (USD)</span></span><div class="opts" data-group="budget"></div></div>
-        <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Plazo</span><span data-l="en">Timeline</span></span><div class="opts" data-group="time"></div></div>
+      <div class="paso4">
+        <label class="mono rot4" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label>
+        <textarea id="cIdea" name="idea" placeholder="…"></textarea>
       </div>
-      <div class="send"><span class="err" id="cErr" role="alert"></span><button class="btn btn-blue" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button></div>
-    </form>
-  </div>
+      <div class="paso4">
+        <span class="mono rot4"><span data-l="es">Presupuesto (USD)</span><span data-l="en">Budget (USD)</span></span>
+        <div class="opts" data-group="budget"></div>
+        <span class="mono rot4" style="margin-top:14px"><span data-l="es">Plazo</span><span data-l="en">Timeline</span></span>
+        <div class="opts" data-group="time"></div>
+      </div>
+      <div class="paso4">
+        <div class="two">
+          <div><label class="mono rot4" for="cName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="cName" name="name" autocomplete="name"></div>
+          <div><label class="mono rot4" for="cMail">Email</label><input id="cMail" name="email" type="email" autocomplete="email"></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="mandos">
+      <button class="pasoBtn atras" type="button"><span class="ar">←</span> <span data-l="es">Atrás</span><span data-l="en">Back</span></button>
+      <span class="err" id="cErr" role="alert"></span>
+      <button class="btn btn-line sigue" type="button"><span data-l="es">Siguiente</span><span data-l="en">Next</span> <span class="ar">→</span></button>
+      <button class="btn btn-blue manda" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button>
+    </div>
+  </form>
 </section>
 
 <!-- 08 CIERRE -->
@@ -759,8 +788,14 @@ const coleccion = $('#coleccion');
     <span class="cod">${f.code} · ${FAM[f.family] ? FAM[f.family][0] : ''}</span>
     <h2>${partes[0]}<br><span class="it">${partes.slice(1).join(' ').toLowerCase()}.</span></h2>
     <p class="tag2">${L(f.tagline)}</p>
-    <div class="specs2">${f.specs.slice(0, 4).map(([k, v]) =>
-      `<div><small>${L(k)}</small><b>${L(v)}</b></div>`).join('')}</div>
+    <div class="specs2">${(() => {
+      /* de los cuatro datos, los dos que de verdad hacen falta antes del clic:
+         con qué herramienta se usa y si se puede usar en trabajos de clientes */
+      const quiero = ['Formato','Licencia'];
+      const tengo = (f.specs || []).filter(([k]) => k && quiero.includes(k.es));
+      return (tengo.length ? tengo : (f.specs || []).slice(0, 2))
+        .map(([k, v]) => `<div><small>${L(k)}</small><b>${L(v)}</b></div>`).join('');
+    })()}</div>
     <div class="acts2">${buyBtn(f)}<a class="btn btn-line" href="${ORBIT.url(f)}">${
       L('Ver detalle','See details')}</a></div>`;
 })();
@@ -866,6 +901,41 @@ const porCuadro = fn => {
   addEventListener('scroll', porCuadro(viajar), {passive:true});
   addEventListener('resize', () => { origen = null; viajar(); });
   setTimeout(() => { medir(); viajar(); }, 3000);
+})();
+
+/* ---- 07 · a medida: una pregunta por vez ---- */
+(function aMedida() {
+  const forma = $('#cform');
+  if (!forma) return;
+  const via = $('.via4', forma), pasos = $$('.paso4', forma),
+        tramos = $$('.tramos i', forma), cuenta = $('.cuenta4', forma),
+        atras = $('.atras', forma), sigue = $('.sigue', forma),
+        manda = $('.manda', forma), err = $('#cErr', forma);
+  let cual = 0;
+  const num = i => String(i + 1).padStart(2, '0');
+
+  function pintar() {
+    via.style.transform = `translateX(-${cual * 100}%)`;
+    tramos.forEach((t, i) => t.classList.toggle('on', i <= cual));
+    cuenta.innerHTML = L('Paso','Step') + ` ${num(cual)} / ${num(pasos.length - 1)}`;
+    atras.hidden = cual === 0;
+    sigue.hidden = cual === pasos.length - 1;
+    manda.hidden = cual !== pasos.length - 1;
+    pasos.forEach((p, i) => p.inert = i !== cual);
+  }
+  /* sólo la idea es obligatoria para avanzar; el resto se valida al enviar */
+  function puedeSeguir() {
+    if (cual === 1 && !$('#cIdea').value.trim()) {
+      err.textContent = ORBIT.tr('Contanos la idea para seguir.','Tell us the idea to continue.');
+      return false;
+    }
+    err.textContent = '';
+    return true;
+  }
+  sigue.onclick = () => { if (puedeSeguir() && cual < pasos.length - 1) { cual++; pintar(); } };
+  atras.onclick = () => { if (cual > 0) { cual--; err.textContent = ''; pintar(); } };
+  pintar();
+  addEventListener('orbit:lang', pintar);
 })();
 
 /* ---- el símbolo de Orbit marca el avance ---- */
