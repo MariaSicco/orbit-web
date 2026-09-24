@@ -809,6 +809,14 @@ function seguirRiel(riel, etiqueta, barra) {
 /* ---- la O viaja del wordmark al indicador de avance ----
    Va en un elemento fijo aparte, no en la O del wordmark: esa vive dentro
    de una sección con recorte, y al salir de ella se cortaría. */
+/* Limita a los oyentes de scroll a correr una vez por cuadro. Sin esto,
+   iOS dispara scroll muchas más veces de las que puede dibujar. */
+const porCuadro = fn => {
+  let pedido = false;
+  return () => { if (pedido) return; pedido = true;
+    requestAnimationFrame(() => { pedido = false; fn(); }); };
+};
+
 /* el alto real de la ventana, medido y no declarado */
 (function altoReal() {
   /* Safari informa distinto según tenga la barra desplegada o compacta, así
@@ -817,9 +825,17 @@ function seguirRiel(riel, etiqueta, barra) {
   const fijar = () => document.documentElement.style.setProperty('--vh',
     Math.max(innerHeight, (window.visualViewport && visualViewport.height) || 0) + 'px');
   fijar();
-  addEventListener('resize', fijar);
-  addEventListener('orientationchange', () => setTimeout(fijar, 120));
-  if (window.visualViewport) visualViewport.addEventListener('resize', fijar);
+  /* En iOS, al scrollear para arriba Safari despliega la barra de direcciones
+     y el alto cambia solo. Si reescribimos --vh ahí, las ocho pantallas se
+     recalculan en medio del gesto y el scroll se traba. Sólo recalculamos
+     cuando cambia el ANCHO —rotación o cambio real de ventana—, nunca por
+     el alto. */
+  let anchoAnterior = innerWidth;
+  addEventListener('resize', () => {
+    if (innerWidth === anchoAnterior) return;
+    anchoAnterior = innerWidth; fijar();
+  });
+  addEventListener('orientationchange', () => setTimeout(() => { anchoAnterior = innerWidth; fijar(); }, 160));
 })();
 
 (function viajeDeLaO() {
@@ -834,7 +850,7 @@ function seguirRiel(riel, etiqueta, barra) {
   const medir = () => { if (scrollY < 4) { const r = $('#bWm .o').getBoundingClientRect(); if (r.width > 4) origen = r; } };
 
   function viajar() {
-    const m = meta.getBoundingClientRect();
+    const m = meta.getBoundingClientRect();   /* #avance es fijo: su caja no depende del scroll */
     /* sin indicador a la vista (pantalla grande) no hay viaje posible */
     if (!m.width) { viajero.style.opacity = 0; document.body.classList.remove('viaja', 'llego'); return; }
     if (!origen) { medir(); if (!origen) return; }
@@ -847,7 +863,7 @@ function seguirRiel(riel, etiqueta, barra) {
     document.body.classList.toggle('viaja', viajando);
     document.body.classList.toggle('llego', t >= .998);
   }
-  addEventListener('scroll', viajar, {passive:true});
+  addEventListener('scroll', porCuadro(viajar), {passive:true});
   addEventListener('resize', () => { origen = null; viajar(); });
   setTimeout(() => { medir(); viajar(); }, 3000);
 })();
@@ -857,17 +873,31 @@ const arco = $('#arco'), avance = $('#avance'), avanceN = $('#avanceN');
 const L2 = 2 * Math.PI * 20;
 arco.style.strokeDasharray = L2;
 const pantallas = $$('.pant');
+/* Antes esto medía la caja de las ocho pantallas y pedía el color calculado
+   en CADA evento de scroll: el navegador tenía que rehacer el cálculo de
+   estilos del documento entero decenas de veces por segundo. Ahora se mide
+   una vez —y de nuevo sólo si cambia el tamaño— y el scroll es pura cuenta. */
+let topes = [], colores = [], recorrido = 0;
+function remedir() {
+  topes = pantallas.map(s => s.getBoundingClientRect().top + scrollY);
+  colores = pantallas.map(s => getComputedStyle(s).color);
+  recorrido = document.documentElement.scrollHeight - innerHeight;
+}
 function avanzar() {
-  const alto = document.documentElement.scrollHeight - innerHeight;
-  const p = alto > 0 ? Math.min(1, Math.max(0, scrollY / alto)) : 0;
+  const p = recorrido > 0 ? Math.min(1, Math.max(0, scrollY / recorrido)) : 0;
   arco.style.strokeDashoffset = L2 * (1 - p);
   avance.classList.toggle('on', scrollY > 80);
+  const corte = scrollY + innerHeight * .5;
   let i = 1;
-  pantallas.forEach((s, k) => { if (s.getBoundingClientRect().top <= innerHeight * .5) i = k + 1; });
+  for (let k = 0; k < topes.length; k++) if (topes[k] <= corte) i = k + 1;
   avanceN.textContent = String(i).padStart(2,'0');
-  avance.style.color = getComputedStyle(pantallas[i-1] || document.body).color;
+  avance.style.color = colores[i - 1] || '';
 }
-addEventListener('scroll', avanzar, {passive:true}); avanzar();
+remedir(); avanzar();
+addEventListener('scroll', porCuadro(avanzar), {passive:true});
+addEventListener('resize', () => { remedir(); avanzar(); });
+addEventListener('load', () => { remedir(); avanzar(); });
+setTimeout(() => { remedir(); avanzar(); }, 3200);   /* con la intro ya terminada */
 })();
 </script>
 </body>
