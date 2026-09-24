@@ -76,8 +76,13 @@
   .origin .wmo{display:none}}
 /* 72px arriba y 72 abajo en cada sección daban casi 150px de nada entre una
    y otra en el celular. Sólo en esta página y sólo en pantallas angostas. */
-@media (max-width:860px){ [data-page="nosotros"] .sec{padding-block:clamp(44px,8vw,140px)} }
-#origen + .sec{padding-top:clamp(26px,4vw,56px)}
+/* Cada sección mide la pantalla donde se está viendo —el alto lo mide el
+   JS en --sv, porque svh y dvh mienten en Safari— y el contenido va
+   centrado. Así no queda una franja de fondo vacío entre una y otra. */
+[data-page="nosotros"] .sec{min-height:var(--sv,100svh);display:flex;align-items:center;
+  padding-block:calc(78px + env(safe-area-inset-top,0px)) clamp(40px,6vw,110px)}
+[data-page="nosotros"] .sec > .wrap{width:100%}
+@media (max-width:860px){ [data-page="nosotros"] .sec{padding-block:calc(78px + env(safe-area-inset-top,0px)) clamp(34px,7vw,110px)} }
 
 .vals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3)}
 .vals>div{background:var(--k);padding:22px;min-height:260px;display:flex;flex-direction:column;justify-content:space-between}
@@ -193,7 +198,7 @@ const org = $('#origen'), oSym = $('#oSym'), chaps = $$('#chapters .chap'), fill
 /* el alto real de la ventana. Sólo se recalcula si cambia el ANCHO: si lo
    recalculáramos por el alto, la barra de Safari lo dispararía en pleno scroll. */
 (function altoReal() {
-  const fijar = () => org.style.setProperty('--sv',
+  const fijar = () => document.documentElement.style.setProperty('--sv',
     Math.max(innerHeight, (window.visualViewport && visualViewport.height) || 0) + 'px');
   fijar();
   let ancho = innerWidth;
