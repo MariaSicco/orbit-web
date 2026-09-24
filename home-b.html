@@ -28,8 +28,9 @@
    ============================================================ */
 
 @media (max-width:900px){
-  html{scroll-snap-type:y mandatory;scroll-padding-top:0}
-  .pant{scroll-snap-align:start;scroll-snap-stop:always}
+  html{scroll-snap-type:y proximity;scroll-padding-top:0}
+  .pant{scroll-snap-align:start}
+  .pant.alta{scroll-snap-align:none}
   .foot{scroll-snap-align:start}
 }
 @media (prefers-reduced-motion:reduce){ html{scroll-snap-type:none} }
@@ -246,12 +247,13 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 /* ---- 05 destacado: el producto como objeto, no como captura ---- */
 .p-destacado{gap:clamp(12px,2.2vh,24px)}
 .p-destacado .feat2{flex:1;min-height:0;display:flex;flex-direction:column;
-  gap:clamp(10px,1.8vh,20px)}
-.p-destacado .boxstage{min-height:0;flex:1;background:radial-gradient(58% 58% at 50% 52%,#2a2a2d 0,var(--k) 70%)}
+  gap:clamp(14px,2.4vh,26px)}
+.p-destacado .boxstage{flex:1;min-height:clamp(230px,32vh,340px);overflow:hidden;
+  background:radial-gradient(58% 58% at 50% 52%,#2a2a2d 0,var(--k) 70%)}
 .p-destacado .box{--w:clamp(120px,32vw,230px);--h:calc(var(--w) * 1.32);--d:calc(var(--w) * .256)}
 .p-destacado .boxstage .hint{position:absolute;left:0;bottom:6px;font-size:9.5px;
   letter-spacing:.12em;text-transform:uppercase;opacity:.35}
-.p-destacado .info2{display:grid;gap:clamp(7px,1.2vh,12px)}
+.p-destacado .info2{display:grid;gap:clamp(9px,1.6vh,15px)}
 .p-destacado .info2 .cod{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
   text-transform:uppercase;opacity:.5}
 .p-destacado .info2 h2{margin:0;font-size:clamp(28px,7.6vw,74px);letter-spacing:-.04em;line-height:.96}
@@ -573,8 +575,8 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   <div class="eti"><span><span data-l="es">A medida<br>OB—X00</span><span data-l="en">Custom<br>OB—X00</span></span><span style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></span></div>
   <div class="cus">
     <div>
-      <h2 class="display" style="font-size:clamp(32px,8.2vw,92px);margin:0"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
-      <p class="lead" style="opacity:.75;margin-top:20px"><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA pensados para tu negocio, con el mismo cuidado que cada producto Orbit.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows built for your business, with the same care as every Orbit product.</span></p>
+      <h2 class="display" style="font-size:clamp(26px,6.6vw,92px);margin:0"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
+      <p class="lead" style="opacity:.75;margin-top:20px"><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA, hechos para tu negocio.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows, built for your business.</span></p>
       <p class="ruta"><span data-l="es">Brief → propuesta en 48 h hábiles → diseño con revisiones → entrega lista para usar.</span><span data-l="en">Brief → proposal in 2 business days → design with revisions → delivery, ready to use.</span></p>
     </div>
     <form class="cform" id="cform" novalidate>

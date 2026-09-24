@@ -80,7 +80,7 @@ if ($('#win') && $('#ptabs')) {
      al hueco de la que abrís, así la demo aparece pegada a lo que tocaste.
      Tocar la que ya está abierta la cierra. */
   const guarida = $('.peek');
-  let abierta = null;
+  let abierta = cur.id;   /* la primera llega abierta: si no, la sección parece vacía */
   $('#ptabs').innerHTML = P.map(p => `<div class="pfila"><button role="tab" data-id="${p.id}" aria-selected="false" aria-expanded="false"><span class="mono">${p.code}</span><b>${p.name}</b><span class="sig" aria-hidden="true">+</span></button><div class="phueco"></div></div>`).join('');
   function mudar() {
     const fila = abierta ? $(`#ptabs .pfila > button[data-id="${abierta}"]`).closest('.pfila') : null;
