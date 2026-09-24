@@ -155,239 +155,85 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .pista-x .barra i{position:absolute;inset:0;background:var(--blue);transform-origin:left;transform:scaleX(.25);transition:transform .25s var(--ease)}
 
 /* =========================================================
-   MÉTODO — cuatro versiones para elegir (?m=1..4)
-   Cada una con su fondo, su efecto y su transición.
+   SEGUNDA PANTALLA — cuatro versiones (?m=1..4)
+   Las cuatro explican, no emocionan. Cada una muestra información
+   distinta: qué hay, qué trae, qué cambia y qué pasa cuando comprás.
+   Todas entran solas y quedan legibles sin tocar nada.
    ========================================================= */
-#metodo .eti{margin-bottom:0}
 .p-met h2{margin:0}
-
-/* piezas compartidas: el libro es siempre el objeto de verdad */
-.met-libro{--w:108px;--h:142px;--d:26px;width:var(--w)}
-.met-libro .side{background:#131314}
-.met-libro .side .wm{font-size:11px}
-
-/* ---------- 01 · CINE ----------
-   Pantalla negra y un foco. Cada escena ocupa el ancho completo: no asoma
-   la siguiente. El problema se lee de un vistazo porque está jerarquizado
-   —una frase grande, una mediana y el remate en verde— y va en la misma
-   tipografía de los títulos, que sobre negro se lee mucho mejor que la
-   cursiva. Después sube, se va de cuadro y el libro entra en el haz. */
-.m1 #metodo{background:var(--k);color:var(--b)}
-.m1 #metodo .riel{flex:1;align-items:stretch;gap:clamp(26px,8vw,52px)}
-.m1 #metodo .riel > *{flex:0 0 100%}
-.m1 .cine{display:flex;flex-direction:column;gap:clamp(14px,2.4vh,22px);height:100%}
-.m1 .cine .cab{display:flex;align-items:center;gap:12px;font-family:var(--mono);
-  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.45}
-.m1 .cine .cab .raya{flex:1;height:1px;background:currentColor;opacity:.3}
-
-.m1 .foco{position:relative;flex:1;display:grid;place-items:center;
-  min-height:clamp(214px,29vh,300px);perspective:900px;perspective-origin:50% 40%}
-.m1 .foco::before{content:"";position:absolute;inset:-12% -16%;pointer-events:none;
-  background:radial-gradient(46% 40% at 50% 54%,rgba(242,239,232,.17) 0,transparent 70%);
-  opacity:var(--fin,0)}
-.m1 .foco > *{grid-area:1 / 1;width:100%;position:relative}
-
-/* el problema, jerarquizado: se entiende sin leerlo entero */
-.m1 .cine .relato{margin:0;display:grid;gap:clamp(7px,1.4vh,12px);align-content:center}
-.m1 .cine .relato .l{display:block;font-family:var(--sans);letter-spacing:-.03em;
-  opacity:calc((.1 + (var(--cuenta,0) - var(--i) * .24) * 4.5) * (1 - var(--fin,0)));
-  transform:translateY(calc(var(--fin,0) * -48px));
-  filter:blur(calc(var(--fin,0) * 4px))}
-.m1 .cine .relato .l:nth-child(1){font-weight:800;font-size:clamp(26px,7.2vw,40px);line-height:1.02}
-.m1 .cine .relato .l:nth-child(2){font-weight:500;font-size:clamp(17px,4.6vw,22px);
-  line-height:1.32;color:rgba(242,239,232,.62);max-width:26ch}
-.m1 .cine .relato .l:nth-child(3){font-weight:800;font-size:clamp(26px,7.2vw,40px);
-  line-height:1.02;color:var(--ac)}
-
-.m1 .foco > .met-libro{width:var(--w);justify-self:center;opacity:var(--fin,0);
-  transform:translateY(calc(46px - var(--fin,0) * 46px)) rotateX(-7deg) rotateY(-26deg);
-  filter:drop-shadow(0 22px 34px rgba(0,0,0,.6))}
-
-.m1 .cine .arregla{margin:0;display:grid;gap:4px;opacity:calc(.22 + (var(--orden,0) - .6) * 2.4)}
-.m1 .cine .arregla i{font-family:var(--mono);font-size:10px;letter-spacing:.11em;
-  text-transform:uppercase;opacity:.5;font-style:normal}
-.m1 .cine .arregla b{font-weight:700;font-size:clamp(16px,4.3vw,19px);letter-spacing:-.015em;line-height:1.25}
-
-/* la flecha que invita a pasar a la siguiente */
-.m1 .pasar{display:flex;align-items:center;justify-content:space-between;gap:16px;
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
-.m1 .pasar .cuenta{opacity:.45}
-.m1 .pasar .ir{appearance:none;border:1px solid rgba(242,239,232,.28);background:none;font:inherit;
-  color:inherit;padding:9px 15px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:9px}
-@keyframes empujar{0%,100%{transform:translateX(0)}55%{transform:translateX(-6px)}}
-.m1 .pasar .ir .ar{animation:empujar 2.4s ease-in-out infinite}
-
-/* ---------- 02 · CORTE ----------
-   Una sola pantalla partida al medio. Arriba el problema en claro, abajo el
-   producto en oscuro. Al cambiar, las dos mitades se cruzan en direcciones
-   opuestas y la línea del medio barre. */
-.m2 .corte{position:relative;flex:1;display:grid;grid-template-rows:auto 1fr;
-  min-height:clamp(320px,46vh,460px);overflow:hidden}
-.m2 .mitad{position:relative;overflow:hidden}
-.m2 .mitad > *{grid-area:1 / 1}
-.m2 .alta{display:grid;align-items:center;padding:clamp(16px,4vw,26px) 0 clamp(20px,4vh,30px)}
-.m2 .baja{display:grid;place-items:center;background:var(--k);perspective:900px;
-  padding:clamp(18px,4vh,28px)}
-.m2 .linea{height:1px;background:rgba(13,13,14,.2);position:relative;overflow:hidden}
-.m2 .linea i{position:absolute;inset:0;background:var(--or);transform-origin:left;
-  transform:scaleX(0);transition:transform .5s cubic-bezier(.65,0,.25,1)}
-.m2 .corte.pasa .linea i{transform:scaleX(1)}
-.m2 .hoja{display:grid;gap:3px;transition:opacity .34s ease,transform .44s cubic-bezier(.3,0,.2,1)}
-.m2 .hoja p{margin:0;font-family:var(--serif);font-style:italic;
-  font-size:clamp(20px,5.6vw,28px);line-height:1.2}
-.m2 .hoja p:last-child{color:var(--or)}
-.m2 .corte.pasa .alta .hoja{opacity:0;transform:translateX(-24px)}
-.m2 .corte.pasa .baja .met-libro{opacity:0;transform:translateX(30px) rotateX(-7deg) rotateY(-26deg)}
-.m2 .baja .met-libro{transition:opacity .34s ease,transform .44s cubic-bezier(.3,0,.2,1);
-  transform:rotateX(-7deg) rotateY(-26deg);filter:drop-shadow(0 18px 28px rgba(0,0,0,.5))}
-.m2 .pie{display:flex;align-items:center;justify-content:space-between;gap:16px;
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
-.m2 .pie .sol{font-weight:700;letter-spacing:-.01em;font-family:var(--sans);
-  font-size:clamp(15px,4vw,18px);text-transform:none;flex:1}
-.m2 .pasos{display:flex;gap:6px}
-.m2 .pasos button{appearance:none;border:1px solid rgba(13,13,14,.25);background:none;
-  font:inherit;color:inherit;padding:5px 9px;border-radius:999px;cursor:pointer;opacity:.5}
-.m2 .pasos button[aria-current="true"]{background:var(--k);color:var(--b);border-color:var(--k);opacity:1}
-
-/* ---------- 03 · ÍNDICE ----------
-   Los cuatro problemas a la vista, como el índice de un libro. El que se
-   abre empuja a los otros y saca su tapa por el costado. */
-.m3 .indice{list-style:none;margin:0;padding:0;display:grid;gap:0;flex:1}
-.m3 .indice li{border-top:1px solid rgba(13,13,14,.18)}
-.m3 .indice li:last-child{border-bottom:1px solid rgba(13,13,14,.18)}
-.m3 .fila{display:flex;align-items:baseline;gap:12px;width:100%;appearance:none;background:none;
-  border:0;padding:clamp(13px,2.4vh,20px) 0;font:inherit;color:inherit;text-align:left;cursor:pointer}
-.m3 .fila .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.45}
-.m3 .fila .t{flex:1;font-weight:800;letter-spacing:-.03em;text-transform:uppercase;
-  font-size:clamp(19px,5.2vw,26px);line-height:1;transition:opacity .3s ease}
-.m3 .indice li:not(.on) .fila .t{opacity:.34}
-.m3 .fila .mas{font-family:var(--mono);font-size:13px;opacity:.4;transition:transform .4s var(--ease)}
-.m3 .indice li.on .fila .mas{transform:rotate(45deg)}
-.m3 .cajon{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s cubic-bezier(.3,0,.15,1)}
-.m3 .indice li.on .cajon{grid-template-rows:1fr}
-.m3 .cajon > div{overflow:hidden;min-height:0}
-.m3 .dentro{display:flex;gap:clamp(14px,4vw,26px);align-items:center;
-  padding-bottom:clamp(16px,2.6vh,24px)}
-.m3 .dentro .txt{flex:1;display:grid;gap:8px}
-.m3 .dentro .txt p{margin:0;font-family:var(--serif);font-style:italic;
-  font-size:clamp(16px,4.3vw,20px);line-height:1.25}
-.m3 .dentro .txt p:last-of-type{color:var(--or)}
-.m3 .dentro .txt b{font-weight:700;font-size:14.5px;letter-spacing:-.01em;line-height:1.3}
-.m3 .dentro .txt i{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;
-  text-transform:uppercase;opacity:.45;font-style:normal;display:block;margin-bottom:2px}
-.m3 .dentro .esc{flex:none;width:clamp(104px,29vw,128px);perspective:800px;display:grid;place-items:center}
-.m3 .met-libro{--w:86px;--h:113px;--d:21px;
-  transform:rotateX(-6deg) rotateY(-60deg) translateX(34px);opacity:0;
-  transition:transform .6s cubic-bezier(.25,1,.3,1) .1s,opacity .5s ease .1s;
-  filter:drop-shadow(0 12px 20px rgba(13,13,14,.22))}
-.m3 .indice li.on .met-libro{transform:rotateX(-6deg) rotateY(-26deg);opacity:1}
-
-/* ---------- 04 · MAZO ----------
-   Un mazo. Las dos caras del naipe son tapas del mismo sistema: adelante la
-   del problema, atrás la del producto. Se da vuelta solo y se pasa de página
-   deslizando, como un libro. */
-.m4 .mazo{position:relative;flex:1;display:grid;place-items:center;
-  min-height:clamp(288px,39vh,364px);perspective:1400px}
-.m4 .naipe{grid-area:1 / 1;width:min(64vw,238px);aspect-ratio:3 / 4;position:relative;
-  transform-style:preserve-3d;cursor:grab;touch-action:pan-y;
-  transform:translateY(calc(var(--nivel) * 9px)) scale(calc(1 - var(--nivel) * .045)) rotate(calc(var(--giro) * 1deg));
-  transition:transform .7s cubic-bezier(.3,0,.15,1),opacity .45s ease}
-.m4 .naipe.dado{transform:rotateY(180deg)}
-.m4 .naipe.ido{transform:translate(-128%,-12%) rotate(-15deg);opacity:0;pointer-events:none}
-/* el de adelante respira, para que se note que está vivo */
-@keyframes convidar{0%,100%{translate:0 0}50%{translate:0 -5px}}
-.m4 .naipe.arriba:not(.dado){animation:convidar 2.6s ease-in-out infinite}
-.m4 .naipe.tirando{animation:none;cursor:grabbing}
-
-.m4 .cara{position:absolute;inset:0;backface-visibility:hidden;border-radius:4px;overflow:hidden;
-  box-shadow:0 20px 44px -22px rgba(13,13,14,.5)}
-
-/* la cara del problema, armada como una tapa: lomo, cifra y la frase */
-.m4 .frente{background:var(--b);color:var(--k);border:1px solid rgba(13,13,14,.14);
-  display:grid;grid-template-columns:13% 1fr;container-type:inline-size}
-.m4 .frente .lomo{background:var(--k);color:var(--b);display:flex;flex-direction:column;
-  align-items:center;justify-content:space-between;padding:clamp(11px,3vw,15px) 0}
-.m4 .frente .lomo span{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;
-  font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase}
-.m4 .frente .lomo .rub{font-size:max(8px,2.9cqw);opacity:.9}
-.m4 .frente .lomo .cod{font-size:max(7px,2.4cqw);opacity:.5;letter-spacing:.12em}
-.m4 .frente .hoja{padding:clamp(14px,3.6vw,20px);display:flex;flex-direction:column;position:relative}
-.m4 .frente .alto{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
-  font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
-.m4 .frente .cifra{font-weight:800;font-size:clamp(44px,12.5vw,60px);letter-spacing:-.05em;
-  line-height:.78;margin-top:6px;opacity:.14}
-/* la cursiva no se leía: misma jerarquía que la versión oscura, con la
-   tipografía de los títulos. Las medidas van en unidades del naipe, así
-   acompañan su tamaño. */
-.m4 .frente .dicho{margin-top:auto;display:grid;gap:max(5px,1.8cqw)}
-.m4 .frente .dicho p{margin:0;font-family:var(--sans);letter-spacing:-.03em}
-.m4 .frente .dicho p:nth-child(1){font-weight:800;font-size:max(17px,8.2cqw);line-height:1.04}
-.m4 .frente .dicho p:nth-child(2){font-weight:500;font-size:max(12.5px,5.8cqw);
-  line-height:1.3;color:rgba(13,13,14,.6)}
-.m4 .frente .dicho p:nth-child(3){font-weight:800;font-size:max(17px,8.2cqw);
-  line-height:1.04;color:var(--or)}
-.m4 .frente .bajo{margin-top:clamp(10px,2.4vw,14px);font-family:var(--mono);font-size:9px;
-  letter-spacing:.14em;text-transform:uppercase;opacity:.4}
-
-/* el reverso es la tapa del producto, a página completa y sin nada encima */
-.m4 .dorso{transform:rotateY(180deg);background:var(--k);color:var(--b)}
-.m4 .dorso .tapa{position:absolute;inset:0}
-.m4 .dorso .tapa .cover{width:100%;box-shadow:none}
-
-/* la solución, debajo del mazo */
-.m4 .leyenda{display:grid;gap:3px;min-height:clamp(44px,6.4vh,58px);
-  opacity:0;transform:translateY(8px);transition:opacity .4s ease .18s,transform .5s var(--ease) .18s}
-.m4 .leyenda.on{opacity:1;transform:none}
-.m4 .leyenda i{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;opacity:.45;font-style:normal}
-.m4 .leyenda b{font-weight:700;font-size:clamp(16px,4.3vw,19px);letter-spacing:-.015em;line-height:1.28}
-
-.m4 .ayuda{display:flex;align-items:center;justify-content:space-between;gap:14px;
-  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
-.m4 .ayuda .cuenta{opacity:.45}
-.m4 .ayuda .pista{display:flex;align-items:center;gap:8px;opacity:.5}
-@keyframes empujar{0%,100%{transform:translateX(0)}55%{transform:translateX(-6px)}}
-.m4 .ayuda .pista .ar{animation:empujar 2.4s ease-in-out infinite}
-
-/* ---------- 05 · PANORAMA ----------
-   Un pantallazo: en cinco segundos y sin tocar nada se entiende qué vende
-   Orbit, cuántos hay, en qué formato y desde cuánto. Se cuenta solo una vez
-   —la frase, después el estante, después las promesas— pero queda todo a la
-   vista, que es lo que necesita una segunda pantalla. */
-.m5 .pano{display:flex;flex-direction:column;gap:clamp(16px,2.8vh,26px);flex:1}
-.m5 .pano .lead{margin:0;font-size:clamp(16px,4.3vw,20px);line-height:1.4;max-width:34ch;
-  opacity:0;transform:translateY(10px);transition:opacity .6s ease .15s,transform .7s var(--ease) .15s}
-.m5.cuenta .pano .lead{opacity:.72;transform:none}
-
-/* el estante: las cuatro tapas de verdad, juntas */
-.m5 .estante{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(8px,2.4vw,14px)}
-.m5 .pieza{display:flex;flex-direction:column;gap:7px;text-decoration:none;color:inherit;
-  opacity:0;transform:translateY(16px) scale(.96);
-  transition:opacity .5s ease var(--d),transform .6s cubic-bezier(.2,.9,.25,1) var(--d)}
-.m5.cuenta .pieza{opacity:1;transform:none}
-.m5 .pieza .cover{width:100%;box-shadow:0 10px 22px -14px rgba(13,13,14,.7)}
-.m5 .pieza .qn{font-family:var(--mono);font-size:9px;letter-spacing:.1em;opacity:.45}
-.m5 .pieza .qs{font-weight:700;font-size:clamp(10.5px,2.9vw,12.5px);letter-spacing:-.01em;line-height:1.2}
-.m5 .pieza .qp{font-family:var(--mono);font-size:10px;letter-spacing:.06em;opacity:.55}
-.m5 .pieza[data-pronto="1"] .cover{filter:grayscale(1) opacity(.55)}
-
-/* las promesas: lo que se lleva quien compra */
-.m5 .promesas{margin-top:auto;border-top:1px solid rgba(13,13,14,.18);padding-top:clamp(13px,2.2vh,18px);
-  display:grid;gap:clamp(10px,1.8vh,15px)}
-.m5 .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,3vw,20px)}
-.m5 .trio div{display:grid;gap:2px;opacity:0;transform:translateY(10px);
-  transition:opacity .5s ease var(--d),transform .6s var(--ease) var(--d)}
-.m5.cuenta .trio div{opacity:1;transform:none}
-.m5 .trio b{font-weight:800;font-size:clamp(20px,5.6vw,28px);letter-spacing:-.04em;line-height:1}
-.m5 .trio span{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
-.m5 .formatos{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-  opacity:0;transition:opacity .6s ease .95s}
-.m5.cuenta .formatos{opacity:.45}
-.m5 .sigue{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10.5px;
-  letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .6s ease 1.15s}
-.m5.cuenta .sigue{opacity:.5}
+.p-met .lead{margin:0;font-size:clamp(15.5px,4.1vw,19px);line-height:1.42;max-width:36ch;opacity:.7}
+.p-met .cuerpo{display:flex;flex-direction:column;gap:clamp(14px,2.4vh,22px);flex:1}
+.p-met .pie-nota{display:flex;align-items:center;gap:9px;font-family:var(--mono);font-size:10px;
+  letter-spacing:.1em;text-transform:uppercase;opacity:.45}
 @keyframes bajar{0%,100%{transform:translateY(0)}55%{transform:translateY(4px)}}
-.m5 .sigue .ar{animation:bajar 2.4s ease-in-out infinite}
+.p-met .pie-nota .ar{animation:bajar 2.4s ease-in-out infinite}
+/* lo que entra en orden cuando la pantalla aparece */
+.p-met .ent2{opacity:0;transform:translateY(14px);
+  transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
+.cuenta .p-met .ent2{opacity:1;transform:none}
+.cuenta .p-met .lead.ent2{opacity:.7}
+.cuenta .p-met .pie-nota.ent2{opacity:.45}
+
+/* ---------- 01 · CATÁLOGO — qué hay ---------- */
+.m1 .estante{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(8px,2.4vw,14px)}
+.m1 .pieza{display:flex;flex-direction:column;gap:7px;text-decoration:none;color:inherit}
+.m1 .pieza .cover{width:100%;box-shadow:0 10px 22px -14px rgba(13,13,14,.7)}
+.m1 .pieza .qn{font-family:var(--mono);font-size:9px;letter-spacing:.1em;opacity:.45}
+.m1 .pieza .qs{font-weight:700;font-size:clamp(10.5px,2.9vw,12.5px);letter-spacing:-.01em;line-height:1.2}
+.m1 .pieza .qp{font-family:var(--mono);font-size:10px;letter-spacing:.06em;opacity:.55}
+.m1 .pieza[data-pronto="1"] .cover{filter:grayscale(1) opacity(.55)}
+.m1 .promesas{margin-top:auto;border-top:1px solid rgba(13,13,14,.18);padding-top:clamp(13px,2.2vh,18px);
+  display:grid;gap:clamp(9px,1.6vh,14px)}
+.m1 .trio{display:grid;grid-template-columns:repeat(3,1fr);gap:clamp(10px,3vw,20px)}
+.m1 .trio div{display:grid;gap:2px}
+.m1 .trio b{font-weight:800;font-size:clamp(20px,5.6vw,28px);letter-spacing:-.04em;line-height:1}
+.m1 .trio span{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.m1 .formatos{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.45}
+
+/* ---------- 02 · QUÉ TRAE — el contenido de cada sistema ---------- */
+.m2 .pestanas{display:flex;gap:6px;flex-wrap:wrap}
+.m2 .pestanas button{appearance:none;border:1px solid rgba(13,13,14,.22);background:none;font:inherit;
+  color:inherit;font-family:var(--mono);font-size:10px;letter-spacing:.08em;padding:6px 11px;
+  border-radius:999px;cursor:pointer;opacity:.5;transition:all .25s var(--ease)}
+.m2 .pestanas button[aria-current="true"]{background:var(--k);color:var(--b);border-color:var(--k);opacity:1}
+.m2 .ficha{display:grid;gap:clamp(11px,1.9vh,16px);transition:opacity .28s ease}
+.m2 .ficha.cambia{opacity:0}
+.m2 .ficha .nom{font-weight:800;font-size:clamp(22px,6vw,30px);letter-spacing:-.04em;line-height:1.02;margin:0}
+.m2 .ficha .meta{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.m2 .trae{list-style:none;margin:0;padding:0;display:grid}
+.m2 .trae li{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:baseline;
+  padding:clamp(9px,1.6vh,13px) 0;border-top:1px solid rgba(13,13,14,.14)}
+.m2 .trae li:last-child{border-bottom:1px solid rgba(13,13,14,.14)}
+.m2 .trae .nn{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;opacity:.4}
+.m2 .trae b{font-weight:700;font-size:clamp(14.5px,3.9vw,17px);letter-spacing:-.01em;line-height:1.25;display:block}
+.m2 .trae small{display:block;font-size:clamp(12.5px,3.4vw,14px);line-height:1.35;opacity:.62;margin-top:2px}
+
+/* ---------- 03 · QUÉ CAMBIA — antes y después ---------- */
+.m3 .cambios{list-style:none;margin:0;padding:0;display:grid;flex:1;align-content:center}
+.m3 .cambios li{padding:clamp(11px,2vh,17px) 0;border-top:1px solid rgba(13,13,14,.16)}
+.m3 .cambios li:last-child{border-bottom:1px solid rgba(13,13,14,.16)}
+.m3 .cambios .qu{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;
+  opacity:.45;display:block;margin-bottom:5px}
+.m3 .par{display:flex;align-items:baseline;gap:clamp(8px,2.6vw,14px);flex-wrap:wrap}
+.m3 .antes{font-family:var(--serif);font-style:italic;font-size:clamp(16px,4.3vw,20px);
+  opacity:.45;text-decoration:line-through;text-decoration-thickness:1px}
+.m3 .flecha{font-family:var(--mono);font-size:12px;opacity:.35}
+.m3 .luego{font-weight:800;font-size:clamp(17px,4.6vw,21px);letter-spacing:-.025em;color:var(--or)}
+
+/* ---------- 04 · CÓMO FUNCIONA — el recorrido ---------- */
+.m4 .pasos2{list-style:none;margin:0;padding:0;display:grid;flex:1;align-content:center;
+  position:relative}
+.m4 .pasos2::before{content:"";position:absolute;left:12px;top:14px;bottom:14px;width:1px;
+  background:rgba(13,13,14,.16)}
+.m4 .pasos2 li{display:grid;grid-template-columns:26px 1fr auto;gap:clamp(11px,3vw,16px);
+  align-items:baseline;padding:clamp(8px,1.5vh,13px) 0;position:relative}
+.m4 .pasos2 .pt{width:9px;height:9px;border-radius:50%;background:var(--b);
+  border:1px solid rgba(13,13,14,.4);margin-left:8px;align-self:center}
+.m4 .pasos2 li:last-child .pt{background:var(--or);border-color:var(--or)}
+.m4 .pasos2 b{font-weight:700;font-size:clamp(15.5px,4.2vw,18px);letter-spacing:-.015em;line-height:1.2;display:block}
+.m4 .pasos2 small{display:block;font-size:clamp(12.5px,3.4vw,14px);line-height:1.35;opacity:.6;margin-top:2px}
+.m4 .pasos2 .dato{font-family:var(--mono);font-size:clamp(13px,3.6vw,16px);font-weight:700;
+  letter-spacing:-.01em;opacity:.75;align-self:center}
 
 /* selector de versiones: es para probar, sale cuando esté elegida */
 .selm{position:fixed;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;
@@ -593,355 +439,158 @@ if (document.documentElement.classList.contains('gate-on')) {
 } else setTimeout(arrancar, 50);
 
 /* ---- método: un problema por diapositiva ---- */
-/* Cuatro problemas concretos y muy comunes. Cada tarjeta muestra el desorden
-   real —las piezas sueltas de ese problema— y esas mismas piezas se acomodan
-   dentro de una tapa: el producto terminado. El problema no se reemplaza por
-   la herramienta, se convierte en ella. */
-const PROB = [
-  { rubro:['Contenido','Content'],
-    relato:[['Son las once de la noche.', 'It is eleven at night.'],
-            ['Todavía no sabés qué publicás mañana.', 'You still don’t know what you’re posting tomorrow.'],
-            ['Y mañana hay que publicar.', 'And tomorrow you have to post.']],
-    arregla:['Un sistema donde el próximo post ya está empezado',
-             'A system where the next post is already started'] },
-  { rubro:['Recursos','Assets'],
-    relato:[['Faltan veinte minutos para entregar.', 'Twenty minutes to the deadline.'],
-            ['La tipografía que usaste la última vez no está en ninguna carpeta.',
-             'The typeface you used last time is in none of the folders.'],
-            ['Empezás a buscar.', 'So you start hunting.']],
-    arregla:['Todo lo que usás, en un solo lugar y listo para usar',
-             'Everything you use, in one place and ready to go'] },
-  { rubro:['Negocio','Business'],
-    relato:[['La plata del estudio está en cinco lugares distintos.',
-             'The studio’s money lives in five different places.'],
-            ['Cobraste, pagaste, facturaste.', 'You charged, you paid, you invoiced.'],
-            ['No sabés cuánto ganaste.', 'You have no idea what you made.']],
-    arregla:['Un tablero con la plata, los proyectos y los clientes',
-             'One board with the money, the projects and the clients'] },
-  { rubro:['Tiempo','Time'],
-    relato:[['Tres horas renombrando, exportando, adaptando.',
-             'Three hours renaming, exporting, resizing.'],
-            ['Lo mismo que la semana pasada.', 'The same as last week.'],
-            ['Lo mismo que la semana que viene.', 'The same as next week.']],
-    arregla:['Un flujo que hace solo la parte mecánica',
-             'A workflow that handles the mechanical part'] },
-];
 
 /* El libro es el mismo objeto que en el resto del sitio: la tapa de verdad,
    con su lomo, su código y su contratapa. No un dibujo que se le parezca.
    Entra de canto, mostrando el lomo, y gira hasta darte la tapa a medida que
    la tarjeta llega al centro: del problema al producto, con el mismo gesto. */
 /* =========================================================
-   MÉTODO — cuatro versiones distintas, para elegir una.
-   Se prenden con ?m=1..4 y hay un selector abajo a la derecha.
-   Las cuatro cuentan lo mismo y usan el mismo libro de verdad;
-   cambian el fondo, el efecto y la transición.
+   SEGUNDA PANTALLA — cuatro versiones que explican (?m=1..4)
+   En el segundo scroll hay que entender qué es Orbit, qué vende y qué
+   queda por ver. Las cuatro responden eso; cada una con otra información:
+   01 qué hay · 02 qué trae cada uno · 03 qué cambia · 04 qué pasa al comprar.
+   Todas quedan legibles sin tocar nada; la animación solo las presenta.
    ========================================================= */
-const MV = Math.min(5, Math.max(1, +(new URLSearchParams(location.search).get('m')) || 5));
+const MV = Math.min(4, Math.max(1, +(new URLSearchParams(location.search).get('m')) || 1));
 document.body.classList.add('m' + MV);
 document.body.insertAdjacentHTML('beforeend',
-  '<div class="selm">' + L('<b>Método</b>','<b>Method</b>') +
-  [1,2,3,4,5].map(n => `<a href="?m=${n}" class="${n === MV ? 'on' : ''}">0${n}</a>`).join('') + '</div>');
+  '<div class="selm">' + L('<b>Pantalla 2</b>','<b>Screen 2</b>') +
+  [1,2,3,4].map(n => `<a href="?m=${n}" class="${n === MV ? 'on' : ''}">0${n}</a>`).join('') + '</div>');
 
 const metodo = $('#metodo');
-const cabecera = () => `
-  <div class="eti"><span>${L('Nuestro método','Our method')}</span><span>${L('Problema → herramienta','Problem → tool')}</span></div>
-  <h2 class="display">${L('Problema<br>→ <span class="it" style="color:var(--or)">herramienta.</span>',
-                          'Problem<br>→ <span class="it" style="color:var(--or)">tool.</span>')}</h2>`;
 const num = i => String(i + 1).padStart(2, '0');
-const frases = q => q.relato.map(([es, en]) => `<p>${L(es, en)}</p>`).join('');
-
-/* ---------- 01 · CINE ----------------------------------------------------
-   Pantalla negra y un foco. El problema sube y se va de cuadro; el libro
-   entra desde abajo dentro del haz, con su reflejo abajo. */
-function cine() {
-  metodo.className = 'pant dark p-met';
-  metodo.innerHTML = cabecera()
-    + `<div class="riel" id="rielM">${PROB.map((q, i) => `<article class="cine" style="--orden:0;--caos:1">
-        <div class="cab"><span>${num(i)}</span><i class="raya"></i><span>${L(...q.rubro)}</span></div>
-        <div class="foco">
-          <p class="relato">${q.relato.map(([es, en], j) => `<span class="l" style="--i:${j}">${L(es, en)}</span>`).join('')}</p>
-          ${P[i] ? caras(P[i]) : ''}
-        </div>
-        <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
-      </article>`).join('')}</div>`
-    + `<div class="pasar"><span class="cuenta"></span>
-        <button class="ir" type="button">${L('Siguiente','Next')} <span class="ar">→</span></button></div>`;
-
-  const riel = $('#rielM', metodo), tarjetas = $$('.cine', metodo),
-        cuenta = $('.cuenta', metodo), ir = $('.ir', metodo);
-  const marcar = () => {
-    const i = Math.round(riel.scrollLeft / (riel.scrollWidth / tarjetas.length));
-    cuenta.textContent = `${num(Math.min(i, tarjetas.length - 1))} / ${num(tarjetas.length - 1)}`;
-  };
-  ir.onclick = () => {
-    const paso = riel.scrollWidth / tarjetas.length;
-    const i = Math.round(riel.scrollLeft / paso);
-    riel.scrollTo({left: i >= tarjetas.length - 1 ? 0 : (i + 1) * paso, behavior:'smooth'});
-  };
-  riel.addEventListener('scroll', marcar, {passive:true});
-  marcar();
-  avanzarRiel(tarjetas);
-}
-
-/* ---------- 05 · PANORAMA ------------------------------------------------
-   Qué es Orbit y qué vas a encontrar, de un vistazo. */
+const dato = v => typeof v === 'string' ? v : L(v.es, v.en);
+/* los nombres del catálogo están en inglés; en la home se dicen en castellano */
 const ENCASTELLANO = {
   'ob-001': ['Sistema de contenido', 'Content system'],
   'ob-002': ['Biblioteca de recursos', 'Asset library'],
   'ob-003': ['Sistema del estudio', 'Studio system'],
   'ob-004': ['Flujos con IA', 'AI workflows'],
 };
-function panorama() {
+const enCastellano = p => L(...(ENCASTELLANO[p.id] || [p.name, p.name]));
+const cabecera = (arriba, derecha, titulo) => `
+  <div class="eti ent2" style="--d:0s"><span>${arriba}</span><span>${derecha}</span></div>
+  <h2 class="display ent2" style="--d:.08s">${titulo}</h2>`;
+const piezas = P.slice(0, 4);
+
+/* ---------- 01 · CATÁLOGO — qué hay ------------------------------------ */
+function catalogo() {
   metodo.className = 'pant luz p-met';
-  const piezas = P.slice(0, 4);
-  metodo.innerHTML = `
-    <div class="eti"><span>${L('Qué es Orbit','What Orbit is')}</span><span>${L('De un vistazo','At a glance')}</span></div>
-    <h2 class="display">${L('Todo lo que ya<br>está <span class="it" style="color:var(--or)">armado.</span>',
-                            'Everything that is<br>already <span class="it" style="color:var(--or)">built.</span>')}</h2>
-    <div class="pano">
-      <p class="lead">${L('Sistemas, plantillas y kits que abrís en las herramientas que ya usás, adaptás a tu marca y usás las veces que quieras.',
-                          'Systems, templates and kits you open in the tools you already use, adapt to your brand and use as often as you like.')}</p>
+  metodo.innerHTML = cabecera(L('Qué es Orbit','What Orbit is'), L('De un vistazo','At a glance'),
+      L('Todo lo que ya<br>está <span class="it" style="color:var(--or)">armado.</span>',
+        'Everything that is<br>already <span class="it" style="color:var(--or)">built.</span>'))
+    + `<div class="cuerpo">
+      <p class="lead ent2" style="--d:.16s">${L(
+        'Sistemas, plantillas y kits que abrís en las herramientas que ya usás, adaptás a tu marca y usás las veces que quieras.',
+        'Systems, templates and kits you open in the tools you already use, adapt to your brand and use as often as you like.')}</p>
       <div class="estante">${piezas.map((p, i) => {
         const pronto = p.status === 'soon';
-        return `<a class="pieza" href="${ORBIT.url(p)}" data-pronto="${pronto ? 1 : 0}" style="--d:${(.25 + i * .09).toFixed(2)}s">
+        return `<a class="pieza ent2" href="${ORBIT.url(p)}" data-pronto="${pronto ? 1 : 0}" style="--d:${(.26 + i * .09).toFixed(2)}s">
           ${ORBIT.cover(p)}
           <span class="qn">${p.code}</span>
-          <span class="qs">${L(...(ENCASTELLANO[p.id] || [p.name, p.name]))}</span>
-          <span class="qp">${pronto ? L('Pronto','Soon') : ORBIT.money(p.price)}</span>
-        </a>`;
+          <span class="qs">${enCastellano(p)}</span>
+          <span class="qp">${pronto ? L('Pronto','Soon') : ORBIT.money(p.price)}</span></a>`;
       }).join('')}</div>
       <div class="promesas">
         <div class="trio">
-          <div style="--d:.62s"><b>0&#39;</b><span>${L('Entrega','Delivery')}</span></div>
-          <div style="--d:.72s"><b>$0</b><span>${L('Actualizaciones','Updates')}</span></div>
-          <div style="--d:.82s"><b>&infin;</b><span>${L('Licencia','License')}</span></div>
+          <div class="ent2" style="--d:.64s"><b>0&#39;</b><span>${L('Entrega','Delivery')}</span></div>
+          <div class="ent2" style="--d:.72s"><b>$0</b><span>${L('Actualizaciones','Updates')}</span></div>
+          <div class="ent2" style="--d:.8s"><b>&infin;</b><span>${L('Licencia','License')}</span></div>
         </div>
-        <span class="formatos">Notion · Figma · Canva · PNG · SVG · PDF</span>
-        <span class="sigue">${L('Abajo: cada sistema por dentro','Below: every system in detail')} <span class="ar">&#8595;</span></span>
-      </div>
-    </div>`;
-  const contar = () => document.body.classList.add('cuenta');
-  if (RM) return contar();
-  new IntersectionObserver(([e], obs) => { if (e.isIntersecting) { contar(); obs.disconnect(); } },
-    {threshold:.35}).observe(metodo);
+        <span class="formatos ent2" style="--d:.9s">Notion · Figma · Canva · PNG · SVG · PDF</span>
+        <span class="pie-nota ent2" style="--d:1s">${L('Abajo: cada sistema por dentro','Below: every system in detail')} <span class="ar">&#8595;</span></span>
+      </div></div>`;
 }
 
-function corte() {
+/* ---------- 02 · QUÉ TRAE — el contenido de cada sistema --------------- */
+function quetrae() {
   metodo.className = 'pant luz p-met';
-  metodo.innerHTML = cabecera() + `
-    <div class="corte">
-      <div class="mitad alta"><div class="hoja"></div></div>
-      <div class="linea"><i></i></div>
-      <div class="mitad baja"><div class="esc"></div></div>
-    </div>
-    <div class="pie"><span class="sol"></span><span class="pasos">${
-      PROB.map((q, i) => `<button type="button" data-i="${i}">${num(i)}</button>`).join('')}</span></div>`;
-  const caja = $('.corte', metodo), hoja = $('.hoja', metodo), esc = $('.esc', metodo),
-        sol = $('.sol', metodo), botones = $$('.pasos button', metodo);
-  let cual = -1, ocupado = false;
+  metodo.innerHTML = cabecera(L('Qué trae','What is inside'), L('Elegí uno','Pick one'),
+      L('Qué hay<br><span class="it" style="color:var(--or)">adentro.</span>',
+        'What is<br><span class="it" style="color:var(--or)">inside.</span>'))
+    + `<div class="cuerpo">
+      <div class="pestanas ent2" style="--d:.16s">${piezas.map((p, i) =>
+        `<button type="button" data-i="${i}">${p.code}</button>`).join('')}</div>
+      <div class="ficha ent2" style="--d:.24s"></div>
+      <span class="pie-nota ent2" style="--d:.5s">${L('Abajo: la colección completa','Below: the full collection')} <span class="ar">&#8595;</span></span>
+    </div>`;
+  const ficha = $('.ficha', metodo), botones = $$('.pestanas button', metodo);
+  let cual = -1;
+  function pintar(i) {
+    const p = piezas[i];
+    const formato = (p.specs.find(([r]) => /formato|format/i.test(dato(r))) || [, ''])[1];
+    ficha.innerHTML = `
+      <h3 class="nom">${enCastellano(p)}</h3>
+      <span class="meta">${p.code} · ${dato(formato)} · ${p.status === 'soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</span>
+      <ul class="trae">${(p.includes || []).map(([t, d], k) =>
+        `<li><span class="nn">${num(k)}</span><span><b>${dato(t)}</b><small>${dato(d)}</small></span></li>`).join('')}</ul>`;
+  }
   function poner(i) {
-    if (i === cual || ocupado) return;
-    const primera = cual === -1;
-    cual = i;
+    if (i === cual) return;
     botones.forEach((b, k) => b.setAttribute('aria-current', k === i ? 'true' : 'false'));
-    const pintar = () => {
-      hoja.innerHTML = frases(PROB[i]);
-      esc.innerHTML = P[i] ? caras(P[i]) : '';
-      sol.innerHTML = L(...PROB[i].arregla);
-    };
-    if (primera) return pintar();
-    ocupado = true; caja.classList.add('pasa');
-    setTimeout(() => { pintar(); caja.classList.remove('pasa'); ocupado = false; }, 380);
+    if (cual === -1) { cual = i; return pintar(i); }
+    cual = i;
+    ficha.classList.add('cambia');
+    setTimeout(() => { pintar(i); ficha.classList.remove('cambia'); }, 260);
   }
   botones.forEach((b, i) => b.onclick = () => poner(i));
   poner(0);
-  /* también se pasa con el dedo */
-  let x0 = null;
-  caja.addEventListener('pointerdown', e => x0 = e.clientX);
-  caja.addEventListener('pointerup', e => {
-    if (x0 === null) return;
-    const d = e.clientX - x0; x0 = null;
-    if (Math.abs(d) > 40) poner(Math.min(PROB.length - 1, Math.max(0, cual + (d < 0 ? 1 : -1))));
-  });
 }
 
-/* ---------- 03 · ÍNDICE --------------------------------------------------
-   Los cuatro a la vista, como el índice de un libro. El que se abre empuja
-   a los demás y saca su tapa por el costado. */
-function indice() {
+/* ---------- 03 · QUÉ CAMBIA — antes y después -------------------------- */
+const CAMBIOS = [
+  [['Empezar una pieza','Starting a piece'], ['Hoja en blanco','Blank page'], ['Plantilla lista','Template ready']],
+  [['Buscar un recurso','Finding an asset'], ['Veinte minutos','Twenty minutes'], ['Está donde va','It is where it belongs']],
+  [['Decidir el formato','Deciding the format'], ['Cada vez','Every time'], ['Una sola vez','Once and for all']],
+  [['Tareas repetidas','Repetitive tasks'], ['A mano','By hand'], ['Un flujo que las hace','A flow that does them']],
+  [['Cuando mejora','When it improves'], ['Comprar de nuevo','Buy it again'], ['Lo bajás gratis','You download it free']],
+];
+function quecambia() {
   metodo.className = 'pant luz p-met';
-  metodo.innerHTML = cabecera() + `<ol class="indice">${PROB.map((q, i) => `
-    <li${i === 0 ? ' class="on"' : ''}>
-      <button class="fila" type="button" data-i="${i}" aria-expanded="${i === 0}">
-        <span class="n">${num(i)}</span><span class="t">${L(...q.rubro)}</span><span class="mas">+</span>
-      </button>
-      <div class="cajon"><div><div class="dentro">
-        <div class="txt">${frases(q)}<span><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></span></div>
-        <div class="esc">${P[i] ? caras(P[i]) : ''}</div>
-      </div></div></div>
-    </li>`).join('')}</ol>`;
-  const filas = $$('.indice li', metodo);
-  $$('.fila', metodo).forEach((b, i) => b.onclick = () => {
-    filas.forEach((li, k) => {
-      const abierta = k === i && !filas[i].classList.contains('on');
-      li.classList.toggle('on', k === i ? abierta : false);
-      $('.fila', li).setAttribute('aria-expanded', li.classList.contains('on'));
-    });
-  });
-}
-
-/* ---------- 04 · MAZO ----------------------------------------------------
-   Un mazo de naipes. El de adelante tiene el problema; lo das vuelta y del
-   otro lado está el producto. Lo tirás y sale el que sigue. */
-function mazo() {
-  metodo.className = 'pant luz p-met';
-  metodo.innerHTML = cabecera() + `
-    <div class="mazo">${PROB.map((q, i) => `
-      <article class="naipe" data-i="${i}" style="--nivel:${i};--giro:${(i % 2 ? 1 : -1) * (i + 1) * 1.5}">
-        <div class="cara frente">
-          <div class="lomo"><span class="rub">${L(...q.rubro)}</span><span class="cod">${P[i] ? P[i].code : ''}</span></div>
-          <div class="hoja">
-            <div class="alto"><span>Orbit®</span><span>${num(i)} / ${num(PROB.length - 1)}</span></div>
-            <span class="cifra">${num(i)}</span>
-            <div class="dicho">${frases(q)}</div>
-            <span class="bajo">${L('El problema','The problem')}</span>
-          </div>
-        </div>
-        <div class="cara dorso"><div class="tapa">${P[i] ? ORBIT.cover(P[i]) : ''}</div></div>
-      </article>`).join('')}</div>
-    <p class="leyenda"><i>${L('Lo arregla','The fix')}</i><b></b></p>
-    <div class="ayuda">
-      <span class="cuenta"></span>
-      <span class="pista">${L('Deslizá para pasar','Swipe to move on')} <span class="ar">→</span></span>
+  metodo.innerHTML = cabecera(L('Qué cambia','What changes'), L('Antes y después','Before and after'),
+      L('Lo mismo, pero<br><span class="it" style="color:var(--or)">ya resuelto.</span>',
+        'The same work,<br><span class="it" style="color:var(--or)">already solved.</span>'))
+    + `<div class="cuerpo">
+      <ul class="cambios">${CAMBIOS.map(([qu, antes, luego], i) => `
+        <li class="ent2" style="--d:${(.18 + i * .09).toFixed(2)}s">
+          <span class="qu">${L(...qu)}</span>
+          <span class="par"><span class="antes">${L(...antes)}</span><span class="flecha">&#8594;</span><span class="luego">${L(...luego)}</span></span>
+        </li>`).join('')}</ul>
+      <span class="pie-nota ent2" style="--d:.7s">${L('Abajo: con qué se hace','Below: what it is made of')} <span class="ar">&#8595;</span></span>
     </div>`;
-
-  const naipes = $$('.naipe', metodo), cuenta = $('.cuenta', metodo),
-        leyenda = $('.leyenda', metodo), leyendaTxt = $('.leyenda b', metodo);
-  let arriba = 0, reloj = 0, ala = false;
-
-  const marcar = () => cuenta.textContent = `${num(arriba)} / ${num(naipes.length - 1)}`;
-  const ordenar = () => naipes.forEach((n, i) => {
-    n.style.setProperty('--nivel', Math.max(0, i - arriba));
-    n.style.zIndex = naipes.length - Math.max(0, i - arriba);
-    n.classList.toggle('ido', i < arriba);
-    n.classList.toggle('arriba', i === arriba);
-  });
-
-  const dar = () => {
-    clearTimeout(reloj);
-    if (!naipes[arriba]) return;
-    naipes[arriba].classList.add('dado');
-    leyendaTxt.innerHTML = L(...PROB[arriba].arregla);
-    leyenda.classList.add('on');
-  };
-  /* se da vuelta solo: no hay que adivinar que se puede tocar */
-  function presentar() {
-    clearTimeout(reloj);
-    if (RM || !ala) return;
-    reloj = setTimeout(dar, 1700);
-  }
-  function siguiente() {
-    clearTimeout(reloj);
-    if (arriba >= naipes.length - 1) {          /* se terminó: el mazo se vuelve a armar */
-      naipes.forEach(n => n.classList.remove('dado', 'ido'));
-      arriba = 0;
-    } else arriba++;
-    leyenda.classList.remove('on');
-    ordenar(); marcar(); presentar();
-  }
-
-  /* se pasa de página deslizando, como un libro: el naipe sigue al dedo y,
-     si lo soltás pasado el umbral, se va y aparece el de atrás */
-  naipes.forEach((n, i) => {
-    let x0 = null, corrio = 0;
-    const mano = e => {
-      if (i !== arriba) return;
-      x0 = e.clientX; corrio = 0;
-      n.classList.add('tirando');
-      n.setPointerCapture(e.pointerId);
-    };
-    const tira = e => {
-      if (x0 === null) return;
-      corrio = e.clientX - x0;
-      n.style.transition = 'none';
-      n.style.transform = `translateX(${corrio.toFixed(1)}px) rotate(${(corrio * .045).toFixed(2)}deg)`
-        + (n.classList.contains('dado') ? ' rotateY(180deg)' : '');
-    };
-    const suelta = () => {
-      if (x0 === null) return;
-      x0 = null;
-      n.classList.remove('tirando');
-      n.style.transition = '';
-      n.style.transform = '';
-      if (Math.abs(corrio) > 64) siguiente();
-      else if (Math.abs(corrio) < 6) { n.classList.contains('dado') ? siguiente() : dar(); }
-      corrio = 0;
-    };
-    n.addEventListener('pointerdown', mano);
-    n.addEventListener('pointermove', tira);
-    n.addEventListener('pointerup', suelta);
-    n.addEventListener('pointercancel', suelta);
-  });
-
-  ordenar(); marcar();
-  new IntersectionObserver(([e]) => {
-    ala = e.isIntersecting;
-    if (ala) presentar(); else clearTimeout(reloj);
-  }, {threshold:.45}).observe(metodo);
 }
 
-/* las caras del libro, que usan las cuatro versiones. La clase con la medida
-   va sobre la caja misma: .box declara su propio tamaño y no lo hereda. */
-function caras(p, extra = '') {
-  return `<div class="box met-libro ${extra}">
-    <div class="f front">${ORBIT.cover(p)}</div>
-    <div class="f side">${ORBIT.wm({color:'#F2EFE8'}, false)}</div>
-    <div class="f lside"></div><div class="f top"></div><div class="f bottom"></div></div>`;
+/* ---------- 04 · CÓMO FUNCIONA — qué pasa cuando comprás --------------- */
+const RECORRIDO = [
+  [['Elegís y pagás','You choose and pay'],
+   ['Cuatro sistemas desde USD 39, con Mercado Pago o tarjeta','Four systems from USD 39, by Mercado Pago or card'], ''],
+  [['Se descarga','It downloads'], ['Aparece en tu cuenta apenas se acredita','It shows up in your account the moment it clears'], "0'"],
+  [['Lo hacés tuyo','You make it yours'], ['Lo abrís en Notion, Figma o Canva y lo adaptás','You open it in Notion, Figma or Canva and adapt it'], ''],
+  [['Se actualiza','It updates'], ['Cuando el sistema mejora, lo bajás de nuevo','When the system improves, you download it again'], '$0'],
+  [['Es tuyo','It is yours'], ['Uso comercial, sin suscripción y sin vencimiento','Commercial use, no subscription, no expiry'], '∞'],
+];
+function comofunciona() {
+  metodo.className = 'pant luz p-met';
+  metodo.innerHTML = cabecera(L('Cómo funciona','How it works'), L('De punta a punta','End to end'),
+      L('Qué pasa al<br><span class="it" style="color:var(--or)">comprar.</span>',
+        'What happens<br>when you <span class="it" style="color:var(--or)">buy.</span>'))
+    + `<div class="cuerpo">
+      <ol class="pasos2">${RECORRIDO.map(([t, d, dat], i) => `
+        <li class="ent2" style="--d:${(.16 + i * .08).toFixed(2)}s">
+          <span class="pt"></span>
+          <span><b>${L(...t)}</b><small>${L(...d)}</small></span>
+          <span class="dato">${dat}</span>
+        </li>`).join('')}</ol>
+      <span class="pie-nota ent2" style="--d:.72s">${L('Abajo: qué sistema te sirve','Below: which system fits you')} <span class="ar">&#8595;</span></span>
+    </div>`;
 }
 
-/* el avance de las diapositivas de la versión 01 */
-function avanzarRiel(tarjetas) {
-  const riel = $('#rielM');
-  if (!riel || !tarjetas.length) return;
-  const aplicar = (t, v) => {
-    t.style.setProperty('--orden', v.toFixed(3));
-    t.style.setProperty('--caos', (1 - v).toFixed(3));
-    t.style.setProperty('--cuenta', Math.min(1, v / .58).toFixed(3));
-    t.style.setProperty('--fin', Math.max(0, (v - .58) / .42).toFixed(3));
-  };
-  if (RM) { tarjetas.forEach(t => aplicar(t, 1)); return; }
-  tarjetas.forEach(t => aplicar(t, 0));
-  const cual = () => {
-    const sangria = parseFloat(getComputedStyle(riel).paddingLeft) || 0;
-    let elegida = 0, cerca = Infinity;
-    tarjetas.forEach((t, i) => {
-      const lejos = Math.abs((t.offsetLeft - riel.scrollLeft) - sangria);
-      if (lejos < cerca) { cerca = lejos; elegida = i; }
-    });
-    return elegida;
-  };
-  let actual = -1, cuadro = 0, espera = 0, ala = false;
-  const contar = i => {
-    cancelAnimationFrame(cuadro);
-    tarjetas.forEach((t, k) => { if (k !== i) aplicar(t, 0); });
-    const arranque = performance.now(), largo = 2600;
-    (function paso(ahora) {
-      const k = Math.min(1, (ahora - arranque) / largo);
-      aplicar(tarjetas[i], k * k * (3 - 2 * k));
-      if (k < 1) cuadro = requestAnimationFrame(paso);
-    })(arranque);
-  };
-  const revisar = () => { if (!ala) return; const i = cual(); if (i === actual) return; actual = i; contar(i); };
-  const pronto = () => { clearTimeout(espera); espera = setTimeout(revisar, 110); };
-  riel.addEventListener('scroll', pronto, {passive:true});
-  addEventListener('resize', pronto);
-  new IntersectionObserver(([e]) => { ala = e.isIntersecting; if (ala) { actual = -1; revisar(); } },
-    {threshold:.4}).observe(metodo);
-  setTimeout(() => { if (actual === -1) tarjetas.forEach((t, k) => aplicar(t, k === 0 ? 1 : 0)); }, 6000);
-}
-
-[cine, corte, indice, mazo, panorama][MV - 1]();
+[catalogo, quetrae, quecambia, comofunciona][MV - 1]();
+/* se presenta sola al llegar, y queda legible para siempre */
+if (RM) document.body.classList.add('cuenta');
+else new IntersectionObserver(([e], obs) => {
+  if (e.isIntersecting) { document.body.classList.add('cuenta'); obs.disconnect(); }
+}, {threshold:.3}).observe(metodo);
 
 /* ---- colección: un libro por diapositiva ---- */
 $('#rielC').innerHTML = P.map(p => `<article class="c-slide">
