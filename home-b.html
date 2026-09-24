@@ -341,6 +341,157 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   .riel>*{flex:0 0 min(40%,380px)}
   .avance{display:none}
 }
+
+/* ============================================================
+   SECCIONES TRAÍDAS DE LA PÁGINA ORIGINAL
+   Vista previa interactiva, disciplinas, quiz y pedido a medida.
+   Los estilos vienen tal cual de la original; lo único que se suma
+   es `.alta`, para las que no entran en una sola pantalla.
+   ============================================================ */
+.pant.alta{justify-content:flex-start;height:auto}
+@media (max-width:900px){ .pant.alta{scroll-snap-stop:normal} }
+.pant.alta > .disc,.pant.alta > .peek,.pant.alta > .cus{margin-top:clamp(16px,2.6vh,30px)}
+
+/* mirá por dentro */
+.peek{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(20px,3vw,48px);align-items:start}
+.ptabs{display:flex;flex-direction:column}
+.ptabs button{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:baseline;text-align:left;padding:16px 0;border-top:1px solid var(--k)}
+.ptabs button:last-child{border-bottom:1px solid var(--k)}
+.ptabs button b{font-weight:800;font-size:clamp(20px,2vw,30px);letter-spacing:-.035em;text-transform:uppercase;line-height:1}
+.ptabs button[aria-selected="true"] b{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:6px;text-decoration-color:var(--blue)}
+.win{background:#fff;border:1px solid rgba(13,13,14,.15);box-shadow:0 30px 70px -40px rgba(0,0,0,.45);overflow:hidden}
+.win .bar{display:flex;align-items:center;gap:7px;padding:10px 14px;background:var(--k);color:var(--b)}
+.win .bar i{width:9px;height:9px;border-radius:50%;background:#444}
+.win .bar span{margin-left:10px}
+.win .body{padding:clamp(14px,2vw,24px);min-height:400px}
+.win .foot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:14px clamp(14px,2vw,24px);border-top:1px solid rgba(13,13,14,.1);background:var(--b)}
+.win .foot .price{font-weight:800;font-size:24px;letter-spacing:-.03em}
+.dhead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:14px}
+.dhead b{font-size:20px;letter-spacing:-.02em}
+/* calendario */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .d{min-height:170px;background:#f6f4ef;padding:6px;display:flex;flex-direction:column;gap:6px}
+.cal .d>span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;opacity:.6}
+.post{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:6px;font-size:12px;line-height:1.2;display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:transform .2s}
+.post:hover{transform:translateY(-2px)}
+.post .st{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;align-self:flex-start}
+@media (max-width:860px){.cal{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:560px){.cal{grid-template-columns:repeat(2,minmax(0,1fr))}.cal .d{min-height:130px}}
+/* kanban */
+.kan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.kan{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kan .col{background:#f6f4ef;padding:8px;min-height:250px;display:flex;flex-direction:column;gap:6px}
+.kan .col>span{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:4px}
+.deal{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:8px;font-size:13px;line-height:1.25;cursor:pointer;transition:transform .2s}
+.deal:hover{transform:translateY(-2px)}
+.deal b{display:block}
+.deal small{font-family:var(--mono);font-size:10px;opacity:.6}
+.kbar{height:8px;background:#eee;margin-top:14px;overflow:hidden}
+.kbar i{display:block;height:100%;background:var(--blue);transform-origin:left;transition:transform .5s var(--ease)}
+@media (max-width:640px){.kan{grid-template-columns:1fr 1fr}}
+/* biblioteca */
+.lib{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.lib{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.asset{aspect-ratio:1/1;position:relative;overflow:hidden;cursor:pointer;display:grid;place-items:center;container-type:inline-size}
+.asset .tag{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.85);color:var(--k);padding:2px 5px}
+.asset .ok{position:absolute;right:6px;top:6px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:12px;transform:scale(0);transition:transform .25s var(--ease)}
+.asset.sel .ok{transform:scale(1)}
+@media (max-width:640px){.lib{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* workflow IA */
+.wf{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:14px}
+.wf .steps{display:flex;flex-direction:column;gap:6px}
+.wf .steps button{text-align:left;padding:10px;background:#f6f4ef;display:flex;gap:10px;align-items:baseline;font-weight:600;font-size:14px}
+.wf .steps button[aria-pressed="true"]{background:var(--k);color:var(--b)}
+.wf label{display:block;margin-bottom:6px}
+.wf input{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px solid rgba(13,13,14,.25);background:#fff;color:var(--k);margin-bottom:12px}
+.wf input:focus{outline:2px solid var(--blue);outline-offset:0}
+.prompt{background:var(--k);color:var(--b);padding:14px;font-family:var(--mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;min-height:180px}
+.prompt mark{background:none;color:var(--ac)}
+@media (max-width:640px){.wf{grid-template-columns:1fr}}
+@media (max-width:860px){.peek{grid-template-columns:1fr}}
+
+/* disciplinas */
+.disc{border-top:1px solid var(--k)}
+.drow{border-bottom:1px solid var(--k);position:relative}
+.dh{width:100%;display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,.9fr) 56px;gap:20px;align-items:center;padding:clamp(14px,1.6vw,22px) 0;text-align:left;position:relative;color:var(--k)}
+.dh::before{content:"";position:absolute;inset:0 calc(-1 * var(--pad));background:var(--k);transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease);z-index:0}
+.dh>*{position:relative;z-index:1;transition:color .3s}
+.dh:hover::before,.dh:focus-visible::before,.drow.open .dh::before{transform:scaleY(1)}
+.dh:hover>*,.dh:focus-visible>*,.drow.open .dh>*{color:var(--b)}
+.dh:focus-visible{outline:none}
+.disc b{font-weight:800;font-size:clamp(32px,5.4vw,92px);letter-spacing:-.05em;text-transform:uppercase;line-height:.9}
+.dh p{margin:0;font-size:15px;opacity:.7}
+.disc .s{width:48px;transition:transform .6s var(--ease)}
+.dh:hover .s,.drow.open .s{transform:rotate(180deg)}
+.dh:hover .s circle,.drow.open .s circle{fill:var(--ac)}
+.dpanel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s var(--ease)}
+.drow.open .dpanel{grid-template-rows:1fr}
+.dpanel>div{overflow:hidden;background:var(--k);color:var(--b);margin-inline:calc(-1 * var(--pad));padding-inline:var(--pad)}
+.dtop{display:flex;justify-content:space-between;align-items:center;gap:14px;padding-top:6px}
+.darrows{display:flex;gap:8px}
+.darrows button{width:40px;height:40px;border-radius:50%;border:1px solid rgba(242,239,232,.3);color:var(--b);font-size:16px}
+.darrows button:hover{background:var(--b);color:var(--k)}
+.dslide{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,calc((100% - 42px) / 4));gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:18px 0 30px;scrollbar-width:none}
+.dslide::-webkit-scrollbar{display:none}
+.pv{scroll-snap-align:start;background:var(--b);color:var(--k);text-decoration:none;display:flex;flex-direction:column;justify-content:space-between;gap:18px;padding:18px;min-height:270px;position:relative;overflow:hidden;transition:transform .35s var(--ease)}
+.pv:hover{transform:translateY(-6px)}
+.pv .sy{position:absolute;width:46%;right:-12%;bottom:-14%;opacity:.95}
+.pv .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pv .bd{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:3px 6px;background:var(--k);color:var(--b)}
+.pv h5{margin:0;font-weight:800;font-size:clamp(22px,2vw,30px);letter-spacing:-.04em;text-transform:uppercase;line-height:.92;position:relative;z-index:1}
+.pv p{margin:8px 0 0;font-size:14px;opacity:.7;max-width:26ch;position:relative;z-index:1}
+.pv .f{display:flex;justify-content:space-between;align-items:baseline;position:relative;z-index:1}
+.pv .f b{font-size:18px;letter-spacing:-.02em;font-weight:700;text-transform:none;line-height:1}
+.pv.soon{background:#1b1b1d;color:var(--b);border:1px solid var(--k3)}
+.pv.soon .bd{background:var(--b);color:var(--k)}
+.pv.all{background:transparent;color:var(--b);border:1px solid rgba(242,239,232,.3);justify-content:flex-end}
+.pv.all:hover{background:var(--ac);color:var(--k)}
+@media (max-width:760px){.dh{grid-template-columns:1fr 44px}.dh .mono,.dh p{grid-column:1}.dh .s{grid-row:1/4;grid-column:2}.dslide{grid-auto-columns:78%}}
+@media (max-width:760px){.disc a{grid-template-columns:1fr 44px}.disc a .mono,.disc a p{grid-column:1}.disc a .s{grid-row:1/4;grid-column:2}}
+
+/* quiz: encontrá tu sistema */
+.quiz{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px);align-items:start}
+.quiz h2{font-size:clamp(44px,6vw,100px)}
+.qbox{border-top:1px solid var(--b);padding-top:18px;min-height:420px}
+.qprog{display:flex;gap:6px;margin:14px 0 26px}
+.qprog i{flex:1;height:3px;background:var(--k3)}
+.qprog i.on{background:var(--ac)}
+.qq{font-weight:800;font-size:clamp(28px,3.2vw,52px);letter-spacing:-.045em;text-transform:uppercase;line-height:.95;margin:0 0 22px}
+.qopts{display:flex;flex-direction:column}
+.qopts button{display:grid;grid-template-columns:40px 1fr auto;gap:14px;align-items:baseline;text-align:left;padding:16px 0;border-top:1px solid var(--k3);font-size:clamp(18px,1.6vw,22px);font-weight:600;letter-spacing:-.02em;transition:color .2s}
+.qopts button:last-child{border-bottom:1px solid var(--k3)}
+.qopts button:hover,.qopts button:focus-visible{color:var(--ac);outline:none}
+.qopts button .ar{opacity:0;transition:opacity .2s,transform .3s var(--ease)}
+.qopts button:hover .ar,.qopts button:focus-visible .ar{opacity:1;transform:translateX(6px)}
+.qres{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(16px,2.4vw,32px);align-items:start}
+.qres h3{margin:10px 0 12px;font-size:clamp(36px,4vw,64px)}
+.qres ul{list-style:none;margin:16px 0 22px;padding:0}
+.qres li{padding:8px 0;border-top:1px solid var(--k3);display:flex;gap:10px}
+.qres li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--blue);flex:none;margin-top:8px}
+.qres .acts2{display:flex;gap:10px;flex-wrap:wrap}
+.qback{margin-top:22px}
+@media (max-width:860px){.quiz,.qres{grid-template-columns:1fr}.qres .cover{max-width:280px}}
+
+/* a medida */
+.cus{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,4vw,72px);align-items:start}
+.cus h2{font-size:clamp(46px,6.4vw,108px)}
+.cus-steps{list-style:none;margin:32px 0 0;padding:0}
+.cus-steps li{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--k3)}
+.cus-steps li:last-child{border-bottom:1px solid var(--k3)}
+.cus-steps b{display:block;font-size:19px;letter-spacing:-.02em}
+.cus-steps p{margin:2px 0 0;font-size:14px;opacity:.65}
+.cform{background:var(--b);color:var(--k);padding:clamp(18px,2.6vw,36px);display:flex;flex-direction:column;gap:20px}
+.cform .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cform label{display:block;margin-bottom:8px}
+.cform input,.cform textarea{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1px solid rgba(13,13,14,.25);background:#fff;color:var(--k);border-radius:0}
+.cform textarea{min-height:120px;resize:vertical}
+.cform input:focus,.cform textarea:focus{outline:2px solid var(--blue);outline-offset:0}
+.cform .opts{display:flex;flex-wrap:wrap;gap:8px}
+.cform .opts .chip{color:var(--k)}
+.cform .send{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid rgba(13,13,14,.15);padding-top:18px}
+.cform .err{color:var(--or);font-size:14px;min-height:1.2em}
+@media (max-width:860px){.cus{grid-template-columns:1fr}.cform .two{grid-template-columns:1fr}}
+
 </style>
 </head>
 <body data-page="home" data-title-es="Orbit® — Sistemas y herramientas digitales, listos para usar" data-title-en="Orbit® — Digital systems and tools, ready to use">
@@ -373,10 +524,17 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 <!-- 03 LA ESCALA — el contenido lo arma el JS según la versión elegida -->
 <section class="pant dark" id="escala"></section>
 
-<!-- 04 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
+<!-- 04 DISCIPLINAS -->
+<section class="pant luz alta p-disc" id="disciplinas">
+  <div class="eti"><span><span data-l="es">Disciplinas<br>Un universo, muchas órbitas</span><span data-l="en">Disciplines<br>One universe, many orbits</span></span><span style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></span></div>
+  <h2 class="display" style="font-size:clamp(34px,8.6vw,96px);max-width:15ch;margin:0"><span data-l="es">Una órbita para cada <span class="it">disciplina.</span></span><span data-l="en">An orbit for every <span class="it">discipline.</span></span></h2>
+  <div class="disc" id="disc"></div>
+</section>
+
+<!-- 05 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
 <section class="pant dark" id="coleccion"></section>
 
-<!-- 05 DESTACADO -->
+<!-- 06 DESTACADO -->
 <section class="pant dark p-destacado" id="destacado">
   <div class="eti"><span><span data-l="es">Destacado<br>Producto 01</span><span data-l="en">Featured<br>Product 01</span></span><span style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></span></div>
   <div class="feat2">
@@ -385,25 +543,65 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   </div>
 </section>
 
-<!-- 06 CÓMO COMPRAR -->
+<!-- 07 MIRÁ POR DENTRO -->
+<section class="pant luz alta p-dentro" id="por-dentro">
+  <div class="eti"><span><span data-l="es">Mirá por dentro<br>Vista previa interactiva</span><span data-l="en">Look inside<br>Interactive preview</span></span><span style="text-align:right"><span data-l="es">Probalo antes<br>de comprarlo</span><span data-l="en">Try it before<br>you buy it</span></span></div>
+  <h2 class="display" style="font-size:clamp(34px,8.6vw,84px);margin:0"><span data-l="es">Probá cómo <span class="it">funciona.</span></span><span data-l="en">See how it <span class="it">works.</span></span></h2>
+  <div class="peek">
+    <div class="ptabs" role="tablist" id="ptabs"></div>
+    <div class="win" id="win"></div>
+  </div>
+</section>
+
+<!-- 08 CÓMO COMPRAR -->
 <section class="pant dark p-comprar">
   <div class="eti"><span><span data-l="es">Cómo comprar<br>4 pasos</span><span data-l="en">How to buy<br>4 steps</span></span><span style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></span></div>
   <h2 class="display"><span data-l="es">Comprás hoy.<br>Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today.<br>Use it <span class="it">today.</span></span></h2>
   <div class="flow4" id="flow4"></div>
 </section>
 
-<!-- 07 A MEDIDA -->
-<section class="pant luz p-medida" id="a-medida">
-  <div class="eti"><span><span data-l="es">A medida</span><span data-l="en">Custom</span></span><span>OB—X00</span></div>
-  <h2 class="display"><span data-l="es">¿No está lo que<br>necesitás?<br><span class="it" style="color:var(--or)">Lo diseñamos.</span></span><span data-l="en">Not what<br>you need?<br><span class="it" style="color:var(--or)">We design it.</span></span></h2>
-  <p><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows.</span></p>
-  <div class="acts"><a class="btn btn-blue" href="mailto:hola@orbitando.com.ar?subject=Pedido%20a%20medida"><span data-l="es">Contanos qué necesitás</span><span data-l="en">Tell us what you need</span> <span class="ar">→</span></a></div>
+<!-- 09 A MEDIDA -->
+<section class="pant dark alta p-medida" id="a-medida">
+  <div class="eti"><span><span data-l="es">A medida<br>OB—X00</span><span data-l="en">Custom<br>OB—X00</span></span><span style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></span></div>
+  <div class="cus">
+    <div>
+      <h2 class="display" style="font-size:clamp(32px,8.2vw,92px);margin:0"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
+      <p class="lead" style="opacity:.75;margin-top:20px"><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA pensados para tu negocio, con el mismo cuidado que cada producto Orbit.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows built for your business, with the same care as every Orbit product.</span></p>
+      <ol class="cus-steps">
+        <li><span class="mono">01</span><div><b><span data-l="es">Brief</span><span data-l="en">Brief</span></b><p><span data-l="es">Nos contás la idea en este formulario.</span><span data-l="en">Tell us the idea in this form.</span></p></div></li>
+        <li><span class="mono">02</span><div><b><span data-l="es">Propuesta</span><span data-l="en">Proposal</span></b><p><span data-l="es">En 48 h hábiles te enviamos alcance, plazo y precio.</span><span data-l="en">Within 2 business days we send scope, timeline and price.</span></p></div></li>
+        <li><span class="mono">03</span><div><b><span data-l="es">Diseño</span><span data-l="en">Design</span></b><p><span data-l="es">Construimos el sistema con revisiones incluidas.</span><span data-l="en">We build the system, revisions included.</span></p></div></li>
+        <li><span class="mono">04</span><div><b><span data-l="es">Entrega</span><span data-l="en">Delivery</span></b><p><span data-l="es">Listo para usar, con guía y soporte.</span><span data-l="en">Ready to use, with a guide and support.</span></p></div></li>
+      </ol>
+    </div>
+    <form class="cform" id="cform" novalidate>
+      <div class="two">
+        <div><label class="mono" for="cName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="cName" name="name" autocomplete="name"></div>
+        <div><label class="mono" for="cMail">Email</label><input id="cMail" name="email" type="email" autocomplete="email"></div>
+      </div>
+      <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span><div class="opts" data-group="type"></div></div>
+      <div><label class="mono" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label><textarea id="cIdea" name="idea"></textarea></div>
+      <div class="two">
+        <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Presupuesto (USD)</span><span data-l="en">Budget (USD)</span></span><div class="opts" data-group="budget"></div></div>
+        <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Plazo</span><span data-l="en">Timeline</span></span><div class="opts" data-group="time"></div></div>
+      </div>
+      <div class="send"><span class="err" id="cErr" role="alert"></span><button class="btn btn-blue" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button></div>
+    </form>
+  </div>
 </section>
 
-<!-- 08 CIERRE -->
+<!-- 10 ENCONTRÁ TU SISTEMA -->
+<section class="pant dark alta p-quiz" id="encontra">
+  <div class="eti"><span><span data-l="es">Encontrá tu sistema<br>3 preguntas · 20 segundos</span><span data-l="en">Find your system<br>3 questions · 20 seconds</span></span><span style="text-align:right"><span data-l="es">Si todavía<br>no te decidís</span><span data-l="en">If you are<br>still unsure</span></span></div>
+  <h2 class="display" style="font-size:clamp(34px,8.6vw,92px);margin:0"><span data-l="es">Encontrá tu <span class="it">sistema.</span></span><span data-l="en">Find your <span class="it">system.</span></span></h2>
+  <p class="lead" style="opacity:.75;margin:0;max-width:40ch"><span data-l="es">Contanos qué querés resolver y te decimos qué herramienta de Orbit te sirve.</span><span data-l="en">Tell us what you want to solve and we’ll point you to the right Orbit tool.</span></p>
+  <div class="qbox" id="qbox" aria-live="polite"></div>
+</section>
+
+<!-- 11 CIERRE -->
 <section class="pant dark p-cierre">
   <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
-  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>08</span></div>
+  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>11</span></div>
   <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it" style="color:var(--ac)">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it" style="color:var(--ac)">A brighter tomorrow.</span></span></h2>
   <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
   <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir un sistema</span><span data-l="en">Pick a system</span> <span class="ar">↑</span></a></div>
@@ -413,6 +611,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 <script src="assets/js/products.js?v=45"></script>
 <script src="/api/catalog"></script>
 <script src="assets/js/orbit.js?v=45"></script>
+<script src="assets/js/secciones.js?v=1"></script>
 <script>
 (() => {
 const {$, $$, L, cover, buyBtn, money, url, wm, P, FAM} = ORBIT;
