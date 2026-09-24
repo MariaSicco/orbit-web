@@ -68,6 +68,7 @@
 .chap.on .strikes li:nth-child(3)::after{transition-delay:.8s}
 .chap.on .strikes li:nth-child(4)::after{transition-delay:1.05s}
 .osteps{display:flex;align-items:center;gap:14px}
+.osteps .hint{margin-left:auto;opacity:.45}
 .osteps .bars{display:flex;gap:7px;flex:1;max-width:320px}
 .osteps .bars button{flex:1;height:3px;padding:0;border:0;cursor:pointer;
   background:var(--k3);position:relative;overflow:hidden}
@@ -142,6 +143,7 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
     <div class="osteps">
       <div class="bars" id="oBars"><button type="button" aria-label="1"><i></i></button><button type="button" aria-label="2"><i></i></button></div>
       <span class="mono" id="oNum">01 / 02</span>
+      <span class="mono hint"><span data-l="es">Deslizá o tocá</span><span data-l="en">Swipe or tap</span></span>
     </div>
   </div>
 </section>
@@ -194,9 +196,9 @@ $('#vals').innerHTML = [[L('Herramientas','Tools'),L('para hacer.','for doing.')
 
 /* origen: dos tiempos en una sola pantalla. Antes eran cinco capítulos
    repartidos en tres pantallas de scroll secuestrado. Ahora la sección
-   mide una pantalla: el primer tiempo se presenta al llegar, el segundo
-   entra solo unos segundos después y el símbolo se cierra en el camino.
-   Las dos rayitas de abajo dejan volver a cualquiera de los dos. */
+   mide una pantalla y no pasa sola: se desliza con el dedo o se tocan las
+   rayitas de abajo. El símbolo se cierra al pasar del problema a la
+   respuesta. */
 const org = $('#origen'), oSym = $('#oSym'), chaps = $$('#chapters .chap'),
       rayas = $$('#oBars button');
 $('#oWm').innerHTML = ORBIT.wm({color:C.b});
@@ -220,9 +222,9 @@ function cerrar(desde, hasta) {
   cuadro = requestAnimationFrame(paso);
 }
 
-let tiempo = -1, reloj = 0;
-function poner(i, porMano) {
-  if (i === tiempo) return;
+let tiempo = -1;
+function poner(i) {
+  if (i === tiempo || i < 0 || i >= chaps.length) return;
   const antes = tiempo < 0 ? 0 : tiempo;
   tiempo = i;
   org.dataset.st = i;
@@ -230,18 +232,34 @@ function poner(i, porMano) {
   rayas.forEach((r, k) => r.classList.toggle('on', k <= i));
   $('#oNum').textContent = `0${i + 1} / 0${chaps.length}`;
   cerrar(antes, i);
-  if (porMano) clearTimeout(reloj);
 }
-rayas.forEach((r, i) => r.onclick = () => poner(i, true));
+rayas.forEach((r, i) => r.onclick = () => poner(i));
+
+/* se pasa con el dedo, como el estante de la home */
+(function conElDedo() {
+  const zona = $('.stick', org);
+  let x0 = null, y0 = null, tirando = false;
+  zona.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; tirando = false; });
+  zona.addEventListener('pointermove', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if (!tirando && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) tirando = true;
+    if (tirando) e.preventDefault();
+  });
+  const soltar = e => {
+    if (x0 === null) return;
+    const dx = (e.clientX === undefined ? x0 : e.clientX) - x0;
+    x0 = null;
+    if (tirando && Math.abs(dx) > 34) poner(tiempo + (dx < 0 ? 1 : -1));
+    setTimeout(() => tirando = false, 0);
+  };
+  zona.addEventListener('pointerup', soltar);
+  zona.addEventListener('pointercancel', soltar);
+  zona.style.touchAction = 'pan-y';
+})();
 
 dibujar(0);
-if (RM) poner(chaps.length - 1);
-else new IntersectionObserver(([e], obs) => {
-  if (!e.isIntersecting) return;
-  obs.disconnect();
-  poner(0);
-  reloj = setTimeout(() => poner(1), 3200);
-}, {threshold:.4}).observe(org);
+poner(RM ? chaps.length - 1 : 0);
 
 const CH = [[['Idea','Idea'],['Aparece. Todavía no tiene forma.','It appears. It has no shape yet.'],140,false],[['Sistema','System'],['Una buena herramienta la ordena.','A good tool gives it structure.'],90,false],[['Acción','Action'],['El sistema convierte intención en acción.','The system turns intention into action.'],40,false],[['Progreso','Progress'],['Y la acción se vuelve progreso.','And action becomes progress.'],0,true]];
 $('#chain').innerHTML = CH.map(([t,d,g,dot],i) => `<div class="rv"><span class="mono dim">0${i+1}</span><div class="s">${sym({gap:g, ring:C.b, dot:C.blue, dotOn:dot})}</div><div><b>${L(...t)}</b><p>${L(...d)}</p></div></div>`).join('');
