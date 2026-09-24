@@ -75,20 +75,30 @@ if ($('#win') && $('#ptabs')) {
     win.innerHTML = `<div class="bar"><i></i><i></i><i></i><span class="mono">${cur.code} — ${cur.name}</span><span class="mono dim" style="margin-left:auto">${L('Vista previa','Preview')}</span></div>
       <div class="body" id="wbody">${demo(cur)}</div>
       <div class="foot"><div><span class="mono dim">${L('Versión completa','Full version')}: ${L(cur.specs[0][1])} ${L(cur.specs[0][0])}</span><div class="price">${cur.status==='soon' ? L('Pronto','Soon') : money(cur.price)}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${buyBtn(cur)}<a class="btn btn-line" href="${url(cur)}" style="color:var(--k)">${L('Ver detalle','See details')}</a></div></div>`;
-    $$('#ptabs .pfila > button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.id === cur.id)));
-  }
-  /* Cada solapa lleva su propio hueco: la ventana se muda al hueco de la
-     que esté abierta, así la demo aparece pegada a lo que tocaste y no
-     todo apilado al final de la sección. */
-  $('#ptabs').innerHTML = P.map(p => `<div class="pfila"><button role="tab" data-id="${p.id}" aria-selected="${p===cur}"><span class="mono">${p.code}</span><b>${p.name}</b></button><div class="phueco"></div></div>`).join('');
+    }
+  /* Arranca todo cerrado. Cada solapa lleva su hueco y la ventana se muda
+     al hueco de la que abrís, así la demo aparece pegada a lo que tocaste.
+     Tocar la que ya está abierta la cierra. */
+  const guarida = $('.peek');
+  let abierta = null;
+  $('#ptabs').innerHTML = P.map(p => `<div class="pfila"><button role="tab" data-id="${p.id}" aria-selected="false" aria-expanded="false"><span class="mono">${p.code}</span><b>${p.name}</b><span class="sig" aria-hidden="true">+</span></button><div class="phueco"></div></div>`).join('');
   function mudar() {
-    const fila = $(`#ptabs button[data-id="${cur.id}"]`).closest('.pfila');
+    const fila = abierta ? $(`#ptabs .pfila > button[data-id="${abierta}"]`).closest('.pfila') : null;
+    $$('#ptabs .pfila').forEach(f => f.classList.toggle('abierta', f === fila));
+    $$('#ptabs .pfila > button').forEach(b => {
+      const mia = b.dataset.id === abierta;
+      b.setAttribute('aria-selected', String(mia));
+      b.setAttribute('aria-expanded', String(mia));
+    });
+    if (!fila) { win.hidden = true; if (win.parentElement !== guarida) guarida.appendChild(win); return; }
+    win.hidden = false;
     const hueco = $('.phueco', fila);
     if (win.parentElement !== hueco) hueco.appendChild(win);
-    $$('#ptabs .pfila').forEach(f => f.classList.toggle('abierta', f === fila));
   }
   $$('#ptabs .pfila > button').forEach(b => b.onclick = () => {
-    cur = P.find(p => p.id === b.dataset.id);
+    const id = b.dataset.id;
+    if (abierta === id) { abierta = null; mudar(); return; }
+    abierta = id; cur = P.find(p => p.id === id);
     renderWin(); mudar();
     b.scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'});
   });
