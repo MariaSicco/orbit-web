@@ -238,18 +238,34 @@ if ($('#cform')) {
     budget: [['< 500','< 500'],['500 – 1.500','500 – 1,500'],['1.500 +','1,500 +'],['No sé','Not sure']],
     time: [['Sin apuro','No rush'],['1 mes','1 month'],['Urgente','Urgent']],
   };
-  const pick = {type:null, budget:null, time:null};
+  /* `type` admite varias: alguien puede necesitar un sistema Y plantillas.
+     Los demás son una sola opción, y avisan al elegir para que el
+     formulario pueda pasar solo a la pregunta siguiente. */
+  const pick = {type:[], budget:null, time:null};
   $$('.cform .opts').forEach(box => {
-    const g = box.dataset.group;
+    const g = box.dataset.group, varias = box.dataset.varias !== undefined;
     box.innerHTML = OPTS[g].map((o,i) => `<button type="button" class="chip" data-i="${i}" aria-pressed="false">${L(...o)}</button>`).join('');
-    $$('.chip', box).forEach(b => b.onclick = () => { pick[g] = +b.dataset.i; $$('.chip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+    $$('.chip', box).forEach(b => b.onclick = () => {
+      const i = +b.dataset.i;
+      if (varias) {
+        const k = pick[g].indexOf(i);
+        k < 0 ? pick[g].push(i) : pick[g].splice(k, 1);
+        b.setAttribute('aria-pressed', String(k < 0));
+      } else {
+        pick[g] = i;
+        $$('.chip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      }
+      box.dispatchEvent(new CustomEvent('orbit:opcion', {bubbles:true, detail:{grupo:g, varias}}));
+    });
   });
   $('#cform').addEventListener('submit', e => {
     e.preventDefault();
     const name = $('#cName').value.trim(), mail = $('#cMail').value.trim(), idea = $('#cIdea').value.trim(), err = $('#cErr');
     if (!name || !/^\S+@\S+\.\S+$/.test(mail) || !idea) { err.textContent = tr('Completá nombre, un email válido y la idea.', 'Please add your name, a valid email and the idea.'); return; }
     err.textContent = '';
-    const val = g => pick[g] === null ? '—' : tr(...OPTS[g][pick[g]]);
+    const val = g => Array.isArray(pick[g])
+      ? (pick[g].length ? pick[g].map(i => tr(...OPTS[g][i])).join(', ') : '—')
+      : (pick[g] === null ? '—' : tr(...OPTS[g][pick[g]]));
     const body = `${tr('Nombre','Name')}: ${name}\nEmail: ${mail}\n${tr('Qué necesito','What I need')}: ${val('type')}\n${tr('Presupuesto (USD)','Budget (USD)')}: ${val('budget')}\n${tr('Plazo','Timeline')}: ${val('time')}\n\n${idea}`;
     location.href = `mailto:hola@orbitando.com.ar?subject=${encodeURIComponent(tr('Pedido a medida — ','Custom request — ') + name)}&body=${encodeURIComponent(body)}`;
     toast(tr('Abrimos tu email con el pedido listo para enviar','Opening your email with the request ready to send'));
