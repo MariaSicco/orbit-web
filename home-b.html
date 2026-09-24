@@ -213,13 +213,83 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 @keyframes llenar{to{transform:scaleX(1)}}
 #metodo .barra2 .cuenta{font-family:var(--mono);font-size:10px;letter-spacing:.1em;opacity:.45}
 
-/* colección */
-.c-slide{display:flex;flex-direction:column;gap:14px}
-.c-slide .cover{width:100%;box-shadow:0 40px 70px -46px rgba(0,0,0,.95)}
-.c-slide .fila{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
-.c-slide h3{margin:0;font-weight:800;font-size:clamp(20px,5vw,28px);letter-spacing:-.04em;text-transform:uppercase;line-height:1}
-.c-slide .precio{font-weight:800;font-size:clamp(18px,4.6vw,24px);letter-spacing:-.03em;white-space:nowrap}
-.c-slide .btn{justify-content:center}
+/* =========================================================
+   COLECCIÓN — cuatro formas de mostrarla (?c=1..4)
+   01 estantes por categoría · 02 los cuatro libros a la vista
+   03 índice de categorías   · 04 mosaico de categorías
+   La categoría sale del dato `family` de cada producto: cuando se
+   definan las reales, se edita el catálogo y esto se reacomoda solo.
+   ========================================================= */
+#coleccion .lead{margin:0;font-size:clamp(14.5px,3.9vw,17px);line-height:1.4;max-width:34ch;opacity:.6}
+#coleccion .cuerpo{display:flex;flex-direction:column;gap:clamp(12px,2vh,20px);flex:1}
+#coleccion .ent3{opacity:0;transform:translateY(14px);
+  transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
+.ve #coleccion .ent3{opacity:1;transform:none}
+.ve #coleccion .lead.ent3{opacity:.6}
+#coleccion .pie3{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.45}
+
+/* ---------- 01 · ESTANTES — una fila por categoría ---------- */
+.c1 .estantes{display:grid;gap:0;flex:1;align-content:center}
+.c1 .estante{display:grid;grid-template-columns:auto 1fr;gap:clamp(12px,3.4vw,18px);
+  align-items:center;padding:clamp(10px,1.8vh,15px) 0;border-top:1px solid rgba(242,239,232,.14);
+  text-decoration:none;color:inherit}
+.c1 .estante:last-child{border-bottom:1px solid rgba(242,239,232,.14)}
+.c1 .estante .tapas{display:flex}
+.c1 .estante .cover{width:clamp(46px,12.6vw,60px);box-shadow:0 8px 18px -10px rgba(0,0,0,.9)}
+.c1 .estante .cover + .cover{margin-left:-38%}
+.c1 .estante .fam{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.5;display:block;margin-bottom:3px}
+.c1 .estante b{font-weight:700;font-size:clamp(15px,4.1vw,18px);letter-spacing:-.02em;
+  line-height:1.2;display:block}
+.c1 .estante small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;
+  opacity:.45;margin-top:3px}
+
+/* ---------- 02 · LOS CUATRO LIBROS A LA VISTA ---------- */
+.c2 #coleccion h2{font-size:clamp(30px,8.4vw,54px)}
+.c2 #coleccion{gap:clamp(10px,1.7vh,16px)}
+.c2 .vitrina{display:grid;grid-template-columns:1fr 1fr;gap:clamp(9px,2.4vw,14px);flex:1;align-content:center}
+.c2 .libro{display:flex;flex-direction:column;gap:5px;text-decoration:none;color:inherit}
+.c2 .libro .cover{width:100%;box-shadow:0 22px 40px -26px rgba(0,0,0,.95)}
+.c2 .libro .fam{font-family:var(--mono);font-size:9px;letter-spacing:.11em;text-transform:uppercase;opacity:.42}
+.c2 .libro .fila2{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.c2 .libro b{font-weight:700;font-size:clamp(12.5px,3.4vw,15px);letter-spacing:-.015em;line-height:1.15}
+.c2 .libro span{font-family:var(--mono);font-size:10px;opacity:.6;white-space:nowrap}
+.c2 .libro[data-pronto="1"] .cover{filter:grayscale(1) opacity(.5)}
+
+/* ---------- 03 · ÍNDICE DE CATEGORÍAS ---------- */
+.c3 .indice3{display:grid;flex:1;align-content:center}
+.c3 .reng{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;
+  padding:clamp(12px,2.2vh,19px) 0;border-top:1px solid rgba(242,239,232,.14);
+  text-decoration:none;color:inherit}
+.c3 .reng:last-child{border-bottom:1px solid rgba(242,239,232,.14)}
+.c3 .reng b{font-weight:800;font-size:clamp(19px,5.2vw,26px);letter-spacing:-.035em;
+  text-transform:uppercase;line-height:1;display:block}
+.c3 .reng small{display:block;font-size:clamp(12.5px,3.4vw,14px);opacity:.55;margin-top:4px;line-height:1.3}
+.c3 .reng .cuantos{font-family:var(--mono);font-size:10px;letter-spacing:.1em;opacity:.45;white-space:nowrap}
+
+/* ---------- 04 · MOSAICO DE CATEGORÍAS ---------- */
+.c4 #coleccion h2{font-size:clamp(30px,8.4vw,54px)}
+.c4 .mosaico{display:grid;grid-template-columns:1fr 1fr;gap:clamp(10px,2.6vw,16px);flex:1;align-content:center}
+.c4 .celda{position:relative;overflow:hidden;border:1px solid rgba(242,239,232,.16);
+  padding:clamp(13px,3.4vw,18px);min-height:clamp(120px,17vh,158px);display:flex;
+  flex-direction:column;justify-content:space-between;text-decoration:none;color:inherit}
+.c4 .celda .cover{position:absolute;right:-26%;bottom:-22%;width:56%;opacity:.22;
+  transform:rotate(-8deg);pointer-events:none}
+.c4 .celda > *{position:relative;z-index:1}
+.c4 .celda b{font-weight:800;font-size:clamp(14px,3.9vw,17px);letter-spacing:-.03em;
+  text-transform:uppercase;line-height:1.05;display:block}
+.c4 .celda small{display:block;font-size:clamp(11.5px,3.1vw,13px);opacity:.55;line-height:1.3;margin-top:5px}
+.c4 .celda .cuantos{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;opacity:.45}
+
+/* selector de versiones: es para probar, sale cuando esté elegida */
+.selc{position:fixed;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;
+  display:flex;gap:4px;align-items:center;font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+  text-transform:uppercase;background:rgba(13,13,14,.86);border:1px solid rgba(242,239,232,.2);
+  border-radius:999px;padding:5px 7px;color:var(--b);backdrop-filter:blur(8px)}
+.selc b{opacity:.45;font-weight:400;padding:0 3px}
+.selc a{color:inherit;opacity:.5;text-decoration:none;padding:3px 7px;border-radius:999px;line-height:1}
+.selc a.on{opacity:1;background:var(--ac);color:var(--k)}
 
 /* ---- 04 números ---- */
 .p-datos .fila{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:baseline;padding:clamp(14px,3vh,22px) 0;border-top:1px solid rgba(13,13,14,.18)}
@@ -280,13 +350,8 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 <!-- 02 MÉTODO — el contenido lo arma el JS según la versión elegida -->
 <section class="pant luz" id="metodo"></section>
 
-<!-- 03 COLECCIÓN -->
-<section class="pant dark" id="coleccion">
-  <div class="eti"><span><span data-l="es">La colección</span><span data-l="en">The collection</span></span><span>VOL.01</span></div>
-  <h2 class="display"><span data-l="es">Listos para <span class="it" style="color:var(--ac)">usar.</span></span><span data-l="en">Ready to <span class="it" style="color:var(--ac)">use.</span></span></h2>
-  <div class="riel" id="rielC"></div>
-  <div class="pista-x"><span id="cN"></span><span class="barra"><i id="cB"></i></span></div>
-</section>
+<!-- 03 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
+<section class="pant dark" id="coleccion"></section>
 
 <!-- 04 NÚMEROS -->
 <section class="pant luz p-datos">
@@ -334,7 +399,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 <script src="assets/js/orbit.js?v=45"></script>
 <script>
 (() => {
-const {$, $$, L, cover, buyBtn, money, url, wm, P} = ORBIT;
+const {$, $$, L, cover, buyBtn, money, url, wm, P, FAM} = ORBIT;
 /* wordmark animable: arco, punto y letras por separado,
    para poder darle a cada uno su momento */
 const simbolo = ORBIT.symInner({dot:'#3047FF', ring:'#F2EFE8'});
@@ -525,12 +590,98 @@ const ESCENAS = [
   }, {threshold:.3}).observe(metodo);
 })();
 
-/* ---- colección: un libro por diapositiva ---- */
-$('#rielC').innerHTML = P.map(p => `<article class="c-slide">
-  ${cover(p)}
-  <div class="fila"><h3>${p.name}</h3><span class="precio">${p.status==='soon' ? L('Pronto','Soon') : money(p.price)}</span></div>
-  ${buyBtn(p, 'btn btn-acid')}
-</article>`).join('');
+/* =========================================================
+   COLECCIÓN — cuatro formas de mostrarla (?c=1..4)
+   La categoría sale del dato `family` de cada producto y de la lista de
+   familias del catálogo. Cuando definas las reales, editás esos dos
+   lugares y estas pantallas se reacomodan solas.
+   ========================================================= */
+const CV = Math.min(4, Math.max(1, +(new URLSearchParams(location.search).get('c')) || 1));
+document.body.classList.add('c' + CV);
+document.body.insertAdjacentHTML('beforeend',
+  '<div class="selc">' + L('<b>Colección</b>','<b>Collection</b>') +
+  [1,2,3,4].map(n => `<a href="?c=${n}" class="${n === CV ? 'on' : ''}">0${n}</a>`).join('') + '</div>');
+
+const coleccion = $('#coleccion');
+/* solo las familias que hoy tienen algo cargado */
+const FAMILIAS = Object.keys(FAM)
+  .map(id => ({id, nombre: FAM[id][0], desc: FAM[id][1], items: P.filter(p => p.family === id)}))
+  .filter(f => f.items.length);
+const cuantos = f => f.items.length === 1
+  ? L('1 sistema','1 system') : `${f.items.length} ${L('sistemas','systems')}`;
+const cabeza3 = (derecha, titulo, bajada) => `
+  <div class="eti ent3" style="--d:0s"><span>${L('La colección','The collection')}</span><span>${derecha}</span></div>
+  <h2 class="display ent3" style="--d:.07s">${titulo}</h2>
+  <div class="cuerpo">${bajada ? `<p class="lead ent3" style="--d:.14s">${bajada}</p>` : ''}`;
+const pie3 = `<span class="pie3 ent3" style="--d:.6s"><span>${L('Tocá para ver la ficha','Tap to open the details')}</span>
+  <a href="productos.html" style="color:inherit">${L('Ver todo','See all')} →</a></span></div>`;
+
+/* ---------- 01 · ESTANTES — una fila por categoría ---------- */
+function estantes() {
+  coleccion.className = 'pant dark';
+  coleccion.innerHTML = cabeza3('VOL.01',
+      L('Listos para <span class="it" style="color:var(--ac)">usar.</span>',
+        'Ready to <span class="it" style="color:var(--ac)">use.</span>'), '')
+    + `<div class="estantes">${FAMILIAS.map((f, i) => `
+        <a class="estante ent3" href="${ORBIT.url(f.items[0])}" style="--d:${(.18 + i * .08).toFixed(2)}s">
+          <span class="tapas">${f.items.slice(0, 3).map(p => ORBIT.cover(p)).join('')}</span>
+          <span>
+            <span class="fam">${f.nombre}</span>
+            <b>${L(f.desc.es, f.desc.en)}</b>
+            <small>${cuantos(f)} · ${L('desde','from')} ${ORBIT.money(Math.min(...f.items.map(p => p.price)))}</small>
+          </span>
+        </a>`).join('')}</div>` + pie3;
+}
+
+/* ---------- 02 · LOS CUATRO LIBROS A LA VISTA ---------- */
+function vitrina() {
+  coleccion.className = 'pant dark';
+  coleccion.innerHTML = cabeza3('VOL.01',
+      L('Listos para <span class="it" style="color:var(--ac)">usar.</span>',
+        'Ready to <span class="it" style="color:var(--ac)">use.</span>'), '')
+    + `<div class="vitrina">${P.slice(0, 4).map((p, i) => {
+        const pronto = p.status === 'soon';
+        return `<a class="libro ent3" href="${ORBIT.url(p)}" data-pronto="${pronto ? 1 : 0}" style="--d:${(.18 + i * .08).toFixed(2)}s">
+          ${ORBIT.cover(p)}
+          <span class="fam">${(FAM[p.family] || [''])[0]}</span>
+          <span class="fila2"><b>${enCastellano(p)}</b><span>${pronto ? L('Pronto','Soon') : ORBIT.money(p.price)}</span></span>
+        </a>`;
+      }).join('')}</div>` + pie3;
+}
+
+/* ---------- 03 · ÍNDICE DE CATEGORÍAS ---------- */
+function indiceCat() {
+  coleccion.className = 'pant dark';
+  coleccion.innerHTML = cabeza3(L('Por categoría','By category'),
+      L('La colección, <span class="it" style="color:var(--ac)">por partes.</span>',
+        'The collection, <span class="it" style="color:var(--ac)">by parts.</span>'), '')
+    + `<div class="indice3">${FAMILIAS.map((f, i) => `
+        <a class="reng ent3" href="${ORBIT.url(f.items[0])}" style="--d:${(.18 + i * .08).toFixed(2)}s">
+          <span><b>${f.nombre.replace(/^Orbit /, '')}</b><small>${L(f.desc.es, f.desc.en)}</small></span>
+          <span class="cuantos">${cuantos(f)} →</span>
+        </a>`).join('')}</div>` + pie3;
+}
+
+/* ---------- 04 · MOSAICO DE CATEGORÍAS ---------- */
+function mosaico() {
+  coleccion.className = 'pant dark';
+  coleccion.innerHTML = cabeza3(L('Por categoría','By category'),
+      L('Elegí por <span class="it" style="color:var(--ac)">dónde entrar.</span>',
+        'Pick where to <span class="it" style="color:var(--ac)">start.</span>'), '')
+    + `<div class="mosaico">${FAMILIAS.map((f, i) => `
+        <a class="celda ent3" href="${ORBIT.url(f.items[0])}" style="--d:${(.18 + i * .08).toFixed(2)}s">
+          ${ORBIT.cover(f.items[0])}
+          <span><b>${f.nombre.replace(/^Orbit /, '')}</b><small>${L(f.desc.es, f.desc.en)}</small></span>
+          <span class="cuantos">${cuantos(f)}</span>
+        </a>`).join('')}</div>` + pie3;
+}
+
+[estantes, vitrina, indiceCat, mosaico][CV - 1]();
+/* se presenta sola al llegar y queda legible para siempre */
+if (RM) document.body.classList.add('ve');
+else new IntersectionObserver(([e], obs) => {
+  if (e.isIntersecting) { document.body.classList.add('ve'); obs.disconnect(); }
+}, {threshold:.3}).observe(coleccion);
 
 /* ---- los problemas se tachan al entrar en pantalla ---- */
 const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add('vis')), {threshold:.55});
@@ -549,7 +700,6 @@ function seguirRiel(riel, etiqueta, barra) {
   };
   el.addEventListener('scroll', ver, {passive:true}); ver();
 }
-seguirRiel('#rielC', '#cN', '#cB');
 
 /* ---- la O viaja del wordmark al indicador de avance ----
    Va en un elemento fijo aparte, no en la O del wordmark: esa vive dentro
