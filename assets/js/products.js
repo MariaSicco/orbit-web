@@ -117,3 +117,30 @@ window.ORBIT_FAMILIES = {
   library:  ['Orbit Library',  {es: 'Assets comerciales', en: 'Commercial assets'}],
   systems:  ['Orbit Systems',  {es: 'Productos operativos', en: 'Operational products'}],
 };
+
+/* =========================================================
+   LA ESCALA — qué TIPO de cosa es cada familia.
+   La usan la home (sección 03) y productos.html para agrupar el
+   catálogo, siempre en este orden: plantillas, herramientas, sistemas.
+   Si aparece una familia nueva sin ubicar, cae en `herramientas`.
+   ========================================================= */
+window.ORBIT_ESCALA = [
+  {
+    id: 'plantillas', fams: ['library'],
+    n: {es: 'Plantillas', en: 'Templates'},
+    d: {es: 'Piezas listas. Las abrís, les ponés lo tuyo, las usás hoy.',
+        en: 'Ready pieces. Open them, make them yours, use them today.'},
+  },
+  {
+    id: 'herramientas', fams: ['creator', 'ai'], resto: true,
+    n: {es: 'Herramientas', en: 'Tools'},
+    d: {es: 'Flujos de trabajo completos. No una pieza: la forma de hacerlas todas.',
+        en: 'Complete workflows. Not one piece: the way to make them all.'},
+  },
+  {
+    id: 'sistemas', fams: ['business', 'systems'],
+    n: {es: 'Sistemas', en: 'Systems'},
+    d: {es: 'Tu trabajo entero en un solo lugar. Clientes, proyectos, plata, procesos.',
+        en: 'Your whole practice in one place. Clients, projects, money, processes.'},
+  },
+];

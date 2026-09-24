@@ -65,8 +65,17 @@
 @media (max-width:860px){.cat-head{height:auto;min-height:100svh}.shelf{grid-template-columns:1fr 1fr;row-gap:28px}.shelf .cv{width:100%}}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:clamp(28px,4vw,48px)}
 .filters .l{display:flex;flex-wrap:wrap;gap:8px}
-.empty{padding:60px 0;border-top:1px solid var(--k)}
-#grid{scroll-margin-top:100px}
+#grid{display:grid;gap:clamp(48px,7vw,96px)}
+.grupo{scroll-margin-top:100px}
+.grupo .cab{display:grid;gap:8px;padding-bottom:clamp(18px,2.6vw,30px);
+  border-bottom:1px solid var(--k3);margin-bottom:clamp(22px,3vw,38px)}
+.grupo .cab .nn{font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;opacity:.45}
+.grupo .cab h2{margin:0;font-size:clamp(28px,4.6vw,56px);font-weight:800;
+  letter-spacing:-.04em;line-height:1;text-transform:uppercase}
+.grupo .cab p{margin:0;max-width:46ch;opacity:.65;font-size:clamp(14px,1.1vw,16px);line-height:1.45}
+.grupo .nada{margin:0;padding:clamp(22px,3vw,38px) 0;opacity:.5;font-style:italic;
+  font-family:var(--serif);font-size:clamp(16px,1.4vw,21px)}
+.filters .l a.chip{text-decoration:none}
 .soon{margin-top:clamp(56px,7vw,110px);display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);background:var(--k);color:var(--b);min-height:360px}
 .soon .t{padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;justify-content:space-between;gap:24px}
 .soon h2{font-size:clamp(46px,6vw,100px)}
@@ -86,8 +95,7 @@
 <section class="sec light">
   <div class="wrap">
     <div class="filters"><div class="l" id="filt" role="group" aria-label="Filtro"></div><span class="mono dim">Vol.01 — 2026</span></div>
-    <div class="pgrid" id="grid"></div>
-    <div class="empty" id="empty" hidden><h2 class="display" style="font-size:clamp(36px,5vw,72px)"><span data-l="es">Esta órbita todavía <span class="it">está vacía.</span></span><span data-l="en">This orbit is <span class="it">still empty.</span></span></h2><p style="opacity:.7"><span data-l="es">Estamos construyendo productos para esta familia. Mirá el resto del catálogo mientras tanto.</span><span data-l="en">We’re building products for this family. Explore the rest of the catalog in the meantime.</span></p></div>
+    <div id="grid"></div>
 
     <div class="soon rv">
       <div class="t">
@@ -117,23 +125,37 @@ $('#shelf').innerHTML = P.map(p => `<a href="${url(p)}"><div class="cv"><div cla
 <button class="chip qbtn" type="button" data-flip>${L('¿Qué es?','What is it?')}</button></a>`).join('');
 $$('#shelf [data-flip]').forEach(b => b.onclick = e => { e.preventDefault(); const f = $('.flip', b.closest('a')); f.classList.toggle('flipped'); b.innerHTML = f.classList.contains('flipped') ? L('Ver tapa','Show cover') : L('¿Qué es?','What is it?'); });
 const grid = $('#grid'), filt = $('#filt');
-const fams = [['', L('Todo','All')], ...Object.entries(FAM).map(([k,[n]]) => [k, n.replace('Orbit ','')])];
-filt.innerHTML = fams.map(([k,n]) => `<button class="chip" data-f="${k}" aria-pressed="false">${n} · ${k ? P.filter(p => p.family===k).length : P.length}</button>`).join('');
-let cur = '';
-function count() { const n = (cur ? P.filter(p => p.family === cur) : P).length; $('#count').textContent = `${n} ${n===1 ? tr('producto','product') : tr('productos','products')}${cur ? ' — ' + FAM[cur][0] : ''}`; }
-function show(k) {
-  cur = k;
-  const list = k ? P.filter(p => p.family === k) : P;
-  grid.innerHTML = list.map(card).join('');
-  $('#empty').hidden = list.length > 0;
-  $$('.chip', filt).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === k)));
+/* Los escalones, su orden y qué familia cae en cada uno salen de
+   ORBIT_ESCALA (products.js). Una familia nueva sin ubicar cae en el
+   escalón marcado `resto`, así ningún producto desaparece del catálogo. */
+const ESCALA = window.ORBIT_ESCALA || [];
+const suelto = ESCALA.find(t => t.resto) || ESCALA[0];
+const escalonDe = p => (ESCALA.find(t => (t.fams || []).includes(p.family)) || suelto || {}).id;
+const enEscalon = id => P.filter(p => escalonDe(p) === id);
+
+filt.innerHTML = ESCALA.map((t, i) =>
+  `<a class="chip" href="#${t.id}">${String(i + 1).padStart(2, '0')} ${L(t.n)}</a>`).join('');
+
+function pintar() {
+  grid.innerHTML = ESCALA.map((t, i) => {
+    const lista = enEscalon(t.id);
+    return `<section class="grupo" id="${t.id}">
+      <div class="cab">
+        <span class="nn">${String(i + 1).padStart(2, '0')}</span>
+        <h2>${L(t.n)}</h2>
+        <p>${L(t.d)}</p>
+      </div>
+      ${lista.length
+        ? `<div class="pgrid">${lista.map(card).join('')}</div>`
+        : `<p class="nada">${L('Todavía no hay nada en este escalón.','Nothing on this step yet.')}</p>`}
+    </section>`;
+  }).join('');
   $$('.rv', grid).forEach(el => el.classList.remove('rv'));
-  count();
+  const n = P.length;
+  $('#count').textContent = `${n} ${n === 1 ? tr('producto','product') : tr('productos','products')}`;
 }
-$$('.chip', filt).forEach(b => b.onclick = () => { history.replaceState(null, '', b.dataset.f ? '#' + b.dataset.f : location.pathname); show(b.dataset.f); });
-addEventListener('orbit:lang', count);
-const h = location.hash.slice(1);
-show(FAM[h] ? h : '');
+pintar();
+addEventListener('orbit:lang', pintar);
 reveal();
 })();
 </script>
