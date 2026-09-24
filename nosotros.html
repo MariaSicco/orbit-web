@@ -82,11 +82,24 @@
   .origin .wmo{display:none}
   .chap{justify-content:flex-start}
 }
+/* Eran tres bloques de 260px apilados: en el celular la sección se iba a
+   pantalla y media. Ahora, en pantallas angostas, son tres renglones con
+   el símbolo al costado. El símbolo sigue cerrándose de uno al otro. */
 .vals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3)}
-.vals>div{background:var(--k);padding:22px;min-height:260px;display:flex;flex-direction:column;justify-content:space-between}
-.vals .s{width:64px}
-.vals b{display:block;font-size:clamp(28px,3vw,46px);letter-spacing:-.045em;text-transform:uppercase;font-weight:800;line-height:.95}
-.vals em{font-family:var(--serif);font-size:clamp(22px,2vw,30px);color:var(--ac)}
+.vals>div{background:var(--k);padding:clamp(16px,2vw,24px);min-height:196px;
+  display:flex;flex-direction:column;justify-content:space-between;gap:16px}
+.vals .s{width:clamp(42px,4vw,60px)}
+.vals b{display:block;font-size:clamp(24px,2.8vw,42px);letter-spacing:-.045em;
+  text-transform:uppercase;font-weight:800;line-height:.95}
+.vals em{font-family:var(--serif);font-size:clamp(18px,1.8vw,28px);color:var(--ac);line-height:1.1}
+@media (max-width:860px){
+  .vals{grid-template-columns:1fr;gap:1px}
+  .vals>div{min-height:0;flex-direction:row;align-items:center;
+    gap:clamp(14px,4vw,20px);padding:clamp(13px,3.4vw,18px)}
+  .vals .s{width:clamp(36px,10vw,48px);flex:none}
+  .vals b{font-size:clamp(19px,5.2vw,26px)}
+  .vals em{display:block;font-size:clamp(15px,4vw,20px);margin-top:2px}
+}
 .pairs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,1.6vw,24px);margin-top:clamp(40px,5vw,72px)}
 .pairs>div{border-top:1px solid rgba(13,13,14,.25);padding-top:14px}
 .pairs b{display:block;font-size:20px;letter-spacing:-.02em}
@@ -151,7 +164,7 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 <section class="sec dark">
   <div class="wrap">
     <div class="shead mono"><div><b><span data-l="es">Qué hacemos</span><span data-l="en">What we do</span></b><span data-l="es">Idea → movimiento → sistema → resultado</span><span data-l="en">Idea → motion → system → result</span></div><div style="text-align:right"><span data-l="es">No vendemos archivos</span><span data-l="en">We don’t sell files</span></div></div>
-    <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:15ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Tomamos lo desordenado y lo volvemos <span class="it">accionable.</span></span><span data-l="en">We take what’s messy and make it <span class="it">actionable.</span></span></h2>
+    <h2 class="display rv" style="font-size:clamp(30px,7.2vw,112px);max-width:15ch;margin-bottom:clamp(20px,3.4vw,56px)"><span data-l="es">Tomamos lo desordenado y lo volvemos <span class="it">accionable.</span></span><span data-l="en">We take what’s messy and make it <span class="it">actionable.</span></span></h2>
     <div class="vals" id="vals"></div>
   </div>
 </section>
