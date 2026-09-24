@@ -261,42 +261,52 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .m3 .indice li.on .met-libro{transform:rotateX(-6deg) rotateY(-26deg);opacity:1}
 
 /* ---------- 04 · MAZO ----------
-   Un mazo de naipes. El de adelante tiene el dolor escrito; se da vuelta
-   solo y del otro lado está la tapa del producto, a página completa. */
+   Un mazo. Las dos caras del naipe son tapas del mismo sistema: adelante la
+   del problema, atrás la del producto. Se da vuelta solo y se pasa de página
+   deslizando, como un libro. */
 .m4 .mazo{position:relative;flex:1;display:grid;place-items:center;
   min-height:clamp(288px,39vh,364px);perspective:1400px}
 .m4 .naipe{grid-area:1 / 1;width:min(64vw,238px);aspect-ratio:3 / 4;position:relative;
-  transform-style:preserve-3d;cursor:pointer;
+  transform-style:preserve-3d;cursor:grab;touch-action:pan-y;
   transform:translateY(calc(var(--nivel) * 9px)) scale(calc(1 - var(--nivel) * .045)) rotate(calc(var(--giro) * 1deg));
   transition:transform .7s cubic-bezier(.3,0,.15,1),opacity .45s ease}
 .m4 .naipe.dado{transform:rotateY(180deg)}
 .m4 .naipe.ido{transform:translate(-128%,-12%) rotate(-15deg);opacity:0;pointer-events:none}
-/* el de adelante respira, para que se note que hay que tocarlo */
+/* el de adelante respira, para que se note que está vivo */
 @keyframes convidar{0%,100%{translate:0 0}50%{translate:0 -5px}}
 .m4 .naipe.arriba:not(.dado){animation:convidar 2.6s ease-in-out infinite}
+.m4 .naipe.tirando{animation:none;cursor:grabbing}
 
 .m4 .cara{position:absolute;inset:0;backface-visibility:hidden;border-radius:4px;overflow:hidden;
   box-shadow:0 20px 44px -22px rgba(13,13,14,.5)}
-.m4 .frente{background:var(--b);border:1px solid rgba(13,13,14,.16);
-  padding:clamp(17px,4.2vw,23px);display:flex;flex-direction:column;justify-content:space-between}
-.m4 .frente .arriba{display:flex;justify-content:space-between;font-family:var(--mono);
-  font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
-.m4 .frente .dicho{display:grid;gap:4px}
-.m4 .frente .dicho p{margin:0;font-family:var(--serif);font-style:italic;
-  font-size:clamp(16px,4.3vw,20px);line-height:1.22}
-.m4 .frente .dicho p:last-child{color:var(--or)}
-.m4 .frente .toca{display:flex;align-items:center;gap:8px;font-family:var(--mono);
-  font-size:10px;letter-spacing:.11em;text-transform:uppercase;opacity:.55}
-.m4 .frente .toca .giro{display:inline-block;width:13px;height:13px;border-radius:50%;
-  border:1px solid currentColor;position:relative}
-.m4 .frente .toca .giro::after{content:"";position:absolute;left:50%;top:1.5px;width:1px;height:5px;
-  background:currentColor;translate:-50% 0}
 
-/* el reverso es la tapa, a página completa: es lo que se viene a ver */
+/* la cara del problema, armada como una tapa: lomo, cifra y la frase */
+.m4 .frente{background:var(--b);color:var(--k);border:1px solid rgba(13,13,14,.14);
+  display:grid;grid-template-columns:13% 1fr;container-type:inline-size}
+.m4 .frente .lomo{background:var(--k);color:var(--b);display:flex;flex-direction:column;
+  align-items:center;justify-content:space-between;padding:clamp(11px,3vw,15px) 0}
+.m4 .frente .lomo span{writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap;
+  font-family:var(--mono);letter-spacing:.18em;text-transform:uppercase}
+.m4 .frente .lomo .rub{font-size:max(8px,2.9cqw);opacity:.9}
+.m4 .frente .lomo .cod{font-size:max(7px,2.4cqw);opacity:.5;letter-spacing:.12em}
+.m4 .frente .hoja{padding:clamp(14px,3.6vw,20px);display:flex;flex-direction:column;position:relative}
+.m4 .frente .alto{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.m4 .frente .cifra{font-weight:800;font-size:clamp(44px,12.5vw,60px);letter-spacing:-.05em;
+  line-height:.78;margin-top:6px;opacity:.14}
+.m4 .frente .dicho{margin-top:auto;display:grid;gap:3px}
+.m4 .frente .dicho p{margin:0;font-family:var(--serif);font-style:italic;
+  font-size:clamp(15px,4.1vw,19px);line-height:1.22}
+.m4 .frente .dicho p:last-child{color:var(--or)}
+.m4 .frente .bajo{margin-top:clamp(10px,2.4vw,14px);font-family:var(--mono);font-size:9px;
+  letter-spacing:.14em;text-transform:uppercase;opacity:.4}
+
+/* el reverso es la tapa del producto, a página completa y sin nada encima */
 .m4 .dorso{transform:rotateY(180deg);background:var(--k);color:var(--b)}
 .m4 .dorso .tapa{position:absolute;inset:0}
 .m4 .dorso .tapa .cover{width:100%;box-shadow:none}
-/* la solución va debajo del mazo, no encima de la tapa */
+
+/* la solución, debajo del mazo */
 .m4 .leyenda{display:grid;gap:3px;min-height:clamp(44px,6.4vh,58px);
   opacity:0;transform:translateY(8px);transition:opacity .4s ease .18s,transform .5s var(--ease) .18s}
 .m4 .leyenda.on{opacity:1;transform:none}
@@ -307,9 +317,9 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .m4 .ayuda{display:flex;align-items:center;justify-content:space-between;gap:14px;
   font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
 .m4 .ayuda .cuenta{opacity:.45}
-.m4 .ayuda .sig{appearance:none;border:1px solid rgba(13,13,14,.25);background:none;font:inherit;
-  color:inherit;padding:8px 14px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:8px}
-.m4 .ayuda .sig:disabled{opacity:.3;cursor:default}
+.m4 .ayuda .pista{display:flex;align-items:center;gap:8px;opacity:.5}
+@keyframes empujar{0%,100%{transform:translateX(0)}55%{transform:translateX(-6px)}}
+.m4 .ayuda .pista .ar{animation:empujar 2.4s ease-in-out infinite}
 
 /* selector de versiones: es para probar, sale cuando esté elegida */
 .selm{position:fixed;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;
@@ -668,26 +678,27 @@ function mazo() {
     <div class="mazo">${PROB.map((q, i) => `
       <article class="naipe" data-i="${i}" style="--nivel:${i};--giro:${(i % 2 ? 1 : -1) * (i + 1) * 1.5}">
         <div class="cara frente">
-          <div class="arriba"><span>${num(i)} / ${num(PROB.length - 1)}</span><span>${L(...q.rubro)}</span></div>
-          <div class="dicho">${frases(q)}</div>
-          <span class="toca"><i class="giro"></i>${L('Se da vuelta solo','It turns over by itself')}</span>
+          <div class="lomo"><span class="rub">${L(...q.rubro)}</span><span class="cod">${P[i] ? P[i].code : ''}</span></div>
+          <div class="hoja">
+            <div class="alto"><span>Orbit®</span><span>${num(i)} / ${num(PROB.length - 1)}</span></div>
+            <span class="cifra">${num(i)}</span>
+            <div class="dicho">${frases(q)}</div>
+            <span class="bajo">${L('El problema','The problem')}</span>
+          </div>
         </div>
         <div class="cara dorso"><div class="tapa">${P[i] ? ORBIT.cover(P[i]) : ''}</div></div>
       </article>`).join('')}</div>
     <p class="leyenda"><i>${L('Lo arregla','The fix')}</i><b></b></p>
     <div class="ayuda">
       <span class="cuenta"></span>
-      <button class="sig" type="button">${L('Siguiente','Next')} <span class="ar">→</span></button>
+      <span class="pista">${L('Deslizá para pasar','Swipe to move on')} <span class="ar">→</span></span>
     </div>`;
 
-  const naipes = $$('.naipe', metodo), cuenta = $('.cuenta', metodo), sig = $('.sig', metodo),
+  const naipes = $$('.naipe', metodo), cuenta = $('.cuenta', metodo),
         leyenda = $('.leyenda', metodo), leyendaTxt = $('.leyenda b', metodo);
   let arriba = 0, reloj = 0, ala = false;
 
-  const marcar = () => {
-    cuenta.textContent = `${num(arriba)} / ${num(naipes.length - 1)}`;
-    sig.disabled = false;
-  };
+  const marcar = () => cuenta.textContent = `${num(arriba)} / ${num(naipes.length - 1)}`;
   const ordenar = () => naipes.forEach((n, i) => {
     n.style.setProperty('--nivel', Math.max(0, i - arriba));
     n.style.zIndex = naipes.length - Math.max(0, i - arriba);
@@ -695,12 +706,6 @@ function mazo() {
     n.classList.toggle('arriba', i === arriba);
   });
 
-  /* se da vuelta sola: no hay que adivinar que se puede tocar */
-  function presentar() {
-    clearTimeout(reloj);
-    if (RM || !ala) return;
-    reloj = setTimeout(dar, 1700);
-  }
   const dar = () => {
     clearTimeout(reloj);
     if (!naipes[arriba]) return;
@@ -708,9 +713,15 @@ function mazo() {
     leyendaTxt.innerHTML = L(...PROB[arriba].arregla);
     leyenda.classList.add('on');
   };
+  /* se da vuelta solo: no hay que adivinar que se puede tocar */
+  function presentar() {
+    clearTimeout(reloj);
+    if (RM || !ala) return;
+    reloj = setTimeout(dar, 1700);
+  }
   function siguiente() {
     clearTimeout(reloj);
-    if (arriba >= naipes.length - 1) {          /* se terminó: se vuelve a armar */
+    if (arriba >= naipes.length - 1) {          /* se terminó: el mazo se vuelve a armar */
       naipes.forEach(n => n.classList.remove('dado', 'ido'));
       arriba = 0;
     } else arriba++;
@@ -718,11 +729,38 @@ function mazo() {
     ordenar(); marcar(); presentar();
   }
 
-  naipes.forEach((n, i) => n.onclick = () => {
-    if (i !== arriba) return;
-    n.classList.contains('dado') ? siguiente() : dar();
+  /* se pasa de página deslizando, como un libro: el naipe sigue al dedo y,
+     si lo soltás pasado el umbral, se va y aparece el de atrás */
+  naipes.forEach((n, i) => {
+    let x0 = null, corrio = 0;
+    const mano = e => {
+      if (i !== arriba) return;
+      x0 = e.clientX; corrio = 0;
+      n.classList.add('tirando');
+      n.setPointerCapture(e.pointerId);
+    };
+    const tira = e => {
+      if (x0 === null) return;
+      corrio = e.clientX - x0;
+      n.style.transition = 'none';
+      n.style.transform = `translateX(${corrio.toFixed(1)}px) rotate(${(corrio * .045).toFixed(2)}deg)`
+        + (n.classList.contains('dado') ? ' rotateY(180deg)' : '');
+    };
+    const suelta = () => {
+      if (x0 === null) return;
+      x0 = null;
+      n.classList.remove('tirando');
+      n.style.transition = '';
+      n.style.transform = '';
+      if (Math.abs(corrio) > 64) siguiente();
+      else if (Math.abs(corrio) < 6) { n.classList.contains('dado') ? siguiente() : dar(); }
+      corrio = 0;
+    };
+    n.addEventListener('pointerdown', mano);
+    n.addEventListener('pointermove', tira);
+    n.addEventListener('pointerup', suelta);
+    n.addEventListener('pointercancel', suelta);
   });
-  sig.onclick = siguiente;
 
   ordenar(); marcar();
   new IntersectionObserver(([e]) => {
