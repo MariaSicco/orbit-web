@@ -261,10 +261,11 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 
 #coleccion .vitrina2{flex:1;min-height:0;display:flex;align-items:center;
   gap:clamp(12px,3.4vw,22px);overflow-x:auto;overflow-y:hidden;
-  scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+  scroll-snap-type:x mandatory;scroll-padding-left:var(--pad);
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
   margin:0 calc(var(--pad) * -1);padding:0 var(--pad)}
 #coleccion .vitrina2::-webkit-scrollbar{display:none}
-#coleccion .ficha2{flex:0 0 clamp(148px,56vw,228px);scroll-snap-align:start;
+#coleccion .ficha2{flex:0 0 clamp(128px,44vw,190px);scroll-snap-align:start;
   display:grid;gap:10px;align-content:center;text-decoration:none;color:inherit}
 #coleccion .ficha2 .cover{transition:transform .5s var(--ease)}
 #coleccion .ficha2:hover .cover,#coleccion .ficha2:focus-visible .cover{transform:translateY(-8px)}
