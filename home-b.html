@@ -280,6 +280,34 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 #coleccion .pie3 .nota3{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
   text-transform:uppercase;opacity:.45}
 
+/* ---- 05 destacado: el producto como objeto, no como captura ---- */
+.p-destacado{gap:clamp(12px,2.2vh,24px)}
+.p-destacado .feat2{flex:1;min-height:0;display:flex;flex-direction:column;
+  gap:clamp(10px,1.8vh,20px)}
+.p-destacado .boxstage{min-height:0;flex:1;background:radial-gradient(58% 58% at 50% 52%,#2a2a2d 0,var(--k) 70%)}
+.p-destacado .box{--w:clamp(120px,32vw,230px);--h:calc(var(--w) * 1.32);--d:calc(var(--w) * .256)}
+.p-destacado .boxstage .hint{position:absolute;left:0;bottom:6px;font-size:9.5px;
+  letter-spacing:.12em;text-transform:uppercase;opacity:.35}
+.p-destacado .info2{display:grid;gap:clamp(7px,1.2vh,12px)}
+.p-destacado .info2 .cod{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.5}
+.p-destacado .info2 h2{margin:0;font-size:clamp(28px,7.6vw,74px);letter-spacing:-.04em;line-height:.96}
+.p-destacado .info2 h2 .it{font-family:var(--serif);font-style:italic;font-weight:400}
+.p-destacado .info2 .tag2{margin:0;font-size:clamp(13.5px,3.6vw,16px);line-height:1.4;
+  opacity:.68;max-width:38ch}
+.p-destacado .specs2{display:grid;grid-template-columns:1fr 1fr;gap:0 clamp(12px,3.4vw,24px)}
+.p-destacado .specs2 > div{border-top:1px solid rgba(242,239,232,.16);padding:clamp(7px,1.2vh,11px) 0}
+.p-destacado .specs2 small{display:block;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.1em;text-transform:uppercase;opacity:.45}
+.p-destacado .specs2 b{display:block;font-weight:700;font-size:clamp(13.5px,3.7vw,18px);
+  letter-spacing:-.02em;line-height:1.18;margin-top:2px}
+.p-destacado .acts2{display:flex;gap:9px;flex-wrap:wrap;padding-top:clamp(4px,.8vh,8px)}
+@media (min-width:860px){
+  .p-destacado .feat2{flex-direction:row;align-items:center;gap:clamp(24px,4vw,64px)}
+  .p-destacado .boxstage{flex:7}
+  .p-destacado .info2{flex:5}
+}
+
 /* ---- 05 cómo comprar: cuatro pasos, y el símbolo se va cerrando ---- */
 .p-comprar{gap:clamp(16px,3vh,30px)}
 .p-comprar h2{margin:0;font-size:clamp(34px,8.6vw,88px);letter-spacing:-.04em;line-height:1}
@@ -348,14 +376,23 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 <!-- 04 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
 <section class="pant dark" id="coleccion"></section>
 
-<!-- 05 CÓMO COMPRAR -->
+<!-- 05 DESTACADO -->
+<section class="pant dark p-destacado" id="destacado">
+  <div class="eti"><span><span data-l="es">Destacado<br>Producto 01</span><span data-l="en">Featured<br>Product 01</span></span><span style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></span></div>
+  <div class="feat2">
+    <div class="boxstage" id="cajaDest"></div>
+    <div class="info2" id="infoDest"></div>
+  </div>
+</section>
+
+<!-- 06 CÓMO COMPRAR -->
 <section class="pant dark p-comprar">
   <div class="eti"><span><span data-l="es">Cómo comprar<br>4 pasos</span><span data-l="en">How to buy<br>4 steps</span></span><span style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></span></div>
   <h2 class="display"><span data-l="es">Comprás hoy.<br>Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today.<br>Use it <span class="it">today.</span></span></h2>
   <div class="flow4" id="flow4"></div>
 </section>
 
-<!-- 06 A MEDIDA -->
+<!-- 07 A MEDIDA -->
 <section class="pant luz p-medida" id="a-medida">
   <div class="eti"><span><span data-l="es">A medida</span><span data-l="en">Custom</span></span><span>OB—X00</span></div>
   <h2 class="display"><span data-l="es">¿No está lo que<br>necesitás?<br><span class="it" style="color:var(--or)">Lo diseñamos.</span></span><span data-l="en">Not what<br>you need?<br><span class="it" style="color:var(--or)">We design it.</span></span></h2>
@@ -363,10 +400,10 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   <div class="acts"><a class="btn btn-blue" href="mailto:hola@orbitando.com.ar?subject=Pedido%20a%20medida"><span data-l="es">Contanos qué necesitás</span><span data-l="en">Tell us what you need</span> <span class="ar">→</span></a></div>
 </section>
 
-<!-- 07 CIERRE -->
+<!-- 08 CIERRE -->
 <section class="pant dark p-cierre">
   <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
-  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>07</span></div>
+  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>08</span></div>
   <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it" style="color:var(--ac)">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it" style="color:var(--ac)">A brighter tomorrow.</span></span></h2>
   <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
   <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir un sistema</span><span data-l="en">Pick a system</span> <span class="ar">↑</span></a></div>
@@ -641,6 +678,23 @@ const coleccion = $('#coleccion');
   }, {threshold:.25}).observe(coleccion);
 })();
 
+/* ---- 05 · destacado: la caja 3D que se gira con el dedo ---- */
+(function destacado() {
+  const caja = $('#cajaDest'), info = $('#infoDest');
+  if (!caja || !info || !P.length) return;
+  const f = P[0];
+  ORBIT.mountBox(caja, f);
+  const partes = f.name.split(' ');
+  info.innerHTML = `
+    <span class="cod">${f.code} · ${FAM[f.family] ? FAM[f.family][0] : ''}</span>
+    <h2>${partes[0]}<br><span class="it">${partes.slice(1).join(' ').toLowerCase()}.</span></h2>
+    <p class="tag2">${L(f.tagline)}</p>
+    <div class="specs2">${f.specs.slice(0, 4).map(([k, v]) =>
+      `<div><small>${L(k)}</small><b>${L(v)}</b></div>`).join('')}</div>
+    <div class="acts2">${buyBtn(f)}<a class="btn btn-line" href="${ORBIT.url(f)}">${
+      L('Ver detalle','See details')}</a></div>`;
+})();
+
 /* ---- 05 · cómo comprar: el símbolo de Orbit se va cerrando paso a paso ---- */
 (function comoComprar() {
   const caja = $('#flow4');
@@ -649,7 +703,8 @@ const coleccion = $('#coleccion');
     ['Elegí tu sistema','Pick your system',
      'Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.', 140],
     ['Pagá una sola vez','Pay once',
-     'Pago seguro con tarjeta. Sin suscripciones.','Secure card payment. No subscriptions.', 90],
+     'Mercado Pago en pesos o tarjeta en dólares. Sin suscripciones.',
+     'Mercado Pago in pesos or card in dollars. No subscriptions.', 90],
     ['Recibilo al instante','Get it instantly',
      'Te llega un email con la descarga o el acceso.','You get an email with the download or access link.', 40],
     ['Usalo desde hoy','Use it today',
