@@ -146,7 +146,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .llego .avance svg{opacity:1}
 
 /* ---- deslizables ---- */
-.riel{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
+.riel{display:flex;gap:clamp(24px,7vw,44px);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
   margin-inline:calc(var(--pad) * -1);padding-inline:var(--pad);scroll-padding-inline:var(--pad)}
 .riel::-webkit-scrollbar{display:none}
 .riel>*{scroll-snap-align:start;flex:0 0 min(82%,420px)}
@@ -154,74 +154,51 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .pista-x .barra{flex:1;height:2px;background:currentColor;opacity:.18;position:relative;overflow:hidden}
 .pista-x .barra i{position:absolute;inset:0;background:var(--blue);transform-origin:left;transform:scaleX(.25);transition:transform .25s var(--ease)}
 
-/* método */
-.m-slide{border:1px solid rgba(13,13,14,.18);padding:clamp(17px,4.4vw,26px);display:flex;flex-direction:column;justify-content:space-between;gap:clamp(10px,1.7vh,15px)}
-.m-slide .cab{display:flex;justify-content:space-between;align-items:baseline;gap:14px}
-.m-slide .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;opacity:.45}
-.m-slide .tipo{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;
-  text-transform:uppercase;opacity:.45;text-align:right}
-/* El problema entra desarmado y se acomoda a medida que la tarjeta llega al
-   centro del riel. Todo cuelga de --orden, que el JS mueve de 0 a 1 con el
-   dedo: no es una animación que se dispara y termina, es el desorden
-   resolviéndose en tiempo real. --caos es su complemento. */
-.m-slide{--orden:0;--caos:1}
-/* ---- las palabras se convierten en el libro ----
-   No son dos cosas apiladas: ocupan el mismo lugar. Primero se cuenta el
-   problema, frase por frase. Después esas mismas frases se juntan hacia el
-   centro, se achican y se apagan, y desde ese punto crece el libro y gira
-   hasta darte la tapa. Un solo movimiento, manejado por el dedo:
-   --cuenta es la primera mitad (se cuenta), --fin es la segunda (se vuelve). */
-/* La escena es un escenario oscuro dentro de la tarjeta clara: el mismo
-   fondo sobre el que se ve el libro en la ficha de producto. Así el recuadro
-   deja de ser un hueco en blanco y la tapa clara tiene contra qué recortarse. */
-.m-slide .escena{position:relative;display:grid;place-items:center;
-  height:clamp(152px,21vh,198px);padding:clamp(13px,3.2vw,18px);
-  perspective:820px;perspective-origin:50% 46%;color:var(--b);
-  background:radial-gradient(72% 64% at 50% 44%,#26262c 0,#111113 68%,#0D0D0E 100%);
-  box-shadow:inset 0 0 0 1px rgba(242,239,232,.07)}
+/* ---- método: el problema se vuelve el producto ----
+   Sin cajas: ni recuadro, ni fondo, ni pastillas. En la pantalla clara hay
+   dos cosas y nada más: las palabras del problema y el libro. Ocupan el
+   mismo lugar, y uno se vuelve el otro. */
+.m-slide{display:flex;flex-direction:column;gap:clamp(15px,2.6vh,24px);--orden:0;--caos:1}
+
+.m-slide .cab{display:flex;align-items:center;gap:12px;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.m-slide .cab .n{opacity:.5}
+.m-slide .cab .raya{flex:1;height:1px;background:currentColor;opacity:.16}
+.m-slide .cab .tipo{opacity:.5}
+
+/* la zona donde pasa todo: las palabras y el libro, uno encima del otro */
+.m-slide .escena{display:grid;place-items:center;height:clamp(214px,29vh,286px);
+  perspective:900px;perspective-origin:50% 42%}
 .m-slide .escena > *{grid-area:1 / 1;width:100%}
 
-/* el rótulo de la escena acompaña el cambio: lo que se ve deja de ser el
-   problema y pasa a ser la herramienta */
-.m-slide .rot{position:absolute;top:clamp(10px,2.8vw,14px);left:clamp(13px,3.4vw,18px);
-  width:auto;height:1.2em;font-family:var(--mono);font-size:9.5px;
-  letter-spacing:.14em;text-transform:uppercase;pointer-events:none}
-.m-slide .rot span{position:absolute;left:0;top:0;white-space:nowrap}
-.m-slide .rot .a{opacity:calc(.55 * (1 - var(--fin,0)))}
-.m-slide .rot .b{opacity:calc(var(--fin,0));color:var(--ac)}
-
-.m-slide .relato{margin:0;display:grid;gap:4px;will-change:transform,opacity}
+.m-slide .relato{margin:0;display:grid;gap:2px;will-change:transform,opacity}
 .m-slide .relato .l{display:block;font-family:var(--serif);font-style:italic;
-  font-size:clamp(15px,4.1vw,19px);line-height:1.25;transform-origin:50% 50%;
-  opacity:calc((.1 + (var(--cuenta,0) - .02 - var(--i) * .22) * 4.5) * (1 - var(--fin,0)));
-  transform:translateY(calc(var(--dir) * var(--fin,0) * 32px)) scale(calc(1 - .36 * var(--fin,0)))}
-/* la última frase es la que duele: queda en el color de la marca */
-.m-slide .relato .l:last-child{color:var(--ac)}
+  font-size:clamp(19px,5.4vw,26px);line-height:1.22;transform-origin:50% 50%;
+  opacity:calc((.07 + (var(--cuenta,0) - .02 - var(--i) * .22) * 4.5) * (1 - var(--fin,0)));
+  transform:translateY(calc(var(--dir) * var(--fin,0) * 34px)) scale(calc(1 - .34 * var(--fin,0)))}
+/* la última es la que duele */
+.m-slide .relato .l:last-child{color:var(--or)}
 
-/* el libro es el mismo objeto del resto del sitio: la tapa de verdad, con su
-   lomo y su código. Crece desde donde estaban las palabras. */
-.m-slide .escena .box{--w:82px;--h:108px;--d:20px;width:var(--w);justify-self:center;
+/* el libro: el objeto de verdad, apoyado sobre la pantalla clara. La sombra
+   es lo único que lo sostiene; no necesita ninguna caja detrás. */
+.m-slide .escena .box{--w:108px;--h:142px;--d:26px;width:var(--w);justify-self:center;
   will-change:transform,opacity;opacity:var(--fin,0);
-  transform:translateY(7px) rotateX(-7deg) rotateY(calc(-64deg + 40deg * var(--fin,0)))
-            scale(calc(.52 + .48 * var(--fin,0)));
-  filter:drop-shadow(0 12px 24px rgba(13,13,14,calc(.04 + .12 * var(--fin,0))))}
+  transform:translateY(6px) rotateX(-7deg) rotateY(calc(-66deg + 42deg * var(--fin,0)))
+            scale(calc(.55 + .45 * var(--fin,0)));
+  filter:drop-shadow(0 2px 3px rgba(13,13,14,calc(.1 * var(--fin,0))))
+         drop-shadow(0 16px 26px rgba(13,13,14,calc(.2 * var(--fin,0))))}
 .m-slide .escena .box .side{background:#131314}
-.m-slide .escena .box .side .wm{font-size:10px}
+.m-slide .escena .box .side .wm{font-size:11px}
 
-/* los datos del producto, que aparecen con la tapa */
-.m-slide .fichas{display:flex;flex-wrap:wrap;gap:5px;margin:0;
-  opacity:var(--fin,0);transform:translateY(calc((1 - var(--fin,0)) * 6px))}
-.m-slide .fichas > span{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
-  text-transform:uppercase;padding:4px 8px;border:1px solid rgba(13,13,14,.2);
-  border-radius:999px;opacity:.6;white-space:nowrap}
-
-/* la herramienta aparece recién cuando el problema terminó de ordenarse */
-.m-slide .arregla{margin:0;padding-top:11px;border-top:1px solid rgba(13,13,14,.18);
-  display:grid;gap:4px;opacity:calc((var(--orden) - .55) * 2.6);
-  transform:translateY(calc(var(--caos) * 12px))}
+/* la herramienta, cuando el problema ya se resolvió */
+.m-slide .arregla{margin:0;display:grid;gap:4px;
+  opacity:calc(.17 + (var(--orden) - .6) * 2.4);
+  transform:translateY(calc(var(--caos) * 10px))}
 .m-slide .arregla i{font-family:var(--mono);font-size:10px;letter-spacing:.11em;
   text-transform:uppercase;opacity:.45;font-style:normal}
-.m-slide .arregla b{font-weight:700;font-size:15.5px;letter-spacing:-.015em;line-height:1.3}
+.m-slide .arregla b{font-weight:700;font-size:clamp(16px,4.3vw,19px);
+  letter-spacing:-.015em;line-height:1.25}
+
 @media (prefers-reduced-motion:reduce){
   .m-slide{--orden:1;--caos:0;--cuenta:1;--fin:1}
 }
@@ -457,13 +434,6 @@ const PROB = [
    con su lomo, su código y su contratapa. No un dibujo que se le parezca.
    Entra de canto, mostrando el lomo, y gira hasta darte la tapa a medida que
    la tarjeta llega al centro: del problema al producto, con el mismo gesto. */
-/* los datos que ya tiene cargado el producto, sin inventar nada */
-const dato = v => typeof v === 'string' ? v : L(v.es, v.en);
-const fichas = p => (p.specs || []).slice(0, 3).map(([rotulo, valor]) => {
-  const v = dato(valor);
-  return `<span>${/^\d+$/.test(v) ? v + ' ' + dato(rotulo) : v}</span>`;
-}).join('');
-
 const libro = p => `<div class="box">
   <div class="f front">${ORBIT.cover(p)}</div>
   <div class="f side">${ORBIT.wm({color:'#F2EFE8'}, false)}</div>
@@ -471,83 +441,14 @@ const libro = p => `<div class="box">
   <div class="f top"></div><div class="f bottom"></div></div>`;
 
 $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
-  <div class="cab">
-    <span class="n">${String(i+1).padStart(2,'0')} / ${String(PROB.length).padStart(2,'0')}</span>
-    <span class="tipo">${L(...q.rubro)}</span>
-  </div>
+  <div class="cab"><span class="n">${String(i+1).padStart(2,'0')}</span><i class="raya"></i><span class="tipo">${L(...q.rubro)}</span></div>
   <div class="escena">
     <p class="relato">${q.relato.map(([es, en], j) =>
       `<span class="l" style="--i:${j};--dir:${1 - j}">${L(es, en)}</span>`).join('')}</p>
     ${P[i] ? libro(P[i]) : ''}
-    <span class="rot"><span class="a">${L('Problema','Problem')}</span><span class="b">${L('Herramienta','Tool')}</span></span>
   </div>
-  <p class="fichas">${P[i] ? fichas(P[i]) : ''}</p>
   <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
 </article>`).join('');
-
-/* El dedo manda: --orden de cada tarjeta sale de lo cerca que está del
-   centro del riel. Se actualiza en cada cuadro mientras se desliza, así el
-   relato y el libro se arman y se desarman siguiendo el gesto. */
-/* ---- cada tarjeta se cuenta sola al llegar ----
-   Antes el avance salía de la posición del dedo, y como el riel encastra de
-   un tirón, la historia pasaba en un suspiro: se veía aparecer el libro y
-   nada más. Ahora, cuando una tarjeta queda encastrada, se cuenta entera a su
-   tiempo: primero el problema, frase por frase, y después la vuelta al libro. */
-(function contarCadaTarjeta() {
-  const riel = $('#rielM'), tarjetas = $$('.m-slide', riel);
-  if (!tarjetas.length) return;
-
-  /* una sola variable manda: 0 es el problema sin contar, 1 es el libro.
-     --cuenta es la primera mitad (se cuenta), --fin la segunda (se vuelve). */
-  function aplicar(t, v) {
-    t.style.setProperty('--orden', v.toFixed(3));
-    t.style.setProperty('--caos', (1 - v).toFixed(3));
-    t.style.setProperty('--cuenta', Math.min(1, v / .58).toFixed(3));
-    t.style.setProperty('--fin', Math.max(0, (v - .58) / .42).toFixed(3));
-  }
-
-  if (RM) { tarjetas.forEach(t => aplicar(t, 1)); return; }
-  tarjetas.forEach(t => aplicar(t, 0));
-
-  const cual = () => {
-    /* la referencia es el encastre, que es por el borde izquierdo */
-    const sangria = parseFloat(getComputedStyle(riel).paddingLeft) || 0;
-    let elegida = 0, cerca = Infinity;
-    tarjetas.forEach((t, i) => {
-      const lejos = Math.abs((t.offsetLeft - riel.scrollLeft) - sangria);
-      if (lejos < cerca) { cerca = lejos; elegida = i; }
-    });
-    return elegida;
-  };
-
-  let actual = -1, cuadro = 0;
-  function contar(i) {
-    cancelAnimationFrame(cuadro);
-    tarjetas.forEach((t, k) => { if (k !== i) aplicar(t, 0); });
-    const arranque = performance.now(), largo = 2600;
-    (function paso(ahora) {
-      const k = Math.min(1, (ahora - arranque) / largo);
-      aplicar(tarjetas[i], k * k * (3 - 2 * k));
-      if (k < 1) cuadro = requestAnimationFrame(paso);
-    })(arranque);
-  }
-
-  let espera = 0, ala = false;
-  const revisar = () => {
-    if (!ala) return;               /* si no se ve, no gasta nada */
-    const i = cual();
-    if (i === actual) return;
-    actual = i; contar(i);
-  };
-  /* recién cuando el riel frena: contarla mientras se arrastra no se lee */
-  riel.addEventListener('scroll', () => { clearTimeout(espera); espera = setTimeout(revisar, 110); }, {passive:true});
-  addEventListener('resize', () => { clearTimeout(espera); espera = setTimeout(revisar, 110); });
-
-  new IntersectionObserver(([e]) => {
-    ala = e.isIntersecting;
-    if (ala) { actual = -1; revisar(); }
-  }, {threshold:.5}).observe($('#metodo'));
-})();
 
 /* ---- colección: un libro por diapositiva ---- */
 $('#rielC').innerHTML = P.map(p => `<article class="c-slide">
