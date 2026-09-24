@@ -184,7 +184,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 #metodo .cambia{transition:opacity .22s ease,transform .3s var(--ease)}
 #metodo .cambia.sale{opacity:0;transform:translateY(-10px)}
 
-#metodo .medio{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+#metodo .medio{flex:1;display:flex;flex-direction:column;justify-content:center;
   gap:clamp(12px,2vh,20px);padding-bottom:clamp(14px,2.6vh,26px)}
 #metodo .quien{display:flex;align-items:center;gap:10px;font-family:var(--mono);
   font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
@@ -196,7 +196,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   transform:translateX(var(--tira,0));transition:transform .28s var(--ease)}
 #metodo .libros.tirando{transition:none}
 #metodo .libros > button{appearance:none;background:none;border:0;padding:0;cursor:pointer;
-  display:block;flex:1 1 0;min-width:0;opacity:.11;
+  display:block;flex:1 1 0;min-width:0;opacity:.24;
   transform:none;transform-origin:bottom center;
   transition:opacity .4s ease,transform .6s cubic-bezier(.2,1.1,.3,1),flex-grow .45s var(--ease)}
 #metodo .libros > button.puesto{opacity:.44}
@@ -206,43 +206,6 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   box-shadow:0 12px 26px -14px rgba(0,0,0,.9)}
 #metodo .apoyo{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
   text-transform:uppercase;opacity:.4;padding-top:9px}
-
-/* =========================================================
-   TERCERA PANTALLA — la escala
-   De una plantilla a un sistema entero. No nombra ningún producto ni
-   dice cuántos hay: cuenta qué TIPO de cosa hace Orbit, así sigue
-   siendo verdad cuando el catálogo crezca. Los escalones y su orden
-   salen de ORBIT_ESCALA, en products.js.
-   El cuerpo de letra crece escalón a escalón: la escala se ve antes de leerse.
-   ========================================================= */
-#escala{background:var(--k);color:var(--b);overflow:hidden;
-  justify-content:flex-start;gap:clamp(14px,2.4vh,26px)}
-#escala .lead{margin:0;font-size:clamp(14.5px,3.9vw,17px);line-height:1.44;
-  max-width:34ch;opacity:.6}
-#escala .en3{opacity:0;transform:translateY(14px);
-  transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
-.escalado #escala .en3{opacity:1;transform:none}
-.escalado #escala .lead.en3{opacity:.6}
-#escala .nn3{font-family:var(--mono);font-size:10px;letter-spacing:.12em;opacity:.45}
-
-#escala .tipo{flex:1;display:flex;flex-direction:column;justify-content:center;
-  list-style:none;margin:0;padding:0;min-height:0}
-#escala .tipo li{border-top:1px solid rgba(242,239,232,.18)}
-#escala .tipo li:last-child{border-bottom:1px solid rgba(242,239,232,.18)}
-#escala .tipo a{display:grid;gap:5px;text-decoration:none;color:inherit;
-  padding:clamp(11px,2vh,18px) 0}
-#escala .tipo b{display:block;font-weight:800;text-transform:uppercase;
-  letter-spacing:-.045em;line-height:.94;font-size:var(--tam)}
-#escala .tipo li:nth-child(1){--tam:clamp(25px,6.8vw,38px)}
-#escala .tipo li:nth-child(2){--tam:clamp(35px,9.6vw,56px)}
-#escala .tipo li:nth-child(3){--tam:clamp(48px,13.4vw,80px)}
-#escala .tipo li:last-child b{color:var(--ac)}
-#escala .tipo .ar{font-size:.42em;opacity:.4;vertical-align:.24em;margin-left:.16em;
-  display:inline-block;transition:transform .3s var(--ease),opacity .3s ease}
-#escala .tipo a:hover .ar,#escala .tipo a:focus-visible .ar{opacity:1;transform:translateX(5px)}
-#escala .tipo a:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
-#escala .tipo p{margin:0;font-size:clamp(13px,3.5vw,15px);line-height:1.4;
-  opacity:.55;max-width:38ch}
 
 /* =========================================================
    CUARTA PANTALLA — la colección, achicada
@@ -536,20 +499,17 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 <!-- 02 MÉTODO — el contenido lo arma el JS según la versión elegida -->
 <section class="pant luz" id="metodo"></section>
 
-<!-- 03 LA ESCALA — el contenido lo arma el JS según la versión elegida -->
-<section class="pant dark" id="escala"></section>
-
-<!-- 04 DISCIPLINAS -->
+<!-- 03 DISCIPLINAS -->
 <section class="pant luz alta p-disc" id="disciplinas">
   <div class="eti"><span><span data-l="es">Disciplinas<br>Un universo, muchas órbitas</span><span data-l="en">Disciplines<br>One universe, many orbits</span></span><span style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></span></div>
   <h2 class="display" style="font-size:clamp(34px,8.6vw,96px);max-width:15ch;margin:0"><span data-l="es">Una órbita para cada <span class="it">disciplina.</span></span><span data-l="en">An orbit for every <span class="it">discipline.</span></span></h2>
   <div class="disc" id="disc"></div>
 </section>
 
-<!-- 05 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
+<!-- 04 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
 <section class="pant dark" id="coleccion"></section>
 
-<!-- 06 DESTACADO -->
+<!-- 05 DESTACADO -->
 <section class="pant dark p-destacado" id="destacado">
   <div class="eti"><span><span data-l="es">Destacado<br>Producto 01</span><span data-l="en">Featured<br>Product 01</span></span><span style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></span></div>
   <div class="feat2">
@@ -558,7 +518,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   </div>
 </section>
 
-<!-- 07 MIRÁ POR DENTRO -->
+<!-- 06 MIRÁ POR DENTRO -->
 <section class="pant luz alta p-dentro" id="por-dentro">
   <div class="eti"><span><span data-l="es">Mirá por dentro<br>Vista previa interactiva</span><span data-l="en">Look inside<br>Interactive preview</span></span><span style="text-align:right"><span data-l="es">Probalo antes<br>de comprarlo</span><span data-l="en">Try it before<br>you buy it</span></span></div>
   <h2 class="display" style="font-size:clamp(34px,8.6vw,84px);margin:0"><span data-l="es">Probá cómo <span class="it">funciona.</span></span><span data-l="en">See how it <span class="it">works.</span></span></h2>
@@ -568,14 +528,14 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   </div>
 </section>
 
-<!-- 08 CÓMO COMPRAR -->
+<!-- 07 CÓMO COMPRAR -->
 <section class="pant dark p-comprar">
   <div class="eti"><span><span data-l="es">Cómo comprar<br>4 pasos</span><span data-l="en">How to buy<br>4 steps</span></span><span style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></span></div>
   <h2 class="display"><span data-l="es">Comprás hoy.<br>Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today.<br>Use it <span class="it">today.</span></span></h2>
   <div class="flow4" id="flow4"></div>
 </section>
 
-<!-- 09 A MEDIDA -->
+<!-- 08 A MEDIDA -->
 <section class="pant dark alta p-medida" id="a-medida">
   <div class="eti"><span><span data-l="es">A medida<br>OB—X00</span><span data-l="en">Custom<br>OB—X00</span></span><span style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></span></div>
   <div class="cus">
@@ -600,18 +560,10 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   </div>
 </section>
 
-<!-- 10 ENCONTRÁ TU SISTEMA -->
-<section class="pant dark alta p-quiz" id="encontra">
-  <div class="eti"><span><span data-l="es">Encontrá tu sistema<br>3 preguntas · 20 segundos</span><span data-l="en">Find your system<br>3 questions · 20 seconds</span></span><span style="text-align:right"><span data-l="es">Si todavía<br>no te decidís</span><span data-l="en">If you are<br>still unsure</span></span></div>
-  <h2 class="display" style="font-size:clamp(34px,8.6vw,92px);margin:0"><span data-l="es">Encontrá tu <span class="it">sistema.</span></span><span data-l="en">Find your <span class="it">system.</span></span></h2>
-  <p class="lead" style="opacity:.75;margin:0;max-width:40ch"><span data-l="es">Contanos qué querés resolver y te decimos qué herramienta de Orbit te sirve.</span><span data-l="en">Tell us what you want to solve and we’ll point you to the right Orbit tool.</span></p>
-  <div class="qbox" id="qbox" aria-live="polite"></div>
-</section>
-
-<!-- 11 CIERRE -->
+<!-- 09 CIERRE -->
 <section class="pant dark p-cierre">
   <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
-  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>11</span></div>
+  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>09</span></div>
   <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it" style="color:var(--ac)">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it" style="color:var(--ac)">A brighter tomorrow.</span></span></h2>
   <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
   <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir un sistema</span><span data-l="en">Pick a system</span> <span class="ar">↑</span></a></div>
@@ -817,40 +769,6 @@ const ESCENAS = [
   else new IntersectionObserver(([e], obs) => {
     if (e.isIntersecting) { document.body.classList.add('cuenta'); obs.disconnect(); }
   }, {threshold:.25}).observe(metodo);
-})();
-
-/* =========================================================
-   TERCERA PANTALLA — la escala
-   Los tres escalones, su orden y qué familia cae en cada uno salen de
-   ORBIT_ESCALA (products.js). Cada escalón lleva a su grupo en la
-   página de productos.
-   ========================================================= */
-const escala = $('#escala');
-
-(function terceraPantalla() {
-  if (!escala) return;
-  const PASOS = window.ORBIT_ESCALA || [];
-  if (!PASOS.length) return;
-  escala.className = 'pant';
-
-  escala.innerHTML = `
-    <p class="lead en3" style="--d:.06s">${L(
-      'Todo lo que hace Orbit entra en uno de estos tres escalones.',
-      'Everything Orbit makes fits one of these three steps.')}</p>
-    <ol class="tipo en3" style="--d:.24s">${PASOS.map((t, i) => `
-      <li>
-        <a href="productos.html#${t.id}">
-          <span class="nn3">${String(i + 1).padStart(2, '0')}</span>
-          <b>${L(t.n)} <span class="ar">→</span></b>
-          <p>${L(t.d)}</p>
-        </a>
-      </li>`).join('')}</ol>`;
-
-  /* se presenta sola al llegar, y queda legible para siempre */
-  if (RM) document.body.classList.add('escalado');
-  else new IntersectionObserver(([e], obs) => {
-    if (e.isIntersecting) { document.body.classList.add('escalado'); obs.disconnect(); }
-  }, {threshold:.25}).observe(escala);
 })();
 
 /* =========================================================
