@@ -472,6 +472,21 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .qback{margin-top:22px}
 @media (max-width:860px){.quiz,.qres{grid-template-columns:1fr}.qres .cover{max-width:280px}}
 
+/* a medida en la home: el mismo formulario, apretado para que entre de un saque */
+#a-medida .cus{gap:clamp(18px,3vw,56px)}
+#a-medida .lead{margin-top:14px;font-size:clamp(14px,3.7vw,16px);line-height:1.42;max-width:40ch}
+#a-medida .ruta{margin:14px 0 0;font-family:var(--mono);font-size:11px;letter-spacing:.04em;
+  line-height:1.7;opacity:.55;max-width:36ch}
+#a-medida .cform{gap:13px;padding:clamp(14px,3.4vw,30px)}
+#a-medida .cform .two{grid-template-columns:1fr 1fr;gap:10px}
+#a-medida .cform label,#a-medida .cform .mono{font-size:9.5px;letter-spacing:.1em}
+#a-medida .cform label{margin-bottom:5px}
+#a-medida .cform input,#a-medida .cform textarea{padding:9px 11px;font-size:16px}
+#a-medida .cform textarea{min-height:64px}
+#a-medida .cform .opts{gap:6px}
+#a-medida .cform .opts .chip{padding:6px 10px;font-size:9.5px;letter-spacing:.06em}
+#a-medida .cform .send{padding-top:11px}
+
 /* a medida */
 .cus{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,4vw,72px);align-items:start}
 .cus h2{font-size:clamp(46px,6.4vw,108px)}
@@ -567,12 +582,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
     <div>
       <h2 class="display" style="font-size:clamp(32px,8.2vw,92px);margin:0"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
       <p class="lead" style="opacity:.75;margin-top:20px"><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA pensados para tu negocio, con el mismo cuidado que cada producto Orbit.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows built for your business, with the same care as every Orbit product.</span></p>
-      <ol class="cus-steps">
-        <li><span class="mono">01</span><div><b><span data-l="es">Brief</span><span data-l="en">Brief</span></b><p><span data-l="es">Nos contás la idea en este formulario.</span><span data-l="en">Tell us the idea in this form.</span></p></div></li>
-        <li><span class="mono">02</span><div><b><span data-l="es">Propuesta</span><span data-l="en">Proposal</span></b><p><span data-l="es">En 48 h hábiles te enviamos alcance, plazo y precio.</span><span data-l="en">Within 2 business days we send scope, timeline and price.</span></p></div></li>
-        <li><span class="mono">03</span><div><b><span data-l="es">Diseño</span><span data-l="en">Design</span></b><p><span data-l="es">Construimos el sistema con revisiones incluidas.</span><span data-l="en">We build the system, revisions included.</span></p></div></li>
-        <li><span class="mono">04</span><div><b><span data-l="es">Entrega</span><span data-l="en">Delivery</span></b><p><span data-l="es">Listo para usar, con guía y soporte.</span><span data-l="en">Ready to use, with a guide and support.</span></p></div></li>
-      </ol>
+      <p class="ruta"><span data-l="es">Brief → propuesta en 48 h hábiles → diseño con revisiones → entrega lista para usar.</span><span data-l="en">Brief → proposal in 2 business days → design with revisions → delivery, ready to use.</span></p>
     </div>
     <form class="cform" id="cform" novalidate>
       <div class="two">
