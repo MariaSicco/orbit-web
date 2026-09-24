@@ -32,10 +32,12 @@
 /* `svh` no es lo que se ve: Safari lo calcula con la barra desplegada y
    acá daba MÁS que la ventana real. El pegado quedaba más alto que la
    pantalla, la barra de pasos caía por debajo del borde y al seguir
-   bajando aparecía una franja de fondo antes de la sección siguiente.
-   El alto lo mide el JS en --sv. */
-.origin{position:relative;height:calc(3 * var(--sv,100svh));background:var(--k);color:var(--b)}
-.origin .stick{position:sticky;top:0;height:var(--sv,100svh);min-height:600px;padding:calc(90px + env(safe-area-inset-top,0px)) var(--pad) 16px;display:grid;grid-template-rows:auto 1fr auto;gap:20px;overflow:hidden}
+   bajando aparecía una franja de fondo antes de la sección siguiente. */
+/* Mismo criterio que las secciones: `lvh`, la pantalla con la barra del
+   navegador retraída. Medirlo al cargar dejaba el relato más corto que la
+   pantalla y asomaba una franja de fondo antes de la sección siguiente. */
+.origin{position:relative;height:300vh;height:300lvh;background:var(--k);color:var(--b)}
+.origin .stick{position:sticky;top:0;height:100vh;height:100lvh;min-height:600px;padding:calc(90px + env(safe-area-inset-top,0px)) var(--pad) 16px;display:grid;grid-template-rows:auto 1fr auto;gap:20px;overflow:hidden}
 .origin .top{display:flex;justify-content:space-between;gap:20px}
 .origin .stage{display:grid;grid-template-columns:minmax(0,6fr) minmax(0,6fr);gap:clamp(20px,4vw,72px);align-items:center;min-height:0}
 .origin .symw{position:relative;width:min(100%,62vh);aspect-ratio:1;justify-self:center}
@@ -76,9 +78,8 @@
   .origin .wmo{display:none}}
 /* 72px arriba y 72 abajo en cada sección daban casi 150px de nada entre una
    y otra en el celular. Sólo en esta página y sólo en pantallas angostas. */
-/* Cada sección mide la pantalla donde se está viendo —el alto lo mide el
-   JS en --sv, porque svh y dvh mienten en Safari— y el contenido va
-   centrado. Así no queda una franja de fondo vacío entre una y otra. */
+/* Cada sección mide la pantalla donde se está viendo y el contenido va
+   centrado, así no queda una franja de fondo vacío entre una y otra. */
 /* `lvh` es la pantalla con la barra del navegador RETRAÍDA, que es el alto
    que de verdad tenés cuando estás scrolleando. Medirlo al cargar no sirve:
    al cargar la barra está desplegada, la ventana es más baja, y cuando la
@@ -111,10 +112,10 @@
   .vals b{font-size:clamp(23px,6.2vw,30px)}
   .vals em{display:block;font-size:clamp(17px,4.6vw,23px);line-height:1.15;margin-top:3px}
 }
-.pairs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,1.6vw,24px);margin-top:clamp(40px,5vw,72px)}
-.pairs>div{border-top:1px solid rgba(13,13,14,.25);padding-top:14px}
-.pairs b{display:block;font-size:20px;letter-spacing:-.02em}
-.pairs em{font-family:var(--serif);font-size:22px;opacity:.6}
+
+
+
+
 main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-content:center}
 /* manifiesto editorial */
 .mf-open{font-weight:800;font-size:clamp(46px,7.2vw,124px);letter-spacing:-.05em;line-height:.88;text-transform:uppercase;margin:0;max-width:14ch}
@@ -136,7 +137,7 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 .contact{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,4vw,64px);align-items:end}
 .contact a.big{font-weight:800;font-size:clamp(34px,5vw,80px);letter-spacing:-.05em;text-decoration:none;line-height:1;border-bottom:3px solid var(--blue);word-break:break-all}
 .contact a.big:hover{color:var(--blue)}
-@media (max-width:860px){.ab-hero .g,.contact{grid-template-columns:1fr}.vals{grid-template-columns:1fr}.pairs{grid-template-columns:1fr 1fr}.ab-photos{grid-template-columns:1fr 1fr}.ab-photos .photo:nth-child(3){display:none}}
+@media (max-width:860px){.ab-hero .g,.contact{grid-template-columns:1fr}.vals{grid-template-columns:1fr}.ab-photos{grid-template-columns:1fr 1fr}.ab-photos .photo:nth-child(3){display:none}}
 </style>
 </head>
 <body data-page="nosotros" data-title-es="Nosotros — Orbit®" data-title-en="About — Orbit®">
@@ -163,19 +164,6 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
     <div class="shead mono"><div><b><span data-l="es">Qué hacemos</span><span data-l="en">What we do</span></b><span data-l="es">Idea → movimiento → sistema → resultado</span><span data-l="en">Idea → motion → system → result</span></div><div style="text-align:right"><span data-l="es">No vendemos archivos</span><span data-l="en">We don’t sell files</span></div></div>
     <h2 class="display rv" style="font-size:clamp(34px,7.6vw,112px);max-width:15ch;margin-bottom:clamp(24px,4vw,64px)"><span data-l="es">Tomamos lo desordenado y lo volvemos <span class="it">accionable.</span></span><span data-l="en">We take what’s messy and make it <span class="it">actionable.</span></span></h2>
     <div class="vals" id="vals"></div>
-  </div>
-</section>
-
-<section class="sec light">
-  <div class="wrap">
-    <div class="shead mono"><div><b><span data-l="es">Cómo somos</span><span data-l="en">Who we are</span></b></div><div style="text-align:right"><span data-l="es">Editorial + brutalista + digital + creativa</span><span data-l="en">Editorial + brutalist + digital + creative</span></div></div>
-    <p class="display rv" style="font-size:clamp(34px,5.6vw,92px);line-height:.95"><span data-l="es">Creativa. Directa. Contemporánea. Gráfica. Inteligente. Dinámica. Precisa. Cultural. <span class="it">Funcional.</span></span><span data-l="en">Creative. Direct. Contemporary. Graphic. Smart. Dynamic. Precise. Cultural. <span class="it">Functional.</span></span></p>
-    <div class="pairs">
-      <div class="rv"><b><span data-l="es">Tiene actitud.</span><span data-l="en">Has attitude.</span></b><em><span data-l="es">Pero no grita.</span><span data-l="en">But never shouts.</span></em></div>
-      <div class="rv"><b><span data-l="es">Es experimental.</span><span data-l="en">Experimental.</span></b><em><span data-l="es">Pero no caótica.</span><span data-l="en">Never chaotic.</span></em></div>
-      <div class="rv"><b><span data-l="es">Es tecnológica.</span><span data-l="en">Tech-driven.</span></b><em><span data-l="es">Pero no genérica.</span><span data-l="en">Never generic.</span></em></div>
-      <div class="rv"><b><span data-l="es">Es premium.</span><span data-l="en">Premium.</span></b><em><span data-l="es">Pero no clásica.</span><span data-l="en">Never classic.</span></em></div>
-    </div>
   </div>
 </section>
 
@@ -206,17 +194,7 @@ $('#vals').innerHTML = [[L('Herramientas','Tools'),L('para hacer.','for doing.')
 
 /* origen: el símbolo se construye con el scroll */
 const org = $('#origen'), oSym = $('#oSym'), chaps = $$('#chapters .chap'), fills = $$('#oBars b');
-/* el alto real de la ventana. Sólo se recalcula si cambia el ANCHO: si lo
-   recalculáramos por el alto, la barra de Safari lo dispararía en pleno scroll. */
-document.documentElement.classList.add('pg-nosotros');
-(function altoReal() {
-  const fijar = () => document.documentElement.style.setProperty('--sv',
-    Math.max(innerHeight, (window.visualViewport && visualViewport.height) || 0) + 'px');
-  fijar();
-  let ancho = innerWidth;
-  addEventListener('resize', () => { if (innerWidth !== ancho) { ancho = innerWidth; fijar(); } });
-  addEventListener('orientationchange', () => setTimeout(() => { ancho = innerWidth; fijar(); }, 160));
-})();
+
 $('#oWm').innerHTML = ORBIT.wm({color:C.b});
 const clamp01 = v => Math.max(0, Math.min(1, v));
 function drawOrigin(p) {
