@@ -77,8 +77,21 @@ if ($('#win') && $('#ptabs')) {
       <div class="foot"><div><span class="mono dim">${L('Versión completa','Full version')}: ${L(cur.specs[0][1])} ${L(cur.specs[0][0])}</span><div class="price">${cur.status==='soon' ? L('Pronto','Soon') : money(cur.price)}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${buyBtn(cur)}<a class="btn btn-line" href="${url(cur)}" style="color:var(--k)">${L('Ver detalle','See details')}</a></div></div>`;
     $$('#ptabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.id === cur.id)));
   }
-  $('#ptabs').innerHTML = P.map(p => `<button role="tab" data-id="${p.id}" aria-selected="${p===cur}"><span class="mono">${p.code}</span><b>${p.name}</b></button>`).join('');
-  $$('#ptabs button').forEach(b => b.onclick = () => { cur = P.find(p => p.id === b.dataset.id); renderWin(); });
+  /* Cada solapa lleva su propio hueco: la ventana se muda al hueco de la
+     que esté abierta, así la demo aparece pegada a lo que tocaste y no
+     todo apilado al final de la sección. */
+  $('#ptabs').innerHTML = P.map(p => `<div class="pfila"><button role="tab" data-id="${p.id}" aria-selected="${p===cur}"><span class="mono">${p.code}</span><b>${p.name}</b></button><div class="phueco"></div></div>`).join('');
+  function mudar() {
+    const fila = $(`#ptabs button[data-id="${cur.id}"]`).closest('.pfila');
+    const hueco = $('.phueco', fila);
+    if (win.parentElement !== hueco) hueco.appendChild(win);
+    $$('#ptabs .pfila').forEach(f => f.classList.toggle('abierta', f === fila));
+  }
+  $$('#ptabs button').forEach(b => b.onclick = () => {
+    cur = P.find(p => p.id === b.dataset.id);
+    renderWin(); mudar();
+    b.scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'});
+  });
   win.addEventListener('click', e => {
     const t = e.target;
     const po = t.closest('[data-post]'); if (po) { const x = POSTS[+po.dataset.post]; x.s = (x.s + 1) % 4; renderWin(); return; }
@@ -91,6 +104,7 @@ if ($('#win') && $('#ptabs')) {
   win.addEventListener('input', e => { if (e.target.id === 'wfTopic') { wfTopic = e.target.value; const topic = wfTopic || tr('lanzar un producto digital','launching a digital product'); $('#wfOut').innerHTML = tr(...WF[wfStep][1]).replace('{t}', `<mark>${topic.replace(/[<>&]/g,'')}</mark>`); } });
   addEventListener('orbit:lang', () => { if (cur.id === 'ob-004') renderWin(); });
   renderWin();
+  mudar();
 }
 
 /* ---------- disciplinas: una órbita para cada oficio ---------- */

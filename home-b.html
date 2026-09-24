@@ -315,6 +315,22 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 @media (max-width:900px){ .pant.alta{scroll-snap-stop:normal} }
 .pant.alta > .disc,.pant.alta > .peek,.pant.alta > .cus{margin-top:clamp(16px,2.6vh,30px)}
 
+/* mirá por dentro en la home: la ventana vive dentro de la lista, colgada
+   de la solapa abierta, y la demo va más apretada para no comerse dos pantallas */
+#por-dentro .peek{display:block}
+#por-dentro .ptabs{display:block}
+#por-dentro .pfila{border-top:1px solid var(--k)}
+#por-dentro .pfila:last-child{border-bottom:1px solid var(--k)}
+#por-dentro .pfila button{border:0;width:100%;padding:clamp(11px,2vh,16px) 0}
+#por-dentro .phueco:not(:empty){padding:0 0 clamp(14px,2.4vh,22px)}
+#por-dentro .win .body{min-height:0;padding:clamp(12px,3vw,20px)}
+#por-dentro .win .bar{padding:8px 12px}
+#por-dentro .win .foot{padding:11px clamp(12px,3vw,20px)}
+#por-dentro .win .foot .price{font-size:20px}
+#por-dentro .cal{gap:5px}
+#por-dentro .cal .d{min-height:0;padding:7px;gap:5px}
+#por-dentro .cal .d .pz{padding:8px 9px}
+
 /* mirá por dentro */
 .peek{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(20px,3vw,48px);align-items:start}
 .ptabs{display:flex;flex-direction:column}
