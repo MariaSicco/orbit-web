@@ -174,7 +174,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .m-slide .relato{margin:0;display:grid;gap:2px;will-change:transform,opacity}
 .m-slide .relato .l{display:block;font-family:var(--serif);font-style:italic;
   font-size:clamp(19px,5.4vw,26px);line-height:1.22;transform-origin:50% 50%;
-  opacity:calc((.07 + (var(--cuenta,0) - .02 - var(--i) * .22) * 4.5) * (1 - var(--fin,0)));
+  opacity:calc((.14 + (var(--cuenta,0) - var(--i) * .24) * 4.5) * (1 - var(--fin,0)));
   transform:translateY(calc(var(--dir) * var(--fin,0) * 34px)) scale(calc(1 - .34 * var(--fin,0)))}
 /* la última es la que duele */
 .m-slide .relato .l:last-child{color:var(--or)}
@@ -449,6 +449,70 @@ $('#rielM').innerHTML = PROB.map((q, i) => `<article class="m-slide">
   </div>
   <p class="arregla"><i>${L('Lo arregla','The fix')}</i><b>${L(...q.arregla)}</b></p>
 </article>`).join('');
+
+/* ---- cada diapositiva se cuenta sola al llegar ----
+   El avance no sale de la posición del dedo: el riel encastra de un tirón y
+   la historia pasaba en un suspiro. Cuando una diapositiva queda encastrada,
+   se cuenta entera a su tiempo, y se vuelve a contar cada vez que volvés. */
+(function contarCadaTarjeta() {
+  const riel = $('#rielM'), tarjetas = $$('.m-slide', riel);
+  if (!tarjetas.length) return;
+
+  /* una sola variable manda: 0 es el problema sin contar, 1 es el libro.
+     --cuenta es la primera mitad (se cuenta), --fin la segunda (se vuelve). */
+  function aplicar(t, v) {
+    t.style.setProperty('--orden', v.toFixed(3));
+    t.style.setProperty('--caos', (1 - v).toFixed(3));
+    t.style.setProperty('--cuenta', Math.min(1, v / .58).toFixed(3));
+    t.style.setProperty('--fin', Math.max(0, (v - .58) / .42).toFixed(3));
+  }
+
+  if (RM) { tarjetas.forEach(t => aplicar(t, 1)); return; }
+  tarjetas.forEach(t => aplicar(t, 0));
+
+  const cual = () => {
+    /* la referencia es el encastre, que es por el borde izquierdo */
+    const sangria = parseFloat(getComputedStyle(riel).paddingLeft) || 0;
+    let elegida = 0, cerca = Infinity;
+    tarjetas.forEach((t, i) => {
+      const lejos = Math.abs((t.offsetLeft - riel.scrollLeft) - sangria);
+      if (lejos < cerca) { cerca = lejos; elegida = i; }
+    });
+    return elegida;
+  };
+
+  let actual = -1, cuadro = 0;
+  function contar(i) {
+    cancelAnimationFrame(cuadro);
+    tarjetas.forEach((t, k) => { if (k !== i) aplicar(t, 0); });
+    const arranque = performance.now(), largo = 2600;
+    (function paso(ahora) {
+      const k = Math.min(1, (ahora - arranque) / largo);
+      aplicar(tarjetas[i], k * k * (3 - 2 * k));
+      if (k < 1) cuadro = requestAnimationFrame(paso);
+    })(arranque);
+  }
+
+  let espera = 0, ala = false;
+  const revisar = () => {
+    if (!ala) return;
+    const i = cual();
+    if (i === actual) return;
+    actual = i; contar(i);
+  };
+  /* recién cuando el riel frena: contarla mientras se arrastra no se lee */
+  const pronto = () => { clearTimeout(espera); espera = setTimeout(revisar, 110); };
+  riel.addEventListener('scroll', pronto, {passive:true});
+  addEventListener('resize', pronto);
+
+  new IntersectionObserver(([e]) => {
+    ala = e.isIntersecting;
+    if (ala) { actual = -1; revisar(); }
+  }, {threshold:.4}).observe($('#metodo'));
+
+  /* red de seguridad: si por lo que sea no llega a contarse, que igual se lea */
+  setTimeout(() => { if (actual === -1) { tarjetas.forEach((t, k) => aplicar(t, k === 0 ? 1 : 0)); } }, 6000);
+})();
 
 /* ---- colección: un libro por diapositiva ---- */
 $('#rielC').innerHTML = P.map(p => `<article class="c-slide">
