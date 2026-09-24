@@ -82,6 +82,13 @@
 [data-page="nosotros"] .sec{min-height:var(--sv,100svh);display:flex;align-items:center;
   padding-block:calc(78px + env(safe-area-inset-top,0px)) clamp(40px,6vw,110px)}
 [data-page="nosotros"] .sec > .wrap{width:100%}
+/* El scroll frena en el borde de cada sección, así nunca quedás a mitad de
+   camino con la de arriba cortada. Por CERCANÍA, no obligatorio: sólo ayuda
+   si ya estás cerca. Y sólo en las que miden una pantalla exacta — el relato
+   del origen y el manifiesto son más largos y engancharlos trabaría el dedo. */
+.pg-nosotros{scroll-snap-type:y proximity}
+.pg-nosotros [data-page="nosotros"] .sec:not(#manifiesto){scroll-snap-align:start}
+@media (prefers-reduced-motion:reduce){ .pg-nosotros{scroll-snap-type:none} }
 @media (max-width:860px){ [data-page="nosotros"] .sec{padding-block:calc(78px + env(safe-area-inset-top,0px)) clamp(34px,7vw,110px)} }
 
 .vals{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3)}
@@ -197,6 +204,7 @@ $('#vals').innerHTML = [[L('Herramientas','Tools'),L('para hacer.','for doing.')
 const org = $('#origen'), oSym = $('#oSym'), chaps = $$('#chapters .chap'), fills = $$('#oBars b');
 /* el alto real de la ventana. Sólo se recalcula si cambia el ANCHO: si lo
    recalculáramos por el alto, la barra de Safari lo dispararía en pleno scroll. */
+document.documentElement.classList.add('pg-nosotros');
 (function altoReal() {
   const fijar = () => document.documentElement.style.setProperty('--sv',
     Math.max(innerHeight, (window.visualViewport && visualViewport.height) || 0) + 'px');
