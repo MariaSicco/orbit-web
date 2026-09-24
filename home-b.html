@@ -325,7 +325,13 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 #por-dentro .phueco:not(:empty){padding:0 0 clamp(14px,2.4vh,22px)}
 #por-dentro .win .body{min-height:0;padding:clamp(12px,3vw,20px);
   max-height:min(46vh,430px);overflow:auto;overscroll-behavior:contain}
-@media (max-width:560px){ #por-dentro .cal{grid-template-columns:repeat(3,minmax(0,1fr))} }
+@media (max-width:560px){
+  #por-dentro .cal{grid-template-columns:repeat(3,minmax(0,1fr))}
+  /* en el pie, el botón y el precio se pisaban: van uno debajo del otro */
+  #por-dentro .win .foot{flex-direction:column;align-items:stretch;gap:9px}
+  #por-dentro .win .foot > div{width:100%}
+  #por-dentro .win .foot .btn{width:100%;justify-content:center;text-align:center}
+}
 #por-dentro .win .bar{padding:8px 12px}
 #por-dentro .win .foot{padding:11px clamp(12px,3vw,20px)}
 #por-dentro .win .foot .price{font-size:20px}
