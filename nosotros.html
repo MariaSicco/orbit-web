@@ -125,14 +125,14 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 .chain .s{width:64px}
 .chain b{display:block;font-weight:800;font-size:clamp(26px,3vw,48px);letter-spacing:-.045em;text-transform:uppercase;line-height:.9}
 .chain p{margin:8px 0 0;font-size:14px;opacity:.65;max-width:24ch}
-.verbs{margin-top:clamp(48px,6vw,90px);display:grid;grid-template-columns:1fr;gap:18px;border-top:1px solid var(--k3);padding-top:20px}
-.verbs ul{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:.08em .3em;font-weight:800;font-size:clamp(30px,4.4vw,74px);letter-spacing:-.05em;text-transform:uppercase;line-height:1;max-width:100%}
+
+
 .verbs li:nth-child(odd){color:transparent;-webkit-text-stroke:1.5px var(--b)}
 .verbs li:last-child{color:var(--ac);-webkit-text-stroke:0}
 .mf-close{margin-top:clamp(48px,6vw,90px);display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
 .mf-close p{margin:0;font-family:var(--serif);font-size:clamp(34px,4.6vw,76px);line-height:1;letter-spacing:-.03em;max-width:18ch}
 .mf-close p .it{color:var(--or)}
-@media (max-width:860px){.chain{grid-template-columns:1fr 1fr}.verbs{grid-template-columns:1fr}}
+@media (max-width:860px){.chain{grid-template-columns:1fr 1fr}}
 .contact{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,4vw,64px);align-items:end}
 .contact a.big{font-weight:800;font-size:clamp(34px,5vw,80px);letter-spacing:-.05em;text-decoration:none;line-height:1;border-bottom:3px solid var(--blue);word-break:break-all}
 .contact a.big:hover{color:var(--blue)}
@@ -143,7 +143,7 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 <main>
 <section class="origin" id="origen">
   <div class="stick">
-    <div class="top"><span class="mono"><span data-l="es">Sobre Orbit — el origen</span><span data-l="en">About Orbit — the origin</span></span><span class="mono" style="text-align:right">OB—000<br>Est. 2026</span></div>
+    <div class="top"><span class="mono"><span data-l="es">Sobre Orbit — el origen</span><span data-l="en">About Orbit — the origin</span></span><span class="mono" style="text-align:right">OB—000</span></div>
     <div class="stage">
       <div class="symw"><svg viewBox="-10 -10 120 120" aria-hidden="true"><circle cx="50" cy="50" r="39" fill="none" stroke="rgba(242,239,232,.28)" stroke-width="1" stroke-dasharray="1.5 3" id="oPath"/><g id="oSym" style="color:#F2EFE8"></g></svg><span class="wmo" id="oWm"></span></div>
       <div class="chapters" id="chapters">
@@ -171,7 +171,6 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
     <div class="shead mono"><div><b><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></b></div><div style="text-align:right">OB—M15</div></div>
     <h2 class="mf-open rv"><span data-l="es">Las ideas no necesitan más ruido. Necesitan <span class="it">movimiento.</span></span><span data-l="en">Ideas don’t need more noise. They need <span class="it">movement.</span></span></h2>
     <div class="chain" id="chain"></div>
-    <div class="verbs rv"><span class="mono"><span data-l="es">Para quienes</span><span data-l="en">For those who</span></span><ul><li data-l="es">Construyen.</li><li data-l="es">Prueban.</li><li data-l="es">Crean.</li><li data-l="es">Organizan.</li><li data-l="es">Hacen.</li><li data-l="en">Build.</li><li data-l="en">Test.</li><li data-l="en">Create.</li><li data-l="en">Organize.</li><li data-l="en">Make.</li></ul></div>
     <div class="mf-close rv"><p><span data-l="es">No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></span><span data-l="en">We’re not here to add more things. We’re here to make the <span class="it">right ones.</span></span></p><span class="mono" style="text-align:right">Orbit®<br>Ideas in motion<br>Est. 2026</span></div>
   </div>
 </section>
