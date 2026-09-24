@@ -169,10 +169,10 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 
 /* =========================================================
    SEGUNDA PANTALLA — el estante que se llena
-   Aparece el problema y el libro que lo resuelve cae en su lugar. Los
-   huecos que faltan se ven desde el principio, así que al cuarto caso
-   el estante quedó armado y empalma con la colección de abajo.
-   Se pasa solo, y también agarrando y deslizando en cualquier parte.
+   Manda la persona: no pasa solo. Se desliza en cualquier parte de la
+   pantalla, o se toca el libro que se quiera y aparece su problema.
+   Los huecos que faltan se ven desde el principio, así que al llegar
+   al cuarto el estante quedó armado y empalma con la colección.
    ========================================================= */
 #metodo{background:var(--k);color:var(--b);overflow:hidden;
   justify-content:flex-start;gap:clamp(14px,2.4vh,26px);touch-action:pan-y}
@@ -195,22 +195,17 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 #metodo .libros{display:flex;align-items:flex-end;gap:clamp(7px,2.2vw,13px);
   transform:translateX(var(--tira,0));transition:transform .28s var(--ease)}
 #metodo .libros.tirando{transition:none}
-#metodo .libros > a{display:block;flex:1 1 0;min-width:0;opacity:.11;
+#metodo .libros > button{appearance:none;background:none;border:0;padding:0;cursor:pointer;
+  display:block;flex:1 1 0;min-width:0;opacity:.11;
   transform:none;transform-origin:bottom center;
   transition:opacity .4s ease,transform .6s cubic-bezier(.2,1.1,.3,1),flex-grow .45s var(--ease)}
-#metodo .libros > a.puesto{opacity:.44;transform:none}
-#metodo .libros > a.viva{opacity:1;flex-grow:2.1;transform:translateY(-14px)}
+#metodo .libros > button.puesto{opacity:.44}
+#metodo .libros > button.viva{opacity:1;flex-grow:2.1;transform:translateY(-14px)}
+#metodo .libros > button:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
 #metodo .tabla{height:3px;background:var(--b);opacity:.85;
   box-shadow:0 12px 26px -14px rgba(0,0,0,.9)}
 #metodo .apoyo{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
   text-transform:uppercase;opacity:.4;padding-top:9px}
-
-#metodo .pasos{display:flex;gap:6px;align-items:center}
-#metodo .pasos button{flex:1;height:2px;padding:0;border:0;cursor:pointer;position:relative;
-  background:rgba(242,239,232,.22);overflow:hidden}
-#metodo .pasos button i{position:absolute;inset:0;background:var(--b);transform:scaleX(0);transform-origin:left}
-#metodo .pasos button[aria-current="true"] i{animation:llenar 3.2s linear forwards}
-@keyframes llenar{to{transform:scaleX(1)}}
 
 /* =========================================================
    COLECCIÓN — cuatro formas de mostrarla (?c=1..4)
@@ -493,8 +488,8 @@ if (document.documentElement.classList.contains('gate-on')) {
 /* =========================================================
    SEGUNDA PANTALLA — el estante que se llena
    Los nombres, los códigos y las tapas salen del catálogo real.
-   Pasa solo cada 3,2 s y además se arrastra: al soltar, salta al
-   libro siguiente o al anterior según para dónde fuiste.
+   No pasa solo: se arrastra en cualquier parte de la pantalla, o se
+   toca una tapa y el estante salta a ese libro con su frase.
    ========================================================= */
 const metodo = $('#metodo');
 /* los nombres del catálogo están en inglés; en la home se dicen en castellano */
@@ -512,7 +507,6 @@ const ESCENAS = [
   [['Mis clientes están en cinco lugares distintos.','My clients live in five different places.'], 'ob-003'],
   [['Pierdo horas en tareas repetidas.','I lose hours on repetitive tasks.'], 'ob-004'],
 ];
-const PASO = 3200;   /* lo que dura cada caso */
 
 (function segundaPantalla() {
   if (!metodo) return;
@@ -528,20 +522,16 @@ const PASO = 3200;   /* lo que dura cada caso */
       <div class="quien cambia ent2" style="--d:.18s"><s></s><b></b></div>
     </div>
     <div class="repisa ent2" style="--d:.24s">
-      <div class="libros">${F.map(p =>
-        `<a href="${ORBIT.url(p)}" aria-label="${p.name}">${ORBIT.cover(p)}</a>`).join('')}</div>
+      <div class="libros">${F.map((p, i) =>
+        `<button type="button" data-e="${i}" aria-label="${p.code} — ${p.name}">${ORBIT.cover(p)}</button>`).join('')}</div>
       <div class="tabla"></div>
-      <div class="apoyo">${L('Así se arma la colección','This is how the collection grows')}</div>
-    </div>
-    <div class="pasos ent2" style="--d:.3s">${F.map((_, i) =>
-      `<button type="button" aria-label="${i + 1}" data-e="${i}"><i></i></button>`).join('')}</div>`;
+      <div class="apoyo">${L('Deslizá o tocá un libro','Swipe or tap a book')}</div>
+    </div>`;
 
-  const libros = $('.libros', metodo), tomos = $$('.libros > a', metodo),
+  const libros = $('.libros', metodo), tomos = $$('.libros > button', metodo),
         dicho = $('.dicho', metodo), quien = $('.quien b', metodo),
-        cambia = $$('.cambia', metodo), pasos = $$('.pasos button', metodo);
-  let cual = -1, reloj = 0, mudando = false;
-
-  const rodar = () => { clearInterval(reloj); if (!RM) reloj = setInterval(() => ir((cual + 1) % F.length), PASO); };
+        cambia = $$('.cambia', metodo);
+  let cual = -1, mudando = false;
 
   function ir(i) {
     if (i === cual || mudando) return;
@@ -557,13 +547,8 @@ const PASO = 3200;   /* lo que dura cada caso */
     tomos.forEach((t, k) => {
       t.classList.toggle('puesto', k <= i);
       t.classList.toggle('viva', k === i);
+      t.setAttribute('aria-current', k === i ? 'true' : 'false');
     });
-    pasos.forEach((b, k) => {
-      b.setAttribute('aria-current', k === i ? 'true' : 'false');
-      const r = b.firstElementChild;                  /* reinicia el relleno */
-      r.style.animation = 'none'; void r.offsetWidth; r.style.animation = '';
-    });
-    rodar();
   }
 
   /* se agarra y se desliza en cualquier parte de la pantalla */
@@ -591,11 +576,11 @@ const PASO = 3200;   /* lo que dura cada caso */
   }
   metodo.addEventListener('pointerup', soltar);
   metodo.addEventListener('pointercancel', soltar);
-  /* si fue un arrastre, el libro de abajo no se abre */
+  /* si fue un arrastre, la tapa que quedó abajo no se selecciona */
   metodo.addEventListener('click', e => { if (tirando) { e.preventDefault(); e.stopPropagation(); } }, true);
-  pasos.forEach((b, i) => b.onclick = () => ir(i));
+  tomos.forEach((t, i) => t.onclick = () => ir(i));
 
-  ir(0); rodar();
+  ir(0);
 
   /* se presenta sola al llegar, y queda legible para siempre */
   if (RM) document.body.classList.add('cuenta');
