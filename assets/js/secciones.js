@@ -75,7 +75,7 @@ if ($('#win') && $('#ptabs')) {
     win.innerHTML = `<div class="bar"><i></i><i></i><i></i><span class="mono">${cur.code} — ${cur.name}</span><span class="mono dim" style="margin-left:auto">${L('Vista previa','Preview')}</span></div>
       <div class="body" id="wbody">${demo(cur)}</div>
       <div class="foot"><div><span class="mono dim">${L('Versión completa','Full version')}: ${L(cur.specs[0][1])} ${L(cur.specs[0][0])}</span><div class="price">${cur.status==='soon' ? L('Pronto','Soon') : money(cur.price)}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${buyBtn(cur)}<a class="btn btn-line" href="${url(cur)}" style="color:var(--k)">${L('Ver detalle','See details')}</a></div></div>`;
-    $$('#ptabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.id === cur.id)));
+    $$('#ptabs .pfila > button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.id === cur.id)));
   }
   /* Cada solapa lleva su propio hueco: la ventana se muda al hueco de la
      que esté abierta, así la demo aparece pegada a lo que tocaste y no
@@ -87,7 +87,7 @@ if ($('#win') && $('#ptabs')) {
     if (win.parentElement !== hueco) hueco.appendChild(win);
     $$('#ptabs .pfila').forEach(f => f.classList.toggle('abierta', f === fila));
   }
-  $$('#ptabs button').forEach(b => b.onclick = () => {
+  $$('#ptabs .pfila > button').forEach(b => b.onclick = () => {
     cur = P.find(p => p.id === b.dataset.id);
     renderWin(); mudar();
     b.scrollIntoView({behavior: RM ? 'auto' : 'smooth', block: 'start'});
