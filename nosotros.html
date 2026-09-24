@@ -117,6 +117,23 @@
 
 
 main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-content:center}
+/* quién: la cara detrás de Orbit. La foto todavía no existe, así que el
+   hueco avisa dónde va y desaparece solo en cuanto el archivo esté. */
+.quien{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px);align-items:center}
+.quien .retrato{position:relative;aspect-ratio:4/5;background:var(--k3);background-size:cover;background-position:center;display:grid;place-items:center}
+.quien .retrato .falta{display:none;text-align:center;font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.6;line-height:2;padding:16px}
+.quien .retrato.sinfoto .falta{display:block}
+.quien .retrato.sinfoto{outline:1px dashed rgba(13,13,14,.3);outline-offset:-10px}
+.quien-t{display:flex;flex-direction:column;gap:clamp(10px,1.6vh,18px)}
+.quien-t .shead{margin-bottom:clamp(8px,1.4vh,16px)}
+.quien-t h2{margin:0;font-size:clamp(34px,5.6vw,92px);line-height:.95}
+.quien-t p{margin:0;font-size:clamp(15px,1.3vw,19px);line-height:1.5;max-width:46ch;opacity:.78}
+.quien-t .firma{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.5;margin-top:clamp(6px,1vh,12px)}
+@media (max-width:860px){
+  .quien{grid-template-columns:1fr;gap:clamp(16px,3vh,26px)}
+  .quien .retrato{aspect-ratio:3/2}
+}
+
 /* manifiesto editorial */
 .mf-open{font-weight:800;font-size:clamp(46px,7.2vw,124px);letter-spacing:-.05em;line-height:.88;text-transform:uppercase;margin:0;max-width:14ch}
 .mf-open .it{text-transform:none;color:var(--blue);letter-spacing:-.03em}
@@ -161,6 +178,22 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
     <div class="shead mono"><div><b><span data-l="es">Qué hacemos</span><span data-l="en">What we do</span></b><span data-l="es">Idea → movimiento → sistema → resultado</span><span data-l="en">Idea → motion → system → result</span></div><div style="text-align:right"><span data-l="es">No vendemos archivos</span><span data-l="en">We don’t sell files</span></div></div>
     <h2 class="display rv" style="font-size:clamp(34px,7.6vw,112px);max-width:15ch;margin-bottom:clamp(24px,4vw,64px)"><span data-l="es">Tomamos lo desordenado y lo volvemos <span class="it">accionable.</span></span><span data-l="en">We take what’s messy and make it <span class="it">actionable.</span></span></h2>
     <div class="vals" id="vals"></div>
+  </div>
+</section>
+
+<!-- QUIÉN -->
+<section class="sec light" id="quien">
+  <div class="wrap quien">
+    <div class="retrato" data-photo="majo" role="img" data-aria-es="Majo, fundadora de Orbit" data-aria-en="Majo, founder of Orbit">
+      <span class="falta mono"><span data-l="es">Acá va tu foto<br>assets/img/majo.jpg</span><span data-l="en">Your photo goes here<br>assets/img/majo.jpg</span></span>
+    </div>
+    <div class="quien-t rv">
+      <div class="shead mono"><div><b><span data-l="es">Quién</span><span data-l="en">Who</span></b><span data-l="es">Founder</span><span data-l="en">Founder</span></div><div style="text-align:right">OB—000</div></div>
+      <h2 class="display"><span data-l="es">Hola, soy <span class="it">Majo.</span></span><span data-l="en">Hi, I’m <span class="it">Majo.</span></span></h2>
+      <p><span data-l="es">Soy diseñadora y trabajo desde Argentina. Orbit nació de algo que me pasaba todas las semanas: volver a armar de cero lo que ya había armado antes.</span><span data-l="en">I’m a designer, working from Argentina. Orbit started from something that happened to me every week: building from scratch what I had already built before.</span></p>
+      <p><span data-l="es">Empecé a guardarme esos sistemas —plantillas, tableros, flujos de trabajo— para no repetirlos. Con el tiempo entendí que le servían a cualquiera que trabaje por su cuenta. Eso es Orbit: lo que uso yo, terminado y listo para que lo uses vos.</span><span data-l="en">I started keeping those systems for myself — templates, boards, workflows — so I wouldn’t repeat them. Over time I realised they worked for anyone working on their own. That’s Orbit: what I use, finished and ready for you to use.</span></p>
+      <span class="firma mono"><span data-l="es">Majo Sicco — fundadora de Orbit®</span><span data-l="en">Majo Sicco — founder of Orbit®</span></span>
+    </div>
   </div>
 </section>
 
@@ -212,6 +245,15 @@ else {
 }
 
 const CH = [[['Idea','Idea'],['Aparece. Todavía no tiene forma.','It appears. It has no shape yet.'],140,false],[['Sistema','System'],['Una buena herramienta la ordena.','A good tool gives it structure.'],90,false],[['Acción','Action'],['El sistema convierte intención en acción.','The system turns intention into action.'],40,false],[['Progreso','Progress'],['Y la acción se vuelve progreso.','And action becomes progress.'],0,true]];
+/* el hueco del retrato avisa sólo mientras la foto no exista */
+(function retrato() {
+  const r = $('#quien .retrato');
+  if (!r) return;
+  const im = new Image();
+  im.onerror = () => r.classList.add('sinfoto');
+  im.src = 'assets/img/majo.jpg?v=12';
+})();
+
 $('#chain').innerHTML = CH.map(([t,d,g,dot],i) => `<div class="rv"><span class="mono dim">0${i+1}</span><div class="s">${sym({gap:g, ring:C.b, dot:C.blue, dotOn:dot})}</div><div><b>${L(...t)}</b><p>${L(...d)}</p></div></div>`).join('');
 reveal();
 })();
