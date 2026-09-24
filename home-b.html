@@ -205,19 +205,19 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 
 /* ---------- 1 · el estante que se llena ---------- */
 .m2-estante #metodo{justify-content:flex-start;gap:clamp(14px,2.4vh,26px)}
-.m2-estante #metodo .medio{flex:1;display:flex;flex-direction:column;justify-content:center;
-  gap:clamp(12px,2vh,20px)}
+.m2-estante #metodo .medio{flex:1;display:flex;flex-direction:column;justify-content:flex-end;
+  gap:clamp(12px,2vh,20px);padding-bottom:clamp(14px,2.6vh,26px)}
 .m2-estante #metodo .quien{display:flex;align-items:center;gap:10px;font-family:var(--mono);
   font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
 .m2-estante #metodo .quien b{font-weight:400}
 .m2-estante #metodo .quien s{width:26px;height:1px;background:var(--ac);flex:none;display:block}
 .m2-estante #metodo .estante{display:grid;gap:0}
 .m2-estante #metodo .libros{display:flex;align-items:flex-end;gap:clamp(7px,2.2vw,13px)}
-.m2-estante #metodo .libros > a{display:block;flex:1 1 0;min-width:0;opacity:0;
-  transform:translateY(22px) rotate(-3deg);transform-origin:bottom center;
+.m2-estante #metodo .libros > a{display:block;flex:1 1 0;min-width:0;opacity:.11;
+  transform:translateY(14px);transform-origin:bottom center;
   transition:opacity .45s ease,transform .7s cubic-bezier(.2,1.1,.3,1),flex-grow .55s var(--ease)}
-.m2-estante #metodo .libros > a.puesto{opacity:.46;transform:none}
-.m2-estante #metodo .libros > a.viva{opacity:1;flex-grow:1.7;transform:translateY(-12px)}
+.m2-estante #metodo .libros > a.puesto{opacity:.44;transform:none}
+.m2-estante #metodo .libros > a.viva{opacity:1;flex-grow:2.1;transform:translateY(-14px)}
 .m2-estante #metodo .tabla{height:3px;background:var(--b);opacity:.85;
   box-shadow:0 12px 26px -14px rgba(0,0,0,.9)}
 .m2-estante #metodo .apoyo{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
@@ -264,6 +264,9 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .m2-elegi #metodo{justify-content:flex-start;gap:clamp(14px,2.4vh,24px)}
 .m2-elegi #metodo h2{font-size:clamp(30px,8.4vw,56px);letter-spacing:-.035em;line-height:1.02}
 .m2-elegi #metodo h2 .it{color:var(--ac)}
+.m2-elegi #metodo .pista{margin:0;font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.5}
+.m2-elegi #metodo.elegido .pista{display:none}
 .m2-elegi #metodo .opciones{flex:1;display:flex;flex-direction:column;justify-content:center;
   gap:clamp(8px,1.4vh,14px);min-height:0}
 .m2-elegi #metodo .opciones button{appearance:none;background:none;color:inherit;font:inherit;
@@ -303,8 +306,8 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
   white-space:nowrap;opacity:.72}
 .m2-lomos #metodo .lomo.viva .vert{opacity:0}
-.m2-lomos #metodo .lomo .cara{position:absolute;inset:0;display:grid;place-items:center;
-  padding:clamp(8px,2vw,14px);opacity:0;transition:opacity .45s ease .12s}
+.m2-lomos #metodo .lomo .cara{position:absolute;inset:0;display:grid;place-items:end center;
+  padding:clamp(10px,2.6vw,16px);opacity:0;transition:opacity .45s ease .12s}
 .m2-lomos #metodo .lomo.viva .cara{opacity:1}
 .m2-lomos #metodo .lomo .cara .env{display:block;width:100%}
 .m2-lomos #metodo .pie{display:grid;gap:8px}
@@ -315,7 +318,8 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   justify-content:flex-start;gap:clamp(14px,2.4vh,26px)}
 .m2-color #metodo .eti{opacity:.6}
 .m2-color #metodo .dicho{font-size:clamp(30px,8.8vw,60px);max-width:13ch;flex:none}
-.m2-color #metodo .escena{flex:1;display:flex;align-items:flex-end;justify-content:flex-end;min-height:0}
+.m2-color #metodo .escena{flex:1;display:flex;align-items:flex-end;justify-content:flex-end;min-height:0;
+  margin-right:calc(var(--pad) * -1)}
 .m2-color #metodo .obj{width:min(52vw,230px);transform:rotate(3deg);
   transition:transform .7s var(--ease)}
 .m2-color #metodo .pasos button{background:currentColor;opacity:.25}
@@ -330,7 +334,8 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .m2-numero #metodo .cifra b{font-weight:800;letter-spacing:-.06em;line-height:.8;
   font-size:clamp(96px,38vw,220px);font-variant-numeric:tabular-nums;display:block}
 .m2-numero #metodo .cifra span{font-family:var(--mono);font-size:clamp(11px,3vw,13px);
-  letter-spacing:.16em;text-transform:uppercase;opacity:.5;margin-top:clamp(8px,1.6vh,14px);display:block}
+  letter-spacing:.16em;text-transform:uppercase;color:rgba(242,239,232,.5);
+  margin-top:clamp(8px,1.6vh,14px);display:block}
 .m2-numero #metodo .cifra em{color:var(--ac);font-style:normal}
 
 /* selector temporal para comparar las siete */
@@ -809,6 +814,8 @@ const M2 = VERSIONES[(parseInt(new URLSearchParams(location.search).get('m2'), 1
       if (Math.abs(dx) > 46) { pararTodo(); clearTimeout(espera); ir((cual + (dx < 0 ? 1 : F.length - 1)) % F.length); }
     });
     ir(0);
+    /* lo tipeado es texto plano: hay que volver a escribirlo si cambia el idioma */
+    addEventListener('orbit:lang', () => { const i = cual; cual = -1; ir(i < 0 ? 0 : i); });
   }
 
   /* ---------- 4 · ¿cuál de estos sos? ---------- */
@@ -817,6 +824,7 @@ const M2 = VERSIONES[(parseInt(new URLSearchParams(location.search).get('m2'), 1
       <h2 class="display ent2" style="--d:.06s">${L(
         '¿Cuál de estos<br><span class="it">sos vos?</span>',
         'Which one<br><span class="it">are you?</span>')}</h2>
+      <p class="pista ent2" style="--d:.12s">${L('Tocá el tuyo','Tap yours')}</p>
       <div class="opciones ent2" style="--d:.16s">${F.map((_, i) =>
         `<button type="button" data-e="${i}">“${frase(i)}”</button>`).join('')}</div>
       <div class="salida">
