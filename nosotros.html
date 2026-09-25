@@ -120,14 +120,17 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 /* quién: azul de la marca sobre una grilla de líneas finas. Cada cosa
    ocupa su propia banda —etiquetas, foto, nombre, relato— así nada se
    monta sobre nada y nada se corta. Entra en una pantalla. */
+/* El fondo cubre la pantalla con la barra del navegador escondida (lvh),
+   pero el CONTENIDO entra en la pantalla con la barra desplegada (svh):
+   así no se corta nada al llegar, y tampoco asoma la sección de abajo. */
 .quien-sec{position:relative;background:var(--blue);color:var(--b);overflow:hidden;
-  align-items:stretch;padding:0;touch-action:pan-y}
+  align-items:flex-start;padding:0;touch-action:pan-y}
 .quien-sec .q-fondo{position:absolute;inset:0;z-index:0;pointer-events:none;
   background:
     repeating-linear-gradient(90deg,rgba(242,239,232,.13) 0 1px,transparent 1px 25%),
     repeating-linear-gradient(0deg,rgba(242,239,232,.1) 0 1px,transparent 1px 88px)}
 .quien-sec .q-capa{position:relative;z-index:2;display:flex;flex-direction:column;
-  gap:clamp(12px,2vh,22px);min-height:100vh;min-height:100lvh;
+  gap:clamp(12px,2vh,22px);width:100%;min-height:100vh;min-height:100svh;
   padding:calc(78px + env(safe-area-inset-top,0px)) var(--pad) calc(26px + env(safe-area-inset-bottom,0px))}
 
 .quien-sec .q-top{display:flex;justify-content:space-between;gap:16px;font-size:9.5px;
