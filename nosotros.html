@@ -117,30 +117,75 @@
 
 
 main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-content:center}
-/* quién: la cara detrás de Orbit. Redonda, porque el símbolo de la marca
-   es un anillo y la foto rima con él. La foto todavía no existe: el hueco
-   avisa dónde va y desaparece solo en cuanto el archivo esté. */
-.quien-g{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(22px,4.5vw,64px);align-items:center}
-.quien .retrato{position:relative;width:clamp(150px,24vw,280px);aspect-ratio:1;border-radius:50%;
-  background:var(--k3);background-size:cover;background-position:center 18%;
-  display:grid;place-items:center;box-shadow:0 0 0 1px rgba(13,13,14,.18);
-  /* en blanco y negro, como el resto de las fotos del sitio. El archivo
-     queda en color: esto es sólo cómo se muestra. */
+/* quién: cuatro maneras de presentar a la fundadora (?q=1..4).
+   1 retrato al centro · 2 dentro del anillo de la marca
+   3 el nombre gigante y la foto encima · 4 ficha, como un producto
+   En todas la foto es grande: es la prueba de confianza de la página. */
+#quien .retrato{position:relative;aspect-ratio:1;border-radius:50%;overflow:hidden;
+  background:var(--k3) center 18%/cover;box-shadow:0 0 0 1px rgba(13,13,14,.16);
   filter:grayscale(1) contrast(1.04)}
-.quien .retrato .falta{display:none;text-align:center;font-size:9.5px;letter-spacing:.1em;
-  text-transform:uppercase;opacity:.55;line-height:2;padding:22px}
-.quien .retrato.sinfoto .falta{display:block}
-.quien-t{display:flex;flex-direction:column;gap:clamp(8px,1.2vh,14px)}
-.quien-t .nombre{margin:0;font-weight:800;text-transform:uppercase;letter-spacing:-.05em;
-  line-height:.88;font-size:clamp(38px,6.4vw,104px)}
-.quien-t .rol{margin:0;font-family:var(--serif);font-style:italic;color:var(--or);
-  font-size:clamp(20px,2.4vw,38px);line-height:1}
-.quien-t .dice{margin:clamp(8px,1.4vh,16px) 0 0;font-size:clamp(16px,1.5vw,22px);
-  line-height:1.42;max-width:44ch;opacity:.82}
+#quien .retrato .falta{position:absolute;inset:0;display:none;place-items:center;text-align:center;
+  font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.55;line-height:2;padding:22px}
+#quien .retrato.sinfoto .falta{display:grid}
+#quien .nom{margin:0;font-weight:800;text-transform:uppercase;letter-spacing:-.055em;line-height:.86}
+#quien .ofi{margin:0;font-family:var(--serif);font-style:italic;color:var(--or);line-height:1}
+#quien .dice{margin:0;line-height:1.45;opacity:.82}
+
+/* 1 · el retrato al centro */
+.q1 #quien .wrap{display:flex;flex-direction:column;align-items:center;text-align:center;
+  gap:clamp(14px,2.2vh,26px)}
+.q1 #quien .retrato{width:clamp(220px,46vw,380px)}
+.q1 #quien .rot{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;opacity:.5}
+.q1 #quien .nom{font-size:clamp(40px,9vw,120px)}
+.q1 #quien .ofi{font-size:clamp(20px,3vw,40px)}
+.q1 #quien .dice{font-size:clamp(15px,1.4vw,20px);max-width:46ch}
+
+/* 2 · dentro del anillo de la marca */
+.q2 #quien .wrap{display:flex;flex-direction:column;align-items:center;text-align:center;
+  gap:clamp(14px,2.4vh,28px)}
+.q2 #quien .anillo{position:relative;width:clamp(250px,58vw,420px);aspect-ratio:1;display:grid;place-items:center}
+.q2 #quien .anillo svg{position:absolute;inset:0;width:100%;height:100%}
+.q2 #quien .anillo .retrato{width:70%}
+.q2 #quien .nom{font-size:clamp(34px,7.6vw,96px)}
+.q2 #quien .ofi{font-size:clamp(18px,2.6vw,34px)}
+.q2 #quien .dice{font-size:clamp(15px,1.4vw,20px);max-width:44ch}
+
+/* 3 · el nombre gigante, la foto encima */
+.q3 #quien .wrap{display:flex;flex-direction:column;gap:clamp(12px,2vh,22px)}
+.q3 #quien .cruce{position:relative;display:grid;place-items:center;padding:clamp(20px,4vh,54px) 0}
+.q3 #quien .cruce .nom{position:absolute;left:0;right:0;text-align:center;
+  font-size:clamp(54px,17vw,230px);letter-spacing:-.06em;opacity:.16;pointer-events:none}
+.q3 #quien .cruce .retrato{width:clamp(200px,44vw,330px);position:relative;z-index:2}
+.q3 #quien .pie3q{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap;
+  border-top:1px solid rgba(13,13,14,.16);padding-top:clamp(10px,1.6vh,16px)}
+.q3 #quien .pie3q .chico{font-weight:800;text-transform:uppercase;letter-spacing:-.04em;
+  font-size:clamp(22px,5vw,44px);line-height:1}
+.q3 #quien .ofi{font-size:clamp(18px,2.4vw,32px)}
+.q3 #quien .dice{font-size:clamp(15px,1.4vw,19px);max-width:48ch}
+
+/* 4 · ficha, con el mismo lenguaje que las fichas de producto */
+.q4 #quien .wrap{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(20px,4vw,56px);align-items:center}
+.q4 #quien .retrato{width:clamp(180px,34vw,320px)}
+.q4 #quien .nom{font-size:clamp(30px,5.6vw,72px)}
+.q4 #quien .ofi{font-size:clamp(17px,2.2vw,30px);margin-bottom:clamp(8px,1.4vh,14px)}
+.q4 #quien .datos{display:grid;grid-template-columns:1fr 1fr}
+.q4 #quien .datos > div{border-top:1px solid rgba(13,13,14,.16);padding:clamp(7px,1.1vh,11px) 0}
+.q4 #quien .datos small{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;opacity:.45}
+.q4 #quien .datos b{display:block;font-weight:700;font-size:clamp(14px,1.4vw,19px);margin-top:2px}
+.q4 #quien .dice{font-size:clamp(14.5px,1.3vw,18px);max-width:42ch;margin-top:clamp(8px,1.4vh,14px)}
 @media (max-width:860px){
-  .quien-g{grid-template-columns:1fr;gap:clamp(18px,3vh,28px);justify-items:start}
-  .quien .retrato{width:clamp(132px,38vw,200px)}
+  .q4 #quien .wrap{grid-template-columns:1fr;justify-items:start;gap:clamp(16px,3vh,24px)}
 }
+
+/* selector temporal */
+.selq{position:fixed;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;
+  display:flex;gap:3px;align-items:center;font-family:var(--mono);font-size:10px;
+  background:rgba(13,13,14,.88);border:1px solid rgba(242,239,232,.2);border-radius:999px;
+  padding:4px 7px;color:#F2EFE8;backdrop-filter:blur(8px)}
+.selq b{opacity:.45;font-weight:400;padding-right:3px}
+.selq a{color:inherit;opacity:.5;text-decoration:none;padding:3px 7px;border-radius:999px;line-height:1}
+.selq a.on{opacity:1;background:var(--or);color:#0D0D0E}
 
 /* manifiesto editorial */
 .mf-open{font-weight:800;font-size:clamp(46px,7.2vw,124px);letter-spacing:-.05em;line-height:.88;text-transform:uppercase;margin:0;max-width:14ch}
@@ -189,22 +234,8 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
   </div>
 </section>
 
-<!-- QUIÉN -->
-<section class="sec light" id="quien">
-  <div class="wrap quien">
-    <div class="shead mono"><div><b>Founder</b><span data-l="es">Detrás de Orbit</span><span data-l="en">Behind Orbit</span></div><div style="text-align:right">OB—000</div></div>
-    <div class="quien-g">
-      <div class="retrato" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit">
-        <span class="falta mono"><span data-l="es">Acá va tu foto<br>assets/img/majo.jpg</span><span data-l="en">Your photo goes here<br>assets/img/majo.jpg</span></span>
-      </div>
-      <div class="quien-t rv">
-        <h2 class="nombre">Majo Sicco</h2>
-        <p class="rol"><span data-l="es">Diseñadora</span><span data-l="en">Designer</span></p>
-        <p class="dice"><span data-l="es">Orbit sale de su propio trabajo. Cada sistema se arma para resolver algo real, se usa primero acá adentro y recién después se publica.</span><span data-l="en">Orbit comes out of her own work. Every system is built to solve something real, used here first, and published only after that.</span></p>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- QUIÉN — el contenido lo arma el JS según la versión elegida (?q=1..4) -->
+<section class="sec light" id="quien"></section>
 
 <section class="sec dark" id="manifiesto">
   <div class="wrap">
@@ -254,13 +285,56 @@ else {
 }
 
 const CH = [[['Idea','Idea'],['Aparece. Todavía no tiene forma.','It appears. It has no shape yet.'],140,false],[['Sistema','System'],['Una buena herramienta la ordena.','A good tool gives it structure.'],90,false],[['Acción','Action'],['El sistema convierte intención en acción.','The system turns intention into action.'],40,false],[['Progreso','Progress'],['Y la acción se vuelve progreso.','And action becomes progress.'],0,true]];
-/* el hueco del retrato avisa sólo mientras la foto no exista */
-(function retrato() {
-  const r = $('#quien .retrato');
-  if (!r) return;
+/* quién: cuatro versiones para comparar (?q=1..4) */
+(function quien() {
+  const zona = $('#quien');
+  if (!zona) return;
+  const QV = Math.min(4, Math.max(1, +(new URLSearchParams(location.search).get('q')) || 1));
+  document.body.classList.add('q' + QV);
+
+  const foto = `<div class="retrato" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"><span class="falta mono">${
+    L('Acá va tu foto<br>assets/img/majo.jpg','Your photo goes here<br>assets/img/majo.jpg')}</span></div>`;
+  const nombre = 'Majo Sicco';
+  const oficio = L('Diseñadora','Designer');
+  const dice = L('Orbit sale de su propio trabajo. Cada sistema se arma para resolver algo real, se usa primero acá adentro y recién después se publica.',
+                 'Orbit comes out of her own work. Every system is built to solve something real, used here first, and published only after that.');
+  const cabeza = `<div class="shead mono"><div><b>Founder</b>${
+    L('Detrás de Orbit','Behind Orbit')}</div><div style="text-align:right">OB—000</div></div>`;
+
+  const armados = {
+    1: `<div class="wrap"><span class="rot">Founder</span>${foto}
+        <h2 class="nom">${nombre}</h2><p class="ofi">${oficio}</p><p class="dice">${dice}</p></div>`,
+    2: `<div class="wrap">${cabeza}
+        <div class="anillo">${ORBIT.sym({gap:64, ring:C.k, dot:C.blue, dotOn:true})}${foto}</div>
+        <h2 class="nom">${nombre}</h2><p class="ofi">${oficio}</p><p class="dice">${dice}</p></div>`,
+    3: `<div class="wrap">${cabeza}
+        <div class="cruce"><h2 class="nom">${nombre}</h2>${foto}</div>
+        <div class="pie3q"><span class="chico">${nombre}</span><p class="ofi">${oficio}</p></div>
+        <p class="dice">${dice}</p></div>`,
+    4: `<div class="wrap">${foto}
+        <div><h2 class="nom">${nombre}</h2><p class="ofi">${oficio}</p>
+          <div class="datos">
+            <div><small>${L('Rol','Role')}</small><b>Founder</b></div>
+            <div><small>${L('Oficio','Craft')}</small><b>${oficio}</b></div>
+            <div><small>${L('Desde','From')}</small><b>Argentina</b></div>
+            <div><small>${L('Orbit','Orbit')}</small><b>Est. 2026</b></div>
+          </div>
+          <p class="dice">${dice}</p></div></div>`,
+  };
+  zona.innerHTML = armados[QV];
+  $$('[data-photo]', zona).forEach(el => el.style.backgroundImage = `url(assets/img/${el.dataset.photo}.jpg?v=12)`);
+  const r = $('.retrato', zona);
   const im = new Image();
   im.onerror = () => r.classList.add('sinfoto');
   im.src = 'assets/img/majo.jpg?v=12';
+
+  const caja = document.createElement('div');
+  caja.className = 'selq';
+  caja.innerHTML = '<b>Quién</b>' + [1,2,3,4].map(n => {
+    const u = new URLSearchParams(location.search); u.set('q', n);
+    return `<a href="?${u}#quien" class="${n === QV ? 'on' : ''}">${n}</a>`;
+  }).join('');
+  document.body.appendChild(caja);
 })();
 
 $('#chain').innerHTML = CH.map(([t,d,g,dot],i) => `<div class="rv"><span class="mono dim">0${i+1}</span><div class="s">${sym({gap:g, ring:C.b, dot:C.blue, dotOn:dot})}</div><div><b>${L(...t)}</b><p>${L(...d)}</p></div></div>`).join('');
