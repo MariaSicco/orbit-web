@@ -94,7 +94,10 @@
   padding:calc(78px + env(safe-area-inset-top,0px)) var(--pad) calc(34px + env(safe-area-inset-bottom,0px))}
 /* el contacto mantiene su grilla: la regla de arriba se la estaba comiendo
    y por eso el botón se corría de lugar */
-[data-page="nosotros"] .sec > .wrap.contact{display:grid;align-content:space-between}
+/* el bloque va entero al medio: la caja de "explorar productos" queda
+   pegada al mail, no clavada abajo de la sección */
+[data-page="nosotros"] .sec > .wrap.contact{display:grid;align-content:center;
+  gap:clamp(20px,3.4vh,44px)}
 /* El scroll frena en el borde de cada sección, así nunca quedás a mitad de
    camino con la de arriba cortada. Por CERCANÍA, no obligatorio: sólo ayuda
    si ya estás cerca. Y sólo en las que miden una pantalla exacta — el relato
@@ -209,12 +212,15 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 /* el manifiesto era el único que no entraba en una pantalla: los cuatro
    pasos de la cadena medían 250px cada uno y se iban de largo */
 @media (max-width:860px){
-  .mf-open{font-size:clamp(30px,7.6vw,124px)}
-  .chain{margin-top:clamp(22px,3.4vh,60px)}
-  .chain>div{min-height:0;padding:clamp(11px,3vw,20px);gap:clamp(10px,1.8vh,18px)}
-  .chain .s{width:clamp(38px,11vw,52px)}
-  .chain b{font-size:clamp(20px,5.6vw,34px)}
-  .chain p{margin-top:5px;font-size:12.5px;line-height:1.35}
+  /* lo había apretado de más: el contenido quedaba chico arriba y sobraba
+     media pantalla abajo. Ahora los cuatro pasos ocupan lo que les toca. */
+  .mf-open{font-size:clamp(36px,9.4vw,124px)}
+  .chain{margin-top:clamp(16px,2.4vh,60px)}
+  .chain>div{min-height:clamp(132px,19vh,190px);padding:clamp(13px,3.6vw,22px);
+    gap:clamp(12px,2.2vh,22px);justify-content:space-between}
+  .chain .s{width:clamp(48px,14vw,66px)}
+  .chain b{font-size:clamp(24px,6.6vw,38px)}
+  .chain p{margin-top:6px;font-size:13.5px;line-height:1.38}
   .chain{grid-template-columns:1fr 1fr}}
 /* la frase de cierre, sola en su propia pantalla: es la idea que sostiene
    todo el catálogo y en el manifiesto quedaba de apéndice. */
