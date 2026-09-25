@@ -224,9 +224,11 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
   .chain{grid-template-columns:1fr 1fr}}
 /* la frase de cierre, sola en su propia pantalla: es la idea que sostiene
    todo el catálogo y en el manifiesto quedaba de apéndice. */
-.frase-g{margin:0;font-family:var(--serif);letter-spacing:-.03em;line-height:1.04;
-  font-size:clamp(42px,11.4vw,124px);max-width:13ch}
-.frase-g .it{color:var(--or);font-style:italic}
+.frase-g{margin:0;font-weight:800;text-transform:uppercase;letter-spacing:-.05em;
+  line-height:.92;font-size:clamp(40px,10.6vw,116px);max-width:14ch;text-wrap:balance}
+/* solo "correctas" se va a la serif: es el remate, no el bloque entero */
+.frase-g .it{font-family:var(--serif);font-weight:400;font-style:italic;
+  text-transform:none;letter-spacing:-.03em;color:var(--or)}
 .frase-f{font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.55;
   line-height:2;text-align:left}
 
