@@ -122,8 +122,11 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
    avisa dónde va y desaparece solo en cuanto el archivo esté. */
 .quien-g{display:grid;grid-template-columns:auto minmax(0,1fr);gap:clamp(22px,4.5vw,64px);align-items:center}
 .quien .retrato{position:relative;width:clamp(150px,24vw,280px);aspect-ratio:1;border-radius:50%;
-  background:var(--k3);background-size:cover;background-position:center;
-  display:grid;place-items:center;box-shadow:0 0 0 1px rgba(13,13,14,.18)}
+  background:var(--k3);background-size:cover;background-position:center top;
+  display:grid;place-items:center;box-shadow:0 0 0 1px rgba(13,13,14,.18);
+  /* en blanco y negro, como el resto de las fotos del sitio. El archivo
+     queda en color: esto es sólo cómo se muestra. */
+  filter:grayscale(1) contrast(1.04)}
 .quien .retrato .falta{display:none;text-align:center;font-size:9.5px;letter-spacing:.1em;
   text-transform:uppercase;opacity:.55;line-height:2;padding:22px}
 .quien .retrato.sinfoto .falta{display:block}
