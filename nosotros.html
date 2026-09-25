@@ -164,7 +164,10 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 .quien-sec .q-pista{margin-left:auto;font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.55}
 
 /* ---------- 1 · la foto a sangre, columna entera ---------- */
-.f1 .quien-sec .q-fondo{background:radial-gradient(70% 55% at 12% 14%,#4d61ff 0,transparent 70%)}
+/* Un panel de azul más profundo detrás de la columna de texto, con borde
+   duro contra la foto. Estructura, no resplandor: separa las dos mitades
+   en vez de simular una luz que no existe. */
+.f1 .quien-sec .q-fondo{background:linear-gradient(90deg,#2536e0 0 64%,transparent 64%)}
 .f1 .quien-sec .q-capa{padding-right:calc(var(--pad) + 36vw)}
 .f1 .quien-sec .q-nom{font-size:clamp(28px,8.4vw,150px)}
 .f1 .quien-sec .q-marco{position:absolute;top:0;right:0;bottom:0;width:34vw;z-index:1;
