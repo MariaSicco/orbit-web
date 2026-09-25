@@ -120,7 +120,7 @@ $('#shelf').innerHTML = P.map(p => `<a href="${url(p)}"><div class="cv"><div cla
   <span class="mono">${p.code}<br>Digital goods</span>
   <p>${L(p.tagline)}</p>
   <ul>${p.includes.slice(0,3).map(([t]) => `<li>${L(t)}</li>`).join('')}</ul>
-  <div><span class="mono">Orbit® — Ideas in motion<br>Est. 2026</span><div class="bf" style="margin-top:3cqw"><b>${p.status==='soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</b><span class="mono">${L('Ver detalle','See details')} →</span></div></div>
+  <div><span class="mono">Orbit® — ${L('Ideas en movimiento','Ideas in motion')}<br>Est. 2026</span><div class="bf" style="margin-top:3cqw"><b>${p.status==='soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</b><span class="mono">${L('Ver detalle','See details')} →</span></div></div>
 </div></div></div><span class="to"><b>${p.name}</b><span class="mono dim">${p.status==='soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</span></span>
 <button class="chip qbtn" type="button" data-flip>${L('¿Qué es?','What is it?')}</button></a>`).join('');
 $$('#shelf [data-flip]').forEach(b => b.onclick = e => { e.preventDefault(); const f = $('.flip', b.closest('a')); f.classList.toggle('flipped'); b.innerHTML = f.classList.contains('flipped') ? L('Ver tapa','Show cover') : L('¿Qué es?','What is it?'); });

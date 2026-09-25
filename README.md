@@ -1,6 +1,6 @@
 # ORBIT® — Sitio web
 
-Orden en movimiento. Ideas in motion.
+Ideas en movimiento. Ideas in motion.
 
 Sitio estático (HTML/CSS/JS, sin build) publicado con GitHub Pages.
 

@@ -252,7 +252,7 @@ const navSolid = () => nav.classList.toggle('solid', scrollY > 12 || 'navSolid' 
 addEventListener('scroll', navSolid, {passive:true}); navSolid();
 const mnav = document.createElement('nav');
 mnav.className = 'mnav'; mnav.id = 'mnav'; mnav.hidden = true; mnav.setAttribute('aria-label','Menu');
-mnav.innerHTML = `<button class="chip x">${L('Cerrar','Close')}</button><div>${links.map(([h,t]) => `<a href="${h}">${t}</a>`).join('')}</div><div style="display:flex;justify-content:space-between;align-items:center;gap:16px">${langSw}<span class="mono">Orbit® — Ideas in motion</span></div>`;
+mnav.innerHTML = `<button class="chip x">${L('Cerrar','Close')}</button><div>${links.map(([h,t]) => `<a href="${h}">${t}</a>`).join('')}</div><div style="display:flex;justify-content:space-between;align-items:center;gap:16px">${langSw}<span class="mono">Orbit® — ${L('Ideas en movimiento','Ideas in motion')}</span></div>`;
 document.body.append(mnav);
 mountDrawer();
 $('.cart-btn', nav).onclick = openDrawer;
@@ -273,7 +273,7 @@ foot.innerHTML = `<div class="wrap">
     <div><span class="mono dim">${L('Contacto','Contact')}</span><a href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a><a href="https://www.instagram.com/orbitando.ba/" target="_blank" rel="noopener">Instagram</a><a href="acceso.html?nuevo=1">Newsletter</a></div>
     <div><span class="mono dim">Legal</span><a href="terminos.html">${L('Términos y condiciones','Terms and conditions')}</a><a href="privacidad.html">${L('Política de privacidad','Privacy policy')}</a><a href="terminos.html#arrepentimiento">${L('Botón de arrepentimiento','Right to cancel')}</a></div>
   </div>
-  <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">${L('Orden en movimiento.','Order in motion.')}</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>
+  <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">${L('Ideas en movimiento.','Ideas in motion.')}</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>
 </div>`;
 document.body.append(foot);
 
@@ -309,7 +309,7 @@ function reveal(rootEl=document) {
 /* ---------- caja 3D ---------- */
 function mountBox(stage, p) {
   stage.innerHTML = `<div class="box"><div class="f front">${cover(p)}</div><div class="f side">${wm({color:C.b}, false)}</div><div class="f lside"></div>
-    <div class="f back"><span class="mono">${p.code}<br>Digital goods</span><span class="it" style="font-size:21px;line-height:1.05">${L(p.tagline)}</span><span class="mono">Orbit® — Ideas in motion<br>Est. 2026</span></div>
+    <div class="f back"><span class="mono">${p.code}<br>Digital goods</span><span class="it" style="font-size:21px;line-height:1.05">${L(p.tagline)}</span><span class="mono">Orbit® — ${L('Ideas en movimiento','Ideas in motion')}<br>Est. 2026</span></div>
     <div class="f top"></div><div class="f bottom"></div></div><span class="mono hint">${L('Arrastrá para girar','Drag to rotate')}</span>`;
   const box = $('.box', stage);
   let ry = -28, rx = -8, drag = null, spin = !RM;
@@ -323,7 +323,7 @@ function mountBox(stage, p) {
 function gate() {
   const g = document.createElement('div');
   g.className = 'gate'; g.setAttribute('role','dialog'); g.setAttribute('aria-modal','true'); g.setAttribute('aria-label','Elegí tu idioma / Choose your language');
-  g.innerHTML = `<div class="g-top"><span class="mono">OB—000<br>Orbit® — Digital goods</span><span class="mono" style="text-align:right">Ideas in motion<br>Est. 2026</span></div>
+  g.innerHTML = `<div class="g-top"><span class="mono">OB—000<br>Orbit® — Digital goods</span><span class="mono" style="text-align:right">${L('Ideas en movimiento','Ideas in motion')}<br>Est. 2026</span></div>
     <div class="g-mid"><div class="g-word" id="gWord">${bigWm('gateG')}</div></div>
     <div class="g-bot">
       <p class="mono g-ask">Elegí tu idioma<br><span class="dim">Choose your language</span></p>
