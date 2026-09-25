@@ -203,7 +203,16 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 .mf-close{margin-top:clamp(48px,6vw,90px);display:flex;justify-content:space-between;align-items:flex-end;gap:24px;flex-wrap:wrap}
 .mf-close p{margin:0;font-family:var(--serif);font-size:clamp(34px,4.6vw,76px);line-height:1;letter-spacing:-.03em;max-width:18ch}
 .mf-close p .it{color:var(--or)}
-@media (max-width:860px){.chain{grid-template-columns:1fr 1fr}}
+/* el manifiesto era el único que no entraba en una pantalla: los cuatro
+   pasos de la cadena medían 250px cada uno y se iban de largo */
+@media (max-width:860px){
+  .mf-open{font-size:clamp(30px,7.6vw,124px)}
+  .chain{margin-top:clamp(22px,3.4vh,60px)}
+  .chain>div{min-height:0;padding:clamp(11px,3vw,20px);gap:clamp(10px,1.8vh,18px)}
+  .chain .s{width:clamp(38px,11vw,52px)}
+  .chain b{font-size:clamp(20px,5.6vw,34px)}
+  .chain p{margin-top:5px;font-size:12.5px;line-height:1.35}
+  .chain{grid-template-columns:1fr 1fr}}
 /* la frase de cierre, sola en su propia pantalla: es la idea que sostiene
    todo el catálogo y en el manifiesto quedaba de apéndice. */
 .p-frase .wrap{justify-content:space-between}
