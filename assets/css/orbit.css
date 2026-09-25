@@ -267,6 +267,9 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .box .side .wm{transform:rotate(90deg);font-size:30px}
 .box .lside{width:var(--d);height:var(--h);left:calc((var(--w) - var(--d))/2);transform:rotateY(-90deg) translateZ(calc(var(--w)/2));background:var(--k)}
 .box .back{width:var(--w);height:var(--h);transform:rotateY(180deg) translateZ(calc(var(--d)/2));background:var(--k);color:var(--b);padding:18px;display:flex;flex-direction:column;justify-content:space-between}
+/* la contratapa: el texto en cursiva iba en 21px fijos y llenaba toda la
+   cara. Atado al ancho de la caja respira y no se amontona. */
+.box .back .it{font-size:calc(var(--w) * .066);line-height:1.22;max-width:16ch;opacity:.92}
 .box .top{width:var(--w);height:var(--d);top:calc((var(--h) - var(--d))/2);transform:rotateX(90deg) translateZ(calc(var(--h)/2));background:#E4E0D6}
 .box .bottom{width:var(--w);height:var(--d);top:calc((var(--h) - var(--d))/2);transform:rotateX(-90deg) translateZ(calc(var(--h)/2));background:#0a0a0a}
 .boxstage .hint{position:absolute;left:16px;bottom:14px;opacity:.45}

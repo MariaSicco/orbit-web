@@ -309,7 +309,7 @@ function reveal(rootEl=document) {
 /* ---------- caja 3D ---------- */
 function mountBox(stage, p) {
   stage.innerHTML = `<div class="box"><div class="f front">${cover(p)}</div><div class="f side">${wm({color:C.b}, false)}</div><div class="f lside"></div>
-    <div class="f back"><span class="mono">${p.code}<br>Digital goods</span><span class="it" style="font-size:21px;line-height:1.05">${L(p.tagline)}</span><span class="mono">Orbit® — ${L('Ideas en movimiento','Ideas in motion')}<br>Est. 2026</span></div>
+    <div class="f back"><span class="mono">${p.code}<br>Digital goods</span><span class="it">${L(p.tagline)}</span><span class="mono">Orbit® — ${L('Ideas en movimiento','Ideas in motion')}<br>Est. 2026</span></div>
     <div class="f top"></div><div class="f bottom"></div></div><span class="mono hint">${L('Arrastrá para girar','Drag to rotate')}</span>`;
   const box = $('.box', stage);
   let ry = -28, rx = -8, drag = null, spin = !RM;
