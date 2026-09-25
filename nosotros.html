@@ -117,27 +117,22 @@
 
 
 main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-content:center}
-/* quién: la única sección en azul de todo el sitio. La foto va contenida
-   en un marco, no de fondo ni en primer plano. FOUNDER y MAJO SICCO pesan
-   lo mismo: mismo cuerpo, una hueca y la otra llena. */
+/* quién: cuatro maneras de tratar la foto (?f=1..4), todas en azul, con
+   FOUNDER y el nombre pesando lo mismo y el relato de a un párrafo.
+   1 columna a sangre · 2 la tipografía encima de la foto
+   3 círculo XL saliéndose · 4 franja horizontal
+   ========================================================= */
 .quien-sec{position:relative;background:var(--blue);color:var(--b);overflow:hidden;
   align-items:stretch;padding:0;touch-action:pan-y}
+.quien-sec .q-fondo{position:absolute;inset:0;z-index:0;pointer-events:none}
 .quien-sec .q-capa{position:relative;z-index:2;display:flex;flex-direction:column;
-  gap:clamp(14px,2.4vh,26px);min-height:100vh;min-height:100lvh;
+  gap:clamp(12px,2vh,24px);min-height:100vh;min-height:100lvh;
   padding:calc(80px + env(safe-area-inset-top,0px)) var(--pad) calc(28px + env(safe-area-inset-bottom,0px))}
 .quien-sec .q-top{display:flex;justify-content:space-between;gap:20px;font-size:10px;
   letter-spacing:.12em;text-transform:uppercase;opacity:.72;
   border-top:1px solid rgba(242,239,232,.4);padding-top:12px}
 .quien-sec .q-cred{text-align:right;max-width:26ch;line-height:1.85}
 
-.quien-sec .q-medio{flex:1;min-height:0;display:flex;flex-direction:column;
-  justify-content:center;gap:clamp(14px,2.4vh,26px)}
-.quien-sec .q-marco{width:clamp(128px,38vw,230px);aspect-ratio:3/4;overflow:hidden;
-  background:#1b2bb8;align-self:flex-end;
-  opacity:0;transform:translateY(22px);transition:opacity .8s ease,transform .9s var(--ease)}
-.quien-sec.entro .q-marco{opacity:1;transform:none}
-.quien-sec .q-foto{width:100%;height:100%;background:#1b2bb8 center 16%/cover;
-  filter:grayscale(1) contrast(1.12) brightness(1.02)}
 .quien-sec .q-nom{margin:0;display:flex;flex-direction:column;overflow:hidden;
   font-weight:800;text-transform:uppercase;letter-spacing:-.055em;line-height:.84;
   font-size:clamp(42px,13.2vw,150px)}
@@ -147,32 +142,87 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 .quien-sec.entro .q-nom .pal{transform:none}
 .quien-sec .q-nom .hueca{color:transparent;-webkit-text-stroke:1.6px var(--b)}
 
-.quien-sec .q-relato{border-top:1px solid rgba(242,239,232,.4);padding-top:clamp(12px,2vh,20px)}
+.quien-sec .q-foto{background:#1b2bb8 center 16%/cover;filter:grayscale(1) contrast(1.12)}
+.quien-sec .q-marco{overflow:hidden;opacity:0;transform:translateY(22px);
+  transition:opacity .8s ease,transform .9s var(--ease)}
+.quien-sec.entro .q-marco{opacity:1;transform:none}
+
+.quien-sec .q-relato{border-top:1px solid rgba(242,239,232,.4);padding-top:clamp(11px,1.8vh,18px)}
 .quien-sec .q-via{position:relative;min-height:clamp(104px,16vh,160px)}
 .quien-sec .q-beat{position:absolute;inset:0;margin:0;font-size:clamp(15.5px,4.1vw,24px);
-  line-height:1.34;max-width:36ch;opacity:0;transform:translateY(14px);
+  line-height:1.36;max-width:38ch;opacity:0;transform:translateY(14px);color:rgba(242,239,232,.72);
   transition:opacity .45s ease,transform .55s var(--ease);pointer-events:none}
-.quien-sec .q-beat.on{opacity:.92;transform:none;pointer-events:auto}
-.quien-sec .q-beat em{font-family:var(--serif);font-style:italic;color:var(--ac);opacity:1}
+.quien-sec .q-beat.on{opacity:1;transform:none;pointer-events:auto}
+.quien-sec .q-beat b{font-weight:600;color:var(--b)}
+.quien-sec .q-beat em{font-family:var(--serif);font-style:italic;color:var(--ac)}
+.quien-sec .q-beat mark{background:var(--ac);color:var(--k);padding:0 .22em;border-radius:1px}
 .quien-sec .q-pie{display:flex;align-items:center;gap:14px;margin-top:clamp(10px,1.8vh,18px)}
 .quien-sec .q-num{font-size:10px;letter-spacing:.12em;opacity:.7;white-space:nowrap}
 .quien-sec .q-rayas{display:flex;gap:6px;flex:1;max-width:220px}
-.quien-sec .q-rayas button{flex:1;height:2px;padding:0;border:0;cursor:pointer;
-  background:rgba(242,239,232,.35)}
+.quien-sec .q-rayas button{flex:1;height:2px;padding:0;border:0;cursor:pointer;background:rgba(242,239,232,.35)}
 .quien-sec .q-rayas button.on{background:var(--ac)}
-.quien-sec .q-pista{margin-left:auto;font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;opacity:.55}
+.quien-sec .q-pista{margin-left:auto;font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.55}
+
+/* ---------- 1 · la foto a sangre, columna entera ---------- */
+.f1 .quien-sec .q-fondo{background:radial-gradient(70% 55% at 12% 14%,#4d61ff 0,transparent 70%)}
+.f1 .quien-sec .q-capa{padding-right:calc(var(--pad) + 40vw)}
+.f1 .quien-sec .q-marco{position:absolute;top:0;right:0;bottom:0;width:38vw;z-index:1;
+  transform:translateX(24px)}
+.f1 .quien-sec.entro .q-marco{transform:none}
+.f1 .quien-sec .q-foto{width:100%;height:100%;background-position:52% 14%}
+.f1 .quien-sec .q-medio{flex:1;display:flex;flex-direction:column;justify-content:center}
+
+/* ---------- 2 · la tipografía encima de la foto ---------- */
+.f2 .quien-sec .q-fondo{background:linear-gradient(152deg,#2033e8 0,var(--blue) 46%,#5568ff 100%)}
+.f2 .quien-sec .q-medio{flex:1;position:relative;display:flex;flex-direction:column;justify-content:center}
+.f2 .quien-sec .q-marco{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%) scale(.96);
+  width:clamp(190px,56vw,360px);aspect-ratio:3/4;z-index:0}
+.f2 .quien-sec.entro .q-marco{transform:translate(-50%,-50%)}
+.f2 .quien-sec .q-foto{width:100%;height:100%;opacity:.92}
+.f2 .quien-sec .q-nom{position:relative;z-index:2;mix-blend-mode:normal;
+  text-shadow:0 2px 26px rgba(13,13,14,.32)}
+
+/* ---------- 3 · círculo XL saliéndose, sobre grilla ---------- */
+.f3 .quien-sec .q-fondo{
+  background:linear-gradient(0deg,rgba(13,13,14,.22),transparent 55%),
+    repeating-linear-gradient(90deg,rgba(242,239,232,.14) 0 1px,transparent 1px 13.5%),
+    repeating-linear-gradient(0deg,rgba(242,239,232,.1) 0 1px,transparent 1px 84px)}
+.f3 .quien-sec .q-medio{flex:1;display:flex;flex-direction:column;justify-content:center;position:relative}
+.f3 .quien-sec .q-marco{position:absolute;right:-16vw;bottom:-6vh;width:clamp(230px,68vw,460px);
+  aspect-ratio:1;border-radius:50%;z-index:0;transform:translateY(26px) scale(.95)}
+.f3 .quien-sec.entro .q-marco{transform:none}
+.f3 .quien-sec .q-foto{width:100%;height:100%;background-position:44% 12%}
+.f3 .quien-sec .q-nom{position:relative;z-index:2}
+
+/* ---------- 4 · franja horizontal ---------- */
+.f4 .quien-sec .q-fondo{background:linear-gradient(180deg,#2434e0 0,var(--blue) 58%,#1a28c9 100%)}
+.f4 .quien-sec .q-medio{flex:1;display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(12px,2.2vh,24px)}
+.f4 .quien-sec .q-marco{width:calc(100% + var(--pad) * 2);margin-inline:calc(var(--pad) * -1);
+  height:clamp(120px,22vh,230px)}
+.f4 .quien-sec .q-foto{width:100%;height:100%;background-position:center 22%}
+.f4 .quien-sec .q-nom{font-size:clamp(38px,11.6vw,132px)}
+
 @media (min-width:861px){
-  .quien-sec .q-medio{flex-direction:row;align-items:flex-end;justify-content:space-between;
-    gap:clamp(30px,5vw,80px)}
-  .quien-sec .q-nom{order:-1;flex:1}
-  .quien-sec .q-marco{align-self:flex-end;width:clamp(200px,24vw,340px)}
-  .quien-sec .q-beat{font-size:clamp(19px,1.8vw,28px);max-width:44ch}
+  .quien-sec .q-beat{font-size:clamp(19px,1.8vw,28px);max-width:46ch}
+  .f1 .quien-sec .q-capa{padding-right:calc(var(--pad) + 34vw)}
+  .f1 .quien-sec .q-marco{width:32vw}
+  .f3 .quien-sec .q-marco{right:-8vw;width:clamp(320px,38vw,560px)}
+  .f4 .quien-sec .q-marco{height:clamp(200px,30vh,340px)}
 }
 @media (prefers-reduced-motion:reduce){
   .quien-sec .q-marco{opacity:1;transform:none}
   .quien-sec .q-nom .pal{transform:none}
 }
+
+/* selector temporal */
+.self{position:fixed;right:10px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:60;
+  display:flex;gap:3px;align-items:center;font-family:var(--mono);font-size:10px;
+  background:rgba(13,13,14,.88);border:1px solid rgba(242,239,232,.2);border-radius:999px;
+  padding:4px 7px;color:#F2EFE8;backdrop-filter:blur(8px)}
+.self b{opacity:.45;font-weight:400;padding-right:3px}
+.self a{color:inherit;opacity:.5;text-decoration:none;padding:3px 7px;border-radius:999px;line-height:1}
+.self a.on{opacity:1;background:var(--ac);color:#0D0D0E}
 
 /* manifiesto editorial */
 .mf-open{font-weight:800;font-size:clamp(46px,7.2vw,124px);letter-spacing:-.05em;line-height:.88;text-transform:uppercase;margin:0;max-width:14ch}
@@ -221,35 +271,8 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
   </div>
 </section>
 
-<!-- QUIÉN -->
-<section class="sec quien-sec" id="quien">
-  <div class="wrap q-capa">
-    <div class="q-top mono">
-      <span>Founder — OB—000</span>
-      <span class="q-cred"><span data-l="es">Lic. en Comunicación Digital · Diseño · Sistemas · Desarrollo</span><span data-l="en">BA in Digital Communication · Design · Systems · Development</span></span>
-    </div>
-    <div class="q-medio">
-      <div class="q-marco"><div class="q-foto" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"></div></div>
-      <h2 class="q-nom">
-        <span class="pal hueca">Founder</span>
-        <span class="pal llena">Majo Sicco</span>
-      </h2>
-    </div>
-    <div class="q-relato">
-      <div class="q-via">
-        <p class="q-beat"><span data-l="es">Soy Majo, Licenciada en Comunicación Digital y <em>fundadora de Orbit.</em></span><span data-l="en">I’m Majo, I hold a BA in Digital Communication and <em>I founded Orbit.</em></span></p>
-        <p class="q-beat"><span data-l="es">Trabajo en el cruce entre diseño, estrategia y tecnología, buscando una forma más simple de convertir ideas, procesos y problemas cotidianos en <em>herramientas que realmente sirvan.</em></span><span data-l="en">I work where design, strategy and technology meet, looking for a simpler way to turn ideas, processes and everyday problems into <em>tools that actually help.</em></span></p>
-        <p class="q-beat"><span data-l="es">Orbit nació de mi propia manera de trabajar: detectar algo que se repite, entender qué sobra, ordenar lo necesario y <em>construir un sistema mejor.</em></span><span data-l="en">Orbit came out of my own way of working: spot what repeats, see what’s unnecessary, order what’s left and <em>build a better system.</em></span></p>
-        <p class="q-beat"><span data-l="es">Muchas de las herramientas que ves acá empezaron resolviendo un problema real. Primero las uso, las pruebo y las mejoro. Después, si funcionan, <em>entran en órbita.</em></span><span data-l="en">Many of the tools you see here started by solving a real problem. First I use them, test them and improve them. Then, if they work, <em>they enter orbit.</em></span></p>
-      </div>
-      <div class="q-pie">
-        <span class="q-num mono">01 / 04</span>
-        <div class="q-rayas"><button type="button" aria-label="1"></button><button type="button" aria-label="2"></button><button type="button" aria-label="3"></button><button type="button" aria-label="4"></button></div>
-        <span class="q-pista mono"><span data-l="es">Deslizá</span><span data-l="en">Swipe</span></span>
-      </div>
-    </div>
-  </div>
-</section>
+<!-- QUIÉN — el contenido lo arma el JS según la versión elegida (?f=1..4) -->
+<section class="sec quien-sec" id="quien"></section>
 
 <section class="sec dark" id="manifiesto">
   <div class="wrap">
@@ -299,10 +322,44 @@ else {
 }
 
 const CH = [[['Idea','Idea'],['Aparece. Todavía no tiene forma.','It appears. It has no shape yet.'],140,false],[['Sistema','System'],['Una buena herramienta la ordena.','A good tool gives it structure.'],90,false],[['Acción','Action'],['El sistema convierte intención en acción.','The system turns intention into action.'],40,false],[['Progreso','Progress'],['Y la acción se vuelve progreso.','And action becomes progress.'],0,true]];
-/* quién: la escena se arma al llegar y el relato lo maneja la persona */
+/* quién: cuatro tratamientos de la foto (?f=1..4). El texto ya no es todo
+   blanco: lo importante va en blanco pleno, el remate en cursiva verde y
+   una frase por párrafo va resaltada en verde macizo. */
 (function quien() {
   const zona = $('#quien');
   if (!zona) return;
+  const FV = Math.min(4, Math.max(1, +(new URLSearchParams(location.search).get('f')) || 1));
+  document.body.classList.add('f' + FV);
+
+  const BEATS = [
+    ['Soy Majo, <b>Licenciada en Comunicación Digital</b> y <em>fundadora de Orbit.</em>',
+     'I’m Majo, <b>BA in Digital Communication</b> and <em>founder of Orbit.</em>'],
+    ['Trabajo en el cruce entre <mark>diseño, estrategia y tecnología</mark>, buscando una forma más simple de convertir ideas, procesos y problemas cotidianos en <em>herramientas que realmente sirvan.</em>',
+     'I work where <mark>design, strategy and technology</mark> meet, looking for a simpler way to turn ideas, processes and everyday problems into <em>tools that actually help.</em>'],
+    ['Orbit nació de mi propia manera de trabajar: <b>detectar algo que se repite</b>, entender qué sobra, ordenar lo necesario y <em>construir un sistema mejor.</em>',
+     'Orbit came out of my own way of working: <b>spot what repeats</b>, see what’s unnecessary, order what’s left and <em>build a better system.</em>'],
+    ['Muchas de las herramientas que ves acá empezaron resolviendo <mark>un problema real</mark>. Primero las uso, las pruebo y las mejoro. Después, si funcionan, <em>entran en órbita.</em>',
+     'Many of the tools here started by solving <mark>a real problem</mark>. First I use them, test them and improve them. Then, if they work, <em>they enter orbit.</em>'],
+  ];
+  const foto = `<div class="q-marco"><div class="q-foto" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"></div></div>`;
+  const nombre = `<h2 class="q-nom"><span class="pal hueca">Founder</span><span class="pal llena">Majo Sicco</span></h2>`;
+  const arriba = `<div class="q-top mono"><span>Founder — OB—000</span><span class="q-cred">${
+    L('Lic. en Comunicación Digital · Diseño · Sistemas · Desarrollo',
+      'BA in Digital Communication · Design · Systems · Development')}</span></div>`;
+  const relato = `<div class="q-relato">
+      <div class="q-via">${BEATS.map(([es, en]) => `<p class="q-beat">${L(es, en)}</p>`).join('')}</div>
+      <div class="q-pie"><span class="q-num mono">01 / 04</span>
+        <div class="q-rayas">${BEATS.map((_, i) => `<button type="button" aria-label="${i + 1}"></button>`).join('')}</div>
+        <span class="q-pista mono">${L('Deslizá','Swipe')}</span></div>
+    </div>`;
+  /* la 2 necesita la foto detrás del nombre; las demás, antes del texto */
+  const medio = FV === 2 ? `<div class="q-medio">${foto}${nombre}</div>`
+             : FV === 4 ? `<div class="q-medio">${foto}${nombre}</div>`
+             : `<div class="q-medio">${nombre}</div>${foto}`;
+  zona.innerHTML = `<div class="q-fondo" aria-hidden="true"></div><div class="wrap q-capa">${arriba}${medio}${relato}</div>`;
+  if (FV === 1 || FV === 3) zona.querySelector('.q-capa').appendChild($('.q-marco', zona));
+  $$('[data-photo]', zona).forEach(el => el.style.backgroundImage = `url(assets/img/${el.dataset.photo}.jpg?v=12)`);
+
   const beats = $$('.q-beat', zona), rayas = $$('.q-rayas button', zona), num = $('.q-num', zona);
   let cual = -1;
   const poner = i => {
@@ -331,11 +388,19 @@ const CH = [[['Idea','Idea'],['Aparece. Todavía no tiene forma.','It appears. I
   zona.addEventListener('pointerup', soltar);
   zona.addEventListener('pointercancel', soltar);
   poner(0);
-  if (RM) return zona.classList.add('entro');
-  new IntersectionObserver(([e], obs) => {
+  if (RM) zona.classList.add('entro');
+  else new IntersectionObserver(([e], obs) => {
     if (!e.isIntersecting) return;
     zona.classList.add('entro'); obs.disconnect();
   }, {threshold:.25}).observe(zona);
+
+  const caja = document.createElement('div');
+  caja.className = 'self';
+  caja.innerHTML = '<b>Foto</b>' + [1,2,3,4].map(n => {
+    const u = new URLSearchParams(location.search); u.set('f', n);
+    return `<a href="?${u}#quien" class="${n === FV ? 'on' : ''}">${n}</a>`;
+  }).join('');
+  document.body.appendChild(caja);
 })();
 
 $('#chain').innerHTML = CH.map(([t,d,g,dot],i) => `<div class="rv"><span class="mono dim">0${i+1}</span><div class="s">${sym({gap:g, ring:C.b, dot:C.blue, dotOn:dot})}</div><div><b>${L(...t)}</b><p>${L(...d)}</p></div></div>`).join('');
