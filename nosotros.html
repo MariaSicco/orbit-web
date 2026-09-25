@@ -117,34 +117,72 @@
 
 
 main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-content:center}
-/* quién: la fundadora contada como una página editorial, no como una
-   tarjeta centrada. El texto manda de izquierda a derecha y llena la
-   pantalla; la foto es grande y va anclada, no flotando en el medio. */
+/* quién: la fundadora, contada en tiempos. Al entrar se dibuja el aro,
+   aparece el retrato, sube el nombre palabra por palabra, se escribe la
+   credencial y entran los párrafos uno detrás de otro. El punto azul no
+   para de orbitarla: es el mismo movimiento del símbolo de la marca. */
+#quien{position:relative;overflow:hidden}
+#quien .q-fondo{position:absolute;left:-26%;bottom:-38%;width:min(92vw,760px);aspect-ratio:1;
+  color:var(--k);opacity:.07;pointer-events:none;animation:q-rueda 90s linear infinite}
+#quien .q-fondo svg{width:100%;height:100%}
+@keyframes q-rueda{to{transform:rotate(360deg)}}
+#quien .wrap{position:relative;z-index:1}
+
 #quien .q-g{display:grid;gap:clamp(18px,3vh,30px)}
 #quien .q-cara{display:grid;grid-template-columns:auto minmax(0,1fr);
-  gap:clamp(16px,4vw,32px);align-items:center}
-#quien .retrato{position:relative;width:clamp(120px,34vw,240px);aspect-ratio:1;border-radius:50%;
-  overflow:hidden;background:var(--k3) center 18%/cover;
-  box-shadow:0 0 0 1px rgba(13,13,14,.16);filter:grayscale(1) contrast(1.04)}
+  gap:clamp(18px,4.5vw,36px);align-items:center}
+
+#quien .orbe{position:relative;width:clamp(126px,35vw,250px);aspect-ratio:1}
+#quien .retrato{position:absolute;inset:6%;border-radius:50%;overflow:hidden;
+  background:var(--k3) center 18%/cover;filter:grayscale(1) contrast(1.04);
+  opacity:0;transform:scale(.9);transition:opacity .7s var(--ease) .32s,transform .9s var(--ease) .32s}
 #quien .retrato .falta{position:absolute;inset:0;display:none;place-items:center;text-align:center;
   font-size:9px;letter-spacing:.1em;text-transform:uppercase;opacity:.55;line-height:2;padding:18px}
 #quien .retrato.sinfoto .falta{display:grid}
+#quien .aro{position:absolute;inset:0;width:100%;height:100%;color:var(--k);overflow:visible;
+  transform:rotate(-90deg)}
+#quien .aro circle{stroke-dasharray:305;stroke-dashoffset:305;transition:stroke-dashoffset 1.1s var(--ease)}
+#quien .giro{position:absolute;inset:-6%;opacity:0;transition:opacity .5s ease 1s}
+#quien .giro i{position:absolute;left:50%;top:0;width:clamp(11px,2.9vw,20px);aspect-ratio:1;
+  border-radius:50%;background:var(--blue);transform:translateX(-50%)}
+
 #quien .nom{margin:0;font-weight:800;text-transform:uppercase;letter-spacing:-.055em;
-  line-height:.86;font-size:clamp(32px,7.4vw,92px)}
+  line-height:.86;font-size:clamp(30px,7.2vw,88px);overflow:hidden}
+#quien .nom .pal{display:inline-block;transform:translateY(105%);
+  transition:transform .8s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
 #quien .cred{margin:clamp(7px,1.2vh,12px) 0 0;font-size:10px;letter-spacing:.09em;
   text-transform:uppercase;opacity:.5;line-height:1.85;max-width:34ch}
 #quien .q-texto{display:grid;gap:clamp(11px,1.7vh,18px)}
 #quien .q-texto p{margin:0;font-size:clamp(14.5px,1.25vw,18px);line-height:1.5;opacity:.8;max-width:62ch}
-#quien .q-texto .entra{font-size:clamp(17px,1.7vw,24px);line-height:1.38;opacity:1;font-weight:500}
-#quien .q-texto .cierra .it{font-family:var(--serif);font-style:italic;color:var(--or);font-weight:400}
+#quien .q-texto .entra{font-size:clamp(17px,1.7vw,24px);line-height:1.38;font-weight:500}
+#quien .cierra s{text-decoration:none;color:var(--or);font-family:var(--serif);font-style:italic;
+  background:linear-gradient(var(--or),var(--or)) 0 92%/0 1.5px no-repeat;
+  transition:background-size .8s var(--ease) 1.9s}
+
+/* los tiempos: todo arranca abajo y entra cuando la sección llega */
+#quien .q-e{opacity:0;transform:translateY(16px);
+  transition:opacity .6s ease var(--d,0s),transform .7s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
+#quien.entro .q-e{opacity:1;transform:none}
+#quien.entro .q-texto p{opacity:.8}
+#quien.entro .q-texto .entra{opacity:1}
+#quien.entro .aro circle{stroke-dashoffset:0}
+#quien.entro .retrato{opacity:1;transform:none}
+#quien.entro .giro{opacity:1;animation:q-rueda 18s linear infinite}
+#quien.entro .cierra s{background-size:100% 1.5px}
+@media (prefers-reduced-motion:reduce){
+  #quien .q-e,#quien .retrato,#quien .nom .pal{opacity:1;transform:none;transition:none}
+  #quien .aro circle{stroke-dashoffset:0}
+  #quien .q-fondo,#quien .giro{animation:none}
+  #quien .giro{opacity:1}
+}
+#quien.entro .nom .pal{transform:none}
+
 @media (min-width:861px){
-  /* en pantalla ancha: el texto a la izquierda y el retrato acompañando a la derecha */
   #quien .q-g{grid-template-columns:minmax(0,7fr) minmax(0,5fr);
     gap:clamp(32px,5vw,80px);align-items:start}
-  #quien .q-cara{grid-column:2;grid-row:1;grid-template-columns:1fr;gap:clamp(14px,2vw,22px);
-    align-items:start}
+  #quien .q-cara{grid-column:2;grid-row:1;grid-template-columns:1fr;gap:clamp(16px,2vw,26px);align-items:start}
   #quien .q-texto{grid-column:1;grid-row:1}
-  #quien .retrato{width:100%}
+  #quien .orbe{width:100%}
 }
 
 /* manifiesto editorial */
@@ -196,21 +234,28 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 
 <!-- QUIÉN -->
 <section class="sec light" id="quien">
+  <div class="q-fondo" aria-hidden="true">
+    <svg viewBox="0 0 200 200"><circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" stroke-width=".7" stroke-dasharray="2 5"/><circle cx="100" cy="100" r="62" fill="none" stroke="currentColor" stroke-width=".7"/></svg>
+  </div>
   <div class="wrap">
-    <div class="shead mono"><div><b>Founder</b><span data-l="es">Detrás de Orbit</span><span data-l="en">Behind Orbit</span></div><div style="text-align:right">OB—000</div></div>
+    <div class="shead mono q-e" style="--d:0s"><div><b>Founder</b><span data-l="es">Detrás de Orbit</span><span data-l="en">Behind Orbit</span></div><div style="text-align:right">OB—000</div></div>
     <div class="q-g">
       <div class="q-cara">
-        <div class="retrato" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"><span class="falta mono"><span data-l="es">Acá va tu foto<br>assets/img/majo.jpg</span><span data-l="en">Your photo goes here<br>assets/img/majo.jpg</span></span></div>
+        <div class="orbe">
+          <div class="retrato" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"><span class="falta mono"><span data-l="es">Acá va tu foto<br>assets/img/majo.jpg</span><span data-l="en">Your photo goes here<br>assets/img/majo.jpg</span></span></div>
+          <svg class="aro" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="48.5" fill="none" stroke="currentColor" stroke-width="1"/></svg>
+          <span class="giro" aria-hidden="true"><i></i></span>
+        </div>
         <div class="q-id">
-          <h2 class="nom">Majo Sicco</h2>
-          <p class="cred mono"><span data-l="es">Lic. en Comunicación Digital · Diseño · Sistemas · Desarrollo</span><span data-l="en">BA in Digital Communication · Design · Systems · Development</span></p>
+          <h2 class="nom"><span class="pal" style="--d:.5s">Majo</span> <span class="pal" style="--d:.62s">Sicco</span></h2>
+          <p class="cred mono q-e" style="--d:.8s"><span data-l="es">Lic. en Comunicación Digital · Diseño · Sistemas · Desarrollo</span><span data-l="en">BA in Digital Communication · Design · Systems · Development</span></p>
         </div>
       </div>
-      <div class="q-texto rv">
-        <p class="entra"><span data-l="es">Soy Majo, Licenciada en Comunicación Digital y fundadora de Orbit.</span><span data-l="en">I’m Majo, I hold a BA in Digital Communication and I founded Orbit.</span></p>
-        <p><span data-l="es">Trabajo en el cruce entre diseño, estrategia y tecnología, buscando una forma más simple de convertir ideas, procesos y problemas cotidianos en herramientas que realmente sirvan.</span><span data-l="en">I work where design, strategy and technology meet, looking for a simpler way to turn ideas, processes and everyday problems into tools that actually help.</span></p>
-        <p><span data-l="es">Orbit nació de mi propia manera de trabajar: detectar algo que se repite, entender qué sobra, ordenar lo necesario y construir un sistema mejor.</span><span data-l="en">Orbit came out of my own way of working: spot what repeats, see what’s unnecessary, order what’s left and build a better system.</span></p>
-        <p class="cierra"><span data-l="es">Muchas de las herramientas que ves acá empezaron resolviendo un problema real. Primero las uso, las pruebo y las mejoro. Después, si funcionan, <span class="it">entran en órbita.</span></span><span data-l="en">Many of the tools you see here started by solving a real problem. First I use them, test them and improve them. Then, if they work, <span class="it">they enter orbit.</span></span></p>
+      <div class="q-texto">
+        <p class="entra q-e" style="--d:.95s"><span data-l="es">Soy Majo, Licenciada en Comunicación Digital y fundadora de Orbit.</span><span data-l="en">I’m Majo, I hold a BA in Digital Communication and I founded Orbit.</span></p>
+        <p class="q-e" style="--d:1.08s"><span data-l="es">Trabajo en el cruce entre diseño, estrategia y tecnología, buscando una forma más simple de convertir ideas, procesos y problemas cotidianos en herramientas que realmente sirvan.</span><span data-l="en">I work where design, strategy and technology meet, looking for a simpler way to turn ideas, processes and everyday problems into tools that actually help.</span></p>
+        <p class="q-e" style="--d:1.2s"><span data-l="es">Orbit nació de mi propia manera de trabajar: detectar algo que se repite, entender qué sobra, ordenar lo necesario y construir un sistema mejor.</span><span data-l="en">Orbit came out of my own way of working: spot what repeats, see what’s unnecessary, order what’s left and build a better system.</span></p>
+        <p class="cierra q-e" style="--d:1.32s"><span data-l="es">Muchas de las herramientas que ves acá empezaron resolviendo un problema real. Primero las uso, las pruebo y las mejoro. Después, si funcionan, <s>entran en órbita.</s></span><span data-l="en">Many of the tools you see here started by solving a real problem. First I use them, test them and improve them. Then, if they work, <s>they enter orbit.</s></span></p>
       </div>
     </div>
   </div>
@@ -264,13 +309,19 @@ else {
 }
 
 const CH = [[['Idea','Idea'],['Aparece. Todavía no tiene forma.','It appears. It has no shape yet.'],140,false],[['Sistema','System'],['Una buena herramienta la ordena.','A good tool gives it structure.'],90,false],[['Acción','Action'],['El sistema convierte intención en acción.','The system turns intention into action.'],40,false],[['Progreso','Progress'],['Y la acción se vuelve progreso.','And action becomes progress.'],0,true]];
-/* el hueco del retrato avisa sólo mientras la foto no exista */
-(function retrato() {
-  const r = $('#quien .retrato');
-  if (!r) return;
+/* quién: el aviso de la foto y el disparo de la secuencia al llegar */
+(function quien() {
+  const zona = $('#quien');
+  if (!zona) return;
+  const r = $('.retrato', zona);
   const im = new Image();
   im.onerror = () => r.classList.add('sinfoto');
   im.src = 'assets/img/majo.jpg?v=12';
+  if (RM) return zona.classList.add('entro');
+  new IntersectionObserver(([e], obs) => {
+    if (!e.isIntersecting) return;
+    zona.classList.add('entro'); obs.disconnect();
+  }, {threshold:.3}).observe(zona);
 })();
 
 $('#chain').innerHTML = CH.map(([t,d,g,dot],i) => `<div class="rv"><span class="mono dim">0${i+1}</span><div class="s">${sym({gap:g, ring:C.b, dot:C.blue, dotOn:dot})}</div><div><b>${L(...t)}</b><p>${L(...d)}</p></div></div>`).join('');
