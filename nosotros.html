@@ -165,8 +165,9 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 
 /* ---------- 1 · la foto a sangre, columna entera ---------- */
 .f1 .quien-sec .q-fondo{background:radial-gradient(70% 55% at 12% 14%,#4d61ff 0,transparent 70%)}
-.f1 .quien-sec .q-capa{padding-right:calc(var(--pad) + 40vw)}
-.f1 .quien-sec .q-marco{position:absolute;top:0;right:0;bottom:0;width:38vw;z-index:1;
+.f1 .quien-sec .q-capa{padding-right:calc(var(--pad) + 36vw)}
+.f1 .quien-sec .q-nom{font-size:clamp(28px,8.4vw,150px)}
+.f1 .quien-sec .q-marco{position:absolute;top:0;right:0;bottom:0;width:34vw;z-index:1;
   transform:translateX(24px)}
 .f1 .quien-sec.entro .q-marco{transform:none}
 .f1 .quien-sec .q-foto{width:100%;height:100%;background-position:52% 14%}
@@ -188,8 +189,9 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
     repeating-linear-gradient(90deg,rgba(242,239,232,.14) 0 1px,transparent 1px 13.5%),
     repeating-linear-gradient(0deg,rgba(242,239,232,.1) 0 1px,transparent 1px 84px)}
 .f3 .quien-sec .q-medio{flex:1;display:flex;flex-direction:column;justify-content:center;position:relative}
-.f3 .quien-sec .q-marco{position:absolute;right:-16vw;bottom:-6vh;width:clamp(230px,68vw,460px);
+.f3 .quien-sec .q-marco{position:absolute;right:-20vw;top:14%;width:clamp(230px,66vw,460px);
   aspect-ratio:1;border-radius:50%;z-index:0;transform:translateY(26px) scale(.95)}
+.f3 .quien-sec .q-relato{position:relative;z-index:3}
 .f3 .quien-sec.entro .q-marco{transform:none}
 .f3 .quien-sec .q-foto{width:100%;height:100%;background-position:44% 12%}
 .f3 .quien-sec .q-nom{position:relative;z-index:2}
@@ -207,7 +209,7 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
   .quien-sec .q-beat{font-size:clamp(19px,1.8vw,28px);max-width:46ch}
   .f1 .quien-sec .q-capa{padding-right:calc(var(--pad) + 34vw)}
   .f1 .quien-sec .q-marco{width:32vw}
-  .f3 .quien-sec .q-marco{right:-8vw;width:clamp(320px,38vw,560px)}
+  .f3 .quien-sec .q-marco{right:-8vw;top:10%;width:clamp(320px,36vw,540px)}
   .f4 .quien-sec .q-marco{height:clamp(200px,30vh,340px)}
 }
 @media (prefers-reduced-motion:reduce){
