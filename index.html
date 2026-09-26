@@ -3,332 +3,75 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Orbit® — Sistemas y herramientas digitales, listos para usar</title>
+<script>(function(){try{if(new URLSearchParams(location.search).has("full"))return;if(matchMedia("(max-width:860px)").matches)location.replace("/m"+location.search+location.hash)}catch(e){}})()</script>
+<link rel="alternate" media="only screen and (max-width: 860px)" href="https://www.orbitando.com.ar/m">
+<title>Orbit® — Ideas en movimiento</title>
 <script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
-<link rel="icon" href="/favicon.ico" sizes="32x32">
-<link rel="icon" type="image/svg+xml" href="/favicon.svg">
-<link rel="apple-touch-icon" href="/apple-touch-icon.png">
-<link rel="manifest" href="/site.webmanifest">
-<meta name="description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero. Descarga inmediata y uso comercial.">
+<meta name="description" content="Orbit crea herramientas y productos digitales para convertir ideas en resultados, en cualquier disciplina. Ideas en movimiento.">
+
 <link rel="canonical" href="https://www.orbitando.com.ar/">
-<link rel="alternate" hreflang="es" href="https://www.orbitando.com.ar/?lang=es">
-<link rel="alternate" hreflang="en" href="https://www.orbitando.com.ar/?lang=en">
-<link rel="alternate" hreflang="x-default" href="https://www.orbitando.com.ar/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Orbit®">
 <meta property="og:locale" content="es_AR">
 <meta property="og:url" content="https://www.orbitando.com.ar/">
-<meta property="og:title" content="Orbit® — Sistemas y herramientas digitales, listos para usar">
-<meta property="og:description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero.">
+<meta property="og:title" content="Orbit® — Ideas en movimiento">
+<meta property="og:description" content="Sistemas y herramientas digitales para convertir ideas en resultados, en cualquier disciplina.">
 <meta property="og:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Orbit® — Sistemas y herramientas digitales, listos para usar">
-<meta name="twitter:description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero.">
+<meta name="twitter:title" content="Orbit® — Ideas en movimiento">
+<meta name="twitter:description" content="Sistemas y herramientas digitales para convertir ideas en resultados, en cualquier disciplina.">
 <meta name="twitter:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
 <meta name="theme-color" content="#0D0D0E">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="assets/css/orbit.css?v=46">
 <style>
-/* ============================================================
-   VERSIÓN B — pensada como pantallas, no como página.
+/* hero — el ORBIT gigante del manual */
+.hero{height:100svh;min-height:600px;display:flex;flex-direction:column;justify-content:space-between;padding-top:calc(84px + env(safe-area-inset-top,0px));padding-bottom:24px;isolation:isolate}
+.hero-bg{position:absolute;inset:0;z-index:-1;overflow:hidden;background:var(--k)}
+.hero-bg .slide{position:absolute;inset:0;background:center/cover no-repeat;filter:grayscale(1) contrast(1.1);opacity:0;transform:scale(1.1);transition:opacity 1.4s var(--ease),transform 6s linear}
+.hero-bg .slide.on{opacity:.5;transform:scale(1)}
+.hero-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,13,14,.75) 0%,rgba(13,13,14,.2) 30%,rgba(13,13,14,.3) 55%,rgba(13,13,14,.94) 100%)}
+.hprog{display:flex;align-items:center;gap:16px;margin-top:20px;flex-wrap:wrap}
+.hprog .bars{display:flex;gap:5px;width:min(240px,50%)}
+.hprog .bars button{flex:1;height:14px;display:flex;align-items:center;padding:0}
+.hprog .bars i{display:block;width:100%;height:2px;background:rgba(242,239,232,.28);position:relative;overflow:hidden}
+.hprog .bars b{position:absolute;inset:0;background:var(--b);transform-origin:left;transform:scaleX(0)}
+.hprog a{text-decoration:none;transition:color .2s}
+.hprog a:hover{color:var(--ac)}
+.screen2{min-height:100svh;display:flex;flex-direction:column}
+.screen2 .pband{flex:1}
+main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column;justify-content:center}
+.hero .top{display:flex;justify-content:space-between;gap:24px}
+.hero .word{font-size:clamp(60px,min(25vw,34vh),420px);margin:clamp(12px,3vh,40px) 0;cursor:crosshair;user-select:none;line-height:.8}
+.hero .bot{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,3vw,48px);align-items:end}
+.hero .tag{font-size:clamp(34px,4.4vw,74px)}
+.rot{font-weight:800;font-size:clamp(26px,3vw,48px);letter-spacing:-.04em;text-transform:uppercase;line-height:.95;margin:0}
+.rot .it{display:inline-block;color:var(--ac);min-width:5ch;transition:opacity .35s var(--ease),transform .35s var(--ease)}
+.rot .it.swap{opacity:0;transform:translateY(.25em)}
+.hero .sub{margin:14px 0 0;max-width:52ch;opacity:.75}
+.hero .ctas{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+.hero .hint{position:absolute;right:0;top:50%;writing-mode:vertical-rl;opacity:.4}
+@media (max-width:860px){.hero .bot{grid-template-columns:1fr}.hero .hint{display:none}}
 
-   Tres decisiones:
-   1. Cada sección ocupa una pantalla y el scroll aterriza en ella.
-      No hay "medio bloque" nunca.
-   2. El método y la colección se recorren con el dedo, de costado.
-      En un teléfono deslizar es más natural que leer una lista.
-   3. El símbolo de Orbit sigue el avance: se completa a medida que
-      bajás. La marca haciendo un trabajo, no decorando.
-   ============================================================ */
+/* banda de foto */
+.pband{position:relative;min-height:clamp(420px,62vw,760px);display:flex;align-items:flex-end;padding:var(--pad);overflow:hidden}
+.pband .photo{position:absolute;inset:0}
+.pband .ring{position:absolute;width:min(70vw,900px);right:-14%;top:-24%;color:var(--b);opacity:.92}
+.pband h2{position:relative;z-index:2;font-size:clamp(60px,10vw,170px);color:var(--k)}
+.pband .meta{position:absolute;right:var(--pad);bottom:var(--pad);z-index:2;text-align:right;color:var(--k)}
 
-@media (max-width:900px){
-  /* Sin enganche: el scroll es libre. Con secciones de alto distinto,
-     cualquier snap termina peleando contra el dedo. */
-  html{scroll-padding-top:0}
-}
-@media (prefers-reduced-motion:reduce){ html{scroll-snap-type:none} }
-
-/* Ni svh ni dvh alcanzan en Safari: la franja clara de abajo aparecía igual.
-   --vh lo mide el JS con el alto real de la ventana y lo corrige cada vez
-   que cambia. Las unidades quedan solo de respaldo. */
-.pant{min-height:100svh;min-height:100dvh;min-height:var(--vh,100dvh);display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,34px);
-  padding:calc(88px + env(safe-area-inset-top,0px)) var(--pad) calc(56px + env(safe-area-inset-bottom,0px));position:relative;overflow:hidden}
-.pant .eti{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;--op:.5;opacity:var(--op,1)}
-.pant h2{font-size:clamp(44px,11.5vw,120px);margin:0}
-.luz{background:var(--b);color:var(--k)}
-.luz .pant .eti{opacity:.55}
-
-/* ---- avance orbital, fijo ---- */
-.avance{position:fixed;left:var(--pad);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:40;width:46px;height:46px;pointer-events:none;
-  opacity:0;transition:opacity .4s var(--ease)}
-.avance.on{opacity:1}
-.avance svg{width:100%;height:100%;transform:rotate(-90deg)}
-.avance circle{fill:none;stroke-width:6}
-.avance .pista{stroke:currentColor;opacity:.18}
-.avance .arco{stroke:var(--ac);stroke-linecap:round;transition:stroke-dashoffset .12s linear}
-.avance b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;font-weight:400;opacity:.7}
-
-/* ---- 01 entrada ---- */
-.p-entrada .marca{font-size:clamp(58px,19vw,210px);line-height:.78;letter-spacing:-.05em}
-/* El titular explica qué es; la firma de marca pasa a la etiqueta de arriba.
-   Antes lo más pesado de la pantalla era el nombre y un claim poético, y lo
-   único que decía qué se vende era el texto más chico y más apagado. */
-.p-entrada h1{font-size:clamp(25px,6.9vw,44px);font-weight:800;letter-spacing:-.035em;
-  line-height:1.04;max-width:17ch;margin:0;--op:1}
-.p-entrada h1 .it{color:var(--ac)}
-.p-entrada p{margin:0;max-width:32ch;font-size:16.5px;line-height:1.5;--op:.72}
-
-/* las puertas: qué vas a encontrar, sin cerrarle la puerta a nadie */
-.p-entrada .puertas{display:grid;gap:9px;padding-top:clamp(12px,2vh,17px);
-  border-top:1px solid rgba(242,239,232,.16)}
-.p-entrada .puertas i{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
-  text-transform:uppercase;opacity:.45;font-style:normal}
-.p-entrada .puertas nav{display:flex;flex-wrap:wrap;gap:7px}
-.p-entrada .puertas a{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
-  text-transform:uppercase;text-decoration:none;color:inherit;opacity:.72;
-  border:1px solid rgba(242,239,232,.24);border-radius:999px;padding:6px 11px}
-/* el encuadre busca la curva de la foto, que rima con el símbolo;
-   centrada, en un teléfono se recorta justo en la parte plana */
-.p-entrada .foto{position:absolute;inset:0;background:url(assets/img/landing.jpg) 26% 58%/cover;opacity:.46;z-index:0}
-@media (min-width:900px){.p-entrada .foto{background-position:center}}
-.p-entrada>*:not(.foto){position:relative;z-index:1}
-.p-entrada .foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--k) 6%,rgba(13,13,14,.82) 40%,rgba(13,13,14,.3) 72%,var(--k) 97%)}
-
-
-/* ---- 01 entrada: intro en tres actos ----
-   ACTO 1  el símbolo solo, grande y centrado. El arco se carga de punta a punta
-           y el punto llega orbitando.
-   ACTO 2  el símbolo viaja a su lugar como la O y ORBIT se escribe letra por letra.
-   ACTO 3  entra el resto: la foto, el eslogan, el texto y el botón.
-   Los dos primeros actos los maneja el JS con animaciones explícitas: dependen de
-   una medida que solo se conoce en pantalla. El tercero es CSS puro. */
-
-.p-entrada .foto{opacity:0;transform:scale(1.14);transition:opacity 1.6s ease 2.8s,transform 4.2s cubic-bezier(.2,.8,.2,1) 2.8s}
-.go .p-entrada .foto{opacity:.46;transform:none}
-
-.p-entrada .marca .o{transform-origin:50% 50%}
-.p-entrada .marca .gira,.p-entrada .marca .orb{transform-origin:50px 50px}
-
-/* ACTO 2 — ORBIT se escribe: la rayita verde barre y las letras van
-   quedando atrás. Antes aparecían de golpe, una por una, y saltaba. */
-.p-entrada .marca{position:relative}
-.p-entrada .marca .pal{display:inline-block;clip-path:inset(-.28em 100% -.28em 0)}
-.go .p-entrada .marca .pal{clip-path:inset(-.28em -.14em -.28em 0);
-  transition:clip-path .56s cubic-bezier(.45,.02,.25,1) 2.4s}
-.p-entrada .marca .cur{position:absolute;left:0;top:50%;width:.05em;height:.6em;margin-top:-.31em;
-  background:var(--ac);opacity:0;pointer-events:none}
-.go .p-entrada .marca .cur{animation:tipear 1.16s steps(1,end) 2.32s 1 both}
-@keyframes tipear{
-  0%{opacity:0} 5%{opacity:1} 56%{opacity:1}
-  60%{opacity:0} 70%{opacity:1} 80%{opacity:0} 90%{opacity:1} 96%{opacity:0} 100%{opacity:0}}
-.p-entrada .marca sup{opacity:0;transition:opacity .45s ease 3.02s}
-.go .p-entrada .marca sup{opacity:1}
-
-/* ACTO 3 — el resto. Cada uno recupera su propia opacidad de reposo.
-   La barra de arriba también espera: el acto 1 pasa sobre negro, sin nada más. */
-body .nav{opacity:0;transition:opacity .8s ease 3.15s}
-body.go .nav{opacity:1}
-.p-entrada .ent{opacity:0;transform:translateY(18px);
-  transition:opacity .7s ease var(--d,0s),transform .85s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
-.go .p-entrada .ent{opacity:var(--op,1);transform:none}
-
-/* ---- la portada nunca se queda del todo quieta ----
-   Tres movimientos lentos, que se notan pero no piden atención. */
-
-/* el punto no para de orbitar la O, y deja una cola detrás. Arranca justo
-   cuando termina de entrar, así el relevo con la entrada no se ve. */
-@keyframes orbitar{to{transform:rotate(360deg)}}
-.go .p-entrada .marca .orb{animation:orbitar 6.5s linear 1.45s infinite}
-/* la cola aparece recién cuando el punto empieza a moverse: quieta sería
-   una mancha, en movimiento se lee como velocidad */
-.p-entrada .marca .estela{opacity:0}
-.go .p-entrada .marca .estela{opacity:1;transition:opacity .9s ease 1.6s}
-.directo .p-entrada .marca .estela{transition:none}
-
-/* la foto respira: empieza donde la dejó la entrada, así no hay salto */
-@keyframes respirar{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
-.go .p-entrada .foto{animation:respirar 26s ease-in-out 7.2s infinite}
-
-/* con movimiento reducido, sin intro: todo aparece ya puesto */
-body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
-.directo .p-entrada .marca sup,.directo .p-entrada .ent{transition:none!important}
-.directo .p-entrada .marca .orb,.directo .p-entrada .foto{animation-delay:0s}
-.directo .p-entrada .marca .cur{display:none}
-
-@media (prefers-reduced-motion:reduce){
-  body .nav,.p-entrada .foto,.p-entrada .marca .pal,.p-entrada .marca sup,
-  .p-entrada .ent,.p-entrada .marca .orb{transition:none!important;animation:none!important}
-  .p-entrada .marca .estela{display:none}
-  .p-entrada .marca .cur{display:none}
-}
-
-/* ---- la O deja el wordmark y se vuelve el indicador de avance ----
-   Al bajar, la O se despega de ORBIT, viaja hasta la esquina y se
-   convierte en el anillo que marca en qué parte de la página estás:
-   el logo y el indicador terminan siendo la misma pieza. */
-.viajero{position:fixed;left:0;top:0;z-index:41;pointer-events:none;opacity:0;transform-origin:0 0}
-.viajero svg{width:100%;height:100%;overflow:visible}
-.viaja .p-entrada .marca .o{opacity:0}
-.avance svg{opacity:0;transition:opacity .3s ease}
-.llego .avance svg{opacity:1}
-
-/* ---- deslizables ---- */
-.riel{display:flex;gap:clamp(24px,7vw,44px);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
-  margin-inline:calc(var(--pad) * -1);padding-inline:var(--pad);scroll-padding-inline:var(--pad)}
-.riel::-webkit-scrollbar{display:none}
-.riel>*{scroll-snap-align:start;flex:0 0 min(82%,420px)}
-.pista-x{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
-.pista-x .barra{flex:1;height:2px;background:currentColor;opacity:.18;position:relative;overflow:hidden}
-.pista-x .barra i{position:absolute;inset:0;background:var(--blue);transform-origin:left;transform:scaleX(.25);transition:transform .25s var(--ease)}
-
-/* =========================================================
-   SEGUNDA PANTALLA — el estante que se llena
-   Manda la persona: no pasa solo. Se desliza en cualquier parte de la
-   pantalla, o se toca el libro que se quiera y aparece su problema.
-   Los huecos que faltan se ven desde el principio, así que al llegar
-   al cuarto el estante quedó armado y empalma con la colección.
-   ========================================================= */
-#metodo{background:var(--k);color:var(--b);overflow:hidden;
-  justify-content:flex-start;gap:clamp(14px,2.4vh,26px);touch-action:pan-y}
-#metodo .dicho{margin:0;font-family:var(--serif);font-style:italic;line-height:1.1;
-  font-size:clamp(26px,7.4vw,46px);letter-spacing:-.015em;max-width:15ch}
-#metodo .ent2{opacity:0;transform:translateY(14px);
-  transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
-.cuenta #metodo .ent2{opacity:1;transform:none}
-#metodo .cambia{transition:opacity .22s ease,transform .3s var(--ease)}
-#metodo .cambia.sale{opacity:0;transform:translateY(-10px)}
-
-#metodo .medio{flex:1;display:flex;flex-direction:column;justify-content:center;
-  gap:clamp(12px,2vh,20px);padding-bottom:clamp(14px,2.6vh,26px)}
-#metodo .quien{display:flex;align-items:center;gap:10px;font-family:var(--mono);
-  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
-#metodo .quien b{font-weight:400}
-#metodo .quien s{width:26px;height:1px;background:var(--ac);flex:none;display:block}
-
-#metodo .repisa{display:grid;gap:0}
-#metodo .libros{display:flex;align-items:flex-end;gap:clamp(7px,2.2vw,13px);
-  transform:translateX(var(--tira,0));transition:transform .28s var(--ease)}
-#metodo .libros.tirando{transition:none}
-#metodo .libros > button{appearance:none;background:none;border:0;padding:0;cursor:pointer;
-  display:block;flex:1 1 0;min-width:0;opacity:.24;
-  transform:none;transform-origin:bottom center;
-  transition:opacity .4s ease,transform .6s cubic-bezier(.2,1.1,.3,1),flex-grow .45s var(--ease)}
-#metodo .libros > button.puesto{opacity:.44}
-#metodo .libros > button.viva{opacity:1;flex-grow:2.1;transform:translateY(-14px)}
-#metodo .libros > button:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
-#metodo .tabla{height:3px;background:var(--b);opacity:.85;
-  box-shadow:0 12px 26px -14px rgba(0,0,0,.9)}
-#metodo .apoyo{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
-  text-transform:uppercase;opacity:.4;padding-top:9px}
-
-/* =========================================================
-   CUARTA PANTALLA — la colección, achicada
-   No trata de sostener el catálogo entero: muestra las tapas en una
-   vitrina que se desliza y manda a la página de productos, que es
-   donde está separado por plantillas, herramientas y sistemas.
-   ========================================================= */
-#coleccion{background:var(--k);color:var(--b);overflow:hidden;
-  justify-content:flex-start;gap:clamp(14px,2.4vh,26px)}
-#coleccion h2{margin:0;font-size:clamp(40px,11.5vw,104px);font-weight:800;
-  letter-spacing:-.04em;line-height:.94}
-#coleccion h2 .it{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ac)}
-#coleccion .ent3{opacity:0;transform:translateY(14px);
-  transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
-.ve #coleccion .ent3{opacity:1;transform:none}
-
-#coleccion .vitrina2{flex:1;min-height:0;display:flex;align-items:center;
-  gap:clamp(12px,3.4vw,22px);overflow-x:auto;overflow-y:hidden;
-  scroll-snap-type:x mandatory;scroll-padding-left:var(--pad);
-  -webkit-overflow-scrolling:touch;scrollbar-width:none;
-  margin:0 calc(var(--pad) * -1);padding:0 var(--pad)}
-#coleccion .vitrina2::-webkit-scrollbar{display:none}
-#coleccion .ficha2{flex:0 0 clamp(128px,44vw,190px);scroll-snap-align:start;
-  display:grid;gap:10px;align-content:center;text-decoration:none;color:inherit}
-#coleccion .ficha2 .cover{transition:transform .5s var(--ease)}
-#coleccion .ficha2:hover .cover,#coleccion .ficha2:focus-visible .cover{transform:translateY(-8px)}
-#coleccion .ficha2:focus-visible{outline:2px solid var(--ac);outline-offset:6px}
-#coleccion .to2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
-  border-top:1px solid rgba(242,239,232,.18);padding-top:9px}
-#coleccion .to2 b{font-weight:800;text-transform:uppercase;letter-spacing:-.03em;
-  font-size:clamp(12.5px,3.4vw,14.5px);line-height:1.1}
-#coleccion .to2 small{font-family:var(--mono);font-size:10px;letter-spacing:.06em;
-  opacity:.55;white-space:nowrap}
-#coleccion .pie3{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
-#coleccion .pie3 .nota3{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
-  text-transform:uppercase;opacity:.45}
-
-/* ---- 05 destacado: el producto como objeto, no como captura ---- */
-.p-destacado{gap:clamp(12px,2.2vh,24px)}
-.p-destacado .feat2{flex:1;min-height:0;display:flex;flex-direction:column;
-  gap:clamp(14px,2.4vh,26px)}
-.p-destacado .boxstage{flex:1;min-height:clamp(250px,33vh,360px);overflow:hidden;
-  background:radial-gradient(58% 58% at 50% 52%,#2a2a2d 0,var(--k) 70%)}
-.p-destacado .box{--w:clamp(158px,44vw,250px);--h:calc(var(--w) * 1.32);--d:calc(var(--w) * .256)}
-.p-destacado .boxstage .hint{position:absolute;left:0;bottom:6px;font-size:9.5px;
-  letter-spacing:.12em;text-transform:uppercase;opacity:.35}
-.p-destacado .info2{display:grid;gap:clamp(7px,1.2vh,12px)}
-.p-destacado .info2 .cod{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;opacity:.5}
-.p-destacado .info2 h2{margin:0;font-size:clamp(28px,7.6vw,74px);letter-spacing:-.04em;line-height:.96}
-.p-destacado .info2 h2 .it{font-family:var(--serif);font-style:italic;font-weight:400}
-.p-destacado .info2 .tag2{margin:0;font-size:clamp(12.5px,3.3vw,15px);line-height:1.36;
-  opacity:.62;max-width:40ch}
-.p-destacado .specs2{display:grid;grid-template-columns:1fr 1fr;gap:0 clamp(12px,3.4vw,24px)}
-.p-destacado .specs2 > div{border-top:1px solid rgba(242,239,232,.16);padding:clamp(5px,.9vh,9px) 0}
-.p-destacado .specs2 small{display:block;font-family:var(--mono);font-size:9.5px;
-  letter-spacing:.1em;text-transform:uppercase;opacity:.45}
-.p-destacado .specs2 b{display:block;font-weight:700;font-size:clamp(13.5px,3.7vw,18px);
-  letter-spacing:-.02em;line-height:1.18;margin-top:2px}
-.p-destacado .acts2{display:flex;gap:9px;flex-wrap:wrap;padding-top:clamp(4px,.8vh,8px)}
-@media (min-width:860px){
-  .p-destacado .feat2{flex-direction:row;align-items:center;gap:clamp(24px,4vw,64px)}
-  .p-destacado .boxstage{flex:7}
-  .p-destacado .info2{flex:5}
-}
-
-/* ---- 05 cómo comprar: cuatro pasos, y el símbolo se va cerrando ---- */
-.p-comprar{gap:clamp(16px,3vh,30px)}
-.p-comprar h2{margin:0;font-size:clamp(34px,8.6vw,88px);letter-spacing:-.04em;line-height:1}
-.p-comprar h2 .it{font-family:var(--serif);font-style:italic;font-weight:400}
-.p-comprar .flow4{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;
-  gap:1px;background:rgba(242,239,232,.16)}
-.p-comprar .flow4 > div{background:var(--k);padding:clamp(12px,3.2vw,20px);
-  display:flex;flex-direction:column;justify-content:space-between;
-  gap:clamp(10px,2vh,22px);min-height:0;transition:background .4s var(--ease),color .4s var(--ease)}
-.p-comprar .flow4 > div:hover{background:var(--b);color:var(--k)}
-.p-comprar .flow4 .nn4{font-family:var(--mono);font-size:10px;letter-spacing:.12em;opacity:.45}
-.p-comprar .flow4 .s{width:clamp(40px,12vw,62px)}
-.p-comprar .flow4 b{display:block;font-weight:800;font-size:clamp(16px,4.6vw,26px);
-  letter-spacing:-.04em;text-transform:uppercase;line-height:.94}
-.p-comprar .flow4 p{margin:7px 0 0;font-size:clamp(12px,3.2vw,14px);line-height:1.36;
-  opacity:.62;max-width:26ch}
-@media (min-width:860px){.p-comprar .flow4{grid-template-columns:repeat(4,minmax(0,1fr))}}
-
-/* ---- 06 y 07 ---- */
-.p-medida p,.p-cierre p{margin:0;max-width:34ch;font-size:15.5px;line-height:1.5;opacity:.68}
-.p-cierre .ring{position:absolute;left:50%;top:50%;width:min(140vh,150vw);translate:-50% -50%;color:#161617;z-index:0}
-.p-cierre>*:not(.ring){position:relative;z-index:1}
-
-.pant .acts{display:flex;gap:10px;flex-wrap:wrap}
-@media (min-width:900px){
-  .pant{min-height:auto;padding-block:clamp(90px,11vh,150px)}
-  /* en pantallas grandes las secciones dejan de ser de alto completo, pero la
-     portada sí tiene que llenar la pantalla: si no, asoma la sección clara
-     de abajo y la portada se ve cortada */
-  .p-entrada{min-height:100vh;min-height:var(--vh,100dvh);padding-block:calc(104px + 2vh) calc(80px + 2vh)}
-  .riel>*{flex:0 0 min(40%,380px)}
-  .avance{display:none}
-}
-
-/* ============================================================
-   SECCIONES TRAÍDAS DE LA PÁGINA ORIGINAL
-   Vista previa interactiva, disciplinas, quiz y pedido a medida.
-   Los estilos vienen tal cual de la original; lo único que se suma
-   es `.alta`, para las que no entran en una sola pantalla.
-   ============================================================ */
-.pant.alta{justify-content:flex-start;height:auto}
-.pant.alta > .disc,.pant.alta > .peek,.pant.alta > .cus{margin-top:clamp(16px,2.6vh,30px)}
+/* destacado */
+.feat{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,4vw,64px);align-items:center}
+.feat h2{font-size:clamp(46px,6vw,100px)}
+.feat .specs{display:grid;grid-template-columns:1fr 1fr;margin:28px 0}
+.feat .specs div{border-top:1px solid var(--k3);padding:12px 0}
+.feat .specs b{display:block;font-size:20px;letter-spacing:-.02em}
+@media (max-width:860px){.feat{grid-template-columns:1fr}}
 
 /* disciplinas */
 .disc{border-top:1px solid var(--k)}
@@ -336,21 +79,14 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .dh{width:100%;display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,.9fr) 56px;gap:20px;align-items:center;padding:clamp(14px,1.6vw,22px) 0;text-align:left;position:relative;color:var(--k)}
 .dh::before{content:"";position:absolute;inset:0 calc(-1 * var(--pad));background:var(--k);transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease);z-index:0}
 .dh>*{position:relative;z-index:1;transition:color .3s}
-.dh:focus-visible::before,.drow.open .dh::before{transform:scaleY(1)}
-.dh:focus-visible>*,.drow.open .dh>*{color:var(--b)}
-/* el negro al pasar por encima es sólo para mouse: en el teléfono el :hover
-   queda pegado al último elemento tocado y la fila cerrada seguía negra */
-@media (hover:hover) and (pointer:fine){
-  .dh:hover::before{transform:scaleY(1)}
-  .dh:hover>*{color:var(--b)}
-  .dh:hover .s{transform:rotate(180deg)}
-  .dh:hover .s circle{fill:var(--ac)}}
+.dh:hover::before,.dh:focus-visible::before,.drow.open .dh::before{transform:scaleY(1)}
+.dh:hover>*,.dh:focus-visible>*,.drow.open .dh>*{color:var(--b)}
 .dh:focus-visible{outline:none}
 .disc b{font-weight:800;font-size:clamp(32px,5.4vw,92px);letter-spacing:-.05em;text-transform:uppercase;line-height:.9}
 .dh p{margin:0;font-size:15px;opacity:.7}
 .disc .s{width:48px;transition:transform .6s var(--ease)}
-.drow.open .s{transform:rotate(180deg)}
-.drow.open .s circle{fill:var(--ac)}
+.dh:hover .s,.drow.open .s{transform:rotate(180deg)}
+.dh:hover .s circle,.drow.open .s circle{fill:var(--ac)}
 .dpanel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s var(--ease)}
 .drow.open .dpanel{grid-template-rows:1fr}
 .dpanel>div{overflow:hidden;background:var(--k);color:var(--b);margin-inline:calc(-1 * var(--pad));padding-inline:var(--pad)}
@@ -376,6 +112,29 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 @media (max-width:760px){.dh{grid-template-columns:1fr 44px}.dh .mono,.dh p{grid-column:1}.dh .s{grid-row:1/4;grid-column:2}.dslide{grid-auto-columns:78%}}
 @media (max-width:760px){.disc a{grid-template-columns:1fr 44px}.disc a .mono,.disc a p{grid-column:1}.disc a .s{grid-row:1/4;grid-column:2}}
 
+/* cómo funciona */
+.flow{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:2px;background:var(--k3)}
+.flow>div{background:var(--k);padding:20px;min-height:300px;display:flex;flex-direction:column;gap:clamp(28px,4vw,56px);transition:background .4s var(--ease),color .4s var(--ease)}
+.flow>div:hover{background:var(--b);color:var(--k)}
+.flow b{font-weight:800;font-size:clamp(28px,3vw,46px);letter-spacing:-.045em;text-transform:uppercase;line-height:.9}
+.flow .s{width:72px}
+.flow p{margin:10px 0 0;font-size:15px;max-width:26ch;opacity:.75}
+@media (max-width:860px){.flow{grid-template-columns:1fr 1fr}.flow>div{min-height:240px}}
+
+/* banda editorial */
+.band{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);min-height:100svh}
+.band .photo{min-height:460px}
+.band .txt{background:#BDBCB8;color:var(--k);padding:clamp(20px,3vw,44px);display:flex;flex-direction:column;justify-content:space-between;gap:30px}
+.band h2{font-size:clamp(64px,9vw,150px)}
+.band .m{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+@media (max-width:860px){.band{grid-template-columns:1fr}}
+
+/* manifiesto */
+.mani{font-size:clamp(32px,5vw,84px);font-weight:800;letter-spacing:-.045em;line-height:1;text-transform:uppercase;max-width:1300px;margin:0}
+.mani .w{opacity:.14;transition:opacity .35s}
+.mani .w.lit{opacity:1}
+.mani .it{text-transform:none}
+
 /* quiz: encontrá tu sistema */
 .quiz{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px);align-items:start}
 .quiz h2{font-size:clamp(44px,6vw,100px)}
@@ -399,53 +158,63 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .qback{margin-top:22px}
 @media (max-width:860px){.quiz,.qres{grid-template-columns:1fr}.qres .cover{max-width:280px}}
 
-/* a medida: una pregunta por vez, avanzando de costado. El formulario se
-   apoya en un panel apenas más claro —negro sobre negro no se leía— y la
-   pregunta se dice en grande, no como rótulo chiquito. */
-#a-medida{gap:clamp(14px,2.4vh,26px)}
-#a-medida h2{margin:0;font-size:clamp(26px,6.6vw,92px);letter-spacing:-.04em;line-height:1.02}
-#a-medida h2 .it{font-family:var(--serif);font-style:italic;font-weight:400}
-#a-medida .cform{display:flex;flex-direction:column;gap:clamp(12px,2vh,18px);
-  background:var(--k2);border:1px solid rgba(242,239,232,.14);color:inherit;
-  padding:clamp(14px,3.6vw,26px);flex:none}
-#a-medida .barra4{display:flex;align-items:center;gap:14px}
-#a-medida .cuenta4{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
-  text-transform:uppercase;opacity:.5;white-space:nowrap}
-#a-medida .tramos{display:flex;gap:5px;flex:1}
-#a-medida .tramos i{flex:1;height:2px;background:rgba(242,239,232,.2)}
-#a-medida .tramos i.on{background:var(--ac)}
-#a-medida .pista4{overflow:hidden}
-#a-medida .via4{display:flex;align-items:flex-start;
-  transition:transform .42s cubic-bezier(.3,0,.15,1)}
-#a-medida .paso4{flex:0 0 100%;min-width:100%;display:flex;flex-direction:column;
-  gap:10px;min-height:clamp(168px,26vh,220px)}
-#a-medida .preg{display:block;font-weight:800;letter-spacing:-.03em;line-height:1.1;
-  font-size:clamp(18px,4.8vw,26px)}
-#a-medida .ayuda{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
-  text-transform:uppercase;opacity:.45;margin-top:-4px}
-#a-medida .rot4{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;
-  text-transform:uppercase;opacity:.5;margin-bottom:2px}
-#a-medida .opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
-#a-medida .opts .chip{color:var(--b);border:1px solid rgba(242,239,232,.4);
-  padding:10px 14px;font-size:11.5px;letter-spacing:.05em;transition:background .2s,color .2s,border-color .2s}
-#a-medida .opts .chip[aria-pressed="true"]{background:var(--ac);color:var(--k);border-color:var(--ac)}
-#a-medida .two{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,3.4vw,20px)}
-#a-medida input,#a-medida textarea{width:100%;font:inherit;font-size:16px;background:none;
-  color:var(--b);border:0;border-bottom:1px solid rgba(242,239,232,.4);border-radius:0;padding:9px 0}
-#a-medida textarea{min-height:clamp(104px,16vh,150px);resize:none}
-#a-medida input:focus,#a-medida textarea:focus{outline:none;border-bottom-color:var(--ac)}
-#a-medida .mandos{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
-  border-top:1px solid rgba(242,239,232,.14);padding-top:clamp(11px,1.8vh,16px)}
-#a-medida .atras{appearance:none;background:none;border:0;color:inherit;cursor:pointer;
-  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
-  opacity:.55;padding:0}
-#a-medida .atras[hidden],#a-medida .sigue[hidden],#a-medida .manda[hidden]{display:none}
-#a-medida .err{color:var(--or);font-size:12.5px;flex:1;min-height:1.2em}
-#a-medida .sigue,#a-medida .manda{margin-left:auto}
-
-
-
-
+/* mirá por dentro */
+.peek{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(20px,3vw,48px);align-items:start}
+.ptabs{display:flex;flex-direction:column}
+.ptabs button{display:grid;grid-template-columns:70px 1fr;gap:12px;align-items:baseline;text-align:left;padding:16px 0;border-top:1px solid var(--k)}
+.ptabs button:last-child{border-bottom:1px solid var(--k)}
+.ptabs button b{font-weight:800;font-size:clamp(20px,2vw,30px);letter-spacing:-.035em;text-transform:uppercase;line-height:1}
+.ptabs button[aria-selected="true"] b{text-decoration:underline;text-decoration-thickness:3px;text-underline-offset:6px;text-decoration-color:var(--blue)}
+.win{background:#fff;border:1px solid rgba(13,13,14,.15);box-shadow:0 30px 70px -40px rgba(0,0,0,.45);overflow:hidden}
+.win .bar{display:flex;align-items:center;gap:7px;padding:10px 14px;background:var(--k);color:var(--b)}
+.win .bar i{width:9px;height:9px;border-radius:50%;background:#444}
+.win .bar span{margin-left:10px}
+.win .body{padding:clamp(14px,2vw,24px);min-height:400px}
+.win .foot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;padding:14px clamp(14px,2vw,24px);border-top:1px solid rgba(13,13,14,.1);background:var(--b)}
+.win .foot .price{font-weight:800;font-size:24px;letter-spacing:-.03em}
+.dhead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;margin-bottom:14px}
+.dhead b{font-size:20px;letter-spacing:-.02em}
+/* calendario */
+.cal{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px}
+.cal .d{min-height:170px;background:#f6f4ef;padding:6px;display:flex;flex-direction:column;gap:6px}
+.cal .d>span{font-family:var(--mono);font-size:10px;letter-spacing:.08em;opacity:.6}
+.post{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:6px;font-size:12px;line-height:1.2;display:flex;flex-direction:column;gap:5px;cursor:pointer;transition:transform .2s}
+.post:hover{transform:translateY(-2px)}
+.post .st{font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;padding:2px 5px;align-self:flex-start}
+@media (max-width:860px){.cal{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media (max-width:560px){.cal{grid-template-columns:repeat(2,minmax(0,1fr))}.cal .d{min-height:130px}}
+/* kanban */
+.kan{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.kan{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kan .col{background:#f6f4ef;padding:8px;min-height:250px;display:flex;flex-direction:column;gap:6px}
+.kan .col>span{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;opacity:.7;margin-bottom:4px}
+.deal{text-align:left;background:#fff;border:1px solid rgba(13,13,14,.12);padding:8px;font-size:13px;line-height:1.25;cursor:pointer;transition:transform .2s}
+.deal:hover{transform:translateY(-2px)}
+.deal b{display:block}
+.deal small{font-family:var(--mono);font-size:10px;opacity:.6}
+.kbar{height:8px;background:#eee;margin-top:14px;overflow:hidden}
+.kbar i{display:block;height:100%;background:var(--blue);transform-origin:left;transition:transform .5s var(--ease)}
+@media (max-width:640px){.kan{grid-template-columns:1fr 1fr}}
+/* biblioteca */
+.lib{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+@media (max-width:560px){.lib{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.asset{aspect-ratio:1/1;position:relative;overflow:hidden;cursor:pointer;display:grid;place-items:center;container-type:inline-size}
+.asset .tag{position:absolute;left:6px;bottom:6px;font-family:var(--mono);font-size:9px;letter-spacing:.06em;text-transform:uppercase;background:rgba(255,255,255,.85);color:var(--k);padding:2px 5px}
+.asset .ok{position:absolute;right:6px;top:6px;width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;display:grid;place-items:center;font-size:12px;transform:scale(0);transition:transform .25s var(--ease)}
+.asset.sel .ok{transform:scale(1)}
+@media (max-width:640px){.lib{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* workflow IA */
+.wf{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:14px}
+.wf .steps{display:flex;flex-direction:column;gap:6px}
+.wf .steps button{text-align:left;padding:10px;background:#f6f4ef;display:flex;gap:10px;align-items:baseline;font-weight:600;font-size:14px}
+.wf .steps button[aria-pressed="true"]{background:var(--k);color:var(--b)}
+.wf label{display:block;margin-bottom:6px}
+.wf input{width:100%;font:inherit;font-size:15px;padding:10px 12px;border:1px solid rgba(13,13,14,.25);background:#fff;color:var(--k);margin-bottom:12px}
+.wf input:focus{outline:2px solid var(--blue);outline-offset:0}
+.prompt{background:var(--k);color:var(--b);padding:14px;font-family:var(--mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;min-height:180px}
+.prompt mark{background:none;color:var(--ac)}
+@media (max-width:640px){.wf{grid-template-columns:1fr}}
+@media (max-width:860px){.peek{grid-template-columns:1fr}}
 
 /* a medida */
 .cus{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,4vw,72px);align-items:start}
@@ -467,550 +236,499 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .cform .err{color:var(--or);font-size:14px;min-height:1.2em}
 @media (max-width:860px){.cus{grid-template-columns:1fr}.cform .two{grid-template-columns:1fr}}
 
+/* lema: problema → herramienta */
+.pband{align-items:stretch}
+.pband .lema{position:relative;z-index:2;width:100%;display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,3vw,48px);align-items:end}
+.pband .lema h2{font-size:clamp(44px,6.2vw,116px);color:var(--k)}
+.pband .lema h2 .it{color:var(--or)}
+.pband .lema .claim{margin:18px 0 0;max-width:40ch;font-size:clamp(17px,1.5vw,21px);color:var(--k);font-weight:500}
+.p2t{background:var(--b);color:var(--k);padding:clamp(16px,2vw,26px);box-shadow:0 30px 70px -40px rgba(0,0,0,.6)}
+.p2t .row{display:grid;grid-template-columns:110px 1fr;gap:14px;align-items:baseline;padding:14px 0;border-top:1px solid rgba(13,13,14,.15)}
+.p2t .prob{font-family:var(--serif);font-style:italic;font-size:clamp(20px,1.9vw,28px);line-height:1.1;position:relative;transition:opacity .4s}
+.p2t .prob s{text-decoration:none;background:linear-gradient(var(--or),var(--or)) 0 55%/0 3px no-repeat;transition:background-size .6s var(--ease) .5s}
+.p2t.go .prob s{background-size:100% 3px}
+.p2t .tool{font-weight:800;font-size:clamp(20px,2vw,30px);letter-spacing:-.035em;text-transform:uppercase;line-height:1;text-decoration:none;display:block;opacity:0;transform:translateY(10px);transition:opacity .5s var(--ease) 1s,transform .5s var(--ease) 1s}
+.p2t.go .tool{opacity:1;transform:none}
+.p2t .tool:hover{color:var(--blue)}
+.p2t .nav2{display:flex;justify-content:space-between;align-items:center;gap:10px;padding-top:12px;border-top:1px solid rgba(13,13,14,.15)}
+.p2t .dots{display:flex;gap:6px}
+.p2t .dots button{width:9px;height:9px;border-radius:50%;background:rgba(13,13,14,.2);padding:0}
+.p2t .dots button[aria-current="true"]{background:var(--blue)}
+@media (max-width:860px){.pband .lema{grid-template-columns:1fr}.p2t .row{grid-template-columns:1fr;gap:6px}}
+
+.faqgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px)}
+.faqgrid h2{font-size:clamp(44px,5.4vw,90px)}
+@media (max-width:860px){.faqgrid{grid-template-columns:1fr}}
 </style>
 </head>
-<body data-page="home" data-title-es="Orbit® — Sistemas y herramientas digitales, listos para usar" data-title-en="Orbit® — Digital systems and tools, ready to use">
-
-<div class="avance" id="avance" aria-hidden="true">
-  <svg viewBox="0 0 48 48"><circle class="pista" cx="24" cy="24" r="20"></circle><circle class="arco" id="arco" cx="24" cy="24" r="20"></circle></svg>
-  <b id="avanceN">01</b>
-</div>
-
+<body data-page="home" data-title-es="Orbit® — Ideas en movimiento" data-title-en="Orbit® — Ideas in motion">
 <main>
 
-<!-- 01 ENTRADA -->
-<section class="pant p-entrada dark">
-  <div class="foto" aria-hidden="true"></div>
-  <div class="eti ent" style="--d:2.98s"><span>OB—000 · <span data-l="es">Ideas en movimiento</span><span data-l="en">Ideas in motion</span></span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
-  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)">
-    <div class="marca wm" id="bWm" aria-label="Orbit"></div>
-    <h1 class="ent" style="--d:3.1s"><span data-l="es">Sistemas y herramientas digitales, <span class="it">listos para usar.</span></span><span data-l="en">Digital systems and tools, <span class="it">ready to use.</span></span></h1>
-    <p class="ent" style="--d:3.24s"><span data-l="es">Para que nada empiece de cero.</span><span data-l="en">So nothing ever starts from zero.</span></p>
+<!-- HERO -->
+<section class="sec dark hero">
+  <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
+  <div class="wrap top">
+    <p class="mono" style="margin:0"><span data-l="es">Herramientas digitales<br>para un mañana<br>más creativo.</span><span data-l="en">Digital tools<br>for a brighter<br>creative tomorrow.</span></p>
+    <p class="mono" style="margin:0;text-align:right">OB—000<br><span data-l="es">Productos digitales<br>Desde 2026</span><span data-l="en">Digital goods<br>Est. 2026</span></p>
   </div>
-  <div class="acts ent" style="--d:3.4s">
-    <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver la colección</span><span data-l="en">See the collection</span> <span class="ar">↓</span></a>
+  <div class="wrap" style="position:relative">
+    <h1 class="word" id="heroWord" aria-label="ORBIT"></h1>
+    <span class="mono hint"><span data-l="es">Mové el cursor — el punto te sigue</span><span data-l="en">Move your cursor — the dot follows</span></span>
   </div>
-  <div class="puertas ent" style="--d:3.52s" id="bPuertas"></div>
-</section>
-
-<!-- 02 MÉTODO — el contenido lo arma el JS según la versión elegida -->
-<section class="pant luz" id="metodo"></section>
-
-<!-- 03 DISCIPLINAS -->
-<section class="pant luz alta p-disc" id="disciplinas">
-  <div class="eti"><span><span data-l="es">Disciplinas<br>Un universo, muchas órbitas</span><span data-l="en">Disciplines<br>One universe, many orbits</span></span><span style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></span></div>
-  <h2 class="display" style="font-size:clamp(34px,8.6vw,96px);max-width:15ch;margin:0"><span data-l="es">Una órbita para cada <span class="it">disciplina.</span></span><span data-l="en">An orbit for every <span class="it">discipline.</span></span></h2>
-  <div class="disc" id="disc"></div>
-</section>
-
-<!-- 04 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
-<section class="pant dark" id="coleccion"></section>
-
-<!-- 05 DESTACADO -->
-<section class="pant dark p-destacado" id="destacado">
-  <div class="eti"><span><span data-l="es">Destacado<br>Producto 01</span><span data-l="en">Featured<br>Product 01</span></span><span style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></span></div>
-  <div class="feat2">
-    <div class="boxstage" id="cajaDest"></div>
-    <div class="info2" id="infoDest"></div>
-  </div>
-</section>
-
-<!-- 06 CÓMO COMPRAR -->
-<section class="pant dark p-comprar">
-  <div class="eti"><span><span data-l="es">Cómo comprar<br>4 pasos</span><span data-l="en">How to buy<br>4 steps</span></span><span style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></span></div>
-  <h2 class="display"><span data-l="es">Comprás hoy.<br>Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today.<br>Use it <span class="it">today.</span></span></h2>
-  <div class="flow4" id="flow4"></div>
-</section>
-
-<!-- 07 A MEDIDA -->
-<section class="pant dark p-medida" id="a-medida">
-  <div class="eti"><span><span data-l="es">A medida<br>OB—X00</span><span data-l="en">Custom<br>OB—X00</span></span><span style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></span></div>
-  <h2 class="display"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
-  <form class="cform" id="cform" novalidate>
-    <div class="barra4">
-      <span class="cuenta4"></span>
-      <span class="tramos"><i></i><i></i><i></i><i></i><i></i></span>
+  <div class="wrap bot">
+    <p class="display tag"><span data-l="es">Ideas<br>en <span class="it">movimiento.</span></span><span data-l="en">Ideas<br>in <span class="it">motion.</span></span></p>
+    <div>
+      <p class="rot"><span data-l="es">Herramientas para</span><span data-l="en">Tools to</span> <span class="it" id="rotWord">crear.</span></p>
+      <p class="sub"><span data-l="es">Productos digitales para diseñar, vender, organizar, automatizar y hacer crecer ideas — en cualquier disciplina.</span><span data-l="en">Digital products to design, sell, organize, automate and grow ideas — in any discipline.</span></p>
+      <div class="ctas"><a class="btn btn-acid" href="productos.html"><span data-l="es">Explorar productos</span><span data-l="en">Explore products</span> <span class="ar">→</span></a><a class="btn btn-line" href="#disciplinas"><span data-l="es">Ver disciplinas</span><span data-l="en">See disciplines</span></a></div>
+      <div class="hprog"><div class="bars" id="hBars"></div><span class="mono dim"><span data-l="es">En órbita</span><span data-l="en">In orbit</span></span><a class="mono" id="hNow" href="productos.html"></a></div>
     </div>
-    <div class="pista4"><div class="via4">
-      <div class="paso4">
-        <span class="preg"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span>
-        <span class="ayuda"><span data-l="es">Podés elegir más de una.</span><span data-l="en">You can pick more than one.</span></span>
-        <div class="opts" data-group="type" data-varias></div>
+  </div>
+</section>
+
+<!-- SEGUNDA PANTALLA: franja + banda foto -->
+<section class="screen2">
+<div class="dark"><div class="ticker" data-ticker-es="Ideas en movimiento|Ideas que se mueven|Construí lo que sigue|Entrá en órbita|De la idea al sistema|Hacer mejores cosas" data-ticker-en="Order in motion|Ideas that move|Build what’s next|Enter the orbit|From idea to system|Make better things"></div></div>
+<div class="pband light">
+  <div class="photo" data-photo="landing" role="img" data-aria-es="Arquitectura curva de hormigón" data-aria-en="Curved concrete architecture"></div>
+  <div class="ring" data-sym='{"ring":"b","dot":"blue","gap":64,"rot":120}' aria-hidden="true"></div>
+  <div class="lema">
+    <div>
+      <span class="mono" style="color:var(--k)"><span data-l="es">Nuestro método</span><span data-l="en">Our method</span> — OB—000</span>
+      <h2 class="display" style="margin-top:14px"><span data-l="es">Problema<br>→ <span class="it">herramienta.</span></span><span data-l="en">Problem<br>→ <span class="it">tool.</span></span></h2>
+      <p class="claim"><span data-l="es">Pensamos en los problemas que todos tenemos y los convertimos en herramientas productivas, listas para usar.</span><span data-l="en">We think about the problems we all share and turn them into productive, ready-to-use tools.</span></p>
+    </div>
+    <div class="p2t" id="p2t" aria-live="polite"></div>
+  </div>
+</div>
+</section>
+
+<!-- QUIZ -->
+<section class="sec dark" id="encontra">
+  <div class="wrap quiz">
+    <div class="rv">
+      <span class="mono"><span data-l="es">3 preguntas · 20 segundos</span><span data-l="en">3 questions · 20 seconds</span></span>
+      <h2 class="display" style="margin-top:14px"><span data-l="es">Encontrá tu <span class="it">sistema.</span></span><span data-l="en">Find your <span class="it">system.</span></span></h2>
+      <p class="lead" style="opacity:.75;margin-top:20px"><span data-l="es">Contanos qué querés resolver y te decimos qué herramienta de Orbit te sirve.</span><span data-l="en">Tell us what you want to solve and we’ll point you to the right Orbit tool.</span></p>
+    </div>
+    <div class="qbox rv" id="qbox" aria-live="polite"></div>
+  </div>
+</section>
+
+<!-- DISCIPLINAS -->
+<section class="sec light" id="disciplinas">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Disciplinas</span><span data-l="en">Disciplines</span></b><span data-l="es">Un universo, muchas órbitas</span><span data-l="en">One universe, many orbits</span></div><div style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,120px);max-width:15ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Una órbita para cada <span class="it">disciplina.</span></span><span data-l="en">An orbit for every <span class="it">discipline.</span></span></h2>
+    <div class="disc" id="disc"></div>
+  </div>
+</section>
+
+<!-- DESTACADO -->
+<section class="sec dark" id="destacado">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Destacado</span><span data-l="en">Featured</span></b><span data-l="es">Producto 01</span><span data-l="en">Product 01</span></div><div style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></div></div>
+    <div class="feat">
+      <div class="boxstage rv" id="featBox"></div>
+      <div class="rv" id="featInfo"></div>
+    </div>
+  </div>
+</section>
+
+<!-- COLECCIÓN -->
+<section class="sec light" id="coleccion">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Colección</span><span data-l="en">Collection</span></b>Vol.01</div><div style="text-align:right"><a href="productos.html"><span data-l="es">Ver todo el catálogo →</span><span data-l="en">See the full catalog →</span></a></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:14ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Herramientas para <span class="it">hacer.</span></span><span data-l="en">Tools for <span class="it">doing.</span></span></h2>
+    <div class="pgrid" id="homeGrid"></div>
+  </div>
+</section>
+
+<!-- CÓMO FUNCIONA -->
+<section class="sec dark">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Cómo comprar</span><span data-l="en">How to buy</span></b><span data-l="es">4 pasos</span><span data-l="en">4 steps</span></div><div style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(44px,6.4vw,104px);max-width:15ch;margin-bottom:clamp(36px,5vw,64px)"><span data-l="es">Comprás hoy. Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today. Use it <span class="it">today.</span></span></h2>
+    <div class="flow" id="flow"></div>
+  </div>
+</section>
+
+<!-- MIRÁ POR DENTRO -->
+<section class="sec light" id="por-dentro">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Mirá por dentro</span><span data-l="en">Look inside</span></b><span data-l="es">Vista previa interactiva</span><span data-l="en">Interactive preview</span></div><div style="text-align:right"><span data-l="es">Probalo antes<br>de comprarlo</span><span data-l="en">Try it before<br>you buy it</span></div></div>
+    <div class="peek">
+      <div class="rv">
+        <h2 class="display" style="font-size:clamp(40px,4.8vw,80px);margin-bottom:28px"><span data-l="es">Probá cómo <span class="it">funciona.</span></span><span data-l="en">See how it <span class="it">works.</span></span></h2>
+        <div class="ptabs" role="tablist" id="ptabs"></div>
       </div>
-      <div class="paso4">
-        <label class="preg" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label>
-        <textarea id="cIdea" name="idea"></textarea>
+      <div class="win rv" id="win"></div>
+    </div>
+  </div>
+</section>
+
+<!-- A MEDIDA -->
+<section class="sec dark" id="a-medida">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">A medida</span><span data-l="en">Custom</span></b>OB—X00</div><div style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></div></div>
+    <div class="cus">
+      <div class="rv">
+        <h2 class="display"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
+        <p class="lead" style="opacity:.75;margin-top:22px"><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA pensados para tu negocio, con el mismo cuidado que cada producto Orbit.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows built for your business, with the same care as every Orbit product.</span></p>
+        <ol class="cus-steps">
+          <li><span class="mono">01</span><div><b><span data-l="es">Brief</span><span data-l="en">Brief</span></b><p><span data-l="es">Nos contás la idea en este formulario.</span><span data-l="en">Tell us the idea in this form.</span></p></div></li>
+          <li><span class="mono">02</span><div><b><span data-l="es">Propuesta</span><span data-l="en">Proposal</span></b><p><span data-l="es">En 48 h hábiles te enviamos alcance, plazo y precio.</span><span data-l="en">Within 2 business days we send scope, timeline and price.</span></p></div></li>
+          <li><span class="mono">03</span><div><b><span data-l="es">Diseño</span><span data-l="en">Design</span></b><p><span data-l="es">Construimos el sistema con revisiones incluidas.</span><span data-l="en">We build the system, revisions included.</span></p></div></li>
+          <li><span class="mono">04</span><div><b><span data-l="es">Entrega</span><span data-l="en">Delivery</span></b><p><span data-l="es">Listo para usar, con guía y soporte.</span><span data-l="en">Ready to use, with a guide and support.</span></p></div></li>
+        </ol>
       </div>
-      <div class="paso4">
-        <span class="preg"><span data-l="es">¿Qué presupuesto manejás?</span><span data-l="en">What is your budget?</span></span>
-        <span class="ayuda">USD</span>
-        <div class="opts" data-group="budget"></div>
-      </div>
-      <div class="paso4">
-        <span class="preg"><span data-l="es">¿Para cuándo lo necesitás?</span><span data-l="en">When do you need it?</span></span>
-        <div class="opts" data-group="time"></div>
-      </div>
-      <div class="paso4">
-        <span class="preg"><span data-l="es">¿Dónde te escribimos?</span><span data-l="en">Where do we write you?</span></span>
+      <form class="cform rv" id="cform" novalidate>
         <div class="two">
-          <div><label class="rot4" for="cName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="cName" name="name" autocomplete="name"></div>
-          <div><label class="rot4" for="cMail">Email</label><input id="cMail" name="email" type="email" autocomplete="email"></div>
+          <div><label class="mono" for="cName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="cName" name="name" autocomplete="name"></div>
+          <div><label class="mono" for="cMail">Email</label><input id="cMail" name="email" type="email" autocomplete="email"></div>
         </div>
-      </div>
-    </div></div>
-    <div class="mandos">
-      <button class="atras" type="button"><span class="ar">←</span> <span data-l="es">Atrás</span><span data-l="en">Back</span></button>
-      <span class="err" id="cErr" role="alert"></span>
-      <button class="btn btn-line sigue" type="button"><span data-l="es">Siguiente</span><span data-l="en">Next</span> <span class="ar">→</span></button>
-      <button class="btn btn-blue manda" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button>
+        <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span><div class="opts" data-group="type"></div></div>
+        <div><label class="mono" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label><textarea id="cIdea" name="idea"></textarea></div>
+        <div class="two">
+          <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Presupuesto (USD)</span><span data-l="en">Budget (USD)</span></span><div class="opts" data-group="budget"></div></div>
+          <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Plazo</span><span data-l="en">Timeline</span></span><div class="opts" data-group="time"></div></div>
+        </div>
+        <div class="send"><span class="err" id="cErr" role="alert"></span><button class="btn btn-blue" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button></div>
+      </form>
     </div>
-  </form>
+  </div>
 </section>
 
-<!-- 08 CIERRE -->
-<section class="pant dark p-cierre">
-  <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
-  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>08</span></div>
-  <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it" style="color:var(--ac)">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it" style="color:var(--ac)">A brighter tomorrow.</span></span></h2>
-  <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
-  <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir un sistema</span><span data-l="en">Pick a system</span> <span class="ar">↑</span></a></div>
+<!-- BANDA EDITORIAL -->
+<section class="band">
+  <div class="photo" data-photo="figure" role="img" data-aria-es="Diseñadora armando un sistema en la pared de su estudio" data-aria-en="Designer building a system on her studio wall"></div>
+  <div class="txt">
+    <div class="m"><span class="mono">OB—002</span><span class="mono" style="text-align:right"><span data-l="es">Mismas personas.<br>Ideas más grandes.<br>Herramientas nuevas.</span><span data-l="en">Same creators.<br>Bigger ideas.<br>New tools.</span></span></div>
+    <h2 class="display"><span data-l="es">Entrá<br>en<br><span class="it">órbita.</span></span><span data-l="en">Enter<br>the<br><span class="it">orbit.</span></span></h2>
+    <div class="m"><span class="mono"><span data-l="es">No vendemos archivos.<br>Vendemos herramientas para hacer.</span><span data-l="en">We don’t sell files.<br>We make tools for doing.</span></span><a class="btn btn-line" href="nosotros.html" style="color:var(--k)"><span data-l="es">Conocé Orbit</span><span data-l="en">Meet Orbit</span> <span class="ar">→</span></a></div>
+  </div>
+</section>
+
+<!-- MANIFIESTO -->
+<section class="sec dark">
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></b></div><div style="text-align:right">OB—M15</div></div>
+    <p class="mani" data-l="es">Las ideas no necesitan más ruido. Necesitan <span class="it" style="color:var(--blue)">movimiento.</span> No buscamos agregar más cosas. Buscamos crear las <span class="it">correctas.</span></p>
+    <p class="mani" data-l="en">Ideas don’t need more noise. They need <span class="it" style="color:var(--blue)">movement.</span> We’re not here to add more things. We’re here to make the <span class="it">right ones.</span></p>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="sec light">
+  <div class="wrap faqgrid">
+    <div class="rv"><span class="mono"><span data-l="es">Preguntas frecuentes</span><span data-l="en">FAQ</span></span><h2 class="display" style="margin-top:14px"><span data-l="es">Antes de <span class="it">entrar.</span></span><span data-l="en">Before you <span class="it">enter.</span></span></h2></div>
+    <div class="faq rv">
+      <details><summary><span data-l="es">¿Cómo recibo el producto?</span><span data-l="en">How do I get the product?</span></summary><p><span data-l="es">Apenas se confirma el pago te llega un email con el link de descarga o acceso. Es inmediato.</span><span data-l="en">As soon as payment is confirmed you get an email with the download or access link. It’s instant.</span></p></details>
+      <details><summary><span data-l="es">¿Puedo usarlo para clientes?</span><span data-l="en">Can I use it for clients?</span></summary><p><span data-l="es">Sí. Todos los productos incluyen licencia de uso comercial para proyectos propios y de clientes. Lo que no se puede es revender o redistribuir los archivos originales.</span><span data-l="en">Yes. Every product includes a commercial license for your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></details>
+      <details><summary><span data-l="es">¿Qué programas necesito?</span><span data-l="en">What software do I need?</span></summary><p><span data-l="es">Cada producto indica su formato en la ficha (Figma, Canva, Notion, PNG, SVG). La mayoría funciona con las versiones gratuitas.</span><span data-l="en">Each product lists its format (Figma, Canva, Notion, PNG, SVG). Most work with the free versions.</span></p></details>
+      <details><summary><span data-l="es">¿Las actualizaciones tienen costo?</span><span data-l="en">Do updates cost extra?</span></summary><p><span data-l="es">No. Cuando un producto sube de versión (V.01 → V.02) te llega la actualización sin cargo.</span><span data-l="en">No. When a product gets a new version (V.01 → V.02) you get the update for free.</span></p></details>
+      <details><summary><span data-l="es">¿Y si no me sirve?</span><span data-l="en">What if it doesn’t work for me?</span></summary><p><span data-l="es">Escribinos a hola@orbitando.com.ar dentro de los 14 días y lo resolvemos.</span><span data-l="en">Email hola@orbitando.com.ar within 14 days and we’ll sort it out.</span></p></details>
+    </div>
+  </div>
 </section>
 
 </main>
 <script src="assets/js/products.js?v=46"></script>
 <script src="/api/catalog"></script>
 <script src="assets/js/orbit.js?v=46"></script>
-<script src="assets/js/secciones.js?v=1"></script>
 <script>
 (() => {
-const {$, $$, L, cover, buyBtn, money, url, wm, P, FAM} = ORBIT;
-/* wordmark animable: arco, punto y letras por separado,
-   para poder darle a cada uno su momento */
-const simbolo = ORBIT.symInner({dot:'#3047FF', ring:'#F2EFE8'});
-const arcoSVG = (simbolo.match(/<path[^>]*>/) || [''])[0].replace('<path', '<path class="arco"');
-/* la cola del punto: va dentro del mismo grupo que gira, así lo sigue sin cuentas */
-const DEGRADE = '<linearGradient id="obEstela" gradientUnits="userSpaceOnUse" x1="87.84" y1="59.43" x2="78.05" y2="77.09"><stop offset="0" stop-color="#3047FF" stop-opacity="0"/><stop offset="1" stop-color="#3047FF" stop-opacity=".78"/></linearGradient>';
-const COLA = '<path class="estela" d="M87.84 59.43 A39 39 0 0 1 78.05 77.09" fill="none" stroke="url(#obEstela)" stroke-width="11" stroke-linecap="round"/>';
-const puntoSVG = (simbolo.match(/<circle[^>]*>/) || [''])[0];
-$('#bWm').innerHTML =
-  `<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><defs>${DEGRADE}</defs>`
-  + `<g class="gira">${arcoSVG}<g class="orb">${COLA}${puntoSVG}</g></g></svg>`
-  + '<span class="pal">RBIT</span><sup>®</sup><i class="cur" aria-hidden="true"></i>';
+const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow, reveal, toast, money, P, FAM, url, RM} = ORBIT;
 
-const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
-/* la intro se juega cada vez que se carga la página */
+/* hero: ORBIT gigante + punto que sigue al cursor */
+$('#heroWord').innerHTML = bigWm('heroG');
+follow($('#heroG'), $('#heroWord svg'));
 
-/* ACTOS 1 y 2: el símbolo entra solo, grande y centrado en la pantalla; carga su
-   arco de punta a punta, recibe el punto y recién entonces viaja a su lugar.
-   Va con animaciones explícitas porque el punto de partida depende de una medida. */
-function simboloEntra() {
-  const o = $('#bWm .o'), arco = $('#bWm .arco'), orb = $('#bWm .orb'), marca = $('#bWm');
-  if (!o || !arco) return;
-  const caja = o.getBoundingClientRect(), an = innerWidth, al = innerHeight;
-  if (caja.width < 4 || !an) return;
-
-  /* de su tamaño final al tamaño de presentación, y del centro de la pantalla a su lugar */
-  const escala = Math.max(1.6, Math.min(an * .46, al * .30) / caja.width);
-  const dx = an / 2 - (caja.left + caja.width / 2);
-  const dy = al / 2 - (caja.top + caja.height / 2);
-  const reposo = `translateY(${(parseFloat(getComputedStyle(marca).fontSize) * .012).toFixed(2)}px)`;
-
-  const largo = Math.ceil(arco.getTotalLength());
-  arco.style.strokeDasharray = largo;
-  arco.style.strokeDashoffset = largo;
-
-  o.animate([{transform:`translate(${dx}px,${dy}px) scale(${escala})`}, {transform:reposo}],
-    {duration:820, delay:1550, easing:'cubic-bezier(.76,0,.16,1)', fill:'both'});
-  arco.animate([{strokeDashoffset:largo}, {strokeDashoffset:0}],
-    {duration:900, delay:120, easing:'cubic-bezier(.62,0,.2,1)', fill:'both'});
-  const entraPunto = orb.animate([{transform:'rotate(-175deg)', opacity:0}, {opacity:1, offset:.28}, {transform:'rotate(0deg)', opacity:1}],
-    {duration:800, delay:650, easing:'cubic-bezier(.2,1,.28,1)', fill:'both'});
-  /* al terminar la soltamos, para que la órbita continua del CSS tome el control
-     desde el mismo ángulo en el que quedó */
-  entraPunto.finished.then(() => entraPunto.cancel()).catch(() => {});
-
-  /* la rayita acompaña al barrido: va del principio al final de la palabra
-     con la misma curva, así siempre queda sobre el borde de lo que se revela */
-  const cur = $('#bWm .cur'), pal = $('#bWm .pal');
-  if (cur && pal) cur.animate(
-    [{transform:`translateX(${pal.offsetLeft}px)`}, {transform:`translateX(${pal.offsetLeft + pal.offsetWidth}px)`}],
-    {duration:560, delay:2400, easing:'cubic-bezier(.45,.02,.25,1)', fill:'both'});
-}
-
-function arrancar(intento) {
-  const o = $('#bWm .o');
-  /* si todavía no hay layout, esperamos un cuadro más */
-  if ((!o || o.getBoundingClientRect().width < 4) && (intento || 0) < 40)
-    return requestAnimationFrame(() => arrancar((intento || 0) + 1));
-  if (RM) document.body.classList.add('directo');
-  else simboloEntra();
-  requestAnimationFrame(() => document.body.classList.add('go'));
-}
-
-/* con portada de idioma esperamos a que termine de abrirse:
-   la intro es el primer acto de la página, no un telón de fondo */
-if (document.documentElement.classList.contains('gate-on')) {
-  addEventListener('orbit:lang', () => {
-    const esperar = () => document.querySelector('.gate') ? setTimeout(esperar, 60) : arrancar();
-    esperar();
-  }, {once:true});
-} else setTimeout(arrancar, 50);
-
-/* ---- método: un problema por diapositiva ---- */
-
-/* El libro es el mismo objeto que en el resto del sitio: la tapa de verdad,
-   con su lomo, su código y su contratapa. No un dibujo que se le parezca.
-   Entra de canto, mostrando el lomo, y gira hasta darte la tapa a medida que
-   la tarjeta llega al centro: del problema al producto, con el mismo gesto. */
-/* ---- las puertas de la portada: qué vas a encontrar ----
-   Salen de las familias que hoy tienen productos, así que se actualizan
-   solas cuando cambie el catálogo. No limitan a un público: dicen qué hay. */
-(function puertas() {
-  const caja = $('#bPuertas');
-  if (!caja) return;
-  const vivas = Object.keys(FAM).filter(f => P.some(p => p.family === f));
-  if (!vivas.length) return;
-  caja.innerHTML = `<i>${L('Qué vas a encontrar','What you will find')}</i><nav>${
-    vivas.map(f => `<a href="productos.html#${f}">${FAM[f][0].replace(/^Orbit /, '')}</a>`).join('')}</nav>`;
-})();
-
-/* =========================================================
-   SEGUNDA PANTALLA — el estante que se llena
-   Los nombres, los códigos y las tapas salen del catálogo real.
-   No pasa solo: se arrastra en cualquier parte de la pantalla, o se
-   toca una tapa y el estante salta a ese libro con su frase.
-   ========================================================= */
-const metodo = $('#metodo');
-/* los nombres del catálogo están en inglés; en la home se dicen en castellano */
-const ENCASTELLANO = {
-  'ob-001': ['Sistema de contenido', 'Content system'],
-  'ob-002': ['Biblioteca de recursos', 'Asset library'],
-  'ob-003': ['Sistema del estudio', 'Studio system'],
-  'ob-004': ['Flujos con IA', 'AI workflows'],
-};
-const enCastellano = p => L(...(ENCASTELLANO[p.id] || [p.name, p.name]));
-
-const ESCENAS = [
-  [['No sé qué publicar esta semana.','I don’t know what to post this week.'], 'ob-001'],
-  [['Empiezo cada diseño de cero.','I start every design from scratch.'], 'ob-002'],
-  [['Mis clientes están en cinco lugares distintos.','My clients live in five different places.'], 'ob-003'],
-  [['Pierdo horas en tareas repetidas.','I lose hours on repetitive tasks.'], 'ob-004'],
+/* hero: fotos + palabra + producto, sincronizados */
+const SLIDES = [
+  {ph:'hands', v:['crear.','create.'], id:'ob-001'},
+  {ph:'studio', v:['diseñar.','design.'], id:'ob-002'},
+  {ph:'arch', v:['organizar.','organize.'], id:'ob-003'},
+  {ph:'corridor', v:['automatizar.','automate.'], id:'ob-004'},
+  {ph:'figure', v:['crecer.','grow.'], id:null},
 ];
+const DUR = 4200;
+const bg = $('#heroBg'), rw = $('#rotWord'), now = $('#hNow'), bars = $('#hBars');
+bg.innerHTML = SLIDES.map(x => `<div class="slide" style="background-image:url(assets/img/${x.ph}.jpg?v=12)"></div>`).join('');
+bars.innerHTML = SLIDES.map((x,i) => `<button aria-label="${i+1}"><i><b></b></i></button>`).join('');
+const slides = $$('.slide', bg), fills = $$('b', bars);
+let si = 0, t0 = performance.now();
+function showSlide(i) {
+  si = (i + SLIDES.length) % SLIDES.length; t0 = performance.now();
+  slides.forEach((el,k) => el.classList.toggle('on', k === si));
+  const x = SLIDES[si], p = x.id && P.find(q => q.id === x.id);
+  rw.classList.add('swap');
+  setTimeout(() => { rw.textContent = tr(...x.v); rw.classList.remove('swap'); }, RM ? 0 : 300);
+  now.innerHTML = p ? `${p.code} ${p.name} →` : L('Toda la colección →','The full collection →');
+  now.href = p ? url(p) : 'productos.html';
+  fills.forEach((f,k) => f.style.transform = `scaleX(${k < si ? 1 : 0})`);
+}
+$$('button', bars).forEach((b,i) => b.onclick = () => showSlide(i));
+addEventListener('orbit:lang', () => { rw.textContent = tr(...SLIDES[si].v); });
+showSlide(0);
+if (!RM) (function tick(n) {
+  const k = Math.min(1, (n - t0) / DUR);
+  fills[si].style.transform = `scaleX(${k})`;
+  if (k >= 1) showSlide(si + 1);
+  requestAnimationFrame(tick);
+})(performance.now());
+else fills[0].style.transform = 'scaleX(1)';
 
-(function segundaPantalla() {
-  if (!metodo) return;
-  const F = ESCENAS.map(([, id]) => P.find(x => x.id === id)).filter(Boolean);
-  if (!F.length) return;
-
-  metodo.className = 'pant';
-  metodo.innerHTML = `
-    <div class="eti ent2" style="--d:0s"><span>${L('Nuestro método','Our method')} — OB—000</span><span>${
-      L('Un problema, un libro','One problem, one book')}</span></div>
-    <div class="medio">
-      <p class="dicho cambia ent2" style="--d:.1s"></p>
-      <div class="quien cambia ent2" style="--d:.18s"><s></s><b></b></div>
-    </div>
-    <div class="repisa ent2" style="--d:.24s">
-      <div class="libros">${F.map((p, i) =>
-        `<button type="button" data-e="${i}" aria-label="${p.code} — ${p.name}">${ORBIT.cover(p)}</button>`).join('')}</div>
-      <div class="tabla"></div>
-      <div class="apoyo">${L('Deslizá o tocá un libro','Swipe or tap a book')}</div>
-    </div>`;
-
-  const libros = $('.libros', metodo), tomos = $$('.libros > button', metodo),
-        dicho = $('.dicho', metodo), quien = $('.quien b', metodo),
-        cambia = $$('.cambia', metodo);
-  let cual = -1, mudando = false;
-
-  function ir(i) {
-    if (i === cual || mudando) return;
-    cual = i;
-    mudando = true;
-    cambia.forEach(c => c.classList.add('sale'));
-    setTimeout(() => {
-      dicho.innerHTML = '“' + L(...ESCENAS[i][0]) + '”';
-      quien.innerHTML = enCastellano(F[i]) + ' · ' + F[i].code;
-      cambia.forEach(c => c.classList.remove('sale'));
-      mudando = false;
-    }, RM ? 0 : 220);
-    tomos.forEach((t, k) => {
-      t.classList.toggle('puesto', k <= i);
-      t.classList.toggle('viva', k === i);
-      t.setAttribute('aria-current', k === i ? 'true' : 'false');
-    });
+/* disciplinas: cada una despliega un deslizador con sus productos */
+const DISC = [
+  ['Diseño','Design','Plantillas, mockups y sistemas visuales','Templates, mockups and visual systems', [
+    {id:'ob-002'}, {n:'Brand Kit System', d:['Tu identidad lista para aplicar en todo','Your identity, ready to apply everywhere']}, {n:'Mockup Pack', d:['Presentá tu trabajo como un estudio','Present your work like a studio']}]],
+  ['Contenido','Content','Calendarios, portadas y formatos','Calendars, covers and formats', [
+    {id:'ob-001'}, {n:'Reels Script Kit', d:['Guiones y ganchos para videos cortos','Scripts and hooks for short videos']}, {n:'Carousel Templates', d:['Carruseles editables que se guardan','Editable carousels people save']}]],
+  ['Negocios','Business','CRM, finanzas y procesos','CRM, finances and processes', [
+    {id:'ob-003'}, {n:'Client Onboarding Kit', d:['Del “sí” al primer entregable, sin fricción','From “yes” to first delivery, frictionless']}, {n:'Finance Tracker', d:['Ingresos, gastos y proyección simple','Income, expenses and a simple forecast']}]],
+  ['Ventas','Sales','Funnels, emails y propuestas','Funnels, emails and proposals', [
+    {n:'Proposal Kit', d:['Propuestas que se entienden y se aprueban','Proposals that get read and approved']}, {n:'Funnel Map', d:['El recorrido de tu cliente, paso a paso','Your customer journey, step by step']}, {n:'Email Sequences', d:['Secuencias listas para vender','Ready-to-sell email sequences']}]],
+  ['Marketing','Marketing','Campañas, ads y reportes','Campaigns, ads and reports', [
+    {n:'Campaign Planner', d:['Una campaña completa en un tablero','A full campaign on one board']}, {n:'Ads Creative Kit', d:['Piezas para anuncios que convierten','Ad creatives that convert']}, {n:'Monthly Report', d:['Reportes claros para clientes','Clear reports for clients']}]],
+  ['IA','AI','Workflows y automatizaciones','Workflows and automations', [
+    {id:'ob-004'}, {n:'Prompt Library', d:['Prompts probados por disciplina','Tested prompts by discipline']}, {n:'Automation Starter', d:['Tus primeras automatizaciones, guiadas','Your first automations, guided']}]],
+  ['Productividad','Productivity','Planners y sistemas personales','Planners and personal systems', [
+    {n:'Personal OS', d:['Tu semana, tus metas y tus ideas en un lugar','Your week, goals and ideas in one place']}, {n:'Weekly Planner', d:['Planificá en 20 minutos, ejecutá toda la semana','Plan in 20 minutes, execute all week']}, {n:'Habit System', d:['Hábitos que se sostienen','Habits that stick']}]],
+  ['Educación','Education','Workbooks, clases y presentaciones','Workbooks, lessons and decks', [
+    {n:'Course Builder', d:['Estructurá tu curso de principio a fin','Structure your course end to end']}, {n:'Workbook Templates', d:['Cuadernos de trabajo para tus alumnos','Workbooks for your students']}, {n:'Lesson Deck', d:['Presentaciones de clase con estilo editorial','Editorial-style lesson decks']}]],
+];
+const DACC = [C.blue, C.or, C.ac];
+function pvCard(item, i, di) {
+  const p = item.id && P.find(x => x.id === item.id);
+  if (p) {
+    const soon = p.status === 'soon';
+    return `<a class="pv${soon ? ' soon' : ''}" href="${url(p)}"><div class="sy">${sym({ring: soon ? C.b : C.k, dot: DACC[i % 3]})}</div><div class="t"><span class="mono">${p.code}</span><span class="bd">${soon ? L('Próximamente','Coming soon') : L('Disponible','Available')}</span></div><div><h5>${p.name}</h5><p>${L(p.tagline)}</p></div><div class="f"><b>${soon ? L('Pronto','Soon') : money(p.price)}</b><span class="mono">${L('Ver','View')} →</span></div></a>`;
   }
-
-  /* se agarra y se desliza en cualquier parte de la pantalla */
-  let x0 = null, y0 = null, tirando = false;
-  metodo.addEventListener('pointerdown', e => {
-    x0 = e.clientX; y0 = e.clientY; tirando = false;
-    libros.classList.add('tirando');
-  });
-  metodo.addEventListener('pointermove', e => {
-    if (x0 === null) return;
-    const dx = e.clientX - x0, dy = e.clientY - y0;
-    if (!tirando && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) tirando = true;
-    if (!tirando) return;
-    e.preventDefault();
-    libros.style.setProperty('--tira', Math.max(-52, Math.min(52, dx * .34)) + 'px');
-  });
-  function soltar(e) {
-    if (x0 === null) return;
-    const dx = (e.clientX === undefined ? x0 : e.clientX) - x0;
-    x0 = null;
-    libros.classList.remove('tirando');
-    libros.style.removeProperty('--tira');
-    if (tirando && Math.abs(dx) > 34) ir((cual + (dx < 0 ? 1 : F.length - 1)) % F.length);
-    setTimeout(() => tirando = false, 0);
-  }
-  metodo.addEventListener('pointerup', soltar);
-  metodo.addEventListener('pointercancel', soltar);
-  /* si fue un arrastre, la tapa que quedó abajo no se selecciona */
-  metodo.addEventListener('click', e => { if (tirando) { e.preventDefault(); e.stopPropagation(); } }, true);
-  tomos.forEach((t, i) => t.onclick = () => ir(i));
-
-  ir(0);
-
-  /* se presenta sola al llegar, y queda legible para siempre */
-  if (RM) document.body.classList.add('cuenta');
-  else new IntersectionObserver(([e], obs) => {
-    if (e.isIntersecting) { document.body.classList.add('cuenta'); obs.disconnect(); }
-  }, {threshold:.25}).observe(metodo);
-})();
-
-/* =========================================================
-   CUARTA PANTALLA — la colección, achicada
-   Las tapas en una vitrina que se desliza, y de ahí a la página de
-   productos, que es donde el catálogo está separado por escalones.
-   ========================================================= */
-const coleccion = $('#coleccion');
-
-(function cuartaPantalla() {
-  if (!coleccion) return;
-  coleccion.className = 'pant';
-  coleccion.innerHTML = `
-    <div class="eti ent3" style="--d:0s"><span>${L('La colección','The collection')} — Vol.01</span><span>${
-      L('Deslizá','Swipe')}</span></div>
-    <h2 class="ent3" style="--d:.08s">${L(
-      'Listos<br>para <span class="it">usar.</span>',
-      'Ready<br>to <span class="it">use.</span>')}</h2>
-    <div class="vitrina2 ent3" style="--d:.18s">${P.map(p => `
-      <a class="ficha2" href="${ORBIT.url(p)}">
-        ${ORBIT.cover(p)}
-        <span class="to2"><b>${enCastellano(p)}</b><small>${
-          p.status === 'soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</small></span>
-      </a>`).join('')}</div>
-    <div class="pie3 ent3" style="--d:.3s">
-      <span class="nota3">${L('Tocá para ver la ficha','Tap to open the details')}</span>
-      <a class="btn btn-acid" href="productos.html">${L('Ver todo','See all')} <span class="ar">→</span></a>
-    </div>`;
-
-  /* se presenta sola al llegar y queda legible para siempre */
-  if (RM) document.body.classList.add('ve');
-  else new IntersectionObserver(([e], obs) => {
-    if (e.isIntersecting) { document.body.classList.add('ve'); obs.disconnect(); }
-  }, {threshold:.25}).observe(coleccion);
-})();
-
-/* ---- 05 · destacado: la caja 3D que se gira con el dedo ---- */
-(function destacado() {
-  const caja = $('#cajaDest'), info = $('#infoDest');
-  if (!caja || !info || !P.length) return;
-  const f = P[0];
-  ORBIT.mountBox(caja, f);
-  const partes = f.name.split(' ');
-  info.innerHTML = `
-    <span class="cod">${f.code} · ${FAM[f.family] ? FAM[f.family][0] : ''}</span>
-    <h2>${partes[0]}<br><span class="it">${partes.slice(1).join(' ').toLowerCase()}.</span></h2>
-    <p class="tag2">${L(f.tagline)}</p>
-    <div class="specs2">${(() => {
-      /* de los cuatro datos, los dos que de verdad hacen falta antes del clic:
-         con qué herramienta se usa y si se puede usar en trabajos de clientes */
-      const quiero = ['Formato','Licencia'];
-      const tengo = (f.specs || []).filter(([k]) => k && quiero.includes(k.es));
-      return (tengo.length ? tengo : (f.specs || []).slice(0, 2))
-        .map(([k, v]) => `<div><small>${L(k)}</small><b>${L(v)}</b></div>`).join('');
-    })()}</div>
-    <div class="acts2">${buyBtn(f)}<a class="btn btn-line" href="${ORBIT.url(f)}">${
-      L('Ver detalle','See details')}</a></div>`;
-})();
-
-/* ---- 05 · cómo comprar: el símbolo de Orbit se va cerrando paso a paso ---- */
-(function comoComprar() {
-  const caja = $('#flow4');
-  if (!caja) return;
-  const PASOS4 = [
-    ['Elegí tu sistema','Pick your system',
-     'Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.', 140],
-    ['Pagá una sola vez','Pay once',
-     'Mercado Pago en pesos o tarjeta en dólares. Sin suscripciones.',
-     'Mercado Pago in pesos or card in dollars. No subscriptions.', 90],
-    ['Recibilo al instante','Get it instantly',
-     'Te llega un email con la descarga o el acceso.','You get an email with the download or access link.', 40],
-    ['Usalo desde hoy','Use it today',
-     'Licencia comercial y actualizaciones sin cargo.','Commercial license and free updates.', 0],
-  ];
-  caja.innerHTML = PASOS4.map(([t, te, d, de, hueco], i) => `<div>
-      <span class="nn4">0${i + 1}</span>
-      <div class="s">${ORBIT.sym({gap: hueco, ring: 'currentColor',
-        dot: i === 3 ? ORBIT.C.blue : 'currentColor', dotOn: i > 0})}</div>
-      <div><b>${L(t, te)}</b><p>${L(d, de)}</p></div>
-    </div>`).join('');
-})();
-
-/* ---- los problemas se tachan al entrar en pantalla ---- */
-const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add('vis')), {threshold:.55});
-$$('.m-slide').forEach(e => io.observe(e));
-
-/* ---- posición dentro de cada riel ---- */
-function seguirRiel(riel, etiqueta, barra) {
-  const el = $(riel), n = $(etiqueta), b = $(barra);
-  if (!el) return;
-  const total = el.children.length;
-  const ver = () => {
-    const paso = el.scrollWidth / total;
-    const i = Math.min(total, Math.round(el.scrollLeft / paso) + 1);
-    n.textContent = String(i).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
-    b.style.transform = 'scaleX(' + (i/total) + ')';
+  return `<a class="pv soon" href="productos.html"><div class="sy">${sym({ring:C.b, dot:DACC[i % 3]})}</div><div class="t"><span class="mono">OB—D0${di+1}.${i+1}</span><span class="bd">${L('Próximamente','Coming soon')}</span></div><div><h5>${item.n}</h5><p>${L(...item.d)}</p></div><div class="f"><b>${L('Pronto','Soon')}</b><span class="mono dim">${L('En desarrollo','In the works')}</span></div></a>`;
+}
+$('#disc').innerHTML = DISC.map(([es,en,des,den,items],i) => `<div class="drow rv" data-i="${i}">
+  <button class="dh" aria-expanded="false" aria-controls="dp${i}"><span class="mono">OB—D0${i+1}</span><b>${L(es,en)}</b><p>${L(des,den)}</p><span class="s">${sym({ring:'currentColor', dot:C.blue, rot:i*45})}</span></button>
+  <div class="dpanel" id="dp${i}" role="region"><div>
+    <div class="dtop"><span class="mono">${L(es,en)} — ${items.length} ${L('herramientas','tools')}</span><div class="darrows"><button data-dir="-1" aria-label="Anterior">←</button><button data-dir="1" aria-label="Siguiente">→</button></div></div>
+    <div class="dslide">${items.map((it,k) => pvCard(it,k,i)).join('')}<a class="pv all" href="productos.html"><span class="mono">${L('Todo en','All in')} ${L(es,en)}</span><h5>${L('Ver catálogo','See catalog')} →</h5></a></div>
+  </div></div>
+</div>`).join('');
+$$('#disc .drow').forEach(row => {
+  const btn = $('.dh', row);
+  btn.onclick = () => {
+    const open = !row.classList.contains('open');
+    $$('#disc .drow.open').forEach(r => { r.classList.remove('open'); $('.dh', r).setAttribute('aria-expanded','false'); });
+    if (open) { row.classList.add('open'); btn.setAttribute('aria-expanded','true'); setTimeout(() => row.scrollIntoView({behavior: RM ? 'auto' : 'smooth', block:'nearest'}), 300); }
   };
-  el.addEventListener('scroll', ver, {passive:true}); ver();
-}
+  $$('.darrows button', row).forEach(b => b.onclick = () => { const sl = $('.dslide', row); sl.scrollBy({left: +b.dataset.dir * (sl.clientWidth * .8), behavior: RM ? 'auto' : 'smooth'}); });
+});
 
-/* ---- la O viaja del wordmark al indicador de avance ----
-   Va en un elemento fijo aparte, no en la O del wordmark: esa vive dentro
-   de una sección con recorte, y al salir de ella se cortaría. */
-/* Limita a los oyentes de scroll a correr una vez por cuadro. Sin esto,
-   iOS dispara scroll muchas más veces de las que puede dibujar. */
-const porCuadro = fn => {
-  let pedido = false;
-  return () => { if (pedido) return; pedido = true;
-    requestAnimationFrame(() => { pedido = false; fn(); }); };
+/* destacado */
+const f = P[0];
+mountBox($('#featBox'), f);
+$('#featInfo').innerHTML = `<span class="mono">${f.code} · ${FAM[f.family][0]}</span>
+  <h2 class="display" style="margin-top:14px">${f.name.split(' ')[0]}<br><span class="it">${f.name.split(' ').slice(1).join(' ').toLowerCase()}.</span></h2>
+  <p class="lead" style="opacity:.8;margin-top:20px">${L(f.tagline)}</p>
+  <div class="specs">${f.specs.slice(0,4).map(([k,v]) => `<div><span class="mono dim">${L(k)}</span><b>${L(v)}</b></div>`).join('')}</div>
+  <div style="display:flex;gap:10px;flex-wrap:wrap">${buyBtn(f)}<a class="btn btn-line" href="${url(f)}">${L('Ver detalle','See details')}</a></div>`;
+
+$('#homeGrid').innerHTML = P.map(card).join('');
+
+const steps = [['Elegí tu sistema','Pick your system','Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.',140],['Pagá una sola vez','Pay once','Pago seguro con tarjeta. Sin suscripciones.','Secure card payment. No subscriptions.',90],['Recibilo al instante','Get it instantly','Te llega un email con la descarga o el acceso.','You get an email with the download or access link.',40],['Usalo desde hoy','Use it today','Licencia comercial y actualizaciones sin cargo.','Commercial license and free updates.',0]];
+$('#flow').innerHTML = steps.map(([t,te,d,de,g],i) => `<div class="rv"><span class="mono">0${i+1}</span><div class="s">${sym({gap:g, ring:'currentColor', dot:i===3?C.blue:'currentColor', dotOn:i>0})}</div><div><b>${L(t,te)}</b><p>${L(d,de)}</p></div></div>`).join('');
+
+/* manifiesto palabra por palabra */
+const manis = $$('.mani');
+manis.forEach(m => (function split(node) {
+  [...node.childNodes].forEach(n => {
+    if (n.nodeType === 3) { const fr = document.createDocumentFragment(); n.textContent.split(/(\s+)/).forEach(w => { if (!w) return; if (/^\s+$/.test(w)) fr.append(w); else { const s = document.createElement('span'); s.className = 'w'; s.textContent = w; fr.append(s); } }); n.replaceWith(fr); }
+    else if (n.nodeType === 1) n.classList.add('w');
+  });
+})(m));
+const onScroll = () => manis.forEach(m => { if (!m.offsetParent) return; const r = m.getBoundingClientRect(), ws = $$('.w', m); const p = Math.min(1, Math.max(0, (innerHeight*.85 - r.top) / (r.height + innerHeight*.3))); const n = Math.round(p * ws.length * 1.15); ws.forEach((w,i) => w.classList.toggle('lit', i < n)); });
+if (RM) $$('.mani .w').forEach(w => w.classList.add('lit')); else { addEventListener('scroll', onScroll, {passive:true}); addEventListener('orbit:lang', onScroll); onScroll(); }
+
+/* ---------- lema: problema → herramienta ---------- */
+const P2T = [
+  [['“No sé qué publicar esta semana.”','“I don’t know what to post this week.”'],'ob-001'],
+  [['“Empiezo cada diseño de cero.”','“I start every design from scratch.”'],'ob-002'],
+  [['“Mis clientes están en cinco lugares distintos.”','“My clients live in five different places.”'],'ob-003'],
+  [['“Pierdo horas en tareas repetidas.”','“I lose hours on repetitive tasks.”'],'ob-004'],
+];
+const p2t = $('#p2t'); let pi = 0, pTimer;
+function renderP2T() {
+  const [prob, id] = P2T[pi], p = P.find(x => x.id === id);
+  p2t.classList.remove('go');
+  p2t.innerHTML = `<div class="row" style="border-top:0;padding-top:0"><span class="mono">${L('Problema','Problem')}</span><span class="prob"><s>${L(...prob)}</s></span></div>
+    <div class="row"><span class="mono">${L('Herramienta','Tool')}</span><a class="tool" href="${url(p)}">${p.code}<br>${p.name} →</a></div>
+    <div class="nav2"><div class="dots">${P2T.map((_,i) => `<button aria-label="${i+1}" aria-current="${i===pi}" data-p2="${i}"></button>`).join('')}</div><span class="mono dim">${String(pi+1).padStart(2,'0')} / ${String(P2T.length).padStart(2,'0')}</span></div>`;
+  requestAnimationFrame(() => requestAnimationFrame(() => p2t.classList.add('go')));
+  $$('[data-p2]', p2t).forEach(b => b.onclick = () => { pi = +b.dataset.p2; renderP2T(); restart(); });
+}
+const restart = () => { clearInterval(pTimer); if (!RM) pTimer = setInterval(() => { pi = (pi + 1) % P2T.length; renderP2T(); }, 4200); };
+renderP2T(); restart();
+
+/* ---------- quiz: encontrá tu sistema ---------- */
+const Q = [
+  {q:['¿Qué querés resolver?','What do you want to solve?'], o:[
+    [['Publicar contenido con constancia','Publish content consistently'], {'ob-001':3}],
+    [['Tener recursos gráficos listos para usar','Have ready-to-use graphic resources'], {'ob-002':3}],
+    [['Ordenar mi negocio: clientes, proyectos, plata','Organize my business: clients, projects, money'], {'ob-003':3}],
+    [['Trabajar mejor y más rápido con IA','Work better and faster with AI'], {'ob-004':3}],
+  ]},
+  {q:['¿Cómo trabajás hoy?','How do you work today?'], o:[
+    [['Solo/a, con mi propia marca','Solo, on my own brand'], {'ob-001':1,'ob-004':1}],
+    [['Con un equipo chico','With a small team'], {'ob-003':1,'ob-004':1}],
+    [['Para clientes','For clients'], {'ob-002':1,'ob-003':1}],
+  ]},
+  {q:['¿Qué herramienta usás más?','Which tool do you use most?'], o:[
+    [['Notion','Notion'], {'ob-003':1,'ob-001':1,'ob-004':1}],
+    [['Figma','Figma'], {'ob-002':1,'ob-001':1}],
+    [['Canva','Canva'], {'ob-001':1,'ob-002':1}],
+    [['Todavía ninguna','None yet'], {'ob-001':1,'ob-004':1}],
+  ]},
+];
+const WHY = {
+  'ob-001': [['Planificás un mes de contenido en una tarde','Plan a month of content in one afternoon'],['Plantillas que mantienen tu marca consistente','Templates that keep your brand consistent'],['Un calendario que muestra qué está listo','A calendar that shows what’s ready']],
+  'ob-002': [['Recursos listos para cualquier proyecto','Resources ready for any project'],['Presentás trabajo como un estudio','Present work like a studio'],['Licencia comercial para clientes','Commercial license for client work']],
+  'ob-003': [['Clientes, proyectos y cobros en un solo lugar','Clients, projects and payments in one place'],['Sabés qué entra y qué sale cada mes','Know what comes in and goes out each month'],['Procesos que no dependen de tu memoria','Processes that don’t depend on your memory']],
+  'ob-004': [['Workflows probados, no prompts sueltos','Proven workflows, not random prompts'],['Producís más sin perder tu voz','Produce more without losing your voice'],['Automatizás lo repetitivo','Automate the repetitive work']],
 };
-
-/* el alto real de la ventana, medido y no declarado */
-(function altoReal() {
-  /* Safari informa distinto según tenga la barra desplegada o compacta, así
-     que nos quedamos con el mayor de los dos: la pantalla nunca queda corta
-     y no vuelve a asomar la sección de abajo. */
-  const fijar = () => document.documentElement.style.setProperty('--vh',
-    Math.max(innerHeight, (window.visualViewport && visualViewport.height) || 0) + 'px');
-  fijar();
-  /* En iOS, al scrollear para arriba Safari despliega la barra de direcciones
-     y el alto cambia solo. Si reescribimos --vh ahí, las ocho pantallas se
-     recalculan en medio del gesto y el scroll se traba. Sólo recalculamos
-     cuando cambia el ANCHO —rotación o cambio real de ventana—, nunca por
-     el alto. */
-  let anchoAnterior = innerWidth;
-  addEventListener('resize', () => {
-    if (innerWidth === anchoAnterior) return;
-    anchoAnterior = innerWidth; fijar();
-  });
-  addEventListener('orientationchange', () => setTimeout(() => { anchoAnterior = innerWidth; fijar(); }, 160));
-})();
-
-(function viajeDeLaO() {
-  const viajero = document.createElement('div');
-  viajero.className = 'viajero'; viajero.setAttribute('aria-hidden', 'true');
-  viajero.innerHTML = `<svg viewBox="0 0 100 100">${ORBIT.symInner({dot:'#3047FF', ring:'#F2EFE8'})}</svg>`;
-  document.body.append(viajero);
-
-  const meta = $('#avance'), mezcla = (a, b, t) => a + (b - a) * t;
-  let origen = null;
-  /* el punto de partida solo se puede medir arriba de todo y con la intro terminada */
-  const medir = () => { if (scrollY < 4) { const r = $('#bWm .o').getBoundingClientRect(); if (r.width > 4) origen = r; } };
-
-  function viajar() {
-    const m = meta.getBoundingClientRect();   /* #avance es fijo: su caja no depende del scroll */
-    /* sin indicador a la vista (pantalla grande) no hay viaje posible */
-    if (!m.width) { viajero.style.opacity = 0; document.body.classList.remove('viaja', 'llego'); return; }
-    if (!origen) { medir(); if (!origen) return; }
-    const t = Math.min(1, Math.max(0, scrollY / (innerHeight * .62))), e = t * t * (3 - 2 * t);
-    viajero.style.width = origen.width + 'px'; viajero.style.height = origen.height + 'px';
-    viajero.style.transform = `translate(${mezcla(origen.left, m.left, e).toFixed(1)}px,`
-      + `${mezcla(origen.top, m.top, e).toFixed(1)}px) scale(${(mezcla(origen.width, m.width, e) / origen.width).toFixed(4)})`;
-    const viajando = t > .002 && t < .998;
-    viajero.style.opacity = viajando ? 1 : 0;
-    document.body.classList.toggle('viaja', viajando);
-    document.body.classList.toggle('llego', t >= .998);
+let qi = 0, score = {};
+const qbox = $('#qbox');
+function renderQ() {
+  const prog = `<div class="qprog">${Q.map((_,i) => `<i class="${i<=qi?'on':''}"></i>`).join('')}</div>`;
+  if (qi < Q.length) {
+    const it = Q[qi];
+    qbox.innerHTML = `<span class="mono">${L('Pregunta','Question')} ${qi+1} / ${Q.length}</span>${prog}<p class="qq">${L(...it.q)}</p>
+      <div class="qopts">${it.o.map(([t],i) => `<button data-i="${i}"><span class="mono">0${i+1}</span><span>${L(...t)}</span><span class="ar">→</span></button>`).join('')}</div>
+      ${qi ? `<button class="chip qback" data-back>${L('← Atrás','← Back')}</button>` : ''}`;
+    $$('.qopts button', qbox).forEach(b => b.onclick = () => { const w = it.o[+b.dataset.i][1]; hist.push(w); for (const k in w) score[k] = (score[k]||0) + w[k]; qi++; renderQ(); });
+    const back = $('[data-back]', qbox); if (back) back.onclick = () => { const w = hist.pop(); for (const k in w) score[k] -= w[k]; qi--; renderQ(); };
+    return;
   }
-  addEventListener('scroll', porCuadro(viajar), {passive:true});
-  addEventListener('resize', () => { origen = null; viajar(); });
-  setTimeout(() => { medir(); viajar(); }, 3000);
-})();
-
-/* ---- 07 · a medida: una pregunta por vez ---- */
-(function aMedida() {
-  const forma = $('#cform');
-  if (!forma) return;
-  const via = $('.via4', forma), pasos = $$('.paso4', forma),
-        tramos = $$('.tramos i', forma), cuenta = $('.cuenta4', forma),
-        atras = $('.atras', forma), sigue = $('.sigue', forma),
-        manda = $('.manda', forma), err = $('#cErr', forma);
-  let cual = 0;
-  const num = i => String(i + 1).padStart(2, '0');
-
-  function pintar() {
-    via.style.transform = `translateX(-${cual * 100}%)`;
-    tramos.forEach((t, i) => t.classList.toggle('on', i <= cual));
-    cuenta.innerHTML = L('Paso','Step') + ` ${num(cual)} / ${num(pasos.length - 1)}`;
-    atras.hidden = cual === 0;
-    sigue.hidden = cual === pasos.length - 1;
-    manda.hidden = cual !== pasos.length - 1;
-    pasos.forEach((p, i) => p.inert = i !== cual);
-  }
-  /* sólo la idea es obligatoria para avanzar; el resto se valida al enviar */
-  function puedeSeguir() {
-    if (cual === 1 && !$('#cIdea').value.trim()) {
-      err.textContent = ORBIT.tr('Contanos la idea para seguir.','Tell us the idea to continue.');
-      return false;
-    }
-    err.textContent = '';
-    return true;
-  }
-  const avanzar1 = () => { if (cual < pasos.length - 1) { cual++; pintar(); } };
-  sigue.onclick = () => { if (puedeSeguir()) avanzar1(); };
-  /* elegir presupuesto o plazo pasa solo a la pregunta siguiente; la primera
-     admite varias, así que ahí espera a que toques Siguiente */
-  forma.addEventListener('orbit:opcion', e => {
-    if (e.detail.varias) return;
-    err.textContent = '';
-    setTimeout(avanzar1, 260);
-  });
-  atras.onclick = () => { if (cual > 0) { cual--; err.textContent = ''; pintar(); } };
-  pintar();
-  addEventListener('orbit:lang', pintar);
-})();
-
-/* ---- el símbolo de Orbit marca el avance ---- */
-const arco = $('#arco'), avance = $('#avance'), avanceN = $('#avanceN');
-const L2 = 2 * Math.PI * 20;
-arco.style.strokeDasharray = L2;
-const pantallas = $$('.pant');
-/* Antes esto medía la caja de las ocho pantallas y pedía el color calculado
-   en CADA evento de scroll: el navegador tenía que rehacer el cálculo de
-   estilos del documento entero decenas de veces por segundo. Ahora se mide
-   una vez —y de nuevo sólo si cambia el tamaño— y el scroll es pura cuenta. */
-let topes = [], colores = [], recorrido = 0;
-function remedir() {
-  topes = pantallas.map(s => s.getBoundingClientRect().top + scrollY);
-  colores = pantallas.map(s => getComputedStyle(s).color);
-  recorrido = document.documentElement.scrollHeight - innerHeight;
+  const rank = P.map(p => [p, score[p.id]||0]).sort((a,b) => b[1]-a[1]);
+  const [best] = rank[0], alt = rank[1][0];
+  qbox.innerHTML = `<span class="mono">${L('Tu órbita','Your orbit')}</span>${prog}
+    <div class="qres"><div>${cover(best)}</div><div>
+      <span class="mono">${best.code} · ${FAM[best.family][0]}</span>
+      <h3 class="display">${best.name}</h3>
+      <p style="margin:0;opacity:.8">${L(best.tagline)}</p>
+      <ul>${WHY[best.id].map(w => `<li>${L(...w)}</li>`).join('')}</ul>
+      <div class="acts2">${buyBtn(best)}<a class="btn btn-line" href="${url(best)}">${L('Ver detalle','See details')}</a></div>
+      <p class="mono dim" style="margin-top:18px">${L('También te puede servir','You might also like')}: <a href="${url(alt)}">${alt.code} ${alt.name} →</a></p>
+    </div></div>
+    <button class="chip qback" data-restart>${L('↻ Empezar de nuevo','↻ Start over')}</button>`;
+  $('[data-restart]', qbox).onclick = () => { qi = 0; score = {}; hist.length = 0; renderQ(); };
 }
-function avanzar() {
-  const p = recorrido > 0 ? Math.min(1, Math.max(0, scrollY / recorrido)) : 0;
-  arco.style.strokeDashoffset = L2 * (1 - p);
-  avance.classList.toggle('on', scrollY > 80);
-  const corte = scrollY + innerHeight * .5;
-  let i = 1;
-  for (let k = 0; k < topes.length; k++) if (topes[k] <= corte) i = k + 1;
-  avanceN.textContent = String(i).padStart(2,'0');
-  avance.style.color = colores[i - 1] || '';
+const hist = [];
+renderQ();
+
+/* ---------- mirá por dentro ---------- */
+const win = $('#win');
+const DAYS = [['Lun','Mon'],['Mar','Tue'],['Mié','Wed'],['Jue','Thu'],['Vie','Fri'],['Sáb','Sat'],['Dom','Sun']];
+const STAT = [[['Idea','Idea'],'#e8e5dd',C.k],[['Producción','In progress'],C.or,C.k],[['Listo','Ready'],C.ac,C.k],[['Publicado','Published'],C.blue,C.b]];
+const POSTS = [[0,['Carrusel: 5 errores','Carousel: 5 mistakes'],2],[1,['Reel detrás de escena','Behind-the-scenes reel'],1],[2,['Post: caso de cliente','Post: client case'],3],[3,['Story: encuesta','Story: poll'],0],[4,['Carrusel: guía rápida','Carousel: quick guide'],1],[5,['Reel: tip semanal','Reel: weekly tip'],0],[6,['Post: frase de marca','Post: brand quote'],2]].map(([d,t,s]) => ({d,t,s}));
+const DEALS = [{n:'Estudio Norte',v:1200,c:0},{n:'Café Lumen',v:800,c:0},{n:'Atlas Arq.',v:2400,c:1},{n:'Nómade Co.',v:950,c:1},{n:'Río Films',v:1800,c:2},{n:'Plano Studio',v:600,c:3}];
+const COLS_K = [['Contacto','Lead'],['Propuesta','Proposal'],['En curso','In progress'],['Cobrado','Paid']];
+const LIBF = [['all',['Todo','All']],['shape',['Formas','Shapes']],['tex',['Texturas','Textures']],['type',['Tipografía','Type']],['mock',['Mockups','Mockups']]];
+const ASSETS = [
+  ['shape', `<div style="width:100%;height:100%;background:${C.k};display:grid;place-items:center">${sym({ring:C.b,dot:C.blue},'sym','width:60%')}</div>`],
+  ['tex', `<div class="photo" style="position:absolute;inset:0;background-image:url(assets/img/arch.jpg)"></div>`],
+  ['type', `<div style="width:100%;height:100%;background:${C.b};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:30cqw;letter-spacing:-.05em">Aa</div>`],
+  ['shape', `<svg viewBox="0 0 100 100" style="width:100%;height:100%;background:${C.or}"><path d="M-10 90 A80 80 0 0 1 70 10" stroke="${C.k}" stroke-width="12" fill="none"/></svg>`],
+  ['mock', `<div style="width:100%;height:100%;background:#ddd9cf;display:grid;place-items:center"><div style="width:60%;aspect-ratio:3/4;background:${C.k};box-shadow:6px 8px 0 rgba(0,0,0,.2)"></div></div>`],
+  ['tex', `<div class="photo" style="position:absolute;inset:0;background-image:url(assets/img/landing.jpg)"></div>`],
+  ['type', `<div style="width:100%;height:100%;background:${C.k};color:${C.b};display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:26cqw">next.</div>`],
+  ['shape', `<div style="width:100%;height:100%;background:${C.ac};display:grid;grid-template-columns:1fr 1fr;gap:8%;padding:16%">${[0,1,2,3].map(i => sym({ring:C.k,dot:C.k,rot:i*90},'sym','width:100%')).join('')}</div>`],
+  ['mock', `<div style="width:100%;height:100%;background:${C.blue};display:grid;place-items:center"><div style="width:70%;aspect-ratio:16/10;background:${C.b};border-radius:4px"></div></div>`],
+  ['tex', `<div class="photo" style="position:absolute;inset:0;background-image:url(assets/img/corridor.jpg)"></div>`],
+  ['type', `<div style="width:100%;height:100%;background:${C.or};display:flex;align-items:flex-end;padding:10%;font-weight:800;font-size:16cqw;line-height:.85;letter-spacing:-.05em;text-transform:uppercase">Tools<br>that move</div>`],
+  ['mock', `<div style="width:100%;height:100%;background:#ddd9cf;display:grid;place-items:center"><div style="width:44%;aspect-ratio:9/19;background:${C.k};border-radius:10px"></div></div>`],
+];
+const TAGN = {shape:['Forma','Shape'], tex:['Textura','Texture'], type:['Tipo','Type'], mock:['Mockup','Mockup']};
+const WF = [
+  [['Investigar','Research'], ['Actuá como investigador. Sobre el tema «{t}», armá un resumen con: 5 ideas clave, 3 datos verificables con su fuente, 3 preguntas que se hace mi audiencia y 2 ángulos poco explorados.','Act as a researcher. On the topic “{t}”, give me: 5 key ideas, 3 verifiable facts with sources, 3 questions my audience asks and 2 underexplored angles.']],
+  [['Estructurar','Structure'], ['Con este material sobre «{t}», proponé 3 estructuras distintas (lista, historia, paso a paso). Para cada una: título, gancho de una línea y 5 secciones.','Using this material on “{t}”, propose 3 different structures (list, story, step-by-step). For each: title, one-line hook and 5 sections.']],
+  [['Escribir','Write'], ['Escribí el borrador de la estructura elegida sobre «{t}». Frases cortas, tono directo, sin clichés ni lenguaje de gurú. Marcá con [DATO] donde falte un dato real.','Write the draft of the chosen structure on “{t}”. Short sentences, direct tone, no clichés or guru language. Mark [FACT] where a real fact is missing.']],
+  [['Revisar','Review'], ['Revisá este texto sobre «{t}» como editor exigente: señalá lo que sobra, lo que no se entiende y 3 cambios que lo harían más claro. No lo reescribas entero.','Review this text on “{t}” like a demanding editor: point out what’s extra, what’s unclear and 3 changes that would make it clearer. Don’t rewrite it all.']],
+];
+let wfStep = 0, wfTopic = '';
+const libSel = new Set(); let libF = 'all';
+
+function demo(p) {
+  if (p.id === 'ob-001') {
+    const done = POSTS.filter(x => x.s === 3).length;
+    return `<div class="dhead"><b>${L('Calendario editorial — Semana 12','Editorial calendar — Week 12')}</b><span class="mono dim">${L('Tocá una pieza para avanzarla','Tap a post to move it forward')} · ${done}/7 ${L('publicadas','published')}</span></div>
+      <div class="cal">${DAYS.map((d,i) => `<div class="d"><span>${L(...d)}</span>${POSTS.filter(x => x.d===i).map(x => { const [n,bg,fg] = STAT[x.s]; return `<button class="post" data-post="${POSTS.indexOf(x)}"><span class="st" style="background:${bg};color:${fg}">${L(...n)}</span>${L(...x.t)}</button>`; }).join('')}</div>`).join('')}</div>`;
+  }
+  if (p.id === 'ob-003') {
+    const paid = DEALS.filter(d => d.c === 3).reduce((a,d) => a + d.v, 0), total = DEALS.reduce((a,d) => a + d.v, 0);
+    return `<div class="dhead"><b>${L('Pipeline de clientes','Client pipeline')}</b><span class="mono dim">${L('Tocá un cliente para avanzarlo','Tap a client to move it forward')}</span></div>
+      <div class="kan">${COLS_K.map((c,i) => { const ds = DEALS.filter(d => d.c === i); return `<div class="col"><span>${L(...c)}<span>${ds.length}</span></span>${ds.map(d => `<button class="deal" data-deal="${DEALS.indexOf(d)}"><b>${d.n}</b><small>USD ${d.v.toLocaleString('en-US')}</small></button>`).join('')}</div>`; }).join('')}</div>
+      <div class="dhead" style="margin:16px 0 0"><span class="mono">${L('Cobrado este mes','Paid this month')}</span><b>USD ${paid.toLocaleString('en-US')} <span class="mono dim">/ ${total.toLocaleString('en-US')}</span></b></div>
+      <div class="kbar"><i style="transform:scaleX(${(paid/total).toFixed(3)})"></i></div>`;
+  }
+  if (p.id === 'ob-002') {
+    return `<div class="dhead"><b>${L('Biblioteca — Vol.01','Library — Vol.01')}</b><span class="mono dim">${L('Elegí recursos para tu tablero','Pick resources for your board')} · ${libSel.size} ${L('elegidos','selected')}</span></div>
+      <div class="sw2" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${LIBF.map(([k,n]) => `<button class="chip" data-libf="${k}" aria-pressed="${k===libF}" style="color:var(--k)">${L(...n)}</button>`).join('')}</div>
+      <div class="lib">${ASSETS.map(([k,h],i) => (libF==='all'||libF===k) ? `<button class="asset${libSel.has(i)?' sel':''}" data-asset="${i}" aria-pressed="${libSel.has(i)}">${h}<span class="tag">${L(...TAGN[k])}</span><span class="ok">✓</span></button>` : '').join('')}</div>`;
+  }
+  const topic = wfTopic || tr('lanzar un producto digital','launching a digital product');
+  const text = tr(...WF[wfStep][1]).replace('{t}', `<mark>${topic.replace(/[<>&]/g,'')}</mark>`);
+  return `<div class="dhead"><b>${L('Workflow: de idea a texto publicado','Workflow: from idea to published text')}</b><span class="mono dim">${L('Muestra gratis — copiala y usala','Free sample — copy it and use it')}</span></div>
+    <div class="wf"><div class="steps">${WF.map(([n],i) => `<button data-wf="${i}" aria-pressed="${i===wfStep}"><span class="mono">0${i+1}</span>${L(...n)}</button>`).join('')}</div>
+    <div><label class="mono" for="wfTopic">${L('Tu tema','Your topic')}</label><input id="wfTopic" value="${wfTopic.replace(/"/g,'&quot;')}" placeholder="${tr('ej: lanzar un producto digital','e.g. launching a digital product')}">
+    <div class="prompt" id="wfOut">${text}</div>
+    <div style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap"><span class="mono dim">${L('Paso','Step')} ${wfStep+1} / 4</span><button class="chip" data-copy style="color:var(--k)">${L('Copiar prompt','Copy prompt')}</button></div></div></div>`;
 }
-remedir(); avanzar();
-addEventListener('scroll', porCuadro(avanzar), {passive:true});
-addEventListener('resize', () => { remedir(); avanzar(); });
-addEventListener('load', () => { remedir(); avanzar(); });
-setTimeout(() => { remedir(); avanzar(); }, 3200);   /* con la intro ya terminada */
+let cur = P[0];
+function renderWin() {
+  win.innerHTML = `<div class="bar"><i></i><i></i><i></i><span class="mono">${cur.code} — ${cur.name}</span><span class="mono dim" style="margin-left:auto">${L('Vista previa','Preview')}</span></div>
+    <div class="body" id="wbody">${demo(cur)}</div>
+    <div class="foot"><div><span class="mono dim">${L('Versión completa','Full version')}: ${L(cur.specs[0][1])} ${L(cur.specs[0][0])}</span><div class="price">${cur.status==='soon' ? L('Pronto','Soon') : money(cur.price)}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${buyBtn(cur)}<a class="btn btn-line" href="${url(cur)}" style="color:var(--k)">${L('Ver detalle','See details')}</a></div></div>`;
+  $$('#ptabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.id === cur.id)));
+}
+$('#ptabs').innerHTML = P.map(p => `<button role="tab" data-id="${p.id}" aria-selected="${p===cur}"><span class="mono">${p.code}</span><b>${p.name}</b></button>`).join('');
+$$('#ptabs button').forEach(b => b.onclick = () => { cur = P.find(p => p.id === b.dataset.id); renderWin(); });
+win.addEventListener('click', e => {
+  const t = e.target;
+  const po = t.closest('[data-post]'); if (po) { const x = POSTS[+po.dataset.post]; x.s = (x.s + 1) % 4; renderWin(); return; }
+  const de = t.closest('[data-deal]'); if (de) { const d = DEALS[+de.dataset.deal]; d.c = (d.c + 1) % 4; renderWin(); return; }
+  const lf = t.closest('[data-libf]'); if (lf) { libF = lf.dataset.libf; renderWin(); return; }
+  const as = t.closest('[data-asset]'); if (as) { const i = +as.dataset.asset; libSel.has(i) ? libSel.delete(i) : libSel.add(i); renderWin(); return; }
+  const wf = t.closest('[data-wf]'); if (wf) { wfStep = +wf.dataset.wf; renderWin(); return; }
+  if (t.closest('[data-copy]')) { const txt = $('#wfOut').innerText; (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast(tr('Prompt copiado','Prompt copied')), () => toast(tr('Seleccioná el texto para copiarlo','Select the text to copy it'))); }
+});
+win.addEventListener('input', e => { if (e.target.id === 'wfTopic') { wfTopic = e.target.value; const topic = wfTopic || tr('lanzar un producto digital','launching a digital product'); $('#wfOut').innerHTML = tr(...WF[wfStep][1]).replace('{t}', `<mark>${topic.replace(/[<>&]/g,'')}</mark>`); } });
+addEventListener('orbit:lang', () => { if (cur.id === 'ob-004') renderWin(); });
+renderWin();
+
+/* ---------- a medida ---------- */
+const OPTS = {
+  type: [['Sistema en Notion','Notion system'],['Plantillas de marca','Brand templates'],['Kit de contenido','Content kit'],['Workflow de IA','AI workflow'],['Otra idea','Something else']],
+  budget: [['< 500','< 500'],['500 – 1.500','500 – 1,500'],['1.500 +','1,500 +'],['No sé','Not sure']],
+  time: [['Sin apuro','No rush'],['1 mes','1 month'],['Urgente','Urgent']],
+};
+const pick = {type:null, budget:null, time:null};
+$$('.cform .opts').forEach(box => {
+  const g = box.dataset.group;
+  box.innerHTML = OPTS[g].map((o,i) => `<button type="button" class="chip" data-i="${i}" aria-pressed="false">${L(...o)}</button>`).join('');
+  $$('.chip', box).forEach(b => b.onclick = () => { pick[g] = +b.dataset.i; $$('.chip', box).forEach(x => x.setAttribute('aria-pressed', String(x === b))); });
+});
+$('#cform').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('#cName').value.trim(), mail = $('#cMail').value.trim(), idea = $('#cIdea').value.trim(), err = $('#cErr');
+  if (!name || !/^\S+@\S+\.\S+$/.test(mail) || !idea) { err.textContent = tr('Completá nombre, un email válido y la idea.', 'Please add your name, a valid email and the idea.'); return; }
+  err.textContent = '';
+  const val = g => pick[g] === null ? '—' : tr(...OPTS[g][pick[g]]);
+  const body = `${tr('Nombre','Name')}: ${name}\nEmail: ${mail}\n${tr('Qué necesito','What I need')}: ${val('type')}\n${tr('Presupuesto (USD)','Budget (USD)')}: ${val('budget')}\n${tr('Plazo','Timeline')}: ${val('time')}\n\n${idea}`;
+  location.href = `mailto:hola@orbitando.com.ar?subject=${encodeURIComponent(tr('Pedido a medida — ','Custom request — ') + name)}&body=${encodeURIComponent(body)}`;
+  toast(tr('Abrimos tu email con el pedido listo para enviar','Opening your email with the request ready to send'));
+});
+
+reveal();
 })();
 </script>
 </body>

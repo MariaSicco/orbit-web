@@ -1,0 +1,1018 @@
+<!doctype html>
+<html lang="es" data-lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script>(function(){try{if(new URLSearchParams(location.search).has("full"))return;if(matchMedia("(min-width:861px)").matches)location.replace("/"+location.search+location.hash)}catch(e){}})()</script>
+<title>Orbit® — Sistemas y herramientas digitales, listos para usar</title>
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/site.webmanifest">
+<meta name="description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero. Descarga inmediata y uso comercial.">
+<link rel="canonical" href="https://www.orbitando.com.ar/">
+<link rel="alternate" hreflang="es" href="https://www.orbitando.com.ar/?lang=es">
+<link rel="alternate" hreflang="en" href="https://www.orbitando.com.ar/?lang=en">
+<link rel="alternate" hreflang="x-default" href="https://www.orbitando.com.ar/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Orbit®">
+<meta property="og:locale" content="es_AR">
+<meta property="og:url" content="https://www.orbitando.com.ar/">
+<meta property="og:title" content="Orbit® — Sistemas y herramientas digitales, listos para usar">
+<meta property="og:description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero.">
+<meta property="og:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Orbit® — Sistemas y herramientas digitales, listos para usar">
+<meta name="twitter:description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero.">
+<meta name="twitter:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
+<meta name="theme-color" content="#0D0D0E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/orbit.css?v=46">
+<style>
+/* ============================================================
+   VERSIÓN B — pensada como pantallas, no como página.
+
+   Tres decisiones:
+   1. Cada sección ocupa una pantalla y el scroll aterriza en ella.
+      No hay "medio bloque" nunca.
+   2. El método y la colección se recorren con el dedo, de costado.
+      En un teléfono deslizar es más natural que leer una lista.
+   3. El símbolo de Orbit sigue el avance: se completa a medida que
+      bajás. La marca haciendo un trabajo, no decorando.
+   ============================================================ */
+
+@media (max-width:900px){
+  /* Sin enganche: el scroll es libre. Con secciones de alto distinto,
+     cualquier snap termina peleando contra el dedo. */
+  html{scroll-padding-top:0}
+}
+@media (prefers-reduced-motion:reduce){ html{scroll-snap-type:none} }
+
+/* Ni svh ni dvh alcanzan en Safari: la franja clara de abajo aparecía igual.
+   --vh lo mide el JS con el alto real de la ventana y lo corrige cada vez
+   que cambia. Las unidades quedan solo de respaldo. */
+.pant{min-height:100svh;min-height:100dvh;min-height:var(--vh,100dvh);display:flex;flex-direction:column;justify-content:center;gap:clamp(18px,3vh,34px);
+  padding:calc(88px + env(safe-area-inset-top,0px)) var(--pad) calc(56px + env(safe-area-inset-bottom,0px));position:relative;overflow:hidden}
+.pant .eti{display:flex;justify-content:space-between;gap:16px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;--op:.5;opacity:var(--op,1)}
+.pant h2{font-size:clamp(44px,11.5vw,120px);margin:0}
+.luz{background:var(--b);color:var(--k)}
+.luz .pant .eti{opacity:.55}
+
+/* ---- avance orbital, fijo ---- */
+.avance{position:fixed;left:var(--pad);bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:40;width:46px;height:46px;pointer-events:none;
+  opacity:0;transition:opacity .4s var(--ease)}
+.avance.on{opacity:1}
+.avance svg{width:100%;height:100%;transform:rotate(-90deg)}
+.avance circle{fill:none;stroke-width:6}
+.avance .pista{stroke:currentColor;opacity:.18}
+.avance .arco{stroke:var(--ac);stroke-linecap:round;transition:stroke-dashoffset .12s linear}
+.avance b{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;font-weight:400;opacity:.7}
+
+/* ---- 01 entrada ---- */
+.p-entrada .marca{font-size:clamp(58px,19vw,210px);line-height:.78;letter-spacing:-.05em}
+/* El titular explica qué es; la firma de marca pasa a la etiqueta de arriba.
+   Antes lo más pesado de la pantalla era el nombre y un claim poético, y lo
+   único que decía qué se vende era el texto más chico y más apagado. */
+.p-entrada h1{font-size:clamp(25px,6.9vw,44px);font-weight:800;letter-spacing:-.035em;
+  line-height:1.04;max-width:17ch;margin:0;--op:1}
+.p-entrada h1 .it{color:var(--ac)}
+.p-entrada p{margin:0;max-width:32ch;font-size:16.5px;line-height:1.5;--op:.72}
+
+/* las puertas: qué vas a encontrar, sin cerrarle la puerta a nadie */
+.p-entrada .puertas{display:grid;gap:9px;padding-top:clamp(12px,2vh,17px);
+  border-top:1px solid rgba(242,239,232,.16)}
+.p-entrada .puertas i{font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.45;font-style:normal}
+.p-entrada .puertas nav{display:flex;flex-wrap:wrap;gap:7px}
+.p-entrada .puertas a{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;text-decoration:none;color:inherit;opacity:.72;
+  border:1px solid rgba(242,239,232,.24);border-radius:999px;padding:6px 11px}
+/* el encuadre busca la curva de la foto, que rima con el símbolo;
+   centrada, en un teléfono se recorta justo en la parte plana */
+.p-entrada .foto{position:absolute;inset:0;background:url(assets/img/landing.jpg) 26% 58%/cover;opacity:.46;z-index:0}
+@media (min-width:900px){.p-entrada .foto{background-position:center}}
+.p-entrada>*:not(.foto){position:relative;z-index:1}
+.p-entrada .foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,var(--k) 6%,rgba(13,13,14,.82) 40%,rgba(13,13,14,.3) 72%,var(--k) 97%)}
+
+
+/* ---- 01 entrada: intro en tres actos ----
+   ACTO 1  el símbolo solo, grande y centrado. El arco se carga de punta a punta
+           y el punto llega orbitando.
+   ACTO 2  el símbolo viaja a su lugar como la O y ORBIT se escribe letra por letra.
+   ACTO 3  entra el resto: la foto, el eslogan, el texto y el botón.
+   Los dos primeros actos los maneja el JS con animaciones explícitas: dependen de
+   una medida que solo se conoce en pantalla. El tercero es CSS puro. */
+
+.p-entrada .foto{opacity:0;transform:scale(1.14);transition:opacity 1.6s ease 2.8s,transform 4.2s cubic-bezier(.2,.8,.2,1) 2.8s}
+.go .p-entrada .foto{opacity:.46;transform:none}
+
+.p-entrada .marca .o{transform-origin:50% 50%}
+.p-entrada .marca .gira,.p-entrada .marca .orb{transform-origin:50px 50px}
+
+/* ACTO 2 — ORBIT se escribe: la rayita verde barre y las letras van
+   quedando atrás. Antes aparecían de golpe, una por una, y saltaba. */
+.p-entrada .marca{position:relative}
+.p-entrada .marca .pal{display:inline-block;clip-path:inset(-.28em 100% -.28em 0)}
+.go .p-entrada .marca .pal{clip-path:inset(-.28em -.14em -.28em 0);
+  transition:clip-path .56s cubic-bezier(.45,.02,.25,1) 2.4s}
+.p-entrada .marca .cur{position:absolute;left:0;top:50%;width:.05em;height:.6em;margin-top:-.31em;
+  background:var(--ac);opacity:0;pointer-events:none}
+.go .p-entrada .marca .cur{animation:tipear 1.16s steps(1,end) 2.32s 1 both}
+@keyframes tipear{
+  0%{opacity:0} 5%{opacity:1} 56%{opacity:1}
+  60%{opacity:0} 70%{opacity:1} 80%{opacity:0} 90%{opacity:1} 96%{opacity:0} 100%{opacity:0}}
+.p-entrada .marca sup{opacity:0;transition:opacity .45s ease 3.02s}
+.go .p-entrada .marca sup{opacity:1}
+
+/* ACTO 3 — el resto. Cada uno recupera su propia opacidad de reposo.
+   La barra de arriba también espera: el acto 1 pasa sobre negro, sin nada más. */
+body .nav{opacity:0;transition:opacity .8s ease 3.15s}
+body.go .nav{opacity:1}
+.p-entrada .ent{opacity:0;transform:translateY(18px);
+  transition:opacity .7s ease var(--d,0s),transform .85s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
+.go .p-entrada .ent{opacity:var(--op,1);transform:none}
+
+/* ---- la portada nunca se queda del todo quieta ----
+   Tres movimientos lentos, que se notan pero no piden atención. */
+
+/* el punto no para de orbitar la O, y deja una cola detrás. Arranca justo
+   cuando termina de entrar, así el relevo con la entrada no se ve. */
+@keyframes orbitar{to{transform:rotate(360deg)}}
+.go .p-entrada .marca .orb{animation:orbitar 6.5s linear 1.45s infinite}
+/* la cola aparece recién cuando el punto empieza a moverse: quieta sería
+   una mancha, en movimiento se lee como velocidad */
+.p-entrada .marca .estela{opacity:0}
+.go .p-entrada .marca .estela{opacity:1;transition:opacity .9s ease 1.6s}
+.directo .p-entrada .marca .estela{transition:none}
+
+/* la foto respira: empieza donde la dejó la entrada, así no hay salto */
+@keyframes respirar{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
+.go .p-entrada .foto{animation:respirar 26s ease-in-out 7.2s infinite}
+
+/* con movimiento reducido, sin intro: todo aparece ya puesto */
+body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
+.directo .p-entrada .marca sup,.directo .p-entrada .ent{transition:none!important}
+.directo .p-entrada .marca .orb,.directo .p-entrada .foto{animation-delay:0s}
+.directo .p-entrada .marca .cur{display:none}
+
+@media (prefers-reduced-motion:reduce){
+  body .nav,.p-entrada .foto,.p-entrada .marca .pal,.p-entrada .marca sup,
+  .p-entrada .ent,.p-entrada .marca .orb{transition:none!important;animation:none!important}
+  .p-entrada .marca .estela{display:none}
+  .p-entrada .marca .cur{display:none}
+}
+
+/* ---- la O deja el wordmark y se vuelve el indicador de avance ----
+   Al bajar, la O se despega de ORBIT, viaja hasta la esquina y se
+   convierte en el anillo que marca en qué parte de la página estás:
+   el logo y el indicador terminan siendo la misma pieza. */
+.viajero{position:fixed;left:0;top:0;z-index:41;pointer-events:none;opacity:0;transform-origin:0 0}
+.viajero svg{width:100%;height:100%;overflow:visible}
+.viaja .p-entrada .marca .o{opacity:0}
+.avance svg{opacity:0;transition:opacity .3s ease}
+.llego .avance svg{opacity:1}
+
+/* ---- deslizables ---- */
+.riel{display:flex;gap:clamp(24px,7vw,44px);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;
+  margin-inline:calc(var(--pad) * -1);padding-inline:var(--pad);scroll-padding-inline:var(--pad)}
+.riel::-webkit-scrollbar{display:none}
+.riel>*{scroll-snap-align:start;flex:0 0 min(82%,420px)}
+.pista-x{display:flex;align-items:center;gap:12px;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.pista-x .barra{flex:1;height:2px;background:currentColor;opacity:.18;position:relative;overflow:hidden}
+.pista-x .barra i{position:absolute;inset:0;background:var(--blue);transform-origin:left;transform:scaleX(.25);transition:transform .25s var(--ease)}
+
+/* =========================================================
+   SEGUNDA PANTALLA — el estante que se llena
+   Manda la persona: no pasa solo. Se desliza en cualquier parte de la
+   pantalla, o se toca el libro que se quiera y aparece su problema.
+   Los huecos que faltan se ven desde el principio, así que al llegar
+   al cuarto el estante quedó armado y empalma con la colección.
+   ========================================================= */
+#metodo{background:var(--k);color:var(--b);overflow:hidden;
+  justify-content:flex-start;gap:clamp(14px,2.4vh,26px);touch-action:pan-y}
+#metodo .dicho{margin:0;font-family:var(--serif);font-style:italic;line-height:1.1;
+  font-size:clamp(26px,7.4vw,46px);letter-spacing:-.015em;max-width:15ch}
+#metodo .ent2{opacity:0;transform:translateY(14px);
+  transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
+.cuenta #metodo .ent2{opacity:1;transform:none}
+#metodo .cambia{transition:opacity .22s ease,transform .3s var(--ease)}
+#metodo .cambia.sale{opacity:0;transform:translateY(-10px)}
+
+#metodo .medio{flex:1;display:flex;flex-direction:column;justify-content:center;
+  gap:clamp(12px,2vh,20px);padding-bottom:clamp(14px,2.6vh,26px)}
+#metodo .quien{display:flex;align-items:center;gap:10px;font-family:var(--mono);
+  font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+#metodo .quien b{font-weight:400}
+#metodo .quien s{width:26px;height:1px;background:var(--ac);flex:none;display:block}
+
+#metodo .repisa{display:grid;gap:0}
+#metodo .libros{display:flex;align-items:flex-end;gap:clamp(7px,2.2vw,13px);
+  transform:translateX(var(--tira,0));transition:transform .28s var(--ease)}
+#metodo .libros.tirando{transition:none}
+#metodo .libros > button{appearance:none;background:none;border:0;padding:0;cursor:pointer;
+  display:block;flex:1 1 0;min-width:0;opacity:.24;
+  transform:none;transform-origin:bottom center;
+  transition:opacity .4s ease,transform .6s cubic-bezier(.2,1.1,.3,1),flex-grow .45s var(--ease)}
+#metodo .libros > button.puesto{opacity:.44}
+#metodo .libros > button.viva{opacity:1;flex-grow:2.1;transform:translateY(-14px)}
+#metodo .libros > button:focus-visible{outline:2px solid var(--ac);outline-offset:3px}
+#metodo .tabla{height:3px;background:var(--b);opacity:.85;
+  box-shadow:0 12px 26px -14px rgba(0,0,0,.9)}
+#metodo .apoyo{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;opacity:.4;padding-top:9px}
+
+/* =========================================================
+   CUARTA PANTALLA — la colección, achicada
+   No trata de sostener el catálogo entero: muestra las tapas en una
+   vitrina que se desliza y manda a la página de productos, que es
+   donde está separado por plantillas, herramientas y sistemas.
+   ========================================================= */
+#coleccion{background:var(--k);color:var(--b);overflow:hidden;
+  justify-content:flex-start;gap:clamp(14px,2.4vh,26px)}
+#coleccion h2{margin:0;font-size:clamp(40px,11.5vw,104px);font-weight:800;
+  letter-spacing:-.04em;line-height:.94}
+#coleccion h2 .it{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ac)}
+#coleccion .ent3{opacity:0;transform:translateY(14px);
+  transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
+.ve #coleccion .ent3{opacity:1;transform:none}
+
+#coleccion .vitrina2{flex:1;min-height:0;display:flex;align-items:center;
+  gap:clamp(12px,3.4vw,22px);overflow-x:auto;overflow-y:hidden;
+  scroll-snap-type:x mandatory;scroll-padding-left:var(--pad);
+  -webkit-overflow-scrolling:touch;scrollbar-width:none;
+  margin:0 calc(var(--pad) * -1);padding:0 var(--pad)}
+#coleccion .vitrina2::-webkit-scrollbar{display:none}
+#coleccion .ficha2{flex:0 0 clamp(128px,44vw,190px);scroll-snap-align:start;
+  display:grid;gap:10px;align-content:center;text-decoration:none;color:inherit}
+#coleccion .ficha2 .cover{transition:transform .5s var(--ease)}
+#coleccion .ficha2:hover .cover,#coleccion .ficha2:focus-visible .cover{transform:translateY(-8px)}
+#coleccion .ficha2:focus-visible{outline:2px solid var(--ac);outline-offset:6px}
+#coleccion .to2{display:flex;justify-content:space-between;align-items:baseline;gap:10px;
+  border-top:1px solid rgba(242,239,232,.18);padding-top:9px}
+#coleccion .to2 b{font-weight:800;text-transform:uppercase;letter-spacing:-.03em;
+  font-size:clamp(12.5px,3.4vw,14.5px);line-height:1.1}
+#coleccion .to2 small{font-family:var(--mono);font-size:10px;letter-spacing:.06em;
+  opacity:.55;white-space:nowrap}
+#coleccion .pie3{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+#coleccion .pie3 .nota3{font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;opacity:.45}
+
+/* ---- 05 destacado: el producto como objeto, no como captura ---- */
+.p-destacado{gap:clamp(12px,2.2vh,24px)}
+.p-destacado .feat2{flex:1;min-height:0;display:flex;flex-direction:column;
+  gap:clamp(14px,2.4vh,26px)}
+.p-destacado .boxstage{flex:1;min-height:clamp(250px,33vh,360px);overflow:hidden;
+  background:radial-gradient(58% 58% at 50% 52%,#2a2a2d 0,var(--k) 70%)}
+.p-destacado .box{--w:clamp(158px,44vw,250px);--h:calc(var(--w) * 1.32);--d:calc(var(--w) * .256)}
+.p-destacado .boxstage .hint{position:absolute;left:0;bottom:6px;font-size:9.5px;
+  letter-spacing:.12em;text-transform:uppercase;opacity:.35}
+.p-destacado .info2{display:grid;gap:clamp(7px,1.2vh,12px)}
+.p-destacado .info2 .cod{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.5}
+.p-destacado .info2 h2{margin:0;font-size:clamp(28px,7.6vw,74px);letter-spacing:-.04em;line-height:.96}
+.p-destacado .info2 h2 .it{font-family:var(--serif);font-style:italic;font-weight:400}
+.p-destacado .info2 .tag2{margin:0;font-size:clamp(12.5px,3.3vw,15px);line-height:1.36;
+  opacity:.62;max-width:40ch}
+.p-destacado .specs2{display:grid;grid-template-columns:1fr 1fr;gap:0 clamp(12px,3.4vw,24px)}
+.p-destacado .specs2 > div{border-top:1px solid rgba(242,239,232,.16);padding:clamp(5px,.9vh,9px) 0}
+.p-destacado .specs2 small{display:block;font-family:var(--mono);font-size:9.5px;
+  letter-spacing:.1em;text-transform:uppercase;opacity:.45}
+.p-destacado .specs2 b{display:block;font-weight:700;font-size:clamp(13.5px,3.7vw,18px);
+  letter-spacing:-.02em;line-height:1.18;margin-top:2px}
+.p-destacado .acts2{display:flex;gap:9px;flex-wrap:wrap;padding-top:clamp(4px,.8vh,8px)}
+@media (min-width:860px){
+  .p-destacado .feat2{flex-direction:row;align-items:center;gap:clamp(24px,4vw,64px)}
+  .p-destacado .boxstage{flex:7}
+  .p-destacado .info2{flex:5}
+}
+
+/* ---- 05 cómo comprar: cuatro pasos, y el símbolo se va cerrando ---- */
+.p-comprar{gap:clamp(16px,3vh,30px)}
+.p-comprar h2{margin:0;font-size:clamp(34px,8.6vw,88px);letter-spacing:-.04em;line-height:1}
+.p-comprar h2 .it{font-family:var(--serif);font-style:italic;font-weight:400}
+.p-comprar .flow4{flex:1;min-height:0;display:grid;grid-template-columns:1fr 1fr;
+  gap:1px;background:rgba(242,239,232,.16)}
+.p-comprar .flow4 > div{background:var(--k);padding:clamp(12px,3.2vw,20px);
+  display:flex;flex-direction:column;justify-content:space-between;
+  gap:clamp(10px,2vh,22px);min-height:0;transition:background .4s var(--ease),color .4s var(--ease)}
+.p-comprar .flow4 > div:hover{background:var(--b);color:var(--k)}
+.p-comprar .flow4 .nn4{font-family:var(--mono);font-size:10px;letter-spacing:.12em;opacity:.45}
+.p-comprar .flow4 .s{width:clamp(40px,12vw,62px)}
+.p-comprar .flow4 b{display:block;font-weight:800;font-size:clamp(16px,4.6vw,26px);
+  letter-spacing:-.04em;text-transform:uppercase;line-height:.94}
+.p-comprar .flow4 p{margin:7px 0 0;font-size:clamp(12px,3.2vw,14px);line-height:1.36;
+  opacity:.62;max-width:26ch}
+@media (min-width:860px){.p-comprar .flow4{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
+/* ---- 06 y 07 ---- */
+.p-medida p,.p-cierre p{margin:0;max-width:34ch;font-size:15.5px;line-height:1.5;opacity:.68}
+.p-cierre .ring{position:absolute;left:50%;top:50%;width:min(140vh,150vw);translate:-50% -50%;color:#161617;z-index:0}
+.p-cierre>*:not(.ring){position:relative;z-index:1}
+
+.pant .acts{display:flex;gap:10px;flex-wrap:wrap}
+@media (min-width:900px){
+  .pant{min-height:auto;padding-block:clamp(90px,11vh,150px)}
+  /* en pantallas grandes las secciones dejan de ser de alto completo, pero la
+     portada sí tiene que llenar la pantalla: si no, asoma la sección clara
+     de abajo y la portada se ve cortada */
+  .p-entrada{min-height:100vh;min-height:var(--vh,100dvh);padding-block:calc(104px + 2vh) calc(80px + 2vh)}
+  .riel>*{flex:0 0 min(40%,380px)}
+  .avance{display:none}
+}
+
+/* ============================================================
+   SECCIONES TRAÍDAS DE LA PÁGINA ORIGINAL
+   Vista previa interactiva, disciplinas, quiz y pedido a medida.
+   Los estilos vienen tal cual de la original; lo único que se suma
+   es `.alta`, para las que no entran en una sola pantalla.
+   ============================================================ */
+.pant.alta{justify-content:flex-start;height:auto}
+.pant.alta > .disc,.pant.alta > .peek,.pant.alta > .cus{margin-top:clamp(16px,2.6vh,30px)}
+
+/* disciplinas */
+.disc{border-top:1px solid var(--k)}
+.drow{border-bottom:1px solid var(--k);position:relative}
+.dh{width:100%;display:grid;grid-template-columns:90px minmax(0,1fr) minmax(0,.9fr) 56px;gap:20px;align-items:center;padding:clamp(14px,1.6vw,22px) 0;text-align:left;position:relative;color:var(--k)}
+.dh::before{content:"";position:absolute;inset:0 calc(-1 * var(--pad));background:var(--k);transform:scaleY(0);transform-origin:bottom;transition:transform .45s var(--ease);z-index:0}
+.dh>*{position:relative;z-index:1;transition:color .3s}
+.dh:focus-visible::before,.drow.open .dh::before{transform:scaleY(1)}
+.dh:focus-visible>*,.drow.open .dh>*{color:var(--b)}
+/* el negro al pasar por encima es sólo para mouse: en el teléfono el :hover
+   queda pegado al último elemento tocado y la fila cerrada seguía negra */
+@media (hover:hover) and (pointer:fine){
+  .dh:hover::before{transform:scaleY(1)}
+  .dh:hover>*{color:var(--b)}
+  .dh:hover .s{transform:rotate(180deg)}
+  .dh:hover .s circle{fill:var(--ac)}}
+.dh:focus-visible{outline:none}
+.disc b{font-weight:800;font-size:clamp(32px,5.4vw,92px);letter-spacing:-.05em;text-transform:uppercase;line-height:.9}
+.dh p{margin:0;font-size:15px;opacity:.7}
+.disc .s{width:48px;transition:transform .6s var(--ease)}
+.drow.open .s{transform:rotate(180deg)}
+.drow.open .s circle{fill:var(--ac)}
+.dpanel{display:grid;grid-template-rows:0fr;transition:grid-template-rows .55s var(--ease)}
+.drow.open .dpanel{grid-template-rows:1fr}
+.dpanel>div{overflow:hidden;background:var(--k);color:var(--b);margin-inline:calc(-1 * var(--pad));padding-inline:var(--pad)}
+.dtop{display:flex;justify-content:space-between;align-items:center;gap:14px;padding-top:6px}
+.darrows{display:flex;gap:8px}
+.darrows button{width:40px;height:40px;border-radius:50%;border:1px solid rgba(242,239,232,.3);color:var(--b);font-size:16px}
+.darrows button:hover{background:var(--b);color:var(--k)}
+.dslide{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(250px,calc((100% - 42px) / 4));gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:18px 0 30px;scrollbar-width:none}
+.dslide::-webkit-scrollbar{display:none}
+.pv{scroll-snap-align:start;background:var(--b);color:var(--k);text-decoration:none;display:flex;flex-direction:column;justify-content:space-between;gap:18px;padding:18px;min-height:270px;position:relative;overflow:hidden;transition:transform .35s var(--ease)}
+.pv:hover{transform:translateY(-6px)}
+.pv .sy{position:absolute;width:46%;right:-12%;bottom:-14%;opacity:.95}
+.pv .t{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.pv .bd{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:3px 6px;background:var(--k);color:var(--b)}
+.pv h5{margin:0;font-weight:800;font-size:clamp(22px,2vw,30px);letter-spacing:-.04em;text-transform:uppercase;line-height:.92;position:relative;z-index:1}
+.pv p{margin:8px 0 0;font-size:14px;opacity:.7;max-width:26ch;position:relative;z-index:1}
+.pv .f{display:flex;justify-content:space-between;align-items:baseline;position:relative;z-index:1}
+.pv .f b{font-size:18px;letter-spacing:-.02em;font-weight:700;text-transform:none;line-height:1}
+.pv.soon{background:#1b1b1d;color:var(--b);border:1px solid var(--k3)}
+.pv.soon .bd{background:var(--b);color:var(--k)}
+.pv.all{background:transparent;color:var(--b);border:1px solid rgba(242,239,232,.3);justify-content:flex-end}
+.pv.all:hover{background:var(--ac);color:var(--k)}
+@media (max-width:760px){.dh{grid-template-columns:1fr 44px}.dh .mono,.dh p{grid-column:1}.dh .s{grid-row:1/4;grid-column:2}.dslide{grid-auto-columns:78%}}
+@media (max-width:760px){.disc a{grid-template-columns:1fr 44px}.disc a .mono,.disc a p{grid-column:1}.disc a .s{grid-row:1/4;grid-column:2}}
+
+/* quiz: encontrá tu sistema */
+.quiz{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px);align-items:start}
+.quiz h2{font-size:clamp(44px,6vw,100px)}
+.qbox{border-top:1px solid var(--b);padding-top:18px;min-height:420px}
+.qprog{display:flex;gap:6px;margin:14px 0 26px}
+.qprog i{flex:1;height:3px;background:var(--k3)}
+.qprog i.on{background:var(--ac)}
+.qq{font-weight:800;font-size:clamp(28px,3.2vw,52px);letter-spacing:-.045em;text-transform:uppercase;line-height:.95;margin:0 0 22px}
+.qopts{display:flex;flex-direction:column}
+.qopts button{display:grid;grid-template-columns:40px 1fr auto;gap:14px;align-items:baseline;text-align:left;padding:16px 0;border-top:1px solid var(--k3);font-size:clamp(18px,1.6vw,22px);font-weight:600;letter-spacing:-.02em;transition:color .2s}
+.qopts button:last-child{border-bottom:1px solid var(--k3)}
+.qopts button:hover,.qopts button:focus-visible{color:var(--ac);outline:none}
+.qopts button .ar{opacity:0;transition:opacity .2s,transform .3s var(--ease)}
+.qopts button:hover .ar,.qopts button:focus-visible .ar{opacity:1;transform:translateX(6px)}
+.qres{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(16px,2.4vw,32px);align-items:start}
+.qres h3{margin:10px 0 12px;font-size:clamp(36px,4vw,64px)}
+.qres ul{list-style:none;margin:16px 0 22px;padding:0}
+.qres li{padding:8px 0;border-top:1px solid var(--k3);display:flex;gap:10px}
+.qres li::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--blue);flex:none;margin-top:8px}
+.qres .acts2{display:flex;gap:10px;flex-wrap:wrap}
+.qback{margin-top:22px}
+@media (max-width:860px){.quiz,.qres{grid-template-columns:1fr}.qres .cover{max-width:280px}}
+
+/* a medida: una pregunta por vez, avanzando de costado. El formulario se
+   apoya en un panel apenas más claro —negro sobre negro no se leía— y la
+   pregunta se dice en grande, no como rótulo chiquito. */
+#a-medida{gap:clamp(14px,2.4vh,26px)}
+#a-medida h2{margin:0;font-size:clamp(26px,6.6vw,92px);letter-spacing:-.04em;line-height:1.02}
+#a-medida h2 .it{font-family:var(--serif);font-style:italic;font-weight:400}
+#a-medida .cform{display:flex;flex-direction:column;gap:clamp(12px,2vh,18px);
+  background:var(--k2);border:1px solid rgba(242,239,232,.14);color:inherit;
+  padding:clamp(14px,3.6vw,26px);flex:none}
+#a-medida .barra4{display:flex;align-items:center;gap:14px}
+#a-medida .cuenta4{font-family:var(--mono);font-size:10px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.5;white-space:nowrap}
+#a-medida .tramos{display:flex;gap:5px;flex:1}
+#a-medida .tramos i{flex:1;height:2px;background:rgba(242,239,232,.2)}
+#a-medida .tramos i.on{background:var(--ac)}
+#a-medida .pista4{overflow:hidden}
+#a-medida .via4{display:flex;align-items:flex-start;
+  transition:transform .42s cubic-bezier(.3,0,.15,1)}
+#a-medida .paso4{flex:0 0 100%;min-width:100%;display:flex;flex-direction:column;
+  gap:10px;min-height:clamp(168px,26vh,220px)}
+#a-medida .preg{display:block;font-weight:800;letter-spacing:-.03em;line-height:1.1;
+  font-size:clamp(18px,4.8vw,26px)}
+#a-medida .ayuda{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  text-transform:uppercase;opacity:.45;margin-top:-4px}
+#a-medida .rot4{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;
+  text-transform:uppercase;opacity:.5;margin-bottom:2px}
+#a-medida .opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+#a-medida .opts .chip{color:var(--b);border:1px solid rgba(242,239,232,.4);
+  padding:10px 14px;font-size:11.5px;letter-spacing:.05em;transition:background .2s,color .2s,border-color .2s}
+#a-medida .opts .chip[aria-pressed="true"]{background:var(--ac);color:var(--k);border-color:var(--ac)}
+#a-medida .two{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,3.4vw,20px)}
+#a-medida input,#a-medida textarea{width:100%;font:inherit;font-size:16px;background:none;
+  color:var(--b);border:0;border-bottom:1px solid rgba(242,239,232,.4);border-radius:0;padding:9px 0}
+#a-medida textarea{min-height:clamp(104px,16vh,150px);resize:none}
+#a-medida input:focus,#a-medida textarea:focus{outline:none;border-bottom-color:var(--ac)}
+#a-medida .mandos{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  border-top:1px solid rgba(242,239,232,.14);padding-top:clamp(11px,1.8vh,16px)}
+#a-medida .atras{appearance:none;background:none;border:0;color:inherit;cursor:pointer;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  opacity:.55;padding:0}
+#a-medida .atras[hidden],#a-medida .sigue[hidden],#a-medida .manda[hidden]{display:none}
+#a-medida .err{color:var(--or);font-size:12.5px;flex:1;min-height:1.2em}
+#a-medida .sigue,#a-medida .manda{margin-left:auto}
+
+
+
+
+
+/* a medida */
+.cus{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,4vw,72px);align-items:start}
+.cus h2{font-size:clamp(46px,6.4vw,108px)}
+.cus-steps{list-style:none;margin:32px 0 0;padding:0}
+.cus-steps li{display:grid;grid-template-columns:44px 1fr;gap:12px;padding:14px 0;border-top:1px solid var(--k3)}
+.cus-steps li:last-child{border-bottom:1px solid var(--k3)}
+.cus-steps b{display:block;font-size:19px;letter-spacing:-.02em}
+.cus-steps p{margin:2px 0 0;font-size:14px;opacity:.65}
+.cform{background:var(--b);color:var(--k);padding:clamp(18px,2.6vw,36px);display:flex;flex-direction:column;gap:20px}
+.cform .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.cform label{display:block;margin-bottom:8px}
+.cform input,.cform textarea{width:100%;font:inherit;font-size:16px;padding:12px 14px;border:1px solid rgba(13,13,14,.25);background:#fff;color:var(--k);border-radius:0}
+.cform textarea{min-height:120px;resize:vertical}
+.cform input:focus,.cform textarea:focus{outline:2px solid var(--blue);outline-offset:0}
+.cform .opts{display:flex;flex-wrap:wrap;gap:8px}
+.cform .opts .chip{color:var(--k)}
+.cform .send{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;border-top:1px solid rgba(13,13,14,.15);padding-top:18px}
+.cform .err{color:var(--or);font-size:14px;min-height:1.2em}
+@media (max-width:860px){.cus{grid-template-columns:1fr}.cform .two{grid-template-columns:1fr}}
+
+</style>
+</head>
+<body data-page="home" data-title-es="Orbit® — Sistemas y herramientas digitales, listos para usar" data-title-en="Orbit® — Digital systems and tools, ready to use">
+
+<div class="avance" id="avance" aria-hidden="true">
+  <svg viewBox="0 0 48 48"><circle class="pista" cx="24" cy="24" r="20"></circle><circle class="arco" id="arco" cx="24" cy="24" r="20"></circle></svg>
+  <b id="avanceN">01</b>
+</div>
+
+<main>
+
+<!-- 01 ENTRADA -->
+<section class="pant p-entrada dark">
+  <div class="foto" aria-hidden="true"></div>
+  <div class="eti ent" style="--d:2.98s"><span>OB—000 · <span data-l="es">Ideas en movimiento</span><span data-l="en">Ideas in motion</span></span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
+  <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)">
+    <div class="marca wm" id="bWm" aria-label="Orbit"></div>
+    <h1 class="ent" style="--d:3.1s"><span data-l="es">Sistemas y herramientas digitales, <span class="it">listos para usar.</span></span><span data-l="en">Digital systems and tools, <span class="it">ready to use.</span></span></h1>
+    <p class="ent" style="--d:3.24s"><span data-l="es">Para que nada empiece de cero.</span><span data-l="en">So nothing ever starts from zero.</span></p>
+  </div>
+  <div class="acts ent" style="--d:3.4s">
+    <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver la colección</span><span data-l="en">See the collection</span> <span class="ar">↓</span></a>
+  </div>
+  <div class="puertas ent" style="--d:3.52s" id="bPuertas"></div>
+</section>
+
+<!-- 02 MÉTODO — el contenido lo arma el JS según la versión elegida -->
+<section class="pant luz" id="metodo"></section>
+
+<!-- 03 DISCIPLINAS -->
+<section class="pant luz alta p-disc" id="disciplinas">
+  <div class="eti"><span><span data-l="es">Disciplinas<br>Un universo, muchas órbitas</span><span data-l="en">Disciplines<br>One universe, many orbits</span></span><span style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></span></div>
+  <h2 class="display" style="font-size:clamp(34px,8.6vw,96px);max-width:15ch;margin:0"><span data-l="es">Una órbita para cada <span class="it">disciplina.</span></span><span data-l="en">An orbit for every <span class="it">discipline.</span></span></h2>
+  <div class="disc" id="disc"></div>
+</section>
+
+<!-- 04 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
+<section class="pant dark" id="coleccion"></section>
+
+<!-- 05 DESTACADO -->
+<section class="pant dark p-destacado" id="destacado">
+  <div class="eti"><span><span data-l="es">Destacado<br>Producto 01</span><span data-l="en">Featured<br>Product 01</span></span><span style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></span></div>
+  <div class="feat2">
+    <div class="boxstage" id="cajaDest"></div>
+    <div class="info2" id="infoDest"></div>
+  </div>
+</section>
+
+<!-- 06 CÓMO COMPRAR -->
+<section class="pant dark p-comprar">
+  <div class="eti"><span><span data-l="es">Cómo comprar<br>4 pasos</span><span data-l="en">How to buy<br>4 steps</span></span><span style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></span></div>
+  <h2 class="display"><span data-l="es">Comprás hoy.<br>Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today.<br>Use it <span class="it">today.</span></span></h2>
+  <div class="flow4" id="flow4"></div>
+</section>
+
+<!-- 07 A MEDIDA -->
+<section class="pant dark p-medida" id="a-medida">
+  <div class="eti"><span><span data-l="es">A medida<br>OB—X00</span><span data-l="en">Custom<br>OB—X00</span></span><span style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></span></div>
+  <h2 class="display"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
+  <form class="cform" id="cform" novalidate>
+    <div class="barra4">
+      <span class="cuenta4"></span>
+      <span class="tramos"><i></i><i></i><i></i><i></i><i></i></span>
+    </div>
+    <div class="pista4"><div class="via4">
+      <div class="paso4">
+        <span class="preg"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span>
+        <span class="ayuda"><span data-l="es">Podés elegir más de una.</span><span data-l="en">You can pick more than one.</span></span>
+        <div class="opts" data-group="type" data-varias></div>
+      </div>
+      <div class="paso4">
+        <label class="preg" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label>
+        <textarea id="cIdea" name="idea"></textarea>
+      </div>
+      <div class="paso4">
+        <span class="preg"><span data-l="es">¿Qué presupuesto manejás?</span><span data-l="en">What is your budget?</span></span>
+        <span class="ayuda">USD</span>
+        <div class="opts" data-group="budget"></div>
+      </div>
+      <div class="paso4">
+        <span class="preg"><span data-l="es">¿Para cuándo lo necesitás?</span><span data-l="en">When do you need it?</span></span>
+        <div class="opts" data-group="time"></div>
+      </div>
+      <div class="paso4">
+        <span class="preg"><span data-l="es">¿Dónde te escribimos?</span><span data-l="en">Where do we write you?</span></span>
+        <div class="two">
+          <div><label class="rot4" for="cName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="cName" name="name" autocomplete="name"></div>
+          <div><label class="rot4" for="cMail">Email</label><input id="cMail" name="email" type="email" autocomplete="email"></div>
+        </div>
+      </div>
+    </div></div>
+    <div class="mandos">
+      <button class="atras" type="button"><span class="ar">←</span> <span data-l="es">Atrás</span><span data-l="en">Back</span></button>
+      <span class="err" id="cErr" role="alert"></span>
+      <button class="btn btn-line sigue" type="button"><span data-l="es">Siguiente</span><span data-l="en">Next</span> <span class="ar">→</span></button>
+      <button class="btn btn-blue manda" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button>
+    </div>
+  </form>
+</section>
+
+<!-- 08 CIERRE -->
+<section class="pant dark p-cierre">
+  <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
+  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>08</span></div>
+  <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it" style="color:var(--ac)">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it" style="color:var(--ac)">A brighter tomorrow.</span></span></h2>
+  <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
+  <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir un sistema</span><span data-l="en">Pick a system</span> <span class="ar">↑</span></a></div>
+</section>
+
+</main>
+<script src="assets/js/products.js?v=46"></script>
+<script src="/api/catalog"></script>
+<script src="assets/js/orbit.js?v=46"></script>
+<script src="assets/js/secciones.js?v=1"></script>
+<script>
+(() => {
+const {$, $$, L, cover, buyBtn, money, url, wm, P, FAM} = ORBIT;
+/* wordmark animable: arco, punto y letras por separado,
+   para poder darle a cada uno su momento */
+const simbolo = ORBIT.symInner({dot:'#3047FF', ring:'#F2EFE8'});
+const arcoSVG = (simbolo.match(/<path[^>]*>/) || [''])[0].replace('<path', '<path class="arco"');
+/* la cola del punto: va dentro del mismo grupo que gira, así lo sigue sin cuentas */
+const DEGRADE = '<linearGradient id="obEstela" gradientUnits="userSpaceOnUse" x1="87.84" y1="59.43" x2="78.05" y2="77.09"><stop offset="0" stop-color="#3047FF" stop-opacity="0"/><stop offset="1" stop-color="#3047FF" stop-opacity=".78"/></linearGradient>';
+const COLA = '<path class="estela" d="M87.84 59.43 A39 39 0 0 1 78.05 77.09" fill="none" stroke="url(#obEstela)" stroke-width="11" stroke-linecap="round"/>';
+const puntoSVG = (simbolo.match(/<circle[^>]*>/) || [''])[0];
+$('#bWm').innerHTML =
+  `<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><defs>${DEGRADE}</defs>`
+  + `<g class="gira">${arcoSVG}<g class="orb">${COLA}${puntoSVG}</g></g></svg>`
+  + '<span class="pal">RBIT</span><sup>®</sup><i class="cur" aria-hidden="true"></i>';
+
+const RM = matchMedia('(prefers-reduced-motion:reduce)').matches;
+/* la intro se juega cada vez que se carga la página */
+
+/* ACTOS 1 y 2: el símbolo entra solo, grande y centrado en la pantalla; carga su
+   arco de punta a punta, recibe el punto y recién entonces viaja a su lugar.
+   Va con animaciones explícitas porque el punto de partida depende de una medida. */
+function simboloEntra() {
+  const o = $('#bWm .o'), arco = $('#bWm .arco'), orb = $('#bWm .orb'), marca = $('#bWm');
+  if (!o || !arco) return;
+  const caja = o.getBoundingClientRect(), an = innerWidth, al = innerHeight;
+  if (caja.width < 4 || !an) return;
+
+  /* de su tamaño final al tamaño de presentación, y del centro de la pantalla a su lugar */
+  const escala = Math.max(1.6, Math.min(an * .46, al * .30) / caja.width);
+  const dx = an / 2 - (caja.left + caja.width / 2);
+  const dy = al / 2 - (caja.top + caja.height / 2);
+  const reposo = `translateY(${(parseFloat(getComputedStyle(marca).fontSize) * .012).toFixed(2)}px)`;
+
+  const largo = Math.ceil(arco.getTotalLength());
+  arco.style.strokeDasharray = largo;
+  arco.style.strokeDashoffset = largo;
+
+  o.animate([{transform:`translate(${dx}px,${dy}px) scale(${escala})`}, {transform:reposo}],
+    {duration:820, delay:1550, easing:'cubic-bezier(.76,0,.16,1)', fill:'both'});
+  arco.animate([{strokeDashoffset:largo}, {strokeDashoffset:0}],
+    {duration:900, delay:120, easing:'cubic-bezier(.62,0,.2,1)', fill:'both'});
+  const entraPunto = orb.animate([{transform:'rotate(-175deg)', opacity:0}, {opacity:1, offset:.28}, {transform:'rotate(0deg)', opacity:1}],
+    {duration:800, delay:650, easing:'cubic-bezier(.2,1,.28,1)', fill:'both'});
+  /* al terminar la soltamos, para que la órbita continua del CSS tome el control
+     desde el mismo ángulo en el que quedó */
+  entraPunto.finished.then(() => entraPunto.cancel()).catch(() => {});
+
+  /* la rayita acompaña al barrido: va del principio al final de la palabra
+     con la misma curva, así siempre queda sobre el borde de lo que se revela */
+  const cur = $('#bWm .cur'), pal = $('#bWm .pal');
+  if (cur && pal) cur.animate(
+    [{transform:`translateX(${pal.offsetLeft}px)`}, {transform:`translateX(${pal.offsetLeft + pal.offsetWidth}px)`}],
+    {duration:560, delay:2400, easing:'cubic-bezier(.45,.02,.25,1)', fill:'both'});
+}
+
+function arrancar(intento) {
+  const o = $('#bWm .o');
+  /* si todavía no hay layout, esperamos un cuadro más */
+  if ((!o || o.getBoundingClientRect().width < 4) && (intento || 0) < 40)
+    return requestAnimationFrame(() => arrancar((intento || 0) + 1));
+  if (RM) document.body.classList.add('directo');
+  else simboloEntra();
+  requestAnimationFrame(() => document.body.classList.add('go'));
+}
+
+/* con portada de idioma esperamos a que termine de abrirse:
+   la intro es el primer acto de la página, no un telón de fondo */
+if (document.documentElement.classList.contains('gate-on')) {
+  addEventListener('orbit:lang', () => {
+    const esperar = () => document.querySelector('.gate') ? setTimeout(esperar, 60) : arrancar();
+    esperar();
+  }, {once:true});
+} else setTimeout(arrancar, 50);
+
+/* ---- método: un problema por diapositiva ---- */
+
+/* El libro es el mismo objeto que en el resto del sitio: la tapa de verdad,
+   con su lomo, su código y su contratapa. No un dibujo que se le parezca.
+   Entra de canto, mostrando el lomo, y gira hasta darte la tapa a medida que
+   la tarjeta llega al centro: del problema al producto, con el mismo gesto. */
+/* ---- las puertas de la portada: qué vas a encontrar ----
+   Salen de las familias que hoy tienen productos, así que se actualizan
+   solas cuando cambie el catálogo. No limitan a un público: dicen qué hay. */
+(function puertas() {
+  const caja = $('#bPuertas');
+  if (!caja) return;
+  const vivas = Object.keys(FAM).filter(f => P.some(p => p.family === f));
+  if (!vivas.length) return;
+  caja.innerHTML = `<i>${L('Qué vas a encontrar','What you will find')}</i><nav>${
+    vivas.map(f => `<a href="productos.html#${f}">${FAM[f][0].replace(/^Orbit /, '')}</a>`).join('')}</nav>`;
+})();
+
+/* =========================================================
+   SEGUNDA PANTALLA — el estante que se llena
+   Los nombres, los códigos y las tapas salen del catálogo real.
+   No pasa solo: se arrastra en cualquier parte de la pantalla, o se
+   toca una tapa y el estante salta a ese libro con su frase.
+   ========================================================= */
+const metodo = $('#metodo');
+/* los nombres del catálogo están en inglés; en la home se dicen en castellano */
+const ENCASTELLANO = {
+  'ob-001': ['Sistema de contenido', 'Content system'],
+  'ob-002': ['Biblioteca de recursos', 'Asset library'],
+  'ob-003': ['Sistema del estudio', 'Studio system'],
+  'ob-004': ['Flujos con IA', 'AI workflows'],
+};
+const enCastellano = p => L(...(ENCASTELLANO[p.id] || [p.name, p.name]));
+
+const ESCENAS = [
+  [['No sé qué publicar esta semana.','I don’t know what to post this week.'], 'ob-001'],
+  [['Empiezo cada diseño de cero.','I start every design from scratch.'], 'ob-002'],
+  [['Mis clientes están en cinco lugares distintos.','My clients live in five different places.'], 'ob-003'],
+  [['Pierdo horas en tareas repetidas.','I lose hours on repetitive tasks.'], 'ob-004'],
+];
+
+(function segundaPantalla() {
+  if (!metodo) return;
+  const F = ESCENAS.map(([, id]) => P.find(x => x.id === id)).filter(Boolean);
+  if (!F.length) return;
+
+  metodo.className = 'pant';
+  metodo.innerHTML = `
+    <div class="eti ent2" style="--d:0s"><span>${L('Nuestro método','Our method')} — OB—000</span><span>${
+      L('Un problema, un libro','One problem, one book')}</span></div>
+    <div class="medio">
+      <p class="dicho cambia ent2" style="--d:.1s"></p>
+      <div class="quien cambia ent2" style="--d:.18s"><s></s><b></b></div>
+    </div>
+    <div class="repisa ent2" style="--d:.24s">
+      <div class="libros">${F.map((p, i) =>
+        `<button type="button" data-e="${i}" aria-label="${p.code} — ${p.name}">${ORBIT.cover(p)}</button>`).join('')}</div>
+      <div class="tabla"></div>
+      <div class="apoyo">${L('Deslizá o tocá un libro','Swipe or tap a book')}</div>
+    </div>`;
+
+  const libros = $('.libros', metodo), tomos = $$('.libros > button', metodo),
+        dicho = $('.dicho', metodo), quien = $('.quien b', metodo),
+        cambia = $$('.cambia', metodo);
+  let cual = -1, mudando = false;
+
+  function ir(i) {
+    if (i === cual || mudando) return;
+    cual = i;
+    mudando = true;
+    cambia.forEach(c => c.classList.add('sale'));
+    setTimeout(() => {
+      dicho.innerHTML = '“' + L(...ESCENAS[i][0]) + '”';
+      quien.innerHTML = enCastellano(F[i]) + ' · ' + F[i].code;
+      cambia.forEach(c => c.classList.remove('sale'));
+      mudando = false;
+    }, RM ? 0 : 220);
+    tomos.forEach((t, k) => {
+      t.classList.toggle('puesto', k <= i);
+      t.classList.toggle('viva', k === i);
+      t.setAttribute('aria-current', k === i ? 'true' : 'false');
+    });
+  }
+
+  /* se agarra y se desliza en cualquier parte de la pantalla */
+  let x0 = null, y0 = null, tirando = false;
+  metodo.addEventListener('pointerdown', e => {
+    x0 = e.clientX; y0 = e.clientY; tirando = false;
+    libros.classList.add('tirando');
+  });
+  metodo.addEventListener('pointermove', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if (!tirando && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) tirando = true;
+    if (!tirando) return;
+    e.preventDefault();
+    libros.style.setProperty('--tira', Math.max(-52, Math.min(52, dx * .34)) + 'px');
+  });
+  function soltar(e) {
+    if (x0 === null) return;
+    const dx = (e.clientX === undefined ? x0 : e.clientX) - x0;
+    x0 = null;
+    libros.classList.remove('tirando');
+    libros.style.removeProperty('--tira');
+    if (tirando && Math.abs(dx) > 34) ir((cual + (dx < 0 ? 1 : F.length - 1)) % F.length);
+    setTimeout(() => tirando = false, 0);
+  }
+  metodo.addEventListener('pointerup', soltar);
+  metodo.addEventListener('pointercancel', soltar);
+  /* si fue un arrastre, la tapa que quedó abajo no se selecciona */
+  metodo.addEventListener('click', e => { if (tirando) { e.preventDefault(); e.stopPropagation(); } }, true);
+  tomos.forEach((t, i) => t.onclick = () => ir(i));
+
+  ir(0);
+
+  /* se presenta sola al llegar, y queda legible para siempre */
+  if (RM) document.body.classList.add('cuenta');
+  else new IntersectionObserver(([e], obs) => {
+    if (e.isIntersecting) { document.body.classList.add('cuenta'); obs.disconnect(); }
+  }, {threshold:.25}).observe(metodo);
+})();
+
+/* =========================================================
+   CUARTA PANTALLA — la colección, achicada
+   Las tapas en una vitrina que se desliza, y de ahí a la página de
+   productos, que es donde el catálogo está separado por escalones.
+   ========================================================= */
+const coleccion = $('#coleccion');
+
+(function cuartaPantalla() {
+  if (!coleccion) return;
+  coleccion.className = 'pant';
+  coleccion.innerHTML = `
+    <div class="eti ent3" style="--d:0s"><span>${L('La colección','The collection')} — Vol.01</span><span>${
+      L('Deslizá','Swipe')}</span></div>
+    <h2 class="ent3" style="--d:.08s">${L(
+      'Listos<br>para <span class="it">usar.</span>',
+      'Ready<br>to <span class="it">use.</span>')}</h2>
+    <div class="vitrina2 ent3" style="--d:.18s">${P.map(p => `
+      <a class="ficha2" href="${ORBIT.url(p)}">
+        ${ORBIT.cover(p)}
+        <span class="to2"><b>${enCastellano(p)}</b><small>${
+          p.status === 'soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</small></span>
+      </a>`).join('')}</div>
+    <div class="pie3 ent3" style="--d:.3s">
+      <span class="nota3">${L('Tocá para ver la ficha','Tap to open the details')}</span>
+      <a class="btn btn-acid" href="productos.html">${L('Ver todo','See all')} <span class="ar">→</span></a>
+    </div>`;
+
+  /* se presenta sola al llegar y queda legible para siempre */
+  if (RM) document.body.classList.add('ve');
+  else new IntersectionObserver(([e], obs) => {
+    if (e.isIntersecting) { document.body.classList.add('ve'); obs.disconnect(); }
+  }, {threshold:.25}).observe(coleccion);
+})();
+
+/* ---- 05 · destacado: la caja 3D que se gira con el dedo ---- */
+(function destacado() {
+  const caja = $('#cajaDest'), info = $('#infoDest');
+  if (!caja || !info || !P.length) return;
+  const f = P[0];
+  ORBIT.mountBox(caja, f);
+  const partes = f.name.split(' ');
+  info.innerHTML = `
+    <span class="cod">${f.code} · ${FAM[f.family] ? FAM[f.family][0] : ''}</span>
+    <h2>${partes[0]}<br><span class="it">${partes.slice(1).join(' ').toLowerCase()}.</span></h2>
+    <p class="tag2">${L(f.tagline)}</p>
+    <div class="specs2">${(() => {
+      /* de los cuatro datos, los dos que de verdad hacen falta antes del clic:
+         con qué herramienta se usa y si se puede usar en trabajos de clientes */
+      const quiero = ['Formato','Licencia'];
+      const tengo = (f.specs || []).filter(([k]) => k && quiero.includes(k.es));
+      return (tengo.length ? tengo : (f.specs || []).slice(0, 2))
+        .map(([k, v]) => `<div><small>${L(k)}</small><b>${L(v)}</b></div>`).join('');
+    })()}</div>
+    <div class="acts2">${buyBtn(f)}<a class="btn btn-line" href="${ORBIT.url(f)}">${
+      L('Ver detalle','See details')}</a></div>`;
+})();
+
+/* ---- 05 · cómo comprar: el símbolo de Orbit se va cerrando paso a paso ---- */
+(function comoComprar() {
+  const caja = $('#flow4');
+  if (!caja) return;
+  const PASOS4 = [
+    ['Elegí tu sistema','Pick your system',
+     'Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.', 140],
+    ['Pagá una sola vez','Pay once',
+     'Mercado Pago en pesos o tarjeta en dólares. Sin suscripciones.',
+     'Mercado Pago in pesos or card in dollars. No subscriptions.', 90],
+    ['Recibilo al instante','Get it instantly',
+     'Te llega un email con la descarga o el acceso.','You get an email with the download or access link.', 40],
+    ['Usalo desde hoy','Use it today',
+     'Licencia comercial y actualizaciones sin cargo.','Commercial license and free updates.', 0],
+  ];
+  caja.innerHTML = PASOS4.map(([t, te, d, de, hueco], i) => `<div>
+      <span class="nn4">0${i + 1}</span>
+      <div class="s">${ORBIT.sym({gap: hueco, ring: 'currentColor',
+        dot: i === 3 ? ORBIT.C.blue : 'currentColor', dotOn: i > 0})}</div>
+      <div><b>${L(t, te)}</b><p>${L(d, de)}</p></div>
+    </div>`).join('');
+})();
+
+/* ---- los problemas se tachan al entrar en pantalla ---- */
+const io = new IntersectionObserver(es => es.forEach(e => e.isIntersecting && e.target.classList.add('vis')), {threshold:.55});
+$$('.m-slide').forEach(e => io.observe(e));
+
+/* ---- posición dentro de cada riel ---- */
+function seguirRiel(riel, etiqueta, barra) {
+  const el = $(riel), n = $(etiqueta), b = $(barra);
+  if (!el) return;
+  const total = el.children.length;
+  const ver = () => {
+    const paso = el.scrollWidth / total;
+    const i = Math.min(total, Math.round(el.scrollLeft / paso) + 1);
+    n.textContent = String(i).padStart(2,'0') + ' / ' + String(total).padStart(2,'0');
+    b.style.transform = 'scaleX(' + (i/total) + ')';
+  };
+  el.addEventListener('scroll', ver, {passive:true}); ver();
+}
+
+/* ---- la O viaja del wordmark al indicador de avance ----
+   Va en un elemento fijo aparte, no en la O del wordmark: esa vive dentro
+   de una sección con recorte, y al salir de ella se cortaría. */
+/* Limita a los oyentes de scroll a correr una vez por cuadro. Sin esto,
+   iOS dispara scroll muchas más veces de las que puede dibujar. */
+const porCuadro = fn => {
+  let pedido = false;
+  return () => { if (pedido) return; pedido = true;
+    requestAnimationFrame(() => { pedido = false; fn(); }); };
+};
+
+/* el alto real de la ventana, medido y no declarado */
+(function altoReal() {
+  /* Safari informa distinto según tenga la barra desplegada o compacta, así
+     que nos quedamos con el mayor de los dos: la pantalla nunca queda corta
+     y no vuelve a asomar la sección de abajo. */
+  const fijar = () => document.documentElement.style.setProperty('--vh',
+    Math.max(innerHeight, (window.visualViewport && visualViewport.height) || 0) + 'px');
+  fijar();
+  /* En iOS, al scrollear para arriba Safari despliega la barra de direcciones
+     y el alto cambia solo. Si reescribimos --vh ahí, las ocho pantallas se
+     recalculan en medio del gesto y el scroll se traba. Sólo recalculamos
+     cuando cambia el ANCHO —rotación o cambio real de ventana—, nunca por
+     el alto. */
+  let anchoAnterior = innerWidth;
+  addEventListener('resize', () => {
+    if (innerWidth === anchoAnterior) return;
+    anchoAnterior = innerWidth; fijar();
+  });
+  addEventListener('orientationchange', () => setTimeout(() => { anchoAnterior = innerWidth; fijar(); }, 160));
+})();
+
+(function viajeDeLaO() {
+  const viajero = document.createElement('div');
+  viajero.className = 'viajero'; viajero.setAttribute('aria-hidden', 'true');
+  viajero.innerHTML = `<svg viewBox="0 0 100 100">${ORBIT.symInner({dot:'#3047FF', ring:'#F2EFE8'})}</svg>`;
+  document.body.append(viajero);
+
+  const meta = $('#avance'), mezcla = (a, b, t) => a + (b - a) * t;
+  let origen = null;
+  /* el punto de partida solo se puede medir arriba de todo y con la intro terminada */
+  const medir = () => { if (scrollY < 4) { const r = $('#bWm .o').getBoundingClientRect(); if (r.width > 4) origen = r; } };
+
+  function viajar() {
+    const m = meta.getBoundingClientRect();   /* #avance es fijo: su caja no depende del scroll */
+    /* sin indicador a la vista (pantalla grande) no hay viaje posible */
+    if (!m.width) { viajero.style.opacity = 0; document.body.classList.remove('viaja', 'llego'); return; }
+    if (!origen) { medir(); if (!origen) return; }
+    const t = Math.min(1, Math.max(0, scrollY / (innerHeight * .62))), e = t * t * (3 - 2 * t);
+    viajero.style.width = origen.width + 'px'; viajero.style.height = origen.height + 'px';
+    viajero.style.transform = `translate(${mezcla(origen.left, m.left, e).toFixed(1)}px,`
+      + `${mezcla(origen.top, m.top, e).toFixed(1)}px) scale(${(mezcla(origen.width, m.width, e) / origen.width).toFixed(4)})`;
+    const viajando = t > .002 && t < .998;
+    viajero.style.opacity = viajando ? 1 : 0;
+    document.body.classList.toggle('viaja', viajando);
+    document.body.classList.toggle('llego', t >= .998);
+  }
+  addEventListener('scroll', porCuadro(viajar), {passive:true});
+  addEventListener('resize', () => { origen = null; viajar(); });
+  setTimeout(() => { medir(); viajar(); }, 3000);
+})();
+
+/* ---- 07 · a medida: una pregunta por vez ---- */
+(function aMedida() {
+  const forma = $('#cform');
+  if (!forma) return;
+  const via = $('.via4', forma), pasos = $$('.paso4', forma),
+        tramos = $$('.tramos i', forma), cuenta = $('.cuenta4', forma),
+        atras = $('.atras', forma), sigue = $('.sigue', forma),
+        manda = $('.manda', forma), err = $('#cErr', forma);
+  let cual = 0;
+  const num = i => String(i + 1).padStart(2, '0');
+
+  function pintar() {
+    via.style.transform = `translateX(-${cual * 100}%)`;
+    tramos.forEach((t, i) => t.classList.toggle('on', i <= cual));
+    cuenta.innerHTML = L('Paso','Step') + ` ${num(cual)} / ${num(pasos.length - 1)}`;
+    atras.hidden = cual === 0;
+    sigue.hidden = cual === pasos.length - 1;
+    manda.hidden = cual !== pasos.length - 1;
+    pasos.forEach((p, i) => p.inert = i !== cual);
+  }
+  /* sólo la idea es obligatoria para avanzar; el resto se valida al enviar */
+  function puedeSeguir() {
+    if (cual === 1 && !$('#cIdea').value.trim()) {
+      err.textContent = ORBIT.tr('Contanos la idea para seguir.','Tell us the idea to continue.');
+      return false;
+    }
+    err.textContent = '';
+    return true;
+  }
+  const avanzar1 = () => { if (cual < pasos.length - 1) { cual++; pintar(); } };
+  sigue.onclick = () => { if (puedeSeguir()) avanzar1(); };
+  /* elegir presupuesto o plazo pasa solo a la pregunta siguiente; la primera
+     admite varias, así que ahí espera a que toques Siguiente */
+  forma.addEventListener('orbit:opcion', e => {
+    if (e.detail.varias) return;
+    err.textContent = '';
+    setTimeout(avanzar1, 260);
+  });
+  atras.onclick = () => { if (cual > 0) { cual--; err.textContent = ''; pintar(); } };
+  pintar();
+  addEventListener('orbit:lang', pintar);
+})();
+
+/* ---- el símbolo de Orbit marca el avance ---- */
+const arco = $('#arco'), avance = $('#avance'), avanceN = $('#avanceN');
+const L2 = 2 * Math.PI * 20;
+arco.style.strokeDasharray = L2;
+const pantallas = $$('.pant');
+/* Antes esto medía la caja de las ocho pantallas y pedía el color calculado
+   en CADA evento de scroll: el navegador tenía que rehacer el cálculo de
+   estilos del documento entero decenas de veces por segundo. Ahora se mide
+   una vez —y de nuevo sólo si cambia el tamaño— y el scroll es pura cuenta. */
+let topes = [], colores = [], recorrido = 0;
+function remedir() {
+  topes = pantallas.map(s => s.getBoundingClientRect().top + scrollY);
+  colores = pantallas.map(s => getComputedStyle(s).color);
+  recorrido = document.documentElement.scrollHeight - innerHeight;
+}
+function avanzar() {
+  const p = recorrido > 0 ? Math.min(1, Math.max(0, scrollY / recorrido)) : 0;
+  arco.style.strokeDashoffset = L2 * (1 - p);
+  avance.classList.toggle('on', scrollY > 80);
+  const corte = scrollY + innerHeight * .5;
+  let i = 1;
+  for (let k = 0; k < topes.length; k++) if (topes[k] <= corte) i = k + 1;
+  avanceN.textContent = String(i).padStart(2,'0');
+  avance.style.color = colores[i - 1] || '';
+}
+remedir(); avanzar();
+addEventListener('scroll', porCuadro(avanzar), {passive:true});
+addEventListener('resize', () => { remedir(); avanzar(); });
+addEventListener('load', () => { remedir(); avanzar(); });
+setTimeout(() => { remedir(); avanzar(); }, 3200);   /* con la intro ya terminada */
+})();
+</script>
+</body>
+</html>
