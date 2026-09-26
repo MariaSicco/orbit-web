@@ -236,6 +236,28 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
 .contact a.big{font-weight:800;font-size:clamp(26px,6.6vw,72px);letter-spacing:-.05em;text-decoration:none;line-height:1;border-bottom:3px solid var(--blue);word-break:break-all}
 .contact a.big:hover{color:var(--blue)}
 @media (max-width:860px){.ab-hero .g,.contact{grid-template-columns:1fr}.vals{grid-template-columns:1fr}.ab-photos{grid-template-columns:1fr 1fr}.ab-photos .photo:nth-child(3){display:none}}
+
+/* ---- escritorio: el mismo relato, con proporciones de pantalla ancha ----
+   En el teléfono cada sección es una pantalla justa. En una pantalla ancha eso
+   dejaba el titular comiéndose la mitad del alto y las fichas convertidas en
+   franjas de 250 px con el texto apelmazado contra el borde de abajo. */
+@media (min-width:1000px){
+  [data-page="nosotros"] .sec > .wrap{
+    padding:calc(118px + env(safe-area-inset-top,0px)) var(--pad) 74px;
+    gap:clamp(28px,4.4vh,60px)}
+  /* el titular deja de ser el protagonista absoluto */
+  [data-page="nosotros"] .sec .display{font-size:clamp(48px,5vw,84px);max-width:17ch}
+  [data-page="nosotros"] .mf-open{font-size:clamp(48px,5vw,84px);max-width:16ch}
+  [data-page="nosotros"] .frase-g{font-size:clamp(54px,6.2vw,104px);max-width:15ch}
+  /* las fichas recuperan alto y aire adentro */
+  [data-page="nosotros"] .vals>div,
+  [data-page="nosotros"] .chain>div{min-height:clamp(280px,32vh,340px);
+    padding:clamp(24px,2.1vw,36px)}
+  [data-page="nosotros"] .vals .s,[data-page="nosotros"] .chain .s{width:76px}
+  [data-page="nosotros"] .chain p{font-size:15px;margin-top:12px;max-width:26ch}
+  [data-page="nosotros"] .chain{margin-top:0}   /* el hueco lo pone el gap del wrap */
+  [data-page="nosotros"] .sec > .wrap.contact{gap:clamp(28px,4vh,52px)}
+}
 </style>
 </head>
 <body data-page="nosotros" data-title-es="Nosotros — Orbit®" data-title-en="About — Orbit®">
@@ -290,7 +312,7 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
       <div class="q-pie">
         <span class="q-num mono">01 / 04</span>
         <div class="q-rayas"><button type="button" aria-label="1"></button><button type="button" aria-label="2"></button><button type="button" aria-label="3"></button><button type="button" aria-label="4"></button></div>
-        <span class="q-pista mono"><span data-l="es">Deslizá</span><span data-l="en">Swipe</span></span>
+        <span class="q-pista mono"><span data-l="es">Deslizá o tocá los costados</span><span data-l="en">Swipe or tap the sides</span></span>
       </div>
     </div>
   </div>
@@ -373,11 +395,19 @@ const CH = [[['Idea','Idea'],['Aparece. Todavía no tiene forma.','It appears. I
     if (!tirando && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) tirando = true;
     if (tirando) e.preventDefault();
   });
+  const ir = paso => poner((cual + paso + beats.length) % beats.length);
   const soltar = e => {
     if (x0 === null) return;
     const dx = (e.clientX === undefined ? x0 : e.clientX) - x0;
+    const x = e.clientX;
     x0 = null;
-    if (tirando && Math.abs(dx) > 34) poner(cual + (dx < 0 ? 1 : -1));
+    if (tirando && Math.abs(dx) > 34) ir(dx < 0 ? 1 : -1);
+    /* un toque seco: la mitad izquierda vuelve, la derecha avanza. Sin esto,
+       en una pantalla con mouse la única forma de pasar era el rayado. */
+    else if (!tirando && x !== undefined && !(e.target && e.target.closest('a,button'))) {
+      const r = zona.getBoundingClientRect();
+      ir(x - r.left < r.width / 2 ? -1 : 1);
+    }
     setTimeout(() => tirando = false, 0);
   };
   zona.addEventListener('pointerup', soltar);

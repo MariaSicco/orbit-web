@@ -1,0 +1,311 @@
+<!doctype html>
+<html lang="es" data-lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Founder — 4 versiones de escritorio</title>
+<script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang})()</script>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#3047FF">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="assets/css/orbit.css?v=46">
+<style>
+/* ============================================================
+   CUATRO VERSIONES DE LA SECCIÓN FOUNDER PARA ESCRITORIO.
+   No son variaciones del mismo dibujo: cada una decide distinto
+   dónde va el peso —la foto, el dato, el afiche o el contraste—
+   y usa el ancho de otra manera.
+   ============================================================ */
+
+body{background:var(--k);color:var(--b)}
+.marca-v{position:sticky;top:0;z-index:40;display:flex;justify-content:space-between;
+  align-items:center;gap:20px;padding:10px clamp(16px,3vw,44px);background:var(--k);
+  border-bottom:1px solid var(--k3);font-family:var(--mono);font-size:10px;
+  letter-spacing:.12em;text-transform:uppercase}
+.marca-v b{font-weight:500;color:var(--ac)}
+.marca-v nav{display:flex;gap:14px}
+.marca-v a{color:inherit;text-decoration:none;opacity:.6}
+.marca-v a:hover{opacity:1;color:var(--ac)}
+
+.fv{position:relative;min-height:100vh;overflow:hidden;background:var(--blue);color:var(--b);
+  touch-action:pan-y;--pad:clamp(20px,4vw,72px)}
+.fv .tag{position:absolute;left:0;top:0;z-index:6;background:var(--ac);color:var(--k);
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  padding:7px 14px}
+/* la grilla de fondo, igual que en la versión que ya aprobaste */
+.fv .reja{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background:repeating-linear-gradient(90deg,rgba(242,239,232,.13) 0 1px,transparent 1px 12.5%),
+             repeating-linear-gradient(0deg,rgba(242,239,232,.1) 0 1px,transparent 1px 104px)}
+
+/* --- piezas compartidas --- */
+.fv .dato{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;
+  line-height:1.9;opacity:.9}
+.fv .nom{margin:0;display:flex;flex-direction:column;line-height:.84;letter-spacing:-.05em;
+  font-weight:800;text-transform:uppercase}
+.fv .nom .hueca{color:transparent;-webkit-text-stroke:1.5px currentColor}
+.fv .via{position:relative}
+.fv .beat{position:absolute;inset:0;margin:0;opacity:0;transform:translateY(12px);
+  transition:opacity .5s var(--ease),transform .5s var(--ease);pointer-events:none;
+  color:rgba(242,239,232,.92)}
+.fv .beat.on{opacity:1;transform:none;pointer-events:auto}
+.fv .beat b{font-weight:600;color:var(--b)}
+.fv .beat em{font-family:var(--serif);font-style:italic;color:var(--ac)}
+.fv .beat mark{background:var(--ac);color:var(--k);padding:0 .22em;border-radius:1px}
+.fv .pie{display:flex;align-items:center;gap:14px}
+.fv .num{font-family:var(--mono);font-size:10px;letter-spacing:.13em;white-space:nowrap;opacity:.9}
+.fv .rayas{display:flex;gap:6px;flex:1;max-width:220px}
+.fv .rayas button{flex:1;height:2px;padding:0;border:0;cursor:pointer;
+  background:rgba(242,239,232,.35);transition:background .3s}
+.fv .rayas button.on{background:var(--ac)}
+.fv .pista{margin-left:auto;font-family:var(--mono);font-size:10px;letter-spacing:.13em;
+  text-transform:uppercase;opacity:.8}
+/* el cursor avisa de qué lado se avanza */
+@media (hover:hover) and (pointer:fine){
+  .fv .lado{position:absolute;top:0;bottom:0;width:50%;z-index:5}
+  .fv .lado.izq{left:0;cursor:w-resize}
+  .fv .lado.der{right:0;cursor:e-resize}
+}
+.fv .lado{position:absolute;top:0;bottom:0;width:50%;z-index:5}
+.fv .lado.izq{left:0} .fv .lado.der{right:0}
+.fv .capa{position:relative;z-index:6}
+
+/* ============ 01 · COLUMNA ============
+   El retrato es una columna entera, de piso a techo, sin marco. El texto
+   ocupa la otra columna y el nombre se apoya sobre la línea del relato. */
+.fv1 .malla{position:relative;z-index:2;min-height:100vh;display:grid;
+  grid-template-columns:minmax(0,1fr) clamp(300px,34vw,520px)}
+.fv1 .izqda{display:flex;flex-direction:column;justify-content:space-between;
+  padding:clamp(70px,9vh,110px) clamp(28px,3.4vw,58px) clamp(40px,6vh,64px) var(--pad);gap:28px}
+.fv1 .retrato{position:relative;background:#1b2bb8 center 14%/cover;align-self:stretch}
+.fv1 .retrato::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(48,71,255,.34) 0%,rgba(48,71,255,0) 34%,rgba(48,71,255,.28) 100%)}
+.fv1 .nom{font-size:clamp(44px,6.4vw,104px)}
+.fv1 .relato{border-top:1px solid rgba(242,239,232,.42);padding-top:20px;display:grid;gap:18px}
+.fv1 .via{min-height:clamp(96px,13vh,132px)}
+.fv1 .beat{font-size:clamp(18px,1.62vw,26px);line-height:1.34;max-width:40ch}
+
+/* ============ 02 · FICHA TÉCNICA ============
+   Un riel de datos a la izquierda, como la ficha de un producto del catálogo,
+   y el relato grande a la derecha: el texto es la pieza, no la foto. */
+.fv2 .malla{position:relative;z-index:2;min-height:100vh;display:grid;
+  grid-template-columns:clamp(220px,20vw,290px) minmax(0,1fr);
+  gap:clamp(30px,4vw,70px);padding:clamp(74px,10vh,116px) var(--pad) clamp(40px,6vh,64px)}
+.fv2 .riel{display:flex;flex-direction:column;gap:22px;
+  border-right:1px solid rgba(242,239,232,.28);padding-right:clamp(20px,2.4vw,40px)}
+.fv2 .riel .fila{display:grid;gap:3px;border-top:1px solid rgba(242,239,232,.28);padding-top:9px}
+.fv2 .riel .fila span:first-child{opacity:.62}
+.fv2 .carnet{margin-top:auto;aspect-ratio:1;background:#1b2bb8 center 14%/cover;
+  filter:grayscale(.15) contrast(1.05)}
+.fv2 .cuerpo{display:flex;flex-direction:column;justify-content:space-between;gap:clamp(24px,4vh,52px)}
+.fv2 .nom{font-size:clamp(46px,6.8vw,118px)}
+.fv2 .via{flex:1;min-height:clamp(150px,22vh,240px);display:flex;align-items:center}
+.fv2 .beat{display:flex;align-items:center;font-size:clamp(22px,2.4vw,40px);
+  line-height:1.26;max-width:26ch;font-weight:500}
+
+/* ============ 03 · AFICHE ============
+   La foto ocupa toda la sección, el nombre la cruza de lado a lado y el
+   relato queda como pie, en una columna angosta. */
+.fv3 .fondo{position:absolute;inset:0;z-index:0;background:#1b2bb8 center 22%/cover;
+  filter:grayscale(1) contrast(1.06)}
+.fv3 .vel{position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,rgba(48,71,255,.9) 0%,rgba(48,71,255,.52) 42%,rgba(13,13,14,.88) 100%)}
+.fv3 .malla{position:relative;z-index:3;min-height:100vh;display:flex;flex-direction:column;
+  justify-content:space-between;gap:clamp(24px,4vh,48px);
+  padding:clamp(74px,10vh,116px) var(--pad) clamp(40px,6vh,64px)}
+.fv3 .nom{font-size:clamp(52px,10.6vw,190px);line-height:.8}
+.fv3 .nom .hueca{-webkit-text-stroke:2px currentColor}
+.fv3 .relato{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(24px,4vw,64px);
+  align-items:end;border-top:1px solid rgba(242,239,232,.4);padding-top:20px}
+.fv3 .via{min-height:clamp(96px,13vh,128px)}
+.fv3 .beat{font-size:clamp(18px,1.6vw,25px);line-height:1.34;max-width:44ch}
+.fv3 .pie{flex-direction:column;align-items:flex-start;gap:10px}
+.fv3 .rayas{max-width:150px;width:150px}
+
+/* ============ 04 · DOS MITADES ============
+   Mitad foto, mitad panel hueso. Rompe el azul continuo y el relato
+   se lee en negro, que es donde más descansa la vista. */
+.fv4 .malla{position:relative;z-index:2;min-height:100vh;display:grid;
+  grid-template-columns:clamp(280px,44vw,660px) minmax(0,1fr)}
+.fv4 .retrato{position:relative;background:#1b2bb8 center 16%/cover;align-self:stretch}
+.fv4 .panel{background:var(--b);color:var(--k);display:flex;flex-direction:column;
+  justify-content:space-between;gap:clamp(22px,3.4vh,44px);
+  padding:clamp(74px,10vh,116px) var(--pad) clamp(40px,6vh,64px)}
+.fv4 .panel .dato{opacity:.7}
+.fv4 .nom{font-size:clamp(40px,4.9vw,86px)}
+.fv4 .nom .hueca{color:transparent;-webkit-text-stroke:1.5px var(--blue)}
+.fv4 .nom .llena{color:var(--k)}
+.fv4 .relato{border-top:1px solid rgba(13,13,14,.22);padding-top:20px;display:grid;gap:18px}
+.fv4 .via{min-height:clamp(110px,15vh,150px)}
+.fv4 .beat{color:rgba(13,13,14,.78);font-size:clamp(18px,1.6vw,26px);line-height:1.36;max-width:36ch}
+.fv4 .beat b{color:var(--k)}
+.fv4 .beat em{color:var(--blue)}
+.fv4 .beat mark{background:var(--ac);color:var(--k)}
+.fv4 .rayas button{background:rgba(13,13,14,.28)}
+.fv4 .rayas button.on{background:var(--blue)}
+
+/* --- en pantalla angosta las cuatro se apilan, sólo para no romperse --- */
+@media (max-width:999px){
+  .fv1 .malla,.fv2 .malla,.fv4 .malla{grid-template-columns:1fr}
+  .fv1 .retrato,.fv4 .retrato{min-height:46vh}
+  .fv2 .riel{border-right:0;border-bottom:1px solid rgba(242,239,232,.28);padding:0 0 20px}
+  .fv2 .carnet{max-width:220px}
+}
+</style>
+</head>
+<body data-page="founder">
+
+<header class="marca-v">
+  <span>Orbit® · Founder — <b>4 versiones de escritorio</b></span>
+  <nav><a href="#v1">01 Columna</a><a href="#v2">02 Ficha</a><a href="#v3">03 Afiche</a><a href="#v4">04 Dos mitades</a></nav>
+  <span>Mirala en la computadora</span>
+</header>
+
+<main>
+
+<!-- 01 · COLUMNA -->
+<section class="fv fv1" id="v1" data-relato>
+  <div class="reja" aria-hidden="true"></div>
+  <span class="tag">Versión 01 · Columna</span>
+  <button class="lado izq" type="button" aria-label="Anterior"></button>
+  <button class="lado der" type="button" aria-label="Siguiente"></button>
+  <div class="malla">
+    <div class="izqda capa">
+      <p class="dato" style="margin:0">Founder — OB—000<br><span data-l="es">Lic. en Comunicación Digital · Diseño · Sistemas · Desarrollo</span><span data-l="en">BA in Digital Communication · Design · Systems · Development</span></p>
+      <h2 class="nom"><span class="hueca">Founder</span><span class="llena">Majo Sicco</span></h2>
+      <div class="relato">
+        <div class="via" data-via></div>
+        <div class="pie" data-pie></div>
+      </div>
+    </div>
+    <div class="retrato" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"></div>
+  </div>
+</section>
+
+<!-- 02 · FICHA TÉCNICA -->
+<section class="fv fv2" id="v2" data-relato>
+  <div class="reja" aria-hidden="true"></div>
+  <span class="tag">Versión 02 · Ficha técnica</span>
+  <button class="lado izq" type="button" aria-label="Anterior"></button>
+  <button class="lado der" type="button" aria-label="Siguiente"></button>
+  <div class="malla">
+    <aside class="riel capa dato">
+      <div class="fila"><span>Rol</span><span>Founder</span></div>
+      <div class="fila"><span><span data-l="es">Código</span><span data-l="en">Code</span></span><span>OB—000</span></div>
+      <div class="fila"><span><span data-l="es">Formación</span><span data-l="en">Background</span></span><span data-l="es">Lic. en Comunicación Digital</span><span data-l="en">BA in Digital Communication</span></div>
+      <div class="fila"><span><span data-l="es">Oficios</span><span data-l="en">Practice</span></span><span data-l="es">Diseño · Sistemas · Desarrollo</span><span data-l="en">Design · Systems · Development</span></div>
+      <div class="fila"><span><span data-l="es">Desde</span><span data-l="en">Since</span></span><span>2026</span></div>
+      <div class="carnet" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"></div>
+    </aside>
+    <div class="cuerpo capa">
+      <h2 class="nom"><span class="hueca">Founder</span><span class="llena">Majo Sicco</span></h2>
+      <div class="via" data-via></div>
+      <div class="pie" data-pie></div>
+    </div>
+  </div>
+</section>
+
+<!-- 03 · AFICHE -->
+<section class="fv fv3" id="v3" data-relato>
+  <div class="fondo" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"></div>
+  <div class="vel" aria-hidden="true"></div>
+  <div class="reja" aria-hidden="true" style="z-index:2"></div>
+  <span class="tag">Versión 03 · Afiche</span>
+  <button class="lado izq" type="button" aria-label="Anterior"></button>
+  <button class="lado der" type="button" aria-label="Siguiente"></button>
+  <div class="malla">
+    <p class="dato capa" style="margin:0;display:flex;justify-content:space-between;gap:20px">
+      <span>Founder — OB—000</span>
+      <span style="text-align:right" data-l="es">Lic. en Comunicación Digital · Diseño · Sistemas · Desarrollo</span><span style="text-align:right" data-l="en">BA in Digital Communication · Design · Systems · Development</span>
+    </p>
+    <h2 class="nom capa"><span class="hueca">Founder</span><span class="llena">Majo Sicco</span></h2>
+    <div class="relato capa">
+      <div class="via" data-via></div>
+      <div class="pie" data-pie></div>
+    </div>
+  </div>
+</section>
+
+<!-- 04 · DOS MITADES -->
+<section class="fv fv4" id="v4" data-relato>
+  <span class="tag">Versión 04 · Dos mitades</span>
+  <button class="lado izq" type="button" aria-label="Anterior"></button>
+  <button class="lado der" type="button" aria-label="Siguiente"></button>
+  <div class="malla">
+    <div class="retrato" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"></div>
+    <div class="panel capa">
+      <p class="dato" style="margin:0">Founder — OB—000<br><span data-l="es">Lic. en Comunicación Digital · Diseño · Sistemas · Desarrollo</span><span data-l="en">BA in Digital Communication · Design · Systems · Development</span></p>
+      <h2 class="nom"><span class="hueca">Founder</span><span class="llena">Majo Sicco</span></h2>
+      <div class="relato">
+        <div class="via" data-via></div>
+        <div class="pie" data-pie></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<script src="assets/js/products.js?v=46"></script>
+<script src="assets/js/orbit.js?v=46"></script>
+<script>
+(() => {
+const {$, $$, L} = ORBIT;
+
+/* el texto es el mismo que ya está en Nosotros: acá sólo cambia la puesta */
+const BEATS = [
+  ['Soy Majo, <b>Licenciada en Comunicación Digital</b> y <em>fundadora de Orbit.</em>',
+   'I’m Majo, <b>BA in Digital Communication</b> and <em>founder of Orbit.</em>'],
+  ['Trabajo en el cruce entre <mark>diseño, estrategia y tecnología</mark>, convirtiendo ideas, procesos y problemas cotidianos en <em>herramientas que realmente sirvan.</em>',
+   'I work where <mark>design, strategy and technology</mark> meet, turning ideas, processes and everyday problems into <em>tools that actually help.</em>'],
+  ['Orbit nació de mi manera de trabajar: <b>detectar algo que se repite</b>, entender qué sobra y <em>construir un sistema mejor.</em>',
+   'Orbit came out of my way of working: <b>spot what repeats</b>, see what’s unnecessary and <em>build a better system.</em>'],
+  ['Cada herramienta empezó resolviendo <mark>un problema real</mark>. Primero la uso, la pruebo y la mejoro. Después, si funciona, <em>entra en órbita.</em>',
+   'Every tool started by solving <mark>a real problem</mark>. First I use it, test it, improve it. Then, if it works, <em>it enters orbit.</em>'],
+];
+
+$$('[data-relato]').forEach(zona => {
+  $('[data-via]', zona).innerHTML = BEATS.map(([es, en]) => `<p class="beat">${L(es, en)}</p>`).join('');
+  $('[data-pie]', zona).innerHTML = '<span class="num">01 / 04</span>'
+    + '<div class="rayas">' + BEATS.map((b, i) => `<button type="button" aria-label="${i + 1}"></button>`).join('') + '</div>'
+    + `<span class="pista">${L('Tocá los costados','Tap the sides')}</span>`;
+
+  const beats = $$('.beat', zona), rayas = $$('.rayas button', zona), num = $('.num', zona);
+  let cual = -1;
+  const poner = i => {
+    if (i === cual) return;
+    cual = i;
+    beats.forEach((b, k) => b.classList.toggle('on', k === i));
+    rayas.forEach((r, k) => r.classList.toggle('on', k <= i));
+    num.textContent = `0${i + 1} / 0${beats.length}`;
+  };
+  const ir = paso => poner((cual + paso + beats.length) % beats.length);
+  rayas.forEach((r, i) => r.onclick = e => { e.stopPropagation(); poner(i); });
+  $('.lado.izq', zona).onclick = () => ir(-1);
+  $('.lado.der', zona).onclick = () => ir(1);
+
+  /* y el deslizar de siempre, para el teléfono */
+  let x0 = null, y0 = null, tirando = false;
+  zona.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; tirando = false; });
+  zona.addEventListener('pointermove', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0, dy = e.clientY - y0;
+    if (!tirando && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) tirando = true;
+    if (tirando) e.preventDefault();
+  });
+  const soltar = e => {
+    if (x0 === null) return;
+    const dx = (e.clientX === undefined ? x0 : e.clientX) - x0;
+    x0 = null;
+    if (tirando && Math.abs(dx) > 34) ir(dx < 0 ? 1 : -1);
+    setTimeout(() => tirando = false, 0);
+  };
+  zona.addEventListener('pointerup', soltar);
+  zona.addEventListener('pointercancel', soltar);
+  poner(0);
+});
+})();
+</script>
+</body>
+</html>
