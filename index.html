@@ -56,6 +56,41 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 .hero .sub{margin:14px 0 0;max-width:52ch;opacity:.75}
 .hero .ctas{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
 .hero .hint{position:absolute;right:0;top:50%;writing-mode:vertical-rl;opacity:.4}
+
+/* ---- intro en tres actos, la misma que en el teléfono ----
+   ACTO 1  el símbolo solo, grande y centrado: carga su arco y el punto llega orbitando.
+   ACTO 2  viaja a su lugar como la O y ORBIT se escribe detrás de una rayita.
+   ACTO 3  entra el resto: la foto, los textos y los botones.
+   Al terminar, el punto vuelve a seguir al cursor: eso es de esta pantalla. */
+.hero .word{position:relative}
+.hero .word .o{transform-origin:50% 50%}
+.hero .word .gira,.hero .word .orb{transform-origin:50px 50px}
+.hero .word .pal{display:inline-block;clip-path:inset(-.28em 100% -.28em 0)}
+.go .hero .word .pal{clip-path:inset(-.28em -.14em -.28em 0);
+  transition:clip-path .56s cubic-bezier(.45,.02,.25,1) 2.4s}
+.hero .word .cur{position:absolute;left:0;top:50%;width:.05em;height:.6em;margin-top:-.31em;
+  background:var(--ac);opacity:0;pointer-events:none}
+.go .hero .word .cur{animation:tipear 1.16s steps(1,end) 2.32s 1 both}
+@keyframes tipear{
+  0%{opacity:0} 5%{opacity:1} 56%{opacity:1}
+  60%{opacity:0} 70%{opacity:1} 80%{opacity:0} 90%{opacity:1} 96%{opacity:0} 100%{opacity:0}}
+.hero .word sup{opacity:0;transition:opacity .45s ease 3.02s}
+.go .hero .word sup{opacity:1}
+/* ACTO 3 — cada uno recupera su opacidad de reposo, no todos 1 */
+.hero-bg{opacity:0;transition:opacity 1.6s ease 2.8s}
+.go .hero-bg{opacity:1}
+body .nav{opacity:0;transition:opacity .8s ease 3.15s}
+body.go .nav{opacity:1}
+.hero .top,.hero .bot,.hero .hint{opacity:0;transform:translateY(18px);
+  transition:opacity .7s ease var(--d,0s),transform .85s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
+.go .hero .top,.go .hero .bot,.go .hero .hint{opacity:var(--op,1);transform:none}
+.hero .top{--d:3.05s}
+.hero .bot{--d:3.2s}
+.hero .hint{--d:3.5s;--op:.4}
+/* sin intro: todo aparece ya puesto */
+body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .word sup,
+.directo .hero .top,.directo .hero .bot,.directo .hero .hint{transition:none!important}
+.directo .hero .word .cur{display:none}
 @media (max-width:860px){.hero .bot{grid-template-columns:1fr}.hero .hint{display:none}}
 
 /* banda de foto */
@@ -440,9 +475,65 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 (() => {
 const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow, reveal, toast, money, P, FAM, url, RM} = ORBIT;
 
-/* hero: ORBIT gigante + punto que sigue al cursor */
-$('#heroWord').innerHTML = bigWm('heroG');
-follow($('#heroG'), $('#heroWord svg'));
+/* hero: ORBIT gigante con intro, y después el punto sigue al cursor.
+   El wordmark se arma por partes —arco, punto y letras— porque cada uno
+   necesita su propio momento; bigWm() los da en una sola pieza. */
+const simb = ORBIT.symInner({dot:C.blue, ring:'#F2EFE8'});
+const arcoSVG = (simb.match(/<path[^>]*>/) || [''])[0].replace('<path', '<path class="arco"');
+const puntoSVG = (simb.match(/<circle[^>]*>/) || [''])[0];
+$('#heroWord').innerHTML = '<span class="wm">'
+  + '<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><g class="gira" id="heroG">'
+  + arcoSVG + '<g class="orb">' + puntoSVG + '</g></g></svg>'
+  + '<span class="pal">RBIT</span><sup>\u00ae</sup><i class="cur" aria-hidden="true"></i></span>';
+
+/* ACTOS 1 y 2: el símbolo entra solo, grande y centrado, carga su arco, recibe
+   el punto y recién entonces viaja a su lugar. Van con animaciones explícitas
+   porque el punto de partida depende de una medida que sólo existe en pantalla. */
+function heroEntra() {
+  const o = $('#heroWord .o'), arco = $('#heroWord .arco'), orb = $('#heroWord .orb');
+  if (!o || !arco) return 0;
+  const caja = o.getBoundingClientRect(), an = innerWidth, al = innerHeight;
+  if (caja.width < 4 || !an) return 0;
+  const escala = Math.max(1.6, Math.min(an * .46, al * .30) / caja.width);
+  const dx = an / 2 - (caja.left + caja.width / 2);
+  const dy = al / 2 - (caja.top + caja.height / 2);
+  const largo = Math.ceil(arco.getTotalLength());
+  arco.style.strokeDasharray = largo;
+  arco.style.strokeDashoffset = largo;
+  o.animate([{transform:`translate(${dx}px,${dy}px) scale(${escala})`}, {transform:'none'}],
+    {duration:820, delay:1550, easing:'cubic-bezier(.76,0,.16,1)', fill:'both'});
+  arco.animate([{strokeDashoffset:largo}, {strokeDashoffset:0}],
+    {duration:900, delay:120, easing:'cubic-bezier(.62,0,.2,1)', fill:'both'});
+  orb.animate([{transform:'rotate(-175deg)', opacity:0}, {opacity:1, offset:.28}, {transform:'rotate(0deg)', opacity:1}],
+    {duration:800, delay:650, easing:'cubic-bezier(.2,1,.28,1)', fill:'both'});
+  const cur = $('#heroWord .cur'), pal = $('#heroWord .pal');
+  if (cur && pal) cur.animate(
+    [{transform:`translateX(${pal.offsetLeft}px)`}, {transform:`translateX(${pal.offsetLeft + pal.offsetWidth}px)`}],
+    {duration:560, delay:2400, easing:'cubic-bezier(.45,.02,.25,1)', fill:'both'});
+  return 2370;   /* cuando el símbolo ya aterrizó */
+}
+
+/* el relevo: el grupo que giraba pasa a manos de follow() y el punto
+   empieza a seguir al cursor desde la misma posición en la que quedó */
+function heroSigue() { follow($('#heroG'), $('#heroWord svg')); }
+
+function arrancarHero(intento) {
+  const o = $('#heroWord .o');
+  if ((!o || o.getBoundingClientRect().width < 4) && (intento || 0) < 40)
+    return requestAnimationFrame(() => arrancarHero((intento || 0) + 1));
+  if (RM) { document.body.classList.add('directo'); heroSigue(); }
+  else setTimeout(heroSigue, heroEntra());
+  requestAnimationFrame(() => document.body.classList.add('go'));
+}
+
+/* con portada de idioma esperamos a que termine de abrirse: la intro es el
+   primer acto de la página, no un telón de fondo */
+if (document.documentElement.classList.contains('gate-on')) {
+  addEventListener('orbit:lang', () => {
+    const esperar = () => document.querySelector('.gate') ? setTimeout(esperar, 60) : arrancarHero();
+    esperar();
+  }, {once:true});
+} else setTimeout(arrancarHero, 50);
 
 /* hero: fotos + palabra + producto, sincronizados */
 const SLIDES = [
