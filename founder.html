@@ -145,6 +145,9 @@ body{background:var(--k);color:var(--b)}
 .fv4 .rayas button{background:rgba(13,13,14,.28)}
 .fv4 .rayas button.on{background:var(--blue)}
 
+/* el botón flotante de volver arriba se come la pista: le dejamos lugar */
+@media (min-width:1000px){.fv .pista{margin-right:clamp(0px,11vw,165px)}}
+
 /* --- en pantalla angosta las cuatro se apilan, sólo para no romperse --- */
 @media (max-width:999px){
   .fv1 .malla,.fv2 .malla,.fv4 .malla{grid-template-columns:1fr}
