@@ -44,7 +44,7 @@ body{background:var(--k);color:var(--b)}
   line-height:1.9;opacity:.9}
 .fv .nom{margin:0;display:flex;flex-direction:column;line-height:.84;letter-spacing:-.05em;
   font-weight:800;text-transform:uppercase}
-.fv .nom .hueca{color:transparent;-webkit-text-stroke:1.5px currentColor}
+.fv .nom .hueca{color:transparent;-webkit-text-stroke:1.5px var(--b)}
 .fv .via{position:relative}
 .fv .beat{position:absolute;inset:0;margin:0;opacity:0;transform:translateY(12px);
   transition:opacity .5s var(--ease),transform .5s var(--ease);pointer-events:none;
@@ -78,7 +78,7 @@ body{background:var(--k);color:var(--b)}
   grid-template-columns:minmax(0,1fr) clamp(300px,34vw,520px)}
 .fv1 .izqda{display:flex;flex-direction:column;justify-content:space-between;
   padding:clamp(70px,9vh,110px) clamp(28px,3.4vw,58px) clamp(40px,6vh,64px) var(--pad);gap:28px}
-.fv1 .retrato{position:relative;background:#1b2bb8 center 14%/cover;align-self:stretch}
+.fv1 .retrato{position:relative;background:#1b2bb8 center 14%/cover;align-self:stretch;filter:grayscale(1) contrast(1.1)}
 .fv1 .retrato::after{content:"";position:absolute;inset:0;
   background:linear-gradient(180deg,rgba(48,71,255,.34) 0%,rgba(48,71,255,0) 34%,rgba(48,71,255,.28) 100%)}
 .fv1 .nom{font-size:clamp(44px,6.4vw,104px)}
@@ -97,7 +97,7 @@ body{background:var(--k);color:var(--b)}
 .fv2 .riel .fila{display:grid;gap:3px;border-top:1px solid rgba(242,239,232,.28);padding-top:9px}
 .fv2 .riel .fila span:first-child{opacity:.62}
 .fv2 .carnet{margin-top:auto;aspect-ratio:1;background:#1b2bb8 center 14%/cover;
-  filter:grayscale(.15) contrast(1.05)}
+  filter:grayscale(1) contrast(1.1)}
 .fv2 .cuerpo{display:flex;flex-direction:column;justify-content:space-between;gap:clamp(24px,4vh,52px)}
 .fv2 .nom{font-size:clamp(46px,6.8vw,118px)}
 .fv2 .via{flex:1;min-height:clamp(150px,22vh,240px);display:flex;align-items:center}
@@ -115,7 +115,7 @@ body{background:var(--k);color:var(--b)}
   justify-content:space-between;gap:clamp(24px,4vh,48px);
   padding:clamp(74px,10vh,116px) var(--pad) clamp(40px,6vh,64px)}
 .fv3 .nom{font-size:clamp(52px,10.6vw,190px);line-height:.8}
-.fv3 .nom .hueca{-webkit-text-stroke:2px currentColor}
+.fv3 .nom .hueca{-webkit-text-stroke:2px var(--b)}
 .fv3 .relato{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(24px,4vw,64px);
   align-items:end;border-top:1px solid rgba(242,239,232,.4);padding-top:20px}
 .fv3 .via{min-height:clamp(96px,13vh,128px)}
@@ -128,7 +128,7 @@ body{background:var(--k);color:var(--b)}
    se lee en negro, que es donde más descansa la vista. */
 .fv4 .malla{position:relative;z-index:2;min-height:100vh;display:grid;
   grid-template-columns:clamp(280px,44vw,660px) minmax(0,1fr)}
-.fv4 .retrato{position:relative;background:#1b2bb8 center 16%/cover;align-self:stretch}
+.fv4 .retrato{position:relative;background:#1b2bb8 center 16%/cover;align-self:stretch;filter:grayscale(1) contrast(1.1)}
 .fv4 .panel{background:var(--b);color:var(--k);display:flex;flex-direction:column;
   justify-content:space-between;gap:clamp(22px,3.4vh,44px);
   padding:clamp(74px,10vh,116px) var(--pad) clamp(40px,6vh,64px)}
