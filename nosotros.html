@@ -284,8 +284,13 @@ main>section.sec{min-height:100svh;display:flex;flex-direction:column;justify-co
   [data-page="nosotros"] .quien-sec.entro .q-marco{transform:none}
   [data-page="nosotros"] .quien-sec .q-foto{background-position:center 14%}
   /* el velo ata la foto al azul por arriba y por abajo, en vez de recortarla en seco */
+  /* el velo va sobre el blanco y negro, no adentro: con .34 arriba le teñía
+     el pelo de violeta. Sólo un beso de azul arriba y un apagado abajo. */
   [data-page="nosotros"] .quien-sec .q-marco::after{content:"";position:absolute;inset:0;
-    background:linear-gradient(180deg,rgba(48,71,255,.34) 0%,rgba(48,71,255,0) 34%,rgba(48,71,255,.28) 100%)}
+    background:linear-gradient(180deg,rgba(48,71,255,.15) 0%,rgba(48,71,255,0) 24%,
+      rgba(48,71,255,0) 64%,rgba(48,71,255,.26) 100%)}
+  /* la ficha de arriba se partía en cinco renglones al angostarse la columna */
+  [data-page="nosotros"] .quien-sec .q-cred{max-width:44ch}
   [data-page="nosotros"] .quien-sec .q-medio{flex-direction:column;align-items:flex-start;
     justify-content:flex-end;gap:0}
   [data-page="nosotros"] .quien-sec .q-nom{order:0;flex:none;font-size:clamp(44px,6.4vw,104px)}
