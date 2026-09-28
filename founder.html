@@ -71,6 +71,80 @@ body{background:var(--k);color:var(--b)}
 .fv .lado.izq{left:0} .fv .lado.der{right:0}
 .fv .capa{position:relative;z-index:6}
 
+/* ============ 05 · MEZCLA (01 + 04) ============
+   La columna de retrato de la 01 y el panel de color de la 04, pero el panel
+   ya no es de un solo color: cada párrafo del relato trae su propia paleta y
+   su propio recurso gráfico de fondo, y el símbolo de Orbit se va cerrando
+   igual que avanza el texto. Los cuatro estados pasan AA de contraste. */
+.fv5{--pan:var(--blue);--tin:var(--b);--acc:var(--ac);--sua:rgba(242,239,232,.9);--mk:var(--k)}
+.fv5[data-beat="1"]{--pan:var(--b);--tin:var(--k);--acc:var(--blue);--sua:rgba(13,13,14,.78);--mk:var(--b)}
+.fv5[data-beat="2"]{--pan:var(--k);--tin:var(--b);--acc:var(--ac);--sua:rgba(242,239,232,.86);--mk:var(--k)}
+.fv5[data-beat="3"]{--pan:var(--ac);--tin:var(--k);--acc:var(--blue);--sua:rgba(13,13,14,.8);--mk:var(--b)}
+
+.fv5{background:var(--pan);color:var(--tin);transition:background .65s var(--ease),color .65s var(--ease)}
+.fv5 .malla{position:relative;z-index:2;min-height:100vh;display:grid;
+  grid-template-columns:minmax(0,1fr) clamp(300px,33vw,500px)}
+.fv5 .panel{position:relative;display:flex;flex-direction:column;justify-content:space-between;
+  gap:clamp(20px,3vh,38px);
+  padding:clamp(74px,10vh,116px) clamp(28px,3.4vw,58px) clamp(40px,6vh,64px) var(--pad)}
+.fv5 .retrato{position:relative;background:#1b2bb8 center 14%/cover;align-self:stretch;
+  filter:grayscale(1) contrast(1.1)}
+/* el retrato se tiñe apenas del color del paso, para que las dos mitades sean una */
+.fv5 .retrato::after{content:"";position:absolute;inset:0;background:var(--pan);opacity:.17;
+  transition:background .65s var(--ease)}
+
+/* --- los cuatro fondos gráficos, uno por paso --- */
+.fv5 .g{position:absolute;inset:0;z-index:0;pointer-events:none;opacity:0;
+  transition:opacity .65s var(--ease);color:var(--tin)}
+.fv5[data-beat="0"] .g0,.fv5[data-beat="1"] .g1,
+.fv5[data-beat="2"] .g2,.fv5[data-beat="3"] .g3{opacity:1}
+/* 00 · la reja: la idea todavía sin forma, sólo la cuadrícula */
+.fv5 .g0{background:
+  repeating-linear-gradient(90deg,currentColor 0 1px,transparent 1px 12.5%),
+  repeating-linear-gradient(0deg,currentColor 0 1px,transparent 1px 104px);opacity:0;
+  --o:.14}
+.fv5[data-beat="0"] .g0{opacity:.14}
+/* 01 · anillos concéntricos: el cruce de disciplinas */
+.fv5 .g1{background:repeating-radial-gradient(circle at 78% 26%,
+  currentColor 0 1px,transparent 1px 58px)}
+.fv5[data-beat="1"] .g1{opacity:.16}
+/* 02 · diagonales: el sistema que ordena */
+.fv5 .g2{background:repeating-linear-gradient(-38deg,
+  currentColor 0 1px,transparent 1px 26px)}
+.fv5[data-beat="2"] .g2{opacity:.13}
+/* 03 · la trama de puntos: ya está en órbita */
+.fv5 .g3{background:radial-gradient(currentColor 1.4px,transparent 1.5px) 0 0/34px 34px}
+.fv5[data-beat="3"] .g3{opacity:.2}
+
+.fv5 .capa{position:relative;z-index:3}
+.fv5 .dato{color:var(--tin);opacity:.72}
+.fv5 .nom{font-size:clamp(40px,5.1vw,90px)}
+.fv5 .nom .hueca{color:transparent;-webkit-text-stroke:1.6px var(--acc);
+  transition:-webkit-text-stroke-color .65s var(--ease)}
+.fv5 .nom .llena{color:var(--tin)}
+.fv5 .relato{border-top:1px solid currentColor;padding-top:20px;
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  gap:clamp(20px,3vw,48px);align-items:end}
+.fv5 .relato{border-color:color-mix(in srgb,currentColor 34%,transparent)}
+.fv5 .via{min-height:clamp(104px,14vh,140px)}
+.fv5 .beat{color:var(--sua);font-size:clamp(18px,1.62vw,26px);line-height:1.34;max-width:38ch;
+  transition:opacity .5s var(--ease),transform .5s var(--ease),color .65s var(--ease)}
+.fv5 .beat b{color:var(--tin)}
+.fv5 .beat em{color:var(--acc)}
+.fv5 .beat mark{background:var(--acc);color:var(--mk)}
+/* el símbolo de Orbit se cierra a medida que avanza el relato */
+.fv5 .simbs{position:relative;width:clamp(56px,5vw,84px);aspect-ratio:1;margin-left:auto}
+.fv5 .simb{position:absolute;inset:0;opacity:0;transition:opacity .5s var(--ease)}
+.fv5[data-beat="0"] .simb[data-s="0"],.fv5[data-beat="1"] .simb[data-s="1"],
+.fv5[data-beat="2"] .simb[data-s="2"],.fv5[data-beat="3"] .simb[data-s="3"]{opacity:1}
+.fv5 .simb svg{width:100%;height:100%;display:block;color:var(--tin)}
+.fv5 .simb circle{fill:var(--acc)}
+.fv5 .pie{flex-direction:column;align-items:flex-start;gap:10px}
+.fv5 .num,.fv5 .pista{color:var(--tin);opacity:.75}
+.fv5 .rayas{max-width:160px;width:160px}
+.fv5 .rayas button{background:color-mix(in srgb,currentColor 30%,transparent)}
+.fv5 .rayas button.on{background:var(--acc)}
+
 /* ============ 01 · COLUMNA ============
    El retrato es una columna entera, de piso a techo, sin marco. El texto
    ocupa la otra columna y el nombre se apoya sobre la línea del relato. */
@@ -168,11 +242,34 @@ body{background:var(--k);color:var(--b)}
 
 <header class="marca-v">
   <span>Orbit® · Founder — <b>4 versiones de escritorio</b></span>
-  <nav><a href="#v1">01 Columna</a><a href="#v2">02 Ficha</a><a href="#v3">03 Eje</a><a href="#v4">04 Dos mitades</a></nav>
+  <nav><a href="#v5">05 Mezcla</a><a href="#v1">01 Columna</a><a href="#v2">02 Ficha</a><a href="#v3">03 Eje</a><a href="#v4">04 Dos mitades</a></nav>
   <span>Mirala en la computadora</span>
 </header>
 
 <main>
+
+<!-- 05 · MEZCLA -->
+<section class="fv fv5" id="v5" data-relato data-beat="0">
+  <span class="tag">Versión 05 · Mezcla (01 + 04)</span>
+  <button class="lado izq" type="button" aria-label="Anterior"></button>
+  <button class="lado der" type="button" aria-label="Siguiente"></button>
+  <div class="malla">
+    <div class="panel">
+      <div class="g g0" aria-hidden="true"></div><div class="g g1" aria-hidden="true"></div>
+      <div class="g g2" aria-hidden="true"></div><div class="g g3" aria-hidden="true"></div>
+      <div class="capa" style="display:flex;justify-content:space-between;gap:24px;align-items:flex-start">
+        <p class="dato" style="margin:0">Founder — OB—000<br><span data-l="es">Lic. en Comunicación Digital · Diseño · Sistemas · Desarrollo</span><span data-l="en">BA in Digital Communication · Design · Systems · Development</span></p>
+        <div class="simbs" data-simbs></div>
+      </div>
+      <h2 class="nom capa"><span class="hueca">Founder</span><span class="llena">Majo Sicco</span></h2>
+      <div class="relato capa">
+        <div class="via" data-via></div>
+        <div class="pie" data-pie></div>
+      </div>
+    </div>
+    <div class="retrato" data-photo="majo" role="img" data-aria-es="Majo Sicco, fundadora de Orbit" data-aria-en="Majo Sicco, founder of Orbit"></div>
+  </div>
+</section>
 
 <!-- 01 · COLUMNA -->
 <section class="fv fv1" id="v1" data-relato>
@@ -283,11 +380,18 @@ $$('[data-relato]').forEach(zona => {
     + '<div class="rayas">' + BEATS.map((b, i) => `<button type="button" aria-label="${i + 1}"></button>`).join('') + '</div>'
     + `<span class="pista">${L('Tocá los costados','Tap the sides')}</span>`;
 
+  /* el símbolo se cierra paso a paso, como en "cómo comprar" */
+  const simbs = $('[data-simbs]', zona);
+  if (simbs) simbs.innerHTML = [140, 90, 40, 0].map((hueco, i) =>
+    `<div class="simb" data-s="${i}">${ORBIT.sym({gap: hueco, ring: 'currentColor',
+      dot: 'currentColor', dotOn: i > 0})}</div>`).join('');
+
   const beats = $$('.beat', zona), rayas = $$('.rayas button', zona), num = $('.num', zona);
   let cual = -1;
   const poner = i => {
     if (i === cual) return;
     cual = i;
+    zona.dataset.beat = i;          /* de acá cuelgan la paleta y el fondo */
     beats.forEach((b, k) => b.classList.toggle('on', k === i));
     rayas.forEach((r, k) => r.classList.toggle('on', k <= i));
     num.textContent = `0${i + 1} / 0${beats.length}`;
