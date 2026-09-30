@@ -322,7 +322,7 @@ tr.ignorado td { opacity: .55; }
 .compara-tabla th[scope=row] { font-family: var(--mono); font-size: 11px; color: var(--g2); }
 .compara-tabla tr.fila-dif td, .compara-tabla tr.fila-dif th { background: var(--ac-soft); }
 .marca-dif { font-weight: 700; } .marca-ok { color: var(--blue); } .marca-tol, .marca-info { color: var(--g2); font-size: 13px; }
-.sugerencia { padding: 12px 16px; border-left: 3px solid var(--blue); background: var(--blue-soft); }
+.sugerencia { padding: 12px 16px; border: 1px solid var(--blue); background: var(--blue-soft); }
 .sugerencia .mono { color: var(--blue); }
 .explicacion { padding: 12px 16px; background: var(--b2); }
 @media (max-width: 1180px) { .indicadores { grid-template-columns: repeat(4, minmax(0, 1fr)); } .indicador { border-bottom: 1px solid var(--line); } }

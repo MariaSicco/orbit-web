@@ -158,7 +158,7 @@ function pantallaInicio(p) {
   const estadoConc = conc.texto;
   return `
     <section class="portada">
-      <span class="mono">OB—061 · Orbit IVA · ${esc(nombreMes(p.mes))}</span>
+      <span class="mono">OB—005 · Orbit IVA · ${esc(nombreMes(p.mes))}</span>
       <h1 class="titulo-grande">El IVA del mes, <em>en orden.</em></h1>
       <p class="bajada">Dos herramientas para cerrar el mes sin copiar números a mano.</p>
     </section>
