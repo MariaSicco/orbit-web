@@ -1,6 +1,6 @@
 // Orbit IVA — pantallas del cierre del mes (F1: cargar → revisar → conciliar → liquidación → exportar).
 
-import { S, guardar, nuevoId, periodoActual, clienteDe, asegurarInicio, abrirPeriodo, mesActual } from './estado.js';
+import { S, guardar, nuevoId, periodoActual, clienteDe, asegurarInicio, abrirPeriodo, mesActual, nube, cargarDeLaCuenta, cargarPeriodo, hayCambiosSinGuardar, guardarAhora } from './estado.js';
 import { leerFoto, leerPdf, comprobanteManual } from './leer-foto.js';
 import { escanearQr } from './escanear-qr.js';
 import { ia, iaLista, activar, desactivar, modoCuenta, comprarRecarga } from './ia.js';
@@ -42,8 +42,15 @@ function render() {
       : avisoCuenta() || '<div class="aviso-cuenta" role="status"><p><b>No pudimos verificar tu cuenta.</b> Revisá la conexión y recargá la página.</p></div>';
     return;
   }
+  if (nube.activa && nube.estado === 'cargando') { $('#contexto').innerHTML = ''; $('#panel').innerHTML = '<p class="muted" role="status">Cargando tus datos…</p>'; return; }
   asegurarInicio();
   const p = periodoActual();
+  // El período se trae de la cuenta recién cuando se abre
+  if (p._pendiente) {
+    $('#panel').innerHTML = '<p class="muted" role="status">Cargando el período…</p>';
+    cargarPeriodo(p).then(render).catch(e => { $('#panel').innerHTML = `<div class="aviso-cuenta" role="alert"><p><b>No pudimos traer este período.</b> ${esc(e.message)}</p><button class="btn primario" data-accion="reintentar">Reintentar</button></div>`; });
+    return;
+  }
   const herramienta = herramientaDe(S.actual.paso);
   if (!herramienta) S.actual.paso = 'inicio';
   renderContexto(p, herramienta);
@@ -68,7 +75,9 @@ function renderContexto(p, herramienta) {
       <select data-empresa aria-label="Empresa">${opciones}<option disabled>──────</option><option value="__nueva">＋ Agregar empresa</option><option value="__editar">Editar “${esc(c?.nombre)}”</option></select>
     </label>
     <label class="selector"><span>Período</span><input type="month" data-mes value="${esc(p.mes)}" aria-label="Período"></label>
+    ${nube.activa ? '<span class="estado-guardado" id="estado-guardado" role="status"></span>' : ''}
     ${modoCuenta ? chipCuenta() : ia.estado === 'activa' && quedan <= 5 ? `<span class="ia-chip on" role="status">Quedan ${quedan} lecturas con IA hoy</span>` : ''}`;
+  if (nube.activa) dispatchEvent(new CustomEvent('orbit-guardado'));
 }
 
 // ——— Cuenta de Orbit (modo cuenta, dentro de orbitando.com.ar) ———
@@ -111,7 +120,10 @@ function dialogoEmpresa(editar) {
       <div class="campo" style="margin-top:12px"><label for="emp-cuit">CUIT (opcional)</label><input id="emp-cuit" name="cuit" value="${esc(cuitLindo(c?.cuit ?? ''))}" inputmode="numeric" placeholder="30-12345678-9" aria-describedby="emp-err"></div>
       <p id="emp-err" class="error" role="alert"></p>
       <div class="fila"><button class="btn primario">${editar ? 'Guardar' : 'Agregar'}</button></div>
-    </form>`);
+    </form>
+    ${editar ? `<div class="zona-borrar"><p class="mono muted">Borrar datos</p>
+      <div class="fila"><button class="btn chico" data-accion="borrar-periodo">Borrar ${esc(nombreMes(periodoActual().mes))}</button><button class="btn chico" data-accion="borrar-empresa">Eliminar esta empresa</button></div>
+      <p class="muted chico">${nube.activa ? 'Tus datos se guardan en tu cuenta de Orbit mientras la tengas. Las fotos de las facturas no se guardan.' : 'Tus datos se guardan en este navegador.'}</p></div>` : ''}`);
 }
 
 function dialogoIa() {
@@ -376,6 +388,21 @@ document.addEventListener('click', async e => {
   switch (b.dataset.accion) {
     case 'ia': return dialogoIa();
     case 'recarga': return dialogoRecarga();
+    case 'reintentar': return render();
+    case 'borrar-periodo': {
+      if (!confirm(`¿Borrar todo lo cargado en ${nombreMes(p.mes)} para ${clienteDe(p).nombre}? No se puede deshacer.`)) return;
+      S.periodos = S.periodos.filter(x => x.id !== p.id); S.actual.periodoId = null;
+      cerrarDialogo(); guardar(); avisar('Período borrado.'); return ir('inicio');
+    }
+    case 'borrar-empresa': {
+      const c = clienteDe(p);
+      if (S.clientes.length === 1) return avisar('Tiene que quedar al menos una empresa.');
+      if (!confirm(`¿Eliminar "${c.nombre}" y todos sus períodos guardados? No se puede deshacer.`)) return;
+      S.clientes = S.clientes.filter(x => x.id !== c.id); S.periodos = S.periodos.filter(x => x.clienteId !== c.id);
+      if (S.perfiles) delete S.perfiles[c.id];
+      S.actual.clienteId = null; S.actual.periodoId = null;
+      cerrarDialogo(); guardar(); avisar('Empresa eliminada.'); return ir('inicio');
+    }
     case 'pagar-recarga': b.disabled = true; try { await comprarRecarga(b.dataset.via); } catch (err) { b.disabled = false; avisar(err.message); } return;
     case 'cerrar-dialogo': return cerrarDialogo();
     case 'ia-salir': desactivar(); cerrarDialogo(); avisar('Lectura con IA desactivada en este navegador.'); return render();
@@ -526,4 +553,19 @@ if (demo) { await cargarEjemplo(); S.actual.paso = herramientaDe(demo[1]) ? demo
 conciliador.conectar({ render, ir });
 conciliador.instalarEventos(periodoActual);
 render();
-iaLista.then(() => render());
+iaLista.then(async () => {
+  if (nube.activa && ia.estado === 'activa') {
+    try { await cargarDeLaCuenta(); } catch (e) { nube.estado = 'listo'; avisar(`No pudimos traer tus datos guardados: ${e.message}`); }
+  }
+  render();
+});
+// Indicador de guardado (sin volver a dibujar la pantalla)
+const TEXTO_GUARDADO = { guardando: 'Guardando…', guardado: '✓ Guardado en tu cuenta', error: 'Sin guardar · reintentando', listo: '' };
+addEventListener('orbit-guardado', () => {
+  const el = $('#estado-guardado');
+  if (!el) return;
+  el.textContent = TEXTO_GUARDADO[nube.estado] ?? '';
+  el.className = `estado-guardado ${nube.estado}`;
+  el.title = nube.error ?? '';
+});
+addEventListener('beforeunload', e => { if (hayCambiosSinGuardar()) { guardarAhora(); e.preventDefault(); e.returnValue = ''; } });

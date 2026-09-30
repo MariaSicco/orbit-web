@@ -353,3 +353,7 @@ a.volver { display: inline-flex; align-items: center; text-decoration: none; }
 .aviso-cuenta .btn:hover { background: var(--blue); border-color: var(--blue); color: var(--b); }
 .aviso-cuenta.suave { background: var(--or-soft); color: var(--k); padding: 12px 16px; }
 .aviso-cuenta.suave .btn { border-color: var(--k); color: var(--k); }
+.estado-guardado { font-family: var(--mono); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: var(--g); white-space: nowrap; }
+.estado-guardado.error { color: var(--or); }
+.zona-borrar { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line-2); }
+.zona-borrar .mono { margin: 0 0 8px; }

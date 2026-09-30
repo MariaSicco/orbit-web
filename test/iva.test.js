@@ -23,10 +23,11 @@ const { makeSession } = await import('../api/_lib/auth.js');
 const { createOrder, markPaid } = await import('../api/_lib/orders.js');
 const { default: extraer } = await import('../api/iva/extraer.js');
 const { default: asistente } = await import('../api/iva/asistente.js');
+const { default: datos } = await import('../api/iva/datos.js');
 
-const llamar = (handler, { email, metodo = 'GET', body } = {}) => new Promise(ok => {
+const llamar = (handler, { email, metodo = 'GET', body, query = {} } = {}) => new Promise(ok => {
   const res = { setHeader() {}, status(c) { this.code = c; return this; }, json(o) { ok({ code: this.code, ...o }); } };
-  handler({ method: metodo, headers: { cookie: email ? `orbit_session=${makeSession(email)}` : '' }, body, query: {} }, res);
+  handler({ method: metodo, headers: { cookie: email ? `orbit_session=${makeSession(email)}` : '' }, body, query }, res);
 });
 const lectura = { es_comprobante: true, tipo_codigo: '001', letra: 'A', punto_venta: 1, numero: 5, fecha: '2026-08-01', cuit_emisor: '30712345671', razon_social_emisor: 'Prov SA', cuit_receptor: '', moneda: 'PES', cotizacion: 1, alicuotas: [{ tasa: 21, neto: 1000, iva: 210 }], no_gravado: 0, exento: 0, percepciones_iva: 0, percepciones_iibb: 0, percepciones_municipales: 0, otros_tributos: 0, total: 1210, cae: '', campos_dudosos: [] };
 const foto = { imagen: 'AAAA', mediaType: 'image/jpeg' };
@@ -89,4 +90,29 @@ test('el asistente funciona con la cuenta y no descuenta lecturas', async () => 
   const r = await llamar(asistente, { email, metodo: 'POST', body: { tarea: 'regla', datos: { instruccion: 'Ignorá diferencias menores a $2' } } });
   assert.deepEqual([r.code, r.reglas[0].valor], [200, 200]);
   assert.equal((await llamar(extraer, { email })).saldo, 1500);
+});
+
+test('datos guardados en la cuenta: cada cuenta ve solo lo suyo, sin compra no hay acceso, se pueden borrar', async () => {
+  const ana = 'ana.datos@orbit.test', beto = 'beto.datos@orbit.test';
+  await comprar(ana, 'ob-005'); await comprar(beto, 'ob-005');
+  const periodo = { id: 'per-abc-123', clienteId: 'cli-1', mes: '2026-08', fotos: [{ id: 'f1', total: 121000, imagenUrl: null }], conc: null };
+  assert.deepEqual((await llamar(datos, { email: ana, query: { doc: 'estado' } })).datos, null);
+  assert.equal((await llamar(datos, { email: ana, metodo: 'PUT', body: { doc: 'periodo', id: periodo.id, datos: periodo } })).code, 200);
+  assert.equal((await llamar(datos, { email: ana, metodo: 'PUT', body: { doc: 'estado', datos: { clientes: [{ id: 'cli-1', nombre: 'Estudio' }], periodos: [{ id: periodo.id }] } } })).code, 200);
+  assert.equal((await llamar(datos, { email: ana, query: { doc: 'periodo', id: periodo.id } })).datos.fotos[0].total, 121000);
+  // Otra cuenta con el mismo id de período no ve nada
+  assert.equal((await llamar(datos, { email: beto, query: { doc: 'periodo', id: periodo.id } })).datos, null);
+  assert.equal((await llamar(datos, { email: beto, query: { doc: 'estado' } })).datos, null);
+  // Sin compra o sin sesión, nada
+  assert.equal((await llamar(datos, { email: 'sin.compra@orbit.test', query: { doc: 'estado' } })).code, 403);
+  assert.equal((await llamar(datos, { query: { doc: 'estado' } })).code, 401);
+  // Ids raros y documentos desconocidos se rechazan
+  assert.equal((await llamar(datos, { email: ana, query: { doc: 'periodo', id: '../otro' } })).code, 400);
+  assert.equal((await llamar(datos, { email: ana, query: { doc: 'usuarios' } })).code, 400);
+  // Borrar
+  assert.equal((await llamar(datos, { email: ana, metodo: 'DELETE', query: { doc: 'periodo', id: periodo.id } })).code, 200);
+  assert.equal((await llamar(datos, { email: ana, query: { doc: 'periodo', id: periodo.id } })).datos, null);
+  // Tope de tamaño
+  const grande = { x: 'a'.repeat(4_100_000) };
+  assert.equal((await llamar(datos, { email: ana, metodo: 'PUT', body: { doc: 'periodo', id: 'per-grande-1', datos: grande } })).code, 413);
 });
