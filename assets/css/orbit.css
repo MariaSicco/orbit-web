@@ -248,6 +248,22 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .cv-tra .ttl{font-size:10cqw;font-style:italic}
 
 .pcard{display:flex;flex-direction:column;gap:14px;text-decoration:none;color:inherit}
+/* 05 libro — tapa hueso con rayado de planilla, lomo azul */
+.cv-libro .spine{background:var(--blue);color:var(--b)}
+.cv-libro .body{background:var(--b);color:var(--k);justify-content:space-between}
+.cv-libro .rayas{position:absolute;inset:0;display:grid;grid-template-rows:repeat(7,1fr);pointer-events:none;z-index:0}
+.cv-libro .rayas i{border-bottom:1px solid rgba(48,71,255,.22)}
+.cv-libro .t{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;position:relative;z-index:2}
+.cv-libro .t .wm{font-size:7cqw}
+.cv-libro .badge{background:var(--blue);color:var(--b)}
+.cv-libro .ttl{position:relative;z-index:2;font-size:12cqw;margin-top:6cqw;color:var(--k)}
+.cv-libro .b{display:flex;justify-content:space-between;align-items:flex-end;gap:8px;position:relative;z-index:2}
+.cv-libro .num{font-size:32cqw;color:var(--blue)}
+.cv-libro .meta{text-align:right}
+/* la doble raya del total, al pie de la columna */
+.cv-libro .suma{position:absolute;left:7cqw;right:7cqw;bottom:37cqw;height:2.6cqw;z-index:1;
+  border-top:.8cqw solid var(--k);border-bottom:.8cqw solid var(--k)}
+
 .pcard .cover{transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
 .pcard:hover .cover{transform:translateY(-8px) rotate(-1deg);box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
 .pcard .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:1px solid currentColor;padding-top:12px}
