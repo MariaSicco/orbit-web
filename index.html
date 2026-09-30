@@ -482,7 +482,7 @@ const simb = ORBIT.symInner({dot:C.blue, ring:'#F2EFE8'});
 const arcoSVG = (simb.match(/<path[^>]*>/) || [''])[0].replace('<path', '<path class="arco"');
 const puntoSVG = (simb.match(/<circle[^>]*>/) || [''])[0];
 $('#heroWord').innerHTML = '<span class="wm">'
-  + '<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><g class="gira" id="heroG">'
+  + '<svg class="o" viewBox="0 0 100 100" aria-hidden="true"><g class="gira">'
   + arcoSVG + '<g class="orb">' + puntoSVG + '</g></g></svg>'
   + '<span class="pal">RBIT</span><sup>\u00ae</sup><i class="cur" aria-hidden="true"></i></span>';
 
@@ -517,9 +517,28 @@ function heroEntra() {
   return 2370;   /* cuando el símbolo ya aterrizó */
 }
 
-/* el relevo: el grupo que giraba pasa a manos de follow() y el punto
-   empieza a seguir al cursor desde la misma posición en la que quedó */
-function heroSigue() { follow($('#heroG'), $('#heroWord svg')); }
+/* El relevo. follow() gira el grupo entero, así que el aro también se movía y
+   el logo parecía irse de lugar. Acá el aro queda quieto y gira SÓLO el punto,
+   que es lo que tiene que orbitar. */
+const DOTA = 50;   /* el ángulo en el que el punto está dibujado (orbit.js) */
+function heroSigue() {
+  const caja = $('#heroWord .o'), orb = $('#heroWord .orb');
+  if (!caja || !orb) return;
+  let rot = 0, tgt = 0, activo = false, ultimo = 0;
+  addEventListener('pointermove', e => {
+    const o = caja.getBoundingClientRect();
+    if (o.bottom < 0 || o.top > innerHeight) return;
+    tgt = Math.atan2(e.clientY - (o.top + o.height / 2), e.clientX - (o.left + o.width / 2)) * 180 / Math.PI - DOTA;
+    activo = true; ultimo = performance.now();
+  });
+  if (RM) return;
+  (function f(ahora) {
+    if (!activo || ahora - ultimo > 2600) { activo = false; tgt += .12; }
+    rot += (((tgt - rot + 540) % 360) - 180) * .09;
+    orb.setAttribute('transform', `rotate(${rot.toFixed(2)} 50 50)`);
+    requestAnimationFrame(f);
+  })(0);
+}
 
 function arrancarHero(intento) {
   const o = $('#heroWord .o');
