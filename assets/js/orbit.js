@@ -90,6 +90,18 @@ const COVERS = {
       <div class="num">${p.n}</div>
       <div class="b"><div class="ttl">${p.name.replace(' ','<br>')}</div><div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])} · ${L(p.specs[2][1])}</div></div>
     </div>${pages}</div>`,
+  /* 05 — libro: tapa hueso rayada como una planilla, lomo azul.
+     Es una herramienta, no un archivo: la tapa cita el libro de IVA —el
+     rayado y la doble raya del total— en vez de repetir el lenguaje de los
+     otros cuatro, que son bibliotecas de piezas. */
+  libro: p => `<div class="cover cv-libro">${bookSpine(p, C.b)}
+    <div class="body">
+      <div class="rayas">${'<i></i>'.repeat(7)}</div>
+      <div class="t">${wm({color:C.k, dot:C.blue})}${soonBadge(p)}</div>
+      <div class="ttl">${p.name.replace(' ','<br>')}</div>
+      <span class="suma" aria-hidden="true"></span>
+      <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])}<br>${L(p.specs[2][1])}</div></div>
+    </div>${pages}</div>`,
 };
 const cover = p => (COVERS[p.cover] || COVERS.archive)(p);
 const card = p => `<a class="pcard rv" href="${url(p)}" data-fam="${p.family}">${cover(p)}

@@ -500,7 +500,11 @@ function heroEntra() {
   const largo = Math.ceil(arco.getTotalLength());
   arco.style.strokeDasharray = largo;
   arco.style.strokeDashoffset = largo;
-  o.animate([{transform:`translate(${dx}px,${dy}px) scale(${escala})`}, {transform:'none'}],
+  /* el reposo NO es 'none': el símbolo se apoya .012em más abajo (.wm .o en
+     orbit.css). Con fill:both la animación se quedaba con ese valor pisado y
+     el logo quedaba corrido respecto del resto del sitio. */
+  const reposo = `translateY(${(parseFloat(getComputedStyle($('#heroWord .wm')).fontSize) * .012).toFixed(2)}px)`;
+  o.animate([{transform:`translate(${dx}px,${dy}px) scale(${escala})`}, {transform:reposo}],
     {duration:820, delay:1550, easing:'cubic-bezier(.76,0,.16,1)', fill:'both'});
   arco.animate([{strokeDashoffset:largo}, {strokeDashoffset:0}],
     {duration:900, delay:120, easing:'cubic-bezier(.62,0,.2,1)', fill:'both'});

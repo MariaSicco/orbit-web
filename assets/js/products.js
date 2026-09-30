@@ -108,27 +108,38 @@ window.ORBIT_PRODUCTS = [
       {es: 'Quien empieza con IA y quiere un método', en: 'People starting with AI who want a method'},
     ],
   },
-  /* BORRADOR de copy: reemplazar por la entrada que entregue el Project "Orbit" (regla del CLAUDE.md).
-     Herramienta online: no se descarga, se abre desde la cuenta (acceso). Queda en 'soon' hasta probar la compra de punta a punta. */
   {
-    id: 'ob-005', cover: 'grid', code: 'OB—005', n: '05', name: 'Orbit IVA',
-    family: 'business', status: 'soon', price: 79, accent: 'blue', checkout: '', photo: 'grid',
+    /* Herramienta online, no es un archivo que se descarga: por eso la entrega
+       es un acceso desde Mi cuenta y la licencia es por persona, no comercial. */
+    id: 'ob-005', cover: 'libro', code: 'OB\u2014005', n: '05', name: 'Orbit IVA',
+    family: 'business', status: 'soon', price: 79, accent: 'blue', checkout: '', photo: 'ob-005',
     acceso: '/herramientas/iva',
-    tagline: {es: 'Sacá el IVA del mes desde las fotos de tus facturas y conciliá tu sistema contra ARCA.', en: 'Get the month’s VAT from photos of your invoices and reconcile your books against ARCA.'},
+    /* Lo que se muestra de este producto son sus propias pantallas, no una foto
+       de ambiente: es una herramienta, se vende mostrando lo que hace. Cada
+       archivo tiene su version -es y -en. */
+    imgs: ['01-subir-facturas', '02-factura-por-factura', '03-sistema-contra-arca',
+           '04-reglas-en-tus-palabras', '05-exportar'],
+    imgsDir: 'ob-005',
+    tagline: {es: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.', en: 'Two tools to close the month\u2019s VAT: it builds the purchase ledger from your invoices and cross-checks your system against ARCA.'},
     specs: [
-      [{es: 'Formato', en: 'Format'}, {es: 'Herramienta online', en: 'Online tool'}],
-      [{es: 'Lecturas con IA', en: 'AI reads'}, '1.500'],
+      [{es: 'Lecturas', en: 'Reads'}, '1.500'],
+      [{es: 'Formato', en: 'Format'}, {es: 'Online, sin instalar', en: 'Online, no install'}],
+      [{es: 'Licencia', en: 'License'}, {es: 'Por persona', en: 'Per person'}],
       [{es: 'Actualizaciones', en: 'Updates'}, {es: '12 meses', en: '12 months'}],
-      [{es: 'Versión', en: 'Version'}, 'V.01'],
+      [{es: 'Alcance', en: 'Scope'}, {es: 'Estimaci\u00f3n para revisar', en: 'An estimate to review'}],
     ],
     includes: [
-      [{es: 'Calculadora de IVA', en: 'VAT calculator'}, {es: 'Subís fotos o PDF y te arma el Libro de IVA Compras', en: 'Upload photos or PDFs and get your VAT purchase book'}],
-      [{es: 'Conciliador ARCA', en: 'ARCA reconciler'}, {es: 'Cruza tu sistema contable con ARCA y te muestra solo lo que hay que revisar', en: 'Matches your books against ARCA and shows only what needs review'}],
-      [{es: 'Excel listo', en: 'Ready Excel'}, {es: 'Exportás el resultado con cada diferencia explicada', en: 'Export the result with every difference explained'}],
+      [{es: 'Calculadora de IVA', en: 'VAT calculator'}, {es: 'Sub\u00eds fotos o PDF de las facturas de compra y arma el Libro de IVA del mes, con el desglose por al\u00edcuota', en: 'Upload photos or PDFs of your purchase invoices and it builds the month\u2019s VAT ledger, broken down by rate'}],
+      [{es: 'Conciliador ARCA', en: 'ARCA reconciler'}, {es: 'Cruza el Excel de tu sistema contable con Mis Comprobantes y te muestra solo lo que necesita atenci\u00f3n, con el motivo de cada diferencia', en: 'Cross-checks your accounting system\u2019s Excel against Mis Comprobantes and shows only what needs attention, with the reason for every difference'}],
+      [{es: 'Cada factura, controlada', en: 'Every invoice, checked'}, {es: 'La lectura la hace IA y despu\u00e9s se controla con cuentas: la suma tiene que dar el total y la CUIT tiene que ser v\u00e1lida. Lo dudoso queda marcado para que lo revises', en: 'AI does the reading and arithmetic checks it: the parts must add up to the total and the tax ID must be valid. Anything doubtful is flagged for you to review'}],
+      [{es: 'Reglas en tus palabras', en: 'Rules in your own words'}, {es: 'Escrib\u00eds \u201cignor\u00e1 diferencias menores a $2\u201d y queda guardado para el mes siguiente', en: 'Write \u201cignore differences under $2\u201d and it\u2019s saved for next month'}],
+      [{es: '1.500 lecturas incluidas', en: '1,500 reads included'}, {es: 'Cuando se terminan, recarg\u00e1s 1.000 m\u00e1s por USD 19 desde adentro de la herramienta', en: 'When they run out, top up 1,000 more for USD 19 from inside the tool'}],
+      [{es: 'Uso sin vencimiento', en: 'No expiry'}, {es: 'La herramienta sigue siendo tuya; los 12 meses son de actualizaciones', en: 'The tool stays yours; the 12 months are for updates'}],
     ],
     for: [
-      {es: 'Contadores y estudios contables', en: 'Accountants and accounting firms'},
-      {es: 'Negocios que cargan sus propias facturas', en: 'Businesses that enter their own invoices'},
+      {es: 'Contadores y estudios que liquidan IVA de varios clientes', en: 'Accountants and firms filing VAT for several clients'},
+      {es: 'Negocios que cargan sus propias facturas', en: 'Businesses that load their own invoices'},
+      {es: 'Quien concilia a mano el sistema contra ARCA', en: 'Anyone reconciling their system against ARCA by hand'},
     ],
   },
 ];
