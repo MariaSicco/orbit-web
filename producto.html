@@ -35,21 +35,31 @@
 .pd-gal .photo{aspect-ratio:3/4}
 .pd-gal .tile{aspect-ratio:3/4;background:var(--b2);display:grid;place-items:center;padding:12%}
 /* Cuando el producto es una herramienta, en el mismo lugar del libro va un
-   carrusel: primero el libro y después sus pantallas, de a una. */
+   carrusel: primero el libro y después sus pantallas. Cada pantalla entra
+   entera y se recorre con el scroll, en vez de mostrar un recorte suelto. */
 .car{grid-column:1/-1;position:relative}
-.car-via{position:relative;min-height:clamp(420px,46vw,600px);background:var(--k);overflow:hidden}
+.car-via{position:relative;min-height:clamp(440px,48vw,620px);background:var(--k);overflow:hidden}
 .car-via > *{position:absolute;inset:0;opacity:0;transition:opacity .45s var(--ease);
   pointer-events:none;display:grid;place-items:center}
 .car-via > *.on{opacity:1;pointer-events:auto}
 .car-via .boxstage{min-height:0;height:100%;width:100%}
-.car-via img{width:100%;height:100%;object-fit:contain;object-position:center;display:block;background:var(--b)}
+/* la lámina de pantalla: barra con el nombre y, debajo, la captura entera */
+.car-via > .lam{display:flex;flex-direction:column;place-items:stretch}
+.lam-barra{flex:none;display:flex;align-items:baseline;gap:14px;padding:12px 16px;
+  background:var(--k2);color:var(--b);border-bottom:1px solid rgba(242,239,232,.16)}
+.lam-barra b{font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-weight:500}
+.lam-barra span{font-size:13.5px;opacity:.72;line-height:1.3}
+.lam-barra i{margin-left:auto;font-family:var(--mono);font-size:9.5px;letter-spacing:.12em;
+  text-transform:uppercase;opacity:.5;font-style:normal;white-space:nowrap}
+.ventana{flex:1;min-height:0;overflow-y:auto;background:var(--b);scrollbar-width:thin}
+.ventana img{width:100%;display:block}
 .car-pie{display:flex;align-items:center;gap:14px;margin-top:12px}
 .car-pts{display:flex;gap:6px;flex:1}
 .car-pts button{flex:0 0 auto;width:26px;height:3px;padding:0;border:0;cursor:pointer;
   background:rgba(242,239,232,.3);transition:background .3s}
 .car-pts button.on{background:var(--ac)}
 .car-nav{display:flex;gap:8px}
-.car-nav button{width:38px;height:38px;border:1px solid rgba(242,239,232,.35);background:none;
+.car-nav button{width:44px;height:44px;border:1px solid rgba(242,239,232,.35);background:none;
   color:inherit;cursor:pointer;font-size:15px;line-height:1}
 .car-nav button:hover{background:var(--b);color:var(--k)}
 .car-n{font-family:var(--mono);font-size:10px;letter-spacing:.12em;opacity:.7;white-space:nowrap}
@@ -57,7 +67,9 @@
 .specs>div{background:var(--b);padding:18px}
 .specs b{display:block;font-size:clamp(18px,1.8vw,26px);letter-spacing:-.03em;margin-top:10px;line-height:1.1}
 .inc{scroll-margin-top:110px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(14px,2vw,28px);margin-top:clamp(36px,5vw,72px)}
-.inc>div{border-top:2px solid var(--k);padding-top:16px;display:grid;grid-template-columns:48px 1fr;gap:14px}
+.inc>div{border-top:2px solid var(--k);padding-top:16px;display:grid;grid-template-columns:auto 1fr;gap:clamp(14px,1.6vw,22px);align-items:start}
+.inc .inc-n{font-weight:800;font-size:clamp(26px,2.6vw,40px);line-height:.9;letter-spacing:-.04em;
+  color:transparent;-webkit-text-stroke:1.3px var(--k);font-variant-numeric:tabular-nums}
 .inc h3{margin:0;font-size:clamp(22px,2.4vw,34px);letter-spacing:-.035em;font-weight:800;text-transform:uppercase;line-height:1}
 .inc p{margin:8px 0 0;opacity:.7}
 .for{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px)}
@@ -124,14 +136,17 @@ $('#crumbCode').textContent = `${p.code} ${p.name}`;
 $('#specCode').textContent = p.code;
 
 /* una herramienta se muestra con sus pantallas; un archivo, con su foto */
-const shot = (p, n) => `assets/img/${p.imgsDir}/${n}-${lang()}.png`;
-const hayShots = !!(p.imgs && p.imgs.length);
+const PANT = p.pantallas || [];
+const hayPant = PANT.length > 0;
 
-$('#gal').innerHTML = hayShots
+$('#gal').innerHTML = hayPant
   ? `<div class="car">
        <div class="car-via" id="via">
          <div class="on"><div class="boxstage" id="bx"></div></div>
-         ${p.imgs.map(n => `<div><img src="${shot(p, n)}" data-shot="${n}" alt="" loading="lazy"></div>`).join('')}
+         ${PANT.map(([img, t, d]) => `<div class="lam">
+           <div class="lam-barra"><b>${L(t)}</b><span>${L(d)}</span><i>${L('Deslizá para ver la pantalla entera','Scroll to see the whole screen')}</i></div>
+           <div class="ventana"><img src="assets/img/${p.pantallasDir}/${img}.png" alt="${tr(t)}" loading="lazy"></div>
+         </div>`).join('')}
        </div>
        <div class="car-pie">
          <span class="car-n" id="carN"></span>
@@ -145,32 +160,20 @@ $('#gal').innerHTML = hayShots
 
 mountBox($('#bx'), p);
 
-if (hayShots) {
-  const via = $('#via'), laminas = [...via.children];
-  const pts = $('#carPts');
+if (hayPant) {
+  const via = $('#via'), laminas = [...via.children], pts = $('#carPts');
   pts.innerHTML = laminas.map((_, i) => `<button type="button" aria-label="${i + 1}"></button>`).join('');
   const puntos = [...pts.children], num = $('#carN');
   let cual = 0;
   const poner = i => {
     cual = (i + laminas.length) % laminas.length;
-    laminas.forEach((l, k) => l.classList.toggle('on', k === cual));
+    laminas.forEach((l, k) => { l.classList.toggle('on', k === cual); const v = l.querySelector('.ventana'); if (v) v.scrollTop = 0; });
     puntos.forEach((b, k) => b.classList.toggle('on', k === cual));
     num.textContent = `0${cual + 1} / 0${laminas.length}`;
   };
   puntos.forEach((b, i) => b.onclick = () => poner(i));
   $$('.car-nav button').forEach(b => b.onclick = () => poner(cual + Number(b.dataset.paso)));
-  /* deslizar con el dedo; la caja 3D se gira sola, así que ahí no interceptamos */
-  let x0 = null;
-  via.addEventListener('pointerdown', e => { x0 = cual === 0 ? null : e.clientX; });
-  via.addEventListener('pointerup', e => {
-    if (x0 === null) return;
-    const dx = e.clientX - x0; x0 = null;
-    if (Math.abs(dx) > 40) poner(cual + (dx < 0 ? 1 : -1));
-  });
   poner(0);
-  /* las pantallas están escritas en cada idioma */
-  addEventListener('orbit:lang', () => $$('[data-shot]').forEach(i =>
-    i.setAttribute('src', shot(p, i.dataset.shot))));
 }
 
 const [w1, ...rest] = p.name.split(' ');
@@ -187,7 +190,9 @@ $('#info').innerHTML = `<span class="mono">${p.code} · ${fam}</span>
   <div class="pd-trust mono">${TRUST(p).map(([es,en]) => `<span>${L(es,en)}</span>`).join('')}</div>`;
 
 $('#specs').innerHTML = p.specs.map(([k,v]) => `<div><span class="mono dim">${L(k)}</span><b>${L(v)}</b></div>`).join('');
-$('#inc').innerHTML = p.includes.map(([t,d],i) => `<div class="rv"><div>${sym({ring:C.k, dot:i===0?acc:C.k, rot:i*90, gap:70})}</div><div><span class="mono dim">${L('Incluye','Includes')} 0${i+1}</span><h3 style="margin-top:8px">${L(t)}</h3><p>${L(d)}</p></div></div>`).join('');
+/* el símbolo girando no decía nada acá: lo reemplaza el número, que además
+   ordena la lectura */
+$('#inc').innerHTML = p.includes.map(([t,d],i) => `<div class="rv"><span class="inc-n">${String(i+1).padStart(2,'0')}</span><div><h3>${L(t)}</h3><p>${L(d)}</p></div></div>`).join('');
 $('#for').innerHTML = p.for.map(t => `<li>${L(t)}</li>`).join('');
 $('#rel').innerHTML = P.filter(x => x.id !== p.id).map(card).join('');
 

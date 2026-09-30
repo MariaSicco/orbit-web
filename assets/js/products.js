@@ -117,9 +117,23 @@ window.ORBIT_PRODUCTS = [
     /* Lo que se muestra de este producto son sus propias pantallas, no una foto
        de ambiente: es una herramienta, se vende mostrando lo que hace. Cada
        archivo tiene su version -es y -en. */
-    imgs: ['01-subir-facturas', '02-factura-por-factura', '03-sistema-contra-arca',
-           '04-reglas-en-tus-palabras', '05-exportar'],
-    imgsDir: 'ob-005',
+    /* Las pantallas enteras de la herramienta, sin recortar: el texto que las
+       explica va en la página, no quemado adentro de la imagen. */
+    pantallas: [
+      ['p1', {es: 'Entrada', en: 'Home'},
+             {es: 'Las dos herramientas y el estado del mes.', en: 'The two tools and the state of the month.'}],
+      ['p2', {es: 'Calculadora de IVA', en: 'VAT calculator'},
+             {es: 'El IVA del mes, el desglose por concepto y el detalle factura por factura.', en: 'The month’s VAT, the breakdown by item and the invoice-by-invoice detail.'}],
+      ['p3', {es: 'Conciliador · Archivos', en: 'Reconciler · Files'},
+             {es: 'Subís el Excel de tu sistema y el de ARCA.', en: 'Upload the Excel from your system and the one from ARCA.'}],
+      ['p4', {es: 'Conciliador · Columnas', en: 'Reconciler · Columns'},
+             {es: 'Reconoce solo las columnas de cada archivo y las podés corregir.', en: 'It detects each file’s columns on its own, and you can correct them.'}],
+      ['p5', {es: 'Conciliador · Reglas', en: 'Reconciler · Rules'},
+             {es: 'Tolerancias, qué tiene que coincidir y la instrucción escrita a mano.', en: 'Tolerances, what has to match, and the instruction written in your own words.'}],
+      ['p6', {es: 'Conciliador · Resultados', en: 'Reconciler · Results'},
+             {es: 'Solo lo que necesita atención, con el motivo de cada caso.', en: 'Only what needs attention, with the reason for every case.'}],
+    ],
+    pantallasDir: 'ob-005',
     tagline: {es: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.', en: 'Two tools to close the month\u2019s VAT: it builds the purchase ledger from your invoices and cross-checks your system against ARCA.'},
     specs: [
       [{es: 'Lecturas', en: 'Reads'}, '1.500'],
