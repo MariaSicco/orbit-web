@@ -110,13 +110,17 @@ $('#gal').innerHTML = `<div class="boxstage" id="bx"></div>
 mountBox($('#bx'), p);
 
 const [w1, ...rest] = p.name.split(' ');
-const TRUST = [['Descarga inmediata','Instant download'],['Uso comercial','Commercial use'],['Actualizaciones sin cargo','Free updates'],['Soporte por email','Email support']];
+/* Las garantías dependen del producto: una herramienta online no se descarga
+   ni lleva licencia comercial, así que decirlo sería mentir. */
+const TRUST_ARCHIVO = [['Descarga inmediata','Instant download'],['Uso comercial','Commercial use'],['Actualizaciones sin cargo','Free updates'],['Soporte por email','Email support']];
+const TRUST_HERRAMIENTA = [['Acceso desde Mi cuenta','Access from My account'],['Licencia por persona','Per-person license'],['12 meses de actualizaciones','12 months of updates'],['Soporte por email','Email support']];
+const TRUST = p => (p && p.acceso ? TRUST_HERRAMIENTA : TRUST_ARCHIVO);
 $('#info').innerHTML = `<span class="mono">${p.code} · ${fam}</span>
   <h1 class="display">${w1}<br><span class="it">${rest.join(' ').toLowerCase()}.</span></h1>
   <p class="lead" style="opacity:.8;margin:22px 0 0">${L(p.tagline)}</p>
   <div class="pd-price"><b>${p.status==='soon' ? L('Pronto','Soon') : money(p.price)}</b><span class="mono dim">${p.status==='soon' ? L('Lanzamiento 2026','Launching 2026') : L('Pago único · impuestos según país','One-time payment · taxes by country')}</span></div>
   <div class="pd-buy">${buyBtn(p)}<a class="btn btn-line" href="#inc">${L('Qué incluye','What’s inside')}</a></div>
-  <div class="pd-trust mono">${TRUST.map(([es,en]) => `<span>${L(es,en)}</span>`).join('')}</div>`;
+  <div class="pd-trust mono">${TRUST(p).map(([es,en]) => `<span>${L(es,en)}</span>`).join('')}</div>`;
 
 $('#specs').innerHTML = p.specs.map(([k,v]) => `<div><span class="mono dim">${L(k)}</span><b>${L(v)}</b></div>`).join('');
 $('#inc').innerHTML = p.includes.map(([t,d],i) => `<div class="rv"><div>${sym({ring:C.k, dot:i===0?acc:C.k, rot:i*90, gap:70})}</div><div><span class="mono dim">${L('Incluye','Includes')} 0${i+1}</span><h3 style="margin-top:8px">${L(t)}</h3><p>${L(d)}</p></div></div>`).join('');
