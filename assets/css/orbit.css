@@ -34,6 +34,27 @@ p{text-wrap:pretty}
 
 /* layout */
 .sec{position:relative;padding-inline:var(--pad);padding-block:clamp(72px,9vw,140px);overflow:hidden}
+/* ---- área táctil mínima de 44×44 en pantallas de dedo ----
+   No cambia lo que se ve: agranda la zona que recibe el toque con un recuadro
+   invisible centrado sobre el control. Medido con Playwright, quedaban 53
+   controles por debajo de 44 px (enlaces del pie, chips, flechas, la barra). */
+@media (pointer:coarse){
+  .foot .cols a, .drawer nav a, .langsw button, .nav .logo, .nav .cart-btn,
+  .nav .acc-link, .nav .menu, .darrows button, .opts .chip, .drawer-top .chip{position:relative}
+  .foot .cols a::after, .drawer nav a::after, .langsw button::after, .nav .logo::after,
+  .nav .cart-btn::after, .nav .acc-link::after, .nav .menu::after, .darrows button::after,
+  .opts .chip::after, .drawer-top .chip::after{
+    content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+    width:max(100%,44px);height:max(100%,44px)}
+  /* en los campos no sirve el pseudo-elemento: van con alto mínimo */
+  input,textarea,select{min-height:44px}
+}
+
+/* Cada sección de la home mide una pantalla y centra su contenido: con el
+   relleno de 140px encima quedaban casi 500px muertos entre una y otra. */
+@media (min-width:1000px){
+  [data-page="home"] main > section.sec:not(.hero){padding-block:clamp(48px,4.4vw,72px)}
+}
 .light{background:var(--b);color:var(--k)}
 .dark{background:var(--k);color:var(--b)}
 .wrap{max-width:1440px;width:100%;margin-inline:auto;position:relative}

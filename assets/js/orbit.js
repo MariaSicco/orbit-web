@@ -314,7 +314,7 @@ addEventListener('orbit:lang', pintarTickers);
 /* ---------- reveal (solo lo que está debajo de la primera pantalla) ---------- */
 function reveal(rootEl=document) {
   if (RM || !('IntersectionObserver' in window)) return;
-  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.remove('pre'); io.unobserve(e.target); } }), {rootMargin:'0px 0px -8% 0px'});
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.remove('pre'); io.unobserve(e.target); } }), {rootMargin:'0px 0px 22% 0px'}   /* antes -8%: bajando rápido con la rueda la sección entraba todavía invisible */);
   $$('.rv', rootEl).forEach(el => { if (el.getBoundingClientRect().top > innerHeight) { el.classList.add('pre'); io.observe(el); } });
 }
 
