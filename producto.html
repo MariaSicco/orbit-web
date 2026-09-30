@@ -34,6 +34,11 @@
 .pd-gal .boxstage{grid-column:1/-1}
 .pd-gal .photo{aspect-ratio:3/4}
 .pd-gal .tile{aspect-ratio:3/4;background:var(--b2);display:grid;place-items:center;padding:12%}
+/* Cuando el producto es una herramienta, lo que se muestra son sus pantallas.
+   La primera va en la galería de arriba, ancha; el resto, una abajo de otra. */
+.pd-gal .shot{grid-column:1/-1;width:100%;display:block;border:1px solid rgba(13,13,14,.14)}
+.pd-pantallas{display:grid;gap:clamp(16px,2.4vw,34px);margin-top:clamp(36px,5vw,72px)}
+.pd-pantallas img{width:100%;display:block;border:1px solid rgba(13,13,14,.14)}
 .specs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:rgba(13,13,14,.15)}
 .specs>div{background:var(--b);padding:18px}
 .specs b{display:block;font-size:clamp(18px,1.8vw,26px);letter-spacing:-.03em;margin-top:10px;line-height:1.1}
@@ -67,6 +72,7 @@
   <div class="wrap">
     <div class="shead mono"><div><b><span data-l="es">Especificaciones</span><span data-l="en">Specs</span></b><span id="specCode"></span></div><div style="text-align:right"><span data-l="es">Qué es, en datos</span><span data-l="en">What it is, in data</span></div></div>
     <div class="specs rv" id="specs"></div>
+    <div class="pd-pantallas" id="pantallas" hidden></div>
     <div class="inc" id="inc"></div>
   </div>
 </section>
@@ -91,7 +97,7 @@
 <script src="assets/js/orbit.js?v=46"></script>
 <script>
 (() => {
-const {C, $, L, tr, sym, card, buyBtn, mountBox, reveal, P, FAM, ACC, money} = ORBIT;
+const {C, $, $$, L, tr, lang, sym, card, buyBtn, mountBox, reveal, P, FAM, ACC, money} = ORBIT;
 const id = window.ORBIT_ID || new URLSearchParams(location.search).get('id')
   || (location.pathname.match(/\/p\/([\w-]+)/) || [])[1];
 const p = P.find(x => x.id === id) || P[0];
@@ -104,9 +110,22 @@ setDesc(); addEventListener('orbit:lang', setDesc);
 $('#crumbCode').textContent = `${p.code} ${p.name}`;
 $('#specCode').textContent = p.code;
 
-$('#gal').innerHTML = `<div class="boxstage" id="bx"></div>
-  <div class="photo" style="background-image:url(assets/img/${p.photo}.jpg)" role="img" aria-label="${p.name}"></div>
-  <div class="tile">${sym({ring:C.k, dot:acc === C.k ? C.blue : acc})}</div>`;
+/* una herramienta se muestra con sus pantallas; un archivo, con su foto */
+const shot = (p, n) => `assets/img/${p.imgsDir}/${n}-${lang()}.png`;
+$('#gal').innerHTML = `<div class="boxstage" id="bx"></div>` + (p.imgs && p.imgs.length
+  ? `<img class="shot" src="${shot(p, p.imgs[0])}" data-shot="${p.imgs[0]}" alt="">`
+  : `<div class="photo" style="background-image:url(assets/img/${p.photo}.jpg)" role="img" aria-label="${p.name}"></div>
+     <div class="tile">${sym({ring:C.k, dot:acc === C.k ? C.blue : acc})}</div>`);
+
+if (p.imgs && p.imgs.length > 1) {
+  const caja = $('#pantallas');
+  caja.hidden = false;
+  caja.innerHTML = p.imgs.slice(1)
+    .map(n => `<img src="${shot(p, n)}" data-shot="${n}" alt="" loading="lazy">`).join('');
+}
+/* las pantallas están escritas en cada idioma: al cambiarlo, cambian */
+addEventListener('orbit:lang', () => $$('[data-shot]').forEach(i =>
+  i.setAttribute('src', shot(p, i.dataset.shot))));
 mountBox($('#bx'), p);
 
 const [w1, ...rest] = p.name.split(' ');

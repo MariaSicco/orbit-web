@@ -112,8 +112,14 @@ window.ORBIT_PRODUCTS = [
     /* Herramienta online, no es un archivo que se descarga: por eso la entrega
        es un acceso desde Mi cuenta y la licencia es por persona, no comercial. */
     id: 'ob-005', cover: 'libro', code: 'OB\u2014005', n: '05', name: 'Orbit IVA',
-    family: 'business', status: 'soon', price: 79, accent: 'blue', checkout: '', photo: 'figure',
+    family: 'business', status: 'soon', price: 79, accent: 'blue', checkout: '', photo: 'ob-005',
     acceso: '/herramientas/iva',
+    /* Lo que se muestra de este producto son sus propias pantallas, no una foto
+       de ambiente: es una herramienta, se vende mostrando lo que hace. Cada
+       archivo tiene su version -es y -en. */
+    imgs: ['01-subir-facturas', '02-factura-por-factura', '03-sistema-contra-arca',
+           '04-reglas-en-tus-palabras', '05-exportar'],
+    imgsDir: 'ob-005',
     tagline: {es: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.', en: 'Two tools to close the month\u2019s VAT: it builds the purchase ledger from your invoices and cross-checks your system against ARCA.'},
     specs: [
       [{es: 'Lecturas', en: 'Reads'}, '1.500'],
@@ -121,7 +127,6 @@ window.ORBIT_PRODUCTS = [
       [{es: 'Licencia', en: 'License'}, {es: 'Por persona', en: 'Per person'}],
       [{es: 'Actualizaciones', en: 'Updates'}, {es: '12 meses', en: '12 months'}],
       [{es: 'Alcance', en: 'Scope'}, {es: 'Estimaci\u00f3n para revisar', en: 'An estimate to review'}],
-      [{es: 'Acceso', en: 'Access'}, {es: 'Desde Mi cuenta', en: 'From My account'}],
     ],
     includes: [
       [{es: 'Calculadora de IVA', en: 'VAT calculator'}, {es: 'Sub\u00eds fotos o PDF de las facturas de compra y arma el Libro de IVA del mes, con el desglose por al\u00edcuota', en: 'Upload photos or PDFs of your purchase invoices and it builds the month\u2019s VAT ledger, broken down by rate'}],
