@@ -357,3 +357,4 @@ a.volver { display: inline-flex; align-items: center; text-decoration: none; }
 .estado-guardado.error { color: var(--or); }
 .zona-borrar { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--line-2); }
 .zona-borrar .mono { margin: 0 0 8px; }
+@media (max-width: 1500px) { .solo-ancho { display: none; } .contexto { gap: 6px; } .selector select, .selector input { max-width: 170px; } }

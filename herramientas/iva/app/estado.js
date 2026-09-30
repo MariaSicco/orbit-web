@@ -105,6 +105,9 @@ export async function cargarPeriodo(p) {
   return p;
 }
 
+// Cambios en un período que no es el abierto (por ejemplo, facturas movidas a su mes)
+export function marcarCambio(id) { if (NUBE && id) sucios.add(id); }
+
 function programarGuardado() {
   if (S.actual.periodoId) sucios.add(S.actual.periodoId);
   nube.estado = 'guardando'; avisarNube();

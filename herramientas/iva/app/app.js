@@ -1,6 +1,6 @@
 // Orbit IVA — pantallas del cierre del mes (F1: cargar → revisar → conciliar → liquidación → exportar).
 
-import { S, guardar, nuevoId, periodoActual, clienteDe, asegurarInicio, abrirPeriodo, mesActual, nube, cargarDeLaCuenta, cargarPeriodo, hayCambiosSinGuardar, guardarAhora } from './estado.js';
+import { S, guardar, nuevoId, periodoActual, clienteDe, asegurarInicio, abrirPeriodo, mesActual, nube, cargarDeLaCuenta, cargarPeriodo, hayCambiosSinGuardar, guardarAhora, nuevoPeriodo, marcarCambio } from './estado.js';
 import { leerFoto, leerPdf, comprobanteManual } from './leer-foto.js';
 import { escanearQr } from './escanear-qr.js';
 import { ia, iaLista, activar, desactivar, modoCuenta, comprarRecarga } from './ia.js';
@@ -70,7 +70,7 @@ function renderContexto(p, herramienta) {
   const opciones = S.clientes.map(x => `<option value="${x.id}" ${x.id === c?.id ? 'selected' : ''}>${esc(x.nombre)}</option>`).join('');
   const quedan = Math.max(0, ia.limite - ia.usadas);
   $('#contexto').innerHTML = `
-    ${herramienta ? `<button class="volver" data-ir="inicio" aria-label="Volver a las herramientas">← <span>Herramientas</span></button>` : ''}
+    ${herramienta ? `<button class="volver" data-ir="inicio" aria-label="Volver a las herramientas">← <span class="solo-ancho">Herramientas</span></button>` : ''}
     <label class="selector"><span>Empresa</span>
       <select data-empresa aria-label="Empresa">${opciones}<option disabled>──────</option><option value="__nueva">＋ Agregar empresa</option><option value="__editar">Editar “${esc(c?.nombre)}”</option></select>
     </label>
@@ -84,7 +84,7 @@ function renderContexto(p, herramienta) {
 const POCAS = 100;
 function chipCuenta() {
   if (ia.estado !== 'activa') return '';
-  const saldo = ia.ilimitado ? 'Lecturas sin límite (admin)' : `${ia.saldo.toLocaleString('es-AR')} lecturas con IA`;
+  const saldo = ia.ilimitado ? 'Admin · sin límite' : `${ia.saldo.toLocaleString('es-AR')} lecturas`;
   return `<button class="ia-chip ${!ia.ilimitado && ia.saldo <= POCAS ? '' : 'on'}" data-accion="recarga" title="Sumar lecturas">${saldo}${!ia.ilimitado && ia.saldo <= POCAS ? ' · Sumar' : ''}</button>
     <a class="volver" href="/biblioteca">Mi cuenta</a>`;
 }
@@ -188,6 +188,9 @@ function pantallaLiquidador(p) {
   const leyendo = ui.leyendo ? `<div class="card" role="status" style="margin-top:16px"><b>Foto ${Math.min(ui.leyendo.hechas + 1, ui.leyendo.total)} de ${ui.leyendo.total}</b> <span class="muted">${esc(ui.leyendo.detalle ?? '')}</span><div class="progreso"><i style="transform:scaleX(${(ui.leyendo.hechas / ui.leyendo.total).toFixed(3)})"></i></div></div>` : '';
   const compras = p.fotos.filter(f => !fueraDelResumen(f));
   const ventas = p.fotos.filter(f => fueraDelResumen(f) === 'venta');
+  // Facturas con fecha de otro mes: se avisa y se ofrece moverlas a su período (nunca se mueven solas)
+  const otrosMeses = [...new Set(p.fotos.filter(f => /^\d{4}-\d{2}/.test(f.fecha ?? '') && f.fecha.slice(0, 7) !== p.mes).map(f => f.fecha.slice(0, 7)))];
+  const cantOtros = p.fotos.filter(f => otrosMeses.includes(f.fecha?.slice(0, 7))).length;
   const noA = p.fotos.filter(f => fueraDelResumen(f) === 'no_a');
   const fila = f => {
     const k = columnas(f);
@@ -237,6 +240,7 @@ function pantallaLiquidador(p) {
       <p class="subir-ayuda">Fotos o PDF, varias a la vez. También podés arrastrarlas acá.</p>
     </div>
     ${leyendo}
+    ${cantOtros ? `<div class="aviso-cuenta suave no-imprimir" role="status"><p>${cantOtros === 1 ? 'Una factura es' : `${cantOtros} facturas son`} de ${otrosMeses.map(m => esc(nombreMes(m).toLowerCase())).join(' y ')} y estás en ${esc(nombreMes(p.mes).toLowerCase())}.</p><button class="btn chico" data-accion="mover-mes">Mover a su mes</button></div>` : ''}
     ${t.paraRevisar ? `<p class="aviso-revisar">${t.paraRevisar} ${t.paraRevisar === 1 ? 'factura necesita' : 'facturas necesitan'} revisión (marcadas en naranja). Tocá la fila para ver la foto y corregir.</p>` : ''}
     <section class="bloque">
       <div class="bloque-cab"><h2>Detalle por factura</h2><span class="muted">Δ marca cuando el total no coincide con la suma de los conceptos.</span></div>
@@ -389,6 +393,22 @@ document.addEventListener('click', async e => {
     case 'ia': return dialogoIa();
     case 'recarga': return dialogoRecarga();
     case 'reintentar': return render();
+    case 'mover-mes': {
+      const mover = p.fotos.filter(f => /^\d{4}-\d{2}/.test(f.fecha ?? '') && f.fecha.slice(0, 7) !== p.mes);
+      const destinos = new Set();
+      for (const f of mover) {
+        const mes = f.fecha.slice(0, 7);
+        const destino = S.periodos.find(x => x.clienteId === p.clienteId && x.mes === mes) ?? nuevoPeriodo(p.clienteId, mes);
+        await cargarPeriodo(destino);
+        destino.fotos ??= [];
+        destino.fotos.push(f);
+        marcarCambio(destino.id); destinos.add(mes);
+      }
+      p.fotos = p.fotos.filter(f => !mover.includes(f));
+      guardar();
+      avisar(`${mover.length === 1 ? 'Factura movida' : `${mover.length} facturas movidas`} a ${[...destinos].map(m => nombreMes(m).toLowerCase()).join(' y ')}. Cambiá el período arriba para ${mover.length === 1 ? 'verla' : 'verlas'}.`);
+      return render();
+    }
     case 'borrar-periodo': {
       if (!confirm(`¿Borrar todo lo cargado en ${nombreMes(p.mes)} para ${clienteDe(p).nombre}? No se puede deshacer.`)) return;
       S.periodos = S.periodos.filter(x => x.id !== p.id); S.actual.periodoId = null;
@@ -560,7 +580,7 @@ iaLista.then(async () => {
   render();
 });
 // Indicador de guardado (sin volver a dibujar la pantalla)
-const TEXTO_GUARDADO = { guardando: 'Guardando…', guardado: '✓ Guardado en tu cuenta', error: 'Sin guardar · reintentando', listo: '' };
+const TEXTO_GUARDADO = { guardando: 'Guardando…', guardado: '✓ Guardado', error: 'Sin guardar · reintentando', listo: '' };
 addEventListener('orbit-guardado', () => {
   const el = $('#estado-guardado');
   if (!el) return;
