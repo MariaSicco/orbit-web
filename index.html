@@ -28,7 +28,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=47">
+<link rel="stylesheet" href="assets/css/orbit.css?v=48">
 <style>
 /* hero — el ORBIT gigante del manual */
 .hero{height:100svh;min-height:600px;display:flex;flex-direction:column;justify-content:space-between;padding-top:calc(84px + env(safe-area-inset-top,0px));padding-bottom:24px;isolation:isolate}
@@ -64,7 +64,9 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
    Al terminar, el punto vuelve a seguir al cursor: eso es de esta pantalla. */
 .hero .word{position:relative}
 .hero .word .o{transform-origin:50% 50%}
-.hero .word .gira,.hero .word .orb{transform-origin:50px 50px}
+/* solo el punto: el grupo que gira ya trae su centro en rotate(a 50 50); con transform-origin
+   además, el centro se aplicaba dos veces y la O se corría fuera de su lugar mientras giraba */
+.hero .word .orb{transform-origin:50px 50px}
 .hero .word .pal{display:inline-block;clip-path:inset(-.28em 100% -.28em 0)}
 .go .hero .word .pal{clip-path:inset(-.28em -.14em -.28em 0);
   transition:clip-path .56s cubic-bezier(.45,.02,.25,1) 2.4s}
@@ -87,6 +89,10 @@ body.go .nav{opacity:1}
 .hero .top{--d:3.05s}
 .hero .bot{--d:3.2s}
 .hero .hint{--d:3.5s;--op:.4}
+/* colección: con cinco productos, en pantallas anchas van los cinco en una fila (con 4 columnas el quinto
+   quedaba solo abajo, como cortado); en pantallas medianas, 3 + 2 */
+@media (min-width:1101px){#homeGrid{grid-template-columns:repeat(5,minmax(0,1fr))}}
+@media (min-width:1001px) and (max-width:1100px){#homeGrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 /* sin intro: todo aparece ya puesto */
 body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .word sup,
 .directo .hero .top,.directo .hero .bot,.directo .hero .hint{transition:none!important}
@@ -468,9 +474,9 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
 </section>
 
 </main>
-<script src="assets/js/products.js?v=47"></script>
+<script src="assets/js/products.js?v=48"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=47"></script>
+<script src="assets/js/orbit.js?v=48"></script>
 <script>
 (() => {
 const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow, reveal, toast, money, P, FAM, url, RM} = ORBIT;

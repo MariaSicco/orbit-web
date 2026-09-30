@@ -114,12 +114,34 @@ window.ORBIT_PRODUCTS = [
     id: 'ob-005', cover: 'libro', code: 'OB\u2014005', n: '05', name: 'Orbit IVA',
     family: 'business', status: 'soon', price: 79, accent: 'blue', checkout: '', photo: 'ob-005',
     acceso: '/herramientas/iva',
-    /* Lo que se muestra de este producto son sus propias pantallas, no una foto
-       de ambiente: es una herramienta, se vende mostrando lo que hace. Cada
-       archivo tiene su version -es y -en. */
-    imgs: ['01-subir-facturas', '02-factura-por-factura', '03-sistema-contra-arca',
-           '04-reglas-en-tus-palabras', '05-exportar'],
-    imgsDir: 'ob-005',
+    /* Una herramienta se vende mostrando lo que hace: sus pantallas reales (datos ficticios) en un marco
+       de compu y de celular, y "Cómo funciona" paso a paso. Los textos van en la página, no en la imagen. */
+    demo: {
+      dir: 'ob-005/pantallas', escritorio: 'escritorio-calculadora', movil: 'movil-calculadora',
+      url: 'orbitando.com.ar/herramientas/iva',
+      pasos: [
+        {img: 'paso-01-resumen', parte: {es: 'Calculadora de IVA', en: 'VAT calculator'},
+          t: {es: 'Subís las fotos. <i>Sale el IVA del mes.</i>', en: 'Upload the photos. <i>Out comes the month’s VAT.</i>'},
+          d: {es: 'Fotos o PDF de las facturas de compra, varias a la vez. Te devuelve el neto gravado, el IVA por alícuota, Ingresos Brutos, percepciones y el total facturado. Lo exportás a Excel o lo imprimís.',
+              en: 'Photos or PDFs of your purchase invoices, several at once. You get net taxable amount, VAT by rate, gross income tax, withholdings and total invoiced. Export it to Excel or print it.'}},
+        {img: 'paso-02-factura', parte: {es: 'Calculadora de IVA', en: 'VAT calculator'},
+          t: {es: 'Cada factura, <i>controlada.</i>', en: 'Every invoice, <i>checked.</i>'},
+          d: {es: 'La IA lee la factura y después se controla con cuentas: la suma tiene que dar el total y la CUIT tiene que ser válida. Lo dudoso queda marcado y lo corregís al lado de la foto.',
+              en: 'AI reads the invoice and arithmetic checks it: the parts must add up to the total and the tax ID must be valid. Anything doubtful is flagged and you fix it right next to the photo.'}},
+        {img: 'paso-03-conciliador', parte: {es: 'Conciliador ARCA', en: 'ARCA reconciler'},
+          t: {es: 'Tu sistema contra ARCA. <i>Solo lo que hay que revisar.</i>', en: 'Your system vs. ARCA. <i>Only what needs a look.</i>'},
+          d: {es: 'Subís el Excel de tu sistema contable (CHESS u otro) y Mis Comprobantes. Lo que coincide se resuelve solo; adelante te quedan las diferencias, lo que está en un solo lado y los duplicados.',
+              en: 'Upload your accounting system’s Excel (CHESS or any other) and Mis Comprobantes. Whatever matches is settled automatically; up front you get the differences, what’s only on one side and duplicates.'}},
+        {img: 'paso-05-detalle', parte: {es: 'Conciliador ARCA', en: 'ARCA reconciler'},
+          t: {es: 'Cada diferencia, <i>con su motivo.</i>', en: 'Every difference, <i>with its reason.</i>'},
+          d: {es: 'Abrís un caso y ves los dos lados dato por dato, con lo que no coincide marcado y explicado en palabras. Decidís vos: son el mismo, no son el mismo o lo ignorás.',
+              en: 'Open a case and see both sides field by field, with every mismatch highlighted and explained in words. You decide: same document, different one, or ignore it.'}},
+        {img: 'paso-04-reglas', parte: {es: 'Conciliador ARCA', en: 'ARCA reconciler'},
+          t: {es: 'Reglas <i>en tus palabras.</i>', en: 'Rules <i>in your own words.</i>'},
+          d: {es: 'Escribís “ignorá diferencias menores a $2” y queda como regla. La guardás para esa empresa y el mes que viene ya la sabe.',
+              en: 'Write “ignore differences under $2” and it becomes a rule. Save it for that company and next month it already knows.'}},
+      ],
+    },
     tagline: {es: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.', en: 'Two tools to close the month\u2019s VAT: it builds the purchase ledger from your invoices and cross-checks your system against ARCA.'},
     specs: [
       [{es: 'Lecturas', en: 'Reads'}, '1.500'],

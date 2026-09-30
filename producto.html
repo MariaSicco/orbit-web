@@ -13,7 +13,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=47">
+<link rel="stylesheet" href="assets/css/orbit.css?v=48">
 <style>
 .pd{padding-top:calc(100px + env(safe-area-inset-top,0px))}
 .crumb{display:flex;gap:10px;margin-bottom:24px}
@@ -34,11 +34,31 @@
 .pd-gal .boxstage{grid-column:1/-1}
 .pd-gal .photo{aspect-ratio:3/4}
 .pd-gal .tile{aspect-ratio:3/4;background:var(--b2);display:grid;place-items:center;padding:12%}
-/* Cuando el producto es una herramienta, lo que se muestra son sus pantallas.
-   La primera va en la galería de arriba, ancha; el resto, una abajo de otra. */
-.pd-gal .shot{grid-column:1/-1;width:100%;display:block;border:1px solid rgba(13,13,14,.14)}
-.pd-pantallas{display:grid;gap:clamp(16px,2.4vw,34px);margin-top:clamp(36px,5vw,72px)}
-.pd-pantallas img{width:100%;display:block;border:1px solid rgba(13,13,14,.14)}
+/* ——— Herramientas online: se muestran con sus pantallas reales (datos ficticios) ——— */
+.disp{grid-column:1/-1;position:relative;padding:0 0 clamp(40px,6vw,90px)}
+.nav-win{background:var(--b);border-radius:10px;overflow:hidden;box-shadow:0 30px 80px rgba(0,0,0,.45);border:1px solid var(--k3)}
+.nav-win .barra{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#1d1d1f;color:var(--g)}
+.nav-win .barra i{width:10px;height:10px;border-radius:50%;background:var(--k3);flex:none}
+.nav-win .barra span{margin-left:12px;font-size:11px;letter-spacing:.04em;background:var(--k);border-radius:6px;padding:4px 12px;flex:1;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-win img{display:block;width:100%;height:auto}
+.cel{position:absolute;right:-2%;bottom:0;width:26%;min-width:120px;aspect-ratio:9/19.5;border-radius:24px;background:var(--k);padding:7px;box-shadow:0 24px 60px rgba(0,0,0,.55);border:1px solid var(--k3)}
+.cel img{width:100%;height:100%;object-fit:cover;object-position:top;border-radius:18px;display:block}
+.pd-gal .boxstage.chica{grid-column:1/-1}
+.pasos-h{counter-reset:paso}
+.paso-h{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(24px,5vw,80px);align-items:center;padding:clamp(40px,6vw,96px) 0;border-top:1px solid rgba(13,13,14,.15)}
+.paso-h:nth-child(even) .txt{order:2}
+.paso-h .num{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);display:flex;gap:12px;align-items:center}
+.paso-h .num b{font-family:var(--sans);font-size:clamp(56px,7vw,110px);font-weight:900;letter-spacing:-.05em;line-height:.8;color:var(--k)}
+.paso-h h3{font-size:clamp(30px,3.6vw,56px);font-weight:900;letter-spacing:-.04em;line-height:.95;text-transform:uppercase;margin:22px 0 0}
+.paso-h h3 i{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;letter-spacing:-.02em;color:var(--blue)}
+.paso-h p{margin:18px 0 0;opacity:.75;font-size:clamp(16px,1.3vw,19px);max-width:46ch;line-height:1.5}
+.paso-h figure{margin:0;border:1px solid rgba(13,13,14,.16);background:var(--b);box-shadow:0 20px 50px rgba(13,13,14,.10)}
+.paso-h figure img{display:block;width:100%;height:auto}
+.uso{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:2px;background:var(--k3);margin-top:clamp(28px,4vw,56px)}
+.uso>div{background:var(--k);padding:clamp(20px,2.4vw,34px)}
+.uso b{display:block;font-size:clamp(24px,2.4vw,36px);font-weight:900;letter-spacing:-.04em;text-transform:uppercase;line-height:1;margin:14px 0 10px}
+.uso p{margin:0;opacity:.7}
+@media (max-width:960px){.paso-h{grid-template-columns:1fr}.paso-h:nth-child(even) .txt{order:0}.uso{grid-template-columns:1fr}.cel{width:30%;right:0}}
 .specs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:rgba(13,13,14,.15)}
 .specs>div{background:var(--b);padding:18px}
 .specs b{display:block;font-size:clamp(18px,1.8vw,26px);letter-spacing:-.03em;margin-top:10px;line-height:1.1}
@@ -68,11 +88,26 @@
   </div>
 </section>
 
+<section class="sec light" id="como" hidden>
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Cómo funciona</span><span data-l="en">How it works</span></b><span data-l="es">Pantallas reales, datos ficticios</span><span data-l="en">Real screens, sample data</span></div><div style="text-align:right"><span data-l="es">Dos herramientas,<br>un mismo mes</span><span data-l="en">Two tools,<br>one month</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:13ch;margin-bottom:clamp(20px,3vw,40px)"><span data-l="es">Subís los archivos. Revisás <span class="it">solo lo que hace falta.</span></span><span data-l="en">Upload the files. Review <span class="it">only what matters.</span></span></h2>
+    <div class="pasos-h" id="pasosH"></div>
+  </div>
+</section>
+
+<section class="sec dark" id="uso" hidden>
+  <div class="wrap">
+    <div class="shead mono"><div><b><span data-l="es">Después de comprar</span><span data-l="en">After you buy</span></b><span data-l="es">Sin instalar nada</span><span data-l="en">Nothing to install</span></div><div style="text-align:right"><span data-l="es">Todo queda<br>en tu cuenta</span><span data-l="en">Everything stays<br>in your account</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(44px,6.4vw,104px);max-width:15ch"><span data-l="es">Comprás, abrís y <span class="it">cerrás el mes.</span></span><span data-l="en">Buy it, open it, <span class="it">close the month.</span></span></h2>
+    <div class="uso rv" id="usoPasos"></div>
+  </div>
+</section>
+
 <section class="sec light">
   <div class="wrap">
     <div class="shead mono"><div><b><span data-l="es">Especificaciones</span><span data-l="en">Specs</span></b><span id="specCode"></span></div><div style="text-align:right"><span data-l="es">Qué es, en datos</span><span data-l="en">What it is, in data</span></div></div>
     <div class="specs rv" id="specs"></div>
-    <div class="pd-pantallas" id="pantallas" hidden></div>
     <div class="inc" id="inc"></div>
   </div>
 </section>
@@ -92,9 +127,9 @@
 </section>
 </main>
 <div class="buybar" id="buybar" aria-hidden="true"></div>
-<script src="assets/js/products.js?v=47"></script>
+<script src="assets/js/products.js?v=48"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=47"></script>
+<script src="assets/js/orbit.js?v=48"></script>
 <script>
 (() => {
 const {C, $, $$, L, tr, lang, sym, card, buyBtn, mountBox, reveal, P, FAM, ACC, money} = ORBIT;
@@ -110,22 +145,33 @@ setDesc(); addEventListener('orbit:lang', setDesc);
 $('#crumbCode').textContent = `${p.code} ${p.name}`;
 $('#specCode').textContent = p.code;
 
-/* una herramienta se muestra con sus pantallas; un archivo, con su foto */
-const shot = (p, n) => `assets/img/${p.imgsDir}/${n}-${lang()}.png`;
-$('#gal').innerHTML = `<div class="boxstage" id="bx"></div>` + (p.imgs && p.imgs.length
-  ? `<img class="shot" src="${shot(p, p.imgs[0])}" data-shot="${p.imgs[0]}" alt="">`
-  : `<div class="photo" style="background-image:url(assets/img/${p.photo}.jpg)" role="img" aria-label="${p.name}"></div>
-     <div class="tile">${sym({ring:C.k, dot:acc === C.k ? C.blue : acc})}</div>`);
-
-if (p.imgs && p.imgs.length > 1) {
-  const caja = $('#pantallas');
-  caja.hidden = false;
-  caja.innerHTML = p.imgs.slice(1)
-    .map(n => `<img src="${shot(p, n)}" data-shot="${n}" alt="" loading="lazy">`).join('');
+/* una herramienta se muestra con sus pantallas (marco de compu + celular y "Cómo funciona");
+   un archivo, con su caja, su foto y su símbolo */
+const d = p.demo;
+const img = n => `assets/img/${d.dir}/${n}.webp`;
+if (d) {
+  $('#gal').innerHTML = `<div class="disp">
+      <div class="nav-win"><div class="barra" aria-hidden="true"><i></i><i></i><i></i><span class="mono">${d.url}</span></div>
+        <img src="${img(d.escritorio)}" alt="${tr({es:`${p.name} en la compu: el IVA del mes con su desglose`, en:`${p.name} on desktop: the month’s VAT with its breakdown`})}" width="2400" height="1500"></div>
+      <div class="cel"><img src="${img(d.movil)}" alt="${tr({es:`${p.name} en el celular`, en:`${p.name} on mobile`})}" loading="lazy"></div>
+    </div>
+    <div class="boxstage chica" id="bx"></div>`;
+  $('#como').hidden = false;
+  $('#pasosH').innerHTML = d.pasos.map((x, i) => `<div class="paso-h rv">
+      <div class="txt"><span class="num"><b>0${i + 1}</b>${L(x.parte)}</span><h3>${L(x.t)}</h3><p>${L(x.d)}</p></div>
+      <figure><img src="${img(x.img)}" alt="${tr(x.parte)}: ${tr(x.t).replace(/<[^>]+>/g, '')}" loading="lazy"></figure>
+    </div>`).join('');
+  $('#uso').hidden = false;
+  $('#usoPasos').innerHTML = [
+    [{es:'01 · Comprás', en:'01 · You buy'}, {es:'Una vez', en:'Once'}, {es:'Pago único con Mercado Pago o PayPal. Incluye 1.500 lecturas de facturas con IA y 12 meses de actualizaciones.', en:'One-time payment with Mercado Pago or PayPal. Includes 1,500 AI invoice reads and 12 months of updates.'}],
+    [{es:'02 · Abrís', en:'02 · You open it'}, {es:'Desde tu cuenta', en:'From your account'}, {es:'En Mi cuenta aparece Orbit IVA con el botón Abrir. Funciona en la compu y en el celular, sin instalar nada.', en:'Orbit IVA shows up in My account with an Open button. Works on desktop and mobile, nothing to install.'}],
+    [{es:'03 · Seguís', en:'03 · You keep going'}, {es:'Todo guardado', en:'All saved'}, {es:'Tus empresas y meses quedan guardados en tu cuenta. Si se terminan las lecturas, sumás 1.000 más desde adentro.', en:'Your companies and months stay saved in your account. If reads run out, add 1,000 more from inside.'}],
+  ].map(([k, t, x]) => `<div><span class="mono dim">${L(k)}</span><b>${L(t)}</b><p>${L(x)}</p></div>`).join('');
+} else {
+  $('#gal').innerHTML = `<div class="boxstage" id="bx"></div>
+    <div class="photo" style="background-image:url(assets/img/${p.photo}.jpg)" role="img" aria-label="${p.name}"></div>
+    <div class="tile">${sym({ring:C.k, dot:acc === C.k ? C.blue : acc})}</div>`;
 }
-/* las pantallas están escritas en cada idioma: al cambiarlo, cambian */
-addEventListener('orbit:lang', () => $$('[data-shot]').forEach(i =>
-  i.setAttribute('src', shot(p, i.dataset.shot))));
 mountBox($('#bx'), p);
 
 const [w1, ...rest] = p.name.split(' ');
@@ -138,7 +184,7 @@ $('#info').innerHTML = `<span class="mono">${p.code} · ${fam}</span>
   <h1 class="display">${w1}<br><span class="it">${rest.join(' ').toLowerCase()}.</span></h1>
   <p class="lead" style="opacity:.8;margin:22px 0 0">${L(p.tagline)}</p>
   <div class="pd-price"><b>${p.status==='soon' ? L('Pronto','Soon') : money(p.price)}</b><span class="mono dim">${p.status==='soon' ? L('Lanzamiento 2026','Launching 2026') : L('Pago único · impuestos según país','One-time payment · taxes by country')}</span></div>
-  <div class="pd-buy">${buyBtn(p)}<a class="btn btn-line" href="#inc">${L('Qué incluye','What’s inside')}</a></div>
+  <div class="pd-buy">${buyBtn(p)}<a class="btn btn-line" href="${d ? '#como' : '#inc'}">${d ? L('Cómo funciona','How it works') : L('Qué incluye','What’s inside')}</a></div>
   <div class="pd-trust mono">${TRUST(p).map(([es,en]) => `<span>${L(es,en)}</span>`).join('')}</div>`;
 
 $('#specs').innerHTML = p.specs.map(([k,v]) => `<div><span class="mono dim">${L(k)}</span><b>${L(v)}</b></div>`).join('');
