@@ -16,6 +16,8 @@ export const CATALOG = {
     bajada: 'El sistema operativo para pequeños negocios: clientes, proyectos, finanzas y procesos en un solo lugar.' },
   'ob-004': { code: 'OB—004', name: 'AI Workflow System', usd: 69, ars: 69000, soon: true, foto: 'corridor',
     bajada: 'Workflows de IA probados para investigar, escribir, diseñar y automatizar con criterio.' },
+  'ob-005': { code: 'OB—005', name: 'Orbit IVA',          usd: 79, ars: 79000, soon: true, foto: 'figure',
+    bajada: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.' },
 };
 
 const OVER_KEY = 'orbit:catalog';
