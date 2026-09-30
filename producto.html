@@ -34,11 +34,25 @@
 .pd-gal .boxstage{grid-column:1/-1}
 .pd-gal .photo{aspect-ratio:3/4}
 .pd-gal .tile{aspect-ratio:3/4;background:var(--b2);display:grid;place-items:center;padding:12%}
-/* Cuando el producto es una herramienta, lo que se muestra son sus pantallas.
-   La primera va en la galería de arriba, ancha; el resto, una abajo de otra. */
-.pd-gal .shot{grid-column:1/-1;width:100%;display:block;border:1px solid rgba(13,13,14,.14)}
-.pd-pantallas{display:grid;gap:clamp(16px,2.4vw,34px);margin-top:clamp(36px,5vw,72px)}
-.pd-pantallas img{width:100%;display:block;border:1px solid rgba(13,13,14,.14)}
+/* Cuando el producto es una herramienta, en el mismo lugar del libro va un
+   carrusel: primero el libro y después sus pantallas, de a una. */
+.car{grid-column:1/-1;position:relative}
+.car-via{position:relative;min-height:clamp(420px,46vw,600px);background:var(--k);overflow:hidden}
+.car-via > *{position:absolute;inset:0;opacity:0;transition:opacity .45s var(--ease);
+  pointer-events:none;display:grid;place-items:center}
+.car-via > *.on{opacity:1;pointer-events:auto}
+.car-via .boxstage{min-height:0;height:100%;width:100%}
+.car-via img{width:100%;height:100%;object-fit:contain;object-position:center;display:block;background:var(--b)}
+.car-pie{display:flex;align-items:center;gap:14px;margin-top:12px}
+.car-pts{display:flex;gap:6px;flex:1}
+.car-pts button{flex:0 0 auto;width:26px;height:3px;padding:0;border:0;cursor:pointer;
+  background:rgba(242,239,232,.3);transition:background .3s}
+.car-pts button.on{background:var(--ac)}
+.car-nav{display:flex;gap:8px}
+.car-nav button{width:38px;height:38px;border:1px solid rgba(242,239,232,.35);background:none;
+  color:inherit;cursor:pointer;font-size:15px;line-height:1}
+.car-nav button:hover{background:var(--b);color:var(--k)}
+.car-n{font-family:var(--mono);font-size:10px;letter-spacing:.12em;opacity:.7;white-space:nowrap}
 .specs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;background:rgba(13,13,14,.15)}
 .specs>div{background:var(--b);padding:18px}
 .specs b{display:block;font-size:clamp(18px,1.8vw,26px);letter-spacing:-.03em;margin-top:10px;line-height:1.1}
@@ -72,7 +86,6 @@
   <div class="wrap">
     <div class="shead mono"><div><b><span data-l="es">Especificaciones</span><span data-l="en">Specs</span></b><span id="specCode"></span></div><div style="text-align:right"><span data-l="es">Qué es, en datos</span><span data-l="en">What it is, in data</span></div></div>
     <div class="specs rv" id="specs"></div>
-    <div class="pd-pantallas" id="pantallas" hidden></div>
     <div class="inc" id="inc"></div>
   </div>
 </section>
@@ -112,21 +125,53 @@ $('#specCode').textContent = p.code;
 
 /* una herramienta se muestra con sus pantallas; un archivo, con su foto */
 const shot = (p, n) => `assets/img/${p.imgsDir}/${n}-${lang()}.png`;
-$('#gal').innerHTML = `<div class="boxstage" id="bx"></div>` + (p.imgs && p.imgs.length
-  ? `<img class="shot" src="${shot(p, p.imgs[0])}" data-shot="${p.imgs[0]}" alt="">`
-  : `<div class="photo" style="background-image:url(assets/img/${p.photo}.jpg)" role="img" aria-label="${p.name}"></div>
-     <div class="tile">${sym({ring:C.k, dot:acc === C.k ? C.blue : acc})}</div>`);
+const hayShots = !!(p.imgs && p.imgs.length);
 
-if (p.imgs && p.imgs.length > 1) {
-  const caja = $('#pantallas');
-  caja.hidden = false;
-  caja.innerHTML = p.imgs.slice(1)
-    .map(n => `<img src="${shot(p, n)}" data-shot="${n}" alt="" loading="lazy">`).join('');
-}
-/* las pantallas están escritas en cada idioma: al cambiarlo, cambian */
-addEventListener('orbit:lang', () => $$('[data-shot]').forEach(i =>
-  i.setAttribute('src', shot(p, i.dataset.shot))));
+$('#gal').innerHTML = hayShots
+  ? `<div class="car">
+       <div class="car-via" id="via">
+         <div class="on"><div class="boxstage" id="bx"></div></div>
+         ${p.imgs.map(n => `<div><img src="${shot(p, n)}" data-shot="${n}" alt="" loading="lazy"></div>`).join('')}
+       </div>
+       <div class="car-pie">
+         <span class="car-n" id="carN"></span>
+         <div class="car-pts" id="carPts"></div>
+         <div class="car-nav"><button type="button" data-paso="-1" aria-label="Anterior">←</button><button type="button" data-paso="1" aria-label="Siguiente">→</button></div>
+       </div>
+     </div>`
+  : `<div class="boxstage" id="bx"></div>
+     <div class="photo" style="background-image:url(assets/img/${p.photo}.jpg)" role="img" aria-label="${p.name}"></div>
+     <div class="tile">${sym({ring:C.k, dot:acc === C.k ? C.blue : acc})}</div>`;
+
 mountBox($('#bx'), p);
+
+if (hayShots) {
+  const via = $('#via'), laminas = [...via.children];
+  const pts = $('#carPts');
+  pts.innerHTML = laminas.map((_, i) => `<button type="button" aria-label="${i + 1}"></button>`).join('');
+  const puntos = [...pts.children], num = $('#carN');
+  let cual = 0;
+  const poner = i => {
+    cual = (i + laminas.length) % laminas.length;
+    laminas.forEach((l, k) => l.classList.toggle('on', k === cual));
+    puntos.forEach((b, k) => b.classList.toggle('on', k === cual));
+    num.textContent = `0${cual + 1} / 0${laminas.length}`;
+  };
+  puntos.forEach((b, i) => b.onclick = () => poner(i));
+  $$('.car-nav button').forEach(b => b.onclick = () => poner(cual + Number(b.dataset.paso)));
+  /* deslizar con el dedo; la caja 3D se gira sola, así que ahí no interceptamos */
+  let x0 = null;
+  via.addEventListener('pointerdown', e => { x0 = cual === 0 ? null : e.clientX; });
+  via.addEventListener('pointerup', e => {
+    if (x0 === null) return;
+    const dx = e.clientX - x0; x0 = null;
+    if (Math.abs(dx) > 40) poner(cual + (dx < 0 ? 1 : -1));
+  });
+  poner(0);
+  /* las pantallas están escritas en cada idioma */
+  addEventListener('orbit:lang', () => $$('[data-shot]').forEach(i =>
+    i.setAttribute('src', shot(p, i.dataset.shot))));
+}
 
 const [w1, ...rest] = p.name.split(' ');
 /* Las garantías dependen del producto: una herramienta online no se descarga
