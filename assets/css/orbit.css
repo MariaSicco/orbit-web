@@ -40,10 +40,11 @@ p{text-wrap:pretty}
    controles por debajo de 44 px (enlaces del pie, chips, flechas, la barra). */
 @media (pointer:coarse){
   .foot .cols a, .drawer nav a, .langsw button, .nav .logo, .nav .cart-btn,
-  .nav .acc-link, .nav .menu, .darrows button, .opts .chip, .drawer-top .chip{position:relative}
+  .nav .acc-link, .nav .menu, .darrows button, .opts .chip, .drawer-top .chip,
+  .puertas nav a{position:relative}
   .foot .cols a::after, .drawer nav a::after, .langsw button::after, .nav .logo::after,
   .nav .cart-btn::after, .nav .acc-link::after, .nav .menu::after, .darrows button::after,
-  .opts .chip::after, .drawer-top .chip::after{
+  .opts .chip::after, .drawer-top .chip::after, .puertas nav a::after{
     content:"";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
     width:max(100%,44px);height:max(100%,44px)}
   /* en los campos no sirve el pseudo-elemento: van con alto mínimo */
