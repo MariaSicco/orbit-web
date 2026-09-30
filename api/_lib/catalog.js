@@ -7,6 +7,10 @@
    un producto o cargar el archivo que se descarga. */
 import { kvGet, kvSet } from './kv.js';
 
+/* Productos que se pueden comprar solo en las versiones de prueba (preview) para probar la compra de punta a punta.
+   En producción siguen en "soon" hasta que se publiquen. */
+const EN_PREVIEW = process.env.VERCEL_ENV === 'preview';
+
 export const CATALOG = {
   'ob-001': { code: 'OB—001', name: 'Content System',     usd: 39, ars: 39000, foto: 'hands',
     bajada: 'Un sistema completo para planificar, producir y publicar contenido sin empezar de cero.' },
@@ -18,7 +22,7 @@ export const CATALOG = {
     bajada: 'Workflows de IA probados para investigar, escribir, diseñar y automatizar con criterio.' },
   /* Herramienta online (no se descarga): la compra da acceso en /herramientas/iva y suma lecturas con IA.
      Queda en "soon" hasta probar compra, acceso y lectura de punta a punta. */
-  'ob-005': { code: 'OB—005', name: 'Orbit IVA', usd: 79, ars: 79000, soon: true, foto: 'grid',
+  'ob-005': { code: 'OB—005', name: 'Orbit IVA', usd: 79, ars: 79000, soon: !EN_PREVIEW, foto: 'grid',
     herramienta: '/herramientas/iva', creditos: 1500,
     bajada: 'Calculadora de IVA desde fotos de facturas y conciliador ARCA contra tu sistema contable.' },
   /* Recarga: no aparece en el catálogo; se compra desde adentro de la herramienta. */

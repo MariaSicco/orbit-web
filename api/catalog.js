@@ -20,6 +20,9 @@ export default async function handler(req, res) {
     if (Object.keys(p).length) patch[id] = p;
   }
 
+  /* En las versiones de prueba, lo que el catálogo del servidor habilita solo ahí (ver EN_PREVIEW) */
+  if (process.env.VERCEL_ENV === 'preview') for (const [id, c] of Object.entries(CATALOG)) if (!c.soon && !c.oculto) patch[id] = { ...patch[id], status: 'available' };
+
   res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
   res.setHeader('Cache-Control', 'public, max-age=20, s-maxage=60, stale-while-revalidate=300');
   res.status(200).send(
