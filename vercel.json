@@ -2,6 +2,39 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/p/:id", "destination": "/api/producto?id=:id" }
-  ]
+    {
+      "source": "/p/:id",
+      "destination": "/api/producto?id=:id"
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/herramientas/iva",
+      "destination": "/herramientas/iva/app",
+      "permanent": false
+    }
+  ],
+  "headers": [
+    {
+      "source": "/herramientas/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "api/iva/extraer.js": {
+      "maxDuration": 60
+    },
+    "api/iva/asistente.js": {
+      "maxDuration": 60
+    }
+  }
 }

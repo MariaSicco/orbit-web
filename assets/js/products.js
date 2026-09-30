@@ -108,6 +108,29 @@ window.ORBIT_PRODUCTS = [
       {es: 'Quien empieza con IA y quiere un método', en: 'People starting with AI who want a method'},
     ],
   },
+  /* BORRADOR de copy: reemplazar por la entrada que entregue el Project "Orbit" (regla del CLAUDE.md).
+     Herramienta online: no se descarga, se abre desde la cuenta (acceso). Queda en 'soon' hasta probar la compra de punta a punta. */
+  {
+    id: 'ob-005', cover: 'grid', code: 'OB—005', n: '05', name: 'Orbit IVA',
+    family: 'business', status: 'soon', price: 79, accent: 'blue', checkout: '', photo: 'grid',
+    acceso: '/herramientas/iva',
+    tagline: {es: 'Sacá el IVA del mes desde las fotos de tus facturas y conciliá tu sistema contra ARCA.', en: 'Get the month’s VAT from photos of your invoices and reconcile your books against ARCA.'},
+    specs: [
+      [{es: 'Formato', en: 'Format'}, {es: 'Herramienta online', en: 'Online tool'}],
+      [{es: 'Lecturas con IA', en: 'AI reads'}, '1.500'],
+      [{es: 'Actualizaciones', en: 'Updates'}, {es: '12 meses', en: '12 months'}],
+      [{es: 'Versión', en: 'Version'}, 'V.01'],
+    ],
+    includes: [
+      [{es: 'Calculadora de IVA', en: 'VAT calculator'}, {es: 'Subís fotos o PDF y te arma el Libro de IVA Compras', en: 'Upload photos or PDFs and get your VAT purchase book'}],
+      [{es: 'Conciliador ARCA', en: 'ARCA reconciler'}, {es: 'Cruza tu sistema contable con ARCA y te muestra solo lo que hay que revisar', en: 'Matches your books against ARCA and shows only what needs review'}],
+      [{es: 'Excel listo', en: 'Ready Excel'}, {es: 'Exportás el resultado con cada diferencia explicada', en: 'Export the result with every difference explained'}],
+    ],
+    for: [
+      {es: 'Contadores y estudios contables', en: 'Accountants and accounting firms'},
+      {es: 'Negocios que cargan sus propias facturas', en: 'Businesses that enter their own invoices'},
+    ],
+  },
 ];
 
 window.ORBIT_FAMILIES = {

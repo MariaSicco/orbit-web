@@ -1,0 +1,26 @@
+{
+  "esperado": {
+    "es_comprobante": true,
+    "tipo_codigo": "011",
+    "letra": "C",
+    "punto_venta": 2,
+    "numero": 1814,
+    "fecha": "2026-08-23",
+    "cuit_emisor": "30744444442",
+    "razon_social_emisor": "DISTRIBUIDORA SEIS SA",
+    "cuit_receptor": "30799999990",
+    "moneda": "PES",
+    "cotizacion": 1,
+    "alicuotas": [],
+    "no_gravado": null,
+    "exento": null,
+    "percepciones_iva": null,
+    "percepciones_iibb": null,
+    "otros_tributos": null,
+    "total": 55667.53,
+    "cae": "76000027160474",
+    "campos_dudosos": []
+  },
+  "qrTexto": "https://www.arca.gob.ar/fe/qr/?p=eyJ2ZXIiOjEsImZlY2hhIjoiMjAyNi0wOC0yMyIsImN1aXQiOjMwNzQ0NDQ0NDQyLCJwdG9WdGEiOjIsInRpcG9DbXAiOjExLCJucm9DbXAiOjE4MTQsImltcG9ydGUiOjU1NjY3LjUzLCJtb25lZGEiOiJQRVMiLCJjdHoiOjEsInRpcG9Eb2NSZWMiOjgwLCJucm9Eb2NSZWMiOjMwNzk5OTk5OTkwLCJ0aXBvQ29kQXV0IjoiRSIsImNvZEF1dCI6NzYwMDAwMjcxNjA0NzR9",
+  "degradacion": null
+}

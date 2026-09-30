@@ -14,7 +14,7 @@
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=46">
+<link rel="stylesheet" href="assets/css/orbit.css?v=47">
 <style>
 .pan{padding-inline:var(--pad);padding-top:calc(104px + env(safe-area-inset-top,0px));padding-bottom:clamp(60px,8vw,120px);min-height:100svh}
 .pan .wrap{max-width:1440px;margin-inline:auto}
@@ -222,9 +222,9 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=46"></script>
+<script src="assets/js/products.js?v=47"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=46"></script>
+<script src="assets/js/orbit.js?v=47"></script>
 <script>
 (async () => {
 const {$, $$, L, tr, cover, toast, P, url} = ORBIT;
@@ -260,6 +260,11 @@ const signOut = async () => {
   location.href = 'acceso.html?salir=1';
 };
 $('#out').onclick = signOut; $('#out2').onclick = signOut;
+
+/* Herramientas online (p.acceso): se abren en el sitio en vez de descargarse */
+const accion = p => p.acceso
+  ? '<a class="btn btn-acid" href="' + p.acceso + '">' + L('Abrir', 'Open') + ' <span class="ar">→</span></a>'
+  : '<button class="btn btn-acid" data-dl="' + p.id + '">' + L('Descargar', 'Download') + ' <span class="ar">↓</span></button>';
 
 /* ── datos ── */
 const purchases = (me.purchases || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -297,7 +302,7 @@ if (items.length) {
   $('#resume').innerHTML = '<div class="resume"><div>' + cover(it.p) + '</div>'
     + '<div><span class="mono dim">' + it.p.code + ' · ' + L('Comprado', 'Purchased') + ' ' + fmt(it.date) + '</span>'
     + '<h3>' + it.p.name + '</h3><p>' + L(it.p.tagline) + '</p></div>'
-    + '<div class="acts"><button class="btn btn-acid" data-dl="' + it.productId + '">' + L('Descargar', 'Download') + ' <span class="ar">↓</span></button>'
+    + '<div class="acts">' + accion(it.p) 
     + '<a class="btn btn-line" href="' + url(it.p) + '">' + L('Ver guía', 'View guide') + '</a></div></div>';
 }
 const suggest = P.find(p => !ownedIds.has(p.id) && p.status !== 'soon');
@@ -314,8 +319,8 @@ $('#items').innerHTML = items.length ? items.map(({ p, date, downloadable }) =>
   + '<div><span class="mono dim">' + p.code + ' · ' + L('Comprado', 'Purchased') + ' ' + fmt(date) + '</span>'
   + '<h3>' + p.name + '</h3><p>' + L(p.tagline) + '</p>'
   + '<div class="meta">' + p.specs.slice(0, 3).map(([k, v]) => '<span>' + L(k) + ': ' + L(v) + '</span>').join('')
-  + '<span>' + (downloadable ? L('Listo para descargar', 'Ready to download') : L('Archivo en preparación', 'File in preparation')) + '</span></div></div>'
-  + '<div class="acts"><button class="btn btn-acid" data-dl="' + p.id + '">' + L('Descargar', 'Download') + ' <span class="ar">↓</span></button>'
+  + '<span>' + (p.acceso ? L('Herramienta online · lista para usar', 'Online tool · ready to use') : downloadable ? L('Listo para descargar', 'Ready to download') : L('Archivo en preparación', 'File in preparation')) + '</span></div></div>'
+  + '<div class="acts">' + accion(p)
   + '<a class="btn btn-line" href="' + url(p) + '">' + L('Ver guía', 'View guide') + '</a></div></div>').join('')
   : zeroLib;
 

@@ -16,6 +16,15 @@ export const CATALOG = {
     bajada: 'El sistema operativo para pequeños negocios: clientes, proyectos, finanzas y procesos en un solo lugar.' },
   'ob-004': { code: 'OB—004', name: 'AI Workflow System', usd: 69, ars: 69000, soon: true, foto: 'corridor',
     bajada: 'Workflows de IA probados para investigar, escribir, diseñar y automatizar con criterio.' },
+  /* Herramienta online (no se descarga): la compra da acceso en /herramientas/iva y suma lecturas con IA.
+     Queda en "soon" hasta probar compra, acceso y lectura de punta a punta. */
+  'ob-005': { code: 'OB—005', name: 'Orbit IVA', usd: 79, ars: 79000, soon: true, foto: 'grid',
+    herramienta: '/herramientas/iva', creditos: 1500,
+    bajada: 'Calculadora de IVA desde fotos de facturas y conciliador ARCA contra tu sistema contable.' },
+  /* Recarga: no aparece en el catálogo; se compra desde adentro de la herramienta. */
+  'ob-005-r': { code: 'OB—005·R', name: 'Orbit IVA · 1.000 lecturas con IA', usd: 19, ars: 19000, oculto: true,
+    recargaDe: 'ob-005', creditos: 1000,
+    bajada: 'Recarga de 1.000 lecturas de facturas con IA para Orbit IVA.' },
 };
 
 const OVER_KEY = 'orbit:catalog';

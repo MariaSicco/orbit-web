@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<base href="/herramientas/iva/app/">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orbit IVA · Calculadora y Conciliador</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;600;700;800;900&family=Playfair+Display:ital,wght@1,500&family=IBM+Plex+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css?v=36">
+<!-- Lectura de archivos y fotos en el navegador: Excel (SheetJS), QR (jsQR), OCR (Tesseract), export con colores (ExcelJS) -->
+<script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script defer src="vendor/zxing/zxing-reader.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@7.0.0/dist/tesseract.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script>window.ORBIT_IVA = { api: "/api/iva", modo: "cuenta" };</script>
+<script type="module" src="app.js?v=36"></script>
+</head>
+<body>
+<header class="top">
+  <button class="marca" data-ir="inicio" aria-label="Orbit IVA · inicio">
+    <svg class="simbolo" viewBox="0 0 32 32" aria-hidden="true"><path d="M26.8 13.9A11 11 0 1 1 18.1 5.2" fill="none" stroke="currentColor" stroke-width="3.4"/><circle cx="23.8" cy="8.2" r="2.5" fill="var(--blue)"/></svg>
+    <span>ORBIT<sup>®</sup> IVA</span><span class="codigo">OB—061</span>
+  </button>
+  <div class="contexto" id="contexto"></div>
+</header>
+<div class="shell">
+  <nav class="pasos" id="pasos" aria-label="Pasos del cierre"></nav>
+  <main class="panel" id="panel" tabindex="-1"></main>
+</div>
+<div id="avisos" aria-live="polite"></div>
+</body>
+</html>
