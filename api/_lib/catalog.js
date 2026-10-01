@@ -7,6 +7,9 @@
    un producto o cargar el archivo que se descarga. */
 import { kvGet, kvSet } from './kv.js';
 
+/* Productos que se pueden comprar solo en las versiones de prueba (preview), para probar la compra de punta a punta. */
+const EN_PREVIEW = process.env.VERCEL_ENV === 'preview';
+
 export const CATALOG = {
   'ob-001': { code: 'OB—001', name: 'Content System',     usd: 39, ars: 39000, foto: 'hands',
     bajada: 'Un sistema completo para planificar, producir y publicar contenido sin empezar de cero.' },
@@ -16,8 +19,15 @@ export const CATALOG = {
     bajada: 'El sistema operativo para pequeños negocios: clientes, proyectos, finanzas y procesos en un solo lugar.' },
   'ob-004': { code: 'OB—004', name: 'AI Workflow System', usd: 69, ars: 69000, soon: true, foto: 'corridor',
     bajada: 'Workflows de IA probados para investigar, escribir, diseñar y automatizar con criterio.' },
-  'ob-005': { code: 'OB—005', name: 'Orbit IVA',          usd: 79, ars: 79000, soon: true, foto: 'ob-005',
+  /* Herramienta online (no se descarga): la compra da acceso en /herramientas/iva y suma lecturas con IA.
+     En producción sigue en "soon" hasta probar compra, acceso y lectura de punta a punta; en preview se puede comprar. */
+  'ob-005': { code: 'OB—005', name: 'Orbit IVA',          usd: 79, ars: 79000, soon: !EN_PREVIEW, foto: 'ob-005',
+    herramienta: '/herramientas/iva', creditos: 1500,
     bajada: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.' },
+  /* Recarga: no aparece en el catálogo; se compra desde adentro de la herramienta. */
+  'ob-005-r': { code: 'OB—005·R', name: 'Orbit IVA · 1.000 lecturas con IA', usd: 19, ars: 19000, oculto: true,
+    recargaDe: 'ob-005', creditos: 1000,
+    bajada: 'Recarga de 1.000 lecturas de facturas con IA para Orbit IVA.' },
 };
 
 const OVER_KEY = 'orbit:catalog';

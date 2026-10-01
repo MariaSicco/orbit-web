@@ -1,0 +1,5 @@
+Mis Comprobantes Emitidos - CUIT 30799999990 - DATOS FICTICIOS DE PRUEBA
+Fecha;Tipo;Punto de Venta;Cód. Autorización;Tipo Doc. Receptor;Nro. Doc. Receptor;Denominación Receptor;Tipo Cambio;Moneda;Imp. Neto Gravado IVA 21%;IVA 21%;Imp. Neto Gravado IVA 10,5%;IVA 10,5%;Imp. Neto No Gravado;Imp. Op. Exentas;Otros Tributos;Imp. Total
+05/08/2026;1 - Factura A;00002-00000501;76223456789001;80;30755555556;Cliente Final Uno SA;1,00;$;400000,00;84000,00;0,00;0,00;0,00;0,00;0,00;484000,00
+12/08/2026;1 - Factura A;00002-00000502;76223456789002;80;30777777773;Cliente Final Dos SA;1,00;$;150000,00;31500,00;0,00;0,00;0,00;0,00;0,00;181500,00
+20/08/2026;6 - Factura B;00002-00000503;76223456789003;96;25123456;Consumidor Final;1,00;$;50000,00;10500,00;0,00;0,00;0,00;0,00;0,00;60500,00

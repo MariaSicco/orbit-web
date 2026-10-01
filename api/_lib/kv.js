@@ -27,6 +27,22 @@ export async function kvSet(key, val, ttlSeconds) {
   if (ttlSeconds) args.push('EX', String(ttlSeconds));
   await cmd(...args);
 }
+/* Suma atómica (saldos de lecturas con IA). Devuelve el valor nuevo. */
+export async function kvIncr(key, by = 1, ttlSeconds) {
+  if (!hasKV) { const v = (mem.get(key)?.val || 0) + by; mem.set(key, { val: v, exp: ttlSeconds ? Date.now() + ttlSeconds * 1000 : 0 }); return v; }
+  const v = Number(await cmd('INCRBY', key, String(by)));
+  if (ttlSeconds && v === by) await cmd('EXPIRE', key, String(ttlSeconds));
+  return v;
+}
+export async function kvGetNum(key) {
+  if (!hasKV) return Number(mem.get(key)?.val || 0);
+  return Number((await cmd('GET', key)) || 0);
+}
+/* Guarda solo si no existe (para no acreditar dos veces el mismo pago). */
+export async function kvSetNX(key, val) {
+  if (!hasKV) { if (mem.has(key)) return false; mem.set(key, { val, exp: 0 }); return true; }
+  return (await cmd('SET', key, JSON.stringify(val), 'NX')) === 'OK';
+}
 export async function kvDel(key) { if (!hasKV) { mem.delete(key); return; } await cmd('DEL', key); }
 
 /* Recorrido para los informes del panel: SCAN por patrón + lectura en tandas. */

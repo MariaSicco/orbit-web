@@ -1,0 +1,2 @@
+Fecha,Tipo,Punto de Venta,Número Desde,Número Hasta,Cód. Autorización,Tipo Doc. Emisor,Nro. Doc. Emisor,Denominación Emisor,Tipo Cambio,Moneda,Imp. Neto Gravado,Imp. Neto No Gravado,Imp. Op. Exentas,IVA,Imp. Total
+2026-08-15,1 - Factura A,3,1234,1234,76123456789012,80,30712345671,Proveedor Uno SA,1,$,100000.00,0,0,21000.00,121000.00

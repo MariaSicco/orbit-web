@@ -4,6 +4,7 @@ import { getCatalog } from './catalog.js';
 import { randomBytes } from 'node:crypto';
 import { sendEmail, emailReady, layout, it } from './email.js';
 import { upsertContact, listClientes } from './marketing.js';
+import { acreditar } from './creditos.js';
 
 const key = id => `orbit:order:${id}`;
 const listKey = email => `orbit:orders:${email.toLowerCase()}`;
@@ -51,6 +52,12 @@ export async function markPaid(id, { paymentId, amount, currency }) {
       date: order.paidAt,
     });
   }
+  /* Herramientas online: la compra (o la recarga) suma lecturas con IA a la cuenta. Una sola vez por pago. */
+  const CAT = await getCatalog();
+  for (const it of order.items) {
+    const creditos = CAT[it.id]?.creditos;
+    if (creditos) await acreditar(order.email, creditos * it.qty, `${id}:${it.id}`);
+  }
   /* Aviso al comprador y alta como cliente.
      Los dos se esperan: en Vercel, lo que queda pendiente cuando la función
      responde se muere con ella, y el correo no llegaba a salir. */
@@ -80,20 +87,26 @@ export async function enviarComprobante(order) {
   const ZONA = process.env.ORBIT_TZ || 'America/Argentina/Buenos_Aires';
   const cuando = new Date(order.paidAt || Date.now()).toLocaleDateString('es-AR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: ZONA });
   const medio = order.via === 'paypal' ? 'PayPal' : 'Mercado Pago';
+  /* Herramientas online (Orbit IVA y sus recargas): no hay nada que descargar, se abren en el sitio */
+  const CAT = await getCatalog().catch(() => ({}));
+  const herramienta = order.items.map(i => CAT[i.id]?.herramienta || CAT[CAT[i.id]?.recargaDe]?.herramienta).find(Boolean);
+  const soloHerramientas = order.items.every(i => CAT[i.id]?.herramienta || CAT[i.id]?.recargaDe);
+  const destino = soloHerramientas && herramienta ? `${site}${herramienta}` : `${site}/biblioteca`;
+  const lecturas = order.items.reduce((a, i) => a + (CAT[i.id]?.creditos || 0) * i.qty, 0);
   try {
     await sendEmail({
       to: order.email,
       subject: `Ya es tuyo — pedido ${order.id}`,
-      text: `Gracias por tu compra.\n\n${order.items.map(i => `${i.code} — ${i.name}${i.qty > 1 ? ` x${i.qty}` : ''}`).join('\n')}\n\nPedido ${order.id} · ${cuando} · ${medio} · ${money}\n\nDescargalo desde tu cuenta: ${site}/biblioteca`,
+      text: `Gracias por tu compra.\n\n${order.items.map(i => `${i.code} — ${i.name}${i.qty > 1 ? ` x${i.qty}` : ''}`).join('\n')}\n\nPedido ${order.id} · ${cuando} · ${medio} · ${money}\n\n${soloHerramientas ? `Abrilo desde acá: ${destino}${lecturas ? ` (se sumaron ${lecturas.toLocaleString('es-AR')} lecturas con IA a tu cuenta)` : ''}` : `Descargalo desde tu cuenta: ${site}/biblioteca`}`,
       html: layout({
         accent: 'blue',
-        preheader: `Pedido ${order.id} confirmado. Ya podés descargarlo desde tu cuenta.`,
+        preheader: soloHerramientas ? `Pedido ${order.id} confirmado. Ya podés usarlo.` : `Pedido ${order.id} confirmado. Ya podés descargarlo desde tu cuenta.`,
         eyebrow: `Pedido ${order.id} · Confirmado`,
         title: `Ya es ${it('tuyo.', '#3047FF')}`,
         body: '<p style="margin:0">Gracias por comprar en Orbit. Esto es lo que se sumó a tu cuenta:</p>',
         items: order.items,
-        meta: [['Fecha', cuando], ['Medio de pago', medio], ['Total', money]],
-        cta: 'Descargar ahora →', ctaUrl: `${site}/biblioteca`,
+        meta: [['Fecha', cuando], ['Medio de pago', medio], ['Total', money], ...(lecturas ? [['Lecturas con IA', `+${lecturas.toLocaleString('es-AR')}`]] : [])],
+        cta: soloHerramientas ? 'Abrir ahora →' : 'Descargar ahora →', ctaUrl: destino,
         foot: 'Licencia de uso comercial incluida. Las versiones nuevas te llegan sin cargo y aparecen en tu cuenta. ¿Algo no anda? Respondé este email.',
       }),
     });
