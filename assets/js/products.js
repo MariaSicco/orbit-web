@@ -181,7 +181,7 @@ window.ORBIT_PRODUCTS = [
     specs: [
       [{es: 'Formato', en: 'Format'}, {es: 'Excel + guía PDF', en: 'Excel + PDF guide'}],
       [{es: 'Funciona en', en: 'Works on'}, {es: 'Excel y Google Sheets', en: 'Excel and Google Sheets'}],
-      [{es: 'Modalidades', en: 'Fee types'}, {es: 'Fijo, por etapa o porcentaje', en: 'Fixed, by stage or percentage'}],
+      [{es: 'Modalidades', en: 'Fee types'}, {es: 'Fijo, etapa o %', en: 'Fixed, stage or %'}],
       [{es: 'Licencia', en: 'License'}, COMMERCIAL],
       [{es: 'Entrega', en: 'Delivery'}, INSTANT],
     ],

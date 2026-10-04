@@ -81,31 +81,33 @@ const nichos = () => NICHOS.map(n => ({...n, items: enNicho(n.id)})).filter(n =>
 /* el orden de todo el catálogo: nicho por nicho y escalera; lo que no tiene nicho, al final */
 const ordenados = () => { const a = nichos().flatMap(n => n.items); return [...a, ...P.filter(p => !a.includes(p))]; };
 const bookSpine = (p, wmColor) => `<div class="spine">${wm({color:wmColor}, false)}<span class="mono sp-code">${p.code}</span></div>`;
+/* títulos con palabras largas (VENCIMIENTOS) bajan de cuerpo para no cortarse */
+const lng = p => Math.max(...p.name.split(' ').map(w => w.length)) > 10 ? ' long' : '';
 const pages = '<span class="pages" aria-hidden="true"></span>';
 const soonBadge = p => p.status === 'soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : '';
 const COVERS = {
   /* 01 — archivo: tapa bone, lomo negro */
   archive: p => `<div class="cover cv-archive">${bookSpine(p, C.b)}
     <div class="body">${wm({color:C.k, dot:C.blue})}${soonBadge(p)}
-      <div class="num">${p.n}</div><div class="ttl">${p.name.replace(' ','<br>')}</div>
+      <div class="num">${p.n}</div><div class="ttl${lng(p)}">${p.name.replace(' ','<br>')}</div>
       <div class="art">${sym({ring:C.k, dot:C.blue, sw:22})}</div>
-      <div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])}<br>${L(p.specs[2][1])}<br>V.01</div>
+      <div class="mono meta">${L(p.specs[0][1])}<br>${L(p.specs[2][1])}<br>V.01</div>
     </div>${pages}</div>`,
   /* 02 — poster: tapa naranja, lomo bone */
   poster: p => `<div class="cover cv-poster">${bookSpine(p, C.k)}
     <div class="body">
       <div class="arcs">${[0,1,2].map(i => `<svg viewBox="0 0 100 100" style="width:100%"><path d="M0 100 A100 100 0 0 1 100 0" fill="none" stroke="${C.k}" stroke-width="${7 - i*2}" opacity="${.85 - i*.25}"/></svg>`).join('')}</div>
       <div class="t">${wm({color:C.k, dot:C.b})}${soonBadge(p)}</div>
-      <div class="mid"><div class="num">${p.n}</div><div class="ttl">${p.name.replace(' ','<br>')}</div></div>
-      <div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])} · ${L(p.specs[2][1])}</div>
+      <div class="mid"><div class="num">${p.n}</div><div class="ttl${lng(p)}">${p.name.replace(' ','<br>')}</div></div>
+      <div class="mono meta">${L(p.specs[0][1])} · ${L(p.specs[2][1])}</div>
     </div>${pages}</div>`,
   /* 03 — grilla: tapa negra, lomo ácido */
   grid: p => `<div class="cover cv-grid">${bookSpine(p, C.k)}
     <div class="body">
       <div class="lines">${'<i></i>'.repeat(5)}</div>
       <div class="t">${wm({color:C.b, dot:C.ac})}${soonBadge(p)}</div>
-      <div class="ttl">${p.name.replace(' ','<br>')}</div>
-      <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])}<br>${L(p.specs[2][1])}</div></div>
+      <div class="ttl${lng(p)}">${p.name.replace(' ','<br>')}</div>
+      <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L(p.specs[0][1])}<br>${L(p.specs[2][1])}</div></div>
       <span class="dot"></span>
     </div>${pages}</div>`,
   /* 04 — trayectoria: tapa azul, lomo negro */
@@ -114,7 +116,7 @@ const COVERS = {
       <svg class="paths" viewBox="0 0 100 130" preserveAspectRatio="none"><path d="M-5 120 C 30 120 40 30 105 22" fill="none" stroke="${C.b}" stroke-width=".7" opacity=".75"/><path d="M-5 134 C 45 128 60 58 105 50" fill="none" stroke="${C.b}" stroke-width=".7" opacity=".45"/><circle cx="66" cy="34" r="3.2" fill="${C.ac}"/></svg>
       <div class="t">${wm({color:C.b, dot:C.ac})}${soonBadge(p)}</div>
       <div class="num">${p.n}</div>
-      <div class="b"><div class="ttl">${p.name.replace(' ','<br>')}</div><div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])} · ${L(p.specs[2][1])}</div></div>
+      <div class="b"><div class="ttl${lng(p)}">${p.name.replace(' ','<br>')}</div><div class="mono meta">${L(p.specs[0][1])} · ${L(p.specs[2][1])}</div></div>
     </div>${pages}</div>`,
   /* 05 — libro: tapa hueso rayada como una planilla, lomo azul.
      Es una herramienta, no un archivo: la tapa cita el libro de IVA —el
@@ -124,9 +126,9 @@ const COVERS = {
     <div class="body">
       <div class="rayas">${'<i></i>'.repeat(7)}</div>
       <div class="t">${wm({color:C.k, dot:C.blue})}${soonBadge(p)}</div>
-      <div class="ttl">${p.name.replace(' ','<br>')}</div>
+      <div class="ttl${lng(p)}">${p.name.replace(' ','<br>')}</div>
       <span class="suma" aria-hidden="true"></span>
-      <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L(p.specs[0][1])} ${L(p.specs[0][0])}<br>${L(p.specs[2][1])}</div></div>
+      <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L(p.specs[0][1])}<br>${L(p.specs[2][1])}</div></div>
     </div>${pages}</div>`,
 };
 const cover = p => (COVERS[p.cover] || COVERS.archive)(p);

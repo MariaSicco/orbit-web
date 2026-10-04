@@ -26,15 +26,15 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=48">
+<link rel="stylesheet" href="assets/css/orbit.css?v=50">
 <style>
-.cat-head{height:100svh;min-height:620px;padding-top:calc(88px + env(safe-area-inset-top,0px));padding-bottom:28px;display:flex;flex-direction:column;justify-content:space-between;gap:20px}
+.cat-head{min-height:max(620px,100svh);padding-top:calc(88px + env(safe-area-inset-top,0px));padding-bottom:28px;display:flex;flex-direction:column;justify-content:space-between;gap:20px}
 .cat-head .top{display:flex;justify-content:space-between;gap:20px}
 .cat-head h1{font-size:clamp(56px,min(11vw,17vh),200px);margin:0}
 .cat-head h1 .it{color:var(--or)}
-.shelf{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:clamp(14px,2.4vw,40px);align-items:end;perspective:1600px}
+.shelf{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:clamp(14px,2.4vw,40px);align-items:end;perspective:1600px}
 .shelf a{display:flex;flex-direction:column;gap:14px;text-decoration:none;color:inherit;align-items:flex-start}
-.shelf .cv{width:min(100%,calc(40vh * .75));perspective:1400px}
+.shelf .cv{width:100%;max-width:calc(46vh * .75);perspective:1400px}
 .flip{position:relative;aspect-ratio:3/4;transform-style:preserve-3d;transform:rotateY(-10deg);transform-origin:center;transition:transform .85s var(--ease)}
 .shelf a:hover .flip,.shelf a:focus-visible .flip,.flip.flipped{transform:rotateY(180deg) translateY(-10px)}
 .shelf a:hover .face,.shelf a:focus-visible .face,.flip.flipped .face{box-shadow:0 26px 46px -24px rgba(48,71,255,.6)}
@@ -103,14 +103,14 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=48"></script>
+<script src="assets/js/products.js?v=50"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=49"></script>
+<script src="assets/js/orbit.js?v=50"></script>
 <script>
 (() => {
 const {$, $$, L, tr, card, reveal, P, FAM} = ORBIT;
 const {cover, url, C} = ORBIT;
-const PO = ORBIT.ordenados();
+const PO = ORBIT.ordenados().filter(p => p.status !== 'soon');
 $('#shelf').innerHTML = PO.map(p => `<a href="${url(p)}"><div class="cv"><div class="flip"><div class="face front">${cover(p)}</div><div class="face back"><span class="pg"></span>
   <span class="mono">${p.code}<br>Digital goods</span>
   <p>${L(p.tagline)}</p>

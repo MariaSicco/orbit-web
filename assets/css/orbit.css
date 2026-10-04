@@ -230,7 +230,7 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .cv-archive .num{font-size:27cqw;margin-top:7cqw;position:relative;z-index:2}
 .cv-archive .ttl{font-size:9.5cqw;margin-top:3cqw;position:relative;z-index:2}
 .cv-archive .art{position:absolute;right:-22%;bottom:-12%;width:72%;z-index:1}
-.cv-archive .meta{margin-top:auto;position:relative;z-index:2}
+.cv-archive .meta{margin-top:auto;position:relative;z-index:2;max-width:50%}
 
 /* 02 poster — tapa naranja, lomo bone */
 .cv-poster .spine{background:var(--b);color:var(--k)}
@@ -340,3 +340,6 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
   .pre{opacity:1;transform:none}
 }
+
+/* títulos largos: un paso menos de cuerpo para que la palabra entre entera */
+.cover .ttl.long{font-size:8.6cqw!important}
