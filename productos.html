@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Productos — Orbit®</title>
 <script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
-<meta name="description" content="Catálogo Orbit: sistemas, bibliotecas y workflows para diseñar, vender, organizar y automatizar.">
+<meta name="description" content="Catálogo Orbit: planillas y sistemas listos para usar para fleteros y estudios jurídicos. Cuánto cobrar, quién te debe y qué vence.">
 
 <link rel="canonical" href="https://www.orbitando.com.ar/productos">
 <meta property="og:type" content="website">
@@ -13,11 +13,11 @@
 <meta property="og:locale" content="es_AR">
 <meta property="og:url" content="https://www.orbitando.com.ar/productos">
 <meta property="og:title" content="La colección — Orbit®">
-<meta property="og:description" content="Cuatro sistemas digitales listos para usar. Cada herramienta nace de un problema real.">
+<meta property="og:description" content="Herramientas listas para usar para fleteros y estudios jurídicos. Cada una nace de un problema real.">
 <meta property="og:image" content="https://www.orbitando.com.ar/assets/img/studio.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="La colección — Orbit®">
-<meta name="twitter:description" content="Cuatro sistemas digitales listos para usar. Cada herramienta nace de un problema real.">
+<meta name="twitter:description" content="Herramientas listas para usar para fleteros y estudios jurídicos. Cada una nace de un problema real.">
 <meta name="twitter:image" content="https://www.orbitando.com.ar/assets/img/studio.jpg">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
@@ -76,6 +76,9 @@
 .grupo .nada{margin:0;padding:clamp(22px,3vw,38px) 0;opacity:.5;font-style:italic;
   font-family:var(--serif);font-size:clamp(16px,1.4vw,21px)}
 .filters .l a.chip{text-decoration:none}
+.grupo .pgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:860px){.grupo .pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.grupo .pgrid{grid-template-columns:1fr}}
 .soon{margin-top:clamp(56px,7vw,110px);display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);background:var(--k);color:var(--b);min-height:360px}
 .soon .t{padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;justify-content:space-between;gap:24px}
 .soon h2{font-size:clamp(46px,6vw,100px)}
@@ -97,48 +100,40 @@
     <div class="filters"><div class="l" id="filt" role="group" aria-label="Filtro"></div><span class="mono dim">Vol.01 — 2026</span></div>
     <div id="grid"></div>
 
-    <div class="soon rv">
-      <div class="t">
-        <span class="mono">OB—004 · Orbit AI</span>
-        <h2 class="display"><span data-l="es">Sistema nuevo<br><span class="it">en camino.</span></span><span data-l="en">New system<br><span class="it">coming soon.</span></span></h2>
-        <div style="display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-acid" href="producto.html?id=ob-004"><span data-l="es">Ver adelanto</span><span data-l="en">Get a preview</span> <span class="ar">→</span></a></div>
-      </div>
-      <div class="photo" data-photo="corridor" role="img" data-aria-es="Persona caminando en un pasillo" data-aria-en="Person walking down a corridor"></div>
-    </div>
   </div>
 </section>
 </main>
 <script src="assets/js/products.js?v=48"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=48"></script>
+<script src="assets/js/orbit.js?v=49"></script>
 <script>
 (() => {
 const {$, $$, L, tr, card, reveal, P, FAM} = ORBIT;
 const {cover, url, C} = ORBIT;
-const PROB = {'ob-001':['No sé qué publicar esta semana.','I don’t know what to post this week.'],'ob-002':['Empiezo cada diseño de cero.','I start every design from scratch.'],'ob-003':['Mis clientes están en cinco lugares.','My clients live in five places.'],'ob-004':['Pierdo horas en tareas repetidas.','I lose hours on repetitive tasks.']};
-$('#shelf').innerHTML = P.map(p => `<a href="${url(p)}"><div class="cv"><div class="flip"><div class="face front">${cover(p)}</div><div class="face back"><span class="pg"></span>
+const PO = ORBIT.ordenados();
+$('#shelf').innerHTML = PO.map(p => `<a href="${url(p)}"><div class="cv"><div class="flip"><div class="face front">${cover(p)}</div><div class="face back"><span class="pg"></span>
   <span class="mono">${p.code}<br>Digital goods</span>
   <p>${L(p.tagline)}</p>
   <ul>${p.includes.slice(0,3).map(([t]) => `<li>${L(t)}</li>`).join('')}</ul>
-  <div><span class="mono">Orbit® — ${L('Ideas en movimiento','Ideas in motion')}<br>Est. 2026</span><div class="bf" style="margin-top:3cqw"><b>${p.status==='soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</b><span class="mono">${L('Ver detalle','See details')} →</span></div></div>
-</div></div></div><span class="to"><b>${p.name}</b><span class="mono dim">${p.status==='soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</span></span>
+  <div><span class="mono">Orbit® — ${L('Ideas en movimiento','Ideas in motion')}<br>Est. 2026</span><div class="bf" style="margin-top:3cqw"><b>${p.status==='soon' ? L('Pronto','Soon') : ORBIT.money(p)}</b><span class="mono">${L('Ver detalle','See details')} →</span></div></div>
+</div></div></div><span class="to"><b>${p.name}</b><span class="mono dim">${p.status==='soon' ? L('Pronto','Soon') : ORBIT.money(p)}</span></span>
 <button class="chip qbtn" type="button" data-flip>${L('¿Qué es?','What is it?')}</button></a>`).join('');
 $$('#shelf [data-flip]').forEach(b => b.onclick = e => { e.preventDefault(); const f = $('.flip', b.closest('a')); f.classList.toggle('flipped'); b.innerHTML = f.classList.contains('flipped') ? L('Ver tapa','Show cover') : L('¿Qué es?','What is it?'); });
 const grid = $('#grid'), filt = $('#filt');
-/* Los escalones, su orden y qué familia cae en cada uno salen de
-   ORBIT_ESCALA (products.js). Una familia nueva sin ubicar cae en el
-   escalón marcado `resto`, así ningún producto desaparece del catálogo. */
-const ESCALA = window.ORBIT_ESCALA || [];
-const suelto = ESCALA.find(t => t.resto) || ESCALA[0];
-const escalonDe = p => (ESCALA.find(t => (t.fams || []).includes(p.family)) || suelto || {}).id;
-const enEscalon = id => P.filter(p => escalonDe(p) === id);
 
-filt.innerHTML = ESCALA.map((t, i) =>
+/* El catálogo se agrupa por oficio (nicho), en el orden de la escalera:
+   entrada → ancla → complemento. Lo que todavía no tiene nicho (o está por
+   salir) va al final, en "Próximamente". */
+const GRUPOS = ORBIT.nichos().map(n => ({id:n.id, n:n.n, d:n.d, lista:n.items}));
+const resto = P.filter(p => !GRUPOS.some(g => g.lista.includes(p)));
+if (resto.length) GRUPOS.push({id:'pronto', n:{es:'Próximamente', en:'Coming soon'},
+  d:{es:'Lo que estamos terminando.', en:'What we are finishing.'}, lista:resto});
+filt.innerHTML = GRUPOS.map((t, i) =>
   `<a class="chip" href="#${t.id}">${String(i + 1).padStart(2, '0')} ${L(t.n)}</a>`).join('');
 
 function pintar() {
-  grid.innerHTML = ESCALA.map((t, i) => {
-    const lista = enEscalon(t.id);
+  grid.innerHTML = GRUPOS.map((t, i) => {
+    const lista = t.lista;
     return `<section class="grupo" id="${t.id}">
       <div class="cab">
         <span class="nn">${String(i + 1).padStart(2, '0')}</span>
@@ -151,8 +146,8 @@ function pintar() {
     </section>`;
   }).join('');
   $$('.rv', grid).forEach(el => el.classList.remove('rv'));
-  const n = P.length;
-  $('#count').textContent = `${n} ${n === 1 ? tr('producto','product') : tr('productos','products')}`;
+  const n = P.filter(p => p.status !== 'soon').length;
+  $('#count').textContent = `${n} ${n === 1 ? tr('producto disponible','product available') : tr('productos disponibles','products available')}`;
 }
 pintar();
 addEventListener('orbit:lang', pintar);

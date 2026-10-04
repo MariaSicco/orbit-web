@@ -52,8 +52,34 @@ function follow(g, target) {
 /* ---------- productos ---------- */
 const P = window.ORBIT_PRODUCTS || [], FAM = window.ORBIT_FAMILIES || {};
 const ACC = {blue:C.blue, or:C.or, ac:C.ac, b:C.k};
-const money = n => `${window.ORBIT_CURRENCY || 'USD'} ${n}`;
+/* Precio: en español se muestra en pesos (lo que cobra Mercado Pago) y en
+   inglés en dólares (PayPal). Recibe el producto —o un número suelto, que
+   se muestra en USD— y devuelve HTML bilingüe. Si un producto no tiene
+   `ars`, se muestra en USD en los dos idiomas. */
+const fmtArs = n => `ARS ${Math.round(n).toLocaleString('es-AR')}`;
+const fmtUsd = n => `${window.ORBIT_CURRENCY || 'USD'} ${n}`;
+const money = (x, qty = 1) => {
+  if (typeof x !== 'object' || !x) return fmtUsd(x);
+  const usd = fmtUsd((x.price || 0) * qty);
+  return Number.isFinite(x.ars) ? L(fmtArs(x.ars * qty), usd) : usd;
+};
 const url = p => `/p/${p.id}`;
+/* Nichos: el catálogo se muestra por oficio, y dentro de cada uno en el
+   orden de la escalera (entrada → ancla → complemento). Sólo aparecen los
+   nichos con productos disponibles. */
+const NICHOS = [
+  {id:'fleteros', n:{es:'Para fleteros', en:'For freight operators'},
+   d:{es:'Cuánto cobrar cada viaje, cuánto te cuesta cada km y quién te debe.', en:'What to charge per trip, what each km costs you and who owes you.'}},
+  {id:'abogados', n:{es:'Para estudios jurídicos', en:'For law firms'},
+   d:{es:'Vencimientos con días hábiles, casos en orden y honorarios cobrados.', en:'Deadlines in business days, cases in order and fees collected.'}},
+];
+const PIEZA = ['entrada', 'ancla', 'complemento'];
+const PIEZA_N = {entrada:{es:'Para empezar', en:'Start here'}, ancla:{es:'El sistema completo', en:'The full system'}, complemento:{es:'Complemento', en:'Add-on'}};
+const enNicho = id => P.filter(p => p.nicho === id && p.status !== 'soon')
+  .sort((a, b) => PIEZA.indexOf(a.pieza) - PIEZA.indexOf(b.pieza));
+const nichos = () => NICHOS.map(n => ({...n, items: enNicho(n.id)})).filter(n => n.items.length);
+/* el orden de todo el catálogo: nicho por nicho y escalera; lo que no tiene nicho, al final */
+const ordenados = () => { const a = nichos().flatMap(n => n.items); return [...a, ...P.filter(p => !a.includes(p))]; };
 const bookSpine = (p, wmColor) => `<div class="spine">${wm({color:wmColor}, false)}<span class="mono sp-code">${p.code}</span></div>`;
 const pages = '<span class="pages" aria-hidden="true"></span>';
 const soonBadge = p => p.status === 'soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : '';
@@ -106,7 +132,7 @@ const COVERS = {
 const cover = p => (COVERS[p.cover] || COVERS.archive)(p);
 const card = p => `<a class="pcard rv" href="${url(p)}" data-fam="${p.family}">${cover(p)}
   <div class="row"><span class="mono">${p.code}</span><span class="mono dim">${(FAM[p.family]||[''])[0]}</span></div>
-  <div class="row" style="border:0;padding:0"><h3>${p.name}</h3><span class="price">${p.status==='soon' ? `<span class="mono">${L('Pronto','Soon')}</span>` : money(p.price)}</span></div></a>`;
+  <div class="row" style="border:0;padding:0"><h3>${p.name}</h3><span class="price">${p.status==='soon' ? `<span class="mono">${L('Pronto','Soon')}</span>` : money(p)}</span></div></a>`;
 
 /* ---------- toast ---------- */
 let tT;
@@ -117,7 +143,7 @@ function toast(m) {
 /* botón de compra */
 function buyBtn(p, cls='btn btn-acid') {
   if (p.status === 'soon') return `<button class="${cls}" type="button" data-soon="${p.id}">${L('Avisame cuando salga','Notify me')} <span class="ar">→</span></button>`;
-  return `<button class="${cls}" type="button" data-buy="${p.id}">${L('Agregar al carrito','Add to cart')} — ${money(p.price)} <span class="ar">+</span></button>`;
+  return `<button class="${cls}" type="button" data-buy="${p.id}">${L('Agregar al carrito','Add to cart')} — ${money(p)} <span class="ar">+</span></button>`;
 }
 document.addEventListener('click', e => {
   const b = e.target.closest('[data-buy]');
@@ -133,6 +159,9 @@ try { cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]').filter(x => P.so
 const saveCart = () => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {} paintCart(); };
 const cartCount = () => cart.reduce((a, i) => a + i.qty, 0);
 const cartTotal = () => cart.reduce((a, i) => a + (P.find(p => p.id === i.id)?.price || 0) * i.qty, 0);
+const cartTotalArs = () => cart.every(i => Number.isFinite(P.find(p => p.id === i.id)?.ars))
+  ? cart.reduce((a, i) => a + P.find(p => p.id === i.id).ars * i.qty, 0) : null;
+const cartMoney = () => { const ars = cartTotalArs(); return ars === null ? fmtUsd(cartTotal()) : L(fmtArs(ars), fmtUsd(cartTotal())); };
 function cartAdd(id) {
   const p = P.find(x => x.id === id); if (!p || p.status === 'soon') return;
   const line = cart.find(i => i.id === id);
@@ -159,10 +188,10 @@ function paintCart() {
       <div><span class="mono dim">${p.code}</span><b>${p.name}</b>
         <div class="qty"><button type="button" data-q="${id}:-1" aria-label="${tr('Quitar uno','Remove one')}">−</button><span>${qty}</span><button type="button" data-q="${id}:1" aria-label="${tr('Agregar uno','Add one')}">+</button></div>
         <button type="button" class="rm" data-rm="${id}">${L('Quitar','Remove')}</button></div>
-      <span class="pr">${money(p.price * qty)}</span></div>`; }).join('');
+      <span class="pr">${money(p, qty)}</span></div>`; }).join('');
   }
   const foot = $('#drawerFoot'); if (foot) foot.hidden = !cart.length;
-  const tot = $('#cartTotal'); if (tot) tot.textContent = money(cartTotal());
+  const tot = $('#cartTotal'); if (tot) tot.innerHTML = cartMoney();
 }
 function openDrawer() { $('.drawer')?.classList.add('on'); document.documentElement.style.overflow = 'hidden'; }
 function closeDrawer() { $('.drawer')?.classList.remove('on'); document.documentElement.style.overflow = ''; }
@@ -279,8 +308,8 @@ foot.innerHTML = `<div class="wrap">
   <div style="display:flex;justify-content:space-between;gap:20px"><span class="mono">OB—000</span><span class="mono" style="text-align:right">${L('Ideas<br>Recursos<br>Crecimiento<br>Libertad','Ideas<br>Resources<br>Growth<br>Freedom')}</span></div>
   <h2 class="display" style="margin-top:40px">${L('Entrá<br>en órbita.','Enter<br>the orbit.')}</h2>
   <div class="cols">
-    <div><span class="mono dim">${L('Productos','Products')}</span>${P.map(p => `<a href="${url(p)}">${p.code} ${p.name}</a>`).join('')}</div>
-    <div><span class="mono dim">${L('Familias','Families')}</span>${Object.entries(FAM).map(([k,[n]]) => `<a href="productos.html#${k}">${n}</a>`).join('')}</div>
+    <div><span class="mono dim">${L('Productos','Products')}</span>${ordenados().map(p => `<a href="${url(p)}">${p.code} ${p.name}</a>`).join('')}</div>
+    <div><span class="mono dim">${L('Familias','Families')}</span>${Object.entries(FAM).filter(([k]) => P.some(p => p.family === k)).map(([k,[n]]) => `<a href="productos.html#${k}">${n}</a>`).join('')}</div>
     <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="index.html#a-medida">${L('Pedidos a medida','Custom requests')}</a><a href="${session() ? 'biblioteca.html' : 'acceso.html'}">${L('Mi cuenta','My account')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
     <div><span class="mono dim">${L('Contacto','Contact')}</span><a href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a><a href="https://www.instagram.com/orbitando.ba/" target="_blank" rel="noopener">Instagram</a><a href="acceso.html?nuevo=1">Newsletter</a></div>
     <div><span class="mono dim">Legal</span><a href="terminos.html">${L('Términos y condiciones','Terms and conditions')}</a><a href="privacidad.html">${L('Política de privacidad','Privacy policy')}</a><a href="terminos.html#arrepentimiento">${L('Botón de arrepentimiento','Right to cancel')}</a></div>
@@ -360,5 +389,5 @@ const needGate = root.classList.contains('gate-on');
 if (needGate) gate();
 setLang(lang(), false);
 
-window.ORBIT = {C, RM, $, $$, L, tr, lang, setLang, cartAdd, openDrawer, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC};
+window.ORBIT = {C, RM, $, $$, L, tr, lang, setLang, cartAdd, openDrawer, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, NICHOS, PIEZA_N, nichos, ordenados, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC};
 })();

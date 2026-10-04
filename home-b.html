@@ -9,7 +9,7 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="manifest" href="/site.webmanifest">
 <meta name="robots" content="noindex">
-<meta name="description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero. Descarga inmediata y uso comercial.">
+<meta name="description" content="Herramientas para fleteros y estudios jurídicos: sabé cuánto cobrar, cuándo vence cada plazo y quién te debe. Descarga inmediata.">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -469,8 +469,8 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   <div class="eti ent" style="--d:2.98s"><span>OB—000 · <span data-l="es">Ideas en movimiento</span><span data-l="en">Ideas in motion</span></span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)">
     <div class="marca wm" id="bWm" aria-label="Orbit"></div>
-    <h1 class="ent" style="--d:3.1s"><span data-l="es">Sistemas y herramientas digitales, <span class="it">listos para usar.</span></span><span data-l="en">Digital systems and tools, <span class="it">ready to use.</span></span></h1>
-    <p class="ent" style="--d:3.24s"><span data-l="es">Para que nada empiece de cero.</span><span data-l="en">So nothing ever starts from zero.</span></p>
+    <h1 class="ent" style="--d:3.1s"><span data-l="es">Herramientas para fleteros y <span class="it">estudios jurídicos.</span></span><span data-l="en">Tools for freight operators and <span class="it">law firms.</span></span></h1>
+    <p class="ent" style="--d:3.24s"><span data-l="es">Sabé cuánto cobrar, cuándo vence cada plazo y quién te debe.</span><span data-l="en">Know what to charge, when every deadline falls and who owes you.</span></p>
   </div>
   <div class="acts ent" style="--d:3.4s">
     <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver la colección</span><span data-l="en">See the collection</span> <span class="ar">↓</span></a>
@@ -564,8 +564,8 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 </main>
 <script src="assets/js/products.js?v=48"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=48"></script>
-<script src="assets/js/secciones.js?v=1"></script>
+<script src="assets/js/orbit.js?v=49"></script>
+<script src="assets/js/secciones.js?v=2"></script>
 <script>
 (() => {
 const {$, $$, L, cover, buyBtn, money, url, wm, P, FAM} = ORBIT;
@@ -666,20 +666,24 @@ if (document.documentElement.classList.contains('gate-on')) {
    toca una tapa y el estante salta a ese libro con su frase.
    ========================================================= */
 const metodo = $('#metodo');
-/* los nombres del catálogo están en inglés; en la home se dicen en castellano */
+/* nombres cortos para que entren debajo de cada tapa */
 const ENCASTELLANO = {
-  'ob-001': ['Sistema de contenido', 'Content system'],
-  'ob-002': ['Biblioteca de recursos', 'Asset library'],
-  'ob-003': ['Sistema del estudio', 'Studio system'],
-  'ob-004': ['Flujos con IA', 'AI workflows'],
+  'ob-006': ['Tarifador de fletes', 'Freight rate calculator'],
+  'ob-007': ['Costos y tarifas', 'Costs and rates'],
+  'ob-008': ['Viajes y cobranzas', 'Trips and collections'],
+  'ob-009': ['Agenda de vencimientos', 'Deadline planner'],
+  'ob-010': ['Gestión del estudio', 'Law firm system'],
+  'ob-011': ['Honorarios y cobranzas', 'Fees and collections'],
 };
 const enCastellano = p => L(...(ENCASTELLANO[p.id] || [p.name, p.name]));
 
 const ESCENAS = [
-  [['No sé qué publicar esta semana.','I don’t know what to post this week.'], 'ob-001'],
-  [['Empiezo cada diseño de cero.','I start every design from scratch.'], 'ob-002'],
-  [['Mis clientes están en cinco lugares distintos.','My clients live in five different places.'], 'ob-003'],
-  [['Pierdo horas en tareas repetidas.','I lose hours on repetitive tasks.'], 'ob-004'],
+  [['No sé si este viaje me deja plata.','I don’t know if this trip makes me money.'], 'ob-006'],
+  [['Cobro lo que paga el mercado y no sé mi costo por km.','I charge the going rate and don’t know my cost per km.'], 'ob-007'],
+  [['Tengo viajes sin facturar y clientes que no pagan.','I have uninvoiced trips and clients who don’t pay.'], 'ob-008'],
+  [['Anoto los plazos en un cuaderno.','I write deadlines in a notebook.'], 'ob-009'],
+  [['Mis casos están entre WhatsApp, Excel y papeles.','My cases live in WhatsApp, Excel and paper.'], 'ob-010'],
+  [['No sé cuánto me deben de honorarios.','I don’t know how much I’m owed in fees.'], 'ob-011'],
 ];
 
 (function segundaPantalla() {
@@ -783,7 +787,7 @@ const coleccion = $('#coleccion');
       <a class="ficha2" href="${ORBIT.url(p)}">
         ${ORBIT.cover(p)}
         <span class="to2"><b>${enCastellano(p)}</b><small>${
-          p.status === 'soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</small></span>
+          p.status === 'soon' ? L('Pronto','Soon') : ORBIT.money(p)}</small></span>
       </a>`).join('')}</div>
     <div class="pie3 ent3" style="--d:.3s">
       <span class="nota3">${L('Tocá para ver la ficha','Tap to open the details')}</span>

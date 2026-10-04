@@ -4,13 +4,13 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(function(){try{if(new URLSearchParams(location.search).has("full"))return;if(matchMedia("(min-width:861px)").matches)location.replace("/"+location.search+location.hash)}catch(e){}})()</script>
-<title>Orbit® — Sistemas y herramientas digitales, listos para usar</title>
+<title>Orbit · Herramientas para fleteros y estudios jurídicos</title>
 <script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<meta name="description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero. Descarga inmediata y uso comercial.">
+<meta name="description" content="Planillas y sistemas listos para usar, hechos para fleteros y estudios jurídicos. Cargás tus datos y en 15 minutos sabés cuánto cobrar, quién te debe y qué vence.">
 <link rel="canonical" href="https://www.orbitando.com.ar/">
 <link rel="alternate" hreflang="es" href="https://www.orbitando.com.ar/?lang=es">
 <link rel="alternate" hreflang="en" href="https://www.orbitando.com.ar/?lang=en">
@@ -19,12 +19,12 @@
 <meta property="og:site_name" content="Orbit®">
 <meta property="og:locale" content="es_AR">
 <meta property="og:url" content="https://www.orbitando.com.ar/">
-<meta property="og:title" content="Orbit® — Sistemas y herramientas digitales, listos para usar">
-<meta property="og:description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero.">
+<meta property="og:title" content="Orbit · Herramientas para fleteros y estudios jurídicos">
+<meta property="og:description" content="Planillas y sistemas listos para usar, hechos para fleteros y estudios jurídicos. Cargás tus datos y en 15 minutos sabés cuánto cobrar, quién te debe y qué vence.">
 <meta property="og:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Orbit® — Sistemas y herramientas digitales, listos para usar">
-<meta name="twitter:description" content="Sistemas, herramientas y plantillas digitales listos para usar. Para que nada empiece de cero.">
+<meta name="twitter:title" content="Orbit · Herramientas para fleteros y estudios jurídicos">
+<meta name="twitter:description" content="Planillas y sistemas listos para usar, hechos para fleteros y estudios jurídicos. Cargás tus datos y en 15 minutos sabés cuánto cobrar, quién te debe y qué vence.">
 <meta name="twitter:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -75,9 +75,9 @@
 /* El titular explica qué es; la firma de marca pasa a la etiqueta de arriba.
    Antes lo más pesado de la pantalla era el nombre y un claim poético, y lo
    único que decía qué se vende era el texto más chico y más apagado. */
-.p-entrada h1{font-size:clamp(25px,6.9vw,44px);font-weight:800;letter-spacing:-.035em;
-  line-height:1.04;max-width:17ch;margin:0;--op:1}
-.p-entrada h1 .it{color:var(--ac)}
+.p-entrada h1{font-size:clamp(25px,6.9vw,44px);font-weight:800;letter-spacing:-.04em;text-transform:uppercase;
+  line-height:.98;max-width:17ch;margin:0;--op:1}
+.p-entrada h1 .it{color:var(--ac);text-transform:none;font-family:var(--serif);font-style:italic;font-weight:400}
 .p-entrada p{margin:0;max-width:32ch;font-size:16.5px;line-height:1.5;--op:.72}
 
 /* las puertas: qué vas a encontrar, sin cerrarle la puerta a nadie */
@@ -238,13 +238,18 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   transition:opacity .5s ease var(--d,0s),transform .6s cubic-bezier(.2,.9,.25,1) var(--d,0s)}
 .ve #coleccion .ent3{opacity:1;transform:none}
 
+.p-faq{justify-content:flex-start}
+.p-faq h2{font-size:clamp(40px,11vw,104px)}
+.p-faq .faq summary{font-size:clamp(17px,4.6vw,22px);min-height:44px}
+#coleccion .nicho2{display:grid;gap:10px;scroll-margin-top:90px}
+#coleccion .ncab2{font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
 #coleccion .vitrina2{flex:1;min-height:0;display:flex;align-items:center;
   gap:clamp(12px,3.4vw,22px);overflow-x:auto;overflow-y:hidden;
   scroll-snap-type:x mandatory;scroll-padding-left:var(--pad);
   -webkit-overflow-scrolling:touch;scrollbar-width:none;
   margin:0 calc(var(--pad) * -1);padding:0 var(--pad)}
 #coleccion .vitrina2::-webkit-scrollbar{display:none}
-#coleccion .ficha2{flex:0 0 clamp(128px,44vw,190px);scroll-snap-align:start;
+#coleccion .ficha2{flex:0 0 clamp(118px,38vw,180px);scroll-snap-align:start;
   display:grid;gap:10px;align-content:center;text-decoration:none;color:inherit}
 #coleccion .ficha2 .cover{transition:transform .5s var(--ease)}
 #coleccion .ficha2:hover .cover,#coleccion .ficha2:focus-visible .cover{transform:translateY(-8px)}
@@ -470,7 +475,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 
 </style>
 </head>
-<body data-page="home" data-title-es="Orbit® — Sistemas y herramientas digitales, listos para usar" data-title-en="Orbit® — Digital systems and tools, ready to use">
+<body data-page="home" data-title-es="Orbit · Herramientas para fleteros y estudios jurídicos" data-title-en="Orbit · Tools for freight operators and law firms">
 
 <div class="avance" id="avance" aria-hidden="true">
   <svg viewBox="0 0 48 48"><circle class="pista" cx="24" cy="24" r="20"></circle><circle class="arco" id="arco" cx="24" cy="24" r="20"></circle></svg>
@@ -485,11 +490,11 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   <div class="eti ent" style="--d:2.98s"><span>OB—000 · <span data-l="es">Ideas en movimiento</span><span data-l="en">Ideas in motion</span></span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)">
     <div class="marca wm" id="bWm" aria-label="Orbit"></div>
-    <h1 class="ent" style="--d:3.1s"><span data-l="es">Sistemas y herramientas digitales, <span class="it">listos para usar.</span></span><span data-l="en">Digital systems and tools, <span class="it">ready to use.</span></span></h1>
-    <p class="ent" style="--d:3.24s"><span data-l="es">Para que nada empiece de cero.</span><span data-l="en">So nothing ever starts from zero.</span></p>
+    <h1 class="ent" style="--d:3.1s"><span data-l="es">Herramientas para que tu oficio deje de <span class="it">perder plata.</span></span><span data-l="en">Tools that stop your trade from <span class="it">losing money.</span></span></h1>
+    <p class="ent" style="--d:3.24s"><span data-l="es">Planillas y sistemas listos para usar, hechos para fleteros y estudios jurídicos. Cargás tus datos y en 15 minutos sabés cuánto cobrar, quién te debe y qué vence.</span><span data-l="en">Ready-to-use spreadsheets and systems, built for freight operators and law firms. Enter your data and in 15 minutes you know what to charge, who owes you and what is due.</span></p>
   </div>
   <div class="acts ent" style="--d:3.4s">
-    <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver la colección</span><span data-l="en">See the collection</span> <span class="ar">↓</span></a>
+    <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver herramientas</span><span data-l="en">See the tools</span> <span class="ar">↓</span></a>
   </div>
   <div class="puertas ent" style="--d:3.52s" id="bPuertas"></div>
 </section>
@@ -499,8 +504,8 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 
 <!-- 03 DISCIPLINAS -->
 <section class="pant luz alta p-disc" id="disciplinas">
-  <div class="eti"><span><span data-l="es">Disciplinas<br>Un universo, muchas órbitas</span><span data-l="en">Disciplines<br>One universe, many orbits</span></span><span style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></span></div>
-  <h2 class="display" style="font-size:clamp(34px,8.6vw,96px);max-width:15ch;margin:0"><span data-l="es">Una órbita para cada <span class="it">disciplina.</span></span><span data-l="en">An orbit for every <span class="it">discipline.</span></span></h2>
+  <div class="eti"><span><span data-l="es">Oficios<br>Un oficio, una escalera</span><span data-l="en">Trades<br>One trade, one ladder</span></span><span style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></span></div>
+  <h2 class="display" style="font-size:clamp(34px,8.6vw,96px);max-width:15ch;margin:0"><span data-l="es">Una órbita para cada <span class="it">oficio.</span></span><span data-l="en">An orbit for every <span class="it">trade.</span></span></h2>
   <div class="disc" id="disc"></div>
 </section>
 
@@ -509,7 +514,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 
 <!-- 05 DESTACADO -->
 <section class="pant dark p-destacado" id="destacado">
-  <div class="eti"><span><span data-l="es">Destacado<br>Producto 01</span><span data-l="en">Featured<br>Product 01</span></span><span style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></span></div>
+  <div class="eti"><span><span data-l="es">Destacado<br>El sistema completo</span><span data-l="en">Featured<br>The full system</span></span><span style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></span></div>
   <div class="feat2">
     <div class="boxstage" id="cajaDest"></div>
     <div class="info2" id="infoDest"></div>
@@ -544,7 +549,7 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
       </div>
       <div class="paso4">
         <span class="preg"><span data-l="es">¿Qué presupuesto manejás?</span><span data-l="en">What is your budget?</span></span>
-        <span class="ayuda">USD</span>
+        <span class="ayuda"><span data-l="es">En pesos</span><span data-l="en">USD</span></span>
         <div class="opts" data-group="budget"></div>
       </div>
       <div class="paso4">
@@ -568,20 +573,33 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   </form>
 </section>
 
-<!-- 08 CIERRE -->
+<!-- 08 PREGUNTAS FRECUENTES — las mismas que en desktop -->
+<section class="pant luz p-faq" id="faq">
+  <div class="eti"><span><span data-l="es">Preguntas frecuentes</span><span data-l="en">FAQ</span></span><span style="text-align:right">OB—F05</span></div>
+  <h2 class="display"><span data-l="es">Antes de <span class="it">entrar.</span></span><span data-l="en">Before you <span class="it">enter.</span></span></h2>
+  <div class="faq">
+    <details><summary><span data-l="es">¿Cómo recibo el producto?</span><span data-l="en">How do I get the product?</span></summary><p><span data-l="es">Apenas se confirma el pago te llega un email con el link de descarga o acceso. Es inmediato.</span><span data-l="en">As soon as payment is confirmed you get an email with the download or access link. It’s instant.</span></p></details>
+    <details><summary><span data-l="es">¿Puedo usarlo para clientes?</span><span data-l="en">Can I use it for clients?</span></summary><p><span data-l="es">Sí. Todos los productos incluyen licencia de uso comercial para proyectos propios y de clientes. Lo que no se puede es revender o redistribuir los archivos originales.</span><span data-l="en">Yes. Every product includes a commercial license for your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></details>
+    <details><summary><span data-l="es">¿Qué programas necesito?</span><span data-l="en">What software do I need?</span></summary><p><span data-l="es">Cada producto indica su formato en la ficha. Las planillas funcionan en Excel 2010 o posterior y en Google Sheets (gratis); el sistema del estudio es una plantilla de Notion (alcanza el plan gratis); el tarifador funciona en el navegador del celular o la compu.</span><span data-l="en">Each product lists its format. The spreadsheets work in Excel 2010 or later and in Google Sheets (free); the law-firm system is a Notion template (the free plan is enough); the rate calculator runs in your phone or desktop browser.</span></p></details>
+    <details><summary><span data-l="es">¿Las actualizaciones tienen costo?</span><span data-l="en">Do updates cost extra?</span></summary><p><span data-l="es">No. Cuando un producto sube de versión (V.01 → V.02) te llega la actualización sin cargo.</span><span data-l="en">No. When a product gets a new version (V.01 → V.02) you get the update for free.</span></p></details>
+    <details><summary><span data-l="es">¿Y si no me sirve?</span><span data-l="en">What if it doesn’t work for me?</span></summary><p><span data-l="es">Tenés 10 días corridos desde la compra para arrepentirte (Ley 24.240, art. 34). Usá el <a href="terminos.html#arrepentimiento" style="color:inherit">Botón de arrepentimiento</a> o escribinos a hola@orbitando.com.ar.</span><span data-l="en">You have 10 calendar days from purchase to cancel (Argentine Law 24.240, art. 34). Use the <a href="terminos.html#arrepentimiento" style="color:inherit">Right to cancel button</a> or email hola@orbitando.com.ar.</span></p></details>
+  </div>
+</section>
+
+<!-- 09 CIERRE -->
 <section class="pant dark p-cierre">
   <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
-  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>08</span></div>
+  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>09</span></div>
   <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it" style="color:var(--ac)">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it" style="color:var(--ac)">A brighter tomorrow.</span></span></h2>
   <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
-  <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir un sistema</span><span data-l="en">Pick a system</span> <span class="ar">↑</span></a></div>
+  <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir una herramienta</span><span data-l="en">Pick a tool</span> <span class="ar">↑</span></a></div>
 </section>
 
 </main>
 <script src="assets/js/products.js?v=48"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=48"></script>
-<script src="assets/js/secciones.js?v=1"></script>
+<script src="assets/js/orbit.js?v=49"></script>
+<script src="assets/js/secciones.js?v=2"></script>
 <script>
 (() => {
 const {$, $$, L, cover, buyBtn, money, url, wm, P, FAM} = ORBIT;
@@ -669,10 +687,10 @@ if (document.documentElement.classList.contains('gate-on')) {
 (function puertas() {
   const caja = $('#bPuertas');
   if (!caja) return;
-  const vivas = Object.keys(FAM).filter(f => P.some(p => p.family === f));
+  const vivas = ORBIT.nichos();
   if (!vivas.length) return;
-  caja.innerHTML = `<i>${L('Qué vas a encontrar','What you will find')}</i><nav>${
-    vivas.map(f => `<a href="productos.html#${f}">${FAM[f][0].replace(/^Orbit /, '')}</a>`).join('')}</nav>`;
+  caja.innerHTML = `<i>${L('Elegí tu oficio','Pick your trade')}</i><nav>${
+    vivas.map(n => `<a href="#col-${n.id}">${L(n.n)}</a>`).join('')}</nav>`;
 })();
 
 /* =========================================================
@@ -682,20 +700,24 @@ if (document.documentElement.classList.contains('gate-on')) {
    toca una tapa y el estante salta a ese libro con su frase.
    ========================================================= */
 const metodo = $('#metodo');
-/* los nombres del catálogo están en inglés; en la home se dicen en castellano */
+/* nombres cortos para que entren debajo de cada tapa */
 const ENCASTELLANO = {
-  'ob-001': ['Sistema de contenido', 'Content system'],
-  'ob-002': ['Biblioteca de recursos', 'Asset library'],
-  'ob-003': ['Sistema del estudio', 'Studio system'],
-  'ob-004': ['Flujos con IA', 'AI workflows'],
+  'ob-006': ['Tarifador de fletes', 'Freight rate calculator'],
+  'ob-007': ['Costos y tarifas', 'Costs and rates'],
+  'ob-008': ['Viajes y cobranzas', 'Trips and collections'],
+  'ob-009': ['Agenda de vencimientos', 'Deadline planner'],
+  'ob-010': ['Gestión del estudio', 'Law firm system'],
+  'ob-011': ['Honorarios y cobranzas', 'Fees and collections'],
 };
 const enCastellano = p => L(...(ENCASTELLANO[p.id] || [p.name, p.name]));
 
 const ESCENAS = [
-  [['No sé qué publicar esta semana.','I don’t know what to post this week.'], 'ob-001'],
-  [['Empiezo cada diseño de cero.','I start every design from scratch.'], 'ob-002'],
-  [['Mis clientes están en cinco lugares distintos.','My clients live in five different places.'], 'ob-003'],
-  [['Pierdo horas en tareas repetidas.','I lose hours on repetitive tasks.'], 'ob-004'],
+  [['No sé si este viaje me deja plata.','I don’t know if this trip makes me money.'], 'ob-006'],
+  [['Cobro lo que paga el mercado y no sé mi costo por km.','I charge the going rate and don’t know my cost per km.'], 'ob-007'],
+  [['Tengo viajes sin facturar y clientes que no pagan.','I have uninvoiced trips and clients who don’t pay.'], 'ob-008'],
+  [['Anoto los plazos en un cuaderno.','I write deadlines in a notebook.'], 'ob-009'],
+  [['Mis casos están entre WhatsApp, Excel y papeles.','My cases live in WhatsApp, Excel and paper.'], 'ob-010'],
+  [['No sé cuánto me deben de honorarios.','I don’t know how much I’m owed in fees.'], 'ob-011'],
 ];
 
 (function segundaPantalla() {
@@ -795,12 +817,13 @@ const coleccion = $('#coleccion');
     <h2 class="ent3" style="--d:.08s">${L(
       'Listos<br>para <span class="it">usar.</span>',
       'Ready<br>to <span class="it">use.</span>')}</h2>
-    <div class="vitrina2 ent3" style="--d:.18s">${P.map(p => `
+    ${ORBIT.nichos().map((n, k) => `<div class="nicho2 ent3" id="col-${n.id}" style="--d:${(.18 + k * .08).toFixed(2)}s">
+      <span class="ncab2">${L(n.n)}</span>
+      <div class="vitrina2">${n.items.map(p => `
       <a class="ficha2" href="${ORBIT.url(p)}">
         ${ORBIT.cover(p)}
-        <span class="to2"><b>${enCastellano(p)}</b><small>${
-          p.status === 'soon' ? L('Pronto','Soon') : ORBIT.money(p.price)}</small></span>
-      </a>`).join('')}</div>
+        <span class="to2"><b>${enCastellano(p)}</b><small>${ORBIT.money(p)}</small></span>
+      </a>`).join('')}</div></div>`).join('')}
     <div class="pie3 ent3" style="--d:.3s">
       <span class="nota3">${L('Tocá para ver la ficha','Tap to open the details')}</span>
       <a class="btn btn-acid" href="productos.html">${L('Ver todo','See all')} <span class="ar">→</span></a>
@@ -817,7 +840,8 @@ const coleccion = $('#coleccion');
 (function destacado() {
   const caja = $('#cajaDest'), info = $('#infoDest');
   if (!caja || !info || !P.length) return;
-  const f = P[0];
+  const NI = ORBIT.nichos();
+  const f = (NI[0] && NI[0].items.find(p => p.pieza === 'ancla')) || P[0];
   ORBIT.mountBox(caja, f);
   const partes = f.name.split(' ');
   info.innerHTML = `
@@ -841,11 +865,11 @@ const coleccion = $('#coleccion');
   const caja = $('#flow4');
   if (!caja) return;
   const PASOS4 = [
-    ['Elegí tu sistema','Pick your system',
+    ['Elegí tu herramienta','Pick your tool',
      'Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.', 140],
     ['Pagá una sola vez','Pay once',
-     'Mercado Pago en pesos o tarjeta en dólares. Sin suscripciones.',
-     'Mercado Pago in pesos or card in dollars. No subscriptions.', 90],
+     'Mercado Pago en pesos o PayPal en dólares. Sin suscripciones.',
+     'Mercado Pago in pesos or PayPal in dollars. No subscriptions.', 90],
     ['Recibilo al instante','Get it instantly',
      'Te llega un email con la descarga o el acceso.','You get an email with the download or access link.', 40],
     ['Usalo desde hoy','Use it today',

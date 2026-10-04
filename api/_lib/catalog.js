@@ -8,14 +8,20 @@
 import { kvGet, kvSet } from './kv.js';
 
 export const CATALOG = {
-  'ob-001': { code: 'OB—001', name: 'Content System',     usd: 39, ars: 39000, foto: 'hands',
-    bajada: 'Un sistema completo para planificar, producir y publicar contenido sin empezar de cero.' },
-  'ob-002': { code: 'OB—002', name: 'Creator Library',    usd: 49, ars: 49000, foto: 'studio',
-    bajada: 'Una biblioteca curada de recursos gráficos listos para usar en proyectos reales.' },
-  'ob-003': { code: 'OB—003', name: 'Business OS',        usd: 59, ars: 59000, foto: 'arch',
-    bajada: 'El sistema operativo para pequeños negocios: clientes, proyectos, finanzas y procesos en un solo lugar.' },
-  'ob-004': { code: 'OB—004', name: 'AI Workflow System', usd: 69, ars: 69000, soon: true, foto: 'corridor',
-    bajada: 'Workflows de IA probados para investigar, escribir, diseñar y automatizar con criterio.' },
+  /* Drop 1 · Fleteros */
+  'ob-006': { code: 'OB—006', name: 'Tarifador de fletes',            usd: 10, ars: 14999, foto: 'arch',
+    bajada: 'Cargá el viaje y sabé en un minuto cuánto cobrar y cuánto ganás.' },
+  'ob-007': { code: 'OB—007', name: 'Sistema de costos y tarifas',    usd: 49, ars: 74999, foto: 'arch',
+    bajada: 'Sabé cuánto te cuesta cada km de cada camión y qué cliente te hace ganar.' },
+  'ob-008': { code: 'OB—008', name: 'Control de viajes y cobranzas',  usd: 19, ars: 28999, foto: 'arch',
+    bajada: 'Cada viaje registrado, cada peso cobrado. Sabé quién te debe y desde cuándo.' },
+  /* Drop 2 · Abogados */
+  'ob-009': { code: 'OB—009', name: 'Agenda de vencimientos',         usd: 10, ars: 14999, foto: 'corridor',
+    bajada: 'Tus vencimientos en un solo lugar, con días hábiles ya contados.' },
+  'ob-010': { code: 'OB—010', name: 'Sistema de gestión del estudio', usd: 49, ars: 74999, foto: 'corridor',
+    bajada: 'Casos, clientes, audiencias, tareas y honorarios en un solo tablero de Notion.' },
+  'ob-011': { code: 'OB—011', name: 'Control de honorarios',          usd: 19, ars: 28999, foto: 'corridor',
+    bajada: 'Sabé cuánto te deben, quién y cuándo vas a cobrar.' },
   'ob-005': { code: 'OB—005', name: 'Orbit IVA',          usd: 79, ars: 79000, soon: true, foto: 'ob-005',
     bajada: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.' },
 };

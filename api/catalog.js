@@ -1,7 +1,7 @@
 /* Parche público del catálogo.
    El sitio carga primero assets/js/products.js (que siempre funciona) y
    después este script, que aplica encima lo editado en el panel:
-   nombre, precio, estado y bajada. Si esta respuesta falla, el sitio
+   nombre, precio (USD y ARS), estado y bajada. Si esta respuesta falla, el sitio
    sigue andando con los valores del archivo. */
 import { CATALOG, getOverrides } from './_lib/catalog.js';
 
@@ -15,6 +15,7 @@ export default async function handler(req, res) {
     const p = {};
     if (o.name) p.name = String(o.name);
     if (Number.isFinite(o.usd)) p.price = o.usd;
+    if (Number.isFinite(o.ars)) p.ars = o.ars;
     if (typeof o.soon === 'boolean') p.status = o.soon ? 'soon' : 'available';
     if (o.tagline && (o.tagline.es || o.tagline.en)) p.tagline = o.tagline;
     if (Object.keys(p).length) patch[id] = p;

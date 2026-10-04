@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Producto — Orbit®</title>
 <script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
-<meta name="description" content="Productos digitales Orbit. Ideas en movimiento.">
+<meta name="description" content="Herramientas Orbit para fleteros y estudios jurídicos: planillas y sistemas listos para usar.">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
@@ -119,7 +119,7 @@
 <div class="buybar" id="buybar" aria-hidden="true"></div>
 <script src="assets/js/products.js?v=48"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=48"></script>
+<script src="assets/js/orbit.js?v=49"></script>
 <script>
 (() => {
 const {C, $, $$, L, tr, lang, sym, card, buyBtn, mountBox, reveal, P, FAM, ACC, money} = ORBIT;
@@ -185,7 +185,7 @@ const TRUST = p => (p && p.acceso ? TRUST_HERRAMIENTA : TRUST_ARCHIVO);
 $('#info').innerHTML = `<span class="mono">${p.code} · ${fam}</span>
   <h1 class="display">${w1}<br><span class="it">${rest.join(' ').toLowerCase()}.</span></h1>
   <p class="lead" style="opacity:.8;margin:22px 0 0">${L(p.tagline)}</p>
-  <div class="pd-price"><b>${p.status==='soon' ? L('Pronto','Soon') : money(p.price)}</b><span class="mono dim">${p.status==='soon' ? L('Lanzamiento 2026','Launching 2026') : L('Pago único · impuestos según país','One-time payment · taxes by country')}</span></div>
+  <div class="pd-price"><b>${p.status==='soon' ? L('Pronto','Soon') : money(p)}</b><span class="mono dim">${p.status==='soon' ? L('Lanzamiento 2026','Launching 2026') : L('Pago único · impuestos según país','One-time payment · taxes by country')}</span></div>
   <div class="pd-buy">${buyBtn(p)}<a class="btn btn-line" href="#inc">${L('Qué incluye','What’s inside')}</a></div>
   <div class="pd-trust mono">${TRUST(p).map(([es,en]) => `<span>${L(es,en)}</span>`).join('')}</div>`;
 
@@ -194,7 +194,9 @@ $('#specs').innerHTML = p.specs.map(([k,v]) => `<div><span class="mono dim">${L(
    ordena la lectura */
 $('#inc').innerHTML = p.includes.map(([t,d],i) => `<div class="rv"><span class="inc-n">${String(i+1).padStart(2,'0')}</span><div><h3>${L(t)}</h3><p>${L(d)}</p></div></div>`).join('');
 $('#for').innerHTML = p.for.map(t => `<li>${L(t)}</li>`).join('');
-$('#rel').innerHTML = P.filter(x => x.id !== p.id).map(card).join('');
+/* relacionados: primero los del mismo oficio, en el orden de la escalera */
+$('#rel').innerHTML = ORBIT.ordenados().filter(x => x.id !== p.id)
+  .sort((a, b) => (b.nicho === p.nicho) - (a.nicho === p.nicho)).slice(0, 4).map(card).join('');
 
 const bar = $('#buybar'), info = $('#info');
 bar.innerHTML = `<div><span class="mono dim">${p.code}</span><div style="font-weight:800;letter-spacing:-.03em;text-transform:uppercase">${p.name}</div></div>${buyBtn(p)}`;

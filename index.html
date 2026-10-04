@@ -5,21 +5,21 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <script>(function(){try{if(new URLSearchParams(location.search).has("full"))return;if(matchMedia("(max-width:860px)").matches)location.replace("/m"+location.search+location.hash)}catch(e){}})()</script>
 <link rel="alternate" media="only screen and (max-width: 860px)" href="https://www.orbitando.com.ar/m">
-<title>Orbit® — Ideas en movimiento</title>
+<title>Orbit · Herramientas para fleteros y estudios jurídicos</title>
 <script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
-<meta name="description" content="Orbit crea herramientas y productos digitales para convertir ideas en resultados, en cualquier disciplina. Ideas en movimiento.">
+<meta name="description" content="Planillas y sistemas listos para usar, hechos para fleteros y estudios jurídicos. Cargás tus datos y en 15 minutos sabés cuánto cobrar, quién te debe y qué vence.">
 
 <link rel="canonical" href="https://www.orbitando.com.ar/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Orbit®">
 <meta property="og:locale" content="es_AR">
 <meta property="og:url" content="https://www.orbitando.com.ar/">
-<meta property="og:title" content="Orbit® — Ideas en movimiento">
-<meta property="og:description" content="Sistemas y herramientas digitales para convertir ideas en resultados, en cualquier disciplina.">
+<meta property="og:title" content="Orbit · Herramientas para fleteros y estudios jurídicos">
+<meta property="og:description" content="Planillas y sistemas listos para usar, hechos para fleteros y estudios jurídicos. Cargás tus datos y en 15 minutos sabés cuánto cobrar, quién te debe y qué vence.">
 <meta property="og:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Orbit® — Ideas en movimiento">
-<meta name="twitter:description" content="Sistemas y herramientas digitales para convertir ideas en resultados, en cualquier disciplina.">
+<meta name="twitter:title" content="Orbit · Herramientas para fleteros y estudios jurídicos">
+<meta name="twitter:description" content="Planillas y sistemas listos para usar, hechos para fleteros y estudios jurídicos. Cargás tus datos y en 15 minutos sabés cuánto cobrar, quién te debe y qué vence.">
 <meta name="twitter:image" content="https://www.orbitando.com.ar/assets/img/landing.jpg">
 <meta name="theme-color" content="#0D0D0E">
 <link rel="icon" href="/favicon.ico" sizes="32x32">
@@ -49,7 +49,7 @@ main>section.sec:not(.hero){min-height:100svh;display:flex;flex-direction:column
 .hero .top{display:flex;justify-content:space-between;gap:24px}
 .hero .word{font-size:clamp(60px,min(25vw,34vh),420px);margin:clamp(12px,3vh,40px) 0;cursor:crosshair;user-select:none;line-height:.8}
 .hero .bot{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,3vw,48px);align-items:end}
-.hero .tag{font-size:clamp(34px,4.4vw,74px)}
+.hero .tag{font-size:clamp(30px,3.3vw,58px);line-height:.9}
 .rot{font-weight:800;font-size:clamp(26px,3vw,48px);letter-spacing:-.04em;text-transform:uppercase;line-height:.95;margin:0}
 .rot .it{display:inline-block;color:var(--ac);min-width:5ch;transition:opacity .35s var(--ease),transform .35s var(--ease)}
 .rot .it.swap{opacity:0;transform:translateY(.25em)}
@@ -291,31 +291,38 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
 .p2t .dots button[aria-current="true"]{background:var(--blue)}
 @media (max-width:860px){.pband .lema{grid-template-columns:1fr}.p2t .row{grid-template-columns:1fr;gap:6px}}
 
+.ngrupos{display:grid;gap:clamp(48px,6vw,88px)}
+.ncab{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:8px clamp(20px,3vw,48px);align-items:end;padding-bottom:clamp(14px,2vw,22px);border-bottom:1px solid currentColor;margin-bottom:clamp(20px,3vw,36px)}
+.ncab h3{margin:0;font-size:clamp(26px,3.4vw,52px);font-weight:800;letter-spacing:-.04em;line-height:.95;text-transform:uppercase}
+.ncab p{margin:0;opacity:.7;max-width:46ch}
+.ngrupos .pgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media (max-width:860px){.ncab{grid-template-columns:1fr}.ngrupos .pgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:620px){.ngrupos .pgrid{grid-template-columns:1fr}}
 .faqgrid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(20px,4vw,64px)}
 .faqgrid h2{font-size:clamp(44px,5.4vw,90px)}
 @media (max-width:860px){.faqgrid{grid-template-columns:1fr}}
 </style>
 </head>
-<body data-page="home" data-title-es="Orbit® — Ideas en movimiento" data-title-en="Orbit® — Ideas in motion">
+<body data-page="home" data-title-es="Orbit · Herramientas para fleteros y estudios jurídicos" data-title-en="Orbit · Tools for freight operators and law firms">
 <main>
 
 <!-- HERO -->
 <section class="sec dark hero">
   <div class="hero-bg" id="heroBg" aria-hidden="true"></div>
   <div class="wrap top">
-    <p class="mono" style="margin:0"><span data-l="es">Herramientas digitales<br>para un mañana<br>más creativo.</span><span data-l="en">Digital tools<br>for a brighter<br>creative tomorrow.</span></p>
+    <p class="mono" style="margin:0"><span data-l="es">Transporte<br>y estudios<br>jurídicos.</span><span data-l="en">Transport<br>and law<br>firms.</span></p>
     <p class="mono" style="margin:0;text-align:right">OB—000<br><span data-l="es">Productos digitales<br>Desde 2026</span><span data-l="en">Digital goods<br>Est. 2026</span></p>
   </div>
   <div class="wrap" style="position:relative">
-    <h1 class="word" id="heroWord" aria-label="ORBIT"></h1>
+    <div class="word" id="heroWord" role="img" aria-label="ORBIT"></div>
     <span class="mono hint"><span data-l="es">Mové el cursor — el punto te sigue</span><span data-l="en">Move your cursor — the dot follows</span></span>
   </div>
   <div class="wrap bot">
-    <p class="display tag"><span data-l="es">Ideas<br>en <span class="it">movimiento.</span></span><span data-l="en">Ideas<br>in <span class="it">motion.</span></span></p>
+    <h1 class="display tag"><span data-l="es">Herramientas para que tu oficio deje de <span class="it">perder plata.</span></span><span data-l="en">Tools that stop your trade from <span class="it">losing money.</span></span></h1>
     <div>
-      <p class="rot"><span data-l="es">Herramientas para</span><span data-l="en">Tools to</span> <span class="it" id="rotWord">crear.</span></p>
-      <p class="sub"><span data-l="es">Productos digitales para diseñar, vender, organizar, automatizar y hacer crecer ideas — en cualquier disciplina.</span><span data-l="en">Digital products to design, sell, organize, automate and grow ideas — in any discipline.</span></p>
-      <div class="ctas"><a class="btn btn-acid" href="productos.html"><span data-l="es">Explorar productos</span><span data-l="en">Explore products</span> <span class="ar">→</span></a><a class="btn btn-line" href="#disciplinas"><span data-l="es">Ver disciplinas</span><span data-l="en">See disciplines</span></a></div>
+      <p class="rot"><span data-l="es">Hecho para</span><span data-l="en">Made to</span> <span class="it" id="rotWord">cotizar.</span></p>
+      <p class="sub"><span data-l="es">Planillas y sistemas listos para usar, hechos para fleteros y estudios jurídicos. Cargás tus datos y en 15 minutos sabés cuánto cobrar, quién te debe y qué vence.</span><span data-l="en">Ready-to-use spreadsheets and systems, built for freight operators and law firms. Enter your data and in 15 minutes you know what to charge, who owes you and what is due.</span></p>
+      <div class="ctas"><a class="btn btn-acid" href="productos.html"><span data-l="es">Ver herramientas</span><span data-l="en">See the tools</span> <span class="ar">→</span></a><a class="btn btn-line" href="#encontra"><span data-l="es">¿Cuál es para mí?</span><span data-l="en">Which one is for me?</span></a></div>
       <div class="hprog"><div class="bars" id="hBars"></div><span class="mono dim"><span data-l="es">En órbita</span><span data-l="en">In orbit</span></span><a class="mono" id="hNow" href="productos.html"></a></div>
     </div>
   </div>
@@ -353,8 +360,8 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
 <!-- DISCIPLINAS -->
 <section class="sec light" id="disciplinas">
   <div class="wrap">
-    <div class="shead mono"><div><b><span data-l="es">Disciplinas</span><span data-l="en">Disciplines</span></b><span data-l="es">Un universo, muchas órbitas</span><span data-l="en">One universe, many orbits</span></div><div style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></div></div>
-    <h2 class="display rv" style="font-size:clamp(46px,7vw,120px);max-width:15ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Una órbita para cada <span class="it">disciplina.</span></span><span data-l="en">An orbit for every <span class="it">discipline.</span></span></h2>
+    <div class="shead mono"><div><b><span data-l="es">Oficios</span><span data-l="en">Trades</span></b><span data-l="es">Un oficio, una escalera</span><span data-l="en">One trade, one ladder</span></div><div style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></div></div>
+    <h2 class="display rv" style="font-size:clamp(46px,7vw,120px);max-width:15ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Una órbita para cada <span class="it">oficio.</span></span><span data-l="en">An orbit for every <span class="it">trade.</span></span></h2>
     <div class="disc" id="disc"></div>
   </div>
 </section>
@@ -362,7 +369,7 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
 <!-- DESTACADO -->
 <section class="sec dark" id="destacado">
   <div class="wrap">
-    <div class="shead mono"><div><b><span data-l="es">Destacado</span><span data-l="en">Featured</span></b><span data-l="es">Producto 01</span><span data-l="en">Product 01</span></div><div style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></div></div>
+    <div class="shead mono"><div><b><span data-l="es">Destacado</span><span data-l="en">Featured</span></b><span data-l="es">El sistema completo</span><span data-l="en">The full system</span></div><div style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></div></div>
     <div class="feat">
       <div class="boxstage rv" id="featBox"></div>
       <div class="rv" id="featInfo"></div>
@@ -375,7 +382,7 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
   <div class="wrap">
     <div class="shead mono"><div><b><span data-l="es">Colección</span><span data-l="en">Collection</span></b>Vol.01</div><div style="text-align:right"><a href="productos.html"><span data-l="es">Ver todo el catálogo →</span><span data-l="en">See the full catalog →</span></a></div></div>
     <h2 class="display rv" style="font-size:clamp(46px,7vw,112px);max-width:14ch;margin-bottom:clamp(36px,5vw,72px)"><span data-l="es">Herramientas para <span class="it">hacer.</span></span><span data-l="en">Tools for <span class="it">doing.</span></span></h2>
-    <div class="pgrid" id="homeGrid"></div>
+    <div class="ngrupos" id="homeGrid"></div>
   </div>
 </section>
 
@@ -409,7 +416,7 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
     <div class="cus">
       <div class="rv">
         <h2 class="display"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
-        <p class="lead" style="opacity:.75;margin-top:22px"><span data-l="es">Sistemas en Notion, plantillas de marca, kits de contenido o workflows de IA pensados para tu negocio, con el mismo cuidado que cada producto Orbit.</span><span data-l="en">Notion systems, brand templates, content kits or AI workflows built for your business, with the same care as every Orbit product.</span></p>
+        <p class="lead" style="opacity:.75;margin-top:22px"><span data-l="es">Planillas, sistemas en Notion, herramientas web o automatizaciones pensadas para tu oficio, con el mismo cuidado que cada producto Orbit.</span><span data-l="en">Spreadsheets, Notion systems, web tools or automations built for your trade, with the same care as every Orbit product.</span></p>
         <ol class="cus-steps">
           <li><span class="mono">01</span><div><b><span data-l="es">Brief</span><span data-l="en">Brief</span></b><p><span data-l="es">Nos contás la idea en este formulario.</span><span data-l="en">Tell us the idea in this form.</span></p></div></li>
           <li><span class="mono">02</span><div><b><span data-l="es">Propuesta</span><span data-l="en">Proposal</span></b><p><span data-l="es">En 48 h hábiles te enviamos alcance, plazo y precio.</span><span data-l="en">Within 2 business days we send scope, timeline and price.</span></p></div></li>
@@ -425,7 +432,7 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
         <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span><div class="opts" data-group="type"></div></div>
         <div><label class="mono" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label><textarea id="cIdea" name="idea"></textarea></div>
         <div class="two">
-          <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Presupuesto (USD)</span><span data-l="en">Budget (USD)</span></span><div class="opts" data-group="budget"></div></div>
+          <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Presupuesto (ARS)</span><span data-l="en">Budget (USD)</span></span><div class="opts" data-group="budget"></div></div>
           <div><span class="mono" style="display:block;margin-bottom:8px"><span data-l="es">Plazo</span><span data-l="en">Timeline</span></span><div class="opts" data-group="time"></div></div>
         </div>
         <div class="send"><span class="err" id="cErr" role="alert"></span><button class="btn btn-blue" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button></div>
@@ -438,7 +445,7 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
 <section class="band">
   <div class="photo" data-photo="figure" role="img" data-aria-es="Diseñadora armando un sistema en la pared de su estudio" data-aria-en="Designer building a system on her studio wall"></div>
   <div class="txt">
-    <div class="m"><span class="mono">OB—002</span><span class="mono" style="text-align:right"><span data-l="es">Mismas personas.<br>Ideas más grandes.<br>Herramientas nuevas.</span><span data-l="en">Same creators.<br>Bigger ideas.<br>New tools.</span></span></div>
+    <div class="m"><span class="mono">OB—000</span><span class="mono" style="text-align:right"><span data-l="es">Mismas personas.<br>Ideas más grandes.<br>Herramientas nuevas.</span><span data-l="en">Same creators.<br>Bigger ideas.<br>New tools.</span></span></div>
     <h2 class="display"><span data-l="es">Entrá<br>en<br><span class="it">órbita.</span></span><span data-l="en">Enter<br>the<br><span class="it">orbit.</span></span></h2>
     <div class="m"><span class="mono"><span data-l="es">No vendemos archivos.<br>Vendemos herramientas para hacer.</span><span data-l="en">We don’t sell files.<br>We make tools for doing.</span></span><a class="btn btn-line" href="nosotros.html" style="color:var(--k)"><span data-l="es">Conocé Orbit</span><span data-l="en">Meet Orbit</span> <span class="ar">→</span></a></div>
   </div>
@@ -460,9 +467,9 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
     <div class="faq rv">
       <details><summary><span data-l="es">¿Cómo recibo el producto?</span><span data-l="en">How do I get the product?</span></summary><p><span data-l="es">Apenas se confirma el pago te llega un email con el link de descarga o acceso. Es inmediato.</span><span data-l="en">As soon as payment is confirmed you get an email with the download or access link. It’s instant.</span></p></details>
       <details><summary><span data-l="es">¿Puedo usarlo para clientes?</span><span data-l="en">Can I use it for clients?</span></summary><p><span data-l="es">Sí. Todos los productos incluyen licencia de uso comercial para proyectos propios y de clientes. Lo que no se puede es revender o redistribuir los archivos originales.</span><span data-l="en">Yes. Every product includes a commercial license for your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></details>
-      <details><summary><span data-l="es">¿Qué programas necesito?</span><span data-l="en">What software do I need?</span></summary><p><span data-l="es">Cada producto indica su formato en la ficha (Figma, Canva, Notion, PNG, SVG). La mayoría funciona con las versiones gratuitas.</span><span data-l="en">Each product lists its format (Figma, Canva, Notion, PNG, SVG). Most work with the free versions.</span></p></details>
+      <details><summary><span data-l="es">¿Qué programas necesito?</span><span data-l="en">What software do I need?</span></summary><p><span data-l="es">Cada producto indica su formato en la ficha. Las planillas funcionan en Excel 2010 o posterior y en Google Sheets (gratis); el sistema del estudio es una plantilla de Notion (alcanza el plan gratis); el tarifador funciona en el navegador del celular o la compu.</span><span data-l="en">Each product lists its format. The spreadsheets work in Excel 2010 or later and in Google Sheets (free); the law-firm system is a Notion template (the free plan is enough); the rate calculator runs in your phone or desktop browser.</span></p></details>
       <details><summary><span data-l="es">¿Las actualizaciones tienen costo?</span><span data-l="en">Do updates cost extra?</span></summary><p><span data-l="es">No. Cuando un producto sube de versión (V.01 → V.02) te llega la actualización sin cargo.</span><span data-l="en">No. When a product gets a new version (V.01 → V.02) you get the update for free.</span></p></details>
-      <details><summary><span data-l="es">¿Y si no me sirve?</span><span data-l="en">What if it doesn’t work for me?</span></summary><p><span data-l="es">Tenés diez días corridos desde que recibís el pedido para arrepentirte. Usá el <a href="terminos.html#arrepentimiento" style="color:inherit">Botón de arrepentimiento</a> o escribinos a hola@orbitando.com.ar.</span><span data-l="en">You have ten calendar days from delivery to cancel. Use the <a href="terminos.html#arrepentimiento" style="color:inherit">Right to cancel button</a> or email hola@orbitando.com.ar.</span></p></details>
+      <details><summary><span data-l="es">¿Y si no me sirve?</span><span data-l="en">What if it doesn’t work for me?</span></summary><p><span data-l="es">Tenés 10 días corridos desde la compra para arrepentirte (Ley 24.240, art. 34). Usá el <a href="terminos.html#arrepentimiento" style="color:inherit">Botón de arrepentimiento</a> o escribinos a hola@orbitando.com.ar.</span><span data-l="en">You have 10 calendar days from purchase to cancel (Argentine Law 24.240, art. 34). Use the <a href="terminos.html#arrepentimiento" style="color:inherit">Right to cancel button</a> or email hola@orbitando.com.ar.</span></p></details>
     </div>
   </div>
 </section>
@@ -470,7 +477,7 @@ body.directo .nav,.directo .hero-bg,.directo .hero .word .pal,.directo .hero .wo
 </main>
 <script src="assets/js/products.js?v=48"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=48"></script>
+<script src="assets/js/orbit.js?v=49"></script>
 <script>
 (() => {
 const {C, $, $$, L, tr, lang, sym, bigWm, card, cover, buyBtn, mountBox, follow, reveal, toast, money, P, FAM, url, RM} = ORBIT;
@@ -560,12 +567,13 @@ if (document.documentElement.classList.contains('gate-on')) {
 
 /* hero: fotos + palabra + producto, sincronizados */
 const SLIDES = [
-  {ph:'hands', v:['crear.','create.'], id:'ob-001'},
-  {ph:'studio', v:['diseñar.','design.'], id:'ob-002'},
-  {ph:'arch', v:['organizar.','organize.'], id:'ob-003'},
-  {ph:'corridor', v:['automatizar.','automate.'], id:'ob-004'},
-  {ph:'figure', v:['crecer.','grow.'], id:null},
-];
+  {ph:'arch', v:['cotizar.','quote.'], id:'ob-006'},
+  {ph:'corridor', v:['cobrar bien.','charge right.'], id:'ob-007'},
+  {ph:'hands', v:['cobrar.','get paid.'], id:'ob-008'},
+  {ph:'studio', v:['llegar a tiempo.','be on time.'], id:'ob-009'},
+  {ph:'figure', v:['ordenar.','get organized.'], id:'ob-010'},
+  {ph:'landing', v:['cobrar honorarios.','collect fees.'], id:'ob-011'},
+].filter(x => P.some(p => p.id === x.id));
 const DUR = 4200;
 const bg = $('#heroBg'), rw = $('#rotWord'), now = $('#hNow'), bars = $('#hBars');
 bg.innerHTML = SLIDES.map(x => `<div class="slide" style="background-image:url(assets/img/${x.ph}.jpg?v=12)"></div>`).join('');
@@ -594,38 +602,23 @@ if (!RM) (function tick(n) {
 else fills[0].style.transform = 'scaleX(1)';
 
 /* disciplinas: cada una despliega un deslizador con sus productos */
-const DISC = [
-  ['Diseño','Design','Plantillas, mockups y sistemas visuales','Templates, mockups and visual systems', [
-    {id:'ob-002'}, {n:'Brand Kit System', d:['Tu identidad lista para aplicar en todo','Your identity, ready to apply everywhere']}, {n:'Mockup Pack', d:['Presentá tu trabajo como un estudio','Present your work like a studio']}]],
-  ['Contenido','Content','Calendarios, portadas y formatos','Calendars, covers and formats', [
-    {id:'ob-001'}, {n:'Reels Script Kit', d:['Guiones y ganchos para videos cortos','Scripts and hooks for short videos']}, {n:'Carousel Templates', d:['Carruseles editables que se guardan','Editable carousels people save']}]],
-  ['Negocios','Business','CRM, finanzas y procesos','CRM, finances and processes', [
-    {id:'ob-003'}, {n:'Client Onboarding Kit', d:['Del “sí” al primer entregable, sin fricción','From “yes” to first delivery, frictionless']}, {n:'Finance Tracker', d:['Ingresos, gastos y proyección simple','Income, expenses and a simple forecast']}]],
-  ['Ventas','Sales','Funnels, emails y propuestas','Funnels, emails and proposals', [
-    {n:'Proposal Kit', d:['Propuestas que se entienden y se aprueban','Proposals that get read and approved']}, {n:'Funnel Map', d:['El recorrido de tu cliente, paso a paso','Your customer journey, step by step']}, {n:'Email Sequences', d:['Secuencias listas para vender','Ready-to-sell email sequences']}]],
-  ['Marketing','Marketing','Campañas, ads y reportes','Campaigns, ads and reports', [
-    {n:'Campaign Planner', d:['Una campaña completa en un tablero','A full campaign on one board']}, {n:'Ads Creative Kit', d:['Piezas para anuncios que convierten','Ad creatives that convert']}, {n:'Monthly Report', d:['Reportes claros para clientes','Clear reports for clients']}]],
-  ['IA','AI','Workflows y automatizaciones','Workflows and automations', [
-    {id:'ob-004'}, {n:'Prompt Library', d:['Prompts probados por disciplina','Tested prompts by discipline']}, {n:'Automation Starter', d:['Tus primeras automatizaciones, guiadas','Your first automations, guided']}]],
-  ['Productividad','Productivity','Planners y sistemas personales','Planners and personal systems', [
-    {n:'Personal OS', d:['Tu semana, tus metas y tus ideas en un lugar','Your week, goals and ideas in one place']}, {n:'Weekly Planner', d:['Planificá en 20 minutos, ejecutá toda la semana','Plan in 20 minutes, execute all week']}, {n:'Habit System', d:['Hábitos que se sostienen','Habits that stick']}]],
-  ['Educación','Education','Workbooks, clases y presentaciones','Workbooks, lessons and decks', [
-    {n:'Course Builder', d:['Estructurá tu curso de principio a fin','Structure your course end to end']}, {n:'Workbook Templates', d:['Cuadernos de trabajo para tus alumnos','Workbooks for your students']}, {n:'Lesson Deck', d:['Presentaciones de clase con estilo editorial','Editorial-style lesson decks']}]],
-];
+/* un oficio por fila, con sus productos en el orden de la escalera:
+   entrada → ancla → complemento. Sale del catálogo (ORBIT.nichos). */
+const DISC = ORBIT.nichos().map(n => [n.n.es, n.n.en, n.d.es, n.d.en, n.items.map(p => ({id:p.id})), n.id]);
 const DACC = [C.blue, C.or, C.ac];
 function pvCard(item, i, di) {
   const p = item.id && P.find(x => x.id === item.id);
   if (p) {
     const soon = p.status === 'soon';
-    return `<a class="pv${soon ? ' soon' : ''}" href="${url(p)}"><div class="sy">${sym({ring: soon ? C.b : C.k, dot: DACC[i % 3]})}</div><div class="t"><span class="mono">${p.code}</span><span class="bd">${soon ? L('Próximamente','Coming soon') : L('Disponible','Available')}</span></div><div><h5>${p.name}</h5><p>${L(p.tagline)}</p></div><div class="f"><b>${soon ? L('Pronto','Soon') : money(p.price)}</b><span class="mono">${L('Ver','View')} →</span></div></a>`;
+    return `<a class="pv${soon ? ' soon' : ''}" href="${url(p)}"><div class="sy">${sym({ring: soon ? C.b : C.k, dot: DACC[i % 3]})}</div><div class="t"><span class="mono">${p.code}</span><span class="bd">${soon ? L('Próximamente','Coming soon') : L(ORBIT.PIEZA_N[p.pieza] || {es:'Disponible', en:'Available'})}</span></div><div><h5>${p.name}</h5><p>${L(p.tagline)}</p></div><div class="f"><b>${soon ? L('Pronto','Soon') : money(p)}</b><span class="mono">${L('Ver','View')} →</span></div></a>`;
   }
   return `<a class="pv soon" href="productos.html"><div class="sy">${sym({ring:C.b, dot:DACC[i % 3]})}</div><div class="t"><span class="mono">OB—D0${di+1}.${i+1}</span><span class="bd">${L('Próximamente','Coming soon')}</span></div><div><h5>${item.n}</h5><p>${L(...item.d)}</p></div><div class="f"><b>${L('Pronto','Soon')}</b><span class="mono dim">${L('En desarrollo','In the works')}</span></div></a>`;
 }
-$('#disc').innerHTML = DISC.map(([es,en,des,den,items],i) => `<div class="drow rv" data-i="${i}">
+$('#disc').innerHTML = DISC.map(([es,en,des,den,items,nid],i) => `<div class="drow rv" data-i="${i}">
   <button class="dh" aria-expanded="false" aria-controls="dp${i}"><span class="mono">OB—D0${i+1}</span><b>${L(es,en)}</b><p>${L(des,den)}</p><span class="s">${sym({ring:'currentColor', dot:C.blue, rot:i*45})}</span></button>
   <div class="dpanel" id="dp${i}" role="region"><div>
     <div class="dtop"><span class="mono">${L(es,en)} — ${items.length} ${L('herramientas','tools')}</span><div class="darrows"><button data-dir="-1" aria-label="Anterior">←</button><button data-dir="1" aria-label="Siguiente">→</button></div></div>
-    <div class="dslide">${items.map((it,k) => pvCard(it,k,i)).join('')}<a class="pv all" href="productos.html"><span class="mono">${L('Todo en','All in')} ${L(es,en)}</span><h5>${L('Ver catálogo','See catalog')} →</h5></a></div>
+    <div class="dslide">${items.map((it,k) => pvCard(it,k,i)).join('')}<a class="pv all" href="productos.html#${nid}"><span class="mono">${L(es,en)}</span><h5>${L('Ver catálogo','See catalog')} →</h5></a></div>
   </div></div>
 </div>`).join('');
 $$('#disc .drow').forEach(row => {
@@ -638,8 +631,9 @@ $$('#disc .drow').forEach(row => {
   $$('.darrows button', row).forEach(b => b.onclick = () => { const sl = $('.dslide', row); sl.scrollBy({left: +b.dataset.dir * (sl.clientWidth * .8), behavior: RM ? 'auto' : 'smooth'}); });
 });
 
-/* destacado */
-const f = P[0];
+/* destacado: el sistema completo (ancla) del primer oficio */
+const NI = ORBIT.nichos();
+const f = (NI[0] && NI[0].items.find(p => p.pieza === 'ancla')) || P[0];
 mountBox($('#featBox'), f);
 $('#featInfo').innerHTML = `<span class="mono">${f.code} · ${FAM[f.family][0]}</span>
   <h2 class="display" style="margin-top:14px">${f.name.split(' ')[0]}<br><span class="it">${f.name.split(' ').slice(1).join(' ').toLowerCase()}.</span></h2>
@@ -647,9 +641,12 @@ $('#featInfo').innerHTML = `<span class="mono">${f.code} · ${FAM[f.family][0]}<
   <div class="specs">${f.specs.slice(0,4).map(([k,v]) => `<div><span class="mono dim">${L(k)}</span><b>${L(v)}</b></div>`).join('')}</div>
   <div style="display:flex;gap:10px;flex-wrap:wrap">${buyBtn(f)}<a class="btn btn-line" href="${url(f)}">${L('Ver detalle','See details')}</a></div>`;
 
-$('#homeGrid').innerHTML = P.map(card).join('');
+/* colección: agrupada por oficio, en el orden de la escalera */
+$('#homeGrid').innerHTML = NI.map(n => `<div class="ngrupo" id="h-${n.id}">
+  <div class="ncab"><h3>${L(n.n)}</h3><p>${L(n.d)}</p></div>
+  <div class="pgrid">${n.items.map(card).join('')}</div></div>`).join('');
 
-const steps = [['Elegí tu sistema','Pick your system','Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.',140],['Pagá una sola vez','Pay once','Pago seguro con tarjeta. Sin suscripciones.','Secure card payment. No subscriptions.',90],['Recibilo al instante','Get it instantly','Te llega un email con la descarga o el acceso.','You get an email with the download or access link.',40],['Usalo desde hoy','Use it today','Licencia comercial y actualizaciones sin cargo.','Commercial license and free updates.',0]];
+const steps = [['Elegí tu herramienta','Pick your tool','Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.',140],['Pagá una sola vez','Pay once','Mercado Pago en pesos o PayPal en dólares. Sin suscripciones.','Mercado Pago in pesos or PayPal in dollars. No subscriptions.',90],['Recibilo al instante','Get it instantly','Te llega un email con la descarga o el acceso.','You get an email with the download or access link.',40],['Usalo desde hoy','Use it today','Licencia comercial y actualizaciones sin cargo.','Commercial license and free updates.',0]];
 $('#flow').innerHTML = steps.map(([t,te,d,de,g],i) => `<div class="rv"><span class="mono">0${i+1}</span><div class="s">${sym({gap:g, ring:'currentColor', dot:i===3?C.blue:'currentColor', dotOn:i>0})}</div><div><b>${L(t,te)}</b><p>${L(d,de)}</p></div></div>`).join('');
 
 /* manifiesto palabra por palabra */
@@ -665,10 +662,12 @@ if (RM) $$('.mani .w').forEach(w => w.classList.add('lit')); else { addEventList
 
 /* ---------- lema: problema → herramienta ---------- */
 const P2T = [
-  [['“No sé qué publicar esta semana.”','“I don’t know what to post this week.”'],'ob-001'],
-  [['“Empiezo cada diseño de cero.”','“I start every design from scratch.”'],'ob-002'],
-  [['“Mis clientes están en cinco lugares distintos.”','“My clients live in five different places.”'],'ob-003'],
-  [['“Pierdo horas en tareas repetidas.”','“I lose hours on repetitive tasks.”'],'ob-004'],
+  [['“No sé si este viaje me deja plata.”','“I don’t know if this trip makes me money.”'],'ob-006'],
+  [['“Cobro lo que paga el mercado y no sé mi costo por km.”','“I charge the going rate and don’t know my cost per km.”'],'ob-007'],
+  [['“Tengo viajes sin facturar y clientes que no pagan.”','“I have uninvoiced trips and clients who don’t pay.”'],'ob-008'],
+  [['“Anoto los plazos en un cuaderno.”','“I write deadlines in a notebook.”'],'ob-009'],
+  [['“Mis casos están entre WhatsApp, Excel y papeles.”','“My cases live in WhatsApp, Excel and paper.”'],'ob-010'],
+  [['“No sé cuánto me deben de honorarios.”','“I don’t know how much I’m owed in fees.”'],'ob-011'],
 ];
 const p2t = $('#p2t'); let pi = 0, pTimer;
 function renderP2T() {
@@ -685,36 +684,38 @@ renderP2T(); restart();
 
 /* ---------- quiz: encontrá tu sistema ---------- */
 const Q = [
-  {q:['¿Qué querés resolver?','What do you want to solve?'], o:[
-    [['Publicar contenido con constancia','Publish content consistently'], {'ob-001':3}],
-    [['Tener recursos gráficos listos para usar','Have ready-to-use graphic resources'], {'ob-002':3}],
-    [['Ordenar mi negocio: clientes, proyectos, plata','Organize my business: clients, projects, money'], {'ob-003':3}],
-    [['Trabajar mejor y más rápido con IA','Work better and faster with AI'], {'ob-004':3}],
-  ]},
-  {q:['¿Cómo trabajás hoy?','How do you work today?'], o:[
-    [['Solo/a, con mi propia marca','Solo, on my own brand'], {'ob-001':1,'ob-004':1}],
-    [['Con un equipo chico','With a small team'], {'ob-003':1,'ob-004':1}],
-    [['Para clientes','For clients'], {'ob-002':1,'ob-003':1}],
-  ]},
-  {q:['¿Qué herramienta usás más?','Which tool do you use most?'], o:[
-    [['Notion','Notion'], {'ob-003':1,'ob-001':1,'ob-004':1}],
-    [['Figma','Figma'], {'ob-002':1,'ob-001':1}],
-    [['Canva','Canva'], {'ob-001':1,'ob-002':1}],
-    [['Todavía ninguna','None yet'], {'ob-001':1,'ob-004':1}],
-  ]},
-];
+    {q:['¿A qué te dedicás?','What do you do?'], o:[
+      [['Transporte y fletes','Transport and freight'], {'ob-006':10,'ob-007':10,'ob-008':10}],
+      [['Abogacía','Law'], {'ob-009':10,'ob-010':10,'ob-011':10}],
+    ]},
+    {q:['¿Qué te quita el sueño?','What keeps you up at night?'], o:[
+      [['Cobrar bien mis viajes','Charging right for my trips'], {'ob-006':3,'ob-007':3}],
+      [['Que no se me pase un vencimiento','Never missing a deadline'], {'ob-009':3,'ob-010':2}],
+      [['No sé quién me debe ni desde cuándo','Not knowing who owes me or since when'], {'ob-008':3,'ob-011':3}],
+      [['Tengo todo desordenado en mil lugares','Everything is scattered in a thousand places'], {'ob-010':3,'ob-007':3}],
+    ]},
+    {q:['¿Qué querés hoy?','What do you want today?'], o:[
+      [['Una herramienta puntual, para arrancar ya','One focused tool, to start right away'], {'ob-006':2,'ob-009':2}],
+      [['El sistema completo','The complete system'], {'ob-007':2,'ob-010':2}],
+      [['Controlar la plata que entra','Track the money coming in'], {'ob-008':2,'ob-011':2}],
+    ]},
+  ];
 const WHY = {
-  'ob-001': [['Planificás un mes de contenido en una tarde','Plan a month of content in one afternoon'],['Plantillas que mantienen tu marca consistente','Templates that keep your brand consistent'],['Un calendario que muestra qué está listo','A calendar that shows what’s ready']],
-  'ob-002': [['Recursos listos para cualquier proyecto','Resources ready for any project'],['Presentás trabajo como un estudio','Present work like a studio'],['Licencia comercial para clientes','Commercial license for client work']],
-  'ob-003': [['Clientes, proyectos y cobros en un solo lugar','Clients, projects and payments in one place'],['Sabés qué entra y qué sale cada mes','Know what comes in and goes out each month'],['Procesos que no dependen de tu memoria','Processes that don’t depend on your memory']],
-  'ob-004': [['Workflows probados, no prompts sueltos','Proven workflows, not random prompts'],['Producís más sin perder tu voz','Produce more without losing your voice'],['Automatizás lo repetitivo','Automate the repetitive work']],
-};
+    'ob-006': [['Sabés cuánto cobrar cada viaje en un minuto','Know what to charge for each trip in a minute'],['El costo incluye la vuelta vacía y los fijos','The cost includes the empty return and fixed costs'],['Presupuesto listo para mandar por WhatsApp','A quote ready to send on WhatsApp']],
+    'ob-007': [['Tu costo real por km, camión por camión','Your real cost per km, truck by truck'],['Tarifa sugerida por cliente y ruta','Suggested rate per client and route'],['Ves qué cliente te hace ganar y cuál no','See which client makes you money and which does not']],
+    'ob-008': [['Ningún viaje se queda sin facturar','No trip goes uninvoiced'],['Saldo por cliente y antigüedad de la deuda','Balance per client and debt aging'],['La lista de a quién llamar esta semana','The list of who to call this week']],
+    'ob-009': [['Días hábiles contados solos, con feriados','Business days counted for you, with holidays'],['Todo lo que vence esta semana, ordenado','Everything due this week, sorted'],['Una planilla que compartís con tu socia o socio','A sheet you share with your partner']],
+    'ob-010': [['Abrís el día sabiendo qué vence','Start the day knowing what is due'],['Cada caso con todo adentro','Every case with everything inside'],['Sabés cuánto te deben de honorarios','Know how much you are owed in fees']],
+    'ob-011': [['Sabés quién te debe y desde cuándo','Know who owes you and since when'],['Cuánto vas a cobrar los próximos 6 meses','How much you will collect over the next 6 months'],['El plan de cobro se arma solo','The payment plan builds itself']],
+  };
 let qi = 0, score = {};
 const qbox = $('#qbox');
 function renderQ() {
   const prog = `<div class="qprog">${Q.map((_,i) => `<i class="${i<=qi?'on':''}"></i>`).join('')}</div>`;
   if (qi < Q.length) {
-    const it = Q[qi];
+    /* después de elegir oficio, sólo las opciones que tocan productos de ese oficio */
+    const ni = qi ? (P.find(p => p.id === Object.keys(score).sort((a,b) => score[b]-score[a])[0]) || {}).nicho : null;
+    const it = {q: Q[qi].q, o: Q[qi].o.filter(([, w]) => !ni || Object.keys(w).some(id => (P.find(p => p.id === id) || {}).nicho === ni))};
     qbox.innerHTML = `<span class="mono">${L('Pregunta','Question')} ${qi+1} / ${Q.length}</span>${prog}<p class="qq">${L(...it.q)}</p>
       <div class="qopts">${it.o.map(([t],i) => `<button data-i="${i}"><span class="mono">0${i+1}</span><span>${L(...t)}</span><span class="ar">→</span></button>`).join('')}</div>
       ${qi ? `<button class="chip qback" data-back>${L('← Atrás','← Back')}</button>` : ''}`;
@@ -722,7 +723,7 @@ function renderQ() {
     const back = $('[data-back]', qbox); if (back) back.onclick = () => { const w = hist.pop(); for (const k in w) score[k] -= w[k]; qi--; renderQ(); };
     return;
   }
-  const rank = P.map(p => [p, score[p.id]||0]).sort((a,b) => b[1]-a[1]);
+  const rank = P.filter(p => p.status !== 'soon' && WHY[p.id]).map(p => [p, score[p.id]||0]).sort((a,b) => b[1]-a[1]);
   const [best] = rank[0], alt = rank[1][0];
   qbox.innerHTML = `<span class="mono">${L('Tu órbita','Your orbit')}</span>${prog}
     <div class="qres"><div>${cover(best)}</div><div>
@@ -741,88 +742,37 @@ renderQ();
 
 /* ---------- mirá por dentro ---------- */
 const win = $('#win');
-const DAYS = [['Lun','Mon'],['Mar','Tue'],['Mié','Wed'],['Jue','Thu'],['Vie','Fri'],['Sáb','Sat'],['Dom','Sun']];
-const STAT = [[['Idea','Idea'],'#e8e5dd',C.k],[['Producción','In progress'],C.or,C.k],[['Listo','Ready'],C.ac,C.k],[['Publicado','Published'],C.blue,C.b]];
-const POSTS = [[0,['Carrusel: 5 errores','Carousel: 5 mistakes'],2],[1,['Reel detrás de escena','Behind-the-scenes reel'],1],[2,['Post: caso de cliente','Post: client case'],3],[3,['Story: encuesta','Story: poll'],0],[4,['Carrusel: guía rápida','Carousel: quick guide'],1],[5,['Reel: tip semanal','Reel: weekly tip'],0],[6,['Post: frase de marca','Post: brand quote'],2]].map(([d,t,s]) => ({d,t,s}));
-const DEALS = [{n:'Estudio Norte',v:1200,c:0},{n:'Café Lumen',v:800,c:0},{n:'Atlas Arq.',v:2400,c:1},{n:'Nómade Co.',v:950,c:1},{n:'Río Films',v:1800,c:2},{n:'Plano Studio',v:600,c:3}];
-const COLS_K = [['Contacto','Lead'],['Propuesta','Proposal'],['En curso','In progress'],['Cobrado','Paid']];
-const LIBF = [['all',['Todo','All']],['shape',['Formas','Shapes']],['tex',['Texturas','Textures']],['type',['Tipografía','Type']],['mock',['Mockups','Mockups']]];
-const ASSETS = [
-  ['shape', `<div style="width:100%;height:100%;background:${C.k};display:grid;place-items:center">${sym({ring:C.b,dot:C.blue},'sym','width:60%')}</div>`],
-  ['tex', `<div class="photo" style="position:absolute;inset:0;background-image:url(assets/img/arch.jpg)"></div>`],
-  ['type', `<div style="width:100%;height:100%;background:${C.b};display:flex;align-items:center;justify-content:center;font-weight:800;font-size:30cqw;letter-spacing:-.05em">Aa</div>`],
-  ['shape', `<svg viewBox="0 0 100 100" style="width:100%;height:100%;background:${C.or}"><path d="M-10 90 A80 80 0 0 1 70 10" stroke="${C.k}" stroke-width="12" fill="none"/></svg>`],
-  ['mock', `<div style="width:100%;height:100%;background:#ddd9cf;display:grid;place-items:center"><div style="width:60%;aspect-ratio:3/4;background:${C.k};box-shadow:6px 8px 0 rgba(0,0,0,.2)"></div></div>`],
-  ['tex', `<div class="photo" style="position:absolute;inset:0;background-image:url(assets/img/landing.jpg)"></div>`],
-  ['type', `<div style="width:100%;height:100%;background:${C.k};color:${C.b};display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-style:italic;font-size:26cqw">next.</div>`],
-  ['shape', `<div style="width:100%;height:100%;background:${C.ac};display:grid;grid-template-columns:1fr 1fr;gap:8%;padding:16%">${[0,1,2,3].map(i => sym({ring:C.k,dot:C.k,rot:i*90},'sym','width:100%')).join('')}</div>`],
-  ['mock', `<div style="width:100%;height:100%;background:${C.blue};display:grid;place-items:center"><div style="width:70%;aspect-ratio:16/10;background:${C.b};border-radius:4px"></div></div>`],
-  ['tex', `<div class="photo" style="position:absolute;inset:0;background-image:url(assets/img/corridor.jpg)"></div>`],
-  ['type', `<div style="width:100%;height:100%;background:${C.or};display:flex;align-items:flex-end;padding:10%;font-weight:800;font-size:16cqw;line-height:.85;letter-spacing:-.05em;text-transform:uppercase">Tools<br>that move</div>`],
-  ['mock', `<div style="width:100%;height:100%;background:#ddd9cf;display:grid;place-items:center"><div style="width:44%;aspect-ratio:9/19;background:${C.k};border-radius:10px"></div></div>`],
-];
-const TAGN = {shape:['Forma','Shape'], tex:['Textura','Texture'], type:['Tipo','Type'], mock:['Mockup','Mockup']};
-const WF = [
-  [['Investigar','Research'], ['Actuá como investigador. Sobre el tema «{t}», armá un resumen con: 5 ideas clave, 3 datos verificables con su fuente, 3 preguntas que se hace mi audiencia y 2 ángulos poco explorados.','Act as a researcher. On the topic “{t}”, give me: 5 key ideas, 3 verifiable facts with sources, 3 questions my audience asks and 2 underexplored angles.']],
-  [['Estructurar','Structure'], ['Con este material sobre «{t}», proponé 3 estructuras distintas (lista, historia, paso a paso). Para cada una: título, gancho de una línea y 5 secciones.','Using this material on “{t}”, propose 3 different structures (list, story, step-by-step). For each: title, one-line hook and 5 sections.']],
-  [['Escribir','Write'], ['Escribí el borrador de la estructura elegida sobre «{t}». Frases cortas, tono directo, sin clichés ni lenguaje de gurú. Marcá con [DATO] donde falte un dato real.','Write the draft of the chosen structure on “{t}”. Short sentences, direct tone, no clichés or guru language. Mark [FACT] where a real fact is missing.']],
-  [['Revisar','Review'], ['Revisá este texto sobre «{t}» como editor exigente: señalá lo que sobra, lo que no se entiende y 3 cambios que lo harían más claro. No lo reescribas entero.','Review this text on “{t}” like a demanding editor: point out what’s extra, what’s unclear and 3 changes that would make it clearer. Don’t rewrite it all.']],
-];
-let wfStep = 0, wfTopic = '';
-const libSel = new Set(); let libF = 'all';
-
-function demo(p) {
-  if (p.id === 'ob-001') {
-    const done = POSTS.filter(x => x.s === 3).length;
-    return `<div class="dhead"><b>${L('Calendario editorial — Semana 12','Editorial calendar — Week 12')}</b><span class="mono dim">${L('Tocá una pieza para avanzarla','Tap a post to move it forward')} · ${done}/7 ${L('publicadas','published')}</span></div>
-      <div class="cal">${DAYS.map((d,i) => `<div class="d"><span>${L(...d)}</span>${POSTS.filter(x => x.d===i).map(x => { const [n,bg,fg] = STAT[x.s]; return `<button class="post" data-post="${POSTS.indexOf(x)}"><span class="st" style="background:${bg};color:${fg}">${L(...n)}</span>${L(...x.t)}</button>`; }).join('')}</div>`).join('')}</div>`;
+/* La vista previa muestra las pantallas reales de cada producto (las mismas
+     capturas de su ficha): nada de demos inventadas. */
+  let pant = 0;
+  function demo(p) {
+    const PS = p.pantallas || [];
+    if (!PS.length) return `<div class="dhead"><b>${p.name}</b></div><p>${L(p.tagline)}</p>`;
+    const i = Math.min(pant, PS.length - 1), [img, t, d] = PS[i];
+    return `<div class="dhead"><b>${L(t)}</b><span class="mono dim">${L(d)}</span></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${PS.map(([, tt], k) => `<button class="chip" data-pant="${k}" aria-pressed="${k===i}" style="color:var(--k)">${L(tt)}</button>`).join('')}</div>
+      <div style="max-height:420px;overflow:auto;border:1px solid rgba(13,13,14,.12);background:var(--b)"><img src="assets/img/${p.pantallasDir}/${img}.png" alt="${tr(t)}" loading="lazy" style="width:100%;display:block"></div>`;
   }
-  if (p.id === 'ob-003') {
-    const paid = DEALS.filter(d => d.c === 3).reduce((a,d) => a + d.v, 0), total = DEALS.reduce((a,d) => a + d.v, 0);
-    return `<div class="dhead"><b>${L('Pipeline de clientes','Client pipeline')}</b><span class="mono dim">${L('Tocá un cliente para avanzarlo','Tap a client to move it forward')}</span></div>
-      <div class="kan">${COLS_K.map((c,i) => { const ds = DEALS.filter(d => d.c === i); return `<div class="col"><span>${L(...c)}<span>${ds.length}</span></span>${ds.map(d => `<button class="deal" data-deal="${DEALS.indexOf(d)}"><b>${d.n}</b><small>USD ${d.v.toLocaleString('en-US')}</small></button>`).join('')}</div>`; }).join('')}</div>
-      <div class="dhead" style="margin:16px 0 0"><span class="mono">${L('Cobrado este mes','Paid this month')}</span><b>USD ${paid.toLocaleString('en-US')} <span class="mono dim">/ ${total.toLocaleString('en-US')}</span></b></div>
-      <div class="kbar"><i style="transform:scaleX(${(paid/total).toFixed(3)})"></i></div>`;
-  }
-  if (p.id === 'ob-002') {
-    return `<div class="dhead"><b>${L('Biblioteca — Vol.01','Library — Vol.01')}</b><span class="mono dim">${L('Elegí recursos para tu tablero','Pick resources for your board')} · ${libSel.size} ${L('elegidos','selected')}</span></div>
-      <div class="sw2" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px">${LIBF.map(([k,n]) => `<button class="chip" data-libf="${k}" aria-pressed="${k===libF}" style="color:var(--k)">${L(...n)}</button>`).join('')}</div>
-      <div class="lib">${ASSETS.map(([k,h],i) => (libF==='all'||libF===k) ? `<button class="asset${libSel.has(i)?' sel':''}" data-asset="${i}" aria-pressed="${libSel.has(i)}">${h}<span class="tag">${L(...TAGN[k])}</span><span class="ok">✓</span></button>` : '').join('')}</div>`;
-  }
-  const topic = wfTopic || tr('lanzar un producto digital','launching a digital product');
-  const text = tr(...WF[wfStep][1]).replace('{t}', `<mark>${topic.replace(/[<>&]/g,'')}</mark>`);
-  return `<div class="dhead"><b>${L('Workflow: de idea a texto publicado','Workflow: from idea to published text')}</b><span class="mono dim">${L('Muestra gratis — copiala y usala','Free sample — copy it and use it')}</span></div>
-    <div class="wf"><div class="steps">${WF.map(([n],i) => `<button data-wf="${i}" aria-pressed="${i===wfStep}"><span class="mono">0${i+1}</span>${L(...n)}</button>`).join('')}</div>
-    <div><label class="mono" for="wfTopic">${L('Tu tema','Your topic')}</label><input id="wfTopic" value="${wfTopic.replace(/"/g,'&quot;')}" placeholder="${tr('ej: lanzar un producto digital','e.g. launching a digital product')}">
-    <div class="prompt" id="wfOut">${text}</div>
-    <div style="display:flex;justify-content:space-between;gap:10px;margin-top:10px;flex-wrap:wrap"><span class="mono dim">${L('Paso','Step')} ${wfStep+1} / 4</span><button class="chip" data-copy style="color:var(--k)">${L('Copiar prompt','Copy prompt')}</button></div></div></div>`;
-}
-let cur = P[0];
+const PV = ORBIT.ordenados().filter(p => p.status !== 'soon' && (p.pantallas || []).length);
+let cur = PV[0] || P[0];
 function renderWin() {
   win.innerHTML = `<div class="bar"><i></i><i></i><i></i><span class="mono">${cur.code} — ${cur.name}</span><span class="mono dim" style="margin-left:auto">${L('Vista previa','Preview')}</span></div>
     <div class="body" id="wbody">${demo(cur)}</div>
-    <div class="foot"><div><span class="mono dim">${L('Versión completa','Full version')}: ${L(cur.specs[0][1])} ${L(cur.specs[0][0])}</span><div class="price">${cur.status==='soon' ? L('Pronto','Soon') : money(cur.price)}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${buyBtn(cur)}<a class="btn btn-line" href="${url(cur)}" style="color:var(--k)">${L('Ver detalle','See details')}</a></div></div>`;
+    <div class="foot"><div><span class="mono dim">${L('Versión completa','Full version')}: ${L(cur.specs[0][1])} ${L(cur.specs[0][0])}</span><div class="price">${cur.status==='soon' ? L('Pronto','Soon') : money(cur)}</div></div><div style="display:flex;gap:8px;flex-wrap:wrap">${buyBtn(cur)}<a class="btn btn-line" href="${url(cur)}" style="color:var(--k)">${L('Ver detalle','See details')}</a></div></div>`;
   $$('#ptabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.id === cur.id)));
 }
-$('#ptabs').innerHTML = P.map(p => `<button role="tab" data-id="${p.id}" aria-selected="${p===cur}"><span class="mono">${p.code}</span><b>${p.name}</b></button>`).join('');
-$$('#ptabs button').forEach(b => b.onclick = () => { cur = P.find(p => p.id === b.dataset.id); renderWin(); });
+$('#ptabs').innerHTML = PV.map(p => `<button role="tab" data-id="${p.id}" aria-selected="${p===cur}"><span class="mono">${p.code}</span><b>${p.name}</b></button>`).join('');
+$$('#ptabs button').forEach(b => b.onclick = () => { cur = P.find(p => p.id === b.dataset.id); pant = 0; renderWin(); });
 win.addEventListener('click', e => {
-  const t = e.target;
-  const po = t.closest('[data-post]'); if (po) { const x = POSTS[+po.dataset.post]; x.s = (x.s + 1) % 4; renderWin(); return; }
-  const de = t.closest('[data-deal]'); if (de) { const d = DEALS[+de.dataset.deal]; d.c = (d.c + 1) % 4; renderWin(); return; }
-  const lf = t.closest('[data-libf]'); if (lf) { libF = lf.dataset.libf; renderWin(); return; }
-  const as = t.closest('[data-asset]'); if (as) { const i = +as.dataset.asset; libSel.has(i) ? libSel.delete(i) : libSel.add(i); renderWin(); return; }
-  const wf = t.closest('[data-wf]'); if (wf) { wfStep = +wf.dataset.wf; renderWin(); return; }
-  if (t.closest('[data-copy]')) { const txt = $('#wfOut').innerText; (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(() => toast(tr('Prompt copiado','Prompt copied')), () => toast(tr('Seleccioná el texto para copiarlo','Select the text to copy it'))); }
-});
-win.addEventListener('input', e => { if (e.target.id === 'wfTopic') { wfTopic = e.target.value; const topic = wfTopic || tr('lanzar un producto digital','launching a digital product'); $('#wfOut').innerHTML = tr(...WF[wfStep][1]).replace('{t}', `<mark>${topic.replace(/[<>&]/g,'')}</mark>`); } });
-addEventListener('orbit:lang', () => { if (cur.id === 'ob-004') renderWin(); });
+    const b = e.target.closest('[data-pant]'); if (b) { pant = +b.dataset.pant; renderWin(); }
+  });
+addEventListener('orbit:lang', renderWin);
 renderWin();
 
 /* ---------- a medida ---------- */
 const OPTS = {
-  type: [['Sistema en Notion','Notion system'],['Plantillas de marca','Brand templates'],['Kit de contenido','Content kit'],['Workflow de IA','AI workflow'],['Otra idea','Something else']],
-  budget: [['< 500','< 500'],['500 – 1.500','500 – 1,500'],['1.500 +','1,500 +'],['No sé','Not sure']],
+  type: [['Planilla a medida','Custom spreadsheet'],['Sistema en Notion','Notion system'],['Herramienta web','Web tool'],['Automatización','Automation'],['Otra idea','Something else']],
+  budget: [['Hasta 500 mil','< 500'],['500 mil – 1,5 M','500 – 1,500'],['Más de 1,5 M','1,500 +'],['No sé','Not sure']],
   time: [['Sin apuro','No rush'],['1 mes','1 month'],['Urgente','Urgent']],
 };
 const pick = {type:null, budget:null, time:null};
@@ -837,7 +787,7 @@ $('#cform').addEventListener('submit', e => {
   if (!name || !/^\S+@\S+\.\S+$/.test(mail) || !idea) { err.textContent = tr('Completá nombre, un email válido y la idea.', 'Please add your name, a valid email and the idea.'); return; }
   err.textContent = '';
   const val = g => pick[g] === null ? '—' : tr(...OPTS[g][pick[g]]);
-  const body = `${tr('Nombre','Name')}: ${name}\nEmail: ${mail}\n${tr('Qué necesito','What I need')}: ${val('type')}\n${tr('Presupuesto (USD)','Budget (USD)')}: ${val('budget')}\n${tr('Plazo','Timeline')}: ${val('time')}\n\n${idea}`;
+  const body = `${tr('Nombre','Name')}: ${name}\nEmail: ${mail}\n${tr('Qué necesito','What I need')}: ${val('type')}\n${tr('Presupuesto (ARS)','Budget (USD)')}: ${val('budget')}\n${tr('Plazo','Timeline')}: ${val('time')}\n\n${idea}`;
   location.href = `mailto:hola@orbitando.com.ar?subject=${encodeURIComponent(tr('Pedido a medida — ','Custom request — ') + name)}&body=${encodeURIComponent(body)}`;
   toast(tr('Abrimos tu email con el pedido listo para enviar','Opening your email with the request ready to send'));
 });
