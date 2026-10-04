@@ -272,7 +272,7 @@ $('#prods').innerHTML = cat.productos.map(p => `
     <div class="grid4">
       <div class="fld"><label>Nombre</label><input name="name" value="${esc(p.name)}" maxlength="80"></div>
       <div class="fld"><label>Precio USD</label><input name="usd" type="number" min="0" step="1" value="${p.usd}"><span class="tip">Lo que se muestra en el sitio y cobra PayPal</span></div>
-      <div class="fld"><label>Precio ARS</label><input name="ars" type="number" min="0" step="1000" value="${p.ars}"><span class="tip">Lo que cobra Mercado Pago</span></div>
+      <div class="fld"><label>Precio ARS</label><input name="ars" type="number" min="0" step="1" value="${p.ars}"><span class="tip">Lo que cobra Mercado Pago</span></div>
       <div class="fld"><label>Estado</label><select name="soon"><option value="false"${p.soon ? '' : ' selected'}>A la venta</option><option value="true"${p.soon ? ' selected' : ''}>Próximamente</option></select></div>
     </div>
     <div class="fld"><label>Bajada en español</label><textarea name="tes" maxlength="300">${esc(p.tagline?.es || '')}</textarea><span class="tip">Dejala vacía para usar el texto que ya está en el sitio</span></div>
