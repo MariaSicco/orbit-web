@@ -3,7 +3,7 @@
 /* ID del Píxel de Meta (solo números, de Events Manager → Orígenes de datos).
    Vacío = no se carga nada. Aunque tenga valor, el Píxel solo se carga si
    la persona aceptó las cookies de medición en el aviso. */
-const ORBIT_META_PIXEL_ID = '';
+const ORBIT_META_PIXEL_ID = '867844293081970';
 
 (() => {
 const C = {k:'#0D0D0E', b:'#F2EFE8', blue:'#3047FF', or:'#FF4F2E', ac:'#D9FF45', k2:'#161617', b2:'#E4E0D6'};
