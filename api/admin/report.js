@@ -26,7 +26,25 @@ export default async function handler(req, res) {
     if (o.via === 'paypal') r.usd += (i.usd || 0) * (i.qty || 1); else r.ars += (i.ars || 0) * (i.qty || 1);
   }
 
+  /* ventas por afiliado (?ref=) y por origen del tráfico (utm_source · utm_content) */
+  const COMISION = Number(process.env.ORBIT_COMISION || 0.4);
+  const agrupar = clave => {
+    const m = {};
+    for (const o of pagados) {
+      const k = clave(o); if (!k) continue;
+      const r = m[k] || (m[k] = { clave: k, pedidos: 0, ars: 0, usd: 0, ultima: null });
+      r.pedidos++; if (o.via === 'paypal') r.usd += o.usd || 0; else r.ars += o.ars || 0;
+      if (!r.ultima || o.paidAt > r.ultima) r.ultima = o.paidAt;
+    }
+    return Object.values(m).sort((a, b) => b.pedidos - a.pedidos);
+  };
+  const afiliados = agrupar(o => o.ref).map(r => ({ ...r, comisionArs: Math.round(r.ars * COMISION), comisionUsd: Math.round(r.usd * COMISION * 100) / 100 }));
+  const origenes = agrupar(o => o.ref ? 'afiliado' : o.src ? [o.src.s, o.src.c, o.src.x].filter(Boolean).join(' · ') : 'directo');
+
   res.status(200).json({
+    comision: COMISION,
+    afiliados,
+    origenes,
     generado: new Date().toISOString(),
     gente: {
       total: gente.length,
@@ -59,7 +77,7 @@ export default async function handler(req, res) {
       .slice(0, 25)
       .map(u => ({ email: u.email, name: u.name || '', createdAt: u.createdAt || null, news: Boolean(u.news), conClave: Boolean(u.hash) })),
     ultimosPedidos: pedidos.slice(0, 25).map(o => ({
-      id: o.id, email: o.email, via: o.via, status: o.status,
+      id: o.id, email: o.email, via: o.via, status: o.status, ref: o.ref || null,
       fecha: o.paidAt || o.date, ars: o.ars || 0, usd: o.usd || 0, mail: o.mail || null,
       items: (o.items || []).map(i => ({ code: i.code, name: i.name, qty: i.qty || 1 })),
     })),

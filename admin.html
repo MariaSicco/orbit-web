@@ -95,6 +95,7 @@ td .mono{opacity:.55}
 .gate p{margin:0;opacity:.65;line-height:1.55}
 .gate code{font-family:var(--mono);font-size:12.5px;background:var(--k2);border:1px solid var(--k3);padding:10px 14px;display:block;text-align:left;word-break:break-all}
 .hidden{display:none!important}
+.afgen{margin-top:18px;display:grid;gap:8px}.afrow input{width:100%;max-width:360px;padding:10px 12px;font:inherit;border:1px solid currentColor;background:transparent;color:inherit}#afLinks{display:grid;gap:10px;font-size:12px;word-break:break-all}
 </style>
 </head>
 <body>
@@ -130,6 +131,19 @@ td .mono{opacity:.55}
       <div class="blk">
         <div class="bh"><h2>Por producto</h2><span class="hint">Unidades vendidas y facturación</span></div>
         <div class="scroll"><table id="tProd"></table></div>
+      </div>
+      <div class="blk">
+        <div class="bh"><h2>Afiliados</h2><span class="hint" id="afHint">Ventas que llegaron con un link ?ref=</span></div>
+        <div class="scroll"><table id="tAf"></table></div>
+        <div class="afgen">
+          <label for="afName" class="mono dim">Armar los links de un afiliado</label>
+          <div class="afrow"><input id="afName" type="text" placeholder="ej. lucia-reposteria" autocomplete="off" spellcheck="false"></div>
+          <div id="afLinks" class="mono"></div>
+        </div>
+      </div>
+      <div class="blk">
+        <div class="bh"><h2>Origen de las ventas</h2><span class="hint">Por utm_source · campaña · anuncio</span></div>
+        <div class="scroll"><table id="tOrig"></table></div>
       </div>
     </section>
 
@@ -219,6 +233,30 @@ $('#tProd').innerHTML = '<thead><tr><th>Producto</th><th>Estado</th><th>Archivo<
     + '<td class="num">' + (p.ars_vendido ? ars(p.ars_vendido) : '—') + (p.usd_vendido ? '<br><span class="mono">' + usd(p.usd_vendido) + '</span>' : '') + '</td>'
     + '</tr>').join('') + '</tbody>';
 
+/* ── afiliados y origen ── */
+const pct = Math.round((data.comision || 0.4) * 100);
+$('#afHint').textContent = 'Ventas que llegaron con un link ?ref= · comisión ' + pct + ' %';
+const af = data.afiliados || [];
+$('#tAf').innerHTML = '<thead><tr><th>Código</th><th class="num">Pedidos</th><th class="num">Vendido</th><th class="num">Comisión a pagar</th><th>Última venta</th></tr></thead><tbody>'
+  + (af.length ? af.map(a => '<tr>'
+    + '<td><span class="mono">' + esc(a.clave) + '</span></td>'
+    + '<td class="num">' + a.pedidos + '</td>'
+    + '<td class="num">' + (a.ars ? ars(a.ars) : '') + (a.usd ? '<br><span class="mono">' + usd(a.usd) + '</span>' : '') + '</td>'
+    + '<td class="num"><b>' + (a.comisionArs ? ars(a.comisionArs) : '') + (a.comisionUsd ? '<br>' + usd(a.comisionUsd) : '') + '</b></td>'
+    + '<td><span class="mono">' + fecha(a.ultima) + '</span></td>'
+    + '</tr>').join('') : '<tr><td colspan="5" style="opacity:.5">Todavía no hay ventas de afiliados.</td></tr>') + '</tbody>';
+const og = data.origenes || [];
+$('#tOrig').innerHTML = '<thead><tr><th>Origen</th><th class="num">Pedidos</th><th class="num">Vendido</th></tr></thead><tbody>'
+  + (og.length ? og.map(o => '<tr><td><span class="mono">' + esc(o.clave) + '</span></td><td class="num">' + o.pedidos + '</td><td class="num">' + (o.ars ? ars(o.ars) : '') + (o.usd ? '<br><span class="mono">' + usd(o.usd) + '</span>' : '') + '</td></tr>').join('')
+    : '<tr><td colspan="3" style="opacity:.5">Todavía no hay ventas.</td></tr>') + '</tbody>';
+const LANDINGS = [['Postres', '/postres'], ['Tardes sin pantalla', '/tardes'], ['Comandos eléctricos', '/comandos']];
+const afIn = $('#afName');
+const pintarLinks = () => {
+  const c = afIn.value.toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+  $('#afLinks').innerHTML = c ? LANDINGS.map(([n, u]) => '<div><span class="dim">' + n + '</span><br>' + esc(location.origin + u + '?ref=' + c) + '</div>').join('') : '';
+};
+afIn.addEventListener('input', pintarLinks);
+
 /* ── personas ── */
 $('#gCount').textContent = g.total + ' en total · se muestran las ' + Math.min(25, data.ultimaGente.length) + ' más recientes';
 $('#tGente').innerHTML = '<thead><tr><th>Email</th><th>Nombre</th><th>Alta</th><th>Novedades</th><th>Acceso</th></tr></thead><tbody>'
@@ -235,7 +273,7 @@ $('#pCount').textContent = pe.total + ' en total · ' + pe.pagados + ' pagados';
 $('#tPed').innerHTML = '<thead><tr><th>Pedido</th><th>Cliente</th><th>Productos</th><th>Medio</th><th>Estado</th><th>Comprobante</th><th class="num">Total</th></tr></thead><tbody>'
   + (data.ultimosPedidos.length ? data.ultimosPedidos.map(o => '<tr>'
     + '<td><span class="mono">' + esc(o.id) + '</span><br><span class="mono">' + fecha(o.fecha) + '</span></td>'
-    + '<td>' + esc(o.email) + '</td>'
+    + '<td>' + esc(o.email) + (o.ref ? '<br><span class="tag tag-soft">ref ' + esc(o.ref) + '</span>' : '') + '</td>'
     + '<td>' + o.items.map(i => '<span class="mono">' + esc(i.code) + '</span> ' + esc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join('<br>') + '</td>'
     + '<td><span class="mono">' + (o.via === 'paypal' ? 'PayPal' : 'Mercado Pago') + '</span></td>'
     + '<td>' + (o.status === 'paid' ? '<span class="tag tag-ok">Pagado</span>' : '<span class="tag tag-pend">Pendiente</span>') + '</td>'

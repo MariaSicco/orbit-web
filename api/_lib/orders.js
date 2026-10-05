@@ -22,10 +22,20 @@ export async function normalizeItems(items) {
 export const totalUsd = items => items.reduce((a, i) => a + i.usd * i.qty, 0);
 export const totalArs = items => items.reduce((a, i) => a + i.ars * i.qty, 0);
 
-export async function createOrder({ email, items, via }) {
+/* Atribución que manda el navegador: código de afiliado y UTM. Se limpia acá
+   porque viene del cliente. */
+const limpio = v => String(v || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+export function readAttr(body) {
+  const ref = limpio(body?.ref) || null;
+  const s = body?.src && typeof body.src === 'object' ? body.src : null;
+  const src = s && limpio(s.s) ? { s: limpio(s.s), m: limpio(s.m), c: limpio(s.c), x: limpio(s.x) } : null;
+  return { ref, src };
+}
+
+export async function createOrder({ email, items, via, ref = null, src = null }) {
   const id = 'OB' + randomBytes(6).toString('hex').toUpperCase();
   const order = {
-    id, email: email.toLowerCase(), items, via, status: 'pending',
+    id, email: email.toLowerCase(), items, via, status: 'pending', ref, src,
     usd: totalUsd(items), ars: totalArs(items), date: new Date().toISOString(),
   };
   await kvSet(key(id), order, 60 * 60 * 24 * 30);

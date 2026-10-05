@@ -56,6 +56,28 @@ function follow(g, target) {
 }
 
 /* ---------- productos ---------- */
+/* Atribución: ?ref=codigo de afiliado y UTM del anuncio. Gana el último
+   link que trajo a la persona; dura 30 días y viaja con el pedido. */
+const ATTR_DIAS = 30;
+(() => {
+  try {
+    const q = new URLSearchParams(location.search), now = Date.now();
+    const limpio = v => (v || '').toLowerCase().replace(/[^a-z0-9_-]/g, '').slice(0, 40);
+    const ref = limpio(q.get('ref'));
+    if (ref) localStorage.setItem('orbit-ref', JSON.stringify({ v: ref, t: now }));
+    const src = limpio(q.get('utm_source'));
+    if (src) localStorage.setItem('orbit-src', JSON.stringify({ s: src, m: limpio(q.get('utm_medium')), c: limpio(q.get('utm_campaign')), x: limpio(q.get('utm_content')), t: now }));
+  } catch (e) {}
+})();
+const attr = () => {
+  const out = {};
+  try {
+    const vivo = o => o && Date.now() - o.t < ATTR_DIAS * 864e5;
+    const r = JSON.parse(localStorage.getItem('orbit-ref') || 'null'); if (vivo(r)) out.ref = r.v;
+    const u = JSON.parse(localStorage.getItem('orbit-src') || 'null'); if (vivo(u)) out.src = { s: u.s, m: u.m, c: u.c, x: u.x };
+  } catch (e) {}
+  return out;
+};
 const P = window.ORBIT_PRODUCTS || [], FAM = window.ORBIT_FAMILIES || {};
 const ACC = {blue:C.blue, or:C.or, ac:C.ac, b:C.k};
 /* Precio: en español se muestra en pesos (lo que cobra Mercado Pago) y en
@@ -246,7 +268,7 @@ function mountDrawer() {
       try {
         const r = await fetch(`/api/checkout/${pay.dataset.pay}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: cart, email }),
+          body: JSON.stringify({ items: cart, email, ...attr() }),
         });
         const data = await r.json();
         if (data.url) {

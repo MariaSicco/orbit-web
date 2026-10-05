@@ -1,6 +1,6 @@
 import { siteUrl } from '../_lib/catalog.js';
 import { isEmail, readBody } from '../_lib/auth.js';
-import { normalizeItems, createOrder } from '../_lib/orders.js';
+import { normalizeItems, createOrder, readAttr } from '../_lib/orders.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   if (!items.length) return res.status(400).json({ error: 'empty_cart' });
   if (!isEmail(email)) return res.status(400).json({ error: 'invalid_email' });
 
-  const order = await createOrder({ email, items, via: 'mercadopago' });
+  const order = await createOrder({ email, items, via: 'mercadopago', ...readAttr(body) });
   const site = siteUrl(req);
   const r = await fetch('https://api.mercadopago.com/checkout/preferences', {
     method: 'POST',
