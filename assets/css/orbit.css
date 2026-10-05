@@ -343,3 +343,28 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 
 /* títulos largos: un paso menos de cuerpo para que la palabra entre entera */
 .cover .ttl.long{font-size:8.6cqw!important}
+
+/* aviso de cookies: barra abajo, no bloquea. Los botones pesan lo mismo.
+   Mientras está abierta, la barra de compra de la ficha, el botón de
+   volver arriba y el toast suben su altura para no quedar tapados. */
+.ck{position:fixed;left:0;right:0;bottom:0;z-index:55;background:var(--k);color:var(--b);border-top:1px solid var(--k3);padding:14px var(--pad) calc(14px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:space-between;gap:16px 32px;transform:translateY(100%);transition:transform .35s var(--ease)}
+.ck.on{transform:none}
+.ck p{margin:0;display:flex;align-items:baseline;gap:8px 16px;flex-wrap:wrap;font-size:14px;line-height:1.45;max-width:760px}
+.ck .ck-l{color:var(--ac);flex:none}
+.ck a{color:var(--b);text-decoration:underline;text-underline-offset:3px;opacity:.75;white-space:nowrap}
+.ck a:hover{opacity:1}
+.ck-b{display:flex;gap:8px;flex:none}
+.ck-b button{min-height:44px;min-width:112px;padding:0 18px;border:1px solid var(--b);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;transition:background .2s,color .2s}
+.ck-b button:hover,.ck-b button:focus-visible{background:var(--b);color:var(--k)}
+.ck-b button:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+html.ck-on body{padding-bottom:var(--ck-h,0px)}
+html.ck-on .buybar{bottom:var(--ck-h,0px)}
+html.ck-on .totop{bottom:calc(var(--ck-h,0px) + 14px)}
+html.ck-on body:has(.buybar.on) .totop{bottom:calc(var(--ck-h,0px) + 92px)}
+html.ck-on .toast{bottom:calc(var(--ck-h,0px) + 16px)}
+@media (max-width:640px){
+  .ck{flex-direction:column;align-items:stretch;padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .ck p{font-size:13px}
+  .ck-b button{flex:1}
+}
+@media (prefers-reduced-motion:reduce){.ck{transition:none}}

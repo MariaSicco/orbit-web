@@ -10,7 +10,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0D0D0E">
-<link rel="stylesheet" href="assets/css/orbit.css?v=50">
+<link rel="stylesheet" href="assets/css/orbit.css?v=51">
 <style>
 .ty{min-height:100svh;display:flex;flex-direction:column;justify-content:center;gap:clamp(24px,4vw,48px)}
 .ty h1{font-size:clamp(56px,11vw,190px)}
@@ -42,7 +42,7 @@
 </main>
 <script src="assets/js/products.js?v=50"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=50"></script>
+<script src="assets/js/orbit.js?v=51"></script>
 <script>
 (() => {
 const {$, tr} = ORBIT;
@@ -50,6 +50,17 @@ const q = new URLSearchParams(location.search);
 $('#tyMsg').textContent = q.get('pending')
   ? tr('El pago quedó pendiente de acreditación. Te avisamos por email en cuanto se confirme.','Payment is pending. We’ll email you as soon as it clears.')
   : tr('Pago confirmado. Si no ves el email, revisá spam o escribinos a hola@orbitando.com.ar','Payment confirmed. If you don’t see the email, check spam or write to hola@orbitando.com.ar');
+
+/* Purchase: una vez por pedido (track.purchase lo marca en sessionStorage).
+   Valor e ids salen de la foto del carrito que guardó orbit.js al ir a
+   pagar; si el pedido no coincide, sale sin valor. Pendiente = todavía no
+   es compra, no se manda. */
+const order = q.get('order');
+if (order && !q.get('pending')) {
+  let snap = null;
+  try { snap = JSON.parse(localStorage.getItem('orbit-last-checkout') || 'null'); } catch (e) {}
+  ORBIT.track.purchase(order, snap);
+}
 })();
 </script>
 </body>

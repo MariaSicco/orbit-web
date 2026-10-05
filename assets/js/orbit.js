@@ -1,4 +1,10 @@
 /* ORBIT® — núcleo compartido del sitio (bilingüe ES / EN) */
+
+/* ID del Píxel de Meta (solo números, de Events Manager → Orígenes de datos).
+   Vacío = no se carga nada. Aunque tenga valor, el Píxel solo se carga si
+   la persona aceptó las cookies de medición en el aviso. */
+const ORBIT_META_PIXEL_ID = '';
+
 (() => {
 const C = {k:'#0D0D0E', b:'#F2EFE8', blue:'#3047FF', or:'#FF4F2E', ac:'#D9FF45', k2:'#161617', b2:'#E4E0D6'};
 const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -159,6 +165,8 @@ const CART_KEY = 'orbit-cart';
 let cart = [];
 try { cart = JSON.parse(localStorage.getItem(CART_KEY) || '[]').filter(x => P.some(p => p.id === x.id)); } catch (e) {}
 const saveCart = () => { try { localStorage.setItem(CART_KEY, JSON.stringify(cart)); } catch (e) {} paintCart(); };
+/* después de pagar (gracias con ?order y sin pending) el carrito se vacía */
+try { const q = new URLSearchParams(location.search); if (/\/gracias/.test(location.pathname) && q.get('order') && !q.get('pending')) { cart = []; localStorage.setItem(CART_KEY, '[]'); } } catch (e) {}
 const cartCount = () => cart.reduce((a, i) => a + i.qty, 0);
 const cartTotal = () => cart.reduce((a, i) => a + (P.find(p => p.id === i.id)?.price || 0) * i.qty, 0);
 const cartTotalArs = () => cart.every(i => Number.isFinite(P.find(p => p.id === i.id)?.ars))
@@ -169,6 +177,7 @@ function cartAdd(id) {
   const line = cart.find(i => i.id === id);
   if (line) line.qty = Math.min(10, line.qty + 1); else cart.push({ id, qty: 1 });
   saveCart(); openDrawer();
+  track.addToCart(p);
   toast(tr(`${p.name} agregado al carrito`, `${p.name} added to cart`));
 }
 function cartSet(id, qty) {
@@ -223,13 +232,22 @@ function mountDrawer() {
       const email = $('#cartMail').value.trim(), err = $('#cartErr');
       if (!/^\S+@\S+\.\S+$/.test(email)) { err.textContent = tr('Escribí un email válido.','Enter a valid email.'); return; }
       err.textContent = ''; const old = pay.innerHTML; pay.innerHTML = tr('Abriendo…','Opening…');
+      /* la moneda la fija el medio de pago: Mercado Pago cobra en pesos, PayPal en dólares */
+      const ars = cartTotalArs(), enPesos = pay.dataset.pay === 'mercadopago' && ars !== null;
+      const snap = { via: pay.dataset.pay, ids: cart.map(i => i.id), num: cartCount(),
+        value: enPesos ? ars : cartTotal(), currency: enPesos ? 'ARS' : 'USD' };
+      track.beginCheckout(snap);
       try {
         const r = await fetch(`/api/checkout/${pay.dataset.pay}`, {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ items: cart, email }),
         });
         const data = await r.json();
-        if (data.url) { try { localStorage.setItem('orbit-last-order', data.orderId || ''); } catch (e) {} location.href = data.url; return; }
+        if (data.url) {
+          /* foto del pedido para que gracias.html mande Purchase con valor e ids */
+          try { localStorage.setItem('orbit-last-order', data.orderId || ''); localStorage.setItem('orbit-last-checkout', JSON.stringify({ ...snap, orderId: data.orderId || '' })); } catch (e) {}
+          location.href = data.url; return;
+        }
         err.textContent = data.error === 'not_configured'
           ? tr('Ese medio de pago todavía no está activo.','That payment method is not live yet.')
           : tr('No pudimos abrir el pago. Escribinos a hola@orbitando.com.ar','We couldn’t open the payment. Email hola@orbitando.com.ar');
@@ -250,6 +268,80 @@ window.va = window.va || function () { (window.vaq = window.vaq || []).push(argu
   m.defer = true; m.src = '/_vercel/insights/script.js';
   document.head.append(m);
 })();
+
+/* ---------- consentimiento + Píxel de Meta ----------
+   Vercel Analytics (arriba) no usa cookies y corre siempre: con él medimos
+   el embudo propio (view_product → add_to_cart → begin_checkout → purchase).
+   El Píxel de Meta sí pone cookies (_fbp), así que se carga SOLO si la
+   persona tocó "Aceptar". Los eventos que pasan antes de que decida se
+   guardan en una cola y salen recién si acepta, en esta misma página. */
+const CK_KEY = 'orbit-cookies';                       /* 'si' | 'no' */
+const ckGet = () => { try { return localStorage.getItem(CK_KEY); } catch (e) { return null; } };
+const ckSet = v => { try { localStorage.setItem(CK_KEY, v); } catch (e) {} };
+const fbQueue = [];
+let fbLoaded = false;
+function loadPixel() {
+  if (fbLoaded || !ORBIT_META_PIXEL_ID || ckGet() !== 'si') return;
+  fbLoaded = true;
+  /* snippet oficial de Meta, sin el <noscript> */
+  !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+  window.fbq('consent', 'grant');
+  window.fbq('init', ORBIT_META_PIXEL_ID);
+  window.fbq('track', 'PageView');
+  while (fbQueue.length) fbSend(...fbQueue.shift());
+}
+/* once: clave de sessionStorage que marca el evento como enviado (Purchase) */
+const seen = k => { try { return Boolean(k && sessionStorage.getItem(k)); } catch (e) { return false; } };
+function fbSend(ev, params, opts, once) {
+  if (seen(once)) return;
+  window.fbq('track', ev, params, opts);
+  if (once) try { sessionStorage.setItem(once, '1'); } catch (e) {}
+}
+function fb(ev, params = {}, opts = {}, once = '') {
+  if (!ORBIT_META_PIXEL_ID || ckGet() === 'no' || seen(once)) return;
+  if (fbLoaded) fbSend(ev, params, opts, once); else fbQueue.push([ev, params, opts, once]);
+}
+/* evento propio en Vercel Analytics (requiere plan Pro para verlos en el panel) */
+const vaEvent = (name, data) => { try { window.va('event', data ? { name, data } : { name }); } catch (e) {} };
+/* valor en la moneda que la persona está viendo: pesos en ES, dólares en EN */
+const valueOf = (p, qty = 1) => (lang() === 'es' && Number.isFinite(p.ars))
+  ? { value: p.ars * qty, currency: 'ARS' } : { value: (p.price || 0) * qty, currency: 'USD' };
+const track = {
+  viewContent(p) {
+    if (!p) return;
+    vaEvent('view_product', { id: p.id });
+    fb('ViewContent', { content_ids: [p.id], content_name: p.name, content_type: 'product', ...valueOf(p) });
+  },
+  addToCart(p) {
+    vaEvent('add_to_cart', { id: p.id });
+    fb('AddToCart', { content_ids: [p.id], content_name: p.name, content_type: 'product', ...valueOf(p) });
+  },
+  beginCheckout({ via, ids, num, value, currency }) {
+    vaEvent('begin_checkout', { via, items: num, value, currency });
+    fb('InitiateCheckout', { content_ids: ids, content_type: 'product', num_items: num, value, currency });
+  },
+  /* Una sola vez por pedido, aunque recarguen gracias.html. El eventID es el
+     número de pedido, para deduplicar después con la API de Conversiones. */
+  purchase(orderId, snap) {
+    if (!orderId) return;
+    const ok = snap && snap.orderId === orderId;
+    const kva = 'orbit-va-purchase-' + orderId;
+    if (!seen(kva)) {
+      vaEvent('purchase', ok ? { order: orderId, value: snap.value, currency: snap.currency } : { order: orderId });
+      try { sessionStorage.setItem(kva, '1'); } catch (e) {}
+    }
+    /* Meta se marca recién cuando sale: si la persona acepta después de
+       recargar, el Purchase todavía se manda (una sola vez) */
+    fb('Purchase', ok
+      ? { content_ids: snap.ids, content_type: 'product', num_items: snap.num, value: snap.value, currency: snap.currency }
+      : {}, { eventID: orderId }, 'orbit-fb-purchase-' + orderId);
+  },
+};
+/* borra la cookie _fbp si la persona se arrepiente después de aceptar */
+const dropFbCookies = () => ['_fbp', '_fbc'].forEach(c => {
+  const host = location.hostname.replace(/^www\./, '');
+  for (const d of ['', `; domain=.${host}`]) document.cookie = `${c}=; Path=/; Max-Age=0${d}`;
+});
 
 /* ---------- sesión abierta ---------- */
 /* La cookie orbit_user la pone el servidor al entrar y se borra sola al cerrar el navegador. */
@@ -314,11 +406,44 @@ foot.innerHTML = `<div class="wrap">
     <div><span class="mono dim">${L('Familias','Families')}</span>${Object.entries(FAM).filter(([k]) => P.some(p => p.family === k)).map(([k,[n]]) => `<a href="productos.html#${k}">${n}</a>`).join('')}</div>
     <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="index.html#a-medida">${L('Pedidos a medida','Custom requests')}</a><a href="${session() ? 'biblioteca.html' : 'acceso.html'}">${L('Mi cuenta','My account')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
     <div><span class="mono dim">${L('Contacto','Contact')}</span><a href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a><a href="https://www.instagram.com/orbitando.ba/" target="_blank" rel="noopener">Instagram</a><a href="acceso.html?nuevo=1">Newsletter</a></div>
-    <div><span class="mono dim">Legal</span><a href="terminos.html">${L('Términos y condiciones','Terms and conditions')}</a><a href="privacidad.html">${L('Política de privacidad','Privacy policy')}</a><a href="terminos.html#arrepentimiento">${L('Botón de arrepentimiento','Right to cancel')}</a></div>
+    <div><span class="mono dim">Legal</span><a href="terminos.html">${L('Términos y condiciones','Terms and conditions')}</a><a href="privacidad.html">${L('Política de privacidad','Privacy policy')}</a><a href="terminos.html#arrepentimiento">${L('Botón de arrepentimiento','Right to cancel')}</a><a href="privacidad.html#cookies" data-cookies>${L('Configurar cookies','Cookie settings')}</a></div>
   </div>
   <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">${L('Ideas en movimiento.','Ideas in motion.')}</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>
 </div>`;
 document.body.append(foot);
+
+/* ---------- aviso de cookies ----------
+   Barra abajo, sin bloquear la página. Aceptar y Rechazar pesan lo mismo.
+   Cualquier enlace con [data-cookies] la vuelve a abrir. */
+const ck = document.createElement('section');
+ck.className = 'ck'; ck.hidden = true;
+ck.setAttribute('aria-label', tr('Aviso de cookies', 'Cookie notice'));
+ck.innerHTML = `<p><span class="mono ck-l">${L('Cookies','Cookies')}</span><span class="ck-t">${L('Usamos cookies de medición para saber qué anuncios funcionan. ¿Las aceptás?','We use measurement cookies to know which ads work. Do you accept them?')} <a href="privacidad.html#cookies">${L('Política de privacidad','Privacy policy')}</a></span></p>
+  <div class="ck-b"><button type="button" data-ck="no">${L('Rechazar','Reject')}</button><button type="button" data-ck="si">${L('Aceptar','Accept')}</button></div>`;
+document.body.append(ck);
+const ckFit = () => root.style.setProperty('--ck-h', ck.hidden ? '0px' : ck.offsetHeight + 'px');
+function ckShow(on) {
+  ck.hidden = !on; root.classList.toggle('ck-on', on); ckFit();
+  if (on) requestAnimationFrame(() => ck.classList.add('on')); else ck.classList.remove('on');
+}
+ck.addEventListener('click', e => {
+  const b = e.target.closest('[data-ck]'); if (!b) return;
+  const v = b.dataset.ck, antes = ckGet();
+  ckSet(v); ckShow(false);
+  if (v === 'si') loadPixel();
+  /* si antes había aceptado y ahora rechaza, el Píxel ya está en memoria:
+     borramos sus cookies y recargamos para sacarlo de la página */
+  else if (antes === 'si' && fbLoaded) { dropFbCookies(); location.reload(); }
+  else { fbQueue.length = 0; dropFbCookies(); }
+});
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-cookies]'); if (!a) return;
+  e.preventDefault(); ckShow(true); $('[data-ck="si"]', ck).focus({preventScroll:true});
+});
+addEventListener('resize', ckFit, {passive:true});
+addEventListener('orbit:lang', ckFit);
+if (!ckGet()) ckShow(true);
+loadPixel();
 
 /* ---------- volver arriba ---------- */
 const top = document.createElement('button');
@@ -391,5 +516,5 @@ const needGate = root.classList.contains('gate-on');
 if (needGate) gate();
 setLang(lang(), false);
 
-window.ORBIT = {C, RM, $, $$, L, tr, lang, setLang, cartAdd, openDrawer, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, NICHOS, PIEZA_N, nichos, ordenados, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC};
+window.ORBIT = {C, RM, $, $$, L, tr, lang, setLang, cartAdd, openDrawer, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, NICHOS, PIEZA_N, nichos, ordenados, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC, track};
 })();
