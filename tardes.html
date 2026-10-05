@@ -45,9 +45,10 @@ body.lp.kids{--hd:'Fredoka','Inter Tight',system-ui,sans-serif;--acc:#FF4F2E;--a
 .chars span{display:inline-flex;align-items:center;gap:8px;border-radius:99px;padding:8px 14px;font-family:'Fredoka',sans-serif;font-weight:600;border:2px solid var(--ink);background:#fff}
 .chars i{width:14px;height:14px;border-radius:50%;display:inline-block;border:2px solid var(--ink)}
 .sample{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;margin-top:28px;background:var(--hi);border:2px solid var(--ink);border-radius:20px;padding:22px 24px}
-.sample a{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:#fff;text-decoration:none;border-radius:12px;padding:14px 18px;font-weight:700;min-height:48px;white-space:nowrap}
+.sample > a{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:#fff;text-decoration:none;border-radius:12px;padding:14px 18px;font-weight:700;min-height:48px;white-space:nowrap}
 @media (max-width:900px){.secs{grid-template-columns:1fr 1fr}.sample{grid-template-columns:1fr}}
 @media (max-width:520px){.secs{grid-template-columns:1fr}.sec{min-height:0}}
+.sample .lead{display:grid;gap:8px;min-width:0}.sample .lead-row{display:flex;gap:8px;flex-wrap:wrap}.sample .lead input{flex:1 1 200px;min-width:0;height:48px;border:2px solid var(--ink);border-radius:12px;padding:0 14px;font:inherit;background:#fff;color:var(--ink)}.sample .lead button{height:48px;border:0;border-radius:12px;padding:0 18px;font:inherit;font-weight:700;background:var(--ink);color:#fff;cursor:pointer}.sample .lead button:focus-visible,.sample .lead input:focus-visible{outline:3px solid var(--acc,#3047FF);outline-offset:2px}.sample .lead-msg{margin:0;font-size:14px;min-height:1em}.sample a.lead-direct{background:none;color:inherit;padding:0;min-height:0;font-weight:500;text-decoration:underline;font-size:14px;justify-self:start}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
 <body class="lp kids" data-page="lp-tardes" data-prod="ob-015" data-bump="ob-016">
@@ -127,8 +128,13 @@ body.lp.kids{--hd:'Fredoka','Inter Tight',system-ui,sans-serif;--acc:#FF4F2E;--a
   <div class="w">
     <p class="mono rv" style="color:var(--acc2)">Por dentro</p>
     <h2 class="rv" style="margin-top:14px;max-width:16ch">Mirá las páginas <em>de verdad.</em></h2>
-    <div class="sample rv"><div><h3 style="font-family:'Fredoka',sans-serif">Imprimí 5 páginas gratis antes de comprar</h3><p style="margin-top:6px">Probalas esta tarde y fijate si les gustan. Sin dejar tu mail.</p></div>
-      <a href="/muestras/tardes-sin-pantalla-muestra.pdf" download data-sample>Bajar muestra (PDF) <span aria-hidden="true">↓</span></a></div>
+    <div class="sample rv"><div><h3 style="font-family:'Fredoka',sans-serif">Imprimí 5 páginas gratis antes de comprar</h3><p style="margin-top:6px">Te las mandamos al mail o las bajás directo. Probalas esta tarde y fijate si les gustan.</p></div>
+      <form class="lead" data-lead="ob-015" novalidate>
+        <label for="leadMail" class="sr">Tu email</label>
+        <div class="lead-row"><input id="leadMail" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com" required><button type="submit">Mandámela <span aria-hidden="true">→</span></button></div>
+        <p class="lead-msg" role="status" aria-live="polite"></p>
+        <a class="lead-direct" href="/muestras/tardes-sin-pantalla-muestra.pdf" download data-sample>o bajala directo, sin mail</a>
+      </form></div>
   </div>
   <div class="lp-gal" tabindex="0" aria-label="Páginas del cuaderno">
     <img src="assets/img/lp/ts-p001.jpg" alt="Tapa" loading="lazy">
@@ -238,8 +244,8 @@ body.lp.kids{--hd:'Fredoka','Inter Tight',system-ui,sans-serif;--acc:#FF4F2E;--a
 </div>
 
 <script src="assets/js/products.js?v=54"></script>
-<script src="assets/js/orbit.js?v=56"></script>
-<script src="assets/js/lp.js?v=1"></script>
+<script src="assets/js/orbit.js?v=57"></script>
+<script src="assets/js/lp.js?v=2"></script>
 <script>document.querySelector('[data-sample]').addEventListener('click',function(){try{window.va&&window.va('event',{name:'sample_download',data:{id:'ob-015'}})}catch(e){}});</script>
 </body>
 </html>

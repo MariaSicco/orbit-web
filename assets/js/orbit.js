@@ -344,6 +344,10 @@ const track = {
     vaEvent('add_to_cart', { id: p.id });
     fb('AddToCart', { content_ids: [p.id], content_name: p.name, content_type: 'product', ...valueOf(p) });
   },
+  lead(id) {
+    vaEvent('lead', { id });
+    fb('Lead', { content_ids: [id], content_type: 'product' });
+  },
   beginCheckout({ via, ids, num, value, currency }) {
     vaEvent('begin_checkout', { via, items: num, value, currency });
     fb('InitiateCheckout', { content_ids: ids, content_type: 'product', num_items: num, value, currency });
@@ -544,5 +548,5 @@ const needGate = root.classList.contains('gate-on');
 if (needGate) gate();
 setLang(lang(), false);
 
-window.ORBIT = {C, RM, $, $$, L, tr, lang, setLang, cartAdd, openDrawer, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, NICHOS, PIEZA_N, nichos, ordenados, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC, track};
+window.ORBIT = {attr, C, RM, $, $$, L, tr, lang, setLang, cartAdd, openDrawer, sym, symInner, wm, bigWm, cover, card, buyBtn, money, url, toast, NICHOS, PIEZA_N, nichos, ordenados, reveal: needGate ? () => {} : reveal, mountBox, follow, P, FAM, ACC, track};
 })();

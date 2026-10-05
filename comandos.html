@@ -40,9 +40,10 @@ body.lp.elec{--acc:#3047FF;--acc2:#3047FF;--hi:#D9FF45}
 .mini span{display:block;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;opacity:.75}
 .mini b{font-size:22px;letter-spacing:-.02em}
 .sample{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;margin-top:28px;background:var(--hi);border:2px solid var(--ink);border-radius:20px;padding:22px 24px}
-.sample a{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:#fff;text-decoration:none;border-radius:12px;padding:14px 18px;font-weight:700;min-height:48px;white-space:nowrap}
+.sample > a{display:inline-flex;align-items:center;gap:10px;background:var(--ink);color:#fff;text-decoration:none;border-radius:12px;padding:14px 18px;font-weight:700;min-height:48px;white-space:nowrap}
 @media (max-width:900px){.dlist{columns:2}.verif{grid-template-columns:1fr}.sample{grid-template-columns:1fr}}
 @media (max-width:560px){.dlist{columns:1}.mini{grid-template-columns:1fr 1fr}}
+.sample .lead{display:grid;gap:8px;min-width:0}.sample .lead-row{display:flex;gap:8px;flex-wrap:wrap}.sample .lead input{flex:1 1 200px;min-width:0;height:48px;border:2px solid var(--ink);border-radius:12px;padding:0 14px;font:inherit;background:#fff;color:var(--ink)}.sample .lead button{height:48px;border:0;border-radius:12px;padding:0 18px;font:inherit;font-weight:700;background:var(--ink);color:#fff;cursor:pointer}.sample .lead button:focus-visible,.sample .lead input:focus-visible{outline:3px solid var(--acc,#3047FF);outline-offset:2px}.sample .lead-msg{margin:0;font-size:14px;min-height:1em}.sample a.lead-direct{background:none;color:inherit;padding:0;min-height:0;font-weight:500;text-decoration:underline;font-size:14px;justify-self:start}.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 </style>
 </head>
 <body class="lp elec" data-page="lp-comandos" data-prod="ob-017">
@@ -116,8 +117,13 @@ body.lp.elec{--acc:#3047FF;--acc2:#3047FF;--hi:#D9FF45}
       <div class="lp-tile rv"><div class="im" style="aspect-ratio:16/10"><img src="assets/img/lp/ce-ej.jpg" alt="Página de ejercicios: encontrá la falla" loading="lazy"></div>
         <div class="tx"><span class="mono">Práctica</span><h3>20 ejercicios con soluciones</h3><p>Encontrá la falla y completá el diagrama. Para entrenar la vista antes de ir al tablero.</p></div></div>
     </div>
-    <div class="sample rv"><div><h3>Mirá 6 páginas gratis</h3><p style="margin-top:6px">La tapa, los símbolos y dos diagramas completos. Sin dejar tu mail.</p></div>
-      <a href="/muestras/comandos-electricos-muestra.pdf" download data-sample>Bajar muestra (PDF) <span aria-hidden="true">↓</span></a></div>
+    <div class="sample rv"><div><h3>Mirá 6 páginas gratis</h3><p style="margin-top:6px">La tapa, los símbolos y dos diagramas completos. Te la mandamos al mail o la bajás directo.</p></div>
+      <form class="lead" data-lead="ob-017" novalidate>
+        <label for="leadMail" class="sr">Tu email</label>
+        <div class="lead-row"><input id="leadMail" type="email" inputmode="email" autocomplete="email" placeholder="tu@email.com" required><button type="submit">Mandámela <span aria-hidden="true">→</span></button></div>
+        <p class="lead-msg" role="status" aria-live="polite"></p>
+        <a class="lead-direct" href="/muestras/comandos-electricos-muestra.pdf" download data-sample>o bajala directo, sin mail</a>
+      </form></div>
   </div>
 </section>
 
@@ -228,8 +234,8 @@ body.lp.elec{--acc:#3047FF;--acc2:#3047FF;--hi:#D9FF45}
 </div>
 
 <script src="assets/js/products.js?v=54"></script>
-<script src="assets/js/orbit.js?v=56"></script>
-<script src="assets/js/lp.js?v=1"></script>
+<script src="assets/js/orbit.js?v=57"></script>
+<script src="assets/js/lp.js?v=2"></script>
 <script>
 (function(){
   var TRI=[[0.37,0.70,0.72],[0.55,0.73,0.75],[0.75,0.77,0.76],[1.1,0.80,0.78],[1.5,0.82,0.79],[2.2,0.84,0.81],[3,0.855,0.82],[4,0.865,0.82],[5.5,0.875,0.83],[7.5,0.885,0.84],[11,0.895,0.84],[15,0.90,0.85],[18.5,0.91,0.86],[22,0.915,0.86],[30,0.92,0.86]];

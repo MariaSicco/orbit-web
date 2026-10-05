@@ -2,6 +2,15 @@
   "cleanUrls": true,
   "trailingSlash": false,
   "rewrites": [
-    { "source": "/p/:id", "destination": "/api/producto?id=:id" }
+    {
+      "source": "/p/:id",
+      "destination": "/api/producto?id=:id"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/leads",
+      "schedule": "0 13 * * *"
+    }
   ]
 }

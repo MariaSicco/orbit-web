@@ -29,6 +29,27 @@
     setTimeout(function () { var m = document.getElementById('cartMail'); if (m && innerWidth > 700) m.focus(); }, 400);
   });
 
+  /* muestra por mail: guarda el lead, manda el mail 1 y deja bajar el PDF igual */
+  document.addEventListener('submit', function (e) {
+    var f = e.target.closest('[data-lead]'); if (!f) return;
+    e.preventDefault();
+    var inp = f.querySelector('input[type=email]'), msg = f.querySelector('.lead-msg'), btn = f.querySelector('button');
+    var email = (inp.value || '').trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { msg.textContent = 'Escribí un email válido.'; inp.focus(); return; }
+    btn.disabled = true; msg.textContent = 'Enviando…';
+    var payload = Object.assign({ email: email, prod: f.dataset.lead }, O.attr ? O.attr() : {});
+    fetch('/api/lead', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) throw new Error(d.error || 'error');
+        O.track.lead && O.track.lead(f.dataset.lead);
+        msg.textContent = d.mail === 'ok' || d.mail === 'ya enviado' ? 'Listo. Te la mandamos a ' + email + '. Si no llega en unos minutos, revisá Promociones o Spam.' : 'Listo. Bajala con el link de abajo.';
+        inp.value = '';
+      })
+      .catch(function () { msg.textContent = 'No pudimos mandarla. Bajala directo con el link de abajo.'; })
+      .then(function () { btn.disabled = false; });
+  });
+
   if (pm) O.track.viewContent(pm);
 
   /* barra fija: aparece cuando el botón del hero sale de pantalla */
