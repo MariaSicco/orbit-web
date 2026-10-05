@@ -31,7 +31,7 @@ export default async function handler(req, res) {
   if (nuevo || lead.step < 1) mail = await advance(lead, 1);
   await upsertContact({
     email,
-    lists: (process.env.BREVO_LIST_LEADS || process.env.BREVO_LIST_NEWSLETTER || '').split(',').filter(Boolean),
+    lists: (process.env.BREVO_LIST_LEADS || '5')  /* lista "Leads muestras" en Brevo */.split(',').filter(Boolean),
     attributes: { LEAD_PRODUCTO: SEQ[prod].name, LEAD_FECHA: lead.createdAt.slice(0, 10) },
   }).catch(() => null);
   res.status(200).json({ ok: true, mail, sample: SEQ[prod].sample });
