@@ -17,6 +17,8 @@ export const CATALOG = {
     bajada: '120 actividades para imprimir que los chicos de 4 a 7 años hacen solos, sin pantallas.' },
   'ob-016': { code: 'OB—016', name: 'Primeras letras',                usd: 4, ars: 4990, foto: 'studio',
     bajada: '55 actividades para empezar a leer y escribir en imprenta mayúscula.' },
+  'ob-017': { code: 'OB—017', name: 'Comandos eléctricos',            usd: 9, ars: 12990, foto: 'studio',
+    bajada: '25 diagramas de comando verificados y una calculadora que te arma la lista de materiales del tablero.' },
   /* Drop 1 · Fleteros */
   'ob-006': { code: 'OB—006', name: 'Tarifador de fletes',            usd: 10, ars: 14999, foto: 'arch',
     bajada: 'Cargá el viaje y sabé en un minuto cuánto cobrar y cuánto ganás.' },

@@ -136,6 +136,36 @@ window.ORBIT_PRODUCTS = [
     ],
   },
   {
+    id: 'ob-017', ars: 12990, cover: 'grid', code: 'OB\u2014017', n: '17', name: 'Comandos eléctricos',
+    family: 'business', status: 'available', price: 9, accent: 'blue', checkout: '', photo: 'studio',
+    nicho: 'electricistas', pieza: 'ancla',
+    pantallasDir: 'ob-017',
+    pantallas: [
+      ['p1', {es: 'La guía', en: 'The guide'}, {es: '79 páginas para imprimir y llevar a la obra.', en: '79 pages to print and take to the job.'}],
+      ['p2', {es: 'Los diagramas', en: 'The diagrams'}, {es: '25 circuitos de potencia y comando, con secuencia, materiales y fallas.', en: '25 power and control circuits, with sequence, materials and faults.'}],
+      ['p3', {es: 'La calculadora', en: 'The calculator'}, {es: 'Potencia y arranque: corriente, protecciones, contactores y lista de materiales.', en: 'Power and starter: current, protections, contactors and bill of materials.'}],
+    ],
+    tagline: {es: '25 diagramas de comando verificados y una calculadora que te arma la lista de materiales del tablero.', en: '25 verified control diagrams and a calculator that builds the panel bill of materials.'},
+    specs: [
+      [{es: 'Formato', en: 'Format'}, {es: 'PDF + calculadora web', en: 'PDF + web calculator'}],
+      [{es: 'Diagramas', en: 'Diagrams'}, '25'],
+      [{es: 'Ejercicios', en: 'Exercises'}, {es: '20 con soluciones', en: '20 with answers'}],
+      [{es: 'Licencia', en: 'License'}, {es: 'Uso profesional', en: 'Professional use'}],
+      [{es: 'Entrega', en: 'Delivery'}, INSTANT],
+    ],
+    includes: [
+      [{es: 'Guía de 79 páginas', en: '79-page guide'}, {es: 'Símbolos, componentes, cómo leer un diagrama y tablas de selección', en: 'Symbols, components, reading diagrams and selection tables'}],
+      [{es: '25 diagramas', en: '25 diagrams'}, {es: 'Arranque directo, inversión, estrella-triángulo, bombas, secuenciales, portones y más', en: 'Direct-on-line, reversing, star-delta, pumps, sequential, gates and more'}],
+      [{es: '20 ejercicios', en: '20 exercises'}, {es: 'Encontrá la falla y completá el diagrama, con soluciones', en: 'Find the fault and complete the diagram, with answers'}],
+      [{es: 'Calculadora de tablero', en: 'Panel calculator'}, {es: 'Corriente, térmico, guardamotor, contactor, cable y materiales', en: 'Current, overload, motor breaker, contactor, cable and materials'}],
+    ],
+    for: [
+      {es: 'Electricistas que quieren tomar trabajos de tableros', en: 'Electricians who want panel jobs'},
+      {es: 'Estudiantes de escuelas técnicas', en: 'Technical school students'},
+      {es: 'Técnicos de mantenimiento', en: 'Maintenance technicians'},
+    ],
+  },
+  {
     id: 'ob-006', ars: 14999, cover: 'trajectory', code: 'OB—006', n: '06', name: 'Tarifador de fletes',
     family: 'business', status: 'available', price: 10, accent: 'blue', checkout: '', photo: 'arch',
     nicho: 'fleteros', pieza: 'entrada',
