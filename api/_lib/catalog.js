@@ -11,6 +11,12 @@ export const CATALOG = {
   /* Drop 3 · Cocina para vender */
   'ob-012': { code: 'OB—012', name: 'Postres para vender',            usd: 4, ars: 5990, foto: 'studio',
     bajada: '40 postres que se venden y una calculadora que te dice a cuánto venderlos.' },
+  'ob-014': { code: 'OB—014', name: 'Salados para vender',            usd: 4, ars: 4990, foto: 'studio',
+    bajada: '40 salados que se venden y un cotizador que te dice cuánto cobrar cada evento.' },
+  'ob-015': { code: 'OB—015', name: 'Tardes sin pantalla',            usd: 6, ars: 8990, foto: 'studio',
+    bajada: '120 actividades para imprimir que los chicos de 4 a 7 años hacen solos, sin pantallas.' },
+  'ob-016': { code: 'OB—016', name: 'Primeras letras',                usd: 4, ars: 4990, foto: 'studio',
+    bajada: '55 actividades para empezar a leer y escribir en imprenta mayúscula.' },
   /* Drop 1 · Fleteros */
   'ob-006': { code: 'OB—006', name: 'Tarifador de fletes',            usd: 10, ars: 14999, foto: 'arch',
     bajada: 'Cargá el viaje y sabé en un minuto cuánto cobrar y cuánto ganás.' },

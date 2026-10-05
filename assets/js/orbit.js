@@ -76,6 +76,8 @@ const url = p => `/p/${p.id}`;
 const NICHOS = [
   {id:'cocina', n:{es:'Para vender lo que cocinás', en:'For selling what you bake'},
    d:{es:'Recetas que se venden y a cuánto cobrarlas, sin regalar tu trabajo.', en:'Recipes that sell and what to charge, without giving your work away.'}},
+  {id:'chicos', n:{es:'Para chicos sin pantallas', en:'Screen-free kids'},
+   d:{es:'Actividades para imprimir que los chicos hacen solos, de 4 a 7 años.', en:'Printable activities kids aged 4 to 7 do on their own.'}},
   {id:'fleteros', n:{es:'Para fleteros', en:'For freight operators'},
    d:{es:'Cuánto cobrar cada viaje, cuánto te cuesta cada km y quién te debe.', en:'What to charge per trip, what each km costs you and who owes you.'}},
   {id:'abogados', n:{es:'Para estudios jurídicos', en:'For law firms'},
