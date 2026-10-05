@@ -18,6 +18,36 @@ const INSTANT = {es: 'Descarga inmediata', en: 'Instant download'};
 
 window.ORBIT_PRODUCTS = [
   {
+    id: 'ob-012', ars: 5990, cover: 'poster', code: 'OB\u2014012', n: '12', name: 'Postres para vender',
+    family: 'business', status: 'available', price: 4, accent: 'or', checkout: '', photo: 'studio',
+    nicho: 'cocina', pieza: 'entrada',
+    pantallasDir: 'ob-012',
+    pantallas: [
+      ['p1', {es: 'La calculadora', en: 'The calculator'}, {es: 'Elegís el postre y te dice cuánto te cuesta la porción y a cuánto venderla.', en: 'Pick the dessert and it tells you the cost per portion and what to charge.'}],
+      ['p2', {es: 'Tus precios', en: 'Your prices'}, {es: 'Cargás lo que pagás la harina, el azúcar y lo demás. Todo se recalcula solo.', en: 'Enter what you pay for flour, sugar and the rest. Everything recalculates.'}],
+      ['p3', {es: 'El recetario', en: 'The recipe book'}, {es: '40 postres que se venden, con cantidades en gramos y porciones.', en: '40 desserts that sell, with grams and portions.'}],
+    ],
+    tagline: {es: '40 postres que se venden y una calculadora que te dice a cuánto venderlos.', en: '40 desserts that sell and a calculator that tells you what to charge.'},
+    specs: [
+      [{es: 'Formato', en: 'Format'}, {es: 'Web + Excel + 2 PDF', en: 'Web + Excel + 2 PDFs'}],
+      [{es: 'Recetas', en: 'Recipes'}, '40'],
+      [{es: 'Primer precio', en: 'First price'}, {es: '5 minutos', en: '5 minutes'}],
+      [{es: 'Licencia', en: 'License'}, COMMERCIAL],
+      [{es: 'Entrega', en: 'Delivery'}, INSTANT],
+    ],
+    includes: [
+      [{es: 'Calculadora de precios', en: 'Price calculator'}, {es: 'Costo por porción, por docena y por torta, con tu hora, el packaging y el gas incluidos', en: 'Cost per portion, dozen and cake, including your time, packaging and gas'}],
+      [{es: 'Recetario de 40 postres', en: '40-dessert recipe book'}, {es: 'Chocotorta, lemon pie, alfajores, brownies, budines, postres en vaso y más', en: 'Chocotorta, lemon pie, alfajores, brownies, loaves, cup desserts and more'}],
+      [{es: 'Guía para vender', en: 'Selling guide'}, {es: 'Fotos con el celular, packaging, pedidos por WhatsApp, señas y lo legal básico', en: 'Phone photos, packaging, WhatsApp orders, deposits and legal basics'}],
+      [{es: 'Registro de pedidos', en: 'Order log'}, {es: 'En Excel: cliente, seña, saldo y fecha de entrega', en: 'In Excel: client, deposit, balance and delivery date'}],
+    ],
+    for: [
+      {es: 'Quien cocina rico y quiere empezar a vender', en: 'Anyone who bakes well and wants to start selling'},
+      {es: 'Quien ya vende y no sabe si cobra bien', en: 'Anyone already selling who is unsure about prices'},
+      {es: 'Quien vende por Instagram o WhatsApp', en: 'Anyone selling on Instagram or WhatsApp'},
+    ],
+  },
+  {
     id: 'ob-006', ars: 14999, cover: 'trajectory', code: 'OB—006', n: '06', name: 'Tarifador de fletes',
     family: 'business', status: 'available', price: 10, accent: 'blue', checkout: '', photo: 'arch',
     nicho: 'fleteros', pieza: 'entrada',

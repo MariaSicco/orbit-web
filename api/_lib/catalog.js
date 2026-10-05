@@ -8,6 +8,9 @@
 import { kvGet, kvSet } from './kv.js';
 
 export const CATALOG = {
+  /* Drop 3 · Cocina para vender */
+  'ob-012': { code: 'OB—012', name: 'Postres para vender',            usd: 4, ars: 5990, foto: 'studio',
+    bajada: '40 postres que se venden y una calculadora que te dice a cuánto venderlos.' },
   /* Drop 1 · Fleteros */
   'ob-006': { code: 'OB—006', name: 'Tarifador de fletes',            usd: 10, ars: 14999, foto: 'arch',
     bajada: 'Cargá el viaje y sabé en un minuto cuánto cobrar y cuánto ganás.' },
