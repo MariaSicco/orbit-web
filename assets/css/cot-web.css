@@ -22,7 +22,7 @@
 .x-nav .pill{display:flex;align-items:center;gap:10px;background:color-mix(in srgb,var(--bg) 82%,transparent);color:var(--ink);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-radius:999px;padding:6px 16px 6px 6px;box-shadow:0 1px 0 var(--line)}
 .x-nav b{font-weight:700;font-size:15px;letter-spacing:-.01em}
 .x-nav .sp{flex:1}
-.x-nav a{text-decoration:none;font-family:var(--mf);font-size:12px;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:12px 16px;background:var(--c);color:var(--ct)}
+.x-nav a{text-decoration:none;font-family:var(--mf);font-size:12px;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:12px 16px;background:var(--ink);color:var(--bg)}
 .x-logo{width:32px;height:32px;object-fit:contain;border-radius:50%;background:#fff}
 .x-ini{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-weight:800;background:var(--c);color:var(--ct)}
 
@@ -51,7 +51,7 @@
 /* variantes de portada */
 .t-minimal .x-hero.has-img{grid-template-columns:1fr}
 .t-minimal .x-hero.has-img .x-hero-media{left:auto;width:42%;top:110px;bottom:auto;height:58%;border-radius:4px}
-.t-minimal .x-hero.has-img .x-title,.t-bold .x-hero.has-img .x-title{max-width:min(12ch,54%)}
+.t-minimal .x-hero.has-img .x-title,.t-bold .x-hero.has-img .x-title{max-width:min(12ch,54%);font-size:clamp(44px,7.4vw,124px)}
 .t-minimal .x-hero.has-img .x-kick,.t-bold .x-hero.has-img .x-kick{max-width:54%}
 .t-minimal .x-hero .x-dot{position:absolute;right:clamp(18px,5vw,64px);top:110px;width:18px;height:18px;border-radius:50%;background:var(--c)}
 .t-minimal .x-hero.has-img .x-dot{display:none}

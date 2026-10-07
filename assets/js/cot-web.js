@@ -40,7 +40,7 @@ function build(P, opt) {
     ${P.theme === 'editorial' && !cover ? '<div class="x-blob" aria-hidden="true"></div>' : ''}
     ${P.theme === 'dark' ? '<div class="x-ring" aria-hidden="true"></div>' : ''}
     ${P.theme === 'minimal' ? '<div class="x-dot" aria-hidden="true"></div>' : ''}
-    ${P.theme === 'bold' ? `<div class="x-sticker" aria-hidden="true"><svg viewBox="0 0 200 200"><defs><path id="cp" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs><circle cx="100" cy="100" r="98" fill="var(--ink)"/><text font-family="Unbounded" font-weight="700" font-size="17" letter-spacing="3" fill="var(--bg)"><textPath href="#cp">${esc((R.docTitle(P) + ' · ' + (P.num || '') + ' · ' + (P.biz.name || '') + ' · ').toUpperCase())}</textPath></text><circle cx="100" cy="100" r="18" fill="var(--c)"/></svg></div>` : ''}
+    ${P.theme === 'bold' ? `<div class="x-sticker" aria-hidden="true"><svg viewBox="0 0 200 200"><defs><path id="cp" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/></defs><circle cx="100" cy="100" r="98" fill="var(--ink)"/><text font-family="Unbounded" font-weight="700" font-size="15" fill="var(--bg)"><textPath href="#cp" textLength="486" lengthAdjust="spacing">${esc(((R.docTitle(P) + ' · ' + (P.num || '') + ' · ').repeat(2)).toUpperCase())}</textPath></text><circle cx="100" cy="100" r="18" fill="var(--c)"/></svg></div>` : ''}
     <div class="x-in">
       <div class="x-kick x-mono"><span>${esc(R.docTitle(P))} · ${esc(P.num)}</span><span>${t.for} ${esc(P.cli.name)}${P.cli.co ? ' · ' + esc(P.cli.co) : ''}</span></div>
       <h1 class="x-h x-title">${titleHtml(P)}</h1>
