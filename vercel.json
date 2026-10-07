@@ -8,7 +8,7 @@
     },
     {
       "source": "/propuesta/:id",
-      "destination": "/propuesta.html?id=:id"
+      "destination": "/propuesta"
     }
   ],
   "crons": [
