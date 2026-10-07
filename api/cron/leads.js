@@ -2,6 +2,7 @@
    secuencia a quien le toque. Se corta si compró o se dio de baja. */
 import { kvKeys, kvMGet, kvSet } from '../_lib/kv.js';
 import { dueStep, advance, bought, leadKey } from '../_lib/leads.js';
+import { sweepPending } from '../_lib/recover.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
@@ -18,5 +19,6 @@ export default async function handler(req, res) {
     const r = await advance(lead, step);
     if (r === 'ok') out.enviados++; else out.errores++;
   }
+  out.pendientes = await sweepPending().catch(e => ({ error: String(e).slice(0, 120) }));
   res.status(200).json(out);
 }

@@ -277,7 +277,7 @@ $('#tPed').innerHTML = '<thead><tr><th>Pedido</th><th>Cliente</th><th>Productos<
     + '<td>' + o.items.map(i => '<span class="mono">' + esc(i.code) + '</span> ' + esc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join('<br>') + '</td>'
     + '<td><span class="mono">' + (o.via === 'paypal' ? 'PayPal' : 'Mercado Pago') + '</span></td>'
     + '<td>' + (o.status === 'paid' ? '<span class="tag tag-ok">Pagado</span>' : '<span class="tag tag-pend">Pendiente</span>') + '</td>'
-    + '<td>' + (o.status !== 'paid' ? '<span class="mono">—</span>'
+    + '<td>' + (o.status !== 'paid' ? (o.recordatorio ? '<span class="tag tag-soft">' + (String(o.recordatorio).startsWith('error') ? 'Recordatorio falló' : 'Recordatorio enviado') + '</span>' : '<span class="mono">—</span>')
         : '<span class="tag ' + (o.mail === 'ok' ? 'tag-ok' : o.mail ? 'tag-pend' : 'tag-soft') + '">'
           + (o.mail === 'ok' ? 'Enviado' : o.mail ? 'Falló' : 'Sin dato') + '</span>'
           + '<br><button class="alt-url" data-reenviar="' + esc(o.id) + '">Reenviar</button>'
