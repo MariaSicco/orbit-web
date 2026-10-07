@@ -230,3 +230,4 @@
 .th-editorial .cw h1 { font-size:120px; }
 .th-dark .cw::after { content:''; position:absolute; width:520px; height:520px; border-radius:50%; border:2px solid var(--c); right:-160px; top:-140px; }
 .th-minimal .cw::after { content:''; position:absolute; width:22px; height:22px; border-radius:50%; background:var(--c); right:90px; top:110px; }
+.th-bold .cw .logo-txt { background:var(--ct); color:var(--c); }
