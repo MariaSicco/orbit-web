@@ -281,9 +281,27 @@ $('#tPed').innerHTML = '<thead><tr><th>Pedido</th><th>Cliente</th><th>Productos<
         : '<span class="tag ' + (o.mail === 'ok' ? 'tag-ok' : o.mail ? 'tag-pend' : 'tag-soft') + '">'
           + (o.mail === 'ok' ? 'Enviado' : o.mail ? 'Falló' : 'Sin dato') + '</span>'
           + '<br><button class="alt-url" data-reenviar="' + esc(o.id) + '">Reenviar</button>'
-          + '<span class="rmsg mono" data-para="' + esc(o.id) + '"></span>') + '</td>'
+          + '<span class="rmsg mono" data-para="' + esc(o.id) + '"></span>'
+          + '<br><span class="tag ' + (String(o.capi || '').startsWith('ok') ? 'tag-ok' : 'tag-soft') + '">Meta: ' + esc(String(o.capi || 'sin informar').startsWith('ok') ? 'informada' : (o.capi || 'sin informar')) + '</span>'
+          + '<br><button class="alt-url" data-capi="' + esc(o.id) + '">Informar a Meta</button>'
+          + '<span class="rmsg mono" data-capipara="' + esc(o.id) + '"></span>') + '</td>'
     + '<td class="num">' + (o.via === 'paypal' ? usd(o.usd) : ars(o.ars)) + '</td>'
     + '</tr>').join('') : '<tr><td colspan="7" style="opacity:.5">Todavía no hay pedidos.</td></tr>') + '</tbody>';
+
+/* informar una compra a Meta (API de Conversiones) */
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-capi]');
+  if (!b) return;
+  const aviso = document.querySelector('.rmsg[data-capipara="' + b.dataset.capi + '"]');
+  b.disabled = true;
+  try {
+    const r = await fetch('/api/admin/capi', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderId: b.dataset.capi }) });
+    const d = await r.json();
+    if (aviso) { aviso.textContent = ' ' + (d.resultado || d.error || 'falló'); aviso.style.color = d.ok ? 'var(--ac)' : 'var(--or)'; }
+  } catch (err) { if (aviso) { aviso.textContent = ' no se pudo'; aviso.style.color = 'var(--or)'; } }
+  b.disabled = false;
+});
 
 /* reenviar el comprobante de una compra */
 document.addEventListener('click', async e => {

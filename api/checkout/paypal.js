@@ -1,7 +1,7 @@
 import { siteUrl } from '../_lib/catalog.js';
 import { isEmail, readBody } from '../_lib/auth.js';
 import { paypalBase, paypalToken } from '../_lib/paypal.js';
-import { normalizeItems, createOrder, readAttr, totalUsd } from '../_lib/orders.js';
+import { normalizeItems, createOrder, readAttr, readClient, totalUsd } from '../_lib/orders.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   if (!items.length) return res.status(400).json({ error: 'empty_cart' });
   if (!isEmail(email)) return res.status(400).json({ error: 'invalid_email' });
 
-  const order = await createOrder({ email, items, via: 'paypal', ...readAttr(body) });
+  const order = await createOrder({ email, items, via: 'paypal', ...readAttr(body), ...readClient(req) });
   const site = siteUrl(req);
   const token = await paypalToken();
   const total = totalUsd(items).toFixed(2);

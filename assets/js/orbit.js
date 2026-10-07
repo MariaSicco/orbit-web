@@ -67,6 +67,11 @@ const ATTR_DIAS = 30;
     if (ref) localStorage.setItem('orbit-ref', JSON.stringify({ v: ref, t: now }));
     const src = limpio(q.get('utm_source'));
     if (src) localStorage.setItem('orbit-src', JSON.stringify({ s: src, m: limpio(q.get('utm_medium')), c: limpio(q.get('utm_campaign')), x: limpio(q.get('utm_content')), t: now }));
+    /* fbclid: el identificador del clic que Meta agrega al link del anuncio.
+       Viaja con el pedido para que la compra que informa el servidor (API de
+       Conversiones) se pueda unir con ese clic. No es una cookie de Meta. */
+    const fbclid = String(q.get('fbclid') || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 250);
+    if (fbclid) localStorage.setItem('orbit-fbc', JSON.stringify({ v: `fb.1.${now}.${fbclid}`, t: now }));
   } catch (e) {}
 })();
 const attr = () => {
@@ -75,6 +80,7 @@ const attr = () => {
     const vivo = o => o && Date.now() - o.t < ATTR_DIAS * 864e5;
     const r = JSON.parse(localStorage.getItem('orbit-ref') || 'null'); if (vivo(r)) out.ref = r.v;
     const u = JSON.parse(localStorage.getItem('orbit-src') || 'null'); if (vivo(u)) out.src = { s: u.s, m: u.m, c: u.c, x: u.x };
+    const f = JSON.parse(localStorage.getItem('orbit-fbc') || 'null'); if (f && Date.now() - f.t < 7 * 864e5) out.fbc = f.v;
   } catch (e) {}
   return out;
 };

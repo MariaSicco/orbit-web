@@ -4,6 +4,7 @@ import { getCatalog } from './catalog.js';
 import { randomBytes } from 'node:crypto';
 import { sendEmail, emailReady, layout, it } from './email.js';
 import { upsertContact, listClientes } from './marketing.js';
+import { capiPurchase } from './capi.js';
 
 const key = id => `orbit:order:${id}`;
 const listKey = email => `orbit:orders:${email.toLowerCase()}`;
@@ -29,13 +30,21 @@ export function readAttr(body) {
   const ref = limpio(body?.ref) || null;
   const s = body?.src && typeof body.src === 'object' ? body.src : null;
   const src = s && limpio(s.s) ? { s: limpio(s.s), m: limpio(s.m), c: limpio(s.c), x: limpio(s.x) } : null;
-  return { ref, src };
+  const fbc = /^fb\.1\.\d{10,14}\.[A-Za-z0-9_-]{10,250}$/.test(String(body?.fbc || '')) ? body.fbc : null;
+  return { ref, src, fbc };
+}
+/* IP y navegador del comprador, solo para que Meta pueda unir la compra con
+   el clic del anuncio. Se guardan en el pedido y se mandan una vez. */
+export function readClient(req) {
+  const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim().slice(0, 64) || null;
+  const ua = String(req.headers['user-agent'] || '').slice(0, 400) || null;
+  return { ip, ua };
 }
 
-export async function createOrder({ email, items, via, ref = null, src = null }) {
+export async function createOrder({ email, items, via, ref = null, src = null, fbc = null, ip = null, ua = null }) {
   const id = 'OB' + randomBytes(6).toString('hex').toUpperCase();
   const order = {
-    id, email: email.toLowerCase(), items, via, status: 'pending', ref, src,
+    id, email: email.toLowerCase(), items, via, status: 'pending', ref, src, fbc, ip, ua,
     usd: totalUsd(items), ars: totalArs(items), date: new Date().toISOString(),
   };
   await kvSet(key(id), order, 60 * 60 * 24 * 30);
@@ -73,6 +82,9 @@ export async function markPaid(id, { paymentId, amount, currency }) {
   order.contacto = marca && marca.ok ? 'ok' : 'error';
   order.mail = await enviarComprobante(order);
   order.mailAt = new Date().toISOString();
+  /* La compra se informa a Meta desde acá (API de Conversiones): el Píxel
+     del navegador solo corre si la persona aceptó cookies. */
+  order.capi = await capiPurchase(order);
   await kvSet(key(id), order, 60 * 60 * 24 * 365 * 3);
   return order;
 }
