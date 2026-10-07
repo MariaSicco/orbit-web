@@ -26,6 +26,9 @@ function clean(p) {
   s.cur = /^[A-Z]{3}$/.test(s.cur || '') ? s.cur : 'USD';
   s.biz = s.biz || {};
   if (s.biz.logo && !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(s.biz.logo)) s.biz.logo = '';
+  /* fotos: solo las que ya subimos nosotros (sin la copia local en base64) */
+  s.biz.photos = (Array.isArray(s.biz.photos) ? s.biz.photos : []).map(ph => ph && /^\/api\/propuesta\?img=[a-z0-9]{6,24}$/.test(ph.u || '') ? { u: ph.u } : null).filter(Boolean).slice(0, 8);
+  s.coverIdx = Math.max(0, Math.min(s.biz.photos.length - 1, parseInt(s.coverIdx, 10) || 0));
   delete s.pub;
   return s;
 }
@@ -34,6 +37,15 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   const q = req.query || {};
 
+  if (req.method === 'GET' && q.img) {
+    const im = await kvGet(`orbit:pimg:${String(q.img).replace(/[^a-z0-9]/g, '')}`);
+    if (!im) return res.status(404).end();
+    const m = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(im);
+    if (!m) return res.status(404).end();
+    res.setHeader('Content-Type', m[1]);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    return res.status(200).end(Buffer.from(m[2], 'base64'));
+  }
   if (req.method === 'GET') {
     const id = String(q.id || '').replace(/[^a-z0-9]/gi, '');
     const rec = id && await kvGet(key(id));
@@ -44,21 +56,32 @@ export default async function handler(req, res) {
     }
     rec.views = (rec.views || 0) + 1; rec.lastView = new Date().toISOString();
     await kvSet(key(id), rec, TTL);
-    return res.status(200).json({ p: rec.p, accepted: rec.accepted ? { name: rec.accepted.name, option: rec.accepted.option, at: rec.accepted.at } : null });
+    return res.status(200).json({ p: rec.p, accepted: rec.accepted ? { name: rec.accepted.name, option: rec.accepted.option, sig: rec.accepted.sig || '', at: rec.accepted.at } : null });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
 
   const body = await readBody(req);
 
+  /* foto del portfolio (ya comprimida en el navegador) */
+  if (q.img) {
+    const data = String(body.data || '');
+    if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(data)) return res.status(400).json({ error: 'invalid' });
+    if (data.length > 520 * 1024) return res.status(413).json({ error: 'too_big' });
+    const iid = randomBytes(8).toString('hex');
+    await kvSet(`orbit:pimg:${iid}`, data, TTL);
+    return res.status(200).json({ u: `/api/propuesta?img=${iid}` });
+  }
+
   if (q.accept) {
     const id = String(body.id || '').replace(/[^a-z0-9]/gi, '');
     const name = String(body.name || '').trim().slice(0, 120);
     const option = String(body.option || '').trim().slice(0, 120);
+    const sig = /^data:image\/png;base64,[A-Za-z0-9+/=]+$/.test(body.sig || '') && body.sig.length < 160000 ? body.sig : '';
     if (!id || name.length < 2) return res.status(400).json({ error: 'invalid' });
     const rec = await kvGet(key(id));
     if (!rec) return res.status(404).json({ error: 'not_found' });
     if (rec.accepted) return res.status(200).json({ ok: true, accepted: rec.accepted, already: true });
-    rec.accepted = { name, option, at: new Date().toISOString() };
+    rec.accepted = { name, option, sig, at: new Date().toISOString() };
     await kvSet(key(id), rec, TTL);
     const mail = rec.p?.biz?.mail;
     if (mail && isEmail(mail) && emailReady()) {
@@ -70,7 +93,7 @@ export default async function handler(req, res) {
           text: `${name} aceptó la propuesta "${rec.p.proj || ''}"${option ? ` (opción: ${option})` : ''}.\n\nVer la propuesta: ${SITE()}/propuesta/${id}\n\nTe recomendamos escribirle para coordinar la seña.`,
           html: layout({
             accent: 'acid', eyebrow: 'Cotizador Pro · Orbit', title: `¡${it('Aceptada!', '#D9FF45')}`,
-            body: `<p style="margin:0 0 12px"><b>${e(name)}</b> aceptó la propuesta <b>${e(rec.p.proj)}</b>${option ? ` y eligió <b>${e(option)}</b>` : ''}.</p><p style="margin:0">Buen momento para escribirle y coordinar la seña.</p>`,
+            body: `<p style="margin:0 0 12px"><b>${e(name)}</b> aceptó la propuesta <b>${e(rec.p.proj)}</b>${option ? ` y eligió <b>${e(option)}</b>` : ''}.</p>${sig ? '<p style="margin:0 0 12px">Firmó la propuesta en línea.</p>' : ''}<p style="margin:0">Buen momento para escribirle y coordinar la seña.</p>`,
             cta: 'Ver la propuesta →', ctaUrl: `${SITE()}/propuesta/${id}`,
             foot: 'Te llega este aviso porque creaste esta propuesta con el Cotizador Pro de Orbit.',
           }),

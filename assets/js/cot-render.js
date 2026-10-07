@@ -57,10 +57,12 @@ const logo = (P, cls = 'logo') => P.biz.logo ? `<img class="${cls}" src="${P.biz
 const list = (arr, cls = 'ul') => `<ul class="${cls}">${arr.filter(x => String(x).trim()).map(x => `<li>${esc(x)}</li>`).join('')}</ul>`;
 const has = arr => (arr || []).some(x => String(x).trim());
 
+const phSrc = ph => ph && (ph.d || ph.u) || '';
 function coverHtml(P) {
   const t = L(P), c = calc(P);
+  const photos = (P.biz.photos || []).filter(phSrc), cov = photos[P.coverIdx || 0];
   const valid = P.dIssue ? addDays(P.dIssue, P.valid || 15) : '';
-  return `<div class="cv">
+  return `<div class="cv${cov ? ' has-img' : ''}">${cov ? `<div class="cv-img"><img src="${phSrc(cov)}" alt=""></div>` : ''}
     <div class="cv-top">${logo(P)}<div class="cv-biz"><b>${esc(P.biz.name)}</b><span>${esc(P.biz.tag)}</span></div></div>
     <div class="cv-mid">
       <div class="cv-kicker">${esc(docTitle(P))} · ${esc(P.num)}</div>
@@ -86,6 +88,12 @@ function blocks(P) {
     sec(t.about);
     if (P.biz.bio) out.push({ h: `<p class="b-lead">${nl2br(P.biz.bio)}</p>` });
     if (has(P.biz.why)) out.push({ h: `<div class="b-why">${P.biz.why.filter(x => x.trim()).slice(0, 4).map((w, i) => `<div><span class="k">${String(i + 1).padStart(2, '0')}</span><p>${esc(w)}</p></div>`).join('')}</div>` });
+  }
+  const photos = (P.biz.photos || []).filter(phSrc);
+  const gal = photos.filter((p, i) => i !== (P.coverIdx || 0) || photos.length < 3).slice(0, 6);
+  if (S.about !== false && gal.length) {
+    if (!(P.biz.bio || has(P.biz.why))) sec(t.work);
+    for (let i = 0; i < gal.length; i += 3) out.push({ h: `<div class="b-gal n${Math.min(3, gal.length - i)}">${gal.slice(i, i + 3).map(p => `<div><img src="${phSrc(p)}" alt=""></div>`).join('')}</div>` });
   }
   const ans = (P.answers || []).filter(a => String(a.v || '').trim());
   if (S.project !== false && (P.goal || ans.length)) {
@@ -200,7 +208,8 @@ function webHtml(P) {
 function cardHtml(P, url) {
   const t = L(P), c = calc(P);
   const pts = (c.mode === 'packages' ? c.pk.map(p => p.n) : (c.items || []).map(i => i.n)).filter(Boolean).slice(0, 4);
-  return `<div class="cw">
+  const photos = (P.biz.photos || []).filter(phSrc), cov = photos[P.coverIdx || 0];
+  return `<div class="cw${cov ? ' has-img' : ''}">${cov ? `<div class="cw-img"><img src="${phSrc(cov)}" alt=""></div>` : ''}
     <div class="cw-top">${logo(P)}<b>${esc(P.biz.name)}</b></div>
     <div class="cw-k">${esc(docTitle(P))} · ${esc(P.num)}</div>
     <h1>${esc(P.proj || docTitle(P))}</h1>

@@ -334,7 +334,8 @@ const CUR = [['ARS','Peso argentino'],['USD','Dólar estadounidense'],['EUR','Eu
 
 /* Textos fijos del documento en 3 idiomas */
 const T = {
-  es: { proposal: 'Propuesta', quote: 'Cotización', for: 'Para', project: 'Proyecto', prepared: 'Preparada por', date: 'Fecha', valid: 'Válida hasta', number: 'Nº',
+  es: { work: 'Trabajos', letsGo: '¿Arrancamos?', letsGoSub: 'Elegí la opción, poné tu nombre y firmá con el dedo o el mouse.', sign: 'Firmá acá', clear: 'Borrar', wa: 'Escribir por WhatsApp', scroll: 'Bajá', seeAll: 'Ver condiciones', signed: 'Firmada por', made: 'Hecho con Orbit', yourOption: 'Opción elegida', needSign: 'Falta la firma',
+    proposal: 'Propuesta', quote: 'Cotización', for: 'Para', project: 'Proyecto', prepared: 'Preparada por', date: 'Fecha', valid: 'Válida hasta', number: 'Nº',
     about: 'Quiénes somos', why: 'Por qué trabajar con nosotros', theProject: 'El proyecto', goal: 'Objetivo', details: 'Detalles',
     scope: 'Alcance', services: 'Servicios', service: 'Servicio', qty: 'Cant.', price: 'Precio', subtotal: 'Subtotal', includes: 'Incluye', excludes: 'No incluye', deliverables: 'Entregables',
     timeline: 'Cronograma', start: 'Inicio estimado', delivery: 'Entrega estimada', investment: 'Inversión', options: 'Opciones', recommended: 'Recomendada',
@@ -343,7 +344,8 @@ const T = {
     signClient: 'Firma del cliente', signPro: 'Firma del profesional', clarify: 'Aclaración', contact: 'Contacto', thanks: 'Gracias por la oportunidad.',
     notInvoice: 'Propuesta comercial. No es factura.', page: 'Pág.', acceptBtn: 'Acepto la propuesta', accepted: 'Propuesta aceptada', choose: 'Elegí una opción', yourName: 'Tu nombre completo',
     viewOnline: 'Ver la propuesta completa', taxIncl: 'incluido', option: 'Opción', perUnit: 'c/u', tax: 'Impuesto' },
-  en: { proposal: 'Proposal', quote: 'Quote', for: 'Prepared for', project: 'Project', prepared: 'Prepared by', date: 'Date', valid: 'Valid until', number: 'No.',
+  en: { work: 'Work', letsGo: 'Shall we start?', letsGoSub: 'Pick an option, type your name and sign with your finger or mouse.', sign: 'Sign here', clear: 'Clear', wa: 'Message on WhatsApp', scroll: 'Scroll', seeAll: 'See terms', signed: 'Signed by', made: 'Made with Orbit', yourOption: 'Chosen option', needSign: 'Signature missing',
+    proposal: 'Proposal', quote: 'Quote', for: 'Prepared for', project: 'Project', prepared: 'Prepared by', date: 'Date', valid: 'Valid until', number: 'No.',
     about: 'About us', why: 'Why work with us', theProject: 'The project', goal: 'Goal', details: 'Details',
     scope: 'Scope', services: 'Services', service: 'Service', qty: 'Qty', price: 'Price', subtotal: 'Subtotal', includes: 'Included', excludes: 'Not included', deliverables: 'Deliverables',
     timeline: 'Timeline', start: 'Estimated start', delivery: 'Estimated delivery', investment: 'Investment', options: 'Options', recommended: 'Recommended',
@@ -352,7 +354,8 @@ const T = {
     signClient: 'Client signature', signPro: 'Provider signature', clarify: 'Name', contact: 'Contact', thanks: 'Thank you for the opportunity.',
     notInvoice: 'Commercial proposal. Not an invoice.', page: 'Page', acceptBtn: 'I accept this proposal', accepted: 'Proposal accepted', choose: 'Choose an option', yourName: 'Your full name',
     viewOnline: 'See the full proposal', taxIncl: 'included', option: 'Option', perUnit: 'each', tax: 'Tax' },
-  pt: { proposal: 'Proposta', quote: 'Orçamento', for: 'Para', project: 'Projeto', prepared: 'Preparada por', date: 'Data', valid: 'Válida até', number: 'Nº',
+  pt: { work: 'Trabalhos', letsGo: 'Vamos começar?', letsGoSub: 'Escolha a opção, digite seu nome e assine com o dedo ou o mouse.', sign: 'Assine aqui', clear: 'Limpar', wa: 'Falar no WhatsApp', scroll: 'Role', seeAll: 'Ver condições', signed: 'Assinada por', made: 'Feito com Orbit', yourOption: 'Opção escolhida', needSign: 'Falta a assinatura',
+    proposal: 'Proposta', quote: 'Orçamento', for: 'Para', project: 'Projeto', prepared: 'Preparada por', date: 'Data', valid: 'Válida até', number: 'Nº',
     about: 'Quem somos', why: 'Por que trabalhar conosco', theProject: 'O projeto', goal: 'Objetivo', details: 'Detalhes',
     scope: 'Escopo', services: 'Serviços', service: 'Serviço', qty: 'Qtd.', price: 'Preço', subtotal: 'Subtotal', includes: 'Inclui', excludes: 'Não inclui', deliverables: 'Entregáveis',
     timeline: 'Cronograma', start: 'Início previsto', delivery: 'Entrega prevista', investment: 'Investimento', options: 'Opções', recommended: 'Recomendada',
@@ -377,5 +380,12 @@ const parse = r => ({
   s: (r.s || []).map(s => { const [n, d] = s.split('|'); return { n, d: d || '' }; }),
   ph: (r.ph || []).map(s => { const [n, d] = s.split('|'); return { n, d: d || '' }; }),
 });
-window.COT = { RUBROS: [...R, OTRO].map(parse), COND_GEN, PAGO, CUR, T, LOCALE, THEMES };
+const FONTS = {
+  minimal:   { h: "'Schibsted Grotesk'", b: "'Schibsted Grotesk'", m: "'DM Mono'" },
+  editorial: { h: "'Fraunces'", b: "'Instrument Sans'", m: "'DM Mono'" },
+  bold:      { h: "'Unbounded'", b: "'Familjen Grotesk'", m: "'DM Mono'" },
+  dark:      { h: "'Bodoni Moda'", b: "'Jost'", m: "'DM Mono'" },
+};
+const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@400..900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&family=Familjen+Grotesk:wght@400..700&family=Instrument+Sans:wght@400..700&family=Jost:wght@300..700&family=DM+Mono:wght@400;500&display=swap';
+window.COT = { FONTS, FONT_CSS, RUBROS: [...R, OTRO].map(parse), COND_GEN, PAGO, CUR, T, LOCALE, THEMES };
 })();

@@ -7,101 +7,48 @@
 <meta name="robots" content="noindex,nofollow">
 <link rel="icon" href="/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="/assets/css/cot-doc.css?v=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400..900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&family=Familjen+Grotesk:wght@400..700&family=Instrument+Sans:wght@400..700&family=Jost:wght@300..700&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/assets/css/cot-web.css?v=2">
 <style>
-html,body{margin:0}body{background:#F2EFE8;font-family:'Inter Tight',system-ui,sans-serif}
-*{box-sizing:border-box}
-#app{min-height:100vh}
-.msg{min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center;color:#5F5D58}
-.msg b{display:block;color:#0D0D0E;font-size:22px;margin-bottom:6px}
-.bar{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;gap:14px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));background:rgba(13,13,14,.94);color:#F2EFE8;transform:translateY(110%);transition:transform .45s cubic-bezier(.7,0,.2,1)}
-.bar.on{transform:none}
-.bar .t{display:grid;line-height:1.2}.bar .t span{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#8C8A84}.bar .t b{font-size:18px;font-variant-numeric:tabular-nums}
-.bar .sp{flex:1}
-.bar button{border:none;border-radius:999px;background:var(--c,#3047FF);color:var(--ct,#fff);font:700 15px 'Inter Tight',sans-serif;padding:13px 20px;min-height:48px;cursor:pointer}
-.bar .ok{color:#D9FF45;font-weight:700;font-size:14px}
-.modal{position:fixed;inset:0;z-index:40;background:rgba(13,13,14,.6);display:none;align-items:flex-end;justify-content:center}
-.modal.on{display:flex}
-@media(min-width:640px){.modal{align-items:center}}
-.modal>div{background:#fff;color:#16161A;width:min(480px,100%);border-radius:18px 18px 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom,0px));display:grid;gap:14px;animation:up .35s cubic-bezier(.7,0,.2,1)}
-@media(min-width:640px){.modal>div{border-radius:18px}}
-@keyframes up{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
-.modal h2{margin:0;font-size:22px}.modal p{margin:0;color:#6E6E76;font-size:14px;line-height:1.5}
-.modal label{display:grid;gap:6px;font-weight:600;font-size:13px}
-.modal input[type=text]{border:1px solid #E4E0D6;border-radius:10px;padding:12px;min-height:46px;font:inherit;font-size:16px}
-.modal input[type=text]:focus{outline:none;border-color:#0D0D0E}
-.modal .opt{display:flex;align-items:center;gap:10px;border:1px solid #E4E0D6;border-radius:10px;padding:12px;cursor:pointer;font-size:15px}
-.opt input{width:20px;height:20px;accent-color:var(--c,#3047FF)}
-.opt b{margin-left:auto;font-variant-numeric:tabular-nums}
-.row{display:flex;gap:10px}.row button{flex:1;border-radius:999px;min-height:48px;font:700 15px 'Inter Tight',sans-serif;cursor:pointer}
-.row .go{background:var(--c,#3047FF);color:var(--ct,#fff);border:none}.row .no{background:none;border:1px solid #0D0D0E}
-.row button[disabled]{opacity:.5}
-.made{display:block;text-align:center;padding:26px 16px 110px;font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--mut,#8C8A84);text-decoration:none}
-.made:hover{color:var(--ink)}
-:focus-visible{outline:2px solid #3047FF;outline-offset:2px}
+html,body{margin:0;background:#111}
+.msg{min-height:100vh;display:grid;place-items:center;padding:24px;text-align:center;color:#9a958a;font-family:system-ui,sans-serif;background:#0B0B0D}
+.msg b{display:block;color:#EEE9DF;font-size:22px;margin-bottom:6px}
+.pv-flag{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:200;background:#D9FF45;color:#0D0D0E;font:600 12px system-ui,sans-serif;padding:8px 14px;border-radius:999px;letter-spacing:.02em}
 </style>
 </head>
 <body>
-<div id="app"><div class="msg"><div><b>Cargando la propuesta…</b></div></div></div>
-<div class="bar" id="bar" role="region" aria-label="Aceptar propuesta"></div>
-<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="mT"><div id="mBox"></div></div>
-<script src="/assets/js/cot-data.js?v=1"></script>
-<script src="/assets/js/cot-render.js?v=1"></script>
+<div id="app"><div class="msg"><div><b>…</b></div></div></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="/assets/js/cot-data.js?v=2"></script>
+<script src="/assets/js/cot-render.js?v=2"></script>
+<script src="/assets/js/cot-web.js?v=2"></script>
 <script>
 (async () => {
-  const R = window.COTR, $ = s => document.querySelector(s), esc = R.esc;
-  const id = new URLSearchParams(location.search).get('id') || location.pathname.split('/').filter(Boolean).pop();
-  let data;
-  try { const r = await fetch('/api/propuesta?id=' + encodeURIComponent(id)); if (!r.ok) throw 0; data = await r.json(); }
-  catch (e) { $('#app').innerHTML = '<div class="msg"><div><b>No encontramos esta propuesta</b>Revisá el link o pedile uno nuevo a quien te la mandó.</div></div>'; return; }
-  const P = data.p, t = R.L(P), c = R.calc(P);
+  const R = window.COTR, app = document.getElementById('app');
+  const qs = new URLSearchParams(location.search);
+  const preview = qs.has('preview');
+  const id = qs.get('id') || (location.pathname.split('/').filter(Boolean)[1] || '');
+  let P, accepted = null;
+  if (preview) {
+    try { P = JSON.parse(localStorage.getItem('orbit-cot2-preview') || 'null'); } catch (e) {}
+    if (!P) { app.innerHTML = '<div class="msg"><div><b>No hay vista previa</b>Volvé al cotizador y tocá "Ver como la ve tu cliente".</div></div>'; return; }
+  } else {
+    try { const r = await fetch('/api/propuesta?id=' + encodeURIComponent(id)); if (!r.ok) throw 0; const d = await r.json(); P = d.p; accepted = d.accepted; }
+    catch (e) { app.innerHTML = '<div class="msg"><div><b>No encontramos esta propuesta</b>Revisá el link o pedile uno nuevo a quien te la mandó.</div></div>'; return; }
+  }
   document.documentElement.lang = P.lang || 'es';
   document.title = `${R.docTitle(P)} · ${P.proj || ''} · ${P.biz.name || ''}`;
-  const app = $('#app');
-  app.className = `cot-web th-${P.theme}`;
-  document.body.style.background = getComputedStyle(app).getPropertyValue('--bg');
-  for (const el of [document.documentElement]) { el.style.setProperty('--c', P.color); el.style.setProperty('--ct', R.onColor(P.color)); }
-  app.innerHTML = R.webHtml(P) + `<a class="made" href="/cotizador?utm_source=propuesta&utm_medium=referral" target="_blank" rel="noopener">Hecho con Orbit · Cotizador Pro</a>`;
-  document.body.style.background = getComputedStyle(app).backgroundColor;
-
-  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }), { rootMargin: '0px 0px -8% 0px' }) : null;
-  document.querySelectorAll('[data-rv]').forEach(el => io ? io.observe(el) : el.classList.add('in'));
-
-  let accepted = data.accepted;
-  const money = v => R.money(v, P);
-  function bar() {
-    const b = $('#bar');
-    b.innerHTML = `<div class="t"><span>${c.mode === 'packages' ? t.from : t.total}</span><b>${money(c.from)}</b></div><span class="sp"></span>`
-      + (accepted ? `<span class="ok">✓ ${t.accepted}${accepted.option ? ' · ' + esc(accepted.option) : ''}</span>` : `<button type="button" id="acc">${t.acceptBtn}</button>`);
-    if (!accepted) $('#acc').onclick = openModal;
-  }
-  bar(); setTimeout(() => $('#bar').classList.add('on'), 900);
-
-  function openModal() {
-    const opts = c.mode === 'packages' ? c.pk.map((p, i) => `<label class="opt"><input type="radio" name="op" value="${esc(p.n)}" ${p.rec ? 'checked' : ''}>${esc(p.n)}<b>${money(c.per[i].total)}</b></label>`).join('') : '';
-    $('#mBox').innerHTML = `<h2 id="mT">${t.acceptBtn}</h2><p>${t.acceptText}</p>${opts ? `<div style="display:grid;gap:8px"><span style="font-weight:600;font-size:13px">${t.choose}</span>${opts}</div>` : ''}
-      <label>${t.yourName}<input type="text" id="nm" autocomplete="name" maxlength="120"></label>
-      <div class="row"><button type="button" class="no" id="cx">✕</button><button type="button" class="go" id="ok">${t.acceptBtn}</button></div><p id="er" role="alert"></p>`;
-    $('#modal').classList.add('on'); $('#nm').focus();
-    $('#cx').onclick = close;
-    $('#ok').onclick = async () => {
-      const name = $('#nm').value.trim();
-      if (name.length < 2) { $('#nm').focus(); $('#nm').style.borderColor = '#C8361B'; return; }
-      const op = document.querySelector('input[name=op]:checked');
-      $('#ok').disabled = true;
-      try {
-        const r = await fetch('/api/propuesta?accept=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, name, option: op ? op.value : '' }) });
-        const d = await r.json(); if (!r.ok) throw 0;
-        accepted = d.accepted; bar();
-        $('#mBox').innerHTML = `<h2>✓ ${t.accepted}</h2><p>${esc(P.biz.name)} · ${[P.biz.phone, P.biz.mail].filter(Boolean).map(esc).join(' · ')}</p><div class="row"><button type="button" class="go" id="cx2">OK</button></div>`;
-        $('#cx2').onclick = close; $('#cx2').focus();
-      } catch (e) { $('#ok').disabled = false; $('#er').textContent = { es: 'No se pudo enviar. Probá de nuevo.', en: 'Could not send. Please try again.', pt: 'Não foi possível enviar. Tente de novo.' }[P.lang] || 'Error'; }
-    };
-  }
-  function close() { $('#modal').classList.remove('on'); }
-  $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') close(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
+  window.COTW.mount(app, P, {
+    preview, accepted,
+    onAccept: async ({ name, option, sig }) => {
+      if (preview) return { name, option, sig, at: new Date().toISOString() };
+      const r = await fetch('/api/propuesta?accept=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, name, option, sig }) });
+      const d = await r.json(); if (!r.ok) throw new Error(d.error || 'error');
+      return d.accepted;
+    },
+  });
+  if (preview) { const f = document.createElement('div'); f.className = 'pv-flag'; f.textContent = 'Vista previa · así la ve tu cliente'; document.body.appendChild(f); }
 })();
 </script>
 </body>

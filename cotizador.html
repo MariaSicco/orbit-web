@@ -9,8 +9,9 @@
 <meta name="theme-color" content="#0D0D0E">
 <link rel="icon" href="/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;1,400;1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="/assets/css/cot-doc.css?v=1">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400..900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&family=Familjen+Grotesk:wght@400..700&family=Instrument+Sans:wght@400..700&family=Jost:wght@300..700&family=DM+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/assets/css/cot-doc.css?v=2">
 <style>
 :root{--k:#0D0D0E;--k2:#161617;--k3:#242426;--b:#F2EFE8;--b2:#E4E0D6;--g:#8C8A84;--g2:#5F5D58;--blue:#3047FF;--or:#FF4F2E;--ac:#D9FF45;--err:#C8361B;--ease:cubic-bezier(.7,0,.2,1);--f:'Inter Tight',system-ui,-apple-system,sans-serif;--m:'IBM Plex Mono',ui-monospace,monospace;--serif:'Playfair Display',Georgia,serif}
 *{box-sizing:border-box}html,body{margin:0}
@@ -179,6 +180,17 @@ input[type=color]{width:46px;height:46px;border:1px solid var(--b2);border-radiu
 .busy i{width:34px;height:34px;border-radius:50%;border:3px solid var(--b2);border-top-color:var(--blue);animation:spin .8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .offscreen{position:fixed;left:-20000px;top:0;pointer-events:none}
+.phs{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:10px}
+.ph{position:relative;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--b2)}
+.ph img{width:100%;height:100%;object-fit:cover;display:block}
+.ph .x{position:absolute;right:6px;top:6px;width:30px;height:30px;border-radius:50%;border:none;background:rgba(13,13,14,.75);color:#fff;cursor:pointer;font-size:14px}
+.ph .st{position:absolute;left:6px;bottom:6px;font:500 10px var(--m);background:rgba(13,13,14,.75);color:#fff;padding:3px 6px;border-radius:4px}
+.ph-add{aspect-ratio:1;border:1.5px dashed var(--g);border-radius:10px;display:grid;place-items:center;cursor:pointer;font-weight:700;font-size:13px;text-align:center;background:var(--b);padding:8px}
+.ph-add:hover{border-color:var(--k)}
+.covers{display:flex;gap:10px;flex-wrap:wrap}
+.cov{width:84px;height:84px;border-radius:10px;overflow:hidden;border:3px solid transparent;cursor:pointer;padding:0;background:var(--b2)}
+.cov[aria-pressed="true"]{border-color:var(--blue)}
+.cov img{width:100%;height:100%;object-fit:cover;display:block}
 .foot{max-width:1320px;margin:0 auto;padding:0 16px 40px;color:var(--g2);font-size:13px}
 </style>
 </head>
@@ -236,6 +248,12 @@ input[type=color]{width:46px;height:46px;border:1px solid var(--b2);border-radiu
       <label class="f">Instagram o web<input type="text" data-b="web" placeholder="@tunegocio"></label>
       <label class="f">Datos fiscales <small>Opcional</small><input type="text" data-b="tax" placeholder="Ej: Monotributo · CUIT 27-…"></label>
     </div>
+  </div>
+  <div class="card">
+    <h3>Fotos de tus trabajos <small>Hasta 6 · opcional, pero cambia todo</small></h3>
+    <p class="hint">Aparecen en la portada y en una galería. Una propuesta con fotos reales se ve mucho más profesional.</p>
+    <div class="phs" id="phs"></div>
+    <input type="file" id="phIn" accept="image/jpeg,image/png,image/webp" multiple class="sr">
   </div>
   <div class="card">
     <h3>Sobre vos <small>Página "Quiénes somos"</small></h3>
@@ -353,6 +371,8 @@ input[type=color]{width:46px;height:46px;border:1px solid var(--b2);border-radiu
   <p class="lead">El mismo contenido, cuatro maneras de presentarlo. Probá y mirá la vista previa.</p>
   <div class="card"><h3>Estética</h3><div class="themes" id="themes"></div></div>
   <div class="card"><h3>Color de tu marca</h3><div class="chips" id="colors"></div></div>
+  <div class="card" id="covCard" hidden><h3>Foto de portada</h3><div class="covers" id="covers"></div></div>
+  <div class="card"><h3>Así la va a ver tu cliente</h3><p class="hint">La versión web tiene animaciones, galería y firma con el dedo. Abrila para probarla antes de mandarla.</p><button class="btn sec" type="button" id="btnPv" style="justify-self:start">Ver como la ve tu cliente ↗</button></div>
   <div class="card">
     <h3>Tipo de documento</h3>
     <div class="seg" role="group" aria-label="Tipo de documento"><button type="button" data-dk="proposal">Propuesta completa</button><button type="button" data-dk="quote">Cotización simple</button></div>
@@ -393,8 +413,8 @@ input[type=color]{width:46px;height:46px;border:1px solid var(--b2);border-radiu
 <div class="toast" id="toast" role="status"></div>
 <div class="offscreen" id="off"></div>
 
-<script src="/assets/js/cot-data.js?v=1"></script>
-<script src="/assets/js/cot-render.js?v=1"></script>
+<script src="/assets/js/cot-data.js?v=2"></script>
+<script src="/assets/js/cot-render.js?v=2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
@@ -419,7 +439,7 @@ const COLORS = ['#3047FF', '#0D0D0E', '#E4572E', '#1F8A4C', '#7B3FE4', '#D6336C'
 /* ---------- estado ---------- */
 const nextNum = () => 'P-' + String((load(K.seq) || 0) + 1).padStart(4, '0');
 const bumpSeq = n => { const x = parseInt(String(n).replace(/\D/g, ''), 10); if (x && x > (load(K.seq) || 0)) save(K.seq, x); };
-const blankBiz = () => ({ name: '', tag: '', owner: '', phone: '', mail: '', web: '', tax: '', bio: '', why: [], logo: '', rubro: '', rubroName: '' });
+const blankBiz = () => ({ name: '', tag: '', owner: '', phone: '', mail: '', web: '', tax: '', bio: '', why: [], logo: '', rubro: '', rubroName: '', photos: [] });
 let biz = Object.assign(blankBiz(), load(K.biz) || {});
 const rub = () => RUBROS.find(r => r.id === biz.rubro) || RUBROS.find(r => r.id === 'otro');
 function blankP() {
@@ -432,7 +452,7 @@ function blankP() {
     pkgs: [], extras: [], disc: { t: 'pct', v: '' }, taxPct: '', taxName: '',
     inc: [...r.inc], exc: [...r.exc], del: [...r.del], phases: r.ph.map(p => ({ id: uid(), n: p.n, d: p.d })),
     pay: { depT: 'pct', dep: 50, inst: 1, methods: ['Transferencia bancaria'], data: '' },
-    terms: [COND_GEN[0], ...r.cond.slice(0, 3)], notes: '', pub: null,
+    terms: [COND_GEN[0], ...r.cond.slice(0, 3)], notes: '', pub: null, coverIdx: 0,
   };
 }
 let P = load(K.draft) || blankP();
@@ -447,7 +467,7 @@ function full() {
 
 /* ---------- guardar ---------- */
 let saveT;
-function persist() { clearTimeout(saveT); saveT = setTimeout(() => { save(K.biz, biz); if (!save(K.draft, P)) toast('No se pudo guardar el borrador en este navegador'); }, 300); }
+function persist() { clearTimeout(saveT); saveT = setTimeout(() => { if (!save(K.biz, biz)) save(K.biz, { ...biz, photos: (biz.photos || []).filter(p => p.u).map(p => ({ u: p.u })) }); if (!save(K.draft, P)) toast('No se pudo guardar el borrador en este navegador'); }, 300); }
 
 /* ---------- pasos ---------- */
 $('#steps').innerHTML = STEPS.map((s, i) => `<li><button type="button" data-go="${i}"><span class="n">${i + 1}</span>${s}</button></li>`).join('');
@@ -575,6 +595,45 @@ $('#logoIn').addEventListener('change', e => {
   r.readAsDataURL(f); e.target.value = '';
 });
 $('#logoDel').onclick = () => { biz.logo = ''; renderLogo(); update(); };
+
+/* ---------- fotos ---------- */
+const compress = (file, max = 1500, q = .8) => new Promise((ok, ko) => {
+  const r = new FileReader();
+  r.onload = () => { const im = new Image(); im.onload = () => {
+    const s = Math.min(1, max / Math.max(im.width, im.height)); const c = document.createElement('canvas');
+    c.width = Math.round(im.width * s); c.height = Math.round(im.height * s); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height);
+    let d = c.toDataURL('image/jpeg', q); if (d.length > 480 * 1024) d = c.toDataURL('image/jpeg', .62); ok(d);
+  }; im.onerror = ko; im.src = r.result; };
+  r.onerror = ko; r.readAsDataURL(file);
+});
+async function uploadPhoto(ph) {
+  if (ph.u || ph.up) return; ph.up = true; renderPhotos();
+  try { const r = await fetch('/api/propuesta?img=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: ph.d }) }); const d = await r.json(); if (r.ok && d.u) ph.u = d.u; }
+  catch (e) {}
+  ph.up = false; renderPhotos(); persist();
+}
+function renderPhotos() {
+  const ps = biz.photos || [];
+  $('#phs').innerHTML = ps.map((p, i) => `<div class="ph"><img src="${p.d || p.u}" alt="Foto ${i + 1}"><button class="x" type="button" data-phx="${i}" aria-label="Quitar foto">✕</button>${p.up ? '<span class="st">Subiendo…</span>' : (!p.u ? '<span class="st">Solo en este equipo</span>' : '')}</div>`).join('')
+    + (ps.length < 6 ? `<label class="ph-add" for="phIn" tabindex="0">+ Sumar fotos</label>` : '');
+  $('#covCard').hidden = !ps.length;
+  $('#covers').innerHTML = ps.map((p, i) => `<button type="button" class="cov" data-cov="${i}" aria-pressed="${(P.coverIdx || 0) === i}" aria-label="Usar foto ${i + 1} de portada"><img src="${p.d || p.u}" alt=""></button>`).join('');
+}
+$('#phIn').addEventListener('change', async e => {
+  const files = [...e.target.files].slice(0, 6 - (biz.photos || []).length); e.target.value = '';
+  for (const f of files) {
+    if (f.size > 25e6) { toast('Una foto pesa demasiado'); continue; }
+    try { const d = await compress(f); const ph = { d }; biz.photos.push(ph); renderPhotos(); update(); uploadPhoto(ph); } catch (err) { toast('No pudimos leer una de las fotos'); }
+  }
+});
+$('#phs').addEventListener('keydown', e => { if (e.target.matches('.ph-add') && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); $('#phIn').click(); } });
+$('#phs').addEventListener('click', e => { const x = e.target.closest('[data-phx]'); if (x) { biz.photos.splice(+x.dataset.phx, 1); if ((P.coverIdx || 0) >= biz.photos.length) P.coverIdx = 0; renderPhotos(); update(); } });
+$('#covers').addEventListener('click', e => { const b = e.target.closest('[data-cov]'); if (b) { P.coverIdx = +b.dataset.cov; renderPhotos(); update(); } });
+$('#btnPv').onclick = () => {
+  const F = full(); F.biz = { ...F.biz, photos: (F.biz.photos || []).map(p => ({ u: p.u, d: p.u ? undefined : p.d })) };
+  if (!save('orbit-cot2-preview', F)) { F.biz.photos = F.biz.photos.filter(p => p.u); save('orbit-cot2-preview', F); }
+  window.open('/propuesta?preview=1', '_blank', 'noopener');
+};
 
 /* ---------- editor de listas con sugerencias ---------- */
 function listEditor(box, getArr, setArr, sugs, ph) {
@@ -846,7 +905,9 @@ $('#btnImg').onclick = async () => {
 $('#btnLink').onclick = async () => {
   busy(true, P.pub ? 'Actualizando el link…' : 'Creando el link…');
   try {
-    const body = { p: full() };
+    for (const ph of biz.photos || []) if (!ph.u) await uploadPhoto(ph);
+    const F = full(); F.biz = { ...F.biz, photos: (F.biz.photos || []).filter(p => p.u).map(p => ({ u: p.u })) };
+    const body = { p: F };
     if (P.pub) { body.id = P.pub.id; body.key = P.pub.key; }
     const r = await fetch('/api/propuesta', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await r.json();
@@ -897,7 +958,7 @@ $('#btnNew').onclick = newProposal; $('#btnNew2').onclick = newProposal;
 let tt; function toast(m) { const t = $('#toast'); t.textContent = m; t.classList.add('on'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('on'), 2800); }
 document.addEventListener('keydown', e => { if (e.key === 'Escape') { $('#sheet').classList.remove('on'); $('#drawer').classList.remove('on'); } });
 
-function refreshAll() { fillFields(); renderLogo(); renderRubros(); renderQ(); renderItems(); renderSug(); renderPkgs(); renderExtras(); renderPhases(); renderPay(); renderColors(); renderSecs(); drawEditors(); $('#linkBox').classList.remove('on'); $('#btnLink').textContent = 'Crear link'; update(); }
+function refreshAll() { if (!Array.isArray(biz.photos)) biz.photos = []; fillFields(); renderLogo(); renderPhotos(); renderRubros(); renderQ(); renderItems(); renderSug(); renderPkgs(); renderExtras(); renderPhases(); renderPay(); renderColors(); renderSecs(); drawEditors(); $('#linkBox').classList.remove('on'); $('#btnLink').textContent = 'Crear link'; update(); }
 setupEditors(); refreshAll(); go(step);
 })();
 </script>
