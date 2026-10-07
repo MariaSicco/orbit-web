@@ -5,6 +5,10 @@
     {
       "source": "/p/:id",
       "destination": "/api/producto?id=:id"
+    },
+    {
+      "source": "/propuesta/:id",
+      "destination": "/propuesta.html?id=:id"
     }
   ],
   "crons": [
