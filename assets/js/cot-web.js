@@ -51,18 +51,26 @@ function build(P, opt) {
 
   if (svc.length) { const row = svc.map(s => `<span>${esc(s)}</span>`).join(''); h += `<div class="x-mq" aria-hidden="true"><div>${row}${row}${row}${row}</div></div>`; }
 
+  const F = {};
+  F.about = () => {
   if (S.about !== false && (P.biz.bio || has(P.biz.why))) {
     h += `<section class="x-sec"><div class="x-in">${lab(t.about)}${P.biz.bio ? `<p class="x-statement">${esc(P.biz.bio).split(/\s+/).map(w => `<span class="sw">${w}</span>`).join(' ')}</p>` : ''}
       ${has(P.biz.why) ? `<ol class="x-why">${P.biz.why.filter(x => x.trim()).map((w, i) => `<li class="x-rv"><span>${String(i + 1).padStart(2, '0')}</span>${esc(w)}</li>`).join('')}</ol>` : ''}</div></section>`;
   }
-  if (photos.length > (cover ? 1 : 0)) {
+  };
+  F.gallery = () => {
+  if (S.gallery !== false && photos.length > (cover ? 1 : 0)) {
     const gal = photos.filter((p, i) => !(cover && i === (P.coverIdx || 0)) || photos.length < 3);
     h += `<section class="x-gal" aria-label="${t.work}"><div class="x-in">${lab(t.work)}</div><div class="x-gal-track">${gal.map(p => `<figure><img src="${photoUrl(p)}" alt="" loading="lazy"></figure>`).join('')}</div></section>`;
   }
+  };
+  F.project = () => {
   if (S.project !== false && (P.goal || ans.length)) {
     h += `<section class="x-sec"><div class="x-in">${lab(t.theProject)}${P.goal ? `<blockquote class="x-goal x-rv">${nl2br(P.goal)}</blockquote>` : ''}
       ${ans.length ? `<dl class="x-specs">${ans.map(a => `<div class="x-rv"><dt class="x-mono">${esc(a.l)}</dt><dd>${nl2br(a.v)}</dd></div>`).join('')}</dl>` : ''}</div></section>`;
   }
+  };
+  F.scope = () => {
   if (S.scope !== false && ((c.mode === 'items' && c.items.length) || has(P.inc) || has(P.exc) || has(P.del))) {
     h += `<section class="x-sec"><div class="x-in">${lab(t.scope)}`;
     if (c.mode === 'items' && c.items.length) h += `<ul class="x-items">${c.items.map((it, i) => `<li class="x-rv"><span class="n">${String(i + 1).padStart(2, '0')}</span><b>${esc(it.n)}</b><strong>${m(c.lines[i])}</strong>${it.d ? `<small>${nl2br(it.d)}</small>` : ''}${Number(it.q) !== 1 ? `<em>${esc(it.q)} × ${m(it.p)}</em>` : ''}</li>`).join('')}</ul>`;
@@ -70,11 +78,15 @@ function build(P, opt) {
     if (has(P.del)) h += `<div class="x-rv" style="margin-top:clamp(40px,6vw,70px)"><span class="x-mono" style="color:var(--mut)">${t.deliverables}</span><div class="x-del">${P.del.filter(x => x.trim()).map(x => `<span>${esc(x)}</span>`).join('')}</div></div>`;
     h += `</div></section>`;
   }
+  };
   const phases = (P.phases || []).filter(p => (p.n || '').trim());
+  F.timeline = () => {
   if (S.timeline !== false && (phases.length || P.dStart || P.dDelivery)) {
     h += `<section class="x-sec"><div class="x-in">${lab(t.timeline)}${phases.length ? `<ol class="x-tl"><i class="x-tl-line"><i></i></i>${phases.map((p, i) => `<li class="x-rv"><span class="k x-mono">${String(i + 1).padStart(2, '0')}</span><b>${esc(p.n)}</b><span class="d">${esc(p.d)}</span></li>`).join('')}</ol>` : ''}
       ${P.dStart || P.dDelivery ? `<div class="x-dates x-rv">${P.dStart ? `<div><span class="x-mono">${t.start}</span><b>${R.fdate(P.dStart, P)}</b></div>` : ''}${P.dDelivery ? `<div><span class="x-mono">${t.delivery}</span><b>${R.fdate(P.dDelivery, P)}</b></div>` : ''}</div>` : ''}</div></section>`;
   }
+  };
+  F.investment = () => {
   if (S.investment !== false) {
     h += `<section class="x-sec" id="inversion"><div class="x-in">${lab(t.investment)}`;
     const taxL = P.taxName || t.tax;
@@ -92,9 +104,13 @@ function build(P, opt) {
     if (has(pay.methods) || pay.data) h += `<div class="x-pay x-rv">${has(pay.methods) ? `<div><span class="x-mono" style="color:var(--mut)">${t.payment}</span><p>${pay.methods.filter(Boolean).map(esc).join(' · ')}</p></div>` : ''}${pay.data ? `<div><span class="x-mono" style="color:var(--mut)">${t.paymentData}</span><p>${esc(pay.data)}</p></div>` : ''}</div>`;
     h += `</div></section>`;
   }
+  };
+  F.terms = () => {
   if (S.terms !== false && (has(P.terms) || P.notes)) {
     h += `<section class="x-sec"><div class="x-in">${lab(t.terms)}<div class="x-terms x-rv">${has(P.terms) ? `<details open><summary>${t.terms}</summary><ol>${P.terms.filter(x => x.trim()).map(x => `<li>${esc(x)}</li>`).join('')}</ol></details>` : ''}${P.notes ? `<details><summary>${t.notes}</summary><p>${esc(P.notes)}</p></details>` : ''}</div></div></section>`;
   }
+  };
+  R.sectionOrder(P).forEach(k => F[k] && F[k]());
   if (S.accept !== false) {
     h += `<section class="x-acc" id="aceptar"><div class="x-in"><div class="x-lab x-mono" style="color:inherit;opacity:.6"><b>✦</b>${t.accept}</div><div id="xAccBox"></div></div></section>`;
   }
@@ -156,7 +172,9 @@ function acceptUI(root, P, opt, state) {
 
 /* ---------- animación ---------- */
 function animate(root, P) {
-  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const motion = (P.design || {}).motion || 'full';
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || motion === 'none';
+  const soft = motion === 'soft';
   const g = window.gsap, ST = window.ScrollTrigger;
   const bar = root.querySelector('#xBar');
   const showBar = () => bar && bar.classList.toggle('on', scrollY > innerHeight * .6);
@@ -166,6 +184,16 @@ function animate(root, P) {
   if (reduce || !g || !ST) { root.classList.add('x-static'); return; }
   g.registerPlugin(ST);
   const E = 'power3.out';
+  if (soft) {
+    root.querySelector('.x-curtain')?.remove();
+    g.from('.x-hero .x-in > *', { y: 24, opacity: 0, duration: 1, ease: E, stagger: .1 });
+    ST.batch(root.querySelectorAll('.x-rv'), { start: 'top 90%', onEnter: els => g.to(els, { opacity: 1, y: 0, duration: .8, ease: E, stagger: .06, overwrite: true }) });
+    root.querySelectorAll('.x-statement .sw').forEach(w => w.style.opacity = 1);
+    root.querySelectorAll('.x-tl li').forEach(li => li.classList.add('on'));
+    root.querySelectorAll('.x-tl-line i').forEach(l => l.style.transform = 'none');
+    const gal = root.querySelector('.x-gal'); if (gal) { gal.style.overflowX = 'auto'; gal.querySelectorAll('img').forEach(i => i.style.transform = 'none'); }
+    return;
+  }
   const tl = g.timeline();
   tl.from('.x-curtain div', { y: 30, opacity: 0, duration: .6, ease: E })
     .to('.x-curtain', { yPercent: -100, duration: .9, ease: 'expo.inOut' }, '+=.35')
@@ -215,6 +243,8 @@ function mount(root, P, opt = {}) {
   root.className = `xw t-${P.theme || 'minimal'}`;
   root.style.setProperty('--c', P.color || '#3047FF');
   root.style.setProperty('--ct', R.onColor(P.color || '#3047FF'));
+  R.applyDesign(root, P);
+  if (((P.design || {}).motion) === 'none') root.classList.add('x-static');
   document.documentElement.style.background = getComputedStyle(root).getPropertyValue('--bg');
   root.innerHTML = build(P, opt);
   document.documentElement.style.background = getComputedStyle(root).backgroundColor;

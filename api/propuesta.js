@@ -29,6 +29,13 @@ function clean(p) {
   /* fotos: solo las que ya subimos nosotros (sin la copia local en base64) */
   s.biz.photos = (Array.isArray(s.biz.photos) ? s.biz.photos : []).map(ph => ph && /^\/api\/propuesta\?img=[a-z0-9]{6,24}$/.test(ph.u || '') ? { u: ph.u } : null).filter(Boolean).slice(0, 8);
   s.coverIdx = Math.max(0, Math.min(s.biz.photos.length - 1, parseInt(s.coverIdx, 10) || 0));
+  const d = s.design && typeof s.design === 'object' ? s.design : {};
+  const KEYS = ['about', 'gallery', 'project', 'scope', 'timeline', 'investment', 'terms'];
+  s.design = {
+    font: ['auto', 'clasica', 'moderna', 'impacto', 'lujo', 'amable', 'tecnica'].includes(d.font) ? d.font : 'auto',
+    order: (Array.isArray(d.order) ? d.order : []).filter((k, i, a) => KEYS.includes(k) && a.indexOf(k) === i),
+    motion: ['full', 'soft', 'none'].includes(d.motion) ? d.motion : 'full',
+  };
   delete s.pub;
   return s;
 }

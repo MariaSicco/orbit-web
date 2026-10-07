@@ -84,23 +84,31 @@ function blocks(P) {
   let n = 0;
   const sec = (title, sub) => { n++; out.push({ sec: true, h: `<div class="b-sec"><span class="k">${String(n).padStart(2, '0')}</span><h2>${esc(title)}</h2>${sub ? `<p>${esc(sub)}</p>` : ''}</div>` }); };
 
+  const F = {};
+  F.about = () => {
   if (S.about !== false && (P.biz.bio || has(P.biz.why))) {
     sec(t.about);
     if (P.biz.bio) out.push({ h: `<p class="b-lead">${nl2br(P.biz.bio)}</p>` });
     if (has(P.biz.why)) out.push({ h: `<div class="b-why">${P.biz.why.filter(x => x.trim()).slice(0, 4).map((w, i) => `<div><span class="k">${String(i + 1).padStart(2, '0')}</span><p>${esc(w)}</p></div>`).join('')}</div>` });
   }
+  };
   const photos = (P.biz.photos || []).filter(phSrc);
   const gal = photos.filter((p, i) => i !== (P.coverIdx || 0) || photos.length < 3).slice(0, 6);
-  if (S.about !== false && gal.length) {
-    if (!(P.biz.bio || has(P.biz.why))) sec(t.work);
+  F.gallery = () => {
+  if (S.gallery !== false && gal.length) {
+    if (!(S.about !== false && (P.biz.bio || has(P.biz.why))) || order().indexOf('gallery') !== order().indexOf('about') + 1) sec(t.work);
     for (let i = 0; i < gal.length; i += 3) out.push({ h: `<div class="b-gal n${Math.min(3, gal.length - i)}">${gal.slice(i, i + 3).map(p => `<div><img src="${phSrc(p)}" alt=""></div>`).join('')}</div>` });
   }
+  };
   const ans = (P.answers || []).filter(a => String(a.v || '').trim());
+  F.project = () => {
   if (S.project !== false && (P.goal || ans.length)) {
     sec(t.theProject);
     if (P.goal) out.push({ h: `<div class="b-goal"><span class="lb">${t.goal}</span><p>${nl2br(P.goal)}</p></div>` });
     for (let i = 0; i < ans.length; i += 2) out.push({ h: `<div class="b-kv">${ans.slice(i, i + 2).map(a => `<div><span class="lb">${esc(a.l)}</span><b>${nl2br(a.v)}</b></div>`).join('')}</div>` });
   }
+  };
+  F.scope = () => {
   if (S.scope !== false) {
     if (c.mode === 'items' && c.items.length) {
       sec(t.scope);
@@ -111,12 +119,16 @@ function blocks(P) {
     if (has(P.inc) || has(P.exc)) out.push({ h: `<div class="b-cols">${has(P.inc) ? `<div><span class="lb">${t.includes}</span>${list(P.inc, 'ul ok')}</div>` : ''}${has(P.exc) ? `<div><span class="lb">${t.excludes}</span>${list(P.exc, 'ul no')}</div>` : ''}</div>` });
     if (has(P.del)) out.push({ h: `<div class="b-del"><span class="lb">${t.deliverables}</span>${list(P.del, 'ul del')}</div>` });
   }
+  };
   const phases = (P.phases || []).filter(p => (p.n || '').trim());
+  F.timeline = () => {
   if (S.timeline !== false && (phases.length || P.dStart || P.dDelivery)) {
     sec(t.timeline);
     phases.forEach((p, i) => out.push({ h: `<div class="b-ph"><span class="k">${String(i + 1).padStart(2, '0')}</span><b>${esc(p.n)}</b><span class="d">${esc(p.d)}</span></div>` }));
     if (P.dStart || P.dDelivery) out.push({ h: `<div class="b-dates">${P.dStart ? `<div><span class="lb">${t.start}</span><b>${fdate(P.dStart, P)}</b></div>` : ''}${P.dDelivery ? `<div><span class="lb">${t.delivery}</span><b>${fdate(P.dDelivery, P)}</b></div>` : ''}</div>` });
   }
+  };
+  F.investment = () => {
   if (S.investment !== false) {
     sec(t.investment);
     const taxLbl = P.taxName || t.tax;
@@ -146,17 +158,44 @@ function blocks(P) {
     const pay = P.pay || {};
     if (has(pay.methods) || pay.data) out.push({ h: `<div class="b-methods">${has(pay.methods) ? `<div><span class="lb">${t.payment}</span><p>${pay.methods.filter(Boolean).map(esc).join(' · ')}</p></div>` : ''}${pay.data ? `<div><span class="lb">${t.paymentData}</span><p>${nl2br(pay.data)}</p></div>` : ''}</div>` });
   }
+  };
+  F.terms = () => {
   if (S.terms !== false && (has(P.terms) || P.notes)) {
     sec(t.terms);
     (P.terms || []).filter(x => x.trim()).forEach((x, i) => out.push({ h: `<div class="b-term"><span class="k">${i + 1}.</span><p>${esc(x)}</p></div>` }));
     if (P.notes) out.push({ h: `<div class="b-notes"><span class="lb">${t.notes}</span><p>${nl2br(P.notes)}</p></div>` });
   }
+  };
+  const order = () => sectionOrder(P);
+  order().forEach(k => F[k] && F[k]());
   if (S.accept !== false) {
     out.push({ h: `<div class="b-accept"><h2>${t.accept}</h2><p>${t.acceptText}</p>
       <div class="sig"><div><i></i><span>${t.signClient}</span><span>${t.clarify}: ${esc(P.cli.name)}</span></div><div><i></i><span>${t.signPro}</span><span>${t.clarify}: ${esc(P.biz.owner || P.biz.name)}</span></div></div></div>` });
   }
   out.push({ h: `<div class="b-close"><p class="thx">${t.thanks}</p><p>${contactLine(P)}</p></div>` });
   return out;
+}
+
+/* ---------- ajustes de diseño ---------- */
+const ORDER = ['about', 'gallery', 'project', 'scope', 'timeline', 'investment', 'terms'];
+function sectionOrder(P) {
+  const o = ((P.design || {}).order || []).filter(k => ORDER.includes(k));
+  return [...o, ...ORDER.filter(k => !o.includes(k))];
+}
+const PAIRS = {
+  clasica: { n: 'Clásica', h: "'Fraunces', Georgia, serif", b: "'Instrument Sans', sans-serif", hw: 300 },
+  moderna: { n: 'Moderna', h: "'Schibsted Grotesk', sans-serif", b: "'Schibsted Grotesk', sans-serif", hw: 800 },
+  impacto: { n: 'Impacto', h: "'Unbounded', sans-serif", b: "'Familjen Grotesk', sans-serif", hw: 800 },
+  lujo:    { n: 'Lujo', h: "'Bodoni Moda', Georgia, serif", b: "'Jost', sans-serif", hw: 400 },
+  amable:  { n: 'Amable', h: "'Bricolage Grotesque', sans-serif", b: "'Instrument Sans', sans-serif", hw: 700 },
+  tecnica: { n: 'Técnica', h: "'Archivo', sans-serif", b: "'Archivo', sans-serif", hw: 800 },
+};
+/* aplica la tipografía elegida sobre la de la estética */
+function applyDesign(el, P) {
+  const f = PAIRS[(P.design || {}).font];
+  ['--hf', '--bf', '--hw'].forEach(v => el.style.removeProperty(v));
+  if (!f) return;
+  el.style.setProperty('--hf', f.h); el.style.setProperty('--bf', f.b); el.style.setProperty('--hw', String(f.hw));
 }
 
 /* ---------- páginas A4 ---------- */
@@ -171,6 +210,7 @@ function render(container, P) {
   container.className = `cot-doc th-${P.theme || 'minimal'}`;
   container.style.setProperty('--c', P.color || '#3047FF');
   container.style.setProperty('--ct', onColor(P.color || '#3047FF'));
+  applyDesign(container, P);
   const cover = document.createElement('div');
   cover.className = 'cp cover'; cover.innerHTML = coverHtml(P);
   container.appendChild(cover);
@@ -227,5 +267,5 @@ function onColor(h) {
   return (.2126 * ch[0] + .7152 * ch[1] + .0722 * ch[2]) > .42 ? '#111111' : '#FFFFFF';
 }
 
-window.COTR = { render, webHtml, cardHtml, calc, money, fdate, addDays, esc, onColor, L, docTitle };
+window.COTR = { PAIRS, ORDER, sectionOrder, applyDesign, render, webHtml, cardHtml, calc, money, fdate, addDays, esc, onColor, L, docTitle };
 })();

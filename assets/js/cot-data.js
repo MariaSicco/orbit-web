@@ -386,6 +386,6 @@ const FONTS = {
   bold:      { h: "'Unbounded'", b: "'Familjen Grotesk'", m: "'DM Mono'" },
   dark:      { h: "'Bodoni Moda'", b: "'Jost'", m: "'DM Mono'" },
 };
-const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Unbounded:wght@400..900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&family=Familjen+Grotesk:wght@400..700&family=Instrument+Sans:wght@400..700&family=Jost:wght@300..700&family=DM+Mono:wght@400;500&display=swap';
+const FONT_CSS = 'https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Archivo:wght@400..900&family=Unbounded:wght@400..900&family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&family=Familjen+Grotesk:wght@400..700&family=Instrument+Sans:wght@400..700&family=Jost:wght@300..700&family=DM+Mono:wght@400;500&display=swap';
 window.COT = { FONTS, FONT_CSS, RUBROS: [...R, OTRO].map(parse), COND_GEN, PAGO, CUR, T, LOCALE, THEMES };
 })();
