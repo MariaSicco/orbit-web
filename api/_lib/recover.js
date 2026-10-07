@@ -20,7 +20,7 @@ export async function sweepPending(now = Date.now()) {
     const age = now - new Date(o.date).getTime();
     if (age < 1 * H || age > 72 * H) continue;
     out.revisados++;
-    if (/@orbitando\.com\.ar$/i.test(o.email) || o.via !== 'mercadopago') { out.saltados++; continue; }
+    if (/@orbitando\.com\.ar$/i.test(o.email) || isAdmin(o.email) || o.via !== 'mercadopago') { out.saltados++; continue; }
     const ya = await getPurchases(o.email);
     if (o.items.every(i => ya.some(p => p.productId === i.id))) { out.saltados++; continue; }
     const link = `${SITE()}/api/retomar?o=${o.id}&t=${resumeToken(o.id)}`;
