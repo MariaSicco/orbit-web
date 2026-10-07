@@ -3,6 +3,7 @@
    No escribe a pedidos de prueba (@orbitando.com.ar) ni a quien ya compró
    esos productos después. */
 import { createHmac } from 'node:crypto';
+import { isAdmin } from './admin.js';
 import { kvKeys, kvMGet, kvSet, getPurchases } from './kv.js';
 import { sendEmail, emailReady, layout, it } from './email.js';
 
