@@ -105,7 +105,7 @@ export async function saveRequest(f, data) {
   /* aviso al equipo */
   const to = adminEmails()[0] || 'hola@orbitando.com.ar';
   if (emailReady()) {
-    const rows = [['Fundador', `#${f.n} · ${f.email}`], ['Rubro', data.rubro], ['Qué necesita', data.problema], ['Formato', data.formato], ['Hoy lo resuelve con', data.hoy], ['WhatsApp', data.wa || '—'], ['Se puede mostrar', data.mostrar ? 'Sí' : 'No']];
+    const rows = [['Fundador', `#${f.n} · ${f.email}`], ['Rubro', data.rubro], ['Qué necesita', data.problema], ['Formato', data.formato], ['Hoy lo resuelve con', data.hoy], ['WhatsApp', data.wa || '—'], ['Se puede mostrar', data.mostrar ? 'Sí' : 'No'], ['Asistente', data.guia || 'No lo usó']];
     await sendEmail({
       to, subject: `Fundador #${f.n} pidió su herramienta`,
       text: rows.map(([k, v]) => `${k}: ${v}`).join('\n'),

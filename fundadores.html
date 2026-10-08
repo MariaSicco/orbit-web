@@ -54,6 +54,22 @@ textarea{min-height:140px;resize:vertical;line-height:1.5}
 .opt input:checked+span{background:var(--b);color:var(--k);border-color:var(--b)}
 .chk{display:flex;gap:12px;align-items:flex-start;line-height:1.5;color:#cfcbc2;cursor:pointer}
 .chk input{width:22px;height:22px;margin-top:2px;accent-color:var(--blue);flex:none}
+.helpbtn{justify-self:start;display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;border-radius:999px;border:1.5px dashed var(--blue);background:transparent;color:var(--b);font:inherit;font-weight:700;cursor:pointer}
+.helpbtn:hover{background:rgba(48,71,255,.12)}
+.wiz{border:1px solid var(--k3);background:var(--k2);border-radius:18px;padding:clamp(18px,3vw,28px);display:grid;gap:22px}
+.wiz .q{display:grid;gap:10px}
+.wiz .q>b{font-size:17px}
+.wiz .q>b small{font-weight:400;color:var(--g);font-size:14px;margin-left:6px}
+.wiz .step{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--blue);text-transform:uppercase}
+.opt input[type=checkbox]{position:absolute;opacity:0}
+.ideas{display:grid;gap:10px}
+.idea{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;border:1px solid var(--k3);border-radius:14px;padding:16px;background:var(--k)}
+.idea b{display:block;font-size:17px;letter-spacing:-.01em}
+.idea p{margin:4px 0 0;color:#b4b0a8;font-size:14px;line-height:1.45}
+.idea .tagf{display:inline-block;margin-top:8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--ac)}
+.idea button{min-height:44px;padding:0 14px;border-radius:10px;border:none;background:var(--b);color:var(--k);font:inherit;font-weight:800;cursor:pointer;white-space:nowrap}
+.idea.sel{border-color:var(--ac)}
+@media (max-width:560px){.idea{grid-template-columns:1fr}.idea button{justify-self:start}}
 .err{color:#FF8A73;min-height:1.4em;margin:0}
 .done{border:1px solid var(--blue);border-radius:18px;padding:28px;max-width:720px}
 .done h2{margin-top:0}
@@ -86,6 +102,14 @@ footer{padding-block:32px;border-top:1px solid var(--k3);color:var(--g);font-siz
     <h2>Contanos qué <i>necesitás.</i></h2>
     <form id="f" novalidate>
       <label class="f">¿A qué te dedicás?<small>Rubro u oficio. Ej.: electricista matriculado, pastelera, estudio contable.</small><input type="text" name="rubro" maxlength="120" autocomplete="organization-title"></label>
+      <button type="button" class="helpbtn" id="helpBtn" aria-expanded="false" aria-controls="wiz">¿No sabés qué pedir? Te ayudamos a elegir →</button>
+      <div class="wiz" id="wiz" hidden>
+        <div class="q"><span class="step">1 de 4</span><b>¿En qué rubro estás?</b><div class="opts" data-q="rubro"></div></div>
+        <div class="q"><span class="step">2 de 4</span><b>¿Qué te come más tiempo o plata?<small>Elegí hasta 2</small></b><div class="opts" data-q="dolor" data-max="2"></div></div>
+        <div class="q"><span class="step">3 de 4</span><b>¿Cómo lo llevás hoy?</b><div class="opts" data-q="hoy"></div></div>
+        <div class="q"><span class="step">4 de 4</span><b>¿Dónde lo usarías?</b><div class="opts" data-q="donde"></div></div>
+        <div class="q" id="ideasBox" hidden><span class="step">Ideas para vos</span><b>Esto te podríamos armar<small>Elegí una; después la podés ajustar con tus palabras</small></b><div class="ideas" id="ideas"></div></div>
+      </div>
       <label class="f">¿Qué te gustaría resolver?<small>Contalo como se lo contarías a alguien. No hace falta que sepas cómo se hace.</small><textarea name="problema" maxlength="1500" required></textarea></label>
       <label class="f">¿Cómo lo resolvés hoy?<small>Cuaderno, Excel, de memoria, WhatsApp…</small><input type="text" name="hoy" maxlength="300"></label>
       <fieldset style="border:0;padding:0;margin:0;display:grid;gap:10px"><legend style="font-weight:700;margin-bottom:10px">¿En qué formato te sirve más?</legend>
@@ -98,6 +122,7 @@ footer{padding-block:32px;border-top:1px solid var(--k3);color:var(--g);font-siz
       </fieldset>
       <label class="f">WhatsApp (opcional)<small>Por si necesitamos preguntarte algo rápido.</small><input type="tel" name="wa" maxlength="40" autocomplete="tel"></label>
       <label class="chk"><input type="checkbox" name="mostrar"><span>Pueden mostrar la herramienta terminada como ejemplo, sin mis datos personales ni los de mi negocio.</span></label>
+      <input type="hidden" name="guia">
       <p class="err" id="err" role="alert"></p>
       <div><button class="btn" type="submit" id="send">Enviar mi pedido →</button></div>
     </form>
@@ -138,6 +163,96 @@ footer{padding-block:32px;border-top:1px solid var(--k3);color:var(--g);font-siz
 <footer class="w">Orbit® · <a href="/terminos">Términos</a> · <a href="/privacidad">Privacidad</a> · hola@orbitando.com.ar</footer>
 
 <script>
+/* ── Asistente: detecta qué herramienta le sirve a quien no sabe qué pedir.
+   Reglas propias (sin IA): rubro × dolor × cómo lo lleva hoy × dispositivo. ── */
+const WZ = {
+  rubro: [['oficio','Oficio técnico'],['comida','Comida y pastelería'],['prof','Servicio profesional'],['comercio','Comercio o reventa'],['salud','Salud y bienestar'],['educ','Educación'],['creativo','Creativo o contenido'],['transp','Transporte o logística'],['otro','Otro']],
+  dolor: [['precio','Calcular precios y presupuestos'],['ganancia','Saber cuánto gano de verdad'],['clientes','Seguir clientes y pedidos'],['cobros','Cobrar y saber quién me debe'],['agenda','Turnos, agenda o vencimientos'],['stock','Stock y materiales'],['tareas','Organizar tareas o proyectos'],['repetido','Mandar siempre la misma info']],
+  hoy: [['papel','Cuaderno o papel'],['wa','WhatsApp'],['excel','Excel o Sheets'],['memoria','De memoria'],['app','Una app que no me convence']],
+  donde: [['cel','Celular'],['pc','Computadora'],['ambos','Los dos']],
+};
+const IDEAS = {
+  precio: { def: ['Calculadora de presupuestos', 'Cargás materiales, horas y margen, y te da el precio final listo para mandar.'],
+    oficio: ['Presupuestador de trabajos', 'Materiales + mano de obra + viáticos. Te da el total y un resumen para mandar por WhatsApp.'],
+    comida: ['Costeo de recetas', 'Cargás ingredientes y te da el costo por porción y el precio sugerido con tu margen.'],
+    prof: ['Calculadora de honorarios', 'Precio por hora o por proyecto según tus costos fijos y las horas que querés trabajar.'],
+    comercio: ['Lista de precios con margen', 'Actualizás el costo y recalcula el precio de venta de todo con tu margen.'],
+    transp: ['Tarifador por kilómetro', 'Combustible, peajes, desgaste y tu ganancia: el precio de cada viaje en segundos.'],
+    creativo: ['Cotizador por paquetes', 'Tres opciones de precio (básico, completo, premium) armadas sobre tus horas reales.'],
+    salud: ['Calculadora de valor de sesión', 'Cuánto cobrar por sesión según alquiler, insumos y cantidad de pacientes.'],
+    educ: ['Calculadora de valor de clase', 'Precio por clase o por mes según tus horas, materiales y cantidad de alumnos.'] },
+  ganancia: { def: ['Tablero de ingresos y gastos', 'Anotás lo que entra y sale, y ves cuánto ganás por mes y en qué se va la plata.'],
+    comida: ['Ganancia por producto', 'Cuánto te deja cada cosa que vendés y cuáles conviene empujar.'],
+    oficio: ['Ganancia por trabajo', 'Cada trabajo con lo que cobraste y lo que gastaste: cuál te dejó plata de verdad.'],
+    transp: ['Ganancia por viaje', 'Lo cobrado menos combustible, peajes y gastos: cuánto te dejó cada viaje.'] },
+  clientes: { def: ['Mini CRM de clientes', 'Cada cliente con su historial, lo que pidió y cuándo volver a escribirle.'],
+    comida: ['Planilla de pedidos', 'Pedidos por fecha de entrega, con estado (encargado, en preparación, entregado) y seña.'],
+    prof: ['Seguimiento de casos', 'Cada cliente con su caso, próximos pasos y documentos pendientes.'],
+    creativo: ['Tablero de proyectos', 'Cada proyecto en su etapa, con fechas de entrega y feedback del cliente.'] },
+  cobros: { def: ['Control de cobros y deudas', 'Quién te debe, cuánto y desde cuándo, con un mensaje listo para recordarle.'] },
+  agenda: { def: ['Agenda de turnos', 'Turnos por día, recordatorio para mandar y control de quién faltó.'],
+    prof: ['Agenda de vencimientos', 'Fechas importantes ordenadas con aviso de lo que vence esta semana.'],
+    oficio: ['Agenda de trabajos', 'Trabajos por día y dirección, con lo que tenés que llevar a cada uno.'] },
+  stock: { def: ['Control de stock', 'Lo que tenés, lo que entra y sale, y alerta de lo que hay que reponer.'],
+    comida: ['Stock de insumos', 'Insumos con alerta de reposición y lista de compras automática.'],
+    oficio: ['Inventario de materiales', 'Materiales en el taller o la camioneta, y qué comprar para el próximo trabajo.'] },
+  tareas: { def: ['Organizador semanal', 'Tus tareas y proyectos en una vista simple: qué hacer hoy, esta semana y qué está trabado.'] },
+  repetido: { def: ['Respuestas listas', 'Tus mensajes más usados (precios, horarios, cómo trabajás) ordenados para copiar y pegar.'],
+    comida: ['Menú y precios para mandar', 'Tu carta con precios y condiciones, lista para pasar por WhatsApp.'] },
+};
+function formatFor(dolor, w) {
+  if (w.hoy === 'excel' || ['precio','ganancia','cobros','stock'].includes(dolor)) return w.donde === 'cel' ? 'Planilla para el celular (Google Sheets)' : 'Planilla (Excel o Google Sheets)';
+  return w.donde === 'cel' ? 'Plantilla de Notion (app del celular)' : 'Plantilla de Notion';
+}
+function suggest(w) {
+  const pains = (w.dolor || []).slice(0, 2);
+  const extra = { precio: 'ganancia', ganancia: 'precio', clientes: 'cobros', cobros: 'clientes', agenda: 'clientes', stock: 'precio', tareas: 'agenda', repetido: 'clientes' };
+  if (pains.length === 1) pains.push(extra[pains[0]]);
+  if (!pains.length) pains.push('precio', 'clientes');
+  const seen = new Set(); const out = [];
+  for (const d of [...pains, extra[pains[1]] || 'tareas']) {
+    if (!d || seen.has(d)) continue; seen.add(d);
+    const g = IDEAS[d], [t, x] = g[w.rubro] || g.def;
+    out.push({ d, t, x, f: formatFor(d, w) });
+    if (out.length === 3) break;
+  }
+  return out;
+}
+function initWizard() {
+  const $ = s => document.querySelector(s), w = { dolor: [] };
+  const btn = $('#helpBtn'), box = $('#wiz'); if (!btn) return;
+  document.querySelectorAll('#wiz [data-q]').forEach(el => {
+    const q = el.dataset.q, multi = el.dataset.max;
+    el.innerHTML = WZ[q].map(([v, l]) => `<label class="opt"><input type="${multi ? 'checkbox' : 'radio'}" name="wz-${q}" value="${v}"><span>${l}</span></label>`).join('');
+    el.addEventListener('change', ev => {
+      if (multi) {
+        const on = [...el.querySelectorAll('input:checked')];
+        if (on.length > +multi) { ev.target.checked = false; return; }
+        w.dolor = on.map(i => i.value);
+      } else w[q] = ev.target.value;
+      render();
+    });
+  });
+  btn.addEventListener('click', () => { const open = box.hidden; box.hidden = !open; btn.setAttribute('aria-expanded', String(open)); if (open) box.querySelector('input').focus(); });
+  function render() {
+    if (!w.rubro || !w.dolor.length || !w.hoy || !w.donde) { $('#ideasBox').hidden = true; return; }
+    const list = suggest(w); $('#ideasBox').hidden = false;
+    $('#ideas').innerHTML = list.map((i, k) => `<div class="idea" data-k="${k}"><div><b>${i.t}</b><p>${i.x}</p><span class="tagf">${i.f}</span></div><button type="button" data-pick="${k}">Quiero esta</button></div>`).join('');
+    $('#ideas').onclick = ev => {
+      const b = ev.target.closest('[data-pick]'); if (!b) return;
+      const i = list[+b.dataset.pick], f = $('#f');
+      const lbl = (q, v) => (WZ[q].find(x => x[0] === v) || [, v])[1];
+      document.querySelectorAll('.idea').forEach(x => x.classList.toggle('sel', x === b.closest('.idea')));
+      f.problema.value = `${i.t}: ${i.x}\n\nMi caso: `;
+      if (!f.rubro.value && w.rubro !== 'otro') f.rubro.value = lbl('rubro', w.rubro);
+      if (!f.hoy.value) f.hoy.value = lbl('hoy', w.hoy);
+      const fo = [...f.formato].find(r => r.value === 'Lo que recomienden'); if (fo) fo.checked = true;
+      f.guia.value = `Asistente → rubro: ${lbl('rubro', w.rubro)} · dolor: ${w.dolor.map(d => lbl('dolor', d)).join(' + ')} · hoy: ${lbl('hoy', w.hoy)} · usa: ${lbl('donde', w.donde)} · eligió: ${i.t} (${i.f})`;
+      f.problema.focus(); f.problema.setSelectionRange(f.problema.value.length, f.problema.value.length);
+    };
+  }
+}
+
 (async () => {
   const $ = s => document.querySelector(s);
   const qs = new URLSearchParams(location.search), e = qs.get('e'), t = qs.get('t');
@@ -147,6 +262,7 @@ footer{padding-block:32px;border-top:1px solid var(--k3);color:var(--g);font-siz
     $('#cNum').textContent = g.left; dots(g.max - g.left);
     if (!g.left) { $('#cSub').textContent = 'de 10. Ya están los 10 fundadores.'; $('#ctaWrap').hidden = true; }
   } catch (_) {}
+  initWizard();
   if (!e || !t) return;
   try {
     const r = await fetch(`/api/fundadores?e=${encodeURIComponent(e)}&t=${encodeURIComponent(t)}`);

@@ -47,7 +47,7 @@ export default async function handler(req, res) {
     if (!f) return res.status(404).json({ error: 'not_founder' });
     const data = {
       rubro: clip(b.rubro, 120), problema: clip(b.problema, 1500), hoy: clip(b.hoy, 300),
-      formato: clip(b.formato, 60), wa: clip(b.wa, 40), mostrar: Boolean(b.mostrar),
+      formato: clip(b.formato, 60), wa: clip(b.wa, 40), mostrar: Boolean(b.mostrar), guia: clip(b.guia, 600),
     };
     if (data.problema.length < 15) return res.status(400).json({ error: 'need_problem' });
     await saveRequest(f, data);
