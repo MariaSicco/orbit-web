@@ -182,3 +182,10 @@ body.lp:has(.ck.on) .lp-bar{bottom:var(--ckh,0px)}
   .lp-card{min-height:0}
 }
 .lp input{color:var(--ink);font-family:inherit}
+
+/* Programa Fundadores */
+.lp-fund{display:grid;gap:6px;margin-top:4px;padding:14px 16px;border:1.5px dashed var(--acc,#3047FF);border-radius:14px;text-decoration:none;color:inherit;font-size:14px;line-height:1.45;transition:background .2s cubic-bezier(.7,0,.2,1)}
+.lp-fund:hover{background:rgba(48,71,255,.06)}
+.lp-fund .mono{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc,#3047FF)}
+.lp-fund b{font-variant-numeric:tabular-nums}
+.lp-fund[hidden]{display:none}

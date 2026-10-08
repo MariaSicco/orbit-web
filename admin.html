@@ -117,6 +117,7 @@ td .mono{opacity:.55}
       <button type="button" data-tab="prod" aria-pressed="false">Productos</button>
       <button type="button" data-tab="gente" aria-pressed="false">Personas</button>
       <button type="button" data-tab="ped" aria-pressed="false">Pedidos</button>
+      <button type="button" data-tab="fund" aria-pressed="false">Fundadores</button>
     </nav>
 
     <section class="pane" data-pane="res">
@@ -165,6 +166,12 @@ td .mono{opacity:.55}
       <div class="blk">
         <div class="bh"><h2>Últimos pedidos</h2><span class="hint" id="pCount"></span></div>
         <div class="scroll"><table id="tPed"></table></div>
+      </div>
+    </section>
+    <section class="pane hidden" data-pane="fund">
+      <div class="blk">
+        <div class="bh"><h2>Fundadores</h2><span class="hint" id="fCount">Primeros 10 compradores reales desde el 06.10</span></div>
+        <div class="scroll"><table id="tFund"></table></div>
       </div>
     </section>
   </div>
@@ -287,6 +294,32 @@ $('#tPed').innerHTML = '<thead><tr><th>Pedido</th><th>Cliente</th><th>Productos<
           + '<span class="rmsg mono" data-capipara="' + esc(o.id) + '"></span>') + '</td>'
     + '<td class="num">' + (o.via === 'paypal' ? usd(o.usd) : ars(o.ars)) + '</td>'
     + '</tr>').join('') : '<tr><td colspan="7" style="opacity:.5">Todavía no hay pedidos.</td></tr>') + '</tbody>';
+
+/* ── fundadores ── */
+async function loadFund() {
+  try {
+    const d = await (await fetch('/api/fundadores?admin=1')).json();
+    $('#fCount').textContent = d.founders.length + ' de ' + d.max + ' lugares ocupados';
+    $('#tFund').innerHTML = '<thead><tr><th>#</th><th>Cliente</th><th>Compra</th><th>Invitación</th><th>Pedido</th></tr></thead><tbody>'
+      + (d.founders.length ? d.founders.map(f => '<tr><td class="num">' + f.n + '</td><td>' + esc(f.email) + '</td><td>' + fecha(f.at) + '<br><span class="mono dim">' + esc(f.order) + '</span></td>'
+        + '<td>' + (f.invited && !String(f.invited).startsWith('error') ? '<span class="tag tag-ok">Enviada ' + fecha(f.invited) + '</span>' : '<span class="tag tag-soft">' + esc(f.invited || 'Sin enviar') + '</span>')
+        + '<br><button class="alt-url" data-finv="' + esc(f.email) + '">' + (f.invited ? 'Reenviar invitación' : 'Enviar invitación') + '</button><span class="rmsg mono" data-finvpara="' + esc(f.email) + '"></span></td>'
+        + '<td>' + (f.req ? '<b>' + esc(f.req.rubro || '—') + '</b><br>' + esc(f.req.problema).slice(0, 400) + '<br><span class="mono dim">' + esc(f.req.formato || '') + (f.req.wa ? ' · WA ' + esc(f.req.wa) : '') + (f.req.mostrar ? ' · se puede mostrar' : '') + '</span>' : '<span style="opacity:.5">Todavía no pidió</span>') + '</td></tr>').join('')
+        : '<tr><td colspan="5" style="opacity:.5">Todavía no hay fundadores.</td></tr>') + '</tbody>';
+  } catch (e) { $('#fCount').textContent = 'No se pudo cargar'; }
+}
+loadFund();
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-finv]'); if (!b) return;
+  const aviso = document.querySelector('.rmsg[data-finvpara="' + b.dataset.finv + '"]');
+  b.disabled = true;
+  try {
+    const r = await fetch('/api/fundadores?invite=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: b.dataset.finv }) });
+    const d = await r.json();
+    if (aviso) { aviso.textContent = d.ok ? ' Enviada' : ' ' + (d.invited || d.error || 'falló'); aviso.style.color = d.ok ? 'var(--ac)' : 'var(--or)'; }
+  } catch (err) { if (aviso) { aviso.textContent = ' no se pudo'; aviso.style.color = 'var(--or)'; } }
+  b.disabled = false;
+});
 
 /* informar una compra a Meta (API de Conversiones) */
 document.addEventListener('click', async e => {

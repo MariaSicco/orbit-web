@@ -1,4 +1,5 @@
 /* Pedidos: un pedido puede tener varios productos. */
+import { claimFounder } from './founders.js';
 import { kvGet, kvSet, addPurchase } from './kv.js';
 import { getCatalog } from './catalog.js';
 import { randomBytes } from 'node:crypto';
@@ -85,6 +86,8 @@ export async function markPaid(id, { paymentId, amount, currency }) {
   /* La compra se informa a Meta desde acá (API de Conversiones): el Píxel
      del navegador solo corre si la persona aceptó cookies. */
   order.capi = await capiPurchase(order);
+  /* Programa Fundadores: los primeros 10 compradores reales */
+  order.fundador = await claimFounder(order);
   await kvSet(key(id), order, 60 * 60 * 24 * 365 * 3);
   return order;
 }

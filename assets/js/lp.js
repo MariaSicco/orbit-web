@@ -65,3 +65,12 @@
   /* el video del hero no corre si la persona pidió menos movimiento */
   if (rm) document.querySelectorAll('video[autoplay]').forEach(function (v) { v.removeAttribute('autoplay'); v.pause(); });
 })();
+
+/* Programa Fundadores: contador real de lugares */
+(function () {
+  var box = document.querySelector('[data-fund]'); if (!box || !window.fetch) return;
+  fetch('/api/fundadores').then(function (r) { return r.json(); }).then(function (d) {
+    if (!d || !(d.left > 0)) return;
+    box.querySelector('[data-fund-n]').textContent = d.left; box.hidden = false;
+  }).catch(function () {});
+})();
