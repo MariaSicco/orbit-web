@@ -3,6 +3,7 @@
    vive unos minutos. Si es una URL pegada a mano, redirigimos a ella. */
 import { readSession } from './_lib/auth.js';
 import { getPurchases } from './_lib/kv.js';
+import { isAdmin } from './_lib/admin.js';
 import { fileUrlFor, envFileName } from './_lib/catalog.js';
 import { isBlobRef, refPath, signedGet } from './_lib/blob.js';
 
@@ -11,7 +12,8 @@ export default async function handler(req, res) {
   if (!s) return res.status(401).json({ error: 'unauthorized' });
   const id = String(req.query?.id || '');
   const purchases = await getPurchases(s.email);
-  if (!purchases.some(p => p.productId === id)) return res.status(403).json({ error: 'not_purchased' });
+  /* administración descarga todo, para probar los productos */
+  if (!isAdmin(s.email) && !purchases.some(p => p.productId === id)) return res.status(403).json({ error: 'not_purchased' });
 
   const file = await fileUrlFor(id);
   if (!file) return res.status(503).json({ error: 'file_not_configured', message: `Falta cargar el archivo de ${id} (panel de administración o ${envFileName(id)})` });
