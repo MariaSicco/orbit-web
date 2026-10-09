@@ -58,6 +58,7 @@ export async function getCatalog() {
       ...(Number.isFinite(o.ars) ? { ars: o.ars } : {}),
       ...(typeof o.soon === 'boolean' ? { soon: o.soon } : {}),
       ...(o.tagline ? { tagline: o.tagline } : {}),
+      duena: o.duena || null,
       file: o.file || envFile(id) || null,
       fileFrom: o.file ? 'panel' : (envFile(id) ? 'vercel' : null),
     };
@@ -75,6 +76,7 @@ export async function saveOverride(id, patch = {}) {
   if (patch.usd !== undefined && patch.usd !== '') next.usd = Math.max(0, Math.round(Number(patch.usd) || 0));
   if (patch.ars !== undefined && patch.ars !== '') next.ars = Math.max(0, Math.round(Number(patch.ars) || 0));
   if (typeof patch.soon === 'boolean') next.soon = patch.soon;
+  if (typeof patch.duena === 'string') next.duena = patch.duena.replace(/\s+/g, '').toLowerCase().slice(0, 200) || undefined;
   if (typeof patch.file === 'string') next.file = patch.file.trim().slice(0, 600) || undefined;
   if (patch.tagline && typeof patch.tagline === 'object') {
     /* guardamos solo el idioma que tenga texto: el otro sigue saliendo del sitio */

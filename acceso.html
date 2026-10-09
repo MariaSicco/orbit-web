@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Acceso — Orbit®</title>
 <script>(function(){var d=document.documentElement,l=null,q=new URLSearchParams(location.search).get('lang');try{l=localStorage.getItem('orbit-lang')||sessionStorage.getItem('orbit-lang')}catch(e){}if(q==='es'||q==='en'){l=q;try{localStorage.setItem('orbit-lang',q)}catch(e){}}d.dataset.lang=l||((navigator.language||'es').slice(0,2)==='en'?'en':'es');d.lang=d.dataset.lang;if(!l)d.classList.add('gate-on')})()</script>
-<script>/* si la sesión sigue abierta, el panel es el destino */(function(){if(/(^|;\s*)orbit_user=/.test(document.cookie)&&!/salir=1/.test(location.search))location.replace('biblioteca.html')})()</script>
+<script>/* si la sesión sigue abierta, el panel es el destino */(function(){if(/(^|;\s*)orbit_user=/.test(document.cookie)&&!/salir=1/.test(location.search))location.replace(/[?&]next=control/.test(location.search)?'control.html':'biblioteca.html')})()</script>
 <link rel="icon" href="/favicon.ico" sizes="32x32">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -213,7 +213,7 @@ $('#accForm').addEventListener('submit', async e => {
       body: JSON.stringify({ email, password, name: $('#accName').value.trim(), news: $('#accNews').checked }),
     });
     const data = await r.json();
-    if (data.ok) { location.href = 'biblioteca.html'; return; }
+    if (data.ok) { location.href = /[?&]next=control/.test(location.search) ? 'control.html' : 'biblioteca.html'; return; }
     showErr(data.error);
   } catch (err) { showErr(); }
   btn.innerHTML = old; btn.disabled = false;

@@ -101,7 +101,7 @@ td .mono{opacity:.55}
 <body>
 <header class="top">
   <div class="brand"><b>Orbit</b><span>Administración</span></div>
-  <div class="who"><span id="whoami"></span><a href="index.html">Ver sitio</a><button id="out">Salir</button></div>
+  <div class="who"><span id="whoami"></span><a href="control.html">Control</a><a href="index.html">Ver sitio</a><button id="out">Salir</button></div>
 </header>
 
 <main>
@@ -118,6 +118,7 @@ td .mono{opacity:.55}
       <button type="button" data-tab="gente" aria-pressed="false">Personas</button>
       <button type="button" data-tab="ped" aria-pressed="false">Pedidos</button>
       <button type="button" data-tab="fund" aria-pressed="false">Fundadores</button>
+      <button type="button" data-tab="equipo" aria-pressed="false">Equipo</button>
     </nav>
 
     <section class="pane" data-pane="res">
@@ -166,6 +167,24 @@ td .mono{opacity:.55}
       <div class="blk">
         <div class="bh"><h2>Últimos pedidos</h2><span class="hint" id="pCount"></span></div>
         <div class="scroll"><table id="tPed"></table></div>
+      </div>
+    </section>
+    <section class="pane hidden" data-pane="equipo">
+      <div class="blk">
+        <div class="bh"><h2>Equipo</h2><span class="hint">Entran al Control con su email y contraseña</span></div>
+        <div class="scroll"><table id="tEq"></table></div>
+      </div>
+      <div class="blk">
+        <div class="bh"><h2>Sumar a alguien</h2><span class="hint">Pasale el email y la contraseña: entra en orbitando.com.ar/acceso</span></div>
+        <form class="prod" id="eqForm">
+          <div class="grid4">
+            <div class="fld"><label for="eqName">Nombre</label><input id="eqName" name="name" maxlength="60" placeholder="Valen" required></div>
+            <div class="fld"><label for="eqMail">Email</label><input id="eqMail" name="email" type="email" placeholder="valen@…" required></div>
+            <div class="fld"><label for="eqPass">Contraseña</label><input id="eqPass" name="password" type="text" minlength="8" placeholder="Mínimo 8 caracteres" autocomplete="off"><span class="tip">Si ya tiene cuenta en el sitio, dejala vacía</span></div>
+            <div class="fld"><label>&nbsp;</label><button class="btn btn-acid sm" type="submit">Sumar al equipo <span class="ar">→</span></button></div>
+          </div>
+          <p class="pmsg" id="eqMsg"></p>
+        </form>
       </div>
     </section>
     <section class="pane hidden" data-pane="fund">
@@ -352,16 +371,47 @@ document.addEventListener('click', async e => {
   b.textContent = antes; b.disabled = false;
 });
 
+/* ── equipo ── */
+let equipo = [];
+try { equipo = (await (await fetch('/api/control')).json()).equipo || []; } catch (e) {}
+function pintarEquipo() {
+  $('#tEq').innerHTML = '<thead><tr><th>Nombre</th><th>Email</th><th>Rol</th><th></th></tr></thead><tbody>'
+    + equipo.map(m => '<tr><td><b>' + esc(m.name) + '</b></td><td>' + esc(m.email) + '</td><td>' + (m.admin ? '<span class="tag tag-ok">Administra</span>' : '<span class="tag tag-soft">Equipo</span>') + '</td><td>'
+      + (m.admin ? '' : '<button class="alt-url" data-baja="' + esc(m.email) + '">Quitar</button>') + '</td></tr>').join('') + '</tbody>';
+}
+pintarEquipo();
+$('#eqForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const m = $('#eqMsg'); m.classList.remove('ok'); m.textContent = 'Guardando…';
+  try {
+    const r = await fetch('/api/control', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ a: 'equipo-alta', name: $('#eqName').value, email: $('#eqMail').value, password: $('#eqPass').value }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+    equipo = d.equipo; pintarEquipo();
+    m.classList.add('ok'); m.textContent = 'Listo. Ya puede entrar con ese email y contraseña.';
+    e.target.reset();
+  } catch (err) {
+    m.textContent = String(err.message) === 'falta_contrasena' ? 'Esa persona no tiene cuenta: poné una contraseña.' : String(err.message) === 'contrasena_debil' ? 'La contraseña necesita al menos 8 caracteres.' : 'No pudimos guardar. Revisá nombre y email.';
+  }
+});
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-baja]'); if (!b) return;
+  b.disabled = true;
+  try { const d = await (await fetch('/api/control', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ a: 'equipo-baja', email: b.dataset.baja }) })).json(); if (d.ok) { equipo = d.equipo; pintarEquipo(); } } catch (err) {}
+});
+
 /* ── productos editables ── */
 const cat = await (await fetch('/api/admin/catalog')).json();
 $('#prods').innerHTML = cat.productos.map(p => `
   <form class="prod" data-id="${esc(p.id)}">
     <div class="head"><div><span class="mono dim">${esc(p.code)}</span><br><b>${esc(p.name)}</b></div>
       <span class="tag ${p.file ? 'tag-ok' : 'tag-pend'}">${p.file ? 'Archivo cargado' : 'Sin archivo'}</span></div>
-    <div class="grid4">
+    <div class="grid4" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))">
       <div class="fld"><label>Nombre</label><input name="name" value="${esc(p.name)}" maxlength="80"></div>
       <div class="fld"><label>Precio USD</label><input name="usd" type="number" min="0" step="1" value="${p.usd}"><span class="tip">Lo que se muestra en el sitio y cobra PayPal</span></div>
       <div class="fld"><label>Precio ARS</label><input name="ars" type="number" min="0" step="1" value="${p.ars}"><span class="tip">Lo que cobra Mercado Pago</span></div>
+      <div class="fld"><label>De quién es</label><select name="duena">${equipo.map(m => '<option value="' + esc(m.email) + '"' + ((p.duena || (equipo.find(x => x.admin) || {}).email) === m.email ? ' selected' : '') + '>' + esc(m.name) + '</option>').join('')}</select><span class="tip">Sus ventas le aparecen a esa persona en el Control</span></div>
       <div class="fld"><label>Estado</label><select name="soon"><option value="false"${p.soon ? '' : ' selected'}>A la venta</option><option value="true"${p.soon ? ' selected' : ''}>Próximamente</option></select></div>
     </div>
     <div class="fld"><label>Bajada en español</label><textarea name="tes" maxlength="300">${esc(p.tagline?.es || '')}</textarea><span class="tip">Dejala vacía para usar el texto que ya está en el sitio</span></div>
@@ -452,7 +502,7 @@ $$('#prods form').forEach(f => f.addEventListener('submit', async e => {
   try {
     const res = await fetch('/api/admin/catalog', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: f.dataset.id, name: v('name'), usd: v('usd'), ars: v('ars'), soon: v('soon') === 'true', file: v('file'), tagline: { es: v('tes'), en: v('ten') } }),
+      body: JSON.stringify({ id: f.dataset.id, name: v('name'), usd: v('usd'), ars: v('ars'), soon: v('soon') === 'true', duena: v('duena'), file: v('file'), tagline: { es: v('tes'), en: v('ten') } }),
     });
     const d = await res.json();
     if (!d.ok) throw new Error(d.error);

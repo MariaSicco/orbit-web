@@ -1,0 +1,1124 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Control — Orbit®</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/favicon.ico" sizes="32x32">
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<meta name="theme-color" content="#0D0D0E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@1,500&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>body{margin:0}
+/* Layout: herramienta de trabajo en negro Orbit. Barra fija con 6 secciones; cada sección abre con una cifra grande y sigue con herramientas o gráficos. */
+:root{
+  --negro:#0D0D0E; --negro2:#161617; --negro3:#242426; --linea:#2E2E31;
+  --crema:#F2EFE8; --crema2:#E4E0D6; --gris:#8C8A84; --gris2:#B5B2AA;
+  --azul:#3047FF; --azul2:#6B7DFF; --naranja:#FF4F2E; --lima:#D9FF45;
+  --go:#D9FF45; --watch:#6B7DFF; --research:#B5B2AA; --kill:#FF4F2E; --insuf:#5C5A55;
+  --display:"Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --serif:"Playfair Display",Georgia,serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --ease:cubic-bezier(.7,0,.2,1);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--negro);color:var(--crema);font-family:var(--display);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.in{max-width:1240px;margin:0 auto;padding-inline:clamp(16px,4vw,56px)}
+a{color:var(--crema)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--azul2);outline-offset:2px}
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gris)}
+.mono{font-family:var(--mono)}
+.it{font-family:var(--serif);font-style:italic;font-weight:500;text-transform:none;letter-spacing:-.01em}
+.big{font-weight:900;text-transform:uppercase;letter-spacing:-.035em;line-height:.9;margin:0;text-wrap:balance}
+.num{font-variant-numeric:tabular-nums}
+
+/* barra */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--negro);border-bottom:1px solid var(--linea)}
+.top .in{display:flex;align-items:center;gap:18px;min-height:58px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:900;letter-spacing:.08em;font-size:15px;flex:none;text-decoration:none}
+.nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;flex:1;min-width:0}
+.nav::-webkit-scrollbar{display:none}
+.nav a{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gris);text-decoration:none;padding:0 12px;min-height:44px;display:flex;align-items:center;white-space:nowrap;border-bottom:2px solid transparent;transition:color .2s var(--ease),border-color .2s var(--ease)}
+.nav a:hover{color:var(--crema)}
+.nav a[aria-current="page"]{color:var(--crema);border-bottom-color:var(--azul)}
+.who{font-family:var(--mono);font-size:11px;color:var(--gris);white-space:nowrap}
+
+/* páginas */
+.page[hidden]{display:none}
+.page{padding-block:clamp(36px,6vw,72px) 96px;animation:fade .3s var(--ease)}
+@keyframes fade{from{opacity:.3;transform:translateY(6px)}to{opacity:1;transform:none}}
+.hero{display:grid;gap:14px;margin-bottom:clamp(32px,5vw,56px);max-width:980px}
+.hero h1{font-size:clamp(44px,8vw,112px)}
+.hero h1 .it{color:var(--azul2)}
+.hero p{margin:0;color:var(--gris2);max-width:62ch;font-size:16px}
+.sec{display:grid;gap:18px;padding-block:clamp(36px,5vw,56px);border-top:1px solid var(--linea)}
+.sec-h{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap}
+.sec-h h2{font-size:clamp(26px,3.6vw,44px);font-weight:900;text-transform:uppercase;letter-spacing:-.025em;margin:0;line-height:.95}
+.sec-h p{margin:0;color:var(--gris);max-width:56ch;font-size:14px}
+
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:1px;background:var(--linea);border:1px solid var(--linea)}
+.kpi{background:var(--negro);padding:20px;display:grid;gap:10px;align-content:start}
+.kpi b{font-size:clamp(34px,4.4vw,56px);font-weight:900;line-height:.9;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.kpi small{font-size:13px;color:var(--gris);line-height:1.35}
+.bar{height:6px;background:var(--negro3);position:relative}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--azul)}
+.c-az{color:var(--azul2)} .c-na{color:var(--naranja)} .c-li{color:var(--lima)}
+
+/* tiles */
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:1px;background:var(--linea);border:1px solid var(--linea)}
+.tile{background:var(--negro);padding:24px 22px;display:grid;gap:14px;text-decoration:none;min-height:190px;align-content:space-between;transition:background .25s var(--ease)}
+.tile:hover{background:var(--negro2)}
+.tile b{font-size:clamp(22px,2.4vw,30px);font-weight:900;text-transform:uppercase;letter-spacing:-.02em;line-height:.95}
+.tile span{color:var(--gris);font-size:14px}
+.tile .lbl::after{content:" →";color:var(--azul2)}
+
+/* chips y botones */
+.chip{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:4px 8px;border:1px solid currentColor;white-space:nowrap;line-height:1}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.st-GO{color:var(--go)} .st-WATCH{color:var(--watch)} .st-RESEARCH{color:var(--research)} .st-KILL{color:var(--kill)} .st-INSUFFICIENT{color:var(--gris)}
+.v-escalar{color:var(--lima)} .v-iterar{color:var(--azul2)} .v-pausar{color:var(--naranja)} .v-sin{color:var(--gris)}
+.btn{appearance:none;border:1px solid var(--crema);background:transparent;color:var(--crema);font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:0 16px;min-height:44px;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:background .2s var(--ease),color .2s var(--ease)}
+.btn:hover{background:var(--crema);color:var(--negro)}
+.btn.pri{background:var(--azul);border-color:var(--azul);color:var(--crema)}
+.btn.pri:hover{background:var(--azul2);border-color:var(--azul2)}
+.btn.sm{min-height:36px;padding:0 12px;font-size:11px}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filt{appearance:none;border:1px solid var(--linea);background:transparent;color:var(--gris2);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;padding:0 12px;min-height:38px;cursor:pointer}
+.filt[aria-pressed="true"]{border-color:var(--crema);color:var(--crema);background:var(--negro3)}
+
+/* cards de producto */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,290px),1fr));gap:16px}
+.pcard{border:1px solid var(--linea);background:var(--negro);display:grid;align-content:start;min-width:0}
+.pcard .ph{padding:18px 18px 14px;display:grid;gap:8px;border-bottom:1px solid var(--linea)}
+.pcard .row1{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.pcard h3{margin:0;font-size:18px;font-weight:800;line-height:1.15}
+.pcard .meta{font-family:var(--mono);font-size:11px;color:var(--gris);letter-spacing:.06em;text-transform:uppercase}
+.pcard .mx{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));}
+.pcard .mx div{padding:12px 14px;display:grid;gap:4px;border-right:1px solid var(--linea)}
+.pcard .mx div:last-child{border-right:0}
+.pcard .mx b{font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.pcard .mx span{font-family:var(--mono);font-size:10px;color:var(--gris);letter-spacing:.08em;text-transform:uppercase}
+.pcard .pf{padding:12px 18px;display:flex;justify-content:space-between;align-items:center;gap:8px;border-top:1px solid var(--linea)}
+.pcard .note{padding:12px 18px 0;color:var(--gris2);font-size:13px;margin:0}
+.pcard form{padding:14px 18px;display:grid;gap:10px;border-top:1px solid var(--linea);background:var(--negro2)}
+.pcard form[hidden]{display:none}
+.f2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+label.fld{display:grid;gap:5px;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gris)}
+.inp{width:100%;background:var(--negro);border:1px solid var(--linea);color:var(--crema);font-family:var(--display);font-size:14px;padding:10px 12px;min-height:42px;text-transform:none;letter-spacing:0;border-radius:0}
+.inp:focus{border-color:var(--azul2);outline:none}
+textarea.inp{min-height:72px;resize:vertical}
+.empty{border:1px dashed var(--linea);padding:28px;color:var(--gris);display:grid;gap:8px}
+.empty b{color:var(--crema);font-size:16px}
+
+/* chart barras */
+.hbars{display:grid;gap:12px}
+.hb{display:grid;grid-template-columns:minmax(0,180px) minmax(0,1fr) 120px;gap:14px;align-items:center;font-size:13px}
+.hb .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hb .tr{position:relative;height:28px;display:grid;gap:3px;align-content:center}
+.hb .tr i{display:block;height:11px}
+.hb .tr i.g{background:var(--negro3);position:relative}
+.hb .tr i.g::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--naranja)}
+.hb .tr i.r{background:transparent;position:relative}
+.hb .tr i.r::after{content:"";position:absolute;inset:0 auto 0 0;width:var(--w);background:var(--lima)}
+.hb .v{font-family:var(--mono);font-size:12px;text-align:right;font-variant-numeric:tabular-nums;color:var(--gris2)}
+.legend{display:flex;gap:18px;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris2)}
+.legend i{width:14px;height:8px;display:inline-block}
+
+/* tablas */
+.tw{overflow-x:auto;border:1px solid var(--linea)}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:680px}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gris);text-align:left;font-weight:500;padding:12px 14px;background:var(--negro2);border-bottom:1px solid var(--linea)}
+td{padding:12px 14px;border-bottom:1px solid var(--linea);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+th.n{text-align:right}
+td a{color:var(--azul2);text-decoration:none}
+td a:hover{text-decoration:underline}
+
+/* validador */
+.vgrid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:clamp(20px,3vw,40px);align-items:start}
+.vform{display:grid;gap:28px}
+.step{display:grid;gap:14px;border:1px solid var(--linea);padding:20px}
+.step-h{display:flex;align-items:baseline;gap:12px}
+.step-h b{font-family:var(--mono);font-size:12px;color:var(--azul2)}
+.step-h h3{margin:0;font-size:17px;font-weight:800;text-transform:uppercase;letter-spacing:-.01em}
+.step p.help{margin:0;color:var(--gris);font-size:13px}
+.ops{display:grid;gap:10px}
+.op{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1.5fr) 90px auto auto;gap:8px;align-items:center}
+.tog{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris2);cursor:pointer;min-height:42px;white-space:nowrap}
+.tog input{width:18px;height:18px;accent-color:var(--azul)}
+.scores{display:grid;gap:12px}
+.sc{display:grid;grid-template-columns:minmax(0,150px) minmax(0,1fr) 28px auto;gap:12px;align-items:center}
+.sc label{font-size:14px;font-weight:600}
+.sc input[type=range]{width:100%;accent-color:var(--azul)}
+.sc output{font-family:var(--mono);font-weight:600;text-align:right}
+.checks{display:grid;gap:4px}
+.ck{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;align-items:start;cursor:pointer;padding:8px 0;border-bottom:1px solid var(--negro3)}
+.ck input{width:18px;height:18px;margin:2px 0 0;accent-color:var(--azul)}
+.ck span{font-size:14px}
+.ck span small{display:block;color:var(--gris);font-size:12px;margin-top:2px}
+.result{position:sticky;top:calc(env(safe-area-inset-top,0px) + 74px);border:1px solid var(--linea);display:grid}
+.result .rh{padding:22px;display:grid;gap:14px;border-bottom:1px solid var(--linea)}
+.verdict{font-size:clamp(40px,5vw,68px);font-weight:900;letter-spacing:-.035em;line-height:.9;text-transform:uppercase}
+.vring{display:flex;align-items:center;gap:18px}
+.vring svg{width:96px;height:96px;flex:none}
+.reasons{padding:18px 22px;display:grid;gap:10px}
+.rs{display:grid;grid-template-columns:18px minmax(0,1fr);gap:10px;font-size:14px;align-items:start}
+.rs i{width:10px;height:10px;border-radius:50%;margin-top:5px;font-style:normal}
+.rs.ok i{background:var(--lima)} .rs.no i{background:var(--naranja)} .rs.mid i{background:var(--azul2)}
+.result .ra{padding:18px 22px;border-top:1px solid var(--linea);display:flex;gap:10px;flex-wrap:wrap}
+.toast{font-family:var(--mono);font-size:12px;color:var(--lima)}
+
+/* ideas */
+.ideas{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:16px}
+.icard{border:1px solid var(--linea);display:grid;align-content:start;min-width:0}
+.icard .ih{padding:18px;display:grid;gap:10px}
+.icard h3{margin:0;font-size:20px;font-weight:900;text-transform:uppercase;letter-spacing:-.015em;line-height:1}
+.icard .buyer{color:var(--gris2);font-size:13px;margin:0}
+.icard .pain{margin:0;font-size:14px}
+.lines{display:grid;border-top:1px solid var(--linea)}
+.lines div{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;padding:9px 18px;border-bottom:1px solid var(--negro3);font-size:13px}
+.lines div span:first-child{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);padding-top:2px}
+.sbar{display:grid;grid-template-columns:repeat(8,1fr);gap:3px}
+.sbar i{height:22px;background:var(--negro3);position:relative}
+.sbar i::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--s)*20%);background:var(--azul)}
+.icard .ev{padding:12px 18px;display:grid;gap:6px;font-size:13px}
+.icard .ev a{color:var(--azul2);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}
+.icard .ev a:hover{text-decoration:underline}
+.icard .risk{padding:0 18px 12px;color:var(--naranja);font-size:13px;margin:0}
+.icard .if{padding:12px 18px;border-top:1px solid var(--linea);display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.rank{display:grid;gap:6px}
+.rk{display:grid;grid-template-columns:minmax(0,200px) minmax(0,1fr) 44px;gap:12px;align-items:center;font-size:13px}
+.rk .tr{height:14px;background:var(--negro3);position:relative}
+.rk .tr i{position:absolute;inset:0 auto 0 0}
+.rk .tr .cut{position:absolute;top:-4px;bottom:-4px;left:75%;border-left:1px dashed var(--crema)}
+.rk b{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+
+/* estrategia */
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:1px;background:var(--linea);border:1px solid var(--linea)}
+.card{background:var(--negro);padding:22px;display:grid;gap:10px;align-content:start}
+.card .k{font-family:var(--mono);font-size:12px;color:var(--azul2)}
+.card h3{margin:0;font-size:17px;font-weight:800;line-height:1.15}
+.card p{margin:0;color:var(--gris2);font-size:14px}
+.card a{color:var(--gris);font-size:12px;font-family:var(--mono)}
+.compare{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.cbox{border:1px solid var(--linea);padding:22px;display:grid;gap:16px}
+.cbox.new{border-color:var(--azul)}
+.cbox svg{width:100%;height:auto;display:block}
+.timeline{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea)}
+.tl{background:var(--negro);padding:16px;display:grid;gap:8px;align-content:start}
+.tl.key{background:var(--negro2)}
+.tl b{font-size:13px;font-family:var(--mono);color:var(--azul2)}
+.tl p{margin:0;font-size:13px;color:var(--gris2)}
+.funnel{display:grid;gap:6px}
+.fn{display:grid;grid-template-columns:minmax(0,1fr) 120px;gap:14px;align-items:center}
+.fn div{background:var(--azul);color:var(--crema);padding:12px 16px;font-weight:700;font-size:14px;margin-inline:var(--m) auto;width:calc(100% - var(--m)*2)}
+.fn span{font-family:var(--mono);font-size:12px;color:var(--gris2);text-align:right}
+.donutwrap{display:grid;grid-template-columns:minmax(0,300px) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:center}
+.donutwrap svg{width:100%;height:auto;max-width:300px}
+.plist{display:grid;gap:14px}
+.pl{display:grid;grid-template-columns:56px minmax(0,1fr);gap:14px;align-items:baseline;padding-bottom:12px;border-bottom:1px solid var(--linea)}
+.pl b{font-size:28px;font-weight:900;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+.pl strong{display:block;font-size:15px}
+.pl span{color:var(--gris);font-size:13px}
+.week{display:grid;grid-template-columns:110px repeat(5,minmax(0,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea);min-width:760px}
+.week div{background:var(--negro);padding:12px;font-size:13px;min-height:58px}
+.week .wh{background:var(--negro2);font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gris);min-height:auto}
+.week .ch{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--crema);background:var(--negro2)}
+.week .x{color:var(--negro3)}
+.ten{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea)}
+.ten div{background:var(--negro);padding:16px;display:grid;gap:6px;align-content:start;font-size:13px}
+.ten b{font-size:26px;font-weight:900;color:var(--azul2);line-height:1}
+.flow{display:flex;gap:0;flex-wrap:wrap}
+.fl{flex:1 1 150px;border:1px solid var(--linea);margin:-1px 0 0 -1px;padding:16px;display:grid;gap:6px;position:relative}
+.fl b{font-family:var(--mono);font-size:11px;color:var(--azul2);letter-spacing:.1em}
+.fl span{font-size:14px;font-weight:600}
+.warn{border-left:3px solid var(--naranja);padding:16px 20px;background:var(--negro2);display:grid;gap:6px}
+.warn b{font-size:16px}
+.warn p{margin:0;color:var(--gris2);font-size:14px;max-width:80ch}
+.srcs{display:grid;gap:4px;font-size:12px;color:var(--gris)}
+.srcs a{color:var(--gris2)}
+.foot{padding-block:24px;border-top:1px solid var(--linea);font-family:var(--mono);font-size:11px;color:var(--gris)}
+
+@media (max-width:900px){
+  .vgrid,.donutwrap,.compare{grid-template-columns:1fr}
+  .result{position:static}
+  .timeline{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .ten{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .op{grid-template-columns:minmax(0,1fr) minmax(0,1fr);}
+  .op .opurl{grid-column:1 / -1}
+  .hb{grid-template-columns:minmax(0,1fr) 92px}
+  .hb .tr{grid-column:1 / -1;grid-row:2}
+  .rk{grid-template-columns:minmax(0,130px) minmax(0,1fr) 36px}
+  .sc{grid-template-columns:minmax(0,1fr) 28px auto}
+  .sc input[type=range]{grid-column:1 / -1;grid-row:2}
+  .who{display:none}
+}
+@media (max-width:520px){.pcard .mx{grid-template-columns:repeat(2,minmax(0,1fr))}.pcard .mx div:nth-child(2){border-right:0}.pcard .mx div:nth-child(-n+2){border-bottom:1px solid var(--linea)}.f2{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){.page{animation:none}*{transition:none!important}}
+
+/* ---- herramienta diaria ---- */
+.persona{display:flex;align-items:center;gap:8px;flex:none}
+.persona select{background:var(--negro2);border:1px solid var(--linea);color:var(--crema);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;min-height:36px;padding:0 10px;border-radius:0}
+.hola{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:end;margin-bottom:clamp(28px,4vw,48px)}
+.hola h1{font-size:clamp(48px,8vw,108px)}
+.hola h1 .it{color:var(--azul2)}
+.nextbox{border:1px solid var(--azul);padding:20px;display:grid;gap:10px}
+.nextbox b{font-size:20px;font-weight:800;line-height:1.15}
+.nextbox p{margin:0;color:var(--gris2);font-size:14px}
+.two{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:clamp(16px,3vw,32px);align-items:start}
+.panelbox{border:1px solid var(--linea);display:grid;align-content:start;min-width:0}
+.panelbox > header{padding:16px 18px;border-bottom:1px solid var(--linea);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.panelbox > header h2{margin:0;font-size:16px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em}
+.panelbox .body{padding:16px 18px;display:grid;gap:12px}
+.rowi{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--negro3)}
+.rowi:last-child{border-bottom:0}
+.rowi b{display:block;font-size:15px}
+.rowi small{color:var(--gris);font-size:12px;font-family:var(--mono);letter-spacing:.04em}
+.acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.team3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea)}
+.mem{background:var(--negro);padding:18px;display:grid;gap:8px;align-content:start}
+.mem .nm{font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:-.02em}
+.mem .ni{font-size:14px}
+.mem .ni.none{color:var(--gris)}
+.dots{display:flex;gap:4px;flex-wrap:wrap}
+.dots i{width:10px;height:10px;border-radius:50%;background:var(--negro3)}
+.dots i.on{background:var(--azul2)}
+.dots i.pub{background:var(--lima)}
+/* fases */
+.phases{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.phases i{height:6px;background:var(--negro3)}
+.phases i.done{background:var(--azul)}
+.phases i.now{background:var(--lima)}
+.prow{display:grid;gap:10px;padding:16px 0;border-bottom:1px solid var(--negro3)}
+.prow:last-child{border-bottom:0}
+.prow .top2{display:flex;justify-content:space-between;gap:10px;align-items:baseline;flex-wrap:wrap}
+.prow b{font-size:16px}
+.prow .hint{margin:0;color:var(--gris2);font-size:13px}
+/* generador */
+.genbar{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:10px;align-items:end}
+.thinking{font-family:var(--mono);font-size:12px;color:var(--lima);letter-spacing:.06em}
+.lad{display:grid;border-top:1px solid var(--linea)}
+.lad div{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:10px;padding:9px 18px;border-bottom:1px solid var(--negro3);font-size:13px;align-items:baseline}
+.lad div span:first-child{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris)}
+.lad div span:last-child{font-family:var(--mono);font-size:12px;color:var(--crema2);white-space:nowrap}
+.tag{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);border:1px dashed var(--linea);padding:3px 6px}
+/* kanban */
+.kanban{display:grid;grid-template-columns:repeat(6,minmax(220px,1fr));gap:10px;overflow-x:auto;padding-bottom:8px}
+.kcol{background:var(--negro2);border:1px solid var(--linea);display:grid;align-content:start;gap:8px;padding:10px;min-height:200px}
+.kcol > header{display:flex;justify-content:space-between;align-items:baseline;padding:4px 4px 8px;border-bottom:1px solid var(--linea)}
+.kcol > header b{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.kcol > header span{font-family:var(--mono);font-size:12px;color:var(--gris)}
+.kcol p.kh{margin:0;font-size:12px;color:var(--gris);padding:0 4px}
+.ncard{appearance:none;text-align:left;width:100%;background:var(--negro);border:1px solid var(--linea);padding:12px;display:grid;gap:8px;cursor:pointer;color:var(--crema);transition:border-color .2s var(--ease)}
+.ncard:hover{border-color:var(--gris)}
+.ncard b{font-size:15px;font-weight:800;line-height:1.15}
+.ncard .r{display:flex;justify-content:space-between;gap:6px;align-items:center;flex-wrap:wrap}
+.ncard small{font-family:var(--mono);font-size:11px;color:var(--gris)}
+.minibar{height:4px;background:var(--negro3);position:relative}
+.minibar i{position:absolute;inset:0 auto 0 0;background:var(--azul2)}
+/* drawer */
+.scrim{position:fixed;inset:0;background:rgba(13,13,14,.72);z-index:40}
+.scrim[hidden]{display:none}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(640px,100%);background:var(--negro);border-left:1px solid var(--linea);z-index:41;overflow-y:auto;padding:calc(env(safe-area-inset-top,0px) + 20px) clamp(16px,3vw,28px) calc(env(safe-area-inset-bottom,0px) + 40px);display:grid;align-content:start;gap:20px;animation:slide .28s var(--ease)}
+.drawer[hidden]{display:none}
+@keyframes slide{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}
+.drawer h2{margin:0;font-size:clamp(28px,4vw,40px);font-weight:900;text-transform:uppercase;letter-spacing:-.025em;line-height:.95}
+.dsec{display:grid;gap:10px;border-top:1px solid var(--linea);padding-top:16px}
+.dsec h3{margin:0;font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--gris);font-weight:500}
+.dsec p{margin:0;font-size:14px;color:var(--crema2)}
+.opsl{display:grid;gap:6px}
+.opr{display:grid;grid-template-columns:minmax(0,1fr) 56px 56px 70px 28px;gap:8px;align-items:center;font-size:13px;padding:8px 0;border-bottom:1px solid var(--negro3)}
+.opr a{color:var(--azul2);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.opr .ok{color:var(--lima)} .opr .no{color:var(--naranja)}
+.opr .n{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums}
+.opr.h{font-family:var(--mono);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris)}
+.addop{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1.6fr) 64px 64px;gap:6px;align-items:end}
+.addop .tog{grid-column:1 / 3}
+.x{appearance:none;background:none;border:0;color:var(--gris);cursor:pointer;font-size:16px;min-width:28px;min-height:28px}
+.closeb{position:sticky;top:0;justify-self:end;z-index:2}
+.rules{display:grid;gap:6px}
+.queue{display:grid;gap:0}
+.qi{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;padding:10px 0;border-bottom:1px solid var(--negro3);font-size:13px}
+.qi small{color:var(--gris);font-family:var(--mono);font-size:11px}
+.engine{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:var(--linea);border:1px solid var(--linea)}
+.engine div{background:var(--negro);padding:16px;display:grid;gap:6px}
+.engine b{font-family:var(--mono);font-size:11px;color:var(--azul2);letter-spacing:.1em}
+.engine span{font-size:14px}
+@media (max-width:900px){
+  .hola,.two{grid-template-columns:1fr}
+  .team3,.engine{grid-template-columns:1fr}
+  .genbar{grid-template-columns:1fr}
+  .addop{grid-template-columns:1fr 1fr}
+  .opr{grid-template-columns:minmax(0,1fr) 44px 44px 60px 28px}
+}
+
+.gate{position:fixed;inset:0;z-index:60;background:var(--negro);display:grid;place-items:center;padding:24px 16px;overflow-y:auto}
+.gate[hidden]{display:none}
+.gate-in{max-width:720px;width:100%;display:grid;gap:22px;justify-items:start}
+.gate h1{font-size:clamp(44px,8vw,96px)}
+.gate h1 .it{color:var(--azul2)}
+.gate p{margin:0;color:var(--gris2);max-width:52ch;font-size:16px}
+.toastbar{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 20px);transform:translate(-50%,20px);background:var(--crema);color:var(--negro);font-family:var(--mono);font-size:12px;letter-spacing:.04em;padding:12px 18px;margin:0;z-index:70;opacity:0;pointer-events:none;transition:opacity .25s var(--ease),transform .25s var(--ease);max-width:calc(100% - 32px)}
+.toastbar.on{opacity:1;transform:translate(-50%,0)}
+.persona{display:flex;gap:8px;align-items:center}
+.persona .btn{min-height:36px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="in">
+    <a class="logo" href="#hoy" aria-label="Orbit, control">
+      <svg width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10" fill="none" stroke="#F2EFE8" stroke-width="3" stroke-dasharray="54 9" transform="rotate(100 16 16)"/><circle cx="16" cy="26" r="3.6" fill="#3047FF"/></svg>
+      ORBIT <span class="lbl" style="letter-spacing:.14em">Control</span>
+    </a>
+    <nav class="nav" aria-label="Secciones">
+      <a href="#hoy">Hoy</a>
+      <a href="#buscar">Buscar</a>
+      <a href="#nichos">Nichos</a>
+      <a href="#productos">Productos</a>
+      <a href="#meta">Meta Ads</a>
+      <a href="#contenido">Contenido</a>
+    </nav>
+    <span class="persona"><b class="mono" id="meName" style="font-size:11px;letter-spacing:.1em;text-transform:uppercase">—</b><a class="btn sm" id="adminLink" href="admin.html" hidden>Panel</a><button class="btn sm" id="out" type="button">Salir</button></span>
+  </div>
+</header>
+<div class="gate" id="gate"><div class="gate-in"><svg width="56" height="56" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="10" fill="none" stroke="#F2EFE8" stroke-width="3" stroke-dasharray="54 9" transform="rotate(100 16 16)"/><circle cx="16" cy="26" r="3.6" fill="#3047FF"/></svg><h1 class="big" id="gateT">Cargando el <span class="it">control.</span></h1><p id="gateMsg"></p><div id="gateAct"></div></div></div>
+
+<main>
+
+<!-- ================= HOY ================= -->
+<section class="page in" id="p-hoy" data-page="hoy">
+  <div class="hola">
+    <div>
+      <span class="lbl" id="hoyDate">Hoy</span>
+      <h1 class="big">Hola, <span class="it" id="hoyName">Majo</span>.</h1>
+    </div>
+    <div class="nextbox" id="nextBox"><span class="lbl">Tu próximo paso</span><b>Cargando…</b></div>
+  </div>
+
+  <div class="two">
+    <div class="panelbox" id="myNicheBox">
+      <header><h2>Tu nicho</h2></header>
+      <div class="body"><p class="lbl">Cargando…</p></div>
+    </div>
+    <div class="panelbox" id="sideBox">
+      <header><h2 id="sideTitle">Para aprobar</h2></header>
+      <div class="body"><p class="lbl">Cargando…</p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Tus ventas</h2><p>Pedidos pagados en la web de los productos que son tuyos.</p></div>
+    <div class="kpis" id="myKpis"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Tus productos</h2><p>Cada producto avanza por fases. Tocá "Avanzar" cuando termines la fase.</p></div>
+    <div class="panelbox"><div class="body" id="myProds"><p class="lbl">Cargando…</p></div></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>El equipo</h2><p>Un nicho activo por persona. Los puntos son productos: azul en desarrollo, lima publicados.</p></div>
+    <div class="team3" id="teamBox"></div>
+  </div>
+</section>
+
+<!-- ================= BUSCAR ================= -->
+<section class="page in" id="p-buscar" data-page="buscar" hidden>
+  <div class="hero">
+    <span class="lbl">Buscar nichos</span>
+    <h1 class="big">Ideas que <span class="it">se venden.</span></h1>
+    <p>La IA propone nichos al instante siguiendo las reglas de Orbit. Lo que mandás a investigar lo revisa Claude cada mañana en Espiad y en la Biblioteca de anuncios de Meta, y vuelve con anunciantes reales, precios y veredicto.</p>
+  </div>
+
+  <div class="engine">
+    <div><b>01 · AL INSTANTE</b><span>La IA propone nichos y una escalera de productos. Es hipótesis: todavía sin evidencia.</span></div>
+    <div><b>02 · CADA MAÑANA</b><span>Claude busca en Espiad y en Meta desde el Chrome de Majo y carga anunciantes, avisos activos, días y precio.</span></div>
+    <div><b>03 · VEREDICTO</b><span>Con 3 anunciantes que cumplen y 30/40 de puntaje, el nicho queda GO y Majo lo aprueba como opción.</span></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Generar ideas</h2><p>Dejá el tema vacío para que proponga libre.</p></div>
+    <form class="genbar" id="genForm">
+      <label class="fld" for="genQ">Tema, rubro u oficio<input class="inp" id="genQ" placeholder="Ej.: oficios de la construcción, salud administrativa, gastronomía"></label>
+      <label class="fld" for="genLinea">Línea<select class="inp" id="genLinea"><option value="cualquiera">Cualquiera</option><option value="plantilla">Plantillas</option><option value="sistema">Sistemas</option><option value="microapp">Microapps</option></select></label>
+      <button class="btn pri" type="submit" id="genBtn">Generar 6 ideas</button>
+    </form>
+    <p class="thinking" id="genStatus" role="status"></p>
+    <div class="ideas" id="genOut"></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Traer de Espiad</h2><p>Pide a la investigación de mañana que recorra Espiad buscando ofertas escaladas que Orbit pueda resolver mejor.</p></div>
+    <form class="genbar" id="espForm">
+      <label class="fld" for="espQ">Categoría o palabra en Espiad<input class="inp" id="espQ" placeholder="Ej.: Negocios, Recetas, planilla, Excel"></label>
+      <span></span>
+      <button class="btn" type="submit">Pedir a Espiad</button>
+    </form>
+    <p class="thinking" id="espStatus" role="status"></p>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Cola de investigación</h2><p id="queueMeta">Corre de lunes a sábado a las 7:58 desde la compu de Majo.</p></div>
+    <div class="queue" id="queueList"><p class="lbl">Cargando…</p></div>
+  </div>
+</section>
+
+<!-- ================= NICHOS ================= -->
+<section class="page in" id="p-nichos" data-page="nichos" hidden>
+  <div class="hero">
+    <span class="lbl">Tablero de nichos</span>
+    <h1 class="big">De idea a <span class="it">nicho tomado.</span></h1>
+    <p>Cada nicho pasa por estas columnas. El veredicto lo calculan las reglas, no la opinión: anunciantes que cumplen, puntaje y precio del ancla. Tocá un nicho para ver todo y actuar.</p>
+  </div>
+  <div class="kanban" id="board"></div>
+  <div class="sec">
+    <div class="sec-h"><h2>Las reglas del veredicto</h2></div>
+    <div class="cards">
+      <div class="card"><span class="chip st-GO">GO</span><p>3 anunciantes que cumplen, 30/40 o más y ancla entre USD 39 y 69.</p></div>
+      <div class="card"><span class="chip st-WATCH">Watch</span><p>Al menos 1 anunciante que cumple y 30/40. Falta evidencia.</p></div>
+      <div class="card"><span class="chip st-RESEARCH">Research</span><p>Hay datos, pero no alcanzan para decidir.</p></div>
+      <div class="card"><span class="chip st-KILL">Kill</span><p>Menos de 24/40 o promete resultados de salud, legales o de ingresos.</p></div>
+      <div class="card"><span class="k">Anunciante que cumple</span><p>Link a la oferta, checkout visible, 15 o más avisos activos y 7 o más días activo. No cuenta una marca personal.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= PRODUCTOS ================= -->
+<section class="page in" id="p-productos" data-page="productos" hidden>
+  <div class="hero">
+    <span class="lbl">Productos</span>
+    <h1 class="big"><span id="catHead">—</span></h1>
+    <p>Publicados con sus ventas reales de la web y los que están en desarrollo. Majo carga la pauta de Meta cada viernes.</p>
+  </div>
+  <div class="kpis">
+    <div class="kpi"><span class="lbl">Ventas en la web</span><b class="num" data-k="ventas">—</b><small data-k="ventasub">Pedidos pagados</small></div>
+    <div class="kpi"><span class="lbl">Gasto en pauta</span><b class="num c-na" data-k="gasto">—</b><div class="bar"><i data-k="gastobar" style="width:0"></i></div><small data-k="gastosub">ARS</small></div>
+    <div class="kpi"><span class="lbl">Facturado</span><b class="num c-li" data-k="fact">—</b><small data-k="factsub">ARS</small></div>
+    <div class="kpi"><span class="lbl">En desarrollo</span><b class="num c-az" data-k="dev">—</b><small>Productos antes de publicar</small></div>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><h2>Gasto contra ingreso</h2></div>
+    <div class="legend"><span><i style="background:var(--naranja)"></i>Gasto</span><span><i style="background:var(--lima)"></i>Ingreso</span></div>
+    <div class="hbars" id="spendChart"></div>
+  </div>
+  <div class="sec">
+    <div class="sec-h">
+      <h2>Todos</h2>
+      <div class="filters" id="catFilters" role="group" aria-label="Filtrar">
+        <button class="filt" aria-pressed="true" data-f="todas">Todos</button>
+        <button class="filt" aria-pressed="false" data-f="dev">En desarrollo</button>
+        <button class="filt" aria-pressed="false" data-f="pub">Publicados</button>
+      </div>
+    </div>
+    <div class="grid" id="prodGrid"><div class="empty"><b>Cargando…</b></div></div>
+  </div>
+</section>
+<!-- ================= META ADS ================= -->
+<section class="page in" id="p-meta" data-page="meta" hidden>
+  <div class="hero">
+    <span class="lbl">04 · Estrategia en Meta Ads</span>
+    <h1 class="big">Menos conjuntos, <span class="it">más señal.</span></h1>
+    <p>Nueve conjuntos con este presupuesto le dan a cada uno muy poca plata para aprender. La propuesta: 1 campaña, 2 conjuntos, productos de USD 19 o más y 4–5 creativos distintos de verdad en cada uno.</p>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><span class="lbl">Gastado</span><b class="num c-na">93.576</b><small>ARS, 05–08.10</small></div>
+    <div class="kpi"><span class="lbl">Ventas</span><b class="num">3</b><small>2 Comandos, 1 Postres</small></div>
+    <div class="kpi"><span class="lbl">Costo por venta</span><b class="num">31.192</b><small>ARS. El ticket más alto pautado es ARS 12.990</small></div>
+    <div class="kpi"><span class="lbl">CTR</span><b class="num c-az">1,14%</b><small>Mediana Argentina ≈ 1,49%</small></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Lo que corrió</h2><p>Por conjunto, ordenado por gasto. Fuente: Ads Manager, cuenta Orbit Ads.</p></div>
+    <div class="tw"><table>
+      <thead><tr><th>Conjunto</th><th>Estado</th><th class="n">Gasto ARS</th><th class="n">Impresiones</th><th class="n">Clics</th><th class="n">CTR</th><th class="n">CPC ARS</th><th class="n">Ventas</th></tr></thead>
+      <tbody>
+        <tr><td>Comandos · C · ¿Qué térmico le pongo?</td><td><span class="chip v-escalar">Activo</span></td><td class="n">20.637</td><td class="n">2.149</td><td class="n">36</td><td class="n">1,68%</td><td class="n">573</td><td class="n">1</td></tr>
+        <tr><td>Comandos · E · Encontrá la falla</td><td><span class="chip v-escalar">Activo</span></td><td class="n">19.552</td><td class="n">3.390</td><td class="n">49</td><td class="n">1,45%</td><td class="n">399</td><td class="n">1</td></tr>
+        <tr><td>Comandos · A · Si te falta este contacto</td><td><span class="chip v-sin">Pausado</span></td><td class="n">10.730</td><td class="n">1.759</td><td class="n">12</td><td class="n">0,68%</td><td class="n">894</td><td class="n">0</td></tr>
+        <tr><td>Postres · A · ¿$2.500 o $6.000?</td><td><span class="chip v-escalar">Activo</span></td><td class="n">9.523</td><td class="n">1.222</td><td class="n">11</td><td class="n">0,90%</td><td class="n">866</td><td class="n">1</td></tr>
+        <tr><td>Tardes · E · Una tarde sin celular</td><td><span class="chip v-sin">Pausado</span></td><td class="n">8.716</td><td class="n">1.100</td><td class="n">11</td><td class="n">1,00%</td><td class="n">792</td><td class="n">0</td></tr>
+        <tr><td>Postres · D · Estás regalando 3 horas</td><td><span class="chip v-sin">Pausado</span></td><td class="n">7.735</td><td class="n">752</td><td class="n">6</td><td class="n">0,80%</td><td class="n">1.289</td><td class="n">0</td></tr>
+        <tr><td>Tardes · C · Imprimí una hoja</td><td><span class="chip v-sin">Pausado</span></td><td class="n">7.712</td><td class="n">908</td><td class="n">9</td><td class="n">0,99%</td><td class="n">857</td><td class="n">0</td></tr>
+        <tr><td>Tardes · A · ¿Y ahora qué hago?</td><td><span class="chip v-sin">Pausado</span></td><td class="n">6.342</td><td class="n">589</td><td class="n">2</td><td class="n">0,34%</td><td class="n">3.171</td><td class="n">0</td></tr>
+        <tr><td>Postres · B · No vendas tu primer postre</td><td><span class="chip v-sin">Pausado</span></td><td class="n">2.630</td><td class="n">121</td><td class="n">1</td><td class="n">0,83%</td><td class="n">2.630</td><td class="n">0</td></tr>
+      </tbody>
+    </table></div>
+    <div class="warn">
+      <b>Los hooks que funcionan son preguntas técnicas del oficio</b>
+      <p>"¿Qué térmico le pongo?" y "Encontrá la falla" tienen el mejor CTR y las dos ventas de Comandos. Los hooks emocionales de Tardes y Postres quedaron abajo del 1%. El problema es el ticket: ARS 12.990 no cubre un costo por venta de ARS 25.000.</p>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Hoy contra la propuesta</h2></div>
+    <div class="compare">
+      <div class="cbox">
+        <span class="lbl">Hoy · 9 conjuntos</span>
+        <svg viewBox="0 0 400 180" role="img" aria-label="Una campaña repartida en 9 conjuntos con muy poco presupuesto cada uno">
+          <rect x="170" y="10" width="60" height="28" fill="none" stroke="#F2EFE8" stroke-width="1.5"/>
+          <g stroke="#2E2E31" stroke-width="1.5">
+            <line x1="200" y1="38" x2="22" y2="120"/><line x1="200" y1="38" x2="66" y2="120"/><line x1="200" y1="38" x2="110" y2="120"/><line x1="200" y1="38" x2="155" y2="120"/><line x1="200" y1="38" x2="200" y2="120"/><line x1="200" y1="38" x2="245" y2="120"/><line x1="200" y1="38" x2="290" y2="120"/><line x1="200" y1="38" x2="334" y2="120"/><line x1="200" y1="38" x2="378" y2="120"/>
+          </g>
+          <g fill="#FF4F2E"><circle cx="22" cy="130" r="9"/><circle cx="66" cy="130" r="9"/><circle cx="110" cy="130" r="9"/><circle cx="155" cy="130" r="9"/><circle cx="200" cy="130" r="9"/><circle cx="245" cy="130" r="9"/><circle cx="290" cy="130" r="9"/><circle cx="334" cy="130" r="9"/><circle cx="378" cy="130" r="9"/></g>
+          <text x="200" y="168" text-anchor="middle" fill="#8C8A84" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1">CADA UNO APRENDE POCO</text>
+        </svg>
+      </div>
+      <div class="cbox new">
+        <span class="lbl" style="color:var(--azul2)">Propuesta · 2 conjuntos</span>
+        <svg viewBox="0 0 400 180" role="img" aria-label="Una campaña de Ventas con 2 conjuntos, cada uno con 4 o 5 creativos distintos">
+          <rect x="150" y="10" width="100" height="28" fill="#3047FF"/>
+          <text x="200" y="29" text-anchor="middle" fill="#F2EFE8" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1">VENTAS</text>
+          <g stroke="#6B7DFF" stroke-width="2"><line x1="200" y1="38" x2="110" y2="90"/><line x1="200" y1="38" x2="290" y2="90"/></g>
+          <circle cx="110" cy="100" r="22" fill="#3047FF"/><circle cx="290" cy="100" r="22" fill="#3047FF"/>
+          <g fill="#F2EFE8"><circle cx="70" cy="150" r="6"/><circle cx="90" cy="150" r="6"/><circle cx="110" cy="150" r="6"/><circle cx="130" cy="150" r="6"/><circle cx="150" cy="150" r="6"/><circle cx="250" cy="150" r="6"/><circle cx="270" cy="150" r="6"/><circle cx="290" cy="150" r="6"/><circle cx="310" cy="150" r="6"/><circle cx="330" cy="150" r="6"/></g>
+          <text x="200" y="176" text-anchor="middle" fill="#8C8A84" font-family="IBM Plex Mono, monospace" font-size="11" letter-spacing="1">4–5 CREATIVOS DISTINTOS POR CONJUNTO</text>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Los 7 principios</h2></div>
+    <div class="cards">
+      <div class="card"><span class="k">01</span><h3>El creativo segmenta</h3><p>Meta encuentra al público por lo que muestra el anuncio. Un tablero eléctrico ya le habla al electricista.</p><a href="https://www.facebook.com/business/news/the-creative-advantage-unlocking-the-power-of-diversification-with-meta-andromeda" target="_blank" rel="noopener">Meta, Andromeda ↗</a></div>
+      <div class="card"><span class="k">02</span><h3>Distinto no es variante</h3><p>Si dos anuncios se parecen en los primeros 2 segundos, Meta los toma como uno. Cambiar el titular no alcanza.</p><a href="https://lineardesign.com/blog/metas-advantage-audience/" target="_blank" rel="noopener">Linear Design ↗</a></div>
+      <div class="card"><span class="k">03</span><h3>Consolidar</h3><p>Cada conjunto necesita unos 50 eventos por semana para aprender. Con menos de USD 1.000 al mes, pocos conjuntos.</p><a href="https://jetfuel.agency/what-is-the-meta-ads-learning-phase-how-to-exit-it-faster-in-2026/" target="_blank" rel="noopener">Jetfuel ↗</a></div>
+      <div class="card"><span class="k">04</span><h3>Audiencia abierta</h3><p>Advantage+ sin intereses dio 5% más conversiones que segmentar por intereses y 25% más que lookalikes.</p><a href="https://www.jonloomer.com/5-meta-ads-tests-targeting/" target="_blank" rel="noopener">Jon Loomer ↗</a></div>
+      <div class="card"><span class="k">05</span><h3>El ticket paga el CPA</h3><p>Con CPC de USD 0,19–0,38 y 1–3% de conversión, una venta cuesta USD 10–20. Un producto de USD 4 no se paga solo.</p><span class="lbl">Supuesto calculado</span></div>
+      <div class="card"><span class="k">06</span><h3>Decidir por CPA, no por días</h3><p>Se gasta 3 veces el CPA objetivo antes de juzgar un conjunto.</p><a href="https://www.flighted.co/blog/how-to-know-when-to-pause-a-meta-ad" target="_blank" rel="noopener">Flighted ↗</a></div>
+      <div class="card"><span class="k">07</span><h3>Señal limpia</h3><p>CAPI deduplicado, calidad de coincidencia alta y UTMs en cada anuncio.</p><a href="https://developers.facebook.com/documentation/ads-commerce/conversions-api/best-practices.md" target="_blank" rel="noopener">Meta Developers ↗</a></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Estructura</h2></div>
+    <div class="tw"><table>
+      <thead><tr><th>Nivel</th><th>Configuración</th><th>Por qué</th></tr></thead>
+      <tbody>
+        <tr><td>Campaña</td><td>1 campaña de Ventas con Advantage+</td><td>Las campañas Advantage+ de ventas dan en promedio 9% menos de CPA, según Meta</td></tr>
+        <tr><td>Presupuesto</td><td>Por conjunto: 2 × USD 4/día (≈ ARS 6.200 cada uno)</td><td>Cada conjunto es otro producto. Con presupuesto de campaña uno se queda sin gasto</td></tr>
+        <tr><td>Conjuntos</td><td>2, uno por producto de USD 19 o más</td><td>El resto se pausa. Los de USD 4–9 pasan a bump</td></tr>
+        <tr><td>Audiencia</td><td>Argentina, 25–65, Advantage+, compradores excluidos</td><td>El creativo hace la segmentación</td></tr>
+        <tr><td>Evento</td><td>Compra. Si al día 7 hay menos de 2 compras y 10 o más inicios de pago, pasar a Inicio de pago</td><td>Tráfico o visitas traen gente que clickea, no que compra</td></tr>
+        <tr><td>Anuncios</td><td>4–5 conceptos distintos: video, estático y carrusel</td><td>Con poco presupuesto, 3 o más conceptos realmente distintos</td></tr>
+      </tbody>
+    </table></div>
+    <div class="warn"><b>Presupuesto del test: ≈ ARS 172.000 en 14 días</b><p>Quedan ARS 60.424 del tope de ARS 154.000. Para correr el test completo a USD 8 por día hay que subir el tope. Si no, el test va con un solo conjunto a USD 5 por día. Pagar con tarjeta desde Argentina suma percepciones de IVA y Ganancias: el costo real por dólar es mayor.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Test de 14 días</h2></div>
+    <div class="timeline">
+      <div class="tl key"><b>Día 0</b><p>Pausar todo. Armar la campaña nueva, cargar UTMs, compra de prueba y verificar la deduplicación.</p></div>
+      <div class="tl"><b>Días 1–2</b><p>No tocar. Mirar que haya entrega y ningún rechazo.</p></div>
+      <div class="tl key"><b>Día 3</b><p>Primer corte de creativos por CTR, hook y CPC.</p></div>
+      <div class="tl"><b>Días 4–6</b><p>No tocar. Entra 1 concepto nuevo si se cortó alguno.</p></div>
+      <div class="tl key"><b>Día 7</b><p>Corte de conjunto por 3 × CPA. Decidir si se optimiza por inicio de pago.</p></div>
+      <div class="tl"><b>Días 8–13</b><p>El ganador se queda con todo. +20% cada 3 días si el CPA da.</p></div>
+      <div class="tl key"><b>Día 14</b><p>Escalar, cambiar landing o precio, o matar el producto.</p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Reglas de corte y escala</h2><p>Reemplazan las anteriores. CPA objetivo: USD 12 para productos de USD 19–29 (supuesto, ajustar al neto).</p></div>
+    <div class="tw"><table>
+      <thead><tr><th>Regla</th><th>Umbral</th><th>Cuándo</th><th>Base</th></tr></thead>
+      <tbody>
+        <tr><td>Cortar creativo</td><td>CTR de enlace menor a 0,8%</td><td>Con 2.000 impresiones</td><td><a href="https://www.superads.ai/facebook-ads-costs/ctr-click-through-rate/argentina" target="_blank" rel="noopener">Mediana AR 1,49%</a></td></tr>
+        <tr><td>Cortar creativo</td><td>Menos de 20% mira 3 segundos</td><td>Con 1.000 impresiones</td><td>Supuesto</td></tr>
+        <tr><td>Cortar por costo de clic</td><td>CPC mayor a USD 0,45</td><td>Día 3</td><td><a href="https://www.adamigo.ai/blog/meta-ads-cpm-cpc-benchmarks-by-country-2026" target="_blank" rel="noopener">Promedio AR USD 0,38</a></td></tr>
+        <tr><td>Cortar conjunto</td><td>0–1 ventas con USD 36 gastados</td><td>Sin importar el día</td><td><a href="https://www.flighted.co/blog/how-to-know-when-to-pause-a-meta-ad" target="_blank" rel="noopener">3 × CPA</a></td></tr>
+        <tr><td>Zona amarilla</td><td>2 ventas con USD 36</td><td>Seguir hasta USD 48</td><td>Ídem</td></tr>
+        <tr><td>Pausar todo</td><td>0 ventas en la cuenta con USD 70</td><td>En los 14 días</td><td>Es la oferta, no el anuncio</td></tr>
+        <tr><td>Escalar</td><td>CPA bajo el objetivo 3 días seguidos</td><td>+20% cada 3 días</td><td><a href="https://segwise.ai/blog/abo-cbo-meta-ads-budget-strategies" target="_blank" rel="noopener">Segwise</a></td></tr>
+        <tr><td>Fatiga</td><td>Frecuencia 7 días mayor a 3, o CTR -10% semana contra semana</td><td>Refrescar el concepto</td><td><a href="https://thesocialoutline.com/blog/meta-ads-frequency" target="_blank" rel="noopener">The Social Outline</a></td></tr>
+        <tr><td>Ruido</td><td>No decidir con diferencias menores a 25%</td><td>Siempre</td><td><a href="https://www.jonloomer.com/5-meta-ads-tests-targeting/" target="_blank" rel="noopener">Jon Loomer</a></td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Embudo de ticket bajo</h2><p>Donde van los productos de USD 4–9.</p></div>
+    <div class="funnel">
+      <div class="fn" style="--m:0px"><div>Entrada USD 19–29 · lo que se pauta</div><span>Anuncio</span></div>
+      <div class="fn" style="--m:24px"><div>Bump USD 5–9 en el checkout · 20–40% del precio</div><span>30–40% lo toma*</span></div>
+      <div class="fn" style="--m:48px"><div>Upsell al sistema ancla USD 49+</div><span>Página de gracias</span></div>
+      <div class="fn" style="--m:72px"><div>Recupero por email de pagos no terminados</div><span>Brevo</span></div>
+    </div>
+    <span class="lbl">* Dato del propio proveedor (<a href="https://www.samcart.com/blog/the-complete-guide-to-order-bumps" target="_blank" rel="noopener" style="color:var(--gris2)">SamCart</a>), no independiente</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Formatos de anuncio</h2><p>Todos sin caras. Video 9:16 de 1080×1920, imagen 4:5.</p></div>
+    <div class="cards">
+      <div class="card"><span class="k">Demo de pantalla · 15–25 s</span><h3>El resultado primero</h3><p>Segundo 1: el presupuesto ya armado. Después 3 pasos reales y el precio.</p></div>
+      <div class="card"><span class="k">Problema → herramienta</span><h3>Antes y después</h3><p>Libreta o WhatsApp desordenado, corte a Orbit resolviéndolo.</p></div>
+      <div class="card"><span class="k">Manos en el oficio</span><h3>El lugar real</h3><p>Celular en la cabina del flete, junto al tablero o en la cocina.</p></div>
+      <div class="card"><span class="k">Estático 4:5</span><h3>Ficha técnica</h3><p>Mockup del producto y 3 números: tiempo, contenido, precio.</p></div>
+      <div class="card"><span class="k">Carrusel 4–6</span><h3>Paso a paso</h3><p>Una pantalla por tarjeta. La última, precio y 10 días de arrepentimiento.</p></div>
+      <div class="card"><span class="k">Tipografía · 8–12 s</span><h3>Solo texto Orbit</h3><p>Dolor, solución, precio. Barato de hacer, sirve para probar ángulos.</p></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Checklist</h2></div>
+    <div class="cards">
+      <div class="card"><span class="k">Medición</span><ul style="margin:0;padding-left:18px;color:var(--gris2);font-size:14px;display:grid;gap:6px"><li>Píxel y CAPI con el mismo event_id en Compra, Inicio de pago y Carrito</li><li>Calidad de coincidencia de Compra de 8 o más</li><li>Atribución 7 días clic + 1 día vista</li><li>UTMs dinámicas en todos los anuncios</li><li>Privacidad y cookies que nombren Píxel y CAPI</li></ul></div>
+      <div class="card"><span class="k">Lo que Meta rechaza</span><ul style="margin:0;padding-left:18px;color:var(--gris2);font-size:14px;display:grid;gap:6px"><li>"Ganá $X por mes" o "facturá el doble"</li><li>Preguntas sobre atributos del que mira: "¿Estás endeudado?"</li><li>"Evitá multas" o "liquidá sin contador"</li><li>Una landing que no cumple lo que promete el anuncio</li></ul><a href="https://transparency.meta.com/policies/ad-standards/deceptive-content/unrealistic-outcomes" target="_blank" rel="noopener">Normas de Meta ↗</a></div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= CONTENIDO ================= -->
+<section class="page in" id="p-contenido" data-page="contenido" hidden>
+  <div class="hero">
+    <span class="lbl">05 · Estrategia de contenido</span>
+    <h1 class="big">El producto es <span class="it">el protagonista.</span></h1>
+    <p>Instagram es el canal principal: reels de demo y carruseles para guardar y mandar. El link llega por DM cuando comentan una palabra. TikTok recibe el mismo material y Pinterest queda en segundo plano.</p>
+  </div>
+
+  <div class="kpis">
+    <div class="kpi"><span class="lbl">Instagram en Argentina</span><b class="num c-az">67,7%</b><small>De la población. <a href="https://datareportal.com/reports/digital-2026-argentina" target="_blank" rel="noopener" style="color:var(--gris2)">DataReportal 2026</a></small></div>
+    <div class="kpi"><span class="lbl">Pinterest en Argentina</span><b class="num">26%</b><small>De la población. Misma fuente</small></div>
+    <div class="kpi"><span class="lbl">Alcance de reels</span><b class="num c-na">−35%</b><small>Interanual. <a href="https://www.socialmediatoday.com/press-release/20251209-instagram-reels-decline-youtube-views-increase-competition-surges-on-link" target="_blank" rel="noopener" style="color:var(--gris2)">Metricool, dic 2025</a></small></div>
+    <div class="kpi"><span class="lbl">Views para 10 ventas</span><b class="num">150–250k</b><small>Supuesto. El orgánico solo no llega: alimenta a los anuncios</small></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Cuatro correcciones</h2></div>
+    <div class="cards">
+      <div class="card"><span class="k">01</span><h3>Marca fijada, producto desde el día 1</h3><p>Una marca que nadie conoce no consigue alcance hablando de sí misma. 3 posts de marca fijados y después reels de problema → herramienta.</p></div>
+      <div class="card"><span class="k">02</span><h3>Trial Reels todavía no</h3><p>Piden 1.000 seguidores.</p><a href="https://betanews.com/2025/07/14/instagram-opens-up-trial-reels-feature-to-more-creators/" target="_blank" rel="noopener">Betanews ↗</a></div>
+      <div class="card"><span class="k">03</span><h3>Una cuenta, series por oficio</h3><p>Cada oficio con su código visual y su destacado. La semana del drop, ese oficio domina el feed.</p></div>
+      <div class="card"><span class="k">04</span><h3>TikTok como Business</h3><p>Una cuenta Business tiene link en la bio sin mínimo de seguidores.</p><a href="https://stan.store/blog/tiktok-link-bio-requirements-2026-guide/" target="_blank" rel="noopener">Stan ↗</a></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Qué premia el algoritmo</h2></div>
+    <div class="cards">
+      <div class="card"><span class="k">Señales top</span><h3>Tiempo de visualización, me gusta y envíos</h3><p>Para llegar a no seguidores, pesan más los envíos por DM.</p><a href="https://www.socialmediatoday.com/news/instagram-shares-algorithm-insights-2025/738034/" target="_blank" rel="noopener">Mosseri vía SMT ↗</a></div>
+      <div class="card"><span class="k">Primeros 3 segundos</span><h3>Tasa de salteo</h3><p>Instagram mide cuánta gente pasa el reel antes de 3 segundos. Ahí va el problema del oficio, no la marca.</p><a href="https://www.socialsamosa.com/news-2/instagram-retention-chart-skip-rate-new-performance-metrics-reels-9730992" target="_blank" rel="noopener">Social Samosa ↗</a></div>
+      <div class="card"><span class="k">Originalidad</span><h3>Grabar el producto propio</h3><p>Desde el 30.04.2026 las cuentas que repostean contenido ajeno pierden recomendaciones.</p><a href="https://techcrunch.com/2026/04/30/instagram-restricts-reach-of-content-aggregators-in-new-crackdown/" target="_blank" rel="noopener">TechCrunch ↗</a></div>
+      <div class="card"><span class="k">Google</span><h3>El caption es SEO</h3><p>Google indexa los posts públicos de cuentas profesionales. Primera línea y texto alternativo con la palabra del oficio.</p><a href="https://metricool.com/instagram-indexing-on-google/" target="_blank" rel="noopener">Metricool ↗</a></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Pilares</h2><p>Porcentajes adaptados de una fuente secundaria; se ajustan con datos propios.</p></div>
+    <div class="donutwrap">
+      <svg viewBox="0 0 200 200" role="img" aria-label="Pilares de contenido: dolor del oficio 35%, demo 30%, venta 15%, marca 10%, prueba 10%">
+        <g transform="rotate(-90 100 100)" fill="none" stroke-width="34">
+          <circle cx="100" cy="100" r="70" stroke="#3047FF" stroke-dasharray="153.9 439.8"/>
+          <circle cx="100" cy="100" r="70" stroke="#6B7DFF" stroke-dasharray="131.9 439.8" stroke-dashoffset="-153.9"/>
+          <circle cx="100" cy="100" r="70" stroke="#D9FF45" stroke-dasharray="66 439.8" stroke-dashoffset="-285.8"/>
+          <circle cx="100" cy="100" r="70" stroke="#F2EFE8" stroke-dasharray="44 439.8" stroke-dashoffset="-351.8"/>
+          <circle cx="100" cy="100" r="70" stroke="#FF4F2E" stroke-dasharray="44 439.8" stroke-dashoffset="-395.8"/>
+        </g>
+        <text x="100" y="98" text-anchor="middle" fill="#F2EFE8" font-family="Inter Tight, sans-serif" font-weight="900" font-size="22">5</text>
+        <text x="100" y="116" text-anchor="middle" fill="#8C8A84" font-family="IBM Plex Mono, monospace" font-size="9" letter-spacing="1">PILARES</text>
+      </svg>
+      <div class="plist">
+        <div class="pl"><b style="color:#3047FF">35%</b><div><strong>Dolor del oficio</strong><span>El costo real del error, mitos, cuentas</span></div></div>
+        <div class="pl"><b style="color:#6B7DFF">30%</b><div><strong>Demo del producto</strong><span>La herramienta resolviendo en pantalla</span></div></div>
+        <div class="pl"><b style="color:#D9FF45">15%</b><div><strong>Venta directa</strong><span>Oferta, precio de lanzamiento, comentá PALABRA</span></div></div>
+        <div class="pl"><b>10%</b><div><strong>Marca Orbit</strong><span>Manifiesto, detrás del diseño</span></div></div>
+        <div class="pl"><b style="color:#FF4F2E">10%</b><div><strong>Prueba</strong><span>Preguntas y capturas de compradores, cuando existan</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Formatos</h2><p>Ejemplos para fleteros. Duraciones a ajustar con el gráfico de retención.</p></div>
+    <div class="tw"><table>
+      <thead><tr><th>Formato</th><th>Qué muestra</th><th>Duración</th><th>Para qué</th><th>Ejemplo</th></tr></thead>
+      <tbody>
+        <tr><td><b>Problema → herramienta</b></td><td>Dolor en texto y la planilla resolviéndolo</td><td>7–15 s</td><td>Alcance y envíos</td><td>"¿Cobrás el flete a ojo?" → aparece la tarifa</td></tr>
+        <tr><td><b>Revelación de calculadora</b></td><td>Se cargan datos y aparece un número que duele</td><td>10–20 s</td><td>Retención y comentarios</td><td>"Este viaje te deja $X, no $Y"</td></tr>
+        <tr><td><b>Antes / después</b></td><td>Cuaderno contra tablero Orbit</td><td>8–12 s</td><td>Envíos</td><td>Viajes en papel → panel de cobros</td></tr>
+        <tr><td><b>POV</b></td><td>Situación del oficio en primera persona</td><td>6–10 s</td><td>Identificación</td><td>"POV: el cliente pregunta cuánto te debe"</td></tr>
+        <tr><td><b>Mito vs. realidad</b></td><td>Creencia del oficio contra el número</td><td>5–7 slides</td><td>Guardados</td><td>"Si hay viaje, hay ganancia"</td></tr>
+        <tr><td><b>Carrusel tutorial</b></td><td>Pasos con la herramienta</td><td>6–10 slides</td><td>Guardados y envíos</td><td>"Tu tarifa por km en 4 pasos"</td></tr>
+        <tr><td><b>Demo grabada</b></td><td>Recorrido con zoom y cursor</td><td>20–40 s</td><td>Intención de compra</td><td>Recorrido por OB—007</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Semana tipo</h2><p>3–5 posts por semana en Instagram dan 12% más de alcance que 1–2 (<a href="https://buffer.com/library/how-often-to-post-on-instagram/" target="_blank" rel="noopener" style="color:var(--gris2)">Buffer</a>).</p></div>
+    <div class="tw" style="border:0"><div class="week">
+      <div class="wh"></div><div class="wh">Lun</div><div class="wh">Mar</div><div class="wh">Mié</div><div class="wh">Jue</div><div class="wh">Vie</div>
+      <div class="ch">Instagram</div><div>Reel problema → herramienta</div><div>Carrusel tutorial o mito</div><div>Historias con encuesta</div><div>Demo + comentá PALABRA</div><div>Antes/después + venta del drop</div>
+      <div class="ch">TikTok</div><div>El mismo reel con voz</div><div>Revelación de calculadora</div><div>POV</div><div>Demo</div><div>Antes/después</div>
+      <div class="ch">Pinterest</div><div>2 pins con link a la ficha</div><div>2 pins</div><div class="x">—</div><div>2 pins, otra variante</div><div>2–4 pins</div>
+      <div class="ch">Historias</div><div>Diarias</div><div>Caja de preguntas</div><div>Encuesta</div><div>Link a lista de espera</div><div>Diarias</div>
+    </div></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>1 producto → 10 piezas</h2><p>Una sola sesión de grabación de pantalla da las piezas 1 a 4 y la 7.</p></div>
+    <div class="ten">
+      <div><b>01</b>Reel problema → herramienta</div>
+      <div><b>02</b>Reel revelación de calculadora</div>
+      <div><b>03</b>Reel antes/después</div>
+      <div><b>04</b>Reel POV</div>
+      <div><b>05</b>Carrusel tutorial</div>
+      <div><b>06</b>Carrusel mito vs. realidad</div>
+      <div><b>07</b>Demo grabada → anuncio</div>
+      <div><b>08</b>Secuencia de historias</div>
+      <div><b>09</b>3–5 pins con variantes</div>
+      <div><b>10</b>Email a la lista con GIF</div>
+    </div>
+    <div class="warn"><b>Lo que gana en orgánico se pauta</b><p>Cada semana, los reels con más envíos por alcance y menos salteo pasan a Meta Ads tal cual. Los 4 formatos de reel de cada producto ya cumplen la variedad que pide Andromeda.</p></div>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Del comentario a la venta</h2><p>Con ManyChat Pro (USD 29/mes, <a href="https://manychat.com/pricing" target="_blank" rel="noopener" style="color:var(--gris2)">precio</a>). El plan gratis no alcanza.</p></div>
+    <div class="flow">
+      <div class="fl"><b>01</b><span>Comentá FLETE</span></div>
+      <div class="fl"><b>02</b><span>DM con botón "Mandámela"</span></div>
+      <div class="fl"><b>03</b><span>Pide email, etiqueta por oficio</span></div>
+      <div class="fl"><b>04</b><span>Link a la ficha con UTM</span></div>
+      <div class="fl"><b>05</b><span>Recordatorio a las 23 h</span></div>
+    </div>
+    <span class="lbl">Palabras por oficio: FLETE · LEGAL · LUZ · TORTA. Los disparadores de comentarios no funcionan en anuncios (<a href="https://manychat.com/blog/how-to-automate-your-comments-with-manychat/" target="_blank" rel="noopener" style="color:var(--gris2)">ManyChat</a>).</span>
+  </div>
+
+  <div class="sec">
+    <div class="sec-h"><h2>Métricas y metas a 60 días</h2></div>
+    <div class="tw"><table>
+      <thead><tr><th>Métrica</th><th>Referencia</th><th>Meta Orbit</th></tr></thead>
+      <tbody>
+        <tr><td>Views por reel</td><td>Mediana 134 en cuentas de menos de 1.000 (<a href="https://www.netinfluencer.com/instagram-carousels-outperform-reels-for-larger-accounts-content-performance-benchmarks-show/" target="_blank" rel="noopener">Metricool</a>)</td><td>Más de 300 (supuesto)</td></tr>
+        <tr><td>Envíos por alcance</td><td>Sin benchmark público</td><td>1% o más (supuesto)</td></tr>
+        <tr><td>Views → visita al perfil</td><td>1–3% (fuente secundaria)</td><td>2%</td></tr>
+        <tr><td>Perfil → clic al link</td><td>10–25% (misma fuente)</td><td>15%</td></tr>
+        <tr><td>DM → clic al link</td><td>Más de 70% con botón antes del link (<a href="https://nowbam.com/the-broke-agent-shares-the-manychat-dm-sequence-that-took-his-instagram-click-through-rate-from-under-20-back-above-70/" target="_blank" rel="noopener">caso</a>)</td><td>50%</td></tr>
+        <tr><td>Landing → lista de espera</td><td>≈23% en páginas de suscripción (<a href="https://www.clickminded.com/landing-page-conversion-benchmark/" target="_blank" rel="noopener">ClickMinded</a>)</td><td>20%</td></tr>
+        <tr><td>Ficha → compra</td><td>1,9–2% en e-commerce (misma fuente)</td><td>2%</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<div class="in"><p class="foot">Orbit · Control · las ideas de la IA son hipótesis hasta que la investigación diaria trae anunciantes reales</p></div>
+</main>
+
+<div class="scrim" id="scrim" hidden></div>
+<aside class="drawer" id="drawer" hidden role="dialog" aria-modal="true" aria-labelledby="dTitle">
+  <button class="btn sm closeb" type="button" id="dClose">Cerrar</button>
+  <div id="dBody"></div>
+</aside>
+<p class="toastbar" id="toast" role="status" aria-live="polite"></p>
+
+<script>
+(function(){
+'use strict';
+var $=function(s,r){return (r||document).querySelector(s)};
+var $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
+function el(tag,attrs,kids){var e=document.createElement(tag);if(attrs)for(var k in attrs){var v=attrs[k];if(v==null||v===false)continue;if(k==='text')e.textContent=v;else if(k==='class')e.className=v;else if(k==='style')e.setAttribute('style',v);else if(k.slice(0,2)==='on')e.addEventListener(k.slice(2),v);else e.setAttribute(k,v===true?'':v)}(kids||[]).forEach(function(c){if(c!=null&&c!==false)e.appendChild(typeof c==='string'?document.createTextNode(c):c)});return e}
+var fmt=function(n){return Math.round(n||0).toLocaleString('es-AR')};
+
+var FASES=['Idea','F0 Tesis','F1 Spec','F2 Build','F3 QA','F4 Venta','Publicado'];
+var FASE_HINT={
+ 'Idea':'Definí cuál de las 3 piezas de la escalera arrancás primero. Empezá por el ancla.',
+ 'F0 Tesis':'Escribí el problema, el comprador exacto, la promesa en una línea y qué NO es el producto.',
+ 'F1 Spec':'Recortá al mínimo: pantallas, datos y cómo llega al primer resultado en 15 minutos.',
+ 'F2 Build':'Construí la versión que funciona de verdad, con el sistema visual de Orbit.',
+ 'F3 QA':'Compralo desde cero como cliente. Guía de setup, email post-compra y mockups.',
+ 'F4 Venta':'Landing para tráfico frío, 4–5 creativos distintos y ficha. Pedile a Majo que lo publique.',
+ 'Publicado':'Mirá tus ventas acá cada semana.'};
+var CRIT=['Demanda','Ticket','Facilidad','Diferenciación','Potencial visual','Escalabilidad','Bundle','Encaje Orbit'];
+var COLS=[['idea','Ideas','Propuestas sin evidencia'],['investigando','Investigando','En la cola de Claude'],['validado','Validados','Con veredicto, esperan a Majo'],['opcion','Opciones','Aprobados para elegir'],['tomado','Tomados','Alguien los está desarrollando'],['descartado','Descartados','No entran']];
+var LABEL={GO:'GO',WATCH:'WATCH',RESEARCH:'RESEARCH',KILL:'KILL',INSUFFICIENT:'SIN DATOS'};
+
+/* ---------- estado ---------- */
+var S={yo:null,equipo:[],porPersona:[],nichos:[],productos:[],cola:[]};
+var curNicho=null,loaded=false;
+var me=function(){return S.yo?S.yo.email:null};
+var isAdmin=function(){return !!(S.yo&&S.yo.admin)};
+function nameOf(email){var m=S.equipo.filter(function(x){return x.email===email})[0];return m?m.name:(email||'—')}
+
+/* ---------- API ---------- */
+function toast(t){var s=$('#toast');s.textContent=t;s.classList.add('on');clearTimeout(toast._t);toast._t=setTimeout(function(){s.classList.remove('on')},3800)}
+var ERR={ya_tenes_nicho:'Ya tenés un nicho tomado. Soltalo antes de tomar otro.',ya_tomado:'Ese nicho ya lo tomó otra persona.',solo_admin_aprueba:'Aprobar lo hace Majo.',solo_admin:'Eso lo hace Majo.',publicar_lo_aprueba_majo:'Publicar lo aprueba Majo.',no_es_tuyo:'Ese producto es de otra persona.',ia_no_configurada:'La IA no está configurada en el sitio.',ia_respuesta_invalida:'La IA respondió algo que no se pudo leer. Probá de nuevo.'};
+function post(body){return fetch('/api/control',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.json().then(function(d){if(!r.ok||d.ok===false){var e=new Error(d.error||'error');e.code=d.error;throw e}return d})})}
+function act(body,okMsg){return post(body).then(function(d){if(okMsg)toast(okMsg);return load().then(function(){return d})}).catch(function(e){toast(ERR[e.code]||(/^ia_error/.test(e.code||'')?'La IA no respondió. Probá en un rato.':'No se pudo guardar. Probá de nuevo.'));throw e})}
+function load(){return fetch('/api/control').then(function(r){
+  if(r.status===401){location.replace('acceso.html?next=control');return}
+  if(r.status===403){gate('Esta cuenta no está en el equipo','Pedile a Majo que te sume desde el panel de administración. Después entrá con el email y la contraseña que te pase.','<a class="btn" href="biblioteca.html">Ir a mi cuenta</a>');return}
+  if(!r.ok){if(!loaded)gate('No pudimos cargar el control','Probá de nuevo en un momento.');return}
+  return r.json().then(function(d){S=d;loaded=true;$('#gate').hidden=true;$('#meName').textContent=S.yo.name;$('#adminLink').hidden=!S.yo.admin;renderAll()})}).catch(function(){if(!loaded)gate('Sin conexión','Revisá tu internet y recargá.')})}
+function gate(t,m,extra){$('#gate').hidden=false;$('#gateT').textContent=t;$('#gateMsg').textContent=m;$('#gateAct').innerHTML=extra||''}
+$('#out').addEventListener('click',function(){fetch('/api/auth/logout',{method:'POST'}).catch(function(){}).then(function(){document.cookie='orbit_user=; Path=/; Max-Age=0; SameSite=Lax; Secure';location.href='acceso.html?salir=1'})});
+setInterval(function(){if(document.visibilityState==='visible'&&$('#drawer').hidden)load()},60000);
+
+/* ---------- router ---------- */
+var pages=['hoy','buscar','nichos','productos','meta','contenido'];
+function route(){var h=(location.hash||'').slice(1);if(pages.indexOf(h)<0)h='hoy';
+  $$('.page').forEach(function(p){p.hidden=p.getAttribute('data-page')!==h});
+  $$('.nav a').forEach(function(a){if(a.getAttribute('href')==='#'+h)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current')});
+  window.scrollTo(0,0)}
+window.addEventListener('hashchange',route);route();
+$('#hoyDate').textContent=new Date().toLocaleDateString('es-AR',{weekday:'long',day:'numeric',month:'long'});
+
+/* ---------- veredicto por reglas ---------- */
+function opOK(o){return !!(o&&o.url&&o.checkout&&(+o.anuncios||0)>=15&&(+o.dias||0)>=7&&!o.marcaPersonal)}
+function ancla(n){var a=(n.escalera||[]).filter(function(x){return /ancla/i.test(x.pieza||'')})[0];return a?(+a.precio||0):0}
+function total(n){return (n.scores||[]).reduce(function(a,b){return a+(+b||0)},0)}
+function verdict(n){
+  var ops=(n.operadores||[]),ok=ops.filter(opOK).length,t=total(n),pa=ancla(n);
+  if(n.claims)return 'KILL';
+  if(!ops.length&&!(n.scores||[]).length)return 'INSUFFICIENT';
+  if((n.scores||[]).length&&t<24)return 'KILL';
+  if(ok>=3&&t>=30&&pa>=39&&pa<=69)return 'GO';
+  if(ok>=1&&t>=30)return 'WATCH';
+  return 'RESEARCH'}
+function reasons(n){
+  var ops=n.operadores||[],ok=ops.filter(opOK).length,t=total(n),pa=ancla(n),R=[];
+  R.push(ok>=3?['ok',ok+' anunciantes que cumplen']:[ok?'mid':'no',ok+' de 3 anunciantes que cumplen']);
+  if((n.scores||[]).length)R.push(t>=30?['ok','Puntaje '+t+'/40']:[t>=24?'mid':'no','Puntaje '+t+'/40 (corte 30)']);else R.push(['no','Sin puntaje']);
+  R.push(pa>=39&&pa<=69?['ok','Ancla USD '+pa+', dentro del rango']:['no',pa?'Ancla USD '+pa+': el rango es 39–69':'Falta el precio del ancla']);
+  if(n.claims)R.push(['no','Promete resultados de salud, legales o de ingresos']);
+  return R}
+function chipV(n){var v=verdict(n);return el('span',{class:'chip st-'+v,text:LABEL[v]})}
+
+/* ---------- acciones ---------- */
+var updN=function(id,patch,msg){return act({a:'nicho',id:id,patch:patch},msg)};
+function sendToResearch(n){return act({a:'cola',tipo:'nicho',consulta:n.nicho,nichoId:n.id},'En la cola de la investigación')}
+function myNiche(email){return S.nichos.filter(function(n){return n.estado==='tomado'&&n.duena===email})[0]}
+function myProds(email){return S.productos.filter(function(x){return x.duena===email})}
+function takeNiche(n){updN(n.id,{estado:'tomado'},'Nicho tomado. Arrancá por el ancla.')}
+function approveBtn(n){return el('button',{class:'btn pri sm',type:'button',text:'Aprobar',disabled:isAdmin()?null:true,title:isAdmin()?'':'Solo Majo aprueba',onclick:function(){updN(n.id,{estado:'opcion'},'Aprobado como opción')}})}
+function startProduct(n,x){
+  if(S.productos.some(function(p){return p.nichoId===n.id&&p.name===x.nombre})){toast('Ese producto ya está arrancado');return}
+  act({a:'dev',patch:{name:x.nombre,nicho:n.nicho,nichoId:n.id,pieza:x.pieza||'',linea:x.linea||'plantilla',usd:+x.precio||0,nota:x.descripcion||'',fase:'F0 Tesis'}},'Producto arrancado')}
+function ladder(n,withStart){
+  var box=el('div',{class:'lad'});
+  (n.escalera||[]).forEach(function(x){
+    var start=withStart&&n.duena===me()&&n.estado==='tomado'?el('button',{class:'btn sm',type:'button',text:'Arrancar',onclick:function(){startProduct(n,x)}}):null;
+    box.appendChild(el('div',{},[el('span',{text:x.pieza||''}),el('span',{},[el('b',{text:x.nombre||''}),x.descripcion||x.linea?el('span',{style:'display:block;color:var(--gris);font-size:12px',text:[x.linea,x.descripcion].filter(Boolean).join(' · ')}):null]),el('span',{},[x.precio?'USD '+x.precio:'',start?' ':'',start])]))});
+  if(!(n.escalera||[]).length)box.appendChild(el('div',{},[el('span',{text:'Escalera'}),el('span',{text:'Sin proponer todavía'}),el('span',{text:''})]));
+  return box}
+
+/* ---------- HOY ---------- */
+function money(v){var p=[];if(v&&v.ars)p.push('ARS '+fmt(v.ars));if(v&&v.usd)p.push('USD '+fmt(v.usd));return p.join(' · ')||'—'}
+function renderHoy(){
+  var yo=me();$('#hoyName').textContent=S.yo.name;
+  var mn=myNiche(yo),mp=myProds(yo).filter(function(x){return x.fase!=='Publicado'}),opts=S.nichos.filter(function(n){return n.estado==='opcion'});
+  var pend=S.nichos.filter(function(n){return n.estado==='validado'});
+  var nb=$('#nextBox');nb.textContent='';nb.appendChild(el('span',{class:'lbl',text:'Tu próximo paso'}));
+  var step,sub,btn=null;
+  if(isAdmin()&&pend.length){step='Revisar '+pend.length+' nicho'+(pend.length>1?'s':'')+' validado'+(pend.length>1?'s':'');sub='Aprobá como opción los que tienen GO para que el equipo pueda elegir.';btn=el('a',{class:'btn sm',href:'#nichos',text:'Ir al tablero'})}
+  else if(mp.length){var p=mp.slice().sort(function(a,b){return FASES.indexOf(a.fase)-FASES.indexOf(b.fase)})[0];step=p.name+' · '+p.fase;sub=FASE_HINT[p.fase]||''}
+  else if(mn){step='Arrancar un producto de '+mn.nicho;sub='Elegí una pieza de la escalera y tocá Arrancar. Empezá por el ancla.'}
+  else if(opts.length&&!isAdmin()){step='Elegir tu nicho';sub=opts.length+' opción'+(opts.length>1?'es':'')+' aprobada'+(opts.length>1?'s':'')+' por Majo. Tomá una.'}
+  else {step='Buscar nichos';sub='Generá ideas y mandalas a investigar.';btn=el('a',{class:'btn sm',href:'#buscar',text:'Buscar ideas'})}
+  nb.appendChild(el('b',{text:step}));nb.appendChild(el('p',{text:sub}));if(btn)nb.appendChild(el('div',{},[btn]));
+  /* tu nicho */
+  var box=$('#myNicheBox .body');box.textContent='';
+  if(mn){
+    box.appendChild(el('div',{style:'display:flex;justify-content:space-between;gap:10px;align-items:center;flex-wrap:wrap'},[el('b',{style:'font-size:22px;font-weight:900;text-transform:uppercase',text:mn.nicho}),chipV(mn)]));
+    if(mn.comprador)box.appendChild(el('p',{style:'margin:0;color:var(--gris2)',text:mn.comprador}));
+    box.appendChild(ladder(mn,true));
+    box.appendChild(el('div',{},[el('button',{class:'btn sm',type:'button',text:'Ver detalle',onclick:function(){openNicho(mn.id)}})]));
+  } else {
+    box.appendChild(el('p',{style:'margin:0;color:var(--gris2)',text:opts.length?'Elegí uno de los nichos aprobados. Cada persona trabaja un nicho por vez.':'No tenés nicho todavía y no hay opciones aprobadas.'}));
+    opts.forEach(function(n){box.appendChild(el('div',{class:'rowi'},[el('div',{},[el('b',{text:n.nicho}),el('small',{text:LABEL[verdict(n)]+' · '+total(n)+'/40 · ancla USD '+(ancla(n)||'—')})]),el('div',{class:'acts'},[el('button',{class:'btn sm',type:'button',text:'Ver',onclick:function(){openNicho(n.id)}}),el('button',{class:'btn pri sm',type:'button',text:'Tomar',onclick:function(){takeNiche(n)}})])]))});
+  }
+  /* lateral */
+  var sb=$('#sideBox .body');sb.textContent='';
+  if(isAdmin()){
+    $('#sideTitle').textContent='Para aprobar';
+    if(!pend.length)sb.appendChild(el('p',{class:'lbl',text:'Nada pendiente.'}));
+    pend.forEach(function(n){sb.appendChild(el('div',{class:'rowi'},[el('div',{},[el('b',{text:n.nicho}),el('small',{text:LABEL[verdict(n)]+' · '+total(n)+'/40'})]),el('div',{class:'acts'},[el('button',{class:'btn sm',type:'button',text:'Ver',onclick:function(){openNicho(n.id)}}),approveBtn(n)])]))});
+  } else {
+    $('#sideTitle').textContent='Investigación';
+    var pc=S.cola.filter(function(q){return q.estado==='pendiente'}).length;
+    sb.appendChild(el('p',{style:'margin:0;color:var(--gris2)',text:pc+' pedido'+(pc===1?'':'s')+' en la cola. Corre de lunes a sábado a la mañana.'}));
+    sb.appendChild(el('div',{},[el('a',{class:'btn sm',href:'#buscar',text:'Buscar ideas'})]));
+  }
+  /* tus ventas */
+  var mine=S.porPersona.filter(function(x){return x.email===yo})[0]||{};
+  var mk=$('#myKpis');mk.textContent='';
+  [['Ventas',String(mine.unidades||0),(mine.unidades30||0)+' en los últimos 30 días','c-li'],['Facturado en pesos','ARS '+fmt(mine.ars),'ARS '+fmt(mine.ars30)+' en 30 días',''],['Facturado en dólares','USD '+fmt(mine.usd),'USD '+fmt(mine.usd30)+' en 30 días','c-az'],['Productos tuyos',String(mine.productos||0),'Publicados y en desarrollo','']].forEach(function(k){mk.appendChild(el('div',{class:'kpi'},[el('span',{class:'lbl',text:k[0]}),el('b',{class:'num '+k[3],text:k[1]}),el('small',{text:k[2]})]))});
+  /* productos */
+  var pb=$('#myProds');pb.textContent='';
+  var all=myProds(yo).sort(function(a,b){return FASES.indexOf(a.fase||'Publicado')-FASES.indexOf(b.fase||'Publicado')});
+  if(!all.length)pb.appendChild(el('p',{class:'lbl',text:'Todavía no tenés productos. Tomá un nicho y arrancá uno desde la escalera.'}));
+  all.forEach(function(p){pb.appendChild(prodRow(p))});
+  /* equipo */
+  var tb=$('#teamBox');tb.textContent='';
+  S.equipo.forEach(function(m){var n=myNiche(m.email),ps=myProds(m.email),pp=S.porPersona.filter(function(x){return x.email===m.email})[0]||{};
+    var dots=el('div',{class:'dots'});ps.forEach(function(p){dots.appendChild(el('i',{class:p.fase==='Publicado'?'pub':'on',title:p.name}))});
+    tb.appendChild(el('div',{class:'mem'},[el('span',{class:'nm',text:m.name}),el('span',{class:'ni'+(n?'':' none'),text:n?n.nicho:'Sin nicho'}),dots,el('small',{class:'lbl',text:(pp.unidades||0)+' venta'+(pp.unidades===1?'':'s')+(pp.ars!=null?' · ARS '+fmt(pp.ars):'')+(pp.usd?' · USD '+fmt(pp.usd):'')})]))});
+}
+function prodRow(p){
+  var i=FASES.indexOf(p.fase||'Publicado');if(i<0)i=6;
+  var ph=el('div',{class:'phases','aria-label':'Fase '+(p.fase||'Publicado')});FASES.forEach(function(f,ix){ph.appendChild(el('i',{class:ix<i?'done':ix===i?'now':'',title:f}))});
+  var dev=p.tipo==='dev';
+  var adv=dev&&i<6?el('button',{class:'btn sm',type:'button',text:i===5?'Publicar':'Avanzar a '+FASES[i+1],disabled:(i===5&&!isAdmin())?true:null,title:i===5&&!isAdmin()?'Publicar lo aprueba Majo':'',onclick:function(){act({a:'dev',id:p.id,patch:{fase:FASES[i+1]}},'Fase actualizada')}}):null;
+  var back=dev&&i>0&&i<6?el('button',{class:'btn sm',type:'button',text:'Volver',onclick:function(){act({a:'dev',id:p.id,patch:{fase:FASES[i-1]}})}}):null;
+  var v=p.ventas||{};
+  return el('div',{class:'prow'},[
+    el('div',{class:'top2'},[el('b',{text:p.name}),el('span',{class:'lbl',text:[p.code,p.nicho,p.pieza,p.fase||'Publicado'].filter(Boolean).join(' · ')})]),
+    ph,
+    dev?el('p',{class:'hint',text:FASE_HINT[p.fase]||''}):el('p',{class:'hint',text:(v.unidades||0)+' ventas · '+money(v)}),
+    (adv||back)?el('div',{class:'acts',style:'justify-content:flex-start'},[back,adv]):null])}
+
+/* ---------- TABLERO ---------- */
+function renderBoard(){
+  var b=$('#board');b.textContent='';
+  COLS.forEach(function(c){
+    var list=S.nichos.filter(function(n){return (n.estado||'idea')===c[0]}).sort(function(a,b){return total(b)-total(a)});
+    var col=el('section',{class:'kcol','aria-label':c[1]},[el('header',{},[el('b',{text:c[1]}),el('span',{text:String(list.length)})]),el('p',{class:'kh',text:c[2]})]);
+    list.forEach(function(n){var t=total(n);
+      col.appendChild(el('button',{class:'ncard',type:'button',onclick:function(){openNicho(n.id)}},[
+        el('div',{class:'r'},[chipV(n),el('small',{text:t?t+'/40':''})]),
+        el('b',{text:n.nicho}),
+        el('div',{class:'minibar'},[el('i',{style:'width:'+(t/40*100)+'%'})]),
+        el('small',{text:[(n.operadores||[]).filter(opOK).length+' anunciantes',n.duena?nameOf(n.duena):null,n.fuente==='ia'?'IA':n.fuente==='espiad'?'Espiad':null].filter(Boolean).join(' · ')})]))});
+    b.appendChild(col)})}
+
+/* ---------- DETALLE ---------- */
+function openNicho(id){curNicho=id;renderDrawer();$('#scrim').hidden=false;$('#drawer').hidden=false;$('#dClose').focus()}
+function closeDrawer(){curNicho=null;$('#scrim').hidden=true;$('#drawer').hidden=true}
+$('#dClose').addEventListener('click',closeDrawer);$('#scrim').addEventListener('click',closeDrawer);
+document.addEventListener('keydown',function(e){if(e.key==='Escape'&&!$('#drawer').hidden)closeDrawer()});
+function renderDrawer(){
+  var n=S.nichos.filter(function(x){return x.id===curNicho})[0];var d=$('#dBody');d.textContent='';
+  if(!n){d.appendChild(el('p',{class:'lbl',text:'Este nicho ya no existe.'}));return}
+  var v=verdict(n);
+  d.appendChild(el('div',{style:'display:grid;gap:10px'},[
+    el('div',{style:'display:flex;gap:8px;align-items:center;flex-wrap:wrap'},[chipV(n),el('span',{class:'tag',text:(COLS.filter(function(c){return c[0]===(n.estado||'idea')})[0]||['','?'])[1]}),n.fuente?el('span',{class:'tag',text:n.fuente==='ia'?'Propuesto por IA':n.fuente==='espiad'?'Desde Espiad':'Investigación'}):null,n.duena?el('span',{class:'tag',text:'Lo tiene '+nameOf(n.duena)}):null]),
+    el('h2',{id:'dTitle',text:n.nicho}),
+    n.comprador?el('p',{style:'margin:0;color:var(--gris2)',text:n.comprador}):null,
+    n.dolor?el('p',{style:'margin:0',text:n.dolor}):null]));
+  var A=[];
+  if(['idea','validado','descartado'].indexOf(n.estado||'idea')>=0)A.push(el('button',{class:'btn sm',type:'button',text:'Mandar a investigar',onclick:function(){sendToResearch(n)}}));
+  if(n.estado==='validado')A.push(approveBtn(n));
+  if(n.estado==='opcion'&&!myNiche(me()))A.push(el('button',{class:'btn pri sm',type:'button',text:'Tomar este nicho',onclick:function(){takeNiche(n)}}));
+  if(n.estado==='tomado'&&(n.duena===me()||isAdmin()))A.push(el('button',{class:'btn sm',type:'button',text:'Soltar nicho',onclick:function(){act({a:'nicho',id:n.id,soltar:true,patch:{}},'Nicho liberado')}}));
+  A.push(el('button',{class:'btn sm',type:'button',text:'Analizar con IA',onclick:function(e){aiAnalyze(n,e.currentTarget)}}));
+  if(n.estado!=='descartado')A.push(el('button',{class:'btn sm',type:'button',text:'Descartar',onclick:function(){updN(n.id,{estado:'descartado'},'Descartado')}}));
+  else A.push(el('button',{class:'btn sm',type:'button',text:'Recuperar',onclick:function(){updN(n.id,{estado:'idea'})}}));
+  A.push(el('a',{class:'btn sm',href:'https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=AR&search_type=keyword_unordered&q='+encodeURIComponent(n.q||n.nicho),target:'_blank',rel:'noopener',text:'Ver en Meta ↗'}));
+  d.appendChild(el('div',{class:'acts',style:'justify-content:flex-start'},A));
+  d.appendChild(el('p',{class:'thinking',id:'dStatus',role:'status'}));
+  var rs=el('div',{class:'rules'});reasons(n).forEach(function(r){rs.appendChild(el('div',{class:'rs '+r[0]},[el('i'),el('span',{text:r[1]})]))});
+  d.appendChild(el('div',{class:'dsec'},[el('h3',{text:'Por qué '+LABEL[v]}),rs,n.resumen?el('p',{text:n.resumen}):null,n.investigadoEl?el('small',{class:'lbl',text:'Investigado el '+String(n.investigadoEl).slice(0,10)}):null]));
+  d.appendChild(el('div',{class:'dsec'},[el('h3',{text:'Escalera de productos'}),ladder(n,true),n.estado==='tomado'&&n.duena!==me()?el('small',{class:'lbl',text:'Arranca productos quien tiene el nicho.'}):null]));
+  var ol=el('div',{class:'opsl'},[el('div',{class:'opr h'},[el('span',{text:'Anunciante'}),el('span',{class:'n',text:'Avisos'}),el('span',{class:'n',text:'Días'}),el('span',{class:'n',text:'Precio'}),el('span',{text:''})])]);
+  (n.operadores||[]).forEach(function(o,ix){
+    ol.appendChild(el('div',{class:'opr'},[
+      el('span',{},[o.url?el('a',{href:o.url,target:'_blank',rel:'noopener',text:(opOK(o)?'● ':'○ ')+(o.nombre||o.url)}):el('span',{text:o.nombre||'—'}),o.fuente?el('small',{class:'lbl',style:'display:block',text:o.fuente+(o.checkout?' · checkout':' · sin checkout')}):null]),
+      el('span',{class:'n',text:o.anuncios!=null?String(o.anuncios):'—'}),el('span',{class:'n',text:o.dias!=null?String(o.dias):'—'}),el('span',{class:'n',text:o.precio||'—'}),
+      el('button',{class:'x',type:'button','aria-label':'Quitar '+(o.nombre||'anunciante'),text:'×',onclick:function(){var ops=(n.operadores||[]).slice();ops.splice(ix,1);updN(n.id,{operadores:ops})}})]))});
+  if(!(n.operadores||[]).length)ol.appendChild(el('p',{class:'lbl',text:'Sin anunciantes todavía. Mandalo a investigar o cargá uno.'}));
+  var f=el('form',{class:'addop'});
+  var iN=el('input',{class:'inp',placeholder:'Anunciante','aria-label':'Anunciante'}),iU=el('input',{class:'inp',placeholder:'Link a la oferta','aria-label':'Link a la oferta'}),iA=el('input',{class:'inp',type:'number',min:'0',placeholder:'Avisos','aria-label':'Avisos activos'}),iD=el('input',{class:'inp',type:'number',min:'0',placeholder:'Días','aria-label':'Días activo'}),iP=el('input',{class:'inp',placeholder:'Precio','aria-label':'Precio'});
+  var cid='ck-'+n.id,iC=el('input',{type:'checkbox',id:cid});
+  [iN,iU,iA,iD,iP].forEach(function(x){f.appendChild(x)});
+  f.appendChild(el('label',{class:'tog',for:cid},[iC,'Checkout visible']));
+  f.appendChild(el('button',{class:'btn sm',type:'submit',text:'Agregar'}));
+  f.addEventListener('submit',function(e){e.preventDefault();if(!iU.value&&!iN.value)return;var ops=(n.operadores||[]).slice();ops.push({nombre:iN.value,url:iU.value,anuncios:+iA.value||0,dias:+iD.value||0,precio:iP.value,checkout:iC.checked,fuente:'Manual · '+S.yo.name});updN(n.id,{operadores:ops},'Anunciante agregado')});
+  d.appendChild(el('div',{class:'dsec'},[el('h3',{text:'Anunciantes ('+(n.operadores||[]).filter(opOK).length+' cumplen)'}),ol,f]));
+  var sc=el('div',{class:'scores'});
+  CRIT.forEach(function(c,ix){var id='s-'+n.id+'-'+ix,val=(n.scores||[])[ix]||3;var r=el('input',{type:'range',min:'1',max:'5',step:'1',id:id,value:String(val)});var o=el('output',{for:id,text:String(val)});
+    r.addEventListener('input',function(){o.textContent=r.value});
+    r.addEventListener('change',function(){var s=(n.scores&&n.scores.length===8?n.scores:[3,3,3,3,3,3,3,3]).slice();s[ix]=+r.value;updN(n.id,{scores:s})});
+    sc.appendChild(el('div',{class:'sc'},[el('label',{for:id,text:c}),r,o,el('span')]))});
+  d.appendChild(el('div',{class:'dsec'},[el('h3',{text:'Puntaje · '+total(n)+'/40'}),sc]));
+  if((n.evidencia||[]).length){var ev=el('div',{style:'display:grid;gap:6px'});(n.evidencia||[]).forEach(function(x){ev.appendChild(el('a',{href:x.url,target:'_blank',rel:'noopener',style:'color:var(--azul2);font-size:13px',text:x.t||x.url}))});d.appendChild(el('div',{class:'dsec'},[el('h3',{text:'Evidencia'}),ev]))}
+  if(n.riesgo)d.appendChild(el('div',{class:'dsec'},[el('h3',{text:'Riesgo'}),el('p',{style:'color:var(--naranja)',text:n.riesgo})]));
+  if(isAdmin())d.appendChild(el('div',{class:'dsec'},[el('button',{class:'btn sm',type:'button',text:'Borrar nicho',onclick:function(){if(this.dataset.c){act({a:'nicho-borrar',id:n.id},'Borrado').then(closeDrawer)}else{this.dataset.c='1';this.textContent='Tocá de nuevo para borrar'}}})]));
+}
+
+/* ---------- IA ---------- */
+$('#genForm').addEventListener('submit',function(e){e.preventDefault();generate()});
+function generate(){
+  var st=$('#genStatus'),out=$('#genOut'),btn=$('#genBtn');
+  btn.disabled=true;st.textContent='Pensando… puede tardar hasta un minuto';out.textContent='';
+  post({a:'generar',tema:$('#genQ').value.trim(),linea:$('#genLinea').value}).then(function(d){
+    var ideas=d.ideas||[];st.textContent=ideas.length+' ideas. Son hipótesis: mandá a investigar las que te gusten.';
+    ideas.forEach(function(i){out.appendChild(genCard(i))});
+  }).catch(function(e){st.textContent=ERR[e.code]||'No se pudo generar. Probá de nuevo.'}).then(function(){btn.disabled=false})}
+function genCard(i){
+  var t=(i.scores||[]).reduce(function(a,b){return a+b},0);
+  var card=el('article',{class:'icard'});
+  var acts=el('div',{class:'if'});
+  var save=function(investigar){acts.textContent='';acts.appendChild(el('span',{class:'lbl',text:'Guardando…'}));
+    post({a:'nicho',patch:Object.assign({},i,{fuente:'ia',estado:'idea'})}).then(function(d){return investigar?post({a:'cola',tipo:'nicho',consulta:i.nicho,nichoId:d.nicho.id}):null}).then(function(){card.style.opacity='.45';acts.textContent='';acts.appendChild(el('span',{class:'lbl',text:investigar?'En la cola de mañana':'Guardada en Ideas'}));load()}).catch(function(){acts.textContent='';acts.appendChild(el('span',{class:'lbl',text:'No se pudo guardar'}))})};
+  acts.appendChild(el('button',{class:'btn pri sm',type:'button',text:'Mandar a investigar',onclick:function(){save(true)}}));
+  acts.appendChild(el('button',{class:'btn sm',type:'button',text:'Guardar idea',onclick:function(){save(false)}}));
+  acts.appendChild(el('button',{class:'btn sm',type:'button',text:'Descartar',onclick:function(){card.remove()}}));
+  var sb=el('div',{class:'sbar'});(i.scores||[]).forEach(function(s,ix){sb.appendChild(el('i',{style:'--s:'+s,title:CRIT[ix]+': '+s}))});
+  card.appendChild(el('div',{class:'ih'},[el('div',{style:'display:flex;justify-content:space-between;gap:8px;align-items:center'},[el('span',{class:'tag',text:'Hipótesis IA'}),el('span',{class:'mono',style:'font-size:20px;font-weight:600',text:t+'/40'})]),el('h3',{text:i.nicho}),el('p',{class:'buyer',text:i.comprador}),el('p',{class:'pain',text:i.dolor}),sb]));
+  card.appendChild(ladder(i,false));
+  if(i.gancho)card.appendChild(el('p',{class:'note',style:'padding:12px 18px 0;margin:0;font-size:13px',text:'Gancho: '+i.gancho}));
+  if(i.riesgo)card.appendChild(el('p',{class:'risk',style:'padding:8px 18px 12px',text:i.riesgo}));
+  card.appendChild(acts);return card}
+function aiAnalyze(n,btn){var st=$('#dStatus');btn.disabled=true;st.textContent='Analizando… hasta un minuto';
+  act({a:'analizar',id:n.id},'Análisis listo').then(function(){if(curNicho)renderDrawer()}).catch(function(){st.textContent='No se pudo analizar.';btn.disabled=false})}
+
+/* ---------- ESPIAD y cola ---------- */
+$('#espForm').addEventListener('submit',function(e){e.preventDefault();act({a:'cola',tipo:'espiad',consulta:$('#espQ').value.trim()},'Pedido a Espiad en la cola').then(function(){$('#espQ').value=''})});
+function renderQueue(){
+  var box=$('#queueList');box.textContent='';
+  var list=S.cola.slice(0,25);
+  if(!list.length){box.appendChild(el('p',{class:'lbl',text:'La cola está vacía.'}));return}
+  list.forEach(function(q){var c={pendiente:'st-RESEARCH','en curso':'st-WATCH',listo:'st-GO',error:'st-KILL'}[q.estado]||'st-INSUFFICIENT';
+    box.appendChild(el('div',{class:'qi'},[el('div',{},[el('b',{text:(q.tipo==='espiad'?'Espiad · ':'')+(q.consulta||'Radar libre')}),el('small',{style:'display:block',text:'Pidió '+nameOf(q.pedidoPor)+' · '+String(q.creado||'').slice(0,10)+(q.resultado?' · '+q.resultado:'')})]),el('span',{class:'chip '+c,text:q.estado})]))})}
+
+/* ---------- PRODUCTOS ---------- */
+var catFilter='todas';
+function pverdict(p){if(p.tipo==='dev')return ['iterar',p.fase];var u=(p.ventas||{}).unidades||0,g=p.pauta&&p.pauta.gasto||0,ing=(p.ventas||{}).ars||0;if(!u&&!g)return ['sin','Sin ventas'];if(g&&!u)return ['pausar','Pausar pauta'];if(g&&ing<g)return ['iterar','Iterar'];return ['escalar','Vende']}
+function renderProductos(){
+  var u=0,a=0,us=0,g=0,dev=0;S.productos.forEach(function(p){var v=p.ventas||{};u+=v.unidades||0;a+=v.ars||0;us+=v.usd||0;if(p.pauta)g+=p.pauta.gasto||0;if(p.tipo==='dev')dev++});
+  var set=function(k,t){$$('[data-k="'+k+'"]').forEach(function(e){e.textContent=t})};
+  set('ventas',String(u));set('fact',fmt(a));set('factsub','ARS'+(us?' · USD '+fmt(us):'')+(isAdmin()?'':' · solo tus productos'));set('gasto',g?fmt(g):'—');set('dev',String(dev));
+  var pct=Math.min(100,g/154000*100);var b=$('[data-k="gastobar"]');if(b)b.style.width=pct.toFixed(1)+'%';set('gastosub','ARS de pauta cargada por Majo');
+  var pub=S.productos.filter(function(p){return p.tipo!=='dev'}).length;
+  $('#catHead').textContent=pub+' publicados · '+dev+' en desarrollo';
+  var box=$('#spendChart');box.textContent='';var rows=S.productos.filter(function(p){return p.pauta&&p.pauta.gasto}).map(function(p){return {n:p.name,g:p.pauta.gasto,i:(p.ventas||{}).ars||0}}).sort(function(a,b){return b.g-a.g});
+  var max=Math.max.apply(null,[1].concat(rows.map(function(r){return Math.max(r.g,r.i)})));
+  rows.forEach(function(r){box.appendChild(el('div',{class:'hb'},[el('span',{class:'nm',text:r.n}),el('div',{class:'tr'},[el('i',{class:'g',style:'--w:'+(r.g/max*100).toFixed(1)+'%'}),el('i',{class:'r',style:'--w:'+(r.i/max*100).toFixed(1)+'%'})]),el('span',{class:'v',text:fmt(r.g)+' / '+fmt(r.i)})]))});
+  if(!rows.length)box.appendChild(el('p',{class:'lbl',text:'Sin pauta cargada.'}));
+  var grid=$('#prodGrid');grid.textContent='';
+  var list=S.productos.filter(function(p){return catFilter==='todas'||(catFilter==='dev'?p.tipo==='dev':p.tipo!=='dev')}).sort(function(a,b){return ((b.ventas||{}).unidades||0)-((a.ventas||{}).unidades||0)});
+  list.forEach(function(p){
+    var vd=pverdict(p),v=p.ventas||{},pa=p.pauta||{},dev=p.tipo==='dev';
+    var form=null;
+    if(!dev&&isAdmin()){
+      form=el('form',{hidden:true});var fields=[['gasto','Gasto ARS'],['ventas','Ventas por Meta'],['clics','Clics'],['impresiones','Impresiones'],['conjuntos','Conjuntos'],['hasta','Datos hasta (fecha)']];
+      var gr=el('div',{class:'f2'});fields.forEach(function(f){var id='e-'+p.id+'-'+f[0];gr.appendChild(el('label',{class:'fld',for:id},[f[1],el('input',{class:'inp',id:id,name:f[0],type:f[0]==='hasta'?'text':'number',min:'0',step:'any',value:pa[f[0]]!=null?String(pa[f[0]]):''})]))});
+      var nid='e-'+p.id+'-nota';form.appendChild(gr);form.appendChild(el('label',{class:'fld',for:nid},['Nota',el('textarea',{class:'inp',id:nid,name:'nota'},[pa.nota||''])]));
+      form.appendChild(el('div',{style:'display:flex;gap:8px'},[el('button',{class:'btn pri sm',type:'submit',text:'Guardar pauta'}),el('button',{class:'btn sm',type:'button',text:'Cancelar',onclick:function(){form.hidden=true}})]));
+      form.addEventListener('submit',function(e){e.preventDefault();var d={a:'pauta',id:p.id};fields.forEach(function(f){d[f[0]]=form.elements[f[0]].value});d.nota=form.elements.nota.value;act(d,'Pauta guardada')});
+    }
+    var stats=dev?[[p.fase,'Fase'],['USD '+(p.usd||0),'Precio'],[nameOf(p.duena),'Responsable'],['—','']]:
+      [[String(v.unidades||0),'Ventas'],[v.ars!=null?fmt(v.ars):'—','ARS'],[pa.gasto?fmt(pa.gasto):'—','Pauta'],[pa.impresiones?((pa.clics||0)/pa.impresiones*100).toFixed(2).replace('.',',')+'%':'—','CTR']];
+    grid.appendChild(el('article',{class:'pcard'},[
+      el('div',{class:'ph'},[el('div',{class:'row1'},[el('span',{class:'meta',text:(p.code||'NUEVO')+' · '+(p.linea||(dev?'':'plantilla'))}),el('span',{class:'chip v-'+vd[0],text:vd[1]})]),el('h3',{text:p.name||''}),el('span',{class:'meta',text:[p.nicho,p.pieza,nameOf(p.duena)].filter(Boolean).join(' · ')}),dev?null:el('span',{class:'mono',style:'font-size:13px;color:var(--crema2)',text:'USD '+(p.usd||0)+' · ARS '+fmt(p.ars)})]),
+      el('div',{class:'mx'},stats.map(function(s){return el('div',{},[el('b',{text:s[0]}),el('span',{text:s[1]})])})),
+      (dev&&p.nota)||pa.nota?el('p',{class:'note',text:dev?p.nota:pa.nota}):null,
+      el('div',{class:'pf'},[el('span',{class:'lbl',text:dev?'En desarrollo':pa.hasta?'Pauta al '+pa.hasta:(v.ultima?'Última venta '+String(v.ultima).slice(0,10):'Sin ventas todavía')}),form?el('button',{class:'btn sm',type:'button',text:'Cargar pauta',onclick:function(){form.hidden=!form.hidden}}):null]),form]))});
+  if(!list.length)grid.appendChild(el('div',{class:'empty'},[el('b',{text:'Nada para mostrar con este filtro.'})]));
+}
+$$('#catFilters .filt').forEach(function(b){b.addEventListener('click',function(){catFilter=b.getAttribute('data-f');$$('#catFilters .filt').forEach(function(x){x.setAttribute('aria-pressed',x===b?'true':'false')});renderProductos()})});
+
+function renderAll(){if(!S.yo)return;renderHoy();renderBoard();renderQueue();renderProductos();if(curNicho)renderDrawer()}
+load();
+})();
+</script>
+</body>
+</html>
