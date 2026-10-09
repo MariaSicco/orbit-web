@@ -473,6 +473,72 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .cform .err{color:var(--or);font-size:14px;min-height:1.2em}
 @media (max-width:860px){.cus{grid-template-columns:1fr}.cform .two{grid-template-columns:1fr}}
 
+/* ===== home mobile v4 (09.10.2026) ===== */
+.p-entrada h1{font-size:clamp(40px,12.4vw,64px);line-height:.92}
+.v-giro{border-top:1px solid rgba(242,239,232,.18);padding-top:12px}
+.v-giro-eti{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;opacity:.5}
+.v-giro-eti span:nth-child(n+3){margin-left:auto}
+.v-giro-fila{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:58px}
+.v-giro-fila q{font-family:var(--serif);font-style:italic;font-size:clamp(19px,5.6vw,24px);line-height:1.15;quotes:"“" "”";transition:opacity .22s cubic-bezier(.7,0,.2,1),transform .22s cubic-bezier(.7,0,.2,1)}
+.v-giro-fila b{font-family:var(--mono);font-weight:400;font-size:12px;color:var(--blue);white-space:nowrap;filter:brightness(1.5)}
+.v-giro-fila.sale q{opacity:0;transform:translateY(6px)}
+.v-cta{width:100%;justify-content:space-between;min-height:58px}
+.btn-blue{background:var(--blue);color:var(--b)}
+
+.v-drop{background:var(--ac);color:var(--k);justify-content:center;gap:18px;padding-top:48px;padding-bottom:48px}
+.v-drop-top{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.v-chip{background:var(--k);color:var(--ac);padding:8px 12px;font-size:11px}
+.v-drop .v-drop-h{font-size:clamp(76px,22vw,150px);line-height:.82;letter-spacing:-.055em;text-transform:uppercase;font-weight:900;margin:0 0 0 -.03em}
+.v-drop-p{margin:0;font-family:var(--serif);font-style:italic;font-size:clamp(22px,6.6vw,30px);line-height:1.15}
+.v-mail{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.v-mail label{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.v-mail-fila{display:flex;gap:8px}
+.v-mail input{flex:1;min-width:0;min-height:52px;padding:0 14px;font:inherit;font-size:16px;background:var(--b);color:var(--k);border:1px solid var(--k);border-radius:0}
+.v-mail input:focus{outline:2px solid var(--k);outline-offset:1px}
+.v-mail-btn{min-height:52px;padding:0 18px;border:0;background:var(--k);color:var(--b);font:inherit;font-weight:700;font-size:15px;cursor:pointer}
+.v-msg{font-family:var(--mono);font-size:11px;letter-spacing:.06em;min-height:1.3em}
+
+.v-video{position:relative;background:var(--k);line-height:0}
+.v-video video{width:100%;aspect-ratio:4/5;display:block;object-fit:cover;background:var(--k)}
+.v-sonido{position:absolute;left:14px;bottom:30px;min-height:44px;padding:0 14px;border:1px solid var(--b);background:rgba(13,13,14,.6);color:var(--b);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;line-height:1}
+.v-sonido[aria-pressed="true"]{background:var(--b);color:var(--k)}
+
+.v-col{justify-content:flex-start;padding-top:56px;padding-bottom:48px;gap:18px}
+.v-col-eti{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.55}
+.v-col-eti span:last-child{margin-left:auto}
+.v-col .v-col-h{font-size:clamp(38px,10.6vw,64px);line-height:.92;letter-spacing:-.035em;text-transform:uppercase;margin:0}
+.v-col-h .it{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;color:var(--ac)}
+.v-col-p{margin:0;font-size:16px;line-height:1.45;opacity:.8}
+.v-estante{display:flex;gap:22px;overflow-x:auto;scroll-snap-type:x mandatory;margin:6px calc(-1 * var(--pad,16px)) 0;padding:4px var(--pad,16px) 18px;scrollbar-width:none}
+.v-estante::-webkit-scrollbar{display:none}
+.v-tomo{flex:0 0 232px;scroll-snap-align:start;display:flex;flex-direction:column;gap:14px;color:var(--b);text-decoration:none}
+.v-tapa{width:232px;height:318px;display:grid;grid-template-columns:24px minmax(0,1fr);box-shadow:10px 10px 0 #242426}
+.v-tapa.borde{border:1px solid #3A3935}
+.v-lomo{background:rgba(13,13,14,.14);display:flex;align-items:center;justify-content:center}
+.v-lomo span{writing-mode:vertical-rl;transform:rotate(180deg);font-family:var(--mono);font-size:9px;letter-spacing:.12em}
+.v-cara{padding:14px 14px 16px;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+.v-cara-top{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);font-size:9px;letter-spacing:.1em;text-transform:uppercase}
+.v-cara-top b{font-family:var(--sans,inherit);font-weight:900;font-size:13px;letter-spacing:-.02em}
+.v-cara svg{width:100%;height:128px}
+.v-cara h3{margin:0;font-size:23px;line-height:.92;letter-spacing:-.03em;text-transform:uppercase;font-weight:900}
+.v-tomo q{font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.2;quotes:"“" "”"}
+.v-tomo-pie{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;opacity:.9}
+.v-tomo-pie span:first-child{opacity:.6;text-transform:uppercase}
+.v-todas{display:flex;justify-content:space-between;align-items:center;min-height:52px;padding:0 20px;border:1px solid var(--b);color:var(--b);text-decoration:none;font-weight:700;font-size:15px}
+
+.v-prob{justify-content:center;gap:16px;padding-top:48px;padding-bottom:56px}
+.v-prob-eti{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.6}
+.v-prob .v-prob-h{font-size:clamp(34px,9.4vw,60px);line-height:.95;letter-spacing:-.035em;text-transform:uppercase;margin:0}
+.v-prob-h .it{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;color:var(--blue)}
+.v-prob-p{margin:0;font-size:16px;line-height:1.45;opacity:.8}
+.v-idea{display:flex;flex-direction:column;gap:10px}
+.v-idea label{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+.v-idea textarea,.v-idea input{font:inherit;font-size:16px;padding:14px;background:#fff;color:var(--k);border:1px solid var(--k);border-radius:0;resize:none}
+.v-idea input{min-height:52px}
+.v-idea textarea:focus,.v-idea input:focus{outline:2px solid var(--blue);outline-offset:1px}
+.v-idea-btn{min-height:56px;margin-top:6px;border:0;background:var(--k);color:var(--b);font:inherit;font-weight:700;font-size:16px;display:flex;justify-content:space-between;align-items:center;padding:0 20px;cursor:pointer}
+@media (prefers-reduced-motion:reduce){.v-giro-fila q{transition:none}}
+
 </style>
 </head>
 <body data-page="home" data-title-es="Orbit · Herramientas para fleteros y estudios jurídicos" data-title-en="Orbit · Tools for freight operators and law firms">
@@ -490,109 +556,61 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
   <div class="eti ent" style="--d:2.98s"><span>OB—000 · <span data-l="es">Ideas en movimiento</span><span data-l="en">Ideas in motion</span></span><span data-l="es">Desde 2026</span><span data-l="en">Est. 2026</span></div>
   <div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:clamp(16px,2.6vh,28px)">
     <div class="marca wm" id="bWm" aria-label="Orbit"></div>
-    <h1 class="ent" style="--d:3.1s"><span data-l="es">Herramientas para que tu oficio deje de <span class="it">perder plata.</span></span><span data-l="en">Tools that stop your trade from <span class="it">losing money.</span></span></h1>
-    <p class="ent" style="--d:3.24s"><span data-l="es">Planillas y sistemas listos para usar, hechos para fleteros y estudios jurídicos. Cargás tus datos y en 15 minutos sabés cuánto cobrar, quién te debe y qué vence.</span><span data-l="en">Ready-to-use spreadsheets and systems, built for freight operators and law firms. Enter your data and in 15 minutes you know what to charge, who owes you and what is due.</span></p>
+    <h1 class="ent" style="--d:3.1s"><span data-l="es">Ideas en <span class="it">movimiento.</span></span><span data-l="en">Ideas in <span class="it">motion.</span></span></h1>
+    <p class="ent" style="--d:3.24s"><span data-l="es">Agarramos problemas de todos los días y los convertimos en herramientas listas para usar.</span><span data-l="en">We take everyday problems and turn them into ready-to-use tools.</span></p>
   </div>
-  <div class="acts ent" style="--d:3.4s">
-    <a class="btn btn-acid" href="#coleccion"><span data-l="es">Ver herramientas</span><span data-l="en">See the tools</span> <span class="ar">↓</span></a>
+  <div class="v-giro ent" style="--d:3.34s" aria-live="polite">
+    <div class="v-giro-eti"><span data-l="es">Problema</span><span data-l="en">Problem</span><span data-l="es">Herramienta</span><span data-l="en">Tool</span></div>
+    <div class="v-giro-fila"><q id="vGiroQ"></q><b id="vGiroC"></b></div>
   </div>
-  <div class="puertas ent" style="--d:3.52s" id="bPuertas"></div>
-</section>
-
-<!-- 02 MÉTODO — el contenido lo arma el JS según la versión elegida -->
-<section class="pant luz" id="metodo"></section>
-
-<!-- 03 DISCIPLINAS -->
-<section class="pant luz alta p-disc" id="disciplinas">
-  <div class="eti"><span><span data-l="es">Oficios<br>Un oficio, una escalera</span><span data-l="en">Trades<br>One trade, one ladder</span></span><span style="text-align:right"><span data-l="es">Mismo lenguaje.<br>Distintos problemas.</span><span data-l="en">Same language.<br>Different problems.</span></span></div>
-  <h2 class="display" style="font-size:clamp(34px,8.6vw,96px);max-width:15ch;margin:0"><span data-l="es">Una órbita para cada <span class="it">oficio.</span></span><span data-l="en">An orbit for every <span class="it">trade.</span></span></h2>
-  <div class="disc" id="disc"></div>
-</section>
-
-<!-- 04 COLECCIÓN — el contenido lo arma el JS según la versión elegida -->
-<section class="pant dark" id="coleccion"></section>
-
-<!-- 05 DESTACADO -->
-<section class="pant dark p-destacado" id="destacado">
-  <div class="eti"><span><span data-l="es">Destacado<br>El sistema completo</span><span data-l="en">Featured<br>The full system</span></span><span style="text-align:right"><span data-l="es">Nunca una captura.<br>Siempre un objeto.</span><span data-l="en">Never a screenshot.<br>Always an object.</span></span></div>
-  <div class="feat2">
-    <div class="boxstage" id="cajaDest"></div>
-    <div class="info2" id="infoDest"></div>
+  <div class="acts ent" style="--d:3.44s">
+    <a class="btn btn-blue v-cta" href="#coleccion"><span data-l="es">Mirá lo que ya está en órbita</span><span data-l="en">See what’s already in orbit</span> <span class="ar">↓</span></a>
   </div>
 </section>
 
-<!-- 06 CÓMO COMPRAR -->
-<section class="pant dark p-comprar">
-  <div class="eti"><span><span data-l="es">Cómo comprar<br>4 pasos</span><span data-l="en">How to buy<br>4 steps</span></span><span style="text-align:right"><span data-l="es">Del clic a usarlo,<br>en minutos</span><span data-l="en">From click to using it,<br>in minutes</span></span></div>
-  <h2 class="display"><span data-l="es">Comprás hoy.<br>Lo usás <span class="it">hoy.</span></span><span data-l="en">Buy today.<br>Use it <span class="it">today.</span></span></h2>
-  <div class="flow4" id="flow4"></div>
-</section>
-
-<!-- 07 A MEDIDA -->
-<section class="pant dark p-medida" id="a-medida">
-  <div class="eti"><span><span data-l="es">A medida<br>OB—X00</span><span data-l="en">Custom<br>OB—X00</span></span><span style="text-align:right"><span data-l="es">Tu idea,<br>convertida en sistema</span><span data-l="en">Your idea,<br>turned into a system</span></span></div>
-  <h2 class="display"><span data-l="es">¿No está lo que necesitás? Lo diseñamos <span class="it">a medida.</span></span><span data-l="en">Can’t find what you need? We’ll design it <span class="it">for you.</span></span></h2>
-  <form class="cform" id="cform" novalidate>
-    <div class="barra4">
-      <span class="cuenta4"></span>
-      <span class="tramos"><i></i><i></i><i></i><i></i><i></i></span>
+<!-- 02 DROP 01 · MICROAPPS -->
+<section class="pant v-drop" id="drop">
+  <div class="v-drop-top"><span>Drop 01</span><span class="v-chip">19.10 · <span id="vFaltan"></span></span></div>
+  <h2 class="v-drop-h">Micro<br>apps</h2>
+  <p class="v-drop-p"><span data-l="es">Las primeras cinco apps de Orbit.</span><span data-l="en">Orbit’s first five apps.</span></p>
+  <form class="v-mail" id="vDrop" novalidate>
+    <label for="vDropMail"><span data-l="es">Te avisamos el día que salen</span><span data-l="en">We’ll email you on launch day</span></label>
+    <div class="v-mail-fila">
+      <input id="vDropMail" name="email" type="email" autocomplete="email" inputmode="email" placeholder="tu@email.com" required>
+      <button class="v-mail-btn" type="submit"><span data-l="es">Avisame</span><span data-l="en">Notify me</span></button>
     </div>
-    <div class="pista4"><div class="via4">
-      <div class="paso4">
-        <span class="preg"><span data-l="es">¿Qué necesitás?</span><span data-l="en">What do you need?</span></span>
-        <span class="ayuda"><span data-l="es">Podés elegir más de una.</span><span data-l="en">You can pick more than one.</span></span>
-        <div class="opts" data-group="type" data-varias></div>
-      </div>
-      <div class="paso4">
-        <label class="preg" for="cIdea"><span data-l="es">Contanos la idea</span><span data-l="en">Tell us the idea</span></label>
-        <textarea id="cIdea" name="idea"></textarea>
-      </div>
-      <div class="paso4">
-        <span class="preg"><span data-l="es">¿Qué presupuesto manejás?</span><span data-l="en">What is your budget?</span></span>
-        <span class="ayuda"><span data-l="es">En pesos</span><span data-l="en">USD</span></span>
-        <div class="opts" data-group="budget"></div>
-      </div>
-      <div class="paso4">
-        <span class="preg"><span data-l="es">¿Para cuándo lo necesitás?</span><span data-l="en">When do you need it?</span></span>
-        <div class="opts" data-group="time"></div>
-      </div>
-      <div class="paso4">
-        <span class="preg"><span data-l="es">¿Dónde te escribimos?</span><span data-l="en">Where do we write you?</span></span>
-        <div class="two">
-          <div><label class="rot4" for="cName"><span data-l="es">Nombre</span><span data-l="en">Name</span></label><input id="cName" name="name" autocomplete="name"></div>
-          <div><label class="rot4" for="cMail">Email</label><input id="cMail" name="email" type="email" autocomplete="email"></div>
-        </div>
-      </div>
-    </div></div>
-    <div class="mandos">
-      <button class="atras" type="button"><span class="ar">←</span> <span data-l="es">Atrás</span><span data-l="en">Back</span></button>
-      <span class="err" id="cErr" role="alert"></span>
-      <button class="btn btn-line sigue" type="button"><span data-l="es">Siguiente</span><span data-l="en">Next</span> <span class="ar">→</span></button>
-      <button class="btn btn-blue manda" type="submit"><span data-l="es">Enviar pedido</span><span data-l="en">Send request</span> <span class="ar">→</span></button>
-    </div>
+    <span class="v-msg" role="status"></span>
   </form>
 </section>
 
-<!-- 08 PREGUNTAS FRECUENTES — las mismas que en desktop -->
-<section class="pant luz p-faq" id="faq">
-  <div class="eti"><span><span data-l="es">Preguntas frecuentes</span><span data-l="en">FAQ</span></span><span style="text-align:right">OB—F05</span></div>
-  <h2 class="display"><span data-l="es">Antes de <span class="it">entrar.</span></span><span data-l="en">Before you <span class="it">enter.</span></span></h2>
-  <div class="faq">
-    <details><summary><span data-l="es">¿Cómo recibo el producto?</span><span data-l="en">How do I get the product?</span></summary><p><span data-l="es">Apenas se confirma el pago te llega un email con el link de descarga o acceso. Es inmediato.</span><span data-l="en">As soon as payment is confirmed you get an email with the download or access link. It’s instant.</span></p></details>
-    <details><summary><span data-l="es">¿Puedo usarlo para clientes?</span><span data-l="en">Can I use it for clients?</span></summary><p><span data-l="es">Sí. Todos los productos incluyen licencia de uso comercial para proyectos propios y de clientes. Lo que no se puede es revender o redistribuir los archivos originales.</span><span data-l="en">Yes. Every product includes a commercial license for your own and client projects. Reselling or redistributing the original files is not allowed.</span></p></details>
-    <details><summary><span data-l="es">¿Qué programas necesito?</span><span data-l="en">What software do I need?</span></summary><p><span data-l="es">Cada producto indica su formato en la ficha. Las planillas funcionan en Excel 2010 o posterior y en Google Sheets (gratis); el sistema del estudio es una plantilla de Notion (alcanza el plan gratis); el tarifador funciona en el navegador del celular o la compu.</span><span data-l="en">Each product lists its format. The spreadsheets work in Excel 2010 or later and in Google Sheets (free); the law-firm system is a Notion template (the free plan is enough); the rate calculator runs in your phone or desktop browser.</span></p></details>
-    <details><summary><span data-l="es">¿Las actualizaciones tienen costo?</span><span data-l="en">Do updates cost extra?</span></summary><p><span data-l="es">No. Cuando un producto sube de versión (V.01 → V.02) te llega la actualización sin cargo.</span><span data-l="en">No. When a product gets a new version (V.01 → V.02) you get the update for free.</span></p></details>
-    <details><summary><span data-l="es">¿Y si no me sirve?</span><span data-l="en">What if it doesn’t work for me?</span></summary><p><span data-l="es">Tenés 10 días corridos desde la compra para arrepentirte (Ley 24.240, art. 34). Usá el <a href="terminos.html#arrepentimiento" style="color:inherit">Botón de arrepentimiento</a> o escribinos a hola@orbitando.com.ar.</span><span data-l="en">You have 10 calendar days from purchase to cancel (Argentine Law 24.240, art. 34). Use the <a href="terminos.html#arrepentimiento" style="color:inherit">Right to cancel button</a> or email hola@orbitando.com.ar.</span></p></details>
-  </div>
+<!-- 03 FORMATOS · video -->
+<section class="v-video" id="formatos" aria-label="Plantillas, sistemas y microapps">
+  <video id="vVideo" src="assets/video/formatos.mp4" poster="assets/video/formatos.jpg" muted loop playsinline preload="metadata"></video>
+  <button class="v-sonido" id="vSonido" type="button" aria-pressed="false"><span data-l="es">Activar sonido</span><span data-l="en">Sound on</span></button>
 </section>
 
-<!-- 09 CIERRE -->
-<section class="pant dark p-cierre">
-  <div class="ring" data-sym='{"ring":"#161617","dot":"#161617","gap":70}' aria-hidden="true"></div>
-  <div class="eti"><span><span data-l="es">Manifiesto</span><span data-l="en">Manifesto</span></span><span>09</span></div>
-  <h2 class="display"><span data-l="es">Mismas personas.<br>Más herramientas.<br><span class="it" style="color:var(--ac)">Un mejor mañana.</span></span><span data-l="en">Same people.<br>More tools.<br><span class="it" style="color:var(--ac)">A brighter tomorrow.</span></span></h2>
-  <p><span data-l="es">Las ideas no necesitan más ruido. Necesitan movimiento.</span><span data-l="en">Ideas don&rsquo;t need more noise. They need movement.</span></p>
-  <div class="acts"><a class="btn btn-acid" href="#coleccion"><span data-l="es">Elegir una herramienta</span><span data-l="en">Pick a tool</span> <span class="ar">↑</span></a></div>
+<!-- 04 COLECCIÓN — las tapas salen del catálogo real -->
+<section class="pant dark v-col" id="coleccion">
+  <div class="v-col-eti"><span data-l="es">Ya a la venta</span><span data-l="en">On sale now</span><span id="vCuantas"></span></div>
+  <h2 class="v-col-h"><span data-l="es">Las primeras plantillas <span class="it">y sistemas.</span></span><span data-l="en">The first templates <span class="it">and systems.</span></span></h2>
+  <p class="v-col-p"><span data-l="es">Las comprás hoy y las usás hoy. Pago único.</span><span data-l="en">Buy today, use today. One-time payment.</span></p>
+  <div class="v-estante" id="vEstante"></div>
+  <a class="v-todas" href="productos.html"><span data-l="es">Ver todas</span><span data-l="en">See all</span> <span class="ar">→</span></a>
+</section>
+
+<!-- 05 TU PROBLEMA -->
+<section class="pant luz v-prob" id="problema">
+  <div class="v-prob-eti"><span data-l="es">¿No está el tuyo?</span><span data-l="en">Not here?</span></div>
+  <h2 class="v-prob-h"><span data-l="es">¿Qué te molesta de tu <span class="it">día a día?</span></span><span data-l="en">What bugs you <span class="it">every day?</span></span></h2>
+  <p class="v-prob-p"><span data-l="es">Contanos en una línea. Lo que más se repite lo convertimos en la próxima herramienta.</span><span data-l="en">Tell us in one line. What comes up most becomes our next tool.</span></p>
+  <form class="v-idea" id="vIdea" novalidate>
+    <label for="vIdeaTxt"><span data-l="es">Tu problema</span><span data-l="en">Your problem</span></label>
+    <textarea id="vIdeaTxt" name="idea" rows="3" maxlength="600" placeholder="Ej: pierdo una hora por día armando presupuestos" required></textarea>
+    <label for="vIdeaMail"><span data-l="es">Tu email (opcional, para avisarte si lo hacemos)</span><span data-l="en">Your email (optional, so we can tell you)</span></label>
+    <input id="vIdeaMail" name="email" type="email" autocomplete="email" inputmode="email" placeholder="tu@email.com">
+    <button class="v-idea-btn" type="submit"><span data-l="es">Mandar a órbita</span><span data-l="en">Send to orbit</span> <span class="ar">→</span></button>
+    <span class="v-msg" role="status"></span>
+  </form>
 </section>
 
 </main>
@@ -675,212 +693,124 @@ if (document.documentElement.classList.contains('gate-on')) {
   }, {once:true});
 } else setTimeout(arrancar, 50);
 
-/* ---- método: un problema por diapositiva ---- */
-
-/* El libro es el mismo objeto que en el resto del sitio: la tapa de verdad,
-   con su lomo, su código y su contratapa. No un dibujo que se le parezca.
-   Entra de canto, mostrando el lomo, y gira hasta darte la tapa a medida que
-   la tarjeta llega al centro: del problema al producto, con el mismo gesto. */
-/* ---- las puertas de la portada: qué vas a encontrar ----
-   Salen de las familias que hoy tienen productos, así que se actualizan
-   solas cuando cambie el catálogo. No limitan a un público: dicen qué hay. */
-(function puertas() {
-  const caja = $('#bPuertas');
-  if (!caja) return;
-  const vivas = ORBIT.nichos();
-  if (!vivas.length) return;
-  caja.innerHTML = `<i>${L('Elegí tu oficio','Pick your trade')}</i><nav>${
-    vivas.map(n => `<a href="#col-${n.id}">${L(n.n)}</a>`).join('')}</nav>`;
-})();
-
 /* =========================================================
-   SEGUNDA PANTALLA — el estante que se llena
-   Los nombres, los códigos y las tapas salen del catálogo real.
-   No pasa solo: se arrastra en cualquier parte de la pantalla, o se
-   toca una tapa y el estante salta a ese libro con su frase.
+   HOME MOBILE v4 · Ideas en movimiento → Drop 01 → formatos → estante → tu problema
    ========================================================= */
-const metodo = $('#metodo');
-/* nombres cortos para que entren debajo de cada tapa */
-const ENCASTELLANO = {
-  'ob-006': ['Tarifador de fletes', 'Freight rate calculator'],
-  'ob-007': ['Costos y tarifas', 'Costs and rates'],
-  'ob-008': ['Viajes y cobranzas', 'Trips and collections'],
-  'ob-009': ['Agenda de vencimientos', 'Deadline planner'],
-  'ob-010': ['Gestión del estudio', 'Law firm system'],
-  'ob-011': ['Honorarios y cobranzas', 'Fees and collections'],
+const ILUS = {"ob-017": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M12 10V120M158 10V120\"/><path d=\"M12 42H58M58 28V56M70 28V56M70 42H104M128 42H158\"/><circle cx=\"116\" cy=\"42\" r=\"12\"/><path d=\"M12 92H58M58 78V106M70 78V106M54 108L74 76M70 92H104M128 92H158\"/><circle cx=\"116\" cy=\"92\" r=\"12\"/><path d=\"M108 84L124 100M124 84L108 100\"/><circle cx=\"12\" cy=\"42\" r=\"5\" fill=\"#D9FF45\" stroke=\"none\"/><circle cx=\"158\" cy=\"92\" r=\"5\" fill=\"#D9FF45\" stroke=\"none\"/></svg>", "ob-012": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M28 112H142\"/><rect x=\"36\" y=\"72\" width=\"98\" height=\"40\"/><rect x=\"54\" y=\"44\" width=\"62\" height=\"28\"/><path d=\"M36 86Q48 96 60 86T84 86T108 86T134 86\"/><path d=\"M85 44V24\"/><circle cx=\"85\" cy=\"16\" r=\"5\" fill=\"currentColor\"/><circle cx=\"144\" cy=\"30\" r=\"18\" fill=\"#0D0D0E\" stroke=\"none\"/><path d=\"M144 20V40M150 25Q144 21 139 25Q136 30 144 30Q152 31 149 36Q144 40 138 36\" stroke=\"#FF4F2E\" stroke-width=\"2.5\"/></svg>", "ob-006": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M16 108C52 108 40 46 84 54S132 28 154 22\" stroke-dasharray=\"7 7\"/><circle cx=\"16\" cy=\"108\" r=\"7\" fill=\"#3047FF\" stroke=\"none\"/><circle cx=\"154\" cy=\"22\" r=\"7\" fill=\"#3047FF\" stroke=\"none\"/><rect x=\"58\" y=\"84\" width=\"44\" height=\"22\"/><path d=\"M102 90H116L124 98V106H102\"/><circle cx=\"70\" cy=\"110\" r=\"5\" fill=\"#0D0D0E\"/><circle cx=\"112\" cy=\"110\" r=\"5\" fill=\"#0D0D0E\"/><text x=\"118\" y=\"74\" font-family=\"IBM Plex Mono,monospace\" font-size=\"14\" fill=\"currentColor\" stroke=\"none\">$/km</text></svg>", "ob-009": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><rect x=\"14\" y=\"14\" width=\"142\" height=\"104\"/><path d=\"M14 34H156M50 34V118M85 34V118M120 34V118M14 62H156M14 90H156\"/><rect x=\"86\" y=\"63\" width=\"33\" height=\"26\" fill=\"#3047FF\" stroke=\"none\"/><path d=\"M126 96L150 114M150 96L126 114M40 6V22M130 6V22\"/></svg>", "ob-015": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><circle cx=\"44\" cy=\"44\" r=\"28\" stroke-dasharray=\"6 6\"/><path d=\"M96 74L130 18L164 74Z\" stroke-dasharray=\"6 6\"/><rect x=\"20\" y=\"88\" width=\"56\" height=\"30\" stroke-dasharray=\"6 6\"/><circle cx=\"104\" cy=\"108\" r=\"9\"/><circle cx=\"104\" cy=\"88\" r=\"9\"/><path d=\"M111 104L156 84M111 92L156 112\"/></svg>", "ob-011": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M14 118H156\"/><rect x=\"22\" y=\"88\" width=\"22\" height=\"30\"/><rect x=\"56\" y=\"70\" width=\"22\" height=\"48\"/><rect x=\"90\" y=\"50\" width=\"22\" height=\"68\"/><rect x=\"124\" y=\"30\" width=\"22\" height=\"88\" fill=\"#3047FF\" stroke=\"#3047FF\"/><circle cx=\"40\" cy=\"34\" r=\"20\"/><path d=\"M40 22V46M46 28Q40 24 34 28Q31 34 40 34Q49 35 46 40Q40 45 33 40\" stroke-width=\"2.5\"/></svg>", "ob-007": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M22 104A63 63 0 0 1 148 104\"/><path d=\"M35 70L44 76M85 41V52M135 70L126 76M58 50L64 59M112 50L106 59\"/><path d=\"M85 104L124 66\" stroke-width=\"5\"/><circle cx=\"85\" cy=\"104\" r=\"9\" fill=\"currentColor\"/><text x=\"62\" y=\"126\" font-family=\"IBM Plex Mono,monospace\" font-size=\"14\" fill=\"currentColor\" stroke=\"none\">$ / km</text></svg>", "ob-008": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><rect x=\"16\" y=\"12\" width=\"18\" height=\"18\"/><path d=\"M20 21L25 26L32 14M46 21H150\"/><rect x=\"16\" y=\"44\" width=\"18\" height=\"18\"/><path d=\"M20 53L25 58L32 46M46 53H130\"/><rect x=\"16\" y=\"76\" width=\"18\" height=\"18\"/><path d=\"M46 85H140\"/><rect x=\"16\" y=\"108\" width=\"18\" height=\"18\"/><path d=\"M46 117H118\"/><circle cx=\"150\" cy=\"85\" r=\"10\" fill=\"#FF4F2E\" stroke=\"none\"/></svg>", "ob-010": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><rect x=\"10\" y=\"10\" width=\"46\" height=\"110\"/><rect x=\"62\" y=\"10\" width=\"46\" height=\"110\"/><rect x=\"114\" y=\"10\" width=\"46\" height=\"110\"/><rect x=\"17\" y=\"20\" width=\"32\" height=\"20\" fill=\"currentColor\"/><rect x=\"17\" y=\"46\" width=\"32\" height=\"20\"/><rect x=\"69\" y=\"20\" width=\"32\" height=\"20\"/><rect x=\"69\" y=\"46\" width=\"32\" height=\"20\" fill=\"#D9FF45\" stroke=\"#D9FF45\"/><rect x=\"69\" y=\"72\" width=\"32\" height=\"20\"/><rect x=\"121\" y=\"20\" width=\"32\" height=\"20\"/></svg>", "ob-014": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><ellipse cx=\"85\" cy=\"96\" rx=\"74\" ry=\"22\"/><circle cx=\"48\" cy=\"80\" r=\"13\"/><circle cx=\"85\" cy=\"74\" r=\"13\" fill=\"currentColor\"/><circle cx=\"122\" cy=\"80\" r=\"13\"/><circle cx=\"66\" cy=\"96\" r=\"13\"/><circle cx=\"104\" cy=\"96\" r=\"13\"/><path d=\"M85 74V30M48 80V44M122 80V44\"/><path d=\"M78 30H92\" stroke-width=\"5\"/></svg>", "ob-016": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><text x=\"10\" y=\"92\" font-family=\"Inter Tight,sans-serif\" font-weight=\"900\" font-size=\"78\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-dasharray=\"6 5\">ABC</text><path d=\"M12 112H158\" stroke-dasharray=\"2 8\"/><path d=\"M128 24L156 52L148 60L120 32Z\"/><path d=\"M120 32L114 18L128 24\"/></svg>"};
+/* tapa, formato y frase de cada producto. Formato: PDF solo = plantilla; si trae planilla o calculadora = sistema */
+const TAPAS = {
+  'ob-017': ['#3047FF','#F2EFE8','s',['¿Qué térmico le pongo?','Which breaker do I use?']],
+  'ob-012': ['#FF4F2E','#0D0D0E','s',['¿A cuánto vendo esta torta?','What do I charge for this cake?']],
+  'ob-006': ['#F2EFE8','#0D0D0E','s',['¿Este viaje me deja plata?','Does this trip make me money?']],
+  'ob-009': ['#161617','#F2EFE8','s',['¿Qué me vence esta semana?','What is due this week?'],1],
+  'ob-015': ['#D9FF45','#0D0D0E','p',['¿Qué hacen los chicos sin pantalla?','What do kids do without screens?']],
+  'ob-011': ['#161617','#F2EFE8','s',['¿Quién me debe honorarios?','Who owes me fees?'],1],
+  'ob-007': ['#FF4F2E','#0D0D0E','s',['¿Cuánto me cuesta cada km?','What does each km cost me?']],
+  'ob-010': ['#161617','#F2EFE8','s',['¿Dónde está ese expediente?','Where is that case file?'],1],
+  'ob-008': ['#F2EFE8','#0D0D0E','s',['¿Quién me debe un viaje?','Who owes me for a trip?']],
+  'ob-014': ['#D9FF45','#0D0D0E','s',['¿Cuánto cobro este evento?','What do I charge for this event?']],
+  'ob-016': ['#3047FF','#F2EFE8','p',['¿Cómo empieza a escribir?','How do they start writing?']],
 };
-const enCastellano = p => L(...(ENCASTELLANO[p.id] || [p.name, p.name]));
+const FMT = {p:['Plantilla','Template'], s:['Sistema','System']};
 
-const ESCENAS = [
-  [['No sé si este viaje me deja plata.','I don’t know if this trip makes me money.'], 'ob-006'],
-  [['Cobro lo que paga el mercado y no sé mi costo por km.','I charge the going rate and don’t know my cost per km.'], 'ob-007'],
-  [['Tengo viajes sin facturar y clientes que no pagan.','I have uninvoiced trips and clients who don’t pay.'], 'ob-008'],
-  [['Anoto los plazos en un cuaderno.','I write deadlines in a notebook.'], 'ob-009'],
-  [['Mis casos están entre WhatsApp, Excel y papeles.','My cases live in WhatsApp, Excel and paper.'], 'ob-010'],
-  [['No sé cuánto me deben de honorarios.','I don’t know how much I’m owed in fees.'], 'ob-011'],
-];
-
-(function segundaPantalla() {
-  if (!metodo) return;
-  const F = ESCENAS.map(([, id]) => P.find(x => x.id === id)).filter(Boolean);
-  if (!F.length) return;
-
-  metodo.className = 'pant';
-  metodo.innerHTML = `
-    <div class="eti ent2" style="--d:0s"><span>${L('Nuestro método','Our method')} — OB—000</span><span>${
-      L('Un problema, un libro','One problem, one book')}</span></div>
-    <div class="medio">
-      <p class="dicho cambia ent2" style="--d:.1s"></p>
-      <div class="quien cambia ent2" style="--d:.18s"><s></s><b></b></div>
-    </div>
-    <div class="repisa ent2" style="--d:.24s">
-      <div class="libros">${F.map((p, i) =>
-        `<button type="button" data-e="${i}" aria-label="${p.code} — ${p.name}">${ORBIT.cover(p)}</button>`).join('')}</div>
-      <div class="tabla"></div>
-      <div class="apoyo">${L('Deslizá o tocá un libro','Swipe or tap a book')}</div>
-    </div>`;
-
-  const libros = $('.libros', metodo), tomos = $$('.libros > button', metodo),
-        dicho = $('.dicho', metodo), quien = $('.quien b', metodo),
-        cambia = $$('.cambia', metodo);
-  let cual = -1, mudando = false;
-
-  function ir(i) {
-    if (i === cual || mudando) return;
-    cual = i;
-    mudando = true;
-    cambia.forEach(c => c.classList.add('sale'));
-    setTimeout(() => {
-      dicho.innerHTML = '“' + L(...ESCENAS[i][0]) + '”';
-      quien.innerHTML = enCastellano(F[i]) + ' · ' + F[i].code;
-      cambia.forEach(c => c.classList.remove('sale'));
-      mudando = false;
-    }, RM ? 0 : 220);
-    tomos.forEach((t, k) => {
-      t.classList.toggle('puesto', k <= i);
-      t.classList.toggle('viva', k === i);
-      t.setAttribute('aria-current', k === i ? 'true' : 'false');
-    });
-  }
-
-  /* se agarra y se desliza en cualquier parte de la pantalla */
-  let x0 = null, y0 = null, tirando = false;
-  metodo.addEventListener('pointerdown', e => {
-    x0 = e.clientX; y0 = e.clientY; tirando = false;
-    libros.classList.add('tirando');
-  });
-  metodo.addEventListener('pointermove', e => {
-    if (x0 === null) return;
-    const dx = e.clientX - x0, dy = e.clientY - y0;
-    if (!tirando && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) tirando = true;
-    if (!tirando) return;
-    e.preventDefault();
-    libros.style.setProperty('--tira', Math.max(-52, Math.min(52, dx * .34)) + 'px');
-  });
-  function soltar(e) {
-    if (x0 === null) return;
-    const dx = (e.clientX === undefined ? x0 : e.clientX) - x0;
-    x0 = null;
-    libros.classList.remove('tirando');
-    libros.style.removeProperty('--tira');
-    if (tirando && Math.abs(dx) > 34) ir((cual + (dx < 0 ? 1 : F.length - 1)) % F.length);
-    setTimeout(() => tirando = false, 0);
-  }
-  metodo.addEventListener('pointerup', soltar);
-  metodo.addEventListener('pointercancel', soltar);
-  /* si fue un arrastre, la tapa que quedó abajo no se selecciona */
-  metodo.addEventListener('click', e => { if (tirando) { e.preventDefault(); e.stopPropagation(); } }, true);
-  tomos.forEach((t, i) => t.onclick = () => ir(i));
-
-  ir(0);
-
-  /* se presenta sola al llegar, y queda legible para siempre */
-  if (RM) document.body.classList.add('cuenta');
-  else new IntersectionObserver(([e], obs) => {
-    if (e.isIntersecting) { document.body.classList.add('cuenta'); obs.disconnect(); }
-  }, {threshold:.25}).observe(metodo);
-})();
-
-/* =========================================================
-   CUARTA PANTALLA — la colección, achicada
-   Las tapas en una vitrina que se desliza, y de ahí a la página de
-   productos, que es donde el catálogo está separado por escalones.
-   ========================================================= */
-const coleccion = $('#coleccion');
-
-(function cuartaPantalla() {
-  if (!coleccion) return;
-  coleccion.className = 'pant';
-  coleccion.innerHTML = `
-    <div class="eti ent3" style="--d:0s"><span>${L('La colección','The collection')} — Vol.01</span><span>${
-      L('Deslizá','Swipe')}</span></div>
-    <h2 class="ent3" style="--d:.08s">${L(
-      'Listos<br>para <span class="it">usar.</span>',
-      'Ready<br>to <span class="it">use.</span>')}</h2>
-    ${ORBIT.nichos().map((n, k) => `<div class="nicho2 ent3" id="col-${n.id}" style="--d:${(.18 + k * .08).toFixed(2)}s">
-      <span class="ncab2">${L(n.n)}</span>
-      <div class="vitrina2">${n.items.map(p => `
-      <a class="ficha2" href="${ORBIT.url(p)}">
-        ${ORBIT.cover(p)}
-        <span class="to2"><b>${enCastellano(p)}</b><small>${ORBIT.money(p)}</small></span>
-      </a>`).join('')}</div></div>`).join('')}
-    <div class="pie3 ent3" style="--d:.3s">
-      <span class="nota3">${L('Tocá para ver la ficha','Tap to open the details')}</span>
-      <a class="btn btn-acid" href="productos.html">${L('Ver todo','See all')} <span class="ar">→</span></a>
-    </div>`;
-
-  /* se presenta sola al llegar y queda legible para siempre */
-  if (RM) document.body.classList.add('ve');
-  else new IntersectionObserver(([e], obs) => {
-    if (e.isIntersecting) { document.body.classList.add('ve'); obs.disconnect(); }
-  }, {threshold:.25}).observe(coleccion);
-})();
-
-/* ---- 05 · destacado: la caja 3D que se gira con el dedo ---- */
-(function destacado() {
-  const caja = $('#cajaDest'), info = $('#infoDest');
-  if (!caja || !info || !P.length) return;
-  const NI = ORBIT.nichos();
-  const f = (NI[0] && NI[0].items.find(p => p.pieza === 'ancla')) || P[0];
-  ORBIT.mountBox(caja, f);
-  const partes = f.name.split(' ');
-  info.innerHTML = `
-    <span class="cod">${f.code} · ${FAM[f.family] ? FAM[f.family][0] : ''}</span>
-    <h2>${partes[0]}<br><span class="it">${partes.slice(1).join(' ').toLowerCase()}.</span></h2>
-    <p class="tag2">${L(f.tagline)}</p>
-    <div class="specs2">${(() => {
-      /* de los cuatro datos, los dos que de verdad hacen falta antes del clic:
-         con qué herramienta se usa y si se puede usar en trabajos de clientes */
-      const quiero = ['Formato','Licencia'];
-      const tengo = (f.specs || []).filter(([k]) => k && quiero.includes(k.es));
-      return (tengo.length ? tengo : (f.specs || []).slice(0, 2))
-        .map(([k, v]) => `<div><small>${L(k)}</small><b>${L(v)}</b></div>`).join('');
-    })()}</div>
-    <div class="acts2">${buyBtn(f)}<a class="btn btn-line" href="${ORBIT.url(f)}">${
-      L('Ver detalle','See details')}</a></div>`;
-})();
-
-/* ---- 05 · cómo comprar: el símbolo de Orbit se va cerrando paso a paso ---- */
-(function comoComprar() {
-  const caja = $('#flow4');
+(function estante() {
+  const caja = $('#vEstante');
   if (!caja) return;
-  const PASOS4 = [
-    ['Elegí tu herramienta','Pick your tool',
-     'Explorá el catálogo o hacé el quiz de 3 preguntas.','Browse the catalog or take the 3-question quiz.', 140],
-    ['Pagá una sola vez','Pay once',
-     'Mercado Pago en pesos o PayPal en dólares. Sin suscripciones.',
-     'Mercado Pago in pesos or PayPal in dollars. No subscriptions.', 90],
-    ['Recibilo al instante','Get it instantly',
-     'Te llega un email con la descarga o el acceso.','You get an email with the download or access link.', 40],
-    ['Usalo desde hoy','Use it today',
-     'Licencia comercial y actualizaciones sin cargo.','Commercial license and free updates.', 0],
-  ];
-  caja.innerHTML = PASOS4.map(([t, te, d, de, hueco], i) => `<div>
-      <span class="nn4">0${i + 1}</span>
-      <div class="s">${ORBIT.sym({gap: hueco, ring: 'currentColor',
-        dot: i === 3 ? ORBIT.C.blue : 'currentColor', dotOn: i > 0})}</div>
-      <div><b>${L(t, te)}</b><p>${L(d, de)}</p></div>
-    </div>`).join('');
+  const lista = Object.keys(TAPAS).map(id => P.find(x => x.id === id && x.status !== 'soon')).filter(Boolean);
+  const pintar = () => {
+    $('#vCuantas').innerHTML = lista.length + ' ' + L('herramientas','tools');
+    caja.innerHTML = lista.map(p => {
+      const [bg, ink, f, q, borde] = TAPAS[p.id];
+      return `<a class="v-tomo" href="${url(p)}">
+        <div class="v-tapa${borde ? ' borde' : ''}" style="background:${bg};color:${ink}">
+          <div class="v-lomo"><span>${p.code}</span></div>
+          <div class="v-cara">
+            <div class="v-cara-top"><b>ORBIT</b><span>${L(...FMT[f])}</span></div>
+            ${ILUS[p.id] || ''}
+            <h3>${p.name}</h3>
+          </div>
+        </div>
+        <q>${L(...q)}</q>
+        <span class="v-tomo-pie"><span>${L(...FMT[f])}</span><span>${money(p)}</span></span>
+      </a>`;
+    }).join('');
+  };
+  pintar();
+})();
+
+/* problema → herramienta, girando en la portada */
+(function giro() {
+  const fila = $('.v-giro-fila'), q = $('#vGiroQ'), c = $('#vGiroC');
+  if (!fila) return;
+  const G = [['ob-006','¿Cuánto cobro este viaje?','What do I charge for this trip?'],
+             ['ob-017','¿Qué térmico le pongo?','Which breaker do I use?'],
+             ['ob-012','¿A cuánto vendo esta torta?','What do I charge for this cake?'],
+             ['ob-009','¿Qué me vence esta semana?','What is due this week?']]
+    .filter(([id]) => P.some(p => p.id === id));
+  if (!G.length) return;
+  let i = 0;
+  const poner = () => { const [id, es, en] = G[i]; q.innerHTML = L(es, en); c.textContent = '→ ' + P.find(p => p.id === id).code; };
+  poner();
+  if (RM) return;
+  setInterval(() => {
+    fila.classList.add('sale');
+    setTimeout(() => { i = (i + 1) % G.length; poner(); fila.classList.remove('sale'); }, 220);
+  }, 2600);
+})();
+
+/* cuenta regresiva del drop */
+(function faltan() {
+  const el = $('#vFaltan');
+  if (!el) return;
+  const pintar = () => {
+    const d = Math.ceil((new Date('2026-10-19T00:00:00-03:00') - Date.now()) / 864e5);
+    el.innerHTML = d > 1 ? L(`faltan ${d} días`, `${d} days to go`) : d === 1 ? L('falta 1 día','1 day to go') : L('ya salió','out now');
+  };
+  pintar();
+})();
+
+/* el video corre solo cuando se ve; el sonido lo prende la persona */
+(function video() {
+  const v = $('#vVideo'), b = $('#vSonido');
+  if (!v) return;
+  new IntersectionObserver(([e]) => { if (e.isIntersecting) v.play().catch(() => {}); else v.pause(); }, {threshold:.35}).observe(v);
+  b.onclick = () => {
+    v.muted = !v.muted;
+    if (!v.muted) { v.currentTime = 0; v.play().catch(() => {}); }
+    b.setAttribute('aria-pressed', String(!v.muted));
+    b.innerHTML = v.muted ? '<span data-l="es">Activar sonido</span><span data-l="en">Sound on</span>'
+                          : '<span data-l="es">Silenciar</span><span data-l="en">Mute</span>';
+  };
+})();
+
+/* lista de espera del drop y problemas que nos mandan */
+function enviar(form, datos, ok) {
+  const msg = $('.v-msg', form), btn = $('button[type=submit]', form);
+  btn.disabled = true; msg.textContent = ORBIT.tr('Enviando…','Sending…');
+  return fetch('/api/espera', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(datos)})
+    .then(r => r.json().then(j => ({r, j})))
+    .then(({r, j}) => {
+      if (!r.ok) throw new Error(j && j.error || 'error');
+      msg.textContent = ok; form.reset();
+      try { ORBIT.track.lead(datos.origen); } catch (e) {}
+    })
+    .catch(e => { msg.textContent = e.message === 'invalid_email' ? ORBIT.tr('Revisá el email.','Check the email.') : ORBIT.tr('No se pudo enviar. Probá de nuevo.','Could not send. Try again.'); })
+    .finally(() => { btn.disabled = false; });
+}
+(function formularios() {
+  const drop = $('#vDrop'), idea = $('#vIdea');
+  if (drop) drop.addEventListener('submit', e => {
+    e.preventDefault();
+    const email = $('#vDropMail').value.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { $('.v-msg', drop).textContent = ORBIT.tr('Revisá el email.','Check the email.'); return; }
+    enviar(drop, {origen:'drop01', email}, ORBIT.tr('Listo. Te avisamos el 19.10.','Done. We’ll email you on Oct 19.'));
+  });
+  if (idea) idea.addEventListener('submit', e => {
+    e.preventDefault();
+    const txt = $('#vIdeaTxt').value.trim(), email = $('#vIdeaMail').value.trim();
+    if (txt.length < 4) { $('.v-msg', idea).textContent = ORBIT.tr('Contanos el problema en una línea.','Tell us the problem in one line.'); return; }
+    enviar(idea, {origen:'problema', idea: txt, email}, ORBIT.tr('Gracias. Ya está en órbita.','Thanks. It’s in orbit now.'));
+  });
 })();
 
 /* ---- los problemas se tachan al entrar en pantalla ---- */
@@ -961,49 +891,6 @@ const porCuadro = fn => {
   addEventListener('scroll', porCuadro(viajar), {passive:true});
   addEventListener('resize', () => { origen = null; viajar(); });
   setTimeout(() => { medir(); viajar(); }, 3000);
-})();
-
-/* ---- 07 · a medida: una pregunta por vez ---- */
-(function aMedida() {
-  const forma = $('#cform');
-  if (!forma) return;
-  const via = $('.via4', forma), pasos = $$('.paso4', forma),
-        tramos = $$('.tramos i', forma), cuenta = $('.cuenta4', forma),
-        atras = $('.atras', forma), sigue = $('.sigue', forma),
-        manda = $('.manda', forma), err = $('#cErr', forma);
-  let cual = 0;
-  const num = i => String(i + 1).padStart(2, '0');
-
-  function pintar() {
-    via.style.transform = `translateX(-${cual * 100}%)`;
-    tramos.forEach((t, i) => t.classList.toggle('on', i <= cual));
-    cuenta.innerHTML = L('Paso','Step') + ` ${num(cual)} / ${num(pasos.length - 1)}`;
-    atras.hidden = cual === 0;
-    sigue.hidden = cual === pasos.length - 1;
-    manda.hidden = cual !== pasos.length - 1;
-    pasos.forEach((p, i) => p.inert = i !== cual);
-  }
-  /* sólo la idea es obligatoria para avanzar; el resto se valida al enviar */
-  function puedeSeguir() {
-    if (cual === 1 && !$('#cIdea').value.trim()) {
-      err.textContent = ORBIT.tr('Contanos la idea para seguir.','Tell us the idea to continue.');
-      return false;
-    }
-    err.textContent = '';
-    return true;
-  }
-  const avanzar1 = () => { if (cual < pasos.length - 1) { cual++; pintar(); } };
-  sigue.onclick = () => { if (puedeSeguir()) avanzar1(); };
-  /* elegir presupuesto o plazo pasa solo a la pregunta siguiente; la primera
-     admite varias, así que ahí espera a que toques Siguiente */
-  forma.addEventListener('orbit:opcion', e => {
-    if (e.detail.varias) return;
-    err.textContent = '';
-    setTimeout(avanzar1, 260);
-  });
-  atras.onclick = () => { if (cual > 0) { cual--; err.textContent = ''; pintar(); } };
-  pintar();
-  addEventListener('orbit:lang', pintar);
 })();
 
 /* ---- el símbolo de Orbit marca el avance ---- */
