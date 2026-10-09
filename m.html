@@ -29,7 +29,7 @@
 <meta name="theme-color" content="#0D0D0E">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=60">
+<link rel="stylesheet" href="assets/css/orbit.css?v=61">
 <style>
 /* ============================================================
    VERSIÓN B — pensada como pantallas, no como página.
@@ -503,7 +503,9 @@ body.directo .nav,.directo .p-entrada .foto,.directo .p-entrada .marca .pal,
 .v-sonido{position:absolute;left:14px;bottom:30px;min-height:44px;padding:0 14px;border:1px solid var(--b);background:rgba(13,13,14,.6);color:var(--b);font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;line-height:1}
 .v-sonido[aria-pressed="true"]{background:var(--b);color:var(--k)}
 
-.v-col{justify-content:flex-start;padding-top:56px;padding-bottom:48px;gap:18px}
+.v-col{justify-content:flex-start;padding-top:56px;gap:18px;
+  /* su propio padding pisaba el que reserva el aviso de cookies */
+  padding-bottom:calc(48px + var(--ck-h,0px))}
 .v-col-eti{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.55}
 .v-col-eti span:last-child{margin-left:auto}
 .v-col .v-col-h{font-size:clamp(38px,10.6vw,64px);line-height:.92;letter-spacing:-.035em;text-transform:uppercase;margin:0}

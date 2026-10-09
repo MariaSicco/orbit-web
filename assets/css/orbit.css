@@ -353,6 +353,9 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
    Acá la sección misma deja ese lugar libre. */
 @media (max-width:860px){
   html.ck-on .pant{padding-bottom:calc(56px + var(--ck-h,0px) + env(safe-area-inset-bottom,0px))}
+  /* en el teléfono se apoyaba sobre las tapas del riel y tapaba un producto;
+     la barra de arriba ya lleva al inicio desde el logo */
+  .totop{display:none}
   .pant{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 }
 
