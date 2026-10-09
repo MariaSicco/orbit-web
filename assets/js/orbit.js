@@ -253,7 +253,7 @@ function mountDrawer() {
       <button class="btn btn-acid" data-pay="mercadopago">${L('Pagar con Mercado Pago','Pay with Mercado Pago')} <span class="ar">→</span></button>
       <button class="btn btn-line" data-pay="paypal">${L('Pagar con PayPal o tarjeta','Pay with PayPal or card')} <span class="ar">→</span></button>
       <p class="err" id="cartErr" role="alert"></p>
-      <p class="note">${L('Mercado Pago cobra en pesos; PayPal, en dólares. Pago único, acceso para siempre.','Mercado Pago charges in ARS; PayPal in USD. One-time payment, lifetime access.')}</p>
+      <p class="note">${L('Mercado Pago cobra en pesos; PayPal, en dólares. Pago único, acceso para siempre. Producto digital de entrega inmediata: una vez entregado no tiene devolución.','Mercado Pago charges in ARS; PayPal in USD. One-time payment, lifetime access. Instant digital delivery: no refunds once delivered.')}</p>
     </div></div>`;
   document.body.append(d);
   d.addEventListener('click', async e => {
@@ -444,7 +444,7 @@ foot.innerHTML = `<div class="wrap">
     <div><span class="mono dim">${L('Familias','Families')}</span>${Object.entries(FAM).filter(([k]) => P.some(p => p.family === k)).map(([k,[n]]) => `<a href="productos.html#${k}">${n}</a>`).join('')}</div>
     <div><span class="mono dim">Orbit</span><a href="nosotros.html">${L('Nosotros','About')}</a><a href="index.html#a-medida">${L('Pedidos a medida','Custom requests')}</a><a href="${session() ? 'biblioteca.html' : 'acceso.html'}">${L('Mi cuenta','My account')}</a><a href="nosotros.html#manifiesto">${L('Manifiesto','Manifesto')}</a><a href="https://mariasicco.github.io/orbit-brand-manual/">${L('Manual de marca','Brand manual')}</a></div>
     <div><span class="mono dim">${L('Contacto','Contact')}</span><a href="mailto:hola@orbitando.com.ar">hola@orbitando.com.ar</a><a href="https://www.instagram.com/orbitando.ba/" target="_blank" rel="noopener">Instagram</a><a href="acceso.html?nuevo=1">Newsletter</a></div>
-    <div><span class="mono dim">Legal</span><a href="terminos.html">${L('Términos y condiciones','Terms and conditions')}</a><a href="privacidad.html">${L('Política de privacidad','Privacy policy')}</a><a href="terminos.html#arrepentimiento">${L('Botón de arrepentimiento','Right to cancel')}</a><a href="privacidad.html#cookies" data-cookies>${L('Configurar cookies','Cookie settings')}</a></div>
+    <div><span class="mono dim">Legal</span><a href="terminos.html">${L('Términos y condiciones','Terms and conditions')}</a><a href="privacidad.html">${L('Política de privacidad','Privacy policy')}</a><a href="privacidad.html#cookies" data-cookies>${L('Configurar cookies','Cookie settings')}</a></div>
   </div>
   <div class="base"><div>${wm({color:C.b})}<p class="mono" style="margin:10px 0 0">${L('Ideas en movimiento.','Ideas in motion.')}</p></div><span class="mono dim" style="text-align:right">${L('Mismas personas. Más herramientas.<br>Un mejor mañana.','Same people. More tools.<br>A brighter tomorrow.')} — Est. 2026</span></div>
 </div>`;
