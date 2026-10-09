@@ -127,6 +127,29 @@ export async function enviarComprobante(order) {
     return String(e).slice(0, 180);
   }
 }
+/* Pasa una compra pagada a otro email (cuando la persona lo tipeó mal en el
+   carrito): la suma a la biblioteca y al historial del email correcto, sin
+   sacársela al anterior. Guarda el email original para el registro. */
+export async function reasignarPedido(order, nuevo) {
+  const email = String(nuevo).replace(/\s+/g, '').toLowerCase();
+  if (!order || order.status !== 'paid' || !email || email === order.email) return order;
+  order.emailOriginal = order.emailOriginal || order.email;
+  order.email = email;
+  order.reasignadoAt = new Date().toISOString();
+  const list = (await kvGet(listKey(email))) || [];
+  if (!list.includes(order.id)) { list.unshift(order.id); await kvSet(listKey(email), list.slice(0, 200)); }
+  for (const it of order.items) {
+    await addPurchase(email, {
+      productId: it.id, orderId: `${order.id}:${it.id}`, via: order.via,
+      amount: order.via === 'paypal' ? it.usd : it.ars,
+      currency: order.via === 'paypal' ? 'USD' : 'ARS',
+      date: order.paidAt,
+    });
+  }
+  await kvSet(key(order.id), order, 60 * 60 * 24 * 365 * 3);
+  return order;
+}
+
 export async function listOrders(email) {
   const ids = (await kvGet(listKey(email))) || [];
   const orders = await Promise.all(ids.slice(0, 50).map(getOrder));
