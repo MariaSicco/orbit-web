@@ -347,15 +347,13 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 /* aviso de cookies: barra abajo, no bloquea. Los botones pesan lo mismo.
    Mientras está abierta, la barra de compra de la ficha, el botón de
    volver arriba y el toast suben su altura para no quedar tapados. */
-/* ---- lo fijo no se come lo que está abajo ----
-   El aviso de cookies (147 px) y el botón de volver arriba son fijos y no
-   reservaban lugar: tapaban el botón principal del hero por 58 px, el
-   "Ver todas" de la colección por 52 y una tapa de producto por 35.
-   Las secciones terminan por encima de los dos. */
+/* ---- una sección de pantalla completa no termina bajo el aviso ----
+   El body ya reserva --ck-h, pero una sección de 100svh igual llega hasta el
+   borde y el aviso le tapaba el final: el botón del hero quedaba 58 px abajo.
+   Acá la sección misma deja ese lugar libre. */
 @media (max-width:860px){
-  .pant{padding-bottom:calc(78px + env(safe-area-inset-bottom,0px))}
-  body:has(.ck.on) .pant{padding-bottom:calc(176px + env(safe-area-inset-bottom,0px))}
-  body:has(.ck.on) .totop{bottom:calc(166px + env(safe-area-inset-bottom,0px))}
+  html.ck-on .pant{padding-bottom:calc(56px + var(--ck-h,0px) + env(safe-area-inset-bottom,0px))}
+  .pant{padding-bottom:calc(72px + env(safe-area-inset-bottom,0px))}
 }
 
 .ck{position:fixed;left:0;right:0;bottom:0;z-index:55;background:var(--k);color:var(--b);border-top:1px solid var(--k3);padding:14px var(--pad) calc(14px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;justify-content:space-between;gap:16px 32px;transform:translateY(100%);transition:transform .35s var(--ease)}
@@ -374,7 +372,11 @@ html.ck-on .totop{bottom:calc(var(--ck-h,0px) + 14px)}
 html.ck-on body:has(.buybar.on) .totop{bottom:calc(var(--ck-h,0px) + 92px)}
 html.ck-on .toast{bottom:calc(var(--ck-h,0px) + 16px)}
 @media (max-width:640px){
-  .ck{flex-direction:column;align-items:stretch;padding-top:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+  .ck{gap:10px 12px;padding-top:10px;padding-bottom:calc(10px + env(safe-area-inset-bottom,0px))}
+  .ck p{font-size:12.5px;line-height:1.35;gap:4px 10px}
+  .ck .ck-l{display:none}            /* el rótulo COOKIES sobra: ya se entiende */
+  .ck-b button{min-width:0;flex:1;padding:0 12px;font-size:11px}
+  .ck-b{flex:none;gap:6px}
   .ck p{font-size:13px}
   .ck-b button{flex:1}
 }
