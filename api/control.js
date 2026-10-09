@@ -124,11 +124,16 @@ async function claude(prompt, maxTokens = 4000) {
   });
   if (!r.ok) throw Object.assign(new Error('ia_error_' + r.status), { status: 502 });
   const d = await r.json();
-  const t = (d.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
+  const t = (d.content || []).filter(c => c.type === 'text').map(c => c.text).join('').trim();
+  const intentos = [t];
+  const fence = t.match(/```(?:json)?\s*([\s\S]*?)```/); if (fence) intentos.push(fence[1]);
   const a = t.indexOf('['), o = t.indexOf('{');
   const start = a >= 0 && (o < 0 || a < o) ? a : o;
   const end = Math.max(t.lastIndexOf(']'), t.lastIndexOf('}'));
-  try { return JSON.parse(t.slice(start, end + 1)); } catch { throw Object.assign(new Error('ia_respuesta_invalida'), { status: 502 }); }
+  if (start >= 0 && end > start) intentos.push(t.slice(start, end + 1));
+  for (const s of intentos) { try { return JSON.parse(s); } catch {} }
+  console.error('IA sin JSON', d.stop_reason, t.slice(0, 300), t.slice(-200));
+  throw Object.assign(new Error(d.stop_reason === 'max_tokens' ? 'ia_respuesta_cortada' : 'ia_respuesta_invalida'), { status: 502 });
 }
 
 export default async function handler(req, res) {
@@ -254,7 +259,8 @@ export default async function handler(req, res) {
 Tarea: proponé 6 nichos NUEVOS${tema ? ` dentro de: "${tema}"` : ''}${linea ? `, donde la línea principal sea ${linea}` : ''}. No repitas estos que ya tenemos: ${nichos.map(n => n.nicho).slice(0, 120).join('; ')}.
 Para cada uno estimá el puntaje de 1 a 5 en este orden: demanda, ticket posible, facilidad de creación, diferenciación, potencial visual, escalabilidad, posibilidad de bundle, encaje con Orbit. Sé exigente: es una hipótesis sin evidencia.
 Respondé SOLO con un array JSON de 6 objetos con esta forma exacta:
-[{"nicho":"","comprador":"","dolor":"qué hace hoy a mano, una oración","q":"2-4 palabras para buscar en la Biblioteca de anuncios de Meta","escalera":[{"pieza":"Ancla","nombre":"","linea":"plantilla|sistema|microapp","precio":49,"descripcion":"una oración"},{"pieza":"Entrada","nombre":"","linea":"","precio":19,"descripcion":""},{"pieza":"Complemento","nombre":"","linea":"","precio":12,"descripcion":""}],"scores":[4,3,4,4,4,4,4,4],"riesgo":"una oración","gancho":"un gancho técnico para el anuncio"}]`);
+[{"nicho":"","comprador":"","dolor":"qué hace hoy a mano, una oración","q":"2-4 palabras para buscar en la Biblioteca de anuncios de Meta","escalera":[{"pieza":"Ancla","nombre":"","linea":"plantilla|sistema|microapp","precio":49,"descripcion":"una oración"},{"pieza":"Entrada","nombre":"","linea":"","precio":19,"descripcion":""},{"pieza":"Complemento","nombre":"","linea":"","precio":12,"descripcion":""}],"scores":[4,3,4,4,4,4,4,4],"riesgo":"una oración","gancho":"un gancho técnico para el anuncio"}]
+Sin texto antes ni después del JSON. Textos breves.`, 8000);
         return res.status(200).json({ ok: true, ideas: (Array.isArray(ideas) ? ideas : []).slice(0, 8).map(limpiarNicho) });
       }
       /* IA: analizar un nicho con los datos cargados */
