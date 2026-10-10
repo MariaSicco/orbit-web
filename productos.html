@@ -110,9 +110,10 @@
   .mc-leyenda button+button{border-left:1px solid #242426}
   .mc-leyenda b{font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:-.01em}
   .mc-leyenda em{font-family:var(--serif);font-size:14px;line-height:1.15;opacity:.9}
-  .mc-uno{display:flex;gap:14px;align-items:center;padding:14px 0;margin:18px 16px 0;border-top:1px solid #242426;border-bottom:1px solid #242426}
-  .mc-uno em{display:block;font-family:var(--serif);font-size:19px;line-height:1.15;margin-bottom:8px}
-  .mc-uno span.t{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border:1px solid #3A3935;margin:0 6px 6px 0}
+  .mc-uno{margin:26px 16px 0;padding-bottom:20px;border-bottom:1px solid #242426}
+  .mc-uno strong{display:block;font-weight:900;font-size:clamp(44px,13vw,60px);line-height:.85;letter-spacing:-.05em;text-transform:uppercase}
+  .mc-uno em{display:block;font-family:var(--serif);font-size:24px;line-height:1.1;margin-top:8px;color:var(--c)}
+  .mc-uno p{margin:14px 0 0;font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.6;line-height:1.7}
   .mc-drop{display:flex;flex-direction:column;gap:10px;margin:20px 16px 0;padding:20px;background:var(--ac);color:var(--k);text-decoration:none}
   .mc-drop .r{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.08em}
   .mc-drop .r span:last-child{background:var(--k);color:var(--ac);padding:6px 10px}
@@ -287,7 +288,7 @@ function pintar() {
   const cur = FMTS.find(x => x.id === f);
   $('#mcInfo').innerHTML = f === 'all'
     ? `<div class="mc-leyenda">${FMTS.slice(1).map(x => `<button type="button" data-f="${x.id}">${orb(x.lv, 26)}<b>${L(...x.n)}</b><em>${L(x.v[0].replace('Para ','').replace('.',''), x.v[1].replace('To ','').replace('.',''))}</em></button>`).join('')}</div>`
-    : `<div class="mc-uno">${orb(cur.lv, 48)}<div><em>${L(...cur.v)}</em>${cur.tags.map(t => `<span class="t">${L(...t)}</span>`).join('')}</div></div>`;
+    : `<div class="mc-uno" style="--c:${cur.id === 'p' ? '#F2EFE8' : cur.id === 's' ? '#D9FF45' : '#7D8CFF'}"><strong>${L(...cur.n)}</strong><em>${L(...cur.v)}</em><p>${cur.tags.map(t => L(...t)).join(' · ')}</p></div>`;
   $('#mcDrop').hidden = !(f === 'all' || f === 'a');
   const vis = lista.filter(p => f === 'all' || fmt(p) === f);
   $('#mcGrid').hidden = !vis.length;
