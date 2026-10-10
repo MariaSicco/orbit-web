@@ -119,7 +119,13 @@
   .mc-drop strong{font-weight:900;font-size:44px;line-height:.85;letter-spacing:-.05em;text-transform:uppercase}
   .mc-drop em{font-family:var(--serif);font-size:19px}
   .mc-drop .b{display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 16px;background:var(--k);color:var(--b);font-weight:700;font-size:15px}
-  .mc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:10px;row-gap:22px;padding:24px 16px 40px}
+  .mc-grupos{padding:8px 0 40px}
+  .mc-grupo{padding:26px 16px 0}
+  .mc-gcab{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-bottom:14px;border-bottom:1px solid #242426;margin-bottom:16px}
+  .mc-gcab h2{margin:0;font-weight:900;font-size:19px;line-height:1;letter-spacing:-.02em;text-transform:uppercase}
+  .mc-gcab h2 small{display:block;font-family:var(--mono);font-weight:400;font-size:9.5px;letter-spacing:.1em;opacity:.5;margin-bottom:6px}
+  .mc-gcab em{font-family:var(--serif);font-size:14px;opacity:.75;text-align:right;max-width:46%}
+  .mc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:10px;row-gap:22px}
   .mc-item{display:flex;flex-direction:column;gap:7px;min-width:0;color:var(--b);text-decoration:none}
   .mc-tapa{display:grid;grid-template-columns:7px minmax(0,1fr);aspect-ratio:3/4;box-shadow:3px 3px 0 #242426}
   .mc-tapa.borde{border:1px solid #3A3935}
@@ -156,7 +162,7 @@
     <em><span data-l="es">Lógica propia, base de datos e IA. Anotate y te avisamos.</span><span data-l="en">Their own logic, a database and AI. Sign up and we’ll let you know.</span></em>
     <span class="b"><span data-l="es">Avisame el 19.10</span><span data-l="en">Notify me on Oct 19</span> <span>→</span></span>
   </a>
-  <div class="mc-grid" id="mcGrid"></div>
+  <div class="mc-grupos" id="mcGrid"></div>
   <div class="mc-falta">
     <span class="k"><span data-l="es">¿NO ESTÁ EL TUYO?</span><span data-l="en">NOT HERE?</span></span>
     <span class="h"><span data-l="es">Contanos qué te <span class="it">molesta.</span></span><span data-l="en">Tell us what <span class="it">bugs you.</span></span></span>
@@ -251,6 +257,15 @@ const ORDEN = Object.keys(TAPAS);
 const lista = ORDEN.map(id => P.find(p => p.id === id && p.status !== 'soon')).filter(Boolean)
   .concat(P.filter(p => p.status !== 'soon' && !TAPAS[p.id]));
 const fmt = p => (TAPAS[p.id] || [])[2] || 's';
+/* subcategorías: por lo que resuelve, no por oficio */
+const SUBS = [
+  {id:'precios', f:'s', n:['Precios y cotizaciones','Pricing and quotes'], d:['Cuánto cobrar, sin regalar tu trabajo.','What to charge, without giving work away.'], ids:['ob-006','ob-007','ob-012','ob-014']},
+  {id:'cobranzas', f:'s', n:['Cobranzas','Collections'], d:['Quién te debe y desde cuándo.','Who owes you and since when.'], ids:['ob-008','ob-011']},
+  {id:'gestion', f:'s', n:['Gestión y vencimientos','Management and deadlines'], d:['Todo en orden y nada se te pasa.','Everything in order, nothing slips.'], ids:['ob-009','ob-010']},
+  {id:'tecnico', f:'s', n:['Cálculo técnico','Technical calculation'], d:['La cuenta hecha y verificada.','The math done and checked.'], ids:['ob-017']},
+  {id:'chicos', f:'p', n:['Actividades para chicos','Activities for kids'], d:['Para imprimir y hacer sin pantallas.','Print and do, screen-free.'], ids:['ob-015','ob-016']},
+];
+const subDe = p => SUBS.find(g => g.ids.includes(p.id)) || {id:'otros', f:fmt(p), n:['Otros','Other'], d:['',''], ids:[]};
 const FMTS = [
   {id:'all', n:['Todo','All'], lv:0, c:'#F2EFE8', i:'#0D0D0E'},
   {id:'p', n:['Plantillas','Templates'], lv:1, c:'#F2EFE8', i:'#0D0D0E', v:['Para leer y usar.','To read and use.'], tags:[['Entregables','Deliverables'],['Imprimibles','Printable'],['No guardan datos','No data saved']]},
@@ -276,14 +291,20 @@ function pintar() {
   $('#mcDrop').hidden = !(f === 'all' || f === 'a');
   const vis = lista.filter(p => f === 'all' || fmt(p) === f);
   $('#mcGrid').hidden = !vis.length;
-  $('#mcGrid').innerHTML = vis.map(p => {
+  const tapa = p => {
     const t = TAPAS[p.id] || ['#161617','#F2EFE8','s',null,1];
     const F = t[2] === 'p' ? L('Plantilla','Template') : L('Sistema','System');
     return `<a class="mc-item" href="${url(p)}">
       <div class="mc-tapa${t[4] ? ' borde' : ''}" style="background:${t[0]};color:${t[1]}"><i></i>
         <div class="mc-cara"><b>ORBIT</b>${ILUS[p.id] || ''}<h3>${p.name}</h3></div></div>
       <small>${F}</small><strong>${p.name}</strong><span class="pr">${money(p)}</span></a>`;
-  }).join('');
+  };
+  const grupos = [];
+  vis.forEach(p => { const g = subDe(p); let k = grupos.find(x => x.g.id === g.id); if (!k) grupos.push(k = {g, items: []}); k.items.push(p); });
+  grupos.sort((a, b) => (a.g.f === b.g.f ? 0 : a.g.f === 's' ? -1 : 1) || SUBS.indexOf(a.g) - SUBS.indexOf(b.g));
+  $('#mcGrid').innerHTML = grupos.map(({g, items}) => `<section class="mc-grupo" id="sub-${g.id}">
+    <div class="mc-gcab"><h2><small>${g.f === 'p' ? L('Plantillas','Templates') : L('Sistemas','Systems')} · ${items.length}</small>${L(...g.n)}</h2>${g.d[0] ? `<em>${L(...g.d)}</em>` : ''}</div>
+    <div class="mc-grid">${items.map(tapa).join('')}</div></section>`).join('');
   $('#mcCount').innerHTML = vis.length + ' ' + (vis.length === 1 ? L('herramienta','tool') : L('herramientas','tools'));
 }
 document.getElementById('mcat').addEventListener('click', e => {
