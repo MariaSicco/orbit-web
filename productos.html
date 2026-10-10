@@ -84,10 +84,85 @@
 .soon h2{font-size:clamp(46px,6vw,100px)}
 .soon .photo{min-height:300px}
 @media (max-width:860px){.cat-head .top,.soon{grid-template-columns:1fr}}
+/* ===== catálogo mobile v2 (10.10.2026): solo hasta 860 px ===== */
+.mcat{display:none}
+@media (max-width:860px){
+  main>.sec.cat-head,main>.sec.light{display:none}
+  .mcat{display:block;background:var(--k);color:var(--b);padding:84px 0 56px}
+  .mc-w{padding:0 16px}
+  .mc-eti{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.55}
+  .mc-h{margin:14px 0 12px;font-weight:900;font-size:clamp(40px,12.3vw,56px);line-height:.9;letter-spacing:-.04em;text-transform:uppercase}
+  .mc-h .it{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;color:var(--ac)}
+  .mc-p{margin:0 0 22px;font-size:16px;line-height:1.45;opacity:.85}
+  .mc-tabs{position:sticky;top:0;z-index:5;background:var(--k);border-bottom:1px solid #242426;display:flex;gap:8px;overflow-x:auto;padding:12px 16px;scrollbar-width:none}
+  .mc-tabs::-webkit-scrollbar{display:none}
+  .mc-tab{flex-shrink:0;min-height:44px;display:flex;align-items:center;gap:8px;padding:0 14px 0 12px;border-radius:22px;border:1px solid #3A3935;background:transparent;color:var(--b);cursor:pointer;white-space:nowrap;font:900 13px/1 var(--sans,'Inter Tight'),sans-serif;text-transform:uppercase;letter-spacing:-.01em;transition:background .2s cubic-bezier(.7,0,.2,1),color .2s cubic-bezier(.7,0,.2,1),border-color .2s cubic-bezier(.7,0,.2,1)}
+  .mc-tab small{font-family:var(--mono);font-weight:400;font-size:10px;letter-spacing:.04em;opacity:.55}
+  .mc-tab[aria-selected="true"]{background:var(--c);color:var(--i);border-color:var(--c)}
+  .mc-tab[aria-selected="true"] small{opacity:.75}
+  .orb3{position:relative;display:block;flex-shrink:0}
+  .orb3 i{position:absolute;box-sizing:border-box;border-radius:50%;border:1px solid currentColor;opacity:.3}
+  .orb3 i.on{opacity:1}
+  .orb3 b{position:absolute;border-radius:50%;background:var(--blue)}
+  .mc-leyenda{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #242426;border-bottom:1px solid #242426;margin:18px 16px 0}
+  .mc-leyenda button{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 10px 14px 12px;background:none;border:0;color:var(--b);cursor:pointer;text-align:left;font-family:inherit}
+  .mc-leyenda button:first-child{padding-left:0}
+  .mc-leyenda button+button{border-left:1px solid #242426}
+  .mc-leyenda b{font-weight:900;font-size:13px;text-transform:uppercase;letter-spacing:-.01em}
+  .mc-leyenda em{font-family:var(--serif);font-size:14px;line-height:1.15;opacity:.9}
+  .mc-uno{display:flex;gap:14px;align-items:center;padding:14px 0;margin:18px 16px 0;border-top:1px solid #242426;border-bottom:1px solid #242426}
+  .mc-uno em{display:block;font-family:var(--serif);font-size:19px;line-height:1.15;margin-bottom:8px}
+  .mc-uno span.t{display:inline-block;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:5px 8px;border:1px solid #3A3935;margin:0 6px 6px 0}
+  .mc-drop{display:flex;flex-direction:column;gap:10px;margin:20px 16px 0;padding:20px;background:var(--ac);color:var(--k);text-decoration:none}
+  .mc-drop .r{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:11px;letter-spacing:.08em}
+  .mc-drop .r span:last-child{background:var(--k);color:var(--ac);padding:6px 10px}
+  .mc-drop strong{font-weight:900;font-size:44px;line-height:.85;letter-spacing:-.05em;text-transform:uppercase}
+  .mc-drop em{font-family:var(--serif);font-size:19px}
+  .mc-drop .b{display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 16px;background:var(--k);color:var(--b);font-weight:700;font-size:15px}
+  .mc-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));column-gap:10px;row-gap:22px;padding:24px 16px 40px}
+  .mc-item{display:flex;flex-direction:column;gap:7px;min-width:0;color:var(--b);text-decoration:none}
+  .mc-tapa{display:grid;grid-template-columns:7px minmax(0,1fr);aspect-ratio:3/4;box-shadow:3px 3px 0 #242426}
+  .mc-tapa.borde{border:1px solid #3A3935}
+  .mc-tapa>i{background:rgba(13,13,14,.16)}
+  .mc-cara{padding:6px 6px 7px;display:flex;flex-direction:column;justify-content:space-between;min-width:0}
+  .mc-cara>b{font-weight:900;font-size:7px;letter-spacing:-.02em}
+  .mc-cara svg{width:100%;height:auto;max-height:44px;stroke-width:5}
+  .mc-cara h3{margin:0;font-weight:900;font-size:8.5px;line-height:.95;letter-spacing:-.02em;text-transform:uppercase}
+  .mc-item small{font-family:var(--mono);font-size:7.5px;letter-spacing:.06em;opacity:.55;text-transform:uppercase}
+  .mc-item strong{font-weight:700;font-size:11px;line-height:1.12}
+  .mc-item span.pr{font-family:var(--mono);font-size:10px}
+  .mc-falta{margin:0 16px;padding:24px 20px;border:1px solid #242426;display:flex;flex-direction:column;gap:12px}
+  .mc-falta .k{font-family:var(--mono);font-size:11px;letter-spacing:.08em;opacity:.55}
+  .mc-falta .h{font-weight:900;font-size:26px;line-height:.95;text-transform:uppercase;letter-spacing:-.03em}
+  .mc-falta .h .it{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;color:var(--blue);filter:brightness(1.5)}
+  .mc-falta a{display:flex;justify-content:space-between;align-items:center;min-height:48px;padding:0 16px;border:1px solid var(--b);color:var(--b);text-decoration:none;font-weight:700;font-size:15px}
+}
+@media (max-width:860px) and (prefers-reduced-motion:reduce){.mc-tab{transition:none}}
 </style>
 </head>
 <body data-page="productos" data-title-es="Productos — Orbit®" data-title-en="Products — Orbit®">
 <main>
+<section class="mcat" id="mcat" aria-label="Catálogo">
+  <div class="mc-w">
+    <div class="mc-eti"><span><span data-l="es">Catálogo · Vol.01</span><span data-l="en">Catalog · Vol.01</span></span><span id="mcCount"></span></div>
+    <h1 class="mc-h"><span data-l="es">Todo lo que está <span class="it">en órbita.</span></span><span data-l="en">Everything <span class="it">in orbit.</span></span></h1>
+    <p class="mc-p"><span data-l="es">Pago único. Lo recibís al instante por email.</span><span data-l="en">One-time payment. Delivered instantly by email.</span></p>
+  </div>
+  <div class="mc-tabs" id="mcTabs" role="tablist" aria-label="Formato"></div>
+  <div id="mcInfo"></div>
+  <a class="mc-drop" id="mcDrop" href="/m#drop">
+    <span class="r"><span>Drop 01</span><span>19.10</span></span>
+    <strong>Microapps</strong>
+    <em><span data-l="es">Lógica propia, base de datos e IA. Anotate y te avisamos.</span><span data-l="en">Their own logic, a database and AI. Sign up and we’ll let you know.</span></em>
+    <span class="b"><span data-l="es">Avisame el 19.10</span><span data-l="en">Notify me on Oct 19</span> <span>→</span></span>
+  </a>
+  <div class="mc-grid" id="mcGrid"></div>
+  <div class="mc-falta">
+    <span class="k"><span data-l="es">¿NO ESTÁ EL TUYO?</span><span data-l="en">NOT HERE?</span></span>
+    <span class="h"><span data-l="es">Contanos qué te <span class="it">molesta.</span></span><span data-l="en">Tell us what <span class="it">bugs you.</span></span></span>
+    <a href="/m#problema"><span data-l="es">Mandar a órbita</span><span data-l="en">Send to orbit</span> <span>→</span></a>
+  </div>
+</section>
 <section class="sec dark cat-head">
   <div class="wrap top"><span class="mono">Vol.01 — 2026</span><span class="mono" style="text-align:right" id="count"></span></div>
   <div class="wrap"><h1 class="display"><span data-l="es">La <span class="it">colección.</span></span><span data-l="en">The <span class="it">collection.</span></span></h1></div>
@@ -152,6 +227,72 @@ function pintar() {
 pintar();
 addEventListener('orbit:lang', pintar);
 reveal();
+})();
+
+/* ===== catálogo mobile v2 ===== */
+(() => {
+const {$, L, tr, P, url, money} = ORBIT;
+if (!$('#mcat')) return;
+const ILUS = {"ob-017": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M12 10V120M158 10V120\"/><path d=\"M12 42H58M58 28V56M70 28V56M70 42H104M128 42H158\"/><circle cx=\"116\" cy=\"42\" r=\"12\"/><path d=\"M12 92H58M58 78V106M70 78V106M54 108L74 76M70 92H104M128 92H158\"/><circle cx=\"116\" cy=\"92\" r=\"12\"/><path d=\"M108 84L124 100M124 84L108 100\"/><circle cx=\"12\" cy=\"42\" r=\"5\" fill=\"#D9FF45\" stroke=\"none\"/><circle cx=\"158\" cy=\"92\" r=\"5\" fill=\"#D9FF45\" stroke=\"none\"/></svg>", "ob-012": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M28 112H142\"/><rect x=\"36\" y=\"72\" width=\"98\" height=\"40\"/><rect x=\"54\" y=\"44\" width=\"62\" height=\"28\"/><path d=\"M36 86Q48 96 60 86T84 86T108 86T134 86\"/><path d=\"M85 44V24\"/><circle cx=\"85\" cy=\"16\" r=\"5\" fill=\"currentColor\"/><circle cx=\"144\" cy=\"30\" r=\"18\" fill=\"#0D0D0E\" stroke=\"none\"/><path d=\"M144 20V40M150 25Q144 21 139 25Q136 30 144 30Q152 31 149 36Q144 40 138 36\" stroke=\"#FF4F2E\" stroke-width=\"2.5\"/></svg>", "ob-006": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M16 108C52 108 40 46 84 54S132 28 154 22\" stroke-dasharray=\"7 7\"/><circle cx=\"16\" cy=\"108\" r=\"7\" fill=\"#3047FF\" stroke=\"none\"/><circle cx=\"154\" cy=\"22\" r=\"7\" fill=\"#3047FF\" stroke=\"none\"/><rect x=\"58\" y=\"84\" width=\"44\" height=\"22\"/><path d=\"M102 90H116L124 98V106H102\"/><circle cx=\"70\" cy=\"110\" r=\"5\" fill=\"#0D0D0E\"/><circle cx=\"112\" cy=\"110\" r=\"5\" fill=\"#0D0D0E\"/><text x=\"118\" y=\"74\" font-family=\"IBM Plex Mono,monospace\" font-size=\"14\" fill=\"currentColor\" stroke=\"none\">$/km</text></svg>", "ob-009": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><rect x=\"14\" y=\"14\" width=\"142\" height=\"104\"/><path d=\"M14 34H156M50 34V118M85 34V118M120 34V118M14 62H156M14 90H156\"/><rect x=\"86\" y=\"63\" width=\"33\" height=\"26\" fill=\"#3047FF\" stroke=\"none\"/><path d=\"M126 96L150 114M150 96L126 114M40 6V22M130 6V22\"/></svg>", "ob-015": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><circle cx=\"44\" cy=\"44\" r=\"28\" stroke-dasharray=\"6 6\"/><path d=\"M96 74L130 18L164 74Z\" stroke-dasharray=\"6 6\"/><rect x=\"20\" y=\"88\" width=\"56\" height=\"30\" stroke-dasharray=\"6 6\"/><circle cx=\"104\" cy=\"108\" r=\"9\"/><circle cx=\"104\" cy=\"88\" r=\"9\"/><path d=\"M111 104L156 84M111 92L156 112\"/></svg>", "ob-011": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M14 118H156\"/><rect x=\"22\" y=\"88\" width=\"22\" height=\"30\"/><rect x=\"56\" y=\"70\" width=\"22\" height=\"48\"/><rect x=\"90\" y=\"50\" width=\"22\" height=\"68\"/><rect x=\"124\" y=\"30\" width=\"22\" height=\"88\" fill=\"#3047FF\" stroke=\"#3047FF\"/><circle cx=\"40\" cy=\"34\" r=\"20\"/><path d=\"M40 22V46M46 28Q40 24 34 28Q31 34 40 34Q49 35 46 40Q40 45 33 40\" stroke-width=\"2.5\"/></svg>", "ob-007": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><path d=\"M22 104A63 63 0 0 1 148 104\"/><path d=\"M35 70L44 76M85 41V52M135 70L126 76M58 50L64 59M112 50L106 59\"/><path d=\"M85 104L124 66\" stroke-width=\"5\"/><circle cx=\"85\" cy=\"104\" r=\"9\" fill=\"currentColor\"/><text x=\"62\" y=\"126\" font-family=\"IBM Plex Mono,monospace\" font-size=\"14\" fill=\"currentColor\" stroke=\"none\">$ / km</text></svg>", "ob-008": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><rect x=\"16\" y=\"12\" width=\"18\" height=\"18\"/><path d=\"M20 21L25 26L32 14M46 21H150\"/><rect x=\"16\" y=\"44\" width=\"18\" height=\"18\"/><path d=\"M20 53L25 58L32 46M46 53H130\"/><rect x=\"16\" y=\"76\" width=\"18\" height=\"18\"/><path d=\"M46 85H140\"/><rect x=\"16\" y=\"108\" width=\"18\" height=\"18\"/><path d=\"M46 117H118\"/><circle cx=\"150\" cy=\"85\" r=\"10\" fill=\"#FF4F2E\" stroke=\"none\"/></svg>", "ob-010": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><rect x=\"10\" y=\"10\" width=\"46\" height=\"110\"/><rect x=\"62\" y=\"10\" width=\"46\" height=\"110\"/><rect x=\"114\" y=\"10\" width=\"46\" height=\"110\"/><rect x=\"17\" y=\"20\" width=\"32\" height=\"20\" fill=\"currentColor\"/><rect x=\"17\" y=\"46\" width=\"32\" height=\"20\"/><rect x=\"69\" y=\"20\" width=\"32\" height=\"20\"/><rect x=\"69\" y=\"46\" width=\"32\" height=\"20\" fill=\"#D9FF45\" stroke=\"#D9FF45\"/><rect x=\"69\" y=\"72\" width=\"32\" height=\"20\"/><rect x=\"121\" y=\"20\" width=\"32\" height=\"20\"/></svg>", "ob-014": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><ellipse cx=\"85\" cy=\"96\" rx=\"74\" ry=\"22\"/><circle cx=\"48\" cy=\"80\" r=\"13\"/><circle cx=\"85\" cy=\"74\" r=\"13\" fill=\"currentColor\"/><circle cx=\"122\" cy=\"80\" r=\"13\"/><circle cx=\"66\" cy=\"96\" r=\"13\"/><circle cx=\"104\" cy=\"96\" r=\"13\"/><path d=\"M85 74V30M48 80V44M122 80V44\"/><path d=\"M78 30H92\" stroke-width=\"5\"/></svg>", "ob-016": "<svg viewBox=\"0 0 170 130\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" aria-hidden=\"true\"><text x=\"10\" y=\"92\" font-family=\"Inter Tight,sans-serif\" font-weight=\"900\" font-size=\"78\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-dasharray=\"6 5\">ABC</text><path d=\"M12 112H158\" stroke-dasharray=\"2 8\"/><path d=\"M128 24L156 52L148 60L120 32Z\"/><path d=\"M120 32L114 18L128 24\"/></svg>"};
+const TAPAS = {
+  'ob-017': ['#3047FF','#F2EFE8','s',['¿Qué térmico le pongo?','Which breaker do I use?']],
+  'ob-012': ['#FF4F2E','#0D0D0E','s',['¿A cuánto vendo esta torta?','What do I charge for this cake?']],
+  'ob-006': ['#F2EFE8','#0D0D0E','s',['¿Este viaje me deja plata?','Does this trip make me money?']],
+  'ob-009': ['#161617','#F2EFE8','s',['¿Qué me vence esta semana?','What is due this week?'],1],
+  'ob-015': ['#D9FF45','#0D0D0E','p',['¿Qué hacen los chicos sin pantalla?','What do kids do without screens?']],
+  'ob-011': ['#161617','#F2EFE8','s',['¿Quién me debe honorarios?','Who owes me fees?'],1],
+  'ob-007': ['#FF4F2E','#0D0D0E','s',['¿Cuánto me cuesta cada km?','What does each km cost me?']],
+  'ob-010': ['#161617','#F2EFE8','s',['¿Dónde está ese expediente?','Where is that case file?'],1],
+  'ob-008': ['#F2EFE8','#0D0D0E','s',['¿Quién me debe un viaje?','Who owes me for a trip?']],
+  'ob-014': ['#D9FF45','#0D0D0E','s',['¿Cuánto cobro este evento?','What do I charge for this event?']],
+  'ob-016': ['#3047FF','#F2EFE8','p',['¿Cómo empieza a escribir?','How do they start writing?']],
+};
+const ORDEN = Object.keys(TAPAS);
+const lista = ORDEN.map(id => P.find(p => p.id === id && p.status !== 'soon')).filter(Boolean)
+  .concat(P.filter(p => p.status !== 'soon' && !TAPAS[p.id]));
+const fmt = p => (TAPAS[p.id] || [])[2] || 's';
+const FMTS = [
+  {id:'all', n:['Todo','All'], lv:0, c:'#F2EFE8', i:'#0D0D0E'},
+  {id:'p', n:['Plantillas','Templates'], lv:1, c:'#F2EFE8', i:'#0D0D0E', v:['Para leer y usar.','To read and use.'], tags:[['Entregables','Deliverables'],['Imprimibles','Printable'],['No guardan datos','No data saved']]},
+  {id:'s', n:['Sistemas','Systems'], lv:2, c:'#D9FF45', i:'#0D0D0E', v:['Para cargar y calcular.','To enter data and calculate.'], tags:[['Cargás tus datos','You enter your data'],['Hacen las cuentas','They do the math'],['Excel o Notion','Excel or Notion']]},
+  {id:'a', n:['Apps','Apps'], lv:3, c:'#3047FF', i:'#F2EFE8', v:['Para que trabajen con vos.','To work alongside you.'], tags:[['Lógica propia','Own logic'],['Base de datos','Database'],['IA incluida','AI included']]},
+];
+/* tres órbitas; se marca la del nivel, como en el video de la home */
+const orb = (lv, px) => {
+  const r = k => { const d = Math.round(px * [.42,.7,1][k-1]), o = (px - d) / 2;
+    return `<i class="${lv === k || lv === 0 ? 'on' : ''}" style="left:${o}px;top:${o}px;width:${d}px;height:${d}px;${lv === k ? `border-width:${Math.max(2, Math.round(px/11))}px` : ''}"></i>`; };
+  const rr = px * [.21,.21,.35,.5][lv], dd = Math.max(5, Math.round(px / 4.5)), q = Math.SQRT1_2;
+  return `<span class="orb3" style="width:${px}px;height:${px}px" aria-hidden="true">${r(3)}${r(2)}${r(1)}<b style="width:${dd}px;height:${dd}px;left:${(px/2 + rr*q - dd/2).toFixed(1)}px;top:${(px/2 + rr*q - dd/2).toFixed(1)}px;${lv === 3 ? 'background:#D9FF45' : ''}"></b></span>`;
+};
+let f = 'all';
+try { const q = new URLSearchParams(location.search).get('formato'); if (FMTS.some(x => x.id === q)) f = q; } catch (e) {}
+function pintar() {
+  const cnt = {all: lista.length, p: lista.filter(p => fmt(p) === 'p').length, s: lista.filter(p => fmt(p) === 's').length};
+  $('#mcTabs').innerHTML = FMTS.map(x => `<button class="mc-tab" role="tab" type="button" data-f="${x.id}" aria-selected="${x.id === f}" style="--c:${x.c};--i:${x.i}">${orb(x.lv, 18)}${L(...x.n)}<small>${x.id === 'a' ? '19.10' : cnt[x.id]}</small></button>`).join('');
+  const cur = FMTS.find(x => x.id === f);
+  $('#mcInfo').innerHTML = f === 'all'
+    ? `<div class="mc-leyenda">${FMTS.slice(1).map(x => `<button type="button" data-f="${x.id}">${orb(x.lv, 26)}<b>${L(...x.n)}</b><em>${L(x.v[0].replace('Para ','').replace('.',''), x.v[1].replace('To ','').replace('.',''))}</em></button>`).join('')}</div>`
+    : `<div class="mc-uno">${orb(cur.lv, 48)}<div><em>${L(...cur.v)}</em>${cur.tags.map(t => `<span class="t">${L(...t)}</span>`).join('')}</div></div>`;
+  $('#mcDrop').hidden = !(f === 'all' || f === 'a');
+  const vis = lista.filter(p => f === 'all' || fmt(p) === f);
+  $('#mcGrid').hidden = !vis.length;
+  $('#mcGrid').innerHTML = vis.map(p => {
+    const t = TAPAS[p.id] || ['#161617','#F2EFE8','s',null,1];
+    const F = t[2] === 'p' ? L('Plantilla','Template') : L('Sistema','System');
+    return `<a class="mc-item" href="${url(p)}">
+      <div class="mc-tapa${t[4] ? ' borde' : ''}" style="background:${t[0]};color:${t[1]}"><i></i>
+        <div class="mc-cara"><b>ORBIT</b>${ILUS[p.id] || ''}<h3>${p.name}</h3></div></div>
+      <small>${F}</small><strong>${p.name}</strong><span class="pr">${money(p)}</span></a>`;
+  }).join('');
+  $('#mcCount').innerHTML = vis.length + ' ' + (vis.length === 1 ? L('herramienta','tool') : L('herramientas','tools'));
+}
+document.getElementById('mcat').addEventListener('click', e => {
+  const b = e.target.closest('[data-f]'); if (!b) return;
+  f = b.dataset.f; pintar();
+  try { const u = new URL(location.href); f === 'all' ? u.searchParams.delete('formato') : u.searchParams.set('formato', f); history.replaceState(null, '', u); } catch (err) {}
+});
+pintar();
+addEventListener('orbit:lang', pintar);
 })();
 </script>
 </body>
