@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<base href="/herramientas/vencimientos/">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0D0D0E">
+<title>Vencimientos de la Casa · Orbit</title>
+<link rel="icon" href="/favicon-32.png">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="/assets/img/vencimientos/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Vencimientos">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/assets/css/orbit.css">
+<link rel="stylesheet" href="vencimientos.css">
+</head>
+<body class="vc">
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+    <symbol id="i-ajustes" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/></symbol>
+    <symbol id="i-inicio" viewBox="0 0 24 24"><path d="M4 11 12 4l8 7v9h-5v-6H9v6H4z"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-lista" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></symbol>
+    <symbol id="i-numeros" viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></symbol>
+    <symbol id="i-izq" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-der" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-cerrar" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+    <symbol id="i-bajar" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></symbol>
+    <symbol id="i-subir" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 20h16"/></symbol>
+    <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17v.5"/></symbol>
+    <symbol id="i-buscar" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/></symbol>
+    <symbol id="i-campana" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5h4"/></symbol>
+    <symbol id="i-candado" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+    <symbol id="i-flecha" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  </defs>
+</svg>
+
+<header class="top">
+  <a class="marca" href="/biblioteca" aria-label="Volver a tu biblioteca de Orbit">
+    <span class="mono">Vencimientos <span class="it">de la</span> Casa</span>
+  </a>
+  <div class="top-acc">
+    <button class="ic" id="b-cal-ics" type="button" aria-label="Sumar todo al calendario del celular" title="Sumar al calendario del celular"><svg><use href="#i-campana"/></svg></button>
+    <button class="ic" id="b-ajustes" type="button" aria-label="Ajustes y respaldo" title="Ajustes y respaldo"><svg><use href="#i-ajustes"/></svg></button>
+  </div>
+</header>
+
+<main id="app" tabindex="-1">
+  <section class="vista" id="v-inicio" data-vista="inicio" aria-labelledby="t-inicio"></section>
+  <section class="vista" id="v-calendario" data-vista="calendario" aria-labelledby="t-calendario" hidden></section>
+  <section class="vista" id="v-cuentas" data-vista="cuentas" aria-labelledby="t-cuentas" hidden></section>
+  <section class="vista" id="v-numeros" data-vista="numeros" aria-labelledby="t-numeros" hidden></section>
+</main>
+
+<nav class="tabs" aria-label="Secciones">
+  <button type="button" data-tab="inicio" aria-current="page"><svg><use href="#i-inicio"/></svg><span>Este mes</span></button>
+  <button type="button" data-tab="calendario"><svg><use href="#i-cal"/></svg><span>Calendario</span></button>
+  <button type="button" class="tab-mas" id="b-agregar" aria-label="Agregar una cuenta o vencimiento"><svg><use href="#i-mas"/></svg></button>
+  <button type="button" data-tab="cuentas"><svg><use href="#i-lista"/></svg><span>Cuentas</span></button>
+  <button type="button" data-tab="numeros"><svg><use href="#i-numeros"/></svg><span>Números</span></button>
+</nav>
+
+<dialog class="hoja" id="hoja" aria-labelledby="hoja-t">
+  <div class="hoja-in">
+    <div class="hoja-top">
+      <h2 id="hoja-t" class="hoja-titulo"></h2>
+      <button class="ic" type="button" data-acc="cerrar" aria-label="Cerrar"><svg><use href="#i-cerrar"/></svg></button>
+    </div>
+    <div class="hoja-cuerpo" id="hoja-cuerpo"></div>
+  </div>
+</dialog>
+
+<div class="vtoast" id="toast" role="status" aria-live="polite" hidden></div>
+<input type="file" id="f-respaldo" accept="application/json,.json" hidden>
+
+<noscript><p class="nojs">Esta herramienta necesita JavaScript activado.</p></noscript>
+<script type="module" src="app.js"></script>
+</body>
+</html>
