@@ -3,6 +3,7 @@
 import * as V from './calculos.js';
 import { SERVICIOS, CATEGORIAS, PRIMER_USO, PRECIOS, servicio, monograma, tintaSobre } from './servicios.js';
 import { datosEjemplo } from './ejemplo.js';
+import { propuestaDesde, cuentaQueCoincide } from './factura.js';
 
 const CLAVE = 'orbit:vencimientos:v1';
 const $id = id => document.getElementById(id);
@@ -107,7 +108,7 @@ function vistaInicio() {
     </div>
     <span class="mono etq">${etiqueta}${esActual ? ' este mes' : ''}</span>
     <p class="grande${pend === 0 && r.ars.total ? ' cero' : ''}">${!r.ars.total ? (r.cantPendientes ? `${r.cantPendientes} por pagar` : 'Nada') : pend === 0 ? 'Nada' : plata(pend)}</p>
-    <p class="sub">${r.ars.total ? `de <b>${plata(r.ars.total)}</b> en ${r.ocurrencias.filter(o => o.estado !== 'salteado').length} vencimientos · pagaste <b>${plata(r.ars.pagado)}</b>` : 'Sin montos cargados para este mes.'}</p>
+    <p class="sub">${r.ars.total ? `de <b>${plata(r.ars.total)}</b> en ${(n => `${n} vencimiento${n === 1 ? '' : 's'}`)(r.ocurrencias.filter(o => o.estado !== 'salteado').length)} · pagaste <b>${plata(r.ars.pagado)}</b>` : 'Sin montos cargados para este mes.'}</p>
     <div class="barra" role="progressbar" aria-label="Pagado del mes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
     <div class="pie"><span class="mono">${pct}% pagado</span><span class="mono">${r.cantPendientes ? `${r.cantPendientes} pendiente${r.cantPendientes > 1 ? 's' : ''}` : 'Todo al día'}</span></div>
     ${r.usd.total ? `<p class="usd">En dólares: falta <b>${plata(r.usd.pendiente, 'USD')}</b> de ${plata(r.usd.total, 'USD')}</p>` : ''}
@@ -173,6 +174,7 @@ function primerUso() {
       <div class="chips">${chips}<button type="button" class="vchip" data-acc="agregar">Otra…</button></div>
       <div class="acciones">
         <button type="button" class="bt prim ancho" data-acc="onb-seguir" ${o.sel.size ? '' : 'disabled'}>${o.sel.size ? `Seguir con ${o.sel.size}` : 'Elegí al menos uno'} <svg><use href="#i-flecha"/></svg></button>
+        <button type="button" class="bt sec ancho" data-acc="leer"><svg><use href="#i-camara"/></svg> Tengo la factura: sacale una foto</button>
         <button type="button" class="btn-txt" data-acc="ejemplo">Ver primero con datos de ejemplo</button>
       </div>
     </div>
@@ -428,7 +430,7 @@ function verOcurrencia(id) {
   } else {
     html += `<form data-form="pagar" data-id="${esc(o.id)}">
       ${tram ? '' : `<div class="fila2">
-        <label class="campo"><span>Monto pagado</span><span class="monto-in" data-sim="${sim}"><input type="text" name="monto" inputmode="decimal" value="${o.monto != null ? V.formatoPesos(o.monto, { simbolo: '' }).trim() : ''}" placeholder="0" autocomplete="off"></span></label>
+        <label class="campo"><span>Monto pagado</span><span class="monto-in" data-sim="${sim}"><input type="text" name="monto" inputmode="decimal" value="${o.monto != null ? V.formatoPesos(o.monto, { simbolo: '', decimales: true }).trim() : ''}" placeholder="0" autocomplete="off"></span></label>
         <label class="campo"><span>Fecha de pago</span><input type="date" name="fecha" value="${hoy}" max="${V.sumarDias(hoy, 365)}"></label>
       </div>
       <label class="campo"><span>Comprobante o nota <small>(opcional)</small></span><input type="text" name="nota" maxlength="80" placeholder="Ej: n.º de operación" autocomplete="off"></label>`}
@@ -441,10 +443,10 @@ function verOcurrencia(id) {
       <form data-form="factura" data-id="${esc(o.id)}">
         <p class="leyenda" style="margin:0 0 12px">${o.aConfirmar ? 'Poné la fecha real (y el monto, si lo tenés). Los meses siguientes pasan a usar ese día.' : 'Cargá el monto y la fecha de esta factura. No cambia los meses siguientes.'}</p>
         <div class="fila2">
-          <label class="campo"><span>Monto de la factura</span><span class="monto-in" data-sim="${sim}"><input type="text" name="monto" inputmode="decimal" value="${o.origen === 'factura' ? V.formatoPesos(o.monto, { simbolo: '' }).trim() : ''}" placeholder="0" autocomplete="off"></span></label>
+          <label class="campo"><span>Monto de la factura</span><span class="monto-in" data-sim="${sim}"><input type="text" name="monto" inputmode="decimal" value="${o.origen === 'factura' ? V.formatoPesos(o.monto, { simbolo: '', decimales: true }).trim() : ''}" placeholder="0" autocomplete="off"></span></label>
           <label class="campo"><span>Vence el</span><input type="date" name="fecha" value="${o.vence}"></label>
         </div>
-        <button class="bt sec ancho" type="submit">Guardar factura</button>
+        <div class="acciones dos"><button class="bt sec" type="button" data-acc="leer" data-para="${esc(o.id)}"><svg><use href="#i-camara"/></svg> Leer foto</button><button class="bt prim" type="submit">Guardar</button></div>
       </form></details>`;
   }
   html += `<div class="sep"></div><div class="acciones dos">
@@ -510,6 +512,8 @@ function elegirServicio(filtro = '') {
 }
 function abrirAgregar() {
   abrir('Agregar', `
+    <button type="button" class="bt prim ancho foto-bt" data-acc="leer"><svg><use href="#i-camara"/></svg> Sacale una foto a la factura</button>
+    <p class="leyenda" style="margin:8px 2px 16px">Leemos la fecha, el 2º vencimiento y el monto. También sirve el PDF que te llega por mail.</p>
     <div class="buscar"><svg><use href="#i-buscar"/></svg><input type="search" id="buscar-serv" placeholder="Buscá: luz, ABL, prepaga, VTV…" aria-label="Buscar un servicio o vencimiento" autocomplete="off"></div>
     <button type="button" class="bt sec ancho" data-acc="elegir" data-s=""><svg><use href="#i-mas"/></svg> Otra cuenta, con nombre propio</button>
     <div id="lista-serv">${elegirServicio()}</div>`);
@@ -534,7 +538,7 @@ function formCuenta(c, esNueva) {
     <div data-si="monto" ${tram ? 'hidden' : ''}>
       ${servicio(c.preset)?.planes ? `<label class="campo" style="margin-top:8px"><span>Tu plan</span><select name="plan" data-planes="${esc(c.preset)}">${opcionesPlan(servicio(c.preset), c.monto ?? null)}</select>
         <small>${esc(PRECIOS.nota)} Fuente: ${esc(servicio(c.preset).fuente)}.</small></label>` : ''}
-      <label class="campo" style="margin-top:8px"><span>Monto aproximado</span><span class="monto-in" data-sim="${sim}"><input type="text" name="monto" inputmode="decimal" value="${c.monto != null ? V.formatoPesos(c.monto, { simbolo: '' }).trim() : ''}" placeholder="Opcional" autocomplete="off"></span>
+      <label class="campo" style="margin-top:8px"><span>Monto aproximado</span><span class="monto-in" data-sim="${sim}"><input type="text" name="monto" inputmode="decimal" value="${c.monto != null ? V.formatoPesos(c.monto, { simbolo: '', decimales: true }).trim() : ''}" placeholder="Opcional" autocomplete="off"></span>
         <small>Si cambia todos los meses, poné el último. Cuando marques pagado con el monto real, se ajusta solo.</small></label>
       <label class="switch"><span><b>Débito automático</b><small>Lo damos por pagado el día que vence.</small></span><input type="checkbox" name="debito" ${c.debito ? 'checked' : ''}></label>
     </div>
@@ -591,6 +595,110 @@ function leerFormCuenta(form) {
     ...(String(f.get('nota') || '').trim() ? { nota: String(f.get('nota')).trim().slice(0, 200) } : {}),
   };
   return c;
+}
+
+/* ── leer factura ──
+   Foto o PDF → /api/leer-factura → "revisá lo que leí" → se guarda solo lo que confirmás.
+   La foto se achica en el teléfono (máx. 2000 px, JPEG) antes de mandarla. */
+let leerPara = null;   // id de ocurrencia si se abrió desde "Llegó la factura"
+let lectura = null;    // { p: propuesta, modo, match }
+async function achicar(file) {
+  if (file.type === 'application/pdf' || /\.pdf$/i.test(file.name)) return file;
+  const img = await new Promise((ok, mal) => { const i = new Image(); i.onload = () => ok(i); i.onerror = mal; i.src = URL.createObjectURL(file); });
+  const max = 2000, k = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight));
+  const cv = document.createElement('canvas');
+  cv.width = Math.round(img.naturalWidth * k); cv.height = Math.round(img.naturalHeight * k);
+  cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+  URL.revokeObjectURL(img.src);
+  return await new Promise(ok => cv.toBlob(ok, 'image/jpeg', 0.85));
+}
+async function leerFactura(file) {
+  abrir('Leyendo la factura', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p><b>Estamos leyendo tu factura.</b><br>Tarda unos segundos. No la guardamos: se lee y se descarta.</p></div>`);
+  let cuerpo;
+  try { cuerpo = await achicar(file); }
+  catch { return errorLectura('No pudimos abrir esa imagen. Probá con otra foto o con el PDF.'); }
+  if (cuerpo.size > 4 * 1024 * 1024) return errorLectura('El archivo pesa más de 4 MB. Probá con una foto más chica.');
+  let r, j;
+  try {
+    r = await fetch('/api/leer-factura', { method: 'POST', body: cuerpo, credentials: 'same-origin', headers: { 'Content-Type': cuerpo.type || 'application/octet-stream' } });
+    j = await r.json().catch(() => ({}));
+  } catch { return errorLectura('Sin conexión. La lectura necesita internet; probá de nuevo o cargala a mano.'); }
+  if (r.status === 401) return errorLectura('Tu sesión de Orbit se cerró. Entrá de nuevo para leer facturas.', true);
+  if (!r.ok || !j.ok) return errorLectura(j.error || 'No pudimos leer la factura. Cargala a mano.');
+  const p = propuestaDesde(j.lectura, hoy);
+  const desde = leerPara ? buscarOc(leerPara)?.cuenta : null;
+  lectura = { p, modo: j.modo, match: desde || cuentaQueCoincide(d.cuentas, p) };
+  revisarLectura();
+}
+function errorLectura(msg, login = false) {
+  abrir('No se pudo leer', `<p class="nota">${esc(msg)}</p><div class="acciones">
+    ${login ? `<a class="bt prim ancho" href="/acceso?next=${encodeURIComponent('/herramientas/vencimientos')}">Entrar</a>` : `<button type="button" class="bt prim ancho" data-acc="leer-reintentar"><svg><use href="#i-camara"/></svg> Probar con otra foto</button>`}
+    <button type="button" class="bt sec ancho" data-acc="leer-manual">Cargarla a mano</button></div>`);
+}
+function revisarLectura() {
+  const { p, modo, match } = lectura;
+  const frecs = V.FRECUENCIAS.filter(([v]) => v).map(([v, t]) => `<option value="${v}" ${v === p.frecuencia ? 'selected' : ''}>${t}</option>`).join('');
+  const sim = p.moneda === 'USD' ? 'US$' : '$';
+  abrir('Revisá lo que leí', `
+    ${modo === 'prueba' ? '<p class="nota"><b>Modo prueba.</b> La lectura real todavía no está conectada: estos datos son de ejemplo, no de tu foto.</p>' : ''}
+    <div class="det-cab">${avatar({ nombre: p.nombre, color: p.color })}<div><span class="badge ${p.confiable ? 'ok' : 'rev'}">${p.confiable ? 'Leída' : 'Revisala bien'}</span><br><b style="font-size:17px">${esc(p.nombre)}</b></div></div>
+    ${p.avisos.length ? `<ul class="avisos-l">${p.avisos.map(a => `<li>${esc(a)}</li>`).join('')}</ul>` : ''}
+    <form data-form="lectura" novalidate>
+      ${match ? `<fieldset class="campo"><legend>¿De qué cuenta es?</legend><div class="seg">
+        <label><input type="radio" name="destino" value="match" checked><span>De ${esc(match.nombre)}</span></label>
+        <label><input type="radio" name="destino" value="nueva"><span>Es otra cuenta</span></label></div></fieldset>` : ''}
+      <label class="campo" data-solo-nueva ${match ? 'hidden' : ''}><span>Nombre</span><input type="text" name="nombre" value="${esc(p.nombre)}" maxlength="40"></label>
+      <div class="fila2">
+        <label class="campo"><span>Vence el</span><input type="date" name="vence" value="${esc(p.vence || '')}" required></label>
+        <label class="campo"><span>Monto</span><span class="monto-in" data-sim="${sim}"><input type="text" name="monto" inputmode="decimal" value="${p.monto != null ? V.formatoPesos(p.monto, { simbolo: '', decimales: true }).trim() : ''}" placeholder="0"></span></label>
+      </div>
+      <div class="fila2">
+        <label class="campo"><span>2º vencimiento</span><input type="number" name="segundoVto" min="1" max="60" inputmode="numeric" value="${p.segundoVto || ''}" placeholder="Días después">${p.montoSegundo ? `<small>Con recargo: ${plata(p.montoSegundo, p.moneda)}</small>` : ''}</label>
+        <label class="campo" data-solo-nueva ${match ? 'hidden' : ''}><span>Llega</span><select name="frecuencia">${frecs}</select></label>
+      </div>
+      <label class="switch" data-solo-nueva ${match ? 'hidden' : ''}><span><b>Débito automático</b><small>${p.debito ? 'La factura dice que se debita.' : 'Lo damos por pagado el día que vence.'}</small></span><input type="checkbox" name="debito" ${p.debito ? 'checked' : ''}></label>
+      <p class="error" id="lectura-error" hidden></p>
+      <div class="acciones" style="margin-top:12px"><button class="bt prim ancho" type="submit"><svg><use href="#i-check"/></svg> Guardar</button>
+      <button type="button" class="bt sec ancho" data-acc="cerrar">Descartar</button></div>
+      <p class="leyenda">No guardamos la foto: solo lo que confirmás acá, en este dispositivo.</p>
+    </form>`);
+}
+/* Guarda la lectura confirmada: en la cuenta que coincide (la ocurrencia más cercana) o como cuenta nueva. */
+function guardarLectura(form) {
+  const f = new FormData(form);
+  const { p, match } = lectura;
+  const vence = String(f.get('vence') || '');
+  const err = $id('lectura-error');
+  if (!V.esFecha(vence)) { err.hidden = false; err.textContent = 'Poné la fecha de vencimiento.'; form.vence.focus(); return; }
+  const monto = V.leerPesos(f.get('monto'));
+  const seg = Number(f.get('segundoVto')) > 0 ? Math.round(Number(f.get('segundoVto'))) : null;
+  let n = d, cid, clave;
+  if (match && f.get('destino') !== 'nueva') {
+    const c = { ...match };
+    if (seg && !c.segundoVto) c.segundoVto = seg;
+    const cerca = V.claves(c, V.sumarDias(vence, -45), V.sumarDias(vence, 45))
+      .sort((a, b) => Math.abs(V.difDias(a, vence)) - Math.abs(V.difDias(b, vence)))[0];
+    if (c.fechaAConfirmar || !cerca) { delete c.fechaAConfirmar; c.primerVto = vence; clave = vence; }
+    else clave = cerca;
+    n = V.guardarCuenta(n, c); cid = c.id;
+    n = V.cargarFactura(n, cid, clave, { ...(monto != null ? { monto } : {}), fecha: vence });
+  } else {
+    const nombre = String(f.get('nombre') || '').trim() || p.nombre;
+    const frecuencia = Number(f.get('frecuencia')) || p.frecuencia || 1;
+    const c = { id: V.nuevoId(), nombre, categoria: p.categoria, frecuencia, primerVto: vence,
+      ...(p.preset && nombre === p.nombre ? { preset: p.preset } : {}), ...(p.color ? { color: p.color } : {}),
+      ...(monto != null ? { monto } : {}), ...(seg ? { segundoVto: seg } : {}), ...(f.get('debito') === 'on' ? { debito: true } : {}),
+      ...(p.moneda === 'USD' ? { moneda: 'USD' } : {}) };
+    if (p.cuota) { c.cuotas = p.cuota.de; c.primerVto = V.sumarMeses(vence, -(p.cuota.n - 1) * frecuencia); }
+    n = V.guardarCuenta(d.ejemplo ? V.estadoVacio() : d, c); cid = c.id; clave = c.primerVto === vence ? vence : V.claves(c, V.sumarDias(vence, -3), V.sumarDias(vence, 3))[0] || vence;
+    if (monto != null) n = V.cargarFactura(n, cid, clave, { monto });
+  }
+  const nombre = n.cuentas.find(x => x.id === cid)?.nombre || p.nombre;
+  ui.onb = { paso: 1, sel: new Set() };
+  guardar(n);
+  cerrar();
+  lectura = null; leerPara = null;
+  toast(`${nombre}: vence el ${V.fechaLarga(vence)}${monto != null ? ` · ${plata(monto, p.moneda)}` : ''}.`, [{ t: 'Otra factura', fn: () => $id('f-factura').click() }, { t: 'Al calendario', fn: () => descargarICS(cid) }], 8000);
 }
 
 /* ── archivos ── */
@@ -725,6 +833,9 @@ document.addEventListener('click', e => {
     case 'ics-cuenta': descargarICS(b.dataset.c); break;
     case 'respaldo': descargarRespaldo(); break;
     case 'importar': $id('f-respaldo').click(); break;
+    case 'leer': leerPara = b.dataset.para || null; $id('f-factura').click(); break;
+    case 'leer-reintentar': $id('f-factura').click(); break;
+    case 'leer-manual': abrirAgregar(); break;
     case 'ejemplo': cerrar(); guardar(datosEjemplo(hoy)); ui.mes = V.mesDe(hoy); toast('Datos de ejemplo cargados.'); break;
     case 'salir-ejemplo': guardar(V.estadoVacio()); ui.onb = { paso: 1, sel: new Set() }; break;
     case 'borrar-todo': {
@@ -754,7 +865,7 @@ document.addEventListener('change', e => {
   if (t.name === 'conMonto') { const box = t.form.querySelector('[data-si=monto]'); box.hidden = !t.checked; }
   if (t.name === 'plan' && t.dataset.planes) {
     const p = servicio(t.dataset.planes)?.planes?.[Number(t.value)];
-    if (p) t.form.monto.value = V.formatoPesos(p.monto, { simbolo: '' }).trim();
+    if (p) t.form.monto.value = V.formatoPesos(p.monto, { simbolo: '', decimales: true }).trim();
     else if (t.value === 'otro') t.form.monto.focus();
   }
   if (t.name === 'plan' && !t.dataset.planes && t.value === 'otro') {
@@ -762,6 +873,7 @@ document.addEventListener('change', e => {
     lab.outerHTML = `<label class="monto-in" data-sim="$" style="margin:0"><span class="mini" aria-hidden="true">Monto</span><input type="text" name="monto" inputmode="decimal" placeholder="0" aria-label="Monto"></label>`;
     li.querySelector('input[name=monto]')?.focus();
   }
+  if (t.name === 'destino') t.form.querySelectorAll('[data-solo-nueva]').forEach(x => { x.hidden = t.value !== 'nueva'; });
   if (t.name === 'moneda') t.form.querySelectorAll('.monto-in').forEach(x => { x.dataset.sim = t.value === 'USD' ? 'US$' : '$'; });
 });
 
@@ -806,6 +918,8 @@ document.addEventListener('submit', e => {
     guardar(V.guardarCuenta(salirEjemplo ? V.estadoVacio() : d, c));
     cerrar();
     toast(salirEjemplo ? `Sacamos el ejemplo. ${c.nombre} es tu primera cuenta.` : nueva ? `${c.nombre} agregada.` : 'Cambios guardados.', nueva ? [{ t: 'Al calendario', fn: () => descargarICS(c.id) }] : [], 6000);
+  } else if (tipo === 'lectura') {
+    guardarLectura(form);
   } else if (tipo === 'avisos') {
     const av = [...form.querySelectorAll('[name=av]:checked')].map(x => Number(x.value)).sort((a, b) => b - a).slice(0, 3);
     guardar({ ...d, config: { ...d.config, avisos: av.length ? av : [0], hora: form.hora.value } });
@@ -813,6 +927,10 @@ document.addEventListener('submit', e => {
   }
 });
 
+$id('f-factura').addEventListener('change', e => {
+  const file = e.target.files?.[0]; e.target.value = '';
+  if (file) leerFactura(file);
+});
 $id('f-respaldo').addEventListener('change', async e => {
   const file = e.target.files?.[0]; e.target.value = '';
   if (!file) return;

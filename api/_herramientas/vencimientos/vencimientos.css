@@ -121,6 +121,15 @@ main{max-width:760px;margin:0 auto;padding:4px 16px 24px;outline:none}
 .nose input{width:20px;height:20px;min-height:0!important;accent-color:var(--azul);margin:0;flex:none}
 .rapida select{min-height:50px}
 
+.leyendo{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding:28px 8px 20px}
+.leyendo p{margin:0;color:var(--suave);font-size:14.5px;line-height:1.5}
+.leyendo p b{color:var(--tinta)}
+.giro{width:44px;height:44px;border-radius:50%;border:3px solid var(--linea);border-top-color:var(--azul);animation:gira .9s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.avisos-l{margin:0 0 16px;padding:12px 14px 12px 30px;background:#FFF8D6;border-radius:12px;font-size:13.5px;line-height:1.45}
+.avisos-l li+li{margin-top:4px}
+.badge.rev{background:#FFE2DA;color:#7A1D0C;border-color:#FFC9BA}
+
 /* ── botones ── */
 .bt{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 20px;border-radius:14px;font-weight:600;font-size:16px;transition:transform .25s var(--ease),background .2s,opacity .2s;text-decoration:none}
 .bt:active{transform:scale(.98)}

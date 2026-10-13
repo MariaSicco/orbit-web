@@ -39,6 +39,9 @@
   "functions": {
     "api/herramienta.js": {
       "includeFiles": "api/_herramientas/**"
+    },
+    "api/leer-factura.js": {
+      "maxDuration": 60
     }
   }
 }
