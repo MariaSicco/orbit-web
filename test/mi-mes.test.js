@@ -143,8 +143,9 @@ test('lectura: acepta cómo escribe la gente en Argentina', () => {
 });
 
 /* ── esquema ── */
-test('migrar: limpia lo inválido y deja la versión de esquema', () => {
+test('migrar v1 → v2: limpia lo inválido, suma moneda, red y color, y deja la versión', () => {
   const d = migrar({
+    v: 1,
     tarjetas: [{ id: 't1', nombre: ' Visa ' }, { id: 't2' }],
     ingresos: [{ id: 'a', monto: 100, repite: true, desde: '2026-10' }, { id: 'b', monto: -1, desde: '2026-10' }],
     gastos: [{ id: 'g', monto: 100, repite: true, desde: '2026-10', hasta: 'nunca', categoria: 'Raro' }],
@@ -153,12 +154,144 @@ test('migrar: limpia lo inválido y deja la versión de esquema', () => {
       { id: 'e', total: 300, cantidad: 0, tarjetaId: 't1', primerMes: '2026-11' }],
   });
   assert.equal(d.v, M.ESQUEMA);
-  assert.deepEqual(d.tarjetas, [{ id: 't1', nombre: 'Visa' }]);
+  assert.equal(M.ESQUEMA, 2);
+  assert.deepEqual(d.tarjetas, [{ id: 't1', nombre: 'Visa', red: 'Otra', banco: '', ultimos4: '', color: 'azul' }]);
   assert.deepEqual(d.ingresos.map(i => [i.id, i.nombre]), [['a', 'Ingreso']]);
   assert.deepEqual([d.gastos[0].categoria, d.gastos[0].hasta], ['Otros', undefined]);
-  assert.deepEqual(d.cuotas.map(c => c.id), ['c']);
+  assert.deepEqual(d.cuotas.map(c => [c.id, c.moneda]), [['c', 'ARS']]);
+  assert.deepEqual([d.resumenes, d.cambio, d.rubrosComercio], [[], {}, {}]);
   assert.deepEqual(migrar('basura'), M.datosVacios());
-  assert.deepEqual(migrar(base()), base());
+  const v2 = migrar(base());
+  assert.deepEqual(migrar(JSON.parse(JSON.stringify(v2))), v2, 'migrar es idempotente');
+  assert.deepEqual(resumenMes(v2, '2026-11').libres, resumenMes(base(), '2026-11').libres, 'las cuentas no cambian al migrar');
+});
+
+/* ── moneda extranjera ── */
+const conUSD = () => {
+  const d = migrar(base());
+  d.cambio = { USD: { valor: $(2_000), fuente: 'prueba', fecha: '2026-10-13' } };
+  d.cuotas.push({ id: 'u1', descripcion: 'Notebook', total: $(1_200), moneda: 'USD', cantidad: 6, tarjetaId: 't1', primerMes: '2026-11' });
+  return d;
+};
+test('moneda: convierte con el tipo de cambio y entra en "te quedan libres"', () => {
+  assert.equal(M.aPesos($(10), 'USD', conUSD()), $(20_000));
+  assert.equal(M.aPesos(1_050, 'USD', conUSD()), $(21_000)); // US$ 10,50
+  assert.equal(M.aPesos($(5), 'ARS', conUSD()), $(5));
+  const nov = resumenMes(conUSD(), '2026-11');
+  const u = nov.cuotas.find(c => c.id === 'u1');
+  assert.deepEqual([u.original, u.moneda, u.monto], [$(200), 'USD', $(400_000)]);
+  assert.equal(nov.libres, resumenMes(base(), '2026-11').libres - $(400_000));
+});
+test('moneda: sin tipo de cambio cargado usa el de por defecto, con fuente y fecha', () => {
+  const c = M.cambioDe(M.datosVacios(), 'USD');
+  assert.ok(c.valor > 0 && c.fuente && M.esFecha(c.fecha) && c.url.startsWith('https://'));
+  assert.equal(M.aPesos($(1), 'USD', M.datosVacios()), M.CAMBIO_DEFECTO.USD.valor);
+});
+test('moneda: si no hay tipo de cambio para esa moneda, no se suma y queda marcada', () => {
+  const d = conUSD();
+  d.cuotas.push({ id: 'b1', descripcion: 'Hotel', total: $(900), moneda: 'BRL', cantidad: 1, tarjetaId: 't2', primerMes: '2026-11' });
+  const nov = resumenMes(d, '2026-11');
+  assert.equal(M.aPesos(100, 'BRL', d), null);
+  assert.deepEqual(nov.sinCambio.map(c => c.id), ['b1']);
+  assert.equal(nov.totCuotas, resumenMes(conUSD(), '2026-11').totCuotas, 'no inventa el monto');
+  d.cambio.BRL = { valor: $(300), fuente: 'Lo cargaste vos', fecha: '2026-10-13' };
+  assert.equal(resumenMes(d, '2026-11').totCuotas - resumenMes(conUSD(), '2026-11').totCuotas, $(270_000));
+});
+test('moneda: cuotas en dólares también reparten exacto', () => {
+  const cs = repartirCuotas(99_999, 4); // US$ 999,99
+  assert.equal(cs.reduce((a, b) => a + b, 0), 99_999);
+  assert.equal(M.formatoMoneda(1_050, 'USD'), 'US$ 10,50');
+  assert.equal(M.formatoMoneda($(1_000), 'USD'), 'US$ 1.000');
+  assert.equal(M.formatoMoneda(-250, 'EUR'), '−€ 2,50');
+});
+
+/* ── resúmenes importados ── */
+const lecturaEjemplo = () => ({
+  tarjeta: { banco: 'Banco Ejemplo', red: 'Visa', ultimos4: '4321' },
+  periodo: { desde: '2026-09-26', hasta: '2026-10-25' }, cierre: '2026-10-29', vencimiento: '2026-11-10',
+  totales: [{ moneda: 'ARS', monto: 250000 }, { moneda: 'USD', monto: 30.5 }],
+  pagoMinimo: { moneda: 'ARS', monto: 25000 },
+  consumos: [
+    { fecha: '2026-10-02', comercio: 'SUPER EJEMPLO 123', monto: 50000, moneda: 'ARS', rubro: 'Supermercado', cuota: null },
+    { fecha: '2026-08-15', comercio: 'Electro Ejemplo', monto: 100000, moneda: 'ARS', rubro: 'Otros', cuota: { n: 3, de: 6 } },
+    { fecha: '2026-10-05', comercio: 'STREAMING*EJEMPLO', monto: 10.5, moneda: 'USD', rubro: 'Suscripciones', cuota: null },
+    { fecha: '2026-10-07', comercio: 'App Ejemplo', monto: 20, moneda: 'USD', rubro: 'Entretenimiento', cuota: null },
+    { fecha: '2026-10-08', comercio: 'Sin monto', moneda: 'ARS', rubro: 'Otros' },
+  ],
+  confianza: 'alta', avisos: [],
+});
+test('lectura: valida, pasa a centavos y descarta lo que no tiene monto (no inventa)', () => {
+  const v = M.validarLectura(lecturaEjemplo());
+  assert.equal(v.ok, true);
+  assert.deepEqual(v.lectura.totales, { ARS: $(250_000), USD: 3_050 });
+  assert.equal(v.lectura.consumos.length, 4);
+  assert.match(v.lectura.avisos.join(' '), /Dejamos afuera 1 línea/);
+  assert.deepEqual(v.lectura.consumos[1].cuota, { n: 3, de: 6 });
+  const mala = M.validarLectura({ consumos: [] });
+  assert.equal(mala.ok, false);
+  assert.ok(mala.errores.length >= 2);
+  assert.equal(M.validarLectura(null).ok, false);
+});
+test('importar: crea la tarjeta, guarda el resumen y suma las cuotas detectadas', () => {
+  const { lectura } = M.validarLectura(lecturaEjemplo());
+  let n = 0;
+  const r = M.importarResumen(M.datosVacios(), lectura, { nuevoId: () => `id${n++}` });
+  const d = r.datos;
+  assert.equal(r.mes, '2026-11');
+  assert.deepEqual(d.tarjetas.map(t => [t.nombre, t.red, t.ultimos4]), [['Banco Ejemplo Visa', 'Visa', '4321']]);
+  assert.equal(d.resumenes.length, 1);
+  assert.deepEqual(d.cuotas.map(c => [c.descripcion, c.total, c.cantidad, c.primerMes]), [['Electro Ejemplo', $(600_000), 6, '2026-09']]);
+  assert.equal(r.cuotasNuevas, 1);
+  // el mes del vencimiento cuesta el total del resumen (USD pasado a pesos), sin sumar la cuota aparte
+  d.cambio = { USD: { valor: $(2_000), fuente: 'p', fecha: '2026-10-13' } };
+  const nov = resumenMes(d, '2026-11');
+  assert.equal(nov.totResumenes, $(250_000) + $(61_000));
+  assert.equal(nov.totCuotas, 0);
+  assert.equal(nov.dentroDeResumen.length, 1);
+  // el mes siguiente sigue la cuota 4/6 (la 3/6 estaba en el resumen de noviembre)
+  const dic = resumenMes(d, '2026-12');
+  assert.deepEqual([dic.totResumenes, dic.totCuotas, dic.cuotas[0].numero], [0, $(100_000), 4]);
+});
+test('importar: el resumen del mes siguiente no duplica la cuota ni la tarjeta', () => {
+  const { lectura } = M.validarLectura(lecturaEjemplo());
+  let n = 0;
+  const id = () => `id${n++}`;
+  const r1 = M.importarResumen(M.datosVacios(), lectura, { nuevoId: id });
+  const sig = structuredClone(lectura);
+  sig.vencimiento = '2026-12-10';
+  sig.consumos = [{ ...lectura.consumos[1], cuota: { n: 4, de: 6 } }];
+  const r2 = M.importarResumen(r1.datos, sig, { nuevoId: id });
+  assert.equal(r2.datos.tarjetas.length, 1);
+  assert.equal(r2.datos.cuotas.length, 1);
+  assert.equal(r2.cuotasNuevas, 0);
+  assert.equal(r2.datos.resumenes.length, 2);
+  // reimportar el mismo mes reemplaza, no suma dos veces
+  const r3 = M.importarResumen(r2.datos, sig, { nuevoId: id });
+  assert.equal(r3.datos.resumenes.length, 2);
+});
+test('tarjeta: total del mes, gasto por rubro y disponible del límite (con USD)', () => {
+  const { lectura } = M.validarLectura(lecturaEjemplo());
+  const r = M.importarResumen(M.datosVacios(), lectura, { nuevoId: (() => { let n = 0; return () => `id${n++}`; })() });
+  const d = r.datos;
+  d.cambio = { USD: { valor: $(2_000), fuente: 'p', fecha: '2026-10-13' } };
+  const t = M.tarjetaEnMes(d, r.tarjetaId, '2026-11');
+  assert.equal(t.total, $(311_000));
+  assert.deepEqual(t.resumen.porMoneda, { ARS: $(250_000), USD: 3_050 });
+  const rubros = M.gastoPorRubro(d.resumenes[0], d);
+  assert.deepEqual(rubros.map(x => [x.rubro, x.ars]), [['Otros', $(100_000)], ['Supermercado', $(50_000)], ['Entretenimiento', $(40_000)], ['Suscripciones', $(21_000)]]);
+  assert.equal(M.disponibleTarjeta(d, r.tarjetaId, '2026-10'), null, 'sin límite cargado no muestra nada');
+  d.tarjetas[0].limite = $(2_000_000);
+  // usado desde octubre: cuotas 2/6 a 6/6 de 100.000 + consumos en un pago 50.000 + US$ 30,50
+  const disp = M.disponibleTarjeta(d, r.tarjetaId, '2026-10');
+  assert.equal(disp.usado, $(500_000) + $(50_000) + $(61_000));
+  assert.equal(disp.disponible, $(2_000_000) - disp.usado);
+});
+test('rubros: la corrección del usuario gana para ese comercio, aunque cambie el número', () => {
+  const mem = { [M.normalizarComercio('SUPER EJEMPLO 123')]: 'Comida' };
+  assert.equal(M.rubroPara('Super Ejemplo 456', 'Supermercado', mem), 'Comida');
+  assert.equal(M.rubroPara('Otro comercio', 'Salud', mem), 'Salud');
+  assert.equal(M.rubroPara('Otro', 'Inventado', mem), 'Otros');
+  assert.equal(M.normalizarComercio('Café* Martínez 12'), 'CAFE MARTINEZ');
 });
 
 /* ── entrega: la herramienta pasa por el control de compra ── */
@@ -183,8 +316,9 @@ test('catálogo y acceso: ob-019 es herramienta, no se compra todavía y sin ses
   const pag = res();
   await herramienta({ ...admin, query: { slug: 'mi-mes' } }, pag);
   assert.equal(pag.code, 200);
-  assert.match(String(pag.body), /Te quedan <span class="it">libres/);
-  for (const f of ['app.js', 'calculos.js', 'mi-mes.css']) {
+  assert.match(String(pag.body), /Te quedan libres/);
+  assert.match(String(pag.body), /<title>Mi Mes by Orbit<\/title>/);
+  for (const f of ['app.js', 'calculos.js', 'ejemplo.js', 'mi-mes.css']) {
     const r = res();
     await herramienta({ ...admin, query: { slug: 'mi-mes', path: f } }, r);
     assert.equal(r.code, 200, f);
