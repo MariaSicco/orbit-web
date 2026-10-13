@@ -1014,30 +1014,53 @@ function libFilter(text, date) {
 const filtering = () => Boolean(ui.lib.q || ui.lib.year);
 /* color del sticker según qué es: vacuna, desparasitación interna o externa */
 const stkTone = r => r.type === 'vacuna' ? 't-vac' : r.type === 'desparasitacion' ? (Z.scopeOf(r) === 'externa' ? 't-ext' : 't-int') : 't-otro';
-function seal(r) {
-  const t = stkTone(r);
-  if (r.sticker) return `<div class="stk has ${t}"><img src="${esc(r.sticker)}" alt="Sticker de ${esc(r.name)}" loading="lazy"></div>`;
-  if (!r.date) return `<div class="stk empty-s ${t}" aria-hidden="true">Pendiente</div>`;
-  return `<div class="stk typed ${t}" aria-hidden="true"><b>${esc(r.name)}</b>${esc(r.lot || 'Sello')}</div>`;
+/* color de cada sticker: fijo por vacuna o tipo de antiparasitario, y el resto por un hash del nombre.
+   [fondo, borde, texto]: el texto oscuro sobre el fondo claro pasa AA con margen (≥ 7:1). */
+const STK = {
+  poli: ['#D6E7FB', '#8DB4E2', '#173F6E'], rabia: ['#FFD9D1', '#E8907E', '#7A1E0B'], corona: ['#FCEBB5', '#D9B44A', '#5A4000'],
+  felina: ['#E6DCFF', '#A58BF0', '#3E2591'], leucemia: ['#FFD6E1', '#E88AA6', '#80163A'], tos: ['#CFF0F1', '#6CC0C6', '#0E5459'],
+  interna: ['#D2F0DC', '#6CC08F', '#12512F'], externa: ['#FFDCC8', '#F0A06E', '#7A2E06'],
+};
+const STK_HASH = [STK.poli, STK.felina, STK.leucemia, STK.tos, STK.corona, STK.interna];
+function stkColor(r) {
+  const n = String(r.name || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (r.type === 'desparasitacion') return Z.scopeOf(r) === 'externa' ? STK.externa : STK.interna;
+  if (/quintuple|sextuple|octuple|polivalente|moquillo/.test(n)) return STK.poli;
+  if (/rabi/.test(n)) return STK.rabia;
+  if (/corona/.test(n)) return STK.corona;
+  if (/triple felina|felina triple/.test(n)) return STK.felina;
+  if (/leucemia|felv/.test(n)) return STK.leucemia;
+  if (/tos|perrera|bordetella/.test(n)) return STK.tos;
+  let h = 0; for (const ch of n) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return STK_HASH[h % STK_HASH.length];
 }
-/* Cartelito de la próxima fecha: solo en el registro que manda (el último de cada vacuna o dosis). */
-function nextTag(r, s) {
-  const que = r.type === 'vacuna' ? 'Próxima vacuna' : r.type === 'desparasitacion' ? 'Próxima dosis' : 'Próximo control';
-  const cls = s.days < 0 ? 'late' : s.days <= 14 ? 'soon' : 'ok';
-  const txt = s.days < 0 ? s.t : s.days <= 14 ? `${que}: ${s.t.toLowerCase()}` : `${que}: ${dd(r.next)}`;
-  return `<span class="badge next-tag ${cls}">${txt}</span>`;
+function seal(r) {
+  const t = stkTone(r), [bg, bd, fg] = stkColor(r), st = `style="--stk:${bg};--stk-b:${bd};--stk-i:${fg}"`;
+  if (r.sticker) return `<div class="stk has ${t}" ${st}><img src="${esc(r.sticker)}" alt="Sticker de ${esc(r.name)}" loading="lazy"></div>`;
+  if (!r.date) return `<div class="stk empty-s ${t}" ${st} aria-hidden="true">Pendiente</div>`;
+  return `<div class="stk typed real ${t}" ${st} aria-hidden="true"><b>${esc(r.name)}</b><small>${esc(r.lot || (r.type === 'vacuna' ? 'Vacuna' : 'Dosis'))}</small></div>`;
+}
+/* cinta de la próxima fecha: solo en el registro que manda (el último de cada tipo + nombre, como mascotas-rules.js);
+   las dosis anteriores con próxima fecha llevan "Renovada" en gris */
+function nextRib(r, s, renewed, print = false) {
+  if (renewed) return `<span class="lrib r-old${print ? ' pr' : ''}"><small>Renovada</small></span>`;
+  const d = `${fmt(r.next, { day: '2-digit' })} ${fmt(r.next, { month: 'short' }).replace('.', '')}`;
+  const cls = s.days < 0 ? 'r-late' : s.days <= 14 ? 'r-soon' : 'r-ok';
+  const k = s.days < 0 ? 'Venció' : s.days === 0 ? '' : 'Próxima';
+  return `<span class="lrib ${cls}${print ? ' pr' : ''}" title="${esc(s.t)}">${k ? `<small>${k}</small>` : ''}<b>${s.days === 0 ? 'HOY' : d}</b></span>`;
 }
 function recEntry(r, isLate, isCurrent) {
   const s = r.next ? Z.status(r.next) : null;
-  const tag = s && (isCurrent || isLate) ? nextTag(r, s) : '';
-  const nextTxt = r.next && !(tag && s.days > 14) ? `<span><em>Próx.</em> ${dd(r.next)}</span>` : '';
-  return `<li class="entry${r.date ? '' : ' planned'}">${seal(r)}
+  const renewed = Boolean(r.next && r.date && !isCurrent && !isLate);
+  const rib = s && (isCurrent || isLate || renewed) ? nextRib(r, s, renewed) : '';
+  const nextTxt = r.next && !rib ? `<span><em>Próx.</em> ${dd(r.next)}</span>` : '';
+  return `<li class="entry lrow${r.date ? '' : ' planned'}">${seal(r)}
     <div class="e-main"><span class="e-name">${esc(r.name)}</span>
-      ${tag}
       <span class="e-dates">${r.date ? `<span><em>Aplic.</em> ${dd(r.date)}</span>` : '<span><em>Sin aplicar</em></span>'}${nextTxt}</span>
       ${r.lot || r.vet ? `<span class="e-sub">${esc([r.lot ? 'Lote/marca: ' + r.lot : '', r.vet].filter(Boolean).join(' · '))}</span>` : ''}
       ${Z.isSug(r) ? '<span class="badge none" style="align-self:flex-start;margin-top:2px">Sugerida, sin confirmar</span>' : ''}
     </div>
+    ${rib ? `<div class="e-rib">${rib}</div>` : ''}
     <button class="e-edit" data-act="detail" data-kind="rec" data-id="${r.id}" aria-label="Ver ${esc(r.name)}">${I('more')}</button></li>`;
 }
 /* lo último de cada vacuna manda: si ya se dio la de este año, la del año pasado no figura como vencida */
@@ -1216,6 +1239,8 @@ function bookGo(i) {
 function libretaDoc(p) {
   const t = rows => `<table>${rows}</table>`;
   const recs = type => p.records.filter(r => r.type === type).sort(byDate);
+  const cur = new Set(Z.upcoming(p).map(x => x.r.id));
+  const nx = r => !r.next ? '' : cur.has(r.id) ? nextRib(r, Z.status(r.next), false, true) : r.date ? `${dd(r.next)} <span class="m">(renovada)</span>` : dd(r.next);
   const vac = recs('vacuna'), des = recs('desparasitacion'), ctl = [...p.records.filter(r => r.type === 'control' || r.type === 'otro').map(r => ({ date: r.date, what: r.name, vet: r.vet, w: '', notes: r.notes, next: r.next })), ...p.visits.map(v => ({ date: v.date, what: v.reason || 'Consulta', vet: v.vet, w: v.weight ? kg(v.weight) : '', notes: [v.findings, v.plan].filter(Boolean).join(' · ') }))].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   const kv = rows => `<div class="kv">${rows.map(([k, v]) => `<div><span>${k}</span><b>${v || '—'}</b></div>`).join('')}</div>`;
   const syms = [...p.symptoms].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
@@ -1226,9 +1251,9 @@ function libretaDoc(p) {
     <h2>Identificación</h2>
     ${kv([['Especie', esc(Z.species(p))], ['Raza', esc(p.breed)], ['Nacimiento', p.birth ? `${dd(p.birth)} (${Z.age(p.birth)})` : ''], ['Sexo', p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : ''], ['Color y señas', esc([p.color, p.marks].filter(Boolean).join('. '))], ['Microchip', esc(p.chip)], ['Castrado/a', p.neutered === 'si' ? 'Sí' : p.neutered === 'no' ? 'No' : ''], ['Peso', p.weight ? kg(p.weight) : ''], ['Tutor/a', esc([p.contact.name, p.contact.phone].filter(Boolean).join(' · '))], ['Veterinaria', esc([p.vet.name, p.vet.phone].filter(Boolean).join(' · '))]])}
     <h2>Vacunas</h2>
-    ${vac.length ? t(`<tr><th>Fecha</th><th>Vacuna</th><th class="hide-s">Lote o marca</th><th class="hide-s">Veterinaria</th><th>Próxima</th><th class="hide-s">Sticker</th></tr>${vac.map(r => `<tr><td>${r.date ? dd(r.date) : '<span class="m">Sin aplicar</span>'}</td><td>${esc(r.name)}${Z.isSug(r) ? ' <span class="m">(sugerida)</span>' : ''}</td><td class="hide-s">${esc(r.lot)}</td><td class="hide-s">${esc(r.vet)}</td><td>${dd(r.next)}</td><td class="hide-s">${r.sticker ? `<img class="stkp" src="${esc(r.sticker)}" alt="">` : ''}</td></tr>`).join('')}`) : '<p class="m">Sin vacunas cargadas.</p>'}
+    ${vac.length ? t(`<tr><th>Fecha</th><th>Vacuna</th><th class="hide-s">Lote o marca</th><th class="hide-s">Veterinaria</th><th>Próxima</th><th class="hide-s">Sticker</th></tr>${vac.map(r => `<tr><td>${r.date ? dd(r.date) : '<span class="m">Sin aplicar</span>'}</td><td>${esc(r.name)}${Z.isSug(r) ? ' <span class="m">(sugerida)</span>' : ''}</td><td class="hide-s">${esc(r.lot)}</td><td class="hide-s">${esc(r.vet)}</td><td>${nx(r)}</td><td class="hide-s">${r.sticker ? `<img class="stkp" src="${esc(r.sticker)}" alt="">` : ''}</td></tr>`).join('')}`) : '<p class="m">Sin vacunas cargadas.</p>'}
     <h2>Desparasitaciones</h2>
-    ${des.length ? t(`<tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th class="hide-s">Lote o marca</th><th>Próxima</th></tr>${des.map(r => `<tr><td>${r.date ? dd(r.date) : '<span class="m">Sin aplicar</span>'}</td><td>${Z.scopeOf(r) === 'interna' ? 'Interna' : 'Externa'}</td><td>${esc(r.name)}</td><td class="hide-s">${esc(r.lot)}</td><td>${dd(r.next)}</td></tr>`).join('')}`) : '<p class="m">Sin desparasitaciones cargadas.</p>'}
+    ${des.length ? t(`<tr><th>Fecha</th><th>Tipo</th><th>Producto</th><th class="hide-s">Lote o marca</th><th>Próxima</th></tr>${des.map(r => `<tr><td>${r.date ? dd(r.date) : '<span class="m">Sin aplicar</span>'}</td><td>${Z.scopeOf(r) === 'interna' ? 'Interna' : 'Externa'}</td><td>${esc(r.name)}</td><td class="hide-s">${esc(r.lot)}</td><td>${nx(r)}</td></tr>`).join('')}`) : '<p class="m">Sin desparasitaciones cargadas.</p>'}
     <h2>Controles y consultas</h2>
     ${ctl.length ? t(`<tr><th>Fecha</th><th>Motivo</th><th class="hide-s">Veterinaria</th><th>Peso</th><th>Indicaciones</th></tr>${ctl.map(c => `<tr><td>${c.date ? dd(c.date) : '<span class="m">Pendiente</span>'}</td><td>${esc(c.what)}</td><td class="hide-s">${esc(c.vet)}</td><td>${c.w}</td><td>${esc(c.notes)}</td></tr>`).join('')}`) : '<p class="m">Sin controles cargados.</p>'}
     <h2>Peso</h2>
@@ -1665,7 +1690,7 @@ function renderScan() {
     <button class="link" data-act="scanBack" style="align-self:flex-start">${I('back')} ${esc(p.name)}</button>
     <h1 class="h-xl">Encontramos ${scan.items.length} ${scan.items.length === 1 ? 'registro' : 'registros'}</h1>
     <p class="dim">Revisá que esté bien. Lo marcado con borde ocre conviene mirarlo con la libreta al lado. Tocá cualquiera para corregirlo.</p>
-    ${scan.warnings.map(w => `<div class="banner care">${bubble('alert', 'perdida')}<span>${esc(w)}</span></div>`).join('')}
+    ${scan.warnings.length ? `<ul class="warn-list" aria-label="Para revisar">${scan.warnings.map(w => `<li>${I('alert')}<span>${esc(w)}</span></li>`).join('')}</ul>` : ''}
     <div class="list">${scan.items.map((x, i) => `<div class="row scanrow${x.confidence === 'baja' ? ' doubt' : ''}">
       <label class="checkbox"><input type="checkbox" data-keep="${i}" ${x.keep ? 'checked' : ''} aria-label="Guardar ${esc(x.name)}"></label>
       <button class="what plain" data-fix="${i}"><b>${esc(x.name || 'Sin nombre')}${x.product ? ` <span class="dim" style="font-weight:500">(${esc(x.product)})</span>` : ''}</b><small>${TYPE[x.type]} · ${x.date ? fmt(x.date) : 'sin fecha'}${x.next ? ' · próxima ' + fmt(x.next) : ''}${x.vet ? ' · ' + esc(x.vet) : ''}</small>${x.note ? `<small style="color:var(--soon)">${esc(x.note)}</small>` : ''}</button>
