@@ -72,12 +72,13 @@ async function flush() {
     const d = await r.json().catch(() => ({}));
     if (r.status === 409 && d.doc) { adopt(d.doc); dirty = false; render(); toast('Había cambios desde otro dispositivo. Revisá lo último que cargaste.'); setSave('Guardado'); }
     else if (r.status === 401) { setSave('Entrá de nuevo para guardar', 'err'); saveEl.onclick = () => { location.href = '/acceso?next=mascotas'; }; }
-    else if (r.status === 413) { setSave('No se guardó: hay demasiado cargado', 'err'); }
+    else if (r.status === 413) { setSave('No se guardó: hay demasiado cargado', 'err'); toast('No se pudo guardar: la cuenta llegó al máximo de datos. Borrá registros viejos o fotos que no uses.'); }
+    else if (r.status === 402) { setSave('No se guardó', 'err'); toast('No encontramos la compra de Mimitos en esta cuenta, así que no se pudo guardar.'); }
     else if (!r.ok) throw new Error(d.error || r.status);
     else { rev = d.doc.rev; dirty = false; setSave('Guardado'); }
   } catch (e) {
     if (!navigator.onLine || e instanceof TypeError) setSave('Sin conexión · se guarda cuando vuelvas', 'off');
-    else { setSave('No se guardó · reintentar', 'err'); saveEl.onclick = () => flush(); }
+    else { setSave('No se guardó · reintentar', 'err'); saveEl.onclick = () => flush(); toast('No se pudo guardar el último cambio. Tocá "reintentar" arriba.'); }
   } finally {
     saving = false;
     if (pending) { pending = false; flush(); }
@@ -591,7 +592,7 @@ const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['ag
 const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
 const TAB_OF = { antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta' };
 const BARE = ['alta', 'lectura'];
-const nav = $('#nav');
+const nav = $('#nav'), topBar = $('.top');
 function parseHash() { const [name = 'inicio', arg = ''] = location.hash.replace(/^#\/?/, '').split('/'); return { name: name || 'inicio', arg: decodeURIComponent(arg) }; }
 function go(name, arg) { const h = '#/' + name + (arg ? '/' + encodeURIComponent(arg) : ''); if (location.hash === h) render(); else location.hash = h; }
 window.addEventListener('hashchange', () => { route = parseHash(); if (dPanel.open) dPanel.close(); render(); window.scrollTo(0, 0); });
@@ -1889,7 +1890,8 @@ async function drawPoster(p, url) {
 /* ---------- acciones ---------- */
 document.addEventListener('click', e => {
   const fx = e.target.closest('[data-fix]'); if (fx && scan && app.contains(fx)) return fixScanItem(+fx.dataset.fix);
-  const b = e.target.closest('[data-act]'); if (!b || (!app.contains(b) && !nav.contains(b))) return;
+  /* la barra de arriba (escritorio) también tiene acciones: elegir mascota, + Agregar y Cargar algo */
+  const b = e.target.closest('[data-act]'); if (!b || (!app.contains(b) && !nav.contains(b) && !topBar.contains(b))) return;
   const cur = curPet();
   const p = b.dataset.pet ? petById(b.dataset.pet) : cur;
   switch (b.dataset.act) {
