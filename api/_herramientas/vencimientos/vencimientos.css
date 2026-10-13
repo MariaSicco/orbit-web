@@ -117,6 +117,10 @@ main{max-width:760px;margin:0 auto;padding:4px 16px 24px;outline:none}
 .rapida label{display:block;position:relative}
 .rapida .monto-in::before{top:44px}
 
+.nose{grid-column:1/-1;display:flex!important;align-items:center;gap:10px;min-height:40px;font-size:13.5px;color:var(--suave);cursor:pointer}
+.nose input{width:20px;height:20px;min-height:0!important;accent-color:var(--azul);margin:0;flex:none}
+.rapida select{min-height:50px}
+
 /* ── botones ── */
 .bt{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 20px;border-radius:14px;font-weight:600;font-size:16px;transition:transform .25s var(--ease),background .2s,opacity .2s;text-decoration:none}
 .bt:active{transform:scale(.98)}

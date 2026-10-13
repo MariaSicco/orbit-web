@@ -1,7 +1,7 @@
 /* Vencimientos de la Casa (ob-021) · interfaz. Las cuentas están en calculos.js.
    Los datos viven solo en este dispositivo (localStorage). */
 import * as V from './calculos.js';
-import { SERVICIOS, CATEGORIAS, PRIMER_USO, servicio, monograma, tintaSobre } from './servicios.js';
+import { SERVICIOS, CATEGORIAS, PRIMER_USO, PRECIOS, servicio, monograma, tintaSobre } from './servicios.js';
 import { datosEjemplo } from './ejemplo.js';
 
 const CLAVE = 'orbit:vencimientos:v1';
@@ -55,6 +55,7 @@ function textoEstado(o) {
   }
   if (o.cuota) t += ` · cuota ${o.cuota}/${c.cuotas}`;
   if (o.ajusta && !o.resuelto) t += ' · se ajusta';
+  if (o.aConfirmar) t += ' · fecha a confirmar';
   return t.trim();
 }
 function montoFila(o) {
@@ -105,7 +106,7 @@ function vistaInicio() {
       <button class="ic" type="button" data-acc="mes" data-d="1" aria-label="Mes siguiente" ${ui.mes >= limite ? 'disabled' : ''}><svg><use href="#i-der"/></svg></button>
     </div>
     <span class="mono etq">${etiqueta}${esActual ? ' este mes' : ''}</span>
-    <p class="grande${pend === 0 && r.ars.total ? ' cero' : ''}">${pend === 0 && r.ars.total ? 'Nada' : plata(pend)}</p>
+    <p class="grande${pend === 0 && r.ars.total ? ' cero' : ''}">${!r.ars.total ? (r.cantPendientes ? `${r.cantPendientes} por pagar` : 'Nada') : pend === 0 ? 'Nada' : plata(pend)}</p>
     <p class="sub">${r.ars.total ? `de <b>${plata(r.ars.total)}</b> en ${r.ocurrencias.filter(o => o.estado !== 'salteado').length} vencimientos · pagaste <b>${plata(r.ars.pagado)}</b>` : 'Sin montos cargados para este mes.'}</p>
     <div class="barra" role="progressbar" aria-label="Pagado del mes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
     <div class="pie"><span class="mono">${pct}% pagado</span><span class="mono">${r.cantPendientes ? `${r.cantPendientes} pendiente${r.cantPendientes > 1 ? 's' : ''}` : 'Todo al día'}</span></div>
@@ -179,18 +180,22 @@ function primerUso() {
   }
   const items = [...o.sel].map(servicio).filter(Boolean).map(s => {
     const tram = s.tipo === 'tramite';
+    const montoCampo = s.planes
+      ? `<label style="margin:0"><span class="mini" aria-hidden="true">Tu plan</span><select name="plan" aria-label="Plan de ${esc(s.nombre)}">${opcionesPlan(s)}</select></label>`
+      : `<label class="monto-in" data-sim="$" style="margin:0"><span class="mini" aria-hidden="true">Monto aprox.</span><input type="text" name="monto" inputmode="decimal" placeholder="Opcional" aria-label="Monto aproximado de ${esc(s.nombre)} (opcional)"></label>`;
     return `<li data-s="${s.id}">
       ${avatar({ nombre: s.nombre, color: s.color })}
       <div><b>${esc(s.nombre)}</b><br><small class="dim">${esc(V.nombreFrecuencia(s.frecuencia))}${s.ayuda ? ` · ${esc(s.ayuda)}` : ''}</small></div>
       <div class="campos">
         ${tram
-          ? `<label style="margin:0;grid-column:1/-1"><span class="mini" aria-hidden="true">Próxima fecha</span><input type="date" name="fecha" min="${hoy}" aria-label="Fecha de vencimiento de ${esc(s.nombre)}"></label>`
-          : `<label style="margin:0"><span class="mini" aria-hidden="true">Día que vence</span><input type="number" name="dia" inputmode="numeric" min="1" max="31" placeholder="1 a 31" aria-label="Día del mes en que vence ${esc(s.nombre)}"></label>
-             <label class="monto-in" data-sim="$" style="margin:0"><span class="mini" aria-hidden="true">Monto aprox.</span><input type="text" name="monto" inputmode="decimal" placeholder="Opcional" aria-label="Monto aproximado de ${esc(s.nombre)} (opcional)"></label>`}
+          ? `<label style="margin:0"><span class="mini" aria-hidden="true">Próxima fecha</span><input type="date" name="fecha" min="${hoy}" aria-label="Fecha de vencimiento de ${esc(s.nombre)}"></label>`
+          : `<label style="margin:0"><span class="mini" aria-hidden="true">${s.planes ? 'Día del cobro' : 'Día que vence'}</span><input type="number" name="dia" inputmode="numeric" min="1" max="31" placeholder="1 a 31" aria-label="Día del mes en que vence ${esc(s.nombre)}"></label>
+             ${montoCampo}`}
+        <label class="nose"><input type="checkbox" name="nose"><span>No sé la fecha: avisame y la confirmo después</span></label>
       </div>
     </li>`;
   }).join('');
-  return `<div class="vt"><div><h1 id="t-inicio">¿Qué día <span class="it">vence?</span></h1><p>Mirá la última factura. El monto es opcional: se ajusta cuando marques pagado.</p></div></div>
+  return `<div class="vt"><div><h1 id="t-inicio">¿Qué día <span class="it">vence?</span></h1><p>Si no la sabés, marcá "No sé" y seguí: queda como fecha a confirmar. El monto es opcional y se ajusta cuando marcás pagado.</p></div></div>
   <div class="primer" style="margin-top:12px">
     <ul class="rapida" id="onb-lista">${items}</ul>
     <p class="error" id="onb-error" hidden></p>
@@ -209,20 +214,25 @@ function terminarPrimerUso() {
   for (const li of filas) {
     const s = servicio(li.dataset.s);
     const inp = li.querySelector('input[name=dia], input[name=fecha]');
+    const noSe = li.querySelector('input[name=nose]')?.checked;
     let primerVto = null;
     if (inp.name === 'fecha') primerVto = V.esFecha(inp.value) ? inp.value : null;
     else {
       const dia = Number(inp.value);
       if (dia >= 1 && dia <= 31) primerVto = V.proximoDia(dia, hoy, s.frecuencia);
     }
+    let aConfirmar = false;
+    if (!primerVto && noSe) { primerVto = fechaProvisoria(s); aConfirmar = true; }
     if (!primerVto) { faltan.push(s.nombre); inp.setAttribute('aria-invalid', 'true'); continue; }
     inp.removeAttribute('aria-invalid');
-    const monto = V.leerPesos(li.querySelector('input[name=monto]')?.value);
-    cuentas.push(cuentaDesdeServicio(s, { primerVto, monto }));
+    const planElegido = s.planes?.[Number(li.querySelector('select[name=plan]')?.value)];
+    const monto = planElegido ? planElegido.monto : V.leerPesos(li.querySelector('input[name=monto]')?.value);
+    cuentas.push({ ...cuentaDesdeServicio(s, { primerVto, monto }), ...(aConfirmar ? { fechaAConfirmar: true } : {}),
+      ...(planElegido ? { nota: `Plan ${planElegido.nombre}` } : {}) });
   }
   if (faltan.length) {
     const e = $id('onb-error'); e.hidden = false;
-    e.textContent = `Falta la fecha de ${faltan.join(', ')}.`;
+    e.textContent = `Falta la fecha de ${faltan.join(', ')}. Si no la sabés, marcá "No sé".`;
     document.querySelector('#onb-lista [aria-invalid=true]')?.focus();
     return;
   }
@@ -240,6 +250,14 @@ function cuentaDesdeServicio(s, extra = {}) {
     ...(s.habil ? { habil: true } : {}),
     primerVto: extra.primerVto, ...(extra.monto != null ? { monto: extra.monto } : {}),
   };
+}
+
+/* Sin fecha: provisoria a 10 días (o 30 para trámites), marcada "a confirmar".
+   Mejor un aviso con fecha aproximada que no cargarla. */
+const fechaProvisoria = s => s.tipo === 'tramite' ? V.sumarDias(hoy, 30) : V.sumarDias(hoy, 10);
+function opcionesPlan(s, montoActual = null) {
+  const ops = s.planes.map((p, i) => `<option value="${i}" ${montoActual === p.monto ? 'selected' : ''}>${esc(p.nombre)} · ${p.final ? '' : '≈ '}${plata(p.monto)}</option>`).join('');
+  return `<option value="">Elegí tu plan</option>${ops}<option value="otro">Otro monto</option>`;
 }
 
 /* ── vista: calendario ── */
@@ -394,6 +412,7 @@ function verOcurrencia(id) {
     c.debito ? ['Débito automático', 'Sí'] : null,
   ].filter(Boolean);
   let html = `<div class="det-cab">${avatar(c)}<div><span class="badge ${claseB}">${txtB}</span>${montoGrande}</div></div>
+  ${o.aConfirmar ? `<p class="nota"><b>Fecha provisoria.</b> Cuando tengas la factura o el resumen, cargá la fecha real abajo, en "Confirmar la fecha", y ajustamos todos los meses.</p>` : ''}
   ${o.ajusta && !o.resuelto ? `<p class="nota">Este mes se ajusta. Cuando sepas el monto nuevo, cargalo en "Llegó la factura".</p>` : ''}
   ${c.nota ? `<p class="nota">${esc(c.nota)}</p>` : ''}
   <ul class="datos">${datos.map(([k, v]) => `<li><span>${k}</span><span>${v}</span></li>`).join('')}</ul>`;
@@ -418,9 +437,9 @@ function verOcurrencia(id) {
     </form>`;
   }
   if (!tram && !o.resuelto) {
-    html += `<details class="mas" style="margin-top:18px"><summary>Llegó la factura</summary>
+    html += `<details class="mas" style="margin-top:18px" ${o.aConfirmar ? 'open' : ''}><summary>${o.aConfirmar ? 'Confirmar la fecha' : 'Llegó la factura'}</summary>
       <form data-form="factura" data-id="${esc(o.id)}">
-        <p class="leyenda" style="margin:0 0 12px">Cargá el monto y la fecha de esta factura. No cambia los meses siguientes.</p>
+        <p class="leyenda" style="margin:0 0 12px">${o.aConfirmar ? 'Poné la fecha real (y el monto, si lo tenés). Los meses siguientes pasan a usar ese día.' : 'Cargá el monto y la fecha de esta factura. No cambia los meses siguientes.'}</p>
         <div class="fila2">
           <label class="campo"><span>Monto de la factura</span><span class="monto-in" data-sim="${sim}"><input type="text" name="monto" inputmode="decimal" value="${o.origen === 'factura' ? V.formatoPesos(o.monto, { simbolo: '' }).trim() : ''}" placeholder="0" autocomplete="off"></span></label>
           <label class="campo"><span>Vence el</span><input type="date" name="fecha" value="${o.vence}"></label>
@@ -505,6 +524,7 @@ function formCuenta(c, esNueva) {
   const abierto = c.segundoVto || c.cuotas || c.hasta || c.ajusteCada || c.moneda === 'USD' || c.nota;
   return `<form data-form="cuenta" data-id="${esc(c.id)}" data-nueva="${esNueva ? 1 : 0}" novalidate>
     <input type="hidden" name="preset" value="${esc(c.preset || '')}"><input type="hidden" name="color" value="${esc(c.color || '')}">
+    <input type="hidden" name="vtoOriginal" value="${c.fechaAConfirmar ? esc(c.primerVto) : ''}">
     <label class="campo"><span>Nombre</span><input type="text" name="nombre" value="${esc(c.nombre)}" required maxlength="40" placeholder="Ej: Luz, Expensas, Seguro" autocomplete="off"></label>
     <div class="fila2">
       <label class="campo"><span>${tram ? 'Vence el' : 'Próximo vencimiento'}</span><input type="date" name="primerVto" value="${esc(c.primerVto || '')}" required></label>
@@ -512,6 +532,8 @@ function formCuenta(c, esNueva) {
     </div>
     <label class="switch"><span><b>Tiene monto</b><small>Apagalo para trámites como la VTV o la licencia.</small></span><input type="checkbox" name="conMonto" ${tram ? '' : 'checked'}></label>
     <div data-si="monto" ${tram ? 'hidden' : ''}>
+      ${servicio(c.preset)?.planes ? `<label class="campo" style="margin-top:8px"><span>Tu plan</span><select name="plan" data-planes="${esc(c.preset)}">${opcionesPlan(servicio(c.preset), c.monto ?? null)}</select>
+        <small>${esc(PRECIOS.nota)} Fuente: ${esc(servicio(c.preset).fuente)}.</small></label>` : ''}
       <label class="campo" style="margin-top:8px"><span>Monto aproximado</span><span class="monto-in" data-sim="${sim}"><input type="text" name="monto" inputmode="decimal" value="${c.monto != null ? V.formatoPesos(c.monto, { simbolo: '' }).trim() : ''}" placeholder="Opcional" autocomplete="off"></span>
         <small>Si cambia todos los meses, poné el último. Cuando marques pagado con el monto real, se ajusta solo.</small></label>
       <label class="switch"><span><b>Débito automático</b><small>Lo damos por pagado el día que vence.</small></span><input type="checkbox" name="debito" ${c.debito ? 'checked' : ''}></label>
@@ -565,6 +587,7 @@ function leerFormCuenta(form) {
     ...(hasta ? { hasta } : {}),
     ...(n('ajusteCada') ? { ajusteCada: n('ajusteCada') } : {}),
     ...(f.get('moneda') === 'USD' ? { moneda: 'USD' } : {}),
+    ...(String(f.get('vtoOriginal') || '') === primerVto ? { fechaAConfirmar: true } : {}),
     ...(String(f.get('nota') || '').trim() ? { nota: String(f.get('nota')).trim().slice(0, 200) } : {}),
   };
   return c;
@@ -729,6 +752,16 @@ document.addEventListener('input', e => {
 document.addEventListener('change', e => {
   const t = e.target;
   if (t.name === 'conMonto') { const box = t.form.querySelector('[data-si=monto]'); box.hidden = !t.checked; }
+  if (t.name === 'plan' && t.dataset.planes) {
+    const p = servicio(t.dataset.planes)?.planes?.[Number(t.value)];
+    if (p) t.form.monto.value = V.formatoPesos(p.monto, { simbolo: '' }).trim();
+    else if (t.value === 'otro') t.form.monto.focus();
+  }
+  if (t.name === 'plan' && !t.dataset.planes && t.value === 'otro') {
+    const li = t.closest('li'); const lab = t.closest('label');
+    lab.outerHTML = `<label class="monto-in" data-sim="$" style="margin:0"><span class="mini" aria-hidden="true">Monto</span><input type="text" name="monto" inputmode="decimal" placeholder="0" aria-label="Monto"></label>`;
+    li.querySelector('input[name=monto]')?.focus();
+  }
   if (t.name === 'moneda') t.form.querySelectorAll('.monto-in').forEach(x => { x.dataset.sim = t.value === 'USD' ? 'US$' : '$'; });
 });
 
@@ -752,6 +785,16 @@ document.addEventListener('submit', e => {
     const f = new FormData(form);
     const monto = V.leerPesos(f.get('monto'));
     const fecha = String(f.get('fecha') || '');
+    if (o.cuenta.fechaAConfirmar && V.esFecha(fecha)) {
+      // la fecha real rearma la serie desde ahí y deja de ser provisoria
+      const { fechaAConfirmar, ...c } = o.cuenta;
+      let n = V.guardarCuenta(d, { ...c, primerVto: fecha });
+      if (monto != null) n = V.cargarFactura(n, c.id, fecha, { monto });
+      guardar(n);
+      verOcurrencia(`${c.id}|${fecha}`);
+      toast('Fecha confirmada. Los meses siguientes ya usan este día.');
+      return;
+    }
     guardar(V.cargarFactura(d, o.cuentaId, o.clave, { monto, fecha: V.esFecha(fecha) ? fecha : o.clave }));
     verOcurrencia(form.dataset.id);
     toast('Factura guardada.');

@@ -268,3 +268,22 @@ test('ics: el débito automático suma un aviso al día siguiente para revisar',
   assert.ok(texto.includes('ABL: revisá que se haya debitado'));
   assert.ok(texto.includes('TRIGGER:PT33H'));
 });
+
+test('fecha a confirmar: se marca hasta que hay factura o pago', () => {
+  let d = base();
+  d.cuentas[0].fechaAConfirmar = true;
+  assert.equal(V.ocurrencia(d, d.cuentas[0], '2026-10-20', HOY).aConfirmar, true);
+  d = V.cargarFactura(d, 'luz', '2026-10-20', { fecha: '2026-10-22' });
+  assert.equal(V.ocurrencia(d, d.cuentas[0], '2026-10-20', HOY).aConfirmar, false);
+  const { texto } = V.generarICS(d, { hoy: HOY, cuentaId: 'luz', meses: 2, sello: '2026-10-13T00:00:00Z' });
+  assert.ok(texto.includes('fecha a confirmar'));
+});
+
+test('planes de suscripciones: IVA sumado donde la página dice + impuestos', async () => {
+  const S = await import('../api/_herramientas/vencimientos/servicios.js');
+  const sp = S.servicio('spotify').planes.find(p => p.nombre === 'Individual');
+  assert.equal(sp.lista, 449900);
+  assert.equal(sp.monto, 544400); // 4.499 × 1,21 = 5.443,79 → 5.444
+  const dis = S.servicio('disney').planes[0];
+  assert.equal(dis.monto, dis.lista); // Disney+ publica precio final
+});

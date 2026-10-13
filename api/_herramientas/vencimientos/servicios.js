@@ -17,6 +17,14 @@ export const CATEGORIAS = [
 
 const S = (id, nombre, categoria, frecuencia, extra = {}) => ({ id, nombre, categoria, frecuencia, ...extra });
 
+/* Precios de lista de suscripciones, tomados de las páginas oficiales para Argentina.
+   `final: false` = la página dice "+ impuestos": sumamos IVA 21 % (servicios digitales);
+   según la provincia puede haber además Ingresos Brutos, por eso se muestra como "≈".
+   Revisar cada mes: los precios cambian seguido. */
+export const PRECIOS = { fecha: '2026-10-13', nota: 'Precio de lista de la página oficial al 13/10/2026. Puede variar con impuestos de tu provincia.' };
+const IVA = 1.21;
+const plan = (nombre, lista, final = false) => ({ nombre, monto: Math.round((final ? lista : lista * IVA)) * 100, lista: lista * 100, final });
+
 export const SERVICIOS = [
   // Servicios
   S('edenor', 'Edenor', 'Servicios', 1, { color: '#3047FF', ayuda: 'Luz · factura mensual' }),
@@ -62,9 +70,12 @@ export const SERVICIOS = [
   S('celular', 'Celular', 'Conectividad', 1, { color: '#3047FF', ayuda: 'Personal, Claro, Movistar' }),
   S('cable', 'Cable / TV', 'Conectividad', 1, { color: '#0D0D0E', ayuda: 'DirecTV, Flow, Telecentro' }),
   // Suscripciones
-  S('netflix', 'Netflix', 'Suscripciones', 1, { color: '#FF4F2E', debito: true }),
-  S('spotify', 'Spotify', 'Suscripciones', 1, { color: '#0D0D0E', debito: true }),
-  S('disney', 'Disney+', 'Suscripciones', 1, { color: '#3047FF', debito: true }),
+  S('netflix', 'Netflix', 'Suscripciones', 1, { color: '#FF4F2E', debito: true, fuente: 'netflix.com/ar',
+    planes: [plan('Básico', 8999), plan('Estándar', 14999), plan('Premium', 19999)] }),
+  S('spotify', 'Spotify', 'Suscripciones', 1, { color: '#0D0D0E', debito: true, fuente: 'spotify.com/ar/premium',
+    planes: [plan('Individual', 4499), plan('Duo', 5999), plan('Familiar', 7599), plan('Estudiantes', 2299)] }),
+  S('disney', 'Disney+', 'Suscripciones', 1, { color: '#3047FF', debito: true, fuente: 'disneyplus.com/es-ar',
+    planes: [plan('Con anuncios', 9999, true), plan('Estándar', 12999, true), plan('Premium', 19999, true)] }),
   S('max', 'Max', 'Suscripciones', 1, { color: '#3047FF', debito: true }),
   S('youtube', 'YouTube Premium', 'Suscripciones', 1, { color: '#FF4F2E', debito: true }),
   S('icloud', 'iCloud / Google One', 'Suscripciones', 1, { color: '#0D0D0E', debito: true }),
@@ -81,7 +92,7 @@ export const SERVICIOS = [
 ];
 
 /* Los que aparecen primero en el primer uso: lo que casi toda casa paga. */
-export const PRIMER_USO = ['edenor', 'edesur', 'metrogas', 'naturgy', 'aysa', 'abl', 'expensas', 'alquiler', 'internet', 'celular', 'prepaga', 'seguro-auto', 'patente', 'vtv', 'netflix', 'monotributo'];
+export const PRIMER_USO = ['edenor', 'edesur', 'metrogas', 'naturgy', 'aysa', 'abl', 'expensas', 'alquiler', 'internet', 'celular', 'prepaga', 'seguro-auto', 'patente', 'vtv', 'netflix', 'spotify', 'disney', 'monotributo'];
 
 export const servicio = id => SERVICIOS.find(s => s.id === id) || null;
 

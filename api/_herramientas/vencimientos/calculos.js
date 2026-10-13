@@ -177,6 +177,7 @@ export function ocurrencia(d, c, clave, hoy) {
     monto: tieneMonto ? monto : null, moneda: c.moneda === 'USD' ? 'USD' : 'ARS',
     origen, estado, cuota: numeroDeCuota(c, clave),
     resuelto: estado === 'pagado' || estado === 'debitado' || estado === 'salteado',
+    aConfirmar: !!(c.fechaAConfirmar && !esFecha(fac.fecha) && !pago),
     pago,
   };
 }
@@ -374,7 +375,7 @@ export function generarICS(d, { hoy, cuentaId = null, meses = 18, sello } = {}) 
       const fin = sumarDias(o.vence, 1).replace(/-/g, '');
       const monto = o.monto != null ? ` · ${o.origen === 'estimado' ? '≈ ' : ''}${formatoMoneda(o.monto, o.moneda)}` : '';
       const cuota = o.cuota ? ` (cuota ${o.cuota}/${c.cuotas})` : '';
-      const ajuste = o.ajusta && o.origen === 'estimado' ? ' · se ajusta' : '';
+      const ajuste = (o.ajusta && o.origen === 'estimado' ? ' · se ajusta' : '') + (o.aConfirmar ? ' · fecha a confirmar' : '');
       const verbo = c.tipo === 'tramite' ? 'Vence' : (c.debito ? 'Se debita' : 'Vence');
       const desc = [
         c.debito ? 'Tiene débito automático: revisá que se haya debitado.' : '',
