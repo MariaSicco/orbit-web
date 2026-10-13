@@ -9,12 +9,24 @@
     {
       "source": "/propuesta/:id",
       "destination": "/propuesta"
+    },
+    {
+      "source": "/mascota/:t",
+      "destination": "/mascota"
+    },
+    {
+      "source": "/cuida/:t",
+      "destination": "/mascota"
     }
   ],
   "crons": [
     {
       "path": "/api/cron/leads",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/mascotas",
+      "schedule": "0 12 * * *"
     }
   ]
 }
