@@ -25,6 +25,11 @@ export const CATALOG = {
     bajada: '55 actividades para empezar a leer y escribir en imprenta mayúscula.' },
   'ob-017': { code: 'OB—017', name: 'Comandos eléctricos',            usd: 9, ars: 12990, foto: 'studio',
     bajada: '25 diagramas de comando verificados y una calculadora que te arma la lista de materiales del tablero.' },
+  /* Drop 01 (19/10/2026) · herramientas online */
+  'ob-019': { code: 'OB—019', name: 'Mi Mes',
+    usd: 0, ars: 0, // PRECIO A DEFINIR (aprobación de Majo). Con soon: true no se puede comprar.
+    soon: true, herramienta: '/herramientas/mi-mes',
+    bajada: 'Cuánto te queda libre este mes y los que vienen, con tus cuotas ya descontadas.' },
   /* Drop 1 · Fleteros */
   'ob-006': { code: 'OB—006', name: 'Tarifador de fletes',            usd: 10, ars: 14999, foto: 'arch',
     bajada: 'Cargá el viaje y sabé en un minuto cuánto cobrar y cuánto ganás.' },
