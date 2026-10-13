@@ -23,6 +23,10 @@
     {
       "path": "/api/cron/leads",
       "schedule": "0 13 * * *"
+    },
+    {
+      "path": "/api/cron/mi-mes",
+      "schedule": "0 13 * * *"
     }
   ],
   "headers": [
@@ -32,6 +36,15 @@
         {
           "key": "X-Robots-Tag",
           "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/herramientas/mi-mes/sw.js",
+      "headers": [
+        {
+          "key": "Service-Worker-Allowed",
+          "value": "/herramientas/"
         }
       ]
     }

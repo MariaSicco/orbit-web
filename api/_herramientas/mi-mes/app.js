@@ -7,7 +7,7 @@ import {
   gastoPorRubro, disponibleTarjeta, rubroPara, normalizarComercio,
   validarLectura, importarResumen, datosVacios, migrar,
   escalera, limiteDelMes, alertasTarjetas, cicloTarjeta, eventosTarjeta, generarICS, diasEntre,
-  cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO,
+  cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
 
@@ -33,7 +33,7 @@ function cargar() {
   }
 }
 function guardar() {
-  try { localStorage.setItem(CLAVE, JSON.stringify(datos)); return true; }
+  try { localStorage.setItem(CLAVE, JSON.stringify(datos)); programarSync(); return true; }
   catch { puedeGuardar = false; $id('sin-storage').hidden = false; return false; }
 }
 let datos = cargar();
@@ -1167,6 +1167,95 @@ dgu.querySelector('form').addEventListener('submit', e => {
   requestAnimationFrame(() => (dgu.querySelector('#gu-cuerpo input, #gu-cuerpo select') || $id('gu-sig')).focus());
 });
 
+
+/* ════════ AVISOS PUSH E INSTALACIÓN ════════
+   El permiso se pide SOLO al tocar "Activar avisos". Al servidor va lo mínimo
+   (datosParaAvisos: nombre de la tarjeta, fechas y dólares sí/no; sin montos). */
+const PUSH = 'orbit:mi-mes:push';
+const API_AVISOS = '/api/mi-mes-avisos';
+const pushActivo = () => { try { return localStorage.getItem(PUSH) === '1'; } catch { return false; } };
+const marcarPush = on => { try { on ? localStorage.setItem(PUSH, '1') : localStorage.removeItem(PUSH); } catch {} $id('campana-on').hidden = !on; };
+const soportaPush = () => !LOCAL && 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const esIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const instalada = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let pedidoInstalar = null;
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; });
+const b64aBytes = b64 => { const p = '='.repeat((4 - (b64.length % 4)) % 4); const raw = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
+async function api(metodo, cuerpo) {
+  const r = await fetch(API_AVISOS, { method: metodo, credentials: 'same-origin', headers: cuerpo ? { 'Content-Type': 'application/json' } : {}, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) throw new Error(j.error || 'No pudimos hablar con Orbit. Probá en un rato.');
+  return j;
+}
+const registroSW = () => navigator.serviceWorker.register('sw.js', { scope: '/herramientas/mi-mes' });
+
+function pintarPush(mensaje = '') {
+  const on = pushActivo();
+  const instalar = instalada() ? '' : `<section class="mm-push-sec"><h3>1. Agregala al inicio del celular</h3>
+    ${pedidoInstalar ? `<button type="button" class="mm-btn sec" data-instalar>${ic('bajar')} Instalar Mi Mes</button>` : ''}
+    <p><b>iPhone</b> (iOS 16.4 o más): abrí esta página en Safari, tocá <b>Compartir</b> y después <b>Agregar a inicio</b>. Los avisos en iPhone funcionan solo desde la app agregada al inicio.</p>
+    <p><b>Android</b>: en Chrome, tocá el menú <b>⋮</b> y después <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.</p>
+    <p class="mm-fuente">En iPhone, la app del inicio guarda sus datos aparte de Safari: si ya cargaste cosas acá, exportá tu copia (en "Lo cargado") e importala en la app.</p></section>`;
+  let accion;
+  if (!soportaPush()) {
+    accion = `<p class="mm-alerta" style="width:auto;margin:0">${LOCAL ? 'Abriste la app como archivo: los avisos en el celular funcionan desde orbitando.com.ar.' : esIOS() && !instalada() ? 'En iPhone, primero agregala al inicio (paso 1) y abrila desde ahí.' : 'Este navegador no puede recibir avisos.'}</p>`;
+  } else if (Notification.permission === 'denied') {
+    accion = `<p class="mm-alerta" style="width:auto;margin:0">Bloqueaste las notificaciones para este sitio. Podés habilitarlas desde los ajustes del navegador o del celular.</p>`;
+  } else if (on) {
+    accion = `<p class="mm-ok">${ic('campana')} Avisos activados en este dispositivo.</p>
+      <button type="button" class="mm-borrar" data-push-off>Desactivar avisos y borrar mis datos del servidor</button>`;
+  } else {
+    accion = `<button type="button" class="mm-btn" data-push-on>${ic('campana')} Activar avisos</button>`;
+  }
+  $id('dp-cuerpo').innerHTML = `
+    <p class="mm-sub" style="margin:0 0 12px">Te avisamos en el celular, sin montos: cuando cierra el resumen de una tarjeta, 3 días antes, la víspera y el día que vence, y si tenés consumos en dólares para pagar con dólares propios.</p>
+    ${instalar}
+    <section class="mm-push-sec"><h3>${instalada() ? '' : '2. '}Activá los avisos</h3>${accion}
+      ${mensaje ? `<p class="mm-err" role="alert">${esc(mensaje)}</p>` : ''}
+      <p class="mm-fuente"><b>Qué guardamos para avisarte:</b> el permiso de tu celular y, por tarjeta, el nombre, las fechas de cierre y vencimiento y si tiene dólares (sí o no). Nada de montos ni consumos. Queda atado a tu cuenta de Orbit y se borra al desactivar.</p></section>
+    <section class="mm-push-sec"><h3>Sin avisos en el celular</h3><p class="mm-fuente">Igual ves los avisos dentro de la app, y en cada tarjeta podés tocar <b>Agregar al calendario</b> para que te suene desde el calendario del teléfono.</p></section>`;
+}
+async function activarPush() {
+  try {
+    const permiso = await Notification.requestPermission();
+    if (permiso !== 'granted') return pintarPush('Sin el permiso no podemos avisarte. Quedan los avisos dentro de la app y el calendario.');
+    const { publicKey } = await api('GET');
+    await registroSW();
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64aBytes(publicKey) });
+    await api('POST', { accion: 'activar', sub: sub.toJSON(), tarjetas: datosParaAvisos(datos, HOY_ISO) });
+    marcarPush(true); ultimoSync = JSON.stringify(datosParaAvisos(datos, HOY_ISO));
+    pintarPush(); avisar('Avisos activados');
+  } catch (e) {
+    pintarPush(e?.message || 'No pudimos activar los avisos.');
+  }
+}
+async function desactivarPush() {
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration('/herramientas/mi-mes');
+    const sub = await reg?.pushManager.getSubscription();
+    await sub?.unsubscribe();
+    await api('DELETE', {});
+    marcarPush(false); pintarPush(); avisar('Avisos desactivados y datos borrados del servidor');
+  } catch (e) { pintarPush(e?.message || 'No pudimos desactivarlos. Probá de nuevo.'); }
+}
+/* si cambian las fechas, se mandan de nuevo (solo si los avisos están activos) */
+let ultimoSync = null, syncT = null;
+function programarSync() {
+  if (!pushActivo() || LOCAL) return;
+  clearTimeout(syncT);
+  syncT = setTimeout(() => {
+    const t = JSON.stringify(datosParaAvisos(datos, HOY_ISO));
+    if (t === ultimoSync) return;
+    api('POST', { accion: 'sincronizar', tarjetas: JSON.parse(t) }).then(j => { ultimoSync = t; if (!j.activo) marcarPush(false); }).catch(() => {});
+  }, 1500);
+}
+$id('dlg-push').addEventListener('click', async e => {
+  if (e.target.closest('[data-push-on]')) return activarPush();
+  if (e.target.closest('[data-push-off]')) return desactivarPush();
+  if (e.target.closest('[data-instalar]') && pedidoInstalar) { pedidoInstalar.prompt(); await pedidoInstalar.userChoice.catch(() => {}); pedidoInstalar = null; pintarPush(); }
+});
+
 /* ── clics de toda la app ── */
 const ABRIR = { cuota: abrirCuota, ingreso: abrirIngreso, gasto: abrirGasto };
 document.addEventListener('click', e => {
@@ -1192,6 +1281,7 @@ document.addEventListener('click', e => {
   if (mm) return irAMes(sumarMeses(mes, Number(mm.dataset.mes)));
   const desc = t.closest('[data-descartar-alerta]');
   if (desc) { datos.alertasVistas = [...datos.alertasVistas, desc.dataset.descartarAlerta].slice(-200); guardar(); pintarTodo(); return avisar('Aviso descartado'); }
+  if (t.closest('[data-avisos-push]')) { pintarPush(); return abrir($id('dlg-push'), $id('dlg-push').querySelector('.mm-cerrar')); }
   if (t.closest('[data-mas-avisos]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-mas-avisos]')?.focus(); }
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
@@ -1219,3 +1309,5 @@ pintarTodo();
 const inicial = location.hash.slice(1);
 if (['tarjetas', 'cargado', 'escalera', 'contado', 'simular'].includes(inicial)) verVista(inicial, { foco: false });
 iniciarGuiaSiHaceFalta();
+marcarPush(pushActivo());
+if (pushActivo()) { ultimoSync = null; programarSync(); }   // al abrir, manda las fechas del ciclo nuevo

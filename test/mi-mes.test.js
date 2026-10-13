@@ -462,7 +462,7 @@ test('catálogo y acceso: ob-019 es herramienta, no se compra todavía y sin ses
   assert.equal(pag.code, 200);
   assert.match(String(pag.body), /Te quedan libres/);
   assert.match(String(pag.body), /<title>Mi Mes by Orbit<\/title>/);
-  for (const f of ['app.js', 'calculos.js', 'ejemplo.js', 'mi-mes.css']) {
+  for (const f of ['app.js', 'calculos.js', 'ejemplo.js', 'mi-mes.css', 'sw.js', 'manifest.webmanifest']) {
     const r = res();
     await herramienta({ ...admin, query: { slug: 'mi-mes', path: f } }, r);
     assert.equal(r.code, 200, f);

@@ -402,3 +402,14 @@ fieldset.mm-campo>legend{margin-bottom:8px}
 .mm-guia-fin .mm-total-num{color:var(--azul)}
 
 .mm-mas-avisos{justify-self:start}
+
+/* avisos push */
+.mm-campana{position:relative;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;color:var(--tinta);order:2}
+.mm-campana:hover{background:var(--papel)}
+.mm-campana i{position:absolute;top:9px;right:10px;width:9px;height:9px;border-radius:50%;background:var(--azul);box-shadow:0 0 0 2px var(--fondo)}
+@media (min-width:1000px){.mm-campana{order:3}}
+.mm-push-sec{display:grid;gap:8px;padding:14px 0;border-top:1px solid var(--linea)}
+.mm-push-sec h3{margin:0;font-size:16px;font-weight:700}
+.mm-push-sec h3:empty{display:none}
+.mm-push-sec p{margin:0;font-size:15px}
+.mm-ok{display:flex;gap:8px;align-items:center;color:var(--azul);font-weight:700}

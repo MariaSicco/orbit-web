@@ -706,3 +706,59 @@ export function simularCompra(datos, compra, desde, meses = 12) {
     return { mes, antes, nueva, despues: nueva === null ? null : antes - nueva, cuota: n || null, supera: lim.supera, limite: lim };
   });
 }
+
+/* ── avisos push: lo MÍNIMO que se manda al servidor ──
+   Por tarjeta: id, nombre, cierre, vencimiento, si tiene dólares (sí/no) y
+   los días cargados a mano (para que el servidor siga el ciclo siguiente).
+   Nunca montos, consumos, banco ni números de tarjeta. */
+export function datosParaAvisos(datos, hoy) {
+  return (datos?.tarjetas || []).slice(0, 12).map(t => {
+    const ciclo = cicloTarjeta(datos, t.id, hoy);
+    const r = ciclo?.resumen;
+    const dolares = Boolean(r && ((r.totales?.USD || 0) > 0 || (r.consumos || []).some(c => c.moneda === 'USD')));
+    return {
+      id: String(t.id).slice(0, 60), nombre: String(t.nombre).slice(0, 40),
+      cierre: ciclo?.cierre || null, vencimiento: ciclo?.vencimiento || null, dolares,
+      ...(t.diaCierre && t.diaVence ? { diaCierre: t.diaCierre, diaVence: t.diaVence } : {}),
+    };
+  }).filter(t => t.vencimiento || t.diaCierre);
+}
+/* Del lado del servidor: deja pasar solo esos campos, aunque manden más. */
+export function limpiarTarjetasAvisos(lista) {
+  const out = [];
+  for (const t of Array.isArray(lista) ? lista.slice(0, 12) : []) {
+    const id = typeof t?.id === 'string' ? t.id.slice(0, 60) : '';
+    const nombre = typeof t?.nombre === 'string' ? t.nombre.trim().slice(0, 40) : '';
+    if (!id || !nombre) continue;
+    const x = { id, nombre, cierre: esFecha(t.cierre) ? t.cierre : null, vencimiento: esFecha(t.vencimiento) ? t.vencimiento : null, dolares: t.dolares === true };
+    if (Number.isInteger(t.diaCierre) && Number.isInteger(t.diaVence) && t.diaCierre >= 1 && t.diaCierre <= 31 && t.diaVence >= 1 && t.diaVence <= 31) {
+      x.diaCierre = t.diaCierre; x.diaVence = t.diaVence;
+    }
+    if (x.vencimiento || x.diaCierre) out.push(x);
+  }
+  return out;
+}
+/* Qué avisos tocan hoy (sin montos). Si las fechas guardadas ya pasaron y
+   hay días cargados, sigue con el ciclo siguiente. */
+export function avisosPushDeHoy(tarjetas, hoy) {
+  const out = [];
+  for (const t of tarjetas || []) {
+    let { cierre, vencimiento } = t;
+    if ((!vencimiento || diasEntre(hoy, vencimiento) < 0) && t.diaCierre) {
+      const c = cicloTarjeta({ tarjetas: [{ id: t.id, diaCierre: t.diaCierre, diaVence: t.diaVence }], resumenes: [] }, t.id, hoy);
+      if (c) ({ cierre, vencimiento } = c);
+    }
+    if (!vencimiento) continue;
+    const d = diasEntre(hoy, vencimiento);
+    if (cierre === hoy) out.push({ tag: `mm:cierre:${t.id}:${cierre}`, title: `Cerró el resumen de tu ${t.nombre}`, body: 'Lo que compres desde hoy va al resumen siguiente.' });
+    if (d === 3 || d === 1 || d === 0) {
+      const cuando = d === 0 ? 'vence hoy' : d === 1 ? 'vence mañana' : 'vence en 3 días';
+      out.push({ tag: `mm:vence:${t.id}:${vencimiento}:${d}`, title: `Tu ${t.nombre} ${cuando}`, body: 'Abrí Mi Mes para ver el total y agendar el pago.' });
+    }
+    if (t.dolares && d === 5) {
+      out.push({ tag: `mm:dolares:${t.id}:${vencimiento}`, title: `Tu ${t.nombre} tiene consumos en dólares`,
+        body: `Si los pagás con dólares propios antes del ${fechaCorta(vencimiento)}, no te cobran la percepción del 30 %. Orientativo: confirmalo con tu banco.` });
+    }
+  }
+  return out;
+}

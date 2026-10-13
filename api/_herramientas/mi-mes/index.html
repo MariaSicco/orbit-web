@@ -8,6 +8,11 @@
 <meta name="theme-color" content="#3047FF">
 <title>Mi Mes by Orbit</title>
 <link rel="icon" href="/favicon-32.png">
+<link rel="manifest" href="manifest.webmanifest" crossorigin="use-credentials">
+<link rel="apple-touch-icon" href="/assets/img/mi-mes/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-title" content="Mi Mes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/assets/css/orbit.css">
@@ -33,6 +38,7 @@
     <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17v.5"/></symbol>
     <symbol id="i-candado" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
     <symbol id="i-editar" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+    <symbol id="i-campana" viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
     <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
     <symbol id="i-simular" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M7 15l4-4 3 3 5-6"/></symbol>
     <symbol id="i-bajar" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 20h16"/></symbol>
@@ -43,6 +49,7 @@
 <header class="mm-top">
   <a class="mm-volver" href="/biblioteca" aria-label="Volver a la biblioteca de Orbit"><svg class="ic"><use href="#i-izq"/></svg></a>
   <p class="mm-marca"><b>Mi Mes</b> <span>by Orbit</span></p>
+  <button type="button" class="mm-campana" data-avisos-push aria-label="Avisos en el celular"><svg class="ic"><use href="#i-campana"/></svg><i id="campana-on" hidden></i></button>
   <nav class="mm-nav" aria-label="Secciones">
     <button type="button" data-vista="inicio" aria-current="page"><svg class="ic"><use href="#i-inicio"/></svg><span>Inicio</span></button>
     <button type="button" data-vista="tarjetas"><svg class="ic"><use href="#i-tarjetas"/></svg><span>Tarjetas</span></button>
@@ -360,6 +367,14 @@
     <div id="gu-cuerpo"></div>
     <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="gu-atras" hidden>Atrás</button><button type="submit" class="mm-btn" id="gu-sig">Seguir</button></div>
   </form>
+</dialog>
+
+<!-- ── Avisos en el celular + instalar ── -->
+<dialog class="mm-dlg" id="dlg-push" aria-labelledby="dp-tit">
+  <div class="mm-form">
+    <div class="mm-dlg-top"><h2 id="dp-tit">Avisos en el celular</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <div id="dp-cuerpo" aria-live="polite"></div>
+  </div>
 </dialog>
 
 <!-- ── Importar copia ── -->
