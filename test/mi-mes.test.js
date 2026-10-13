@@ -173,6 +173,7 @@ test('catálogo y acceso: ob-019 es herramienta, no se compra todavía y sin ses
   const CAT = await getCatalog();
   assert.equal(CAT['ob-019'].herramienta, '/herramientas/mi-mes');
   assert.equal(CAT['ob-019'].soon, true);
+  assert.equal(CAT['ob-019'].name, 'Mi Mes by Orbit');
   assert.equal(productoPorSlug(CAT, 'mi-mes').id, 'ob-019');
   const res = () => { const r = { code: 200, headers: {} }; r.status = c => { r.code = c; return r; }; r.setHeader = (k, v) => { r.headers[k.toLowerCase()] = v; }; r.send = b => { r.body = b; return r; }; r.redirect = (c, u) => { r.code = c; r.location = u; return r; }; return r; };
   const sin = res();

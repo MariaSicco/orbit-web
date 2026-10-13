@@ -12,8 +12,9 @@ main{flex:1;outline:none}
   padding:calc(10px + env(safe-area-inset-top,0px)) var(--pad) 10px;border-bottom:1px solid var(--linea)}
 .mm-volver{display:inline-flex;align-items:center;gap:6px;min-height:44px;text-decoration:none;color:var(--suave)}
 .mm-volver:hover{color:var(--b)}
-.mm-marca{color:var(--suave)}
-.mm-marca b{color:var(--b);font-weight:500}
+.mm-marca{display:inline-flex;align-items:baseline;gap:6px}
+.mm-marca b{font-weight:800;font-size:18px;letter-spacing:-.03em;text-transform:uppercase}
+.mm-marca small{font-family:var(--serif);font-style:italic;font-size:13px;color:var(--suave)}
 .mm-tabs{display:flex;gap:4px;order:3;width:100%}
 .mm-tabs button{flex:1;min-height:44px;padding:0 14px;border:1px solid var(--linea);color:var(--suave);transition:background .2s var(--ease),color .2s var(--ease),border-color .2s}
 .mm-tabs button:hover{color:var(--b);border-color:var(--b)}

@@ -26,7 +26,7 @@ export const CATALOG = {
   'ob-017': { code: 'OB—017', name: 'Comandos eléctricos',            usd: 9, ars: 12990, foto: 'studio',
     bajada: '25 diagramas de comando verificados y una calculadora que te arma la lista de materiales del tablero.' },
   /* Drop 01 (19/10/2026) · herramientas online */
-  'ob-019': { code: 'OB—019', name: 'Mi Mes',
+  'ob-019': { code: 'OB—019', name: 'Mi Mes by Orbit',
     usd: 0, ars: 0, // PRECIO A DEFINIR (aprobación de Majo). Con soon: true no se puede comprar.
     soon: true, herramienta: '/herramientas/mi-mes',
     bajada: 'Cuánto te queda libre este mes y los que vienen, con tus cuotas ya descontadas.' },
