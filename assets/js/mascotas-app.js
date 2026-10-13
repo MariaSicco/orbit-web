@@ -18,7 +18,7 @@ const SUGGEST = {
 
 /* ---------- estado ---------- */
 let mode = 'loading', doc = { pets: [] }, rev = 0, me = { email: '', name: '' };
-let pro = false, freeScan = false, notify = null, scans = [], curId = '';
+let purchase = null, notify = null, scans = [], curId = '';
 let route = { name: 'inicio' }, lastKey = '';
 const ui = { hist: { type: 'todo', year: '', q: '' }, lib: { year: '', q: '', page: 0 }, agenda: { ym: iso(Z.today()).slice(0, 7), sel: iso(Z.today()) }, gastos: { ym: iso(Z.today()).slice(0, 7), pet: 'all' } };
 const store = { get(k) { try { return localStorage.getItem('mimitos:' + k); } catch { return null; } }, set(k, v) { try { localStorage.setItem('mimitos:' + k, v); } catch {} } };
@@ -128,27 +128,7 @@ async function uploadPhoto(data) {
   const d = await r.json(); if (!r.ok || !d.u) throw new Error('upload'); return d.u;
 }
 
-/* ---------- Pro (alcance aprobado: gratis para siempre, Pro con pago único) ---------- */
-const PRO_URL = '/p/ob-018';
-const PRO = {
-  scan: ['camera', 'viaje', 'Leer la libreta con una foto', 'Le sacás foto y cargamos todas las vacunas por vos.'],
-  estudio: ['flask', 'viaje', 'Estudios con sus archivos', 'Análisis, radiografías y ecografías guardados en su historia.'],
-  vetpdf: ['print', 'plata', 'Libreta en PDF', 'Toda su libreta lista para imprimir o mandar al veterinario.'],
-  sitter: ['hand', 'cuida', 'Modo cuidador', 'Un link con todo para quien la cuida, y te avisa qué hizo.'],
-  comida: ['wallet', 'comida', 'Gastos y comida', 'Cuánto gastás por mes y cuándo se termina el alimento.'],
-  viajes: ['plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo sacarlos.'],
-};
-const isLocked = k => k in PRO && !pro && (k !== 'scan' || !freeScan);
-const proTag = k => isLocked(k) ? '<span class="pro-tag">Pro</span>' : '';
-function needPro(k) { if (!isLocked(k)) return false; proPanel(k); return true; }
-function proPanel(k) {
-  const order = [k, ...Object.keys(PRO).filter(x => x !== k)];
-  panel('Mimitos Pro', `<p class="lead-s">${k === 'scan' && !freeScan ? 'Ya usaste la lectura de regalo. ' : ''}Lo gratis es para siempre. Pro suma lo que te ahorra trabajo.</p>
-    <div class="list">${order.map((x, i) => { const [ic, c, t, d] = PRO[x]; return `<div class="row${i ? '' : ' hero-opt'}">${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span><span></span></div>`; }).join('')}</div>
-    <p class="note">Pago único, sin suscripción. Sirve para todas tus mascotas.</p>
-    <a class="btn wide big" href="${PRO_URL}">Pasar a Pro</a>
-    <button class="btn ghost wide" type="button" onclick="location.reload()">Ya lo compré</button>`);
-}
+const BUY_URL = '/p/ob-018';
 
 /* ---------- formulario genérico ---------- */
 const dForm = $('#dForm'), dPanel = $('#dPanel');
@@ -182,7 +162,7 @@ function field(f, v) {
 function openForm(o) {
   form = { ...o, photo: undefined };
   $('#dFormT').textContent = o.title;
-  $('#fBody').innerHTML = (o.intro ? `<p class="note">${o.intro}</p>` : '') + o.fields.map(f => Array.isArray(f) ? `<div class="two">${f.map(x => field(x, o.values?.[x.k])).join('')}</div>` : field(f, o.values?.[f.k])).join('');
+  $('#fBody').innerHTML = (o.intro ? `<p class="note">${o.intro}</p>` : '') + o.fields.map(f => Array.isArray(f) ? `<div class="two${f.some(x => x.stack) ? ' stack-s' : ''}">${f.map(x => field(x, o.values?.[x.k])).join('')}</div>` : field(f, o.values?.[f.k])).join('');
   $('#fSave').textContent = o.saveLabel || 'Guardar';
   const del = $('#fDel'); del.hidden = !o.onDelete; del.innerHTML = `${I('trash')} ${esc(o.deleteLabel || 'Borrar')}`; del.dataset.sure = '';
   $('#fErr').hidden = true;
@@ -201,7 +181,8 @@ $('#fBody').addEventListener('change', async e => {
   const f = e.target.files[0]; if (!f) return;
   try {
     form.photo = await shrink(f, e.target.dataset.square ? 520 : 640, .8);
-    const prev = $(`#${e.target.id}_prev`); prev.innerHTML = `<img src="${form.photo}" alt="">`; if (prev.classList.contains('stk')) prev.className = 'stk has';
+    const prev = $(`#${e.target.id}_prev`); prev.innerHTML = `<img src="${form.photo}" alt="Foto elegida">`; if (prev.classList.contains('stk')) prev.className = 'stk has';
+    const lb = $(`label[for="${e.target.id}"]`); if (lb) lb.innerHTML = `${I('camera')} Cambiar foto`;
   } catch { toast('No pudimos leer esa foto. Probá con otra.'); }
   e.target.value = '';
 });
@@ -286,7 +267,7 @@ function recForm(p, r, preset) {
       { k: 'scope', label: '¿Interna o externa?', type: 'chips', options: [['interna', 'Interna (parásitos)'], ['externa', 'Externa (pulgas, garrapatas)']] },
       { k: 'name', label: 'Nombre', type: 'datalist', options: sugg(t), ph: t === 'vacuna' ? 'Antirrábica' : 'Pipeta antipulgas', hint: 'Como figura en la libreta del veterinario.' },
       [{ k: 'date', label: 'Se aplicó el', type: 'date' }, { k: 'next', label: 'Próxima dosis', type: 'date', quick: [['1', '1 mes'], ['3', '3 meses'], ['12', '1 año']] }],
-      [{ k: 'lot', label: 'Lote o marca', max: 80, ph: 'Nobivac R · A123', opt: true }, { k: 'vet', label: 'Veterinaria', max: 80, opt: true }],
+      [{ k: 'lot', label: 'Lote o marca', max: 80, ph: 'Nobivac R · A123', opt: true, stack: true }, { k: 'vet', label: 'Veterinaria', max: 80, opt: true }],
       { k: 'sticker', label: 'Foto del sticker', type: 'photo', square: true, opt: true, hint: 'El sticker que pega el veterinario. Aparece en la libreta como sello.' },
       { k: 'notes', label: 'Notas', type: 'textarea', max: 300, ph: 'Observaciones', opt: true },
     ],
@@ -558,6 +539,7 @@ function render() {
 function view() {
   if (mode === 'loading') return skeleton();
   if (mode === 'guest') return renderGate();
+  if (mode === 'nopurchase') return renderNoPurchase();
   if (mode === 'error') return renderError();
   if (route.name === 'alta') return renderOnboard();
   if (route.name === 'lectura') return renderScan();
@@ -571,7 +553,7 @@ function view() {
     case 'cuenta': return renderCuenta();
     case 'avisos': return renderAvisos();
     case 'antecedentes': return renderAntecedentes(p);
-    case 'viajes': return isLocked('viajes') ? lockedPage('viajes') : renderViajes(p);
+    case 'viajes': return renderViajes(p);
     case 'datos': return renderDatos(p);
     default: return renderInicio(p);
   }
@@ -593,10 +575,6 @@ function renderError() {
     <p class="lead">Revisá tu conexión. Tus datos están guardados en tu cuenta: no se perdió nada.</p>
     <button class="btn big" data-act="retry">Reintentar</button></section>`;
 }
-function lockedPage(k) {
-  const [ic, c, t, d] = PRO[k];
-  return `<section class="empty" style="margin-top:8px">${bubble(ic, c)}<h2>${t}</h2><p>${d} Es parte de Mimitos Pro: pago único, para todas tus mascotas.</p><button class="btn" data-act="pro" data-k="${k}">Ver Mimitos Pro</button></section>`;
-}
 
 /* bienvenida sin sesión: sobria, con una sola acción principal */
 function renderGate() {
@@ -611,14 +589,28 @@ function renderGate() {
         <div>${bubble('qr', 'viaje')}<span><b>QR por si se pierde</b><small>Quien la encuentre te ubica al instante.</small></span></div>
       </div>
       <div class="cta">
-        <a class="btn big wide" href="/acceso?nuevo=1&next=mascotas">Crear cuenta gratis</a>
-        <a class="btn ghost wide" href="/acceso?next=mascotas">Ya tengo cuenta · Entrar</a>
+        <a class="btn big wide" href="/acceso?next=mascotas">Ingresar</a>
+        <a class="btn ghost wide" href="${BUY_URL}">Conseguir Mimitos</a>
       </div>
-      <p class="note">Gratis para siempre. Tus datos quedan en tu cuenta de Orbit, no en el celu.</p>
+      <p class="note">Entrá con el mail con el que compraste en Orbit. Tus datos quedan en tu cuenta, no en el celu.</p>
     </div>
     <div class="art" aria-hidden="true"><div class="mini c-salud"><div class="cvtxt"><span class="eyebrow">Libreta sanitaria</span>${HEART}<b>Tu mascota</b></div></div></div>
   </section>`;
 }
+
+/* con sesión pero sin la compra de Mimitos */
+function renderNoPurchase() {
+  return `<section class="state nobuy">
+    ${bubble('book', 'salud')}
+    <span class="eyebrow">Mimitos by Orbit</span>
+    <h1 class="h-xl">Mimitos es parte de tu compra en Orbit</h1>
+    <p class="lead">No encontramos la compra de Mimitos en ${me.email ? `<b>${esc(me.email)}</b>` : 'esta cuenta'}. Con ella tenés la libreta digital, los avisos y el QR para todas tus mascotas.</p>
+    <div class="cta"><a class="btn big wide" href="${BUY_URL}">Conseguir Mimitos</a>
+    <button class="btn ghost wide" data-act="relogin">Ya la compré con otro mail</button></div>
+    <p class="note">Si la compraste hace un momento y no aparece, recargá la página en unos minutos o escribinos desde la ficha del producto.</p>
+  </section>`;
+}
+async function relogin() { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {} location.href = '/acceso?next=mascotas'; }
 
 /* primer ingreso, cuenta sin mascotas */
 function renderFirst() {
@@ -697,7 +689,7 @@ function renderInicio(p) {
       ${historySection(p)}
       <section class="sec" aria-labelledby="h-more">
         <h2 id="h-more">Accesos rápidos</h2>
-        <div class="list">${quick.map(([a, ic, c, t, d]) => { const [act, to] = a.split(':'); return `<button class="row link-row" data-act="${act}"${to ? ` data-to="${to}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}${proTag(to || act)}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}</div>
+        <div class="list">${quick.map(([a, ic, c, t, d]) => { const [act, to] = a.split(':'); return `<button class="row link-row" data-act="${act}"${to ? ` data-to="${to}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}</div>
       </section>
     </div>
   </div>`;
@@ -939,7 +931,7 @@ function renderLibreta(p) {
   return `${doc.pets.length > 1 ? switcher(p) : ''}
     <div class="lib-top">
       <div><span class="eyebrow">Libreta sanitaria</span><h1>La libreta de ${esc(p.name)}</h1></div>
-      <div class="lib-tools"><button class="btn sm ghost" data-act="add">${I('plus')} Cargar</button><button class="btn sm" data-act="go" data-to="pdf">${I('print')} PDF${proTag('vetpdf')}</button></div>
+      <div class="lib-tools"><button class="btn sm ghost" data-act="add">${I('plus')} Cargar</button><button class="btn sm" data-act="go" data-to="pdf">${I('print')} PDF</button></div>
     </div>
     <div class="lib-bar">
       <div class="chips scroll" role="group" aria-label="Secciones de la libreta" id="libSecs">${LIB_SECS.map(([k, l]) => `<button class="chip" data-act="lsec" data-sec="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
@@ -1014,7 +1006,6 @@ function libretaDoc(p) {
   </article>`;
 }
 function renderPdf(p) {
-  if (isLocked('vetpdf')) return `<button class="link" data-act="go" data-to="libreta" style="align-self:flex-start">${I('back')} Libreta</button>${lockedPage('vetpdf')}`;
   after(() => { $('#print').innerHTML = libretaDoc(p); });
   return `<div class="pdf-wrap">
     <div class="lib-top"><div><button class="link" data-act="go" data-to="libreta">${I('back')} Libreta</button><h1>Libreta en PDF</h1><p class="dim">Así sale impresa. En el diálogo de impresión elegí "Guardar como PDF" para mandarla por WhatsApp o mail.</p></div>
@@ -1073,7 +1064,6 @@ function renderAgenda() {
 
 /* ---------- GASTOS ---------- */
 function renderGastos(cur) {
-  if (isLocked('comida')) return `${lockedPage('comida')}`;
   const ym = ui.gastos.ym, filt = ui.gastos.pet;
   const pets = filt === 'all' ? doc.pets : doc.pets.filter(p => p.id === filt);
   const all = pets.flatMap(p => p.expenses.map(e => ({ e, p })));
@@ -1129,10 +1119,9 @@ function renderCuenta() {
   return `<div><span class="eyebrow">Cuenta</span><h1 class="h-xl">Tu cuenta</h1></div>
     <div class="cols"><div class="col">
       <section class="card profile"><span class="ini" aria-hidden="true">${esc(initial)}</span><span class="what"><b>${esc(me.name || 'Tu cuenta de Orbit')}</b><small>${esc(me.email)}</small></span></section>
-      <section class="card plan-card ${pro ? 'is-pro' : ''}">
-        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span><span class="eyebrow">Tu plan</span><b style="display:block;font-size:26px;line-height:1.1;font-weight:700;letter-spacing:-.02em">${pro ? 'Mimitos Pro' : 'Gratis'}</b></span>${pro ? `<span class="badge ok">Activo</span>` : ''}</div>
-        <p class="dim">${pro ? 'Tenés todo: libreta en PDF, lectura con foto, estudios, modo cuidador, gastos y viajes. Pago único, sin vencimiento.' : 'Libreta, avisos, QR y modo perdida son gratis para siempre. Pro suma PDF, lectura con foto, estudios, cuidador, gastos y viajes.'}</p>
-        ${pro ? '' : `<button class="btn" data-act="pro" data-k="vetpdf">${I('star')} Ver Mimitos Pro</button>`}
+      <section class="card buy-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span><span class="eyebrow">Tu compra</span><b style="display:block;font-size:22px;line-height:1.15;font-weight:700;letter-spacing:-.02em">Mimitos by Orbit</b></span><span class="badge ok">Activa</span></div>
+        <p class="dim">${purchase?.date ? `Comprada el ${fmt(purchase.date.slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' })}. ` : ''}Pago único: tenés la app completa, para todas tus mascotas, con actualizaciones sin cargo.</p>
       </section>
       <section class="sec"><div class="sec-h"><h2>Tus mascotas</h2><button class="link" data-act="newPet">${I('plus')} Agregar</button></div>
         ${doc.pets.length ? `<div class="list">${doc.pets.map(p => `<button class="row link-row" data-act="editPetId" data-id="${p.id}">${avatar(p)}<span class="what"><b>${esc(p.name)}</b><small>${esc(petMeta(p))}</small></span>${I('edit')}</button>`).join('')}</div>` : `<div class="empty dash"><p>Todavía no cargaste ninguna.</p></div>`}
@@ -1147,7 +1136,6 @@ function renderCuenta() {
         </div>
       </section>
       <button class="btn ghost wide" data-act="logout">${I('logout')} Cerrar sesión</button>
-      <p class="note" style="text-align:center;margin:0 auto">Mimitos es un organizador: no reemplaza al veterinario.</p>
     </div></div>`;
 }
 function exportCopy() {
@@ -1224,7 +1212,7 @@ function renderAvisos() {
     <div class="btns"><button class="btn ghost sm" data-act="aTest">Mandarme uno de prueba</button><button class="btn ghost sm danger" data-act="aOff">Apagar en este celu</button></div>`;
   else if (isIOS && !standalone()) celu = `<div class="ios-steps"><b>En iPhone, primero instalala</b><ol><li>Tocá <b>Compartir</b> abajo en Safari (el cuadrado con la flecha).</li><li>Elegí <b>Agregar a inicio</b>.</li><li>Abrí Mimitos desde el ícono y volvé acá.</li></ol><small class="dim">Necesita iOS 16.4 o más nuevo.</small></div>`;
   else if (!pushSupported()) celu = `<p class="note">Este navegador no acepta avisos. En Android usá Chrome; en iPhone, Safari con Mimitos agregada a inicio. Mientras tanto, activá el mail.</p>`;
-  else celu = `<button class="btn wide" id="aOn" data-act="aOn">${I('bell')} Activar en este celu</button><p class="note">Llegan como los de cualquier app, aunque no tengas Mimitos abierta. Gratis.</p>`;
+  else celu = `<button class="btn wide" id="aOn" data-act="aOn">${I('bell')} Activar en este celu</button><p class="note">Llegan como los de cualquier app, aunque no tengas Mimitos abierta.</p>`;
   return `<button class="link" data-act="go" data-to="cuenta" style="align-self:flex-start">${I('back')} Cuenta</button>
     <div><span class="eyebrow">Centro de avisos</span><h1 class="h-xl">Avisos</h1><p class="lead-s" style="margin-top:6px">Te avisamos antes de cada fecha para que no se te pase nada.</p></div>
     <div class="cols"><div class="col">
@@ -1295,7 +1283,7 @@ function renderOnboard() {
     <div class="two"><div class="f"><label for="ob_vdate">Se aplicó el</label><input id="ob_vdate" type="date" max="${iso(Z.today())}" value="${esc(ob.vac.date)}"></div><div class="f"><label for="ob_vnext">Próxima dosis</label><input id="ob_vnext" type="date" value="${esc(ob.vac.next)}"></div></div>
     <div class="chips"><button type="button" class="chip" data-ob="plus" data-m="1">+1 mes</button><button type="button" class="chip" data-ob="plus" data-m="12">+1 año</button></div>
     <div class="or">o</div>
-    <label class="scanbox" for="ob_scan">${bubble('camera', 'viaje')}<span><b>Sacarle foto a la libreta${proTag('scan')}</b><small>La leemos y cargamos todas las vacunas. Vos solo revisás.</small></span></label><input id="ob_scan" type="file" accept="image/*" multiple class="sr">`;
+    <label class="scanbox" for="ob_scan">${bubble('camera', 'viaje')}<span><b>Sacarle foto a la libreta</b><small>La leemos y cargamos todas las vacunas. Vos solo revisás.</small></span></label><input id="ob_scan" type="file" accept="image/*" multiple class="sr">`;
     skip = 'Todavía no tiene vacunas o no sé';
   }
   if (ob.step === 3) {
@@ -1365,7 +1353,7 @@ app.addEventListener('click', e => {
 app.addEventListener('change', async e => {
   if (route.name !== 'alta' || !ob) return;
   if (e.target.id === 'ob_photo') { const f = e.target.files[0]; if (!f) return; try { obRead(); ob.photo = await shrink(f, 640, .82); render(); } catch { toast('No pudimos leer esa foto.'); } }
-  if (e.target.id === 'ob_scan') { const files = [...e.target.files].slice(0, 4); if (!files.length) return; if (isLocked('scan')) { e.target.value = ''; return proPanel('scan'); } obRead(); obFinish(files); }
+  if (e.target.id === 'ob_scan') { const files = [...e.target.files].slice(0, 4); if (!files.length) return; obRead(); obFinish(files); }
 });
 
 /* ---------- calendario sugerido ---------- */
@@ -1390,7 +1378,7 @@ function suggestPanel(p) {
 
 /* ---------- "cargar algo" ---------- */
 function addPanel(p) {
-  const opt = (act, ic, c, t, d) => `<button class="row link-row" data-add="${act}">${bubble(ic, c)}<span class="what"><b>${t}${proTag(act)}</b><small>${act === 'scan' && !pro && freeScan ? 'La primera es de regalo' : d}</small></span>${I('chevron')}</button>`;
+  const opt = (act, ic, c, t, d) => `<button class="row link-row" data-add="${act}">${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`;
   panel(`Cargar en la libreta de ${p.name}`, `<div class="list">
     ${opt('vacuna', 'syringe', 'salud', 'Vacuna', 'Con lote, veterinaria y foto del sticker')}
     ${opt('anti', 'drop', 'salud', 'Antiparasitario', 'Interno o externo: pipeta, collar, comprimido')}
@@ -1401,11 +1389,11 @@ function addPanel(p) {
     ${opt('sintoma', 'note', 'plata', 'Algo que notaste', 'No come, vomita, se rasca…')}
     ${opt('problema', 'heart', 'perdida', 'Problema de salud', 'Algo que tuvo o tiene')}
   </div>
-  <button class="scanbox" data-add="scan">${bubble('camera', 'viaje')}<span><b>Foto de la libreta${proTag('scan')}</b><small>${!pro && freeScan ? 'La primera es de regalo. ' : ''}La leemos y cargamos las vacunas por vos.</small></span></button>`);
+  <button class="scanbox" data-add="scan">${bubble('camera', 'viaje')}<span><b>Foto de la libreta</b><small>La leemos y cargamos las vacunas por vos.</small></span></button>`);
   $('#pBody').onclick = e => {
     const b = e.target.closest('[data-add]'); if (!b) return;
     dPanel.close();
-    ({ scan: () => needPro('scan') || startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas', scope: 'externa' }), consulta: () => visitForm(p), estudio: () => needPro('estudio') || studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
+    ({ scan: () => startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas', scope: 'externa' }), consulta: () => visitForm(p), estudio: () => studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
   };
 }
 
@@ -1424,9 +1412,8 @@ async function runScan(p, files) {
     const images = []; for (const f of files) images.push(await shrink(f, 1600, .85));
     const r = await fetch('/api/mascotas?scan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, species: p.species }) });
     const d = await r.json();
-    if (r.status === 402) { freeScan = false; scan = null; go('inicio'); return proPanel('scan'); }
+    if (r.status === 402) { scan = null; mode = 'nopurchase'; return render(); }
     if (!r.ok) throw Object.assign(new Error(d.error === 'limite_diario' ? 'Llegaste al límite de lecturas de hoy. Probá mañana o cargá las vacunas a mano.' : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
-    if (!pro) freeScan = false;
     scan = { ...scan, state: 'review', items: prev.concat(d.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) }))), warnings: d.warnings || [] };
   } catch (err) { scan = { ...scan, state: 'error', msg: err.message || 'No pudimos leer las fotos.', plain: Boolean(err.plain) }; }
   render();
@@ -1665,9 +1652,9 @@ document.addEventListener('click', e => {
     case 'pick': selectPet(b.dataset.id); if (TAB_OF[route.name] === 'inicio') return go('inicio'); return render();
     case 'go': return go(b.dataset.to);
     case 'goPet': selectPet(b.dataset.pet); return go(b.dataset.to);
-    case 'pro': return proPanel(b.dataset.k || 'scan');
+    case 'relogin': return relogin();
     case 'add': return addPanel(cur);
-    case 'scan': if (needPro('scan')) return; return startScan(petById(scan?.petId) || cur);
+    case 'scan': return startScan(petById(scan?.petId) || cur);
     case 'scanSave': return saveScan();
     case 'scanBack': scan = null; return go('inicio');
     case 'detail': return detail(cur, b.dataset.kind, b.dataset.id);
@@ -1706,7 +1693,7 @@ document.addEventListener('click', e => {
     case 'trip': return tripForm(cur);
     case 'vet': return vetForm(cur);
     case 'share': return sharePanel(cur);
-    case 'sitter': if (needPro('sitter')) return; return sitterPanel(cur);
+    case 'sitter': return sitterPanel(cur);
     case 'lost': return lostPanel(cur);
     case 'suggest': return suggestPanel(cur);
     case 'export': return exportCopy();
@@ -1725,13 +1712,13 @@ async function boot() {
   let d = null, st = 0;
   try { const r = await fetch('/api/mascotas', { credentials: 'same-origin' }); st = r.status; d = await r.json().catch(() => null); } catch { st = 0; }
   if (st === 200 && d && d.doc) {
-    mode = 'full'; pro = d.access === 'pro'; freeScan = Boolean(d.freeScan); me.email = d.email || '';
+    mode = 'full'; purchase = d.purchase || null; me.email = d.email || '';
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
     fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => { if (x && x.publicKey) { notify = x; render(); } }).catch(() => {});
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(x => { if (x?.name) { me.name = x.name; if (route.name === 'cuenta' || !doc.pets.length) render(); } }).catch(() => {});
-    if (!pro) { const t = $('#plan'); t.hidden = false; t.onclick = () => proPanel('vetpdf'); }
-  } else if (st === 401 || st === 403) mode = 'guest';
+  } else if (st === 402 && d?.error === 'no_purchase') { mode = 'nopurchase'; me.email = d.email || ''; }
+  else if (st === 401 || st === 403) mode = 'guest';
   else mode = 'error';
   render();
 }

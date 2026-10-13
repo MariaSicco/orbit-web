@@ -3,8 +3,21 @@
      si no están, se generan una vez y quedan guardadas en KV (no hay que configurar nada).
    - Por cuenta: orbit:petnotify:<email> = { subs: [...], mail, off: {vac,pip,food,check,qr}, sent: {tag: fecha} } */
 import webpush from 'web-push';
-import { kvGet, kvSet } from './kv.js';
+import { kvGet, kvSet, getPurchases } from './kv.js';
+import { isAdmin } from './admin.js';
 import { sendEmail, emailReady } from './email.js';
+
+/* Mimitos es paga: sin compra del producto no hay app, avisos ni links públicos.
+   Administración entra sin compra. Una compra marcada como reintegrada no cuenta. */
+export const PRODUCT_ID = process.env.MASCOTAS_PRODUCT_ID || 'ob-018';
+const validPurchase = p => p && p.productId === PRODUCT_ID && !p.refunded && p.status !== 'refunded';
+export async function mimitosPurchase(email) {
+  if (!email) return null;
+  const p = (await getPurchases(String(email))).filter(validPurchase).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))[0];
+  if (p) return { date: p.date || null };
+  return isAdmin(email) ? { date: null, admin: true } : null;
+}
+export const hasMimitos = async email => Boolean(await mimitosPurchase(email));
 
 export const notifyKey = email => `orbit:petnotify:${String(email).toLowerCase()}`;
 export const KINDS = ['vac', 'pip', 'food', 'check', 'qr'];

@@ -1,8 +1,9 @@
 /* Mimitos: corre una vez por día (vercel.json → crons, 9:00 de Argentina).
    A cada cuenta con avisos le manda lo que toca hoy: vacunas y pipetas (3 días antes y el día),
-   alimento (5 días antes y el día) y el chequeo del mes. Nunca repite un aviso. */
+   alimento (5 días antes y el día) y el chequeo del mes. Nunca repite un aviso.
+   Solo avisa a quien tiene la compra de Mimitos. */
 import { kvKeys, kvMGet, kvGet } from '../_lib/kv.js';
-import { dueToday, pushTo, mailDigest, saveNotify, todayAR } from '../_lib/petpush.js';
+import { dueToday, pushTo, mailDigest, saveNotify, todayAR, hasMimitos } from '../_lib/petpush.js';
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
@@ -12,13 +13,14 @@ export default async function handler(req, res) {
   const today = String(req.query?.hoy || '').match(/^\d{4}-\d{2}-\d{2}$/) && !process.env.VERCEL_ENV?.startsWith('prod') ? req.query.hoy : todayAR();
   const keys = await kvKeys('orbit:petnotify:*');
   const all = (await kvMGet(keys)).filter(Boolean);
-  const out = { cuentas: all.length, push: 0, mails: 0, errores: 0 };
+  const out = { cuentas: all.length, push: 0, mails: 0, sinCompra: 0, errores: 0 };
   for (const raw of all) {
     const email = String(raw.email || '').toLowerCase();
     if (!email) continue;
     const n = { email, subs: raw.subs || [], mail: Boolean(raw.mail), off: raw.off || {}, sent: raw.sent || {} };
     if (!n.subs.length && !n.mail) continue;
     try {
+      if (!(await hasMimitos(email))) { out.sinCompra++; continue; }
       const doc = await kvGet(`orbit:pets:${email}`);
       const items = dueToday(doc, today).filter(i => !n.off[i.kind] && !n.sent[i.tag]);
       if (!items.length) continue;

@@ -2,8 +2,11 @@
    Los datos viven en la cuenta de Orbit, no en el navegador: así no se
    pierden si el celular borra el almacenamiento del sitio.
 
-   Dueña o dueño (con sesión):
-   GET                        → { access: 'free'|'pro', doc }
+   Mimitos es paga: todo lo de la dueña o el dueño exige sesión y la compra del producto
+   (sin compra → 402 { error: 'no_purchase' }). Los links públicos dejan de andar si la compra no está.
+
+   Dueña o dueño (con sesión y compra):
+   GET                        → { access: 'full', purchase: {date}, doc }
    POST {doc, rev}            → guarda la libreta. Si otro dispositivo guardó antes, 409 con la versión nueva
    POST ?photo=1 {data}       → sube una foto (ya comprimida en el navegador) → { u }
    POST ?share=1 {petId}      → crea (o devuelve) el link público de la ficha
@@ -24,9 +27,9 @@ import { kvGet, kvSet, kvDel, getPurchases } from './_lib/kv.js';
 import { readSession, readBody } from './_lib/auth.js';
 import { isAdmin } from './_lib/admin.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath } from './_lib/blob.js';
-import { getVapid, getNotify, saveNotify, cleanSub, pushTo, KINDS } from './_lib/petpush.js';
+import { getVapid, getNotify, saveNotify, cleanSub, pushTo, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
 
-export const PRODUCT_ID = process.env.MASCOTAS_PRODUCT_ID || 'ob-018';
+export { PRODUCT_ID };
 const docKey = email => `orbit:pets:${email.toLowerCase()}`;
 const shareKey = t => `orbit:petshare:${t}`;
 const sitterKey = t => `orbit:petsitter:${t}`;
@@ -196,14 +199,6 @@ async function scanBooklet(images, species) {
   };
 }
 
-/* Mimitos × Orbit: el perfil es gratis con cualquier cuenta; la compra del producto habilita Pro */
-async function access(email) {
-  if (isAdmin(email)) return 'pro';
-  const list = await getPurchases(email);
-  return list.some(p => p.productId === PRODUCT_ID) ? 'pro' : 'free';
-}
-const freeScanKey = email => `orbit:petscanfree:${String(email).toLowerCase()}`;
-const needPro = (res, acc) => { if (acc === 'pro') return false; res.status(402).json({ error: 'pro', access: acc }); return true; };
 async function scanAlert(email, pet, req) {
   let city = '';
   try { city = decodeURIComponent(String(req.headers['x-vercel-ip-city'] || '')).slice(0, 60); } catch {}
@@ -240,7 +235,8 @@ export default async function handler(req, res) {
     const link = t && await kvGet(shareKey(t));
     const doc = link && await kvGet(docKey(link.email));
     const pet = doc?.pets?.find(p => p.id === link.petId && p.share === t);
-    if (!pet) return res.status(404).json({ error: 'not_found' });
+    /* si la dueña o el dueño ya no tiene la compra, el link deja de mostrar datos */
+    if (!pet || !(await hasMimitos(link.email))) return res.status(404).json({ error: 'not_found' });
     /* aviso a la familia: alguien abrió la ficha (no cuenta si la abre la misma dueña) */
     const viewer = readSession(req);
     if (!viewer || viewer.email.toLowerCase() !== link.email.toLowerCase()) await scanAlert(link.email, pet, req).catch(() => {});
@@ -253,7 +249,7 @@ export default async function handler(req, res) {
     const link = t && await kvGet(sitterKey(t));
     const doc = link && await kvGet(docKey(link.email));
     const pet = doc?.pets?.find(p => p.id === link.petId && p.sitterToken === t);
-    if (!pet) return res.status(404).json({ error: 'not_found' });
+    if (!pet || !(await hasMimitos(link.email))) return res.status(404).json({ error: 'not_found' });
     if (req.method === 'GET') return res.status(200).json({ kind: 'cuidador', pet: sitterView(pet) });
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
     const b = await readBody(req);
@@ -272,7 +268,9 @@ export default async function handler(req, res) {
 
   const s = readSession(req);
   if (!s) return res.status(401).json({ error: 'unauthorized' });
-  const acc = await access(s.email);
+  /* todo lo de la dueña o el dueño exige la compra de Mimitos */
+  const purchase = await mimitosPurchase(s.email);
+  if (!purchase) return res.status(402).json({ error: 'no_purchase', email: s.email, product: PRODUCT_ID });
 
   /* avisos: push en este celu, mail y qué avisar */
   if (q.notify) {
@@ -291,7 +289,6 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET' && q.file) {
-    if (needPro(res, acc)) return;
     const ref = String(q.file);
     if (!isBlobRef(ref) || !refPath(ref).startsWith(folder(s.email) + '/')) return res.status(403).json({ error: 'forbidden' });
     try { return res.redirect(302, await signedGet(refPath(ref), { minutes: 10 })); }
@@ -299,9 +296,8 @@ export default async function handler(req, res) {
   }
   if (req.method === 'GET') {
     const doc = (await kvGet(docKey(s.email))) || { pets: [], rev: 0 };
-    const freeScan = acc === 'pro' || !(await kvGet(freeScanKey(s.email)));
     const scans = ((await kvGet(scansKey(s.email))) || []).slice(-10);
-    return res.status(200).json({ access: acc, email: s.email, doc, freeScan, scans });
+    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   const body = await readBody(req);
@@ -317,7 +313,6 @@ export default async function handler(req, res) {
 
   /* estudios: el archivo viaja del navegador a Blob privado, en la carpeta de esta cuenta */
   if (q.upload) {
-    if (needPro(res, acc)) return;
     if (!blobReady()) return res.status(503).json({ error: 'blob_no_configurado' });
     const size = Number(body.size) || 0;
     if (size > 15 * 1024 * 1024) return res.status(413).json({ error: 'too_big' });
@@ -330,9 +325,6 @@ export default async function handler(req, res) {
 
   /* leer la libreta con IA: devuelve registros para que la persona los revise; no guarda nada */
   if (q.scan) {
-    /* la cuenta gratis tiene una lectura de regalo: es la mejor forma de mostrar Pro */
-    const freeK = freeScanKey(s.email);
-    if (acc !== 'pro' && await kvGet(freeK)) return res.status(402).json({ error: 'pro', access: acc });
     const images = (Array.isArray(body.images) ? body.images : []).filter(x => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(x || '') && x.length < 1.6e6).slice(0, 4);
     if (!images.length) return res.status(400).json({ error: 'sin_fotos' });
     const k = `orbit:petscan:${s.email.toLowerCase()}:${new Date().toISOString().slice(0, 10)}`;
@@ -341,15 +333,13 @@ export default async function handler(req, res) {
     await kvSet(k, n + 1, 60 * 60 * 26);
     try {
       const out = await scanBooklet(images, str(body.species, 10));
-      if (acc !== 'pro') await kvSet(freeK, new Date().toISOString());
-      return res.status(200).json({ ...out, freeScan: acc === 'pro' });
+      return res.status(200).json(out);
     } catch (e) { return res.status(e.status || 502).json({ error: e.message || 'ia_error' }); }
   }
 
   const current = (await kvGet(docKey(s.email))) || { pets: [], rev: 0 };
 
   if (q.share || q.unshare || q.sitter || q.unsitter) {
-    if (q.sitter && needPro(res, acc)) return;
     const pet = current.pets.find(p => p.id === String(body.petId || ''));
     if (!pet) return res.status(404).json({ error: 'not_found' });
     const field = q.share || q.unshare ? 'share' : 'sitterToken';
