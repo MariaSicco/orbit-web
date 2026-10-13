@@ -988,7 +988,7 @@ function pintarEscalera() {
       ${usadas.map(t => f.porTarjeta[t.id] ? `<i class="${esc(t.color)}" style="width:${(f.porTarjeta[t.id] / max) * 100}%"></i>` : '').join('')}
       ${f.tope ? `<b class="esc-tope" style="left:${Math.min(100, (f.tope / max) * 100)}%"></b>` : ''}
     </span>
-    <span class="esc-monto">${esc($(f.total))}${f.supera ? '<small>Te pasás</small>' : f.delBanco.length ? '<small class="banco">según el banco</small>' : ''}</span></li>`).join('') +
+    <span class="esc-monto">${esc($(f.total))}${f.supera ? '<small>Te pasás</small>' : ''}${f.delBanco.length ? '<small class="banco">según el banco</small>' : ''}</span></li>`).join('') +
     (e.diferencias.length ? `<li class="esc-dif"><p class="mm-fuente">${ic('alerta')} En ${e.diferencias.length === 1 ? 'un mes' : `${e.diferencias.length} meses`} la tabla del banco no coincide con lo que proyecta la app (por ejemplo ${esc(corto(e.diferencias[0].mes))}: banco ${esc($(e.diferencias[0].banco))}, app ${esc($(e.diferencias[0].propio))}). Usamos la del banco; si falta cargar alguna cuota, sumala.</p></li>` : '');
 }
 $id('tope-form').addEventListener('submit', e => {
