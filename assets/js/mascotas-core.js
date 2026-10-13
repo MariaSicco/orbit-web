@@ -228,6 +228,21 @@
     more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
     chevron: '<path d="m9 5 7 7-7 7"/>',
     file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
+    book: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"/><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19v-3"/><path d="M12 7.5v5M9.5 10h5"/>',
+    grid: '<rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 17h.01M12 17h.01"/>',
+    user: '<circle cx="12" cy="8.5" r="3.5"/><path d="M5 20c.8-3.6 3.6-5.5 7-5.5s6.2 1.9 7 5.5"/>',
+    bell: '<path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>',
+    trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/><path d="M10 11v5M14 11v5"/>',
+    copy: '<rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/>',
+    print: '<path d="M7 9V3.5h10V9"/><rect x="3.5" y="9" width="17" height="8" rx="2"/><path d="M7 14h10v6.5H7z"/>',
+    next: '<path d="m9 5 7 7-7 7"/>',
+    filter: '<path d="M4 6h16M7 12h10M10 18h4"/>',
+    logout: '<path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4"/><path d="M10 16l-4-4 4-4M6 12h10"/>',
+    shield: '<path d="M12 3.5 19 6v5.5c0 4.2-2.9 7.7-7 9-4.1-1.3-7-4.8-7-9V6z"/><path d="m9 12 2 2 4-4"/>',
+    download: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 19.5h14"/>',
+    star: '<path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8z"/>',
+    sticker: '<path d="M14.5 20H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v7.5z"/><path d="M14.5 20v-3.5a2 2 0 0 1 2-2H20"/>',
+    wifi: '<path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 4-2.3M15 10.2a10 10 0 0 1 4 2.3"/><path d="M12 20h.01"/>',
   };
   const icon = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || P.paw}</svg>`;
   const petIcon = p => icon(p.species === 'gato' ? 'cat' : p.species === 'perro' ? 'dog' : 'paw');
@@ -271,5 +286,41 @@
     };
   }
 
-  g.MZ = { SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
+  /* ---------- desparasitación interna o externa ----------
+     r.scope manda; si no está (registros viejos), se deduce del nombre */
+  const scopeOf = r => r.scope === 'interna' || r.scope === 'externa' ? r.scope
+    : /pulga|garrapat|pipeta|collar|extern|spray|sarna/i.test(String(r.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '')) ? 'externa' : 'interna';
+
+  /* ---------- agenda: todo lo que tiene fecha, de todas las mascotas ---------- */
+  function agenda(pets) {
+    const out = [];
+    for (const p of pets || []) {
+      for (const x of upcoming(p)) out.push({ date: x.r.next, pet: p, kind: 'rec', r: x.r, s: x.s, title: x.r.name || TYPE[x.r.type], sub: TYPE[x.r.type] });
+      const f = food(p.food); if (f) out.push({ date: iso(f.buy), pet: p, kind: 'food', s: status(iso(f.buy)), title: 'Comprar alimento', sub: `Se termina alrededor del ${fmt(f.end, { day: 'numeric', month: 'short' })}` });
+      if (p.trip && p.trip.dest && p.trip.date) out.push({ date: p.trip.date, pet: p, kind: 'trip', s: status(p.trip.date), title: `Viaje a ${DEST[p.trip.dest] || p.trip.dest}`, sub: 'Viaje' });
+    }
+    return out.sort((a, b) => a.date.localeCompare(b.date));
+  }
+
+  /* ---------- próximos avisos: misma regla que api/_lib/petpush.js (3 días antes y el día; alimento 5 días antes y el día; chequeo el primer domingo) ---------- */
+  const KIND_OF = { vacuna: 'vac', desparasitacion: 'pip', control: 'vac', otro: 'vac' };
+  function nextAlerts(pets, off = {}, n = 3) {
+    const t = iso(today()), out = [];
+    for (const p of pets || []) {
+      for (const x of upcoming(p)) {
+        const k = KIND_OF[x.r.type] || 'vac'; if (off[k]) continue;
+        const d0 = pd(x.r.next), d3 = new Date(d0); d3.setDate(d3.getDate() - 3);
+        for (const [d, early] of [[d3, true], [d0, false]]) if (iso(d) >= t) out.push({ date: iso(d), kind: k, pet: p, text: early ? `${p.name}: ${x.r.name} en 3 días` : `${p.name}: hoy toca ${x.r.name}` });
+      }
+      const f = food(p.food);
+      if (f && !off.food) for (const back of [5, 0]) { const d = new Date(f.end); d.setDate(d.getDate() - back); d.setHours(0, 0, 0, 0); if (iso(d) >= t) out.push({ date: iso(d), kind: 'food', pet: p, text: back ? `${p.name}: quedan 5 días de alimento` : `${p.name}: se termina el alimento` }); }
+    }
+    if (!off.check && (pets || []).length) {
+      const d = today(); d.setDate(1);
+      for (let i = 0; i < 2; i++) { const m = new Date(d.getFullYear(), d.getMonth() + i, 1); while (m.getDay() !== 0) m.setDate(m.getDate() + 1); if (iso(m) >= t) { out.push({ date: iso(m), kind: 'check', pet: null, text: 'Chequeo del mes' }); break; } }
+    }
+    return out.sort((a, b) => a.date.localeCompare(b.date)).slice(0, n);
+  }
+
+  g.MZ = { scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
 })(typeof window !== 'undefined' ? window : globalThis);

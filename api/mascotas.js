@@ -108,6 +108,8 @@ export function cleanDoc(d) {
     trip: { dest: str(p?.trip?.dest, 30), date: day(p?.trip?.date) },
     records: (Array.isArray(p?.records) ? p.records : []).slice(0, MAX_RECS).map(r => ({
       id: id(r?.id), type: pick(r?.type, TYPES, 'otro'), name: str(r?.name, 80), date: day(r?.date), next: day(r?.next), vet: str(r?.vet, 80), notes: str(r?.notes, 300),
+      /* libreta digital (opcionales): lote o marca, foto del sticker y si el antiparasitario es interno o externo */
+      lot: str(r?.lot, 80), sticker: photo(r?.sticker), scope: pick(r?.scope, ['interna', 'externa'], ''),
     })).filter(r => r.name || r.date || r.next),
     meds: (Array.isArray(p?.meds) ? p.meds : []).slice(0, 40).map(m => ({
       id: id(m?.id), name: str(m?.name, 80), dose: str(m?.dose, 80), every: Math.max(1, Math.min(720, parseInt(m?.every, 10) || 24)),
