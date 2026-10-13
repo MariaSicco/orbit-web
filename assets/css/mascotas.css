@@ -2,14 +2,14 @@
    Concepto: la chapita del collar. Cada mascota es una chapita de su color;
    cada sección tiene su color suave y su ícono. Cálido, claro y sin infantilizar. */
 :root{
-  --bg:#F3F6F1;--card:#FFFFFF;--ink:#1F2A24;--ink2:#56615A;--line:#E1E7DE;
-  --salud:#DCEFE0;--salud-i:#2C7A4B;
-  --med:#E8E3FB;--med-i:#5A43C8;
-  --comida:#FFE7D1;--comida-i:#B5560F;
-  --plata:#FFF1BD;--plata-i:#7A5C00;
-  --viaje:#D9EBFA;--viaje-i:#1D67A3;
-  --perdida:#FFDDD5;--perdida-i:#D23A22;
-  --cuida:#FBE2EF;--cuida-i:#AD3677;
+  --bg:#FBF6F0;--card:#FFFFFF;--ink:#1F2A24;--ink2:#56615A;--line:#EDE4DA;
+  --salud:#CFEFDA;--salud-i:#2C7A4B;
+  --med:#E4DCFF;--med-i:#5A43C8;
+  --comida:#FFE1C9;--comida-i:#B5560F;
+  --plata:#FFF0B5;--plata-i:#7A5C00;
+  --viaje:#D3E8FF;--viaje-i:#1D67A3;
+  --perdida:#FFD7CF;--perdida-i:#D23A22;
+  --cuida:#FFDBEE;--cuida-i:#AD3677;
   --blue:#3047FF;--err:#C8361B;--ok:#2C7A4B;--warn:#C46A0C;
   --ease:cubic-bezier(.7,0,.2,1);--r:22px;
   --display:'Bricolage Grotesque','Inter Tight',system-ui,sans-serif;--f:'Inter Tight',system-ui,-apple-system,sans-serif;
@@ -254,3 +254,32 @@ input:focus,select:focus,textarea:focus{outline:3px solid rgba(48,71,255,.25);bo
 
 .row.st-late .stt,.row.st-late .when{color:var(--err)}.row.st-soon .stt,.row.st-soon .when{color:var(--warn)}.row.st-done .stt{color:var(--ok)}
 .banner.care.soft{background:var(--viaje)}
+
+/* ---------- pastel ---------- */
+.top{background:rgba(251,246,240,.92)}
+.btn.blue{background:#4A5BF2}
+.pethead{background:var(--c);border-radius:32px;padding:18px;position:relative}
+.pethead::before{content:'';position:absolute;right:20px;top:20px;width:14px;height:14px;border-radius:50%;background:var(--bg);box-shadow:inset 0 0 0 2.5px var(--ci)}
+.pethead .av{background:rgba(255,255,255,.75);--ci:inherit;color:var(--ci);box-shadow:0 0 0 4px #fff}
+.pethead .dim{color:var(--ink)}
+.sw .av{background:var(--c);color:var(--ci);box-shadow:none}
+.sw.on .av{box-shadow:0 0 0 3px #fff,0 0 0 5px var(--ci)}
+.sum{background:var(--c)}
+.sum::before{display:none}
+.sum span{color:var(--ink)}
+.sum.s-ok b{color:var(--ok)}.sum.s-late b{color:var(--err)}.sum.s-none b{color:var(--ink2)}.sum.s-warn b{color:var(--ink)}
+.year{display:inline-block;align-self:flex-start;background:var(--plata);color:var(--plata-i);border-radius:999px;padding:3px 12px;font-size:13px}
+.chip[aria-pressed="true"]{background:var(--med);color:var(--med-i)}
+.tile[aria-pressed="true"]{box-shadow:inset 0 0 0 2.5px var(--med-i);color:var(--med-i);background:var(--med)}
+.tile{background:#fff}
+.progress{background:var(--plata)}.progress i{background:var(--med-i)}
+.welcome{background:var(--comida);border-radius:32px;padding:28px 20px}
+.welcome .ib.big{background:#fff}
+.empty{background:var(--plata)}
+.empty p{color:var(--ink)}
+.scanbox{background:var(--viaje);border-color:#A9CCF2;color:var(--ink)}
+.banner.care{background:var(--perdida)}
+.hero-opt{box-shadow:none;background:var(--viaje)}.hero-opt b{color:var(--viaje-i)}.hero-opt .ib{background:#fff}
+.demo{background:var(--med);color:var(--ink)}.demo a{color:var(--med-i)}
+.act.lost,.banner.lost{background:var(--perdida);color:var(--ink)}.banner.lost .ib{background:#fff}.banner.lost .btn{background:var(--perdida-i);color:#fff}
+.row.st-late{background:#FFF1EE}.row.st-soon{background:#FFF7EA}

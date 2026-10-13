@@ -481,7 +481,7 @@ function renderWelcome() {
 }
 function switcher(p) {
   if (doc.pets.length < 2) return '';
-  return `<nav class="switch" aria-label="Tus mascotas">${doc.pets.map(x => `<button class="sw${x.id === p.id ? ' on' : ''}" data-act="open" data-id="${x.id}" aria-current="${x.id === p.id}">${avatar(x)}<span>${esc(x.name)}</span></button>`).join('')}<button class="sw" data-act="newPet"><span class="av add-av">${I('plus')}</span><span>Agregar</span></button></nav>`;
+  return `<nav class="switch" aria-label="Tus mascotas">${doc.pets.map(x => `<button class="sw c-${Z.tone(x)}${x.id === p.id ? ' on' : ''}" data-act="open" data-id="${x.id}" aria-current="${x.id === p.id}">${avatar(x)}<span>${esc(x.name)}</span></button>`).join('')}<button class="sw" data-act="newPet"><span class="av add-av">${I('plus')}</span><span>Agregar</span></button></nav>`;
 }
 function nextItems(p) {
   const out = [];
@@ -508,7 +508,7 @@ function renderPet(p) {
   const antiTxt = { ok: ['Al día', 'ok'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
   app.innerHTML = `
     ${switcher(p)}
-    <section class="pethead">
+    <section class="pethead c-${Z.tone(p)}">
       ${avatar(p, true)}
       <div class="ph-txt"><h1>${esc(p.name)}</h1><p class="dim">${esc(meta)}</p></div>
     </section>
@@ -520,10 +520,10 @@ function renderPet(p) {
     <section class="sec">
       <div class="sec-h"><h2>Su salud hoy</h2><button class="link" data-act="vetpdf">${I('doc')} PDF para el veterinario</button></div>
       <div class="summary">
-        <button class="sum s-${vaccTxt[1]}" data-act="filter" data-f="vacuna"><span>Vacunas</span><b>${esc(vaccTxt[0])}</b></button>
-        <button class="sum s-${antiTxt[1]}" data-act="filter" data-f="vacuna"><span>Pipeta o antiparasitario</span><b>${esc(antiTxt[0])}</b></button>
-        <button class="sum ${sm.active.length ? 's-warn' : 's-none'}" data-act="sub" data-sub="clinica"><span>Problemas de salud</span><b>${sm.active.length ? esc(sm.active.map(c => c.name).join(', ')) : 'Ninguno cargado'}</b></button>
-        <button class="sum ${p.allergies ? 's-warn' : 's-none'}" data-act="sub" data-sub="clinica"><span>Alergias</span><b>${esc(p.allergies || 'Ninguna cargada')}</b></button>
+        <button class="sum c-salud s-${vaccTxt[1]}" data-act="filter" data-f="vacuna"><span>Vacunas</span><b>${esc(vaccTxt[0])}</b></button>
+        <button class="sum c-viaje s-${antiTxt[1]}" data-act="filter" data-f="vacuna"><span>Pipeta o antiparasitario</span><b>${esc(antiTxt[0])}</b></button>
+        <button class="sum c-cuida ${sm.active.length ? 's-warn' : 's-none'}" data-act="sub" data-sub="clinica"><span>Problemas de salud</span><b>${sm.active.length ? esc(sm.active.map(c => c.name).join(', ')) : 'Ninguno cargado'}</b></button>
+        <button class="sum c-comida ${p.allergies ? 's-warn' : 's-none'}" data-act="sub" data-sub="clinica"><span>Alergias</span><b>${esc(p.allergies || 'Ninguna cargada')}</b></button>
       </div>
       <button class="row link-row" data-act="sub" data-sub="clinica">${bubble('heart', 'salud')}<span class="what"><b>Antecedentes</b><small>${esc([p.neutered === 'si' ? (p.sex === 'h' ? 'Castrada' : 'Castrado') : p.neutered === 'no' ? 'Sin castrar' : '', p.surgeries.length ? `${p.surgeries.length} cirugía${p.surgeries.length > 1 ? 's' : ''}` : '', sm.past.length ? `${sm.past.length} problema${sm.past.length > 1 ? 's' : ''} que ya pasó` : '', p.chronic ? 'Toma remedios siempre' : ''].filter(Boolean).join(' · ') || 'Enfermedades que tuvo, cirugías y remedios de siempre')}</small></span>${I('chevron')}</button>
       ${activeMeds.length ? `<div class="list">${activeMeds.map(m => medRow(p, m)).join('')}</div>` : ''}
