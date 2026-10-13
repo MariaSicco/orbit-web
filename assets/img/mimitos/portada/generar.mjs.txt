@@ -1,0 +1,198 @@
+// Genera las ilustraciones de Mimitos (portada ob-018 y bienvenida). SVG a mano, sin servicios externos.
+import fs from 'node:fs';
+const OUT = process.argv[2] || '.';
+const INK = '#1F1A17', BG = '#F7F3EE', GREEN = '#1F4D40', HEART = '#D9694A', PAPER = '#FFFDF9';
+const P = { salud: '#E3EDE6', comida: '#F6E4DD', plata: '#F3EAD7', viaje: '#E2E9F1', med: '#ECE6F3' };
+const DOG = '#EBDCC6', DOG2 = '#C99F78', DOG3 = '#F8F1E6', CAT = '#CDD6E0', CAT2 = '#AEBACB';
+const F = "Geist, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif";
+const sw = 3;
+
+const defs = `<defs>
+  <filter id="sh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1F1A17" flood-opacity=".10"/></filter>
+  <filter id="sh2" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#1F1A17" flood-opacity=".10"/></filter>
+</defs>`;
+
+/* cola gruesa con contorno: dos trazos, tinta abajo y color arriba */
+const thick = (d, color, w = 22) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w + sw * 2}" stroke-linecap="round" stroke-linejoin="round"/><path d="${d}" fill="none" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+const heartPath = (cx, cy, s, fill) => `<path transform="translate(${cx} ${cy}) scale(${s})" d="M0 9C-6.3 4.8-11 .7-11-4.4-11-7.9-8.3-10.5-5.1-10.5c2.2 0 4 1.1 5.1 2.9 1.1-1.8 2.9-2.9 5.1-2.9 3.2 0 5.9 2.6 5.9 6.1C11 .7 6.3 4.8 0 9z" fill="${fill}"/>`;
+
+/* chapita del collar: corazón o QR */
+function tag(cx, cy, r, kind = 'heart') {
+  const ring = `<circle cx="${cx}" cy="${cy - r - 4}" r="5" fill="none" stroke="${INK}" stroke-width="2.5"/>`;
+  const base = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${HEART}" stroke="${INK}" stroke-width="${sw}"/>`;
+  if (kind === 'heart') return ring + base + heartPath(cx, cy + 1, r / 17, PAPER);
+  // QR mínimo: cuadrado blanco con tres marcas y puntitos
+  const q = r * 1.1, x = cx - q / 2, y = cy - q / 2, m = q / 7;
+  const mark = (mx, my) => `<rect x="${mx}" y="${my}" width="${m * 2.4}" height="${m * 2.4}" rx="${m * .5}" fill="none" stroke="${INK}" stroke-width="${m * .55}"/>`;
+  const dots = [[4.3, 1.2], [5.6, 2.4], [1.2, 4.4], [3.2, 3.4], [4.4, 4.6], [5.6, 5.6], [3.2, 5.6], [2.2, 3.1]].map(([a, b]) => `<rect x="${x + a * m}" y="${y + b * m}" width="${m * .9}" height="${m * .9}" rx="${m * .2}" fill="${INK}"/>`).join('');
+  return ring + base + `<rect x="${x - m * .6}" y="${y - m * .6}" width="${q + m * 1.2}" height="${q + m * 1.2}" rx="${m}" fill="${PAPER}"/>` + mark(x + m * .2, y + m * .2) + mark(x + q - m * 2.6, y + m * .2) + mark(x + m * .2, y + q - m * 2.6) + dots;
+}
+
+/* cabeza de perro (orejas caídas), centro en (150,115) en coordenadas locales */
+function dogHead(tagKind = 'heart', collar = true) {
+  return `
+  <path d="M150 30C205 30 236 68 236 118C236 168 198 196 150 196C102 196 64 168 64 118C64 68 95 30 150 30Z" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/>
+  <ellipse cx="180" cy="104" rx="22" ry="20" fill="#DDBF9C"/>
+  <path d="M96 52C62 46 40 88 46 140C49 166 74 172 84 150C93 128 101 92 110 62C106 56 102 53 96 52Z" fill="${DOG2}" stroke="${INK}" stroke-width="${sw}" stroke-linejoin="round"/>
+  <path d="M204 52C238 46 260 88 254 140C251 166 226 172 216 150C207 128 199 92 190 62C194 56 198 53 204 52Z" fill="${DOG2}" stroke="${INK}" stroke-width="${sw}" stroke-linejoin="round"/>
+  <ellipse cx="150" cy="152" rx="42" ry="31" fill="${DOG3}" stroke="${INK}" stroke-width="2.5"/>
+  <circle cx="121" cy="108" r="6.5" fill="${INK}"/><circle cx="123" cy="105.5" r="2" fill="#fff"/>
+  <circle cx="179" cy="108" r="6.5" fill="${INK}"/><circle cx="181" cy="105.5" r="2" fill="#fff"/>
+  <path d="M110 92Q119 86 128 90M172 90Q181 86 190 92" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+  <ellipse cx="104" cy="138" rx="11" ry="6.5" fill="${HEART}" opacity=".16"/><ellipse cx="196" cy="138" rx="11" ry="6.5" fill="${HEART}" opacity=".16"/>
+  <path d="M136 136Q150 127 164 136Q161 150 150 152Q139 150 136 136Z" fill="${INK}"/>
+  <path d="M150 152V160M137 162Q144 170 150 161Q156 170 163 162" fill="none" stroke="${INK}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  ${collar ? `<path d="M98 186Q150 214 202 186" fill="none" stroke="${INK}" stroke-width="${14 + sw * 2}" stroke-linecap="round"/><path d="M98 186Q150 214 202 186" fill="none" stroke="${GREEN}" stroke-width="14" stroke-linecap="round"/>` : ''}
+  ${collar ? tag(150, 232, 21, tagKind) : ''}`;
+}
+
+/* perro sentado de frente, ~300 x 380 */
+function dog(tagKind = 'heart') {
+  return `
+  ${thick('M218 338C268 334 290 290 268 254C262 244 256 240 250 238', DOG, 24)}
+  <path d="M150 150C92 150 60 226 60 296C60 344 94 368 150 368C206 368 240 344 240 296C240 226 208 150 150 150Z" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/>
+  <path d="M150 210C126 210 112 246 112 286C112 320 128 336 150 336C172 336 188 320 188 286C188 246 174 210 150 210Z" fill="${DOG3}"/>
+  <ellipse cx="82" cy="350" rx="38" ry="20" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/>
+  <ellipse cx="218" cy="350" rx="38" ry="20" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/>
+  <rect x="106" y="262" width="36" height="104" rx="18" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/>
+  <rect x="158" y="262" width="36" height="104" rx="18" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/>
+  <path d="M118 356V364M130 356V364M170 356V364M182 356V364" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/>
+  ${dogHead(tagKind)}`;
+}
+
+/* gato sentado, ~240 x 310, ojos cerrados de contento */
+function cat() {
+  return `
+  ${thick('M168 292C214 296 236 262 222 232C214 216 198 214 192 226', CAT, 20)}
+  <path d="M120 128C70 128 46 206 48 258C50 292 76 304 120 304C164 304 190 292 192 258C194 206 170 128 120 128Z" fill="${CAT}" stroke="${INK}" stroke-width="${sw}"/>
+  <path d="M120 176C104 176 94 206 94 236C94 262 104 276 120 276C136 276 146 262 146 236C146 206 136 176 120 176Z" fill="#E6ECF2"/>
+  <rect x="88" y="226" width="30" height="78" rx="15" fill="${CAT}" stroke="${INK}" stroke-width="${sw}"/>
+  <rect x="122" y="226" width="30" height="78" rx="15" fill="${CAT}" stroke="${INK}" stroke-width="${sw}"/>
+  <path d="M66 70L62 20Q63 12 71 16L106 46Z" fill="${CAT}" stroke="${INK}" stroke-width="${sw}" stroke-linejoin="round"/>
+  <path d="M174 70L178 20Q177 12 169 16L134 46Z" fill="${CAT}" stroke="${INK}" stroke-width="${sw}" stroke-linejoin="round"/>
+  <path d="M72 56L70 30L92 48Z" fill="${P.comida}"/><path d="M168 56L170 30L148 48Z" fill="${P.comida}"/>
+  <ellipse cx="120" cy="96" rx="66" ry="56" fill="${CAT}" stroke="${INK}" stroke-width="${sw}"/>
+  <path d="M110 46V60M120 44V62M130 46V60" stroke="${CAT2}" stroke-width="4" stroke-linecap="round"/>
+  <path d="M84 98Q93 90 102 98M138 98Q147 90 156 98" fill="none" stroke="${INK}" stroke-width="3" stroke-linecap="round"/>
+  <ellipse cx="82" cy="116" rx="10" ry="6" fill="${HEART}" opacity=".16"/><ellipse cx="158" cy="116" rx="10" ry="6" fill="${HEART}" opacity=".16"/>
+  <path d="M113 110H127L120 118Z" fill="${HEART}" stroke="${INK}" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M120 118V123M111 125Q116 130 120 123Q124 130 129 125" fill="none" stroke="${INK}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M60 112L90 116M58 124L90 121M180 112L150 116M182 124L150 121" stroke="${INK}" stroke-width="1.6" stroke-linecap="round" opacity=".55"/>
+  <path d="M86 150Q120 164 154 150" fill="none" stroke="${INK}" stroke-width="${10 + sw * 2}" stroke-linecap="round"/><path d="M86 150Q120 164 154 150" fill="none" stroke="${HEART}" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="120" cy="170" r="9" fill="#E9C46A" stroke="${INK}" stroke-width="2.5"/>`;
+}
+
+/* libreta sanitaria abierta, ~400 x 260 */
+function booklet() {
+  const stk = (x, y, c, w = 72, h = 46) => `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="8" fill="${c}" stroke="${INK}" stroke-width="2"/><rect x="${x + 9}" y="${y + 10}" width="${w * .55}" height="6" rx="3" fill="${INK}" opacity=".55"/><rect x="${x + 9}" y="${y + 23}" width="${w * .72}" height="5" rx="2.5" fill="${INK}" opacity=".22"/><rect x="${x + 9}" y="${y + 33}" width="${w * .4}" height="5" rx="2.5" fill="${INK}" opacity=".22"/>`;
+  const line = (x, y, w, o = .16) => `<rect x="${x}" y="${y}" width="${w}" height="6" rx="3" fill="${INK}" opacity="${o}"/>`;
+  return `
+  <ellipse cx="200" cy="262" rx="190" ry="14" fill="${INK}" opacity=".07"/>
+  <path d="M8 26Q8 14 20 14H380Q392 14 392 26V246Q392 256 380 256H20Q8 256 8 246Z" fill="${GREEN}" stroke="${INK}" stroke-width="${sw}"/>
+  <path d="M22 8H196V244H22Q14 244 14 236V16Q14 8 22 8Z" fill="${PAPER}" stroke="${INK}" stroke-width="${sw}"/>
+  <path d="M204 8H378Q386 8 386 16V236Q386 244 378 244H204Z" fill="${PAPER}" stroke="${INK}" stroke-width="${sw}"/>
+  <path d="M196 8Q200 14 204 8V244Q200 250 196 244Z" fill="#E8E1D8" stroke="${INK}" stroke-width="2"/>
+  ${heartPath(46, 40, .9, HEART)}
+  <text x="62" y="45" font-family="${F}" font-size="15" font-weight="700" fill="${INK}" letter-spacing="-.2">Libreta sanitaria</text>
+  <rect x="34" y="66" width="56" height="62" rx="10" fill="${P.salud}" stroke="${INK}" stroke-width="2"/>
+  <path d="M62 112c-7-3.6-12-7.2-12-11.3 0-2.8 2.2-4.9 4.8-4.9 1.8 0 3.3.9 4.2 2.4.9-1.5 2.4-2.4 4.2-2.4 2.6 0 4.8 2.1 4.8 4.9 0 4.1-5 7.7-6 11.3z" fill="none"/>
+  <g transform="translate(62 98)"><circle cx="0" cy="4" r="8" fill="${GREEN}" opacity=".8"/><circle cx="-10" cy="-6" r="4" fill="${GREEN}" opacity=".8"/><circle cx="-3" cy="-11" r="4" fill="${GREEN}" opacity=".8"/><circle cx="5" cy="-11" r="4" fill="${GREEN}" opacity=".8"/><circle cx="11" cy="-5" r="4" fill="${GREEN}" opacity=".8"/></g>
+  ${line(102, 74, 72, .5)}${line(102, 90, 58)}${line(102, 106, 66)}${line(102, 122, 44)}
+  ${line(34, 150, 140, .12)}${line(34, 168, 120, .12)}${line(34, 186, 136, .12)}${line(34, 204, 96, .12)}
+  <text x="34" y="232" font-family="${F}" font-size="10.5" font-weight="600" fill="${INK}" opacity=".5" letter-spacing="1.2">VACUNAS · CONTROLES</text>
+  ${stk(218, 26, P.salud)}${stk(298, 26, P.comida)}
+  ${stk(218, 84, P.viaje)}${stk(298, 84, P.plata)}
+  ${stk(218, 142, P.med)}
+  <g transform="translate(336 182) rotate(-14)" opacity=".92">
+    <circle r="40" fill="none" stroke="${GREEN}" stroke-width="3.5"/>
+    <circle r="32" fill="none" stroke="${GREEN}" stroke-width="1.6" stroke-dasharray="3 4"/>
+    <path d="M-13 -6L-4 3L14 -15" fill="none" stroke="${GREEN}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text y="21" text-anchor="middle" font-family="${F}" font-size="8" font-weight="700" fill="${GREEN}" letter-spacing=".6">VACUNADO</text>
+  </g>`;
+}
+
+/* globito de aviso */
+function bubble(w = 340, title = 'Le toca la antirrábica', sub = 'Luna · en 3 días, el jueves', tail = 'left') {
+  const tl = tail === 'left' ? `<path d="M46 86L40 108L72 86Z" fill="#fff"/>` : tail === 'right' ? `<path d="M${w - 72} 86L${w - 40} 108L${w - 46} 86Z" fill="#fff"/>` : '';
+  return `<g filter="url(#sh)">
+    <rect x="0" y="0" width="${w}" height="88" rx="24" fill="#fff"/>${tl}
+  </g>
+  <circle cx="44" cy="44" r="25" fill="${P.comida}"/>
+  <g transform="translate(44 44)" fill="none" stroke="${HEART}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M-8 6C-8 -3 -6 -9 0 -9S8 -3 8 6L10 9H-10Z"/><path d="M-3 12Q0 15 3 12"/></g>
+  <text x="82" y="40" font-family="${F}" font-size="19" font-weight="700" fill="${INK}" letter-spacing="-.3">${title}</text>
+  <text x="82" y="64" font-family="${F}" font-size="14.5" font-weight="500" fill="#6B625B">${sub}</text>`;
+}
+
+const mark = (x, y) => `<g transform="translate(${x} ${y})">
+  <path transform="translate(0 -2) scale(1.05)" d="M16 27.5c-6.3-4.2-11-8.3-11-13.4C5 10.6 7.7 8 10.9 8c2.2 0 4 1.1 5.1 2.9C17.1 9.1 18.9 8 21.1 8 24.3 8 27 10.6 27 14.1c0 5.1-4.7 9.2-11 13.4z" fill="${HEART}"/>
+  <circle cx="13" cy="15" r="1.5" fill="${INK}"/><circle cx="21" cy="15" r="1.5" fill="${INK}"/><path d="M15 18.8c1.1.9 2.9.9 4 0" fill="none" stroke="${INK}" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="40" y="25" font-family="${F}" font-size="26" font-weight="700" fill="${INK}" letter-spacing="-.6">mimitos</text>
+  <text x="148" y="25" font-family="${F}" font-size="14" font-weight="500" fill="#6B625B">by Orbit</text></g>`;
+
+const sparkle = (x, y, s, c) => `<path transform="translate(${x} ${y}) scale(${s})" d="M0 -10Q1.5 -1.5 10 0Q1.5 1.5 0 10Q-1.5 1.5 -10 0Q-1.5 -1.5 0 -10Z" fill="${c}"/>`;
+const paws = (x, y, r, c) => `<g transform="translate(${x} ${y}) rotate(${r})" fill="${c}"><ellipse cx="0" cy="4" rx="7" ry="6"/><circle cx="-8" cy="-5" r="3"/><circle cx="-3" cy="-10" r="3"/><circle cx="3" cy="-10" r="3"/><circle cx="8" cy="-5" r="3"/></g>`;
+
+const svg = (w, h, body, title) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}" width="${w}" height="${h}" role="img" aria-label="${title}">
+<title>${title}</title>${defs}
+${body}
+</svg>`;
+
+/* A: perro sentado con su libreta y el aviso */
+const A = svg(1200, 630, `
+  <rect width="1200" height="630" fill="${BG}"/>
+  <circle cx="360" cy="390" r="238" fill="${P.salud}"/>
+  <circle cx="930" cy="560" r="170" fill="${P.comida}" opacity=".7"/>
+  ${paws(1080, 120, 18, '#E6DED3')}${paws(1120, 170, 28, '#E6DED3')}${paws(1090, 222, 14, '#E6DED3')}
+  ${sparkle(600, 120, 1.1, HEART)}${sparkle(178, 214, .8, GREEN)}${sparkle(1040, 330, .7, '#C9A27E')}
+  ${mark(60, 52)}
+  <ellipse cx="360" cy="600" rx="170" ry="16" fill="${INK}" opacity=".07"/>
+  <g transform="translate(206 168) scale(1.13)">${dog('heart')}</g>
+  <g transform="translate(626 254) rotate(-4) scale(1.22)">${booklet()}</g>
+  <g transform="translate(560 108)">${bubble(352)}</g>`, 'Mimitos: un perrito junto a su libreta sanitaria, con el aviso de que le toca la antirrábica');
+
+/* B: perro y gato juntos, libreta adelante */
+const B = svg(1200, 630, `
+  <rect width="1200" height="630" fill="${BG}"/>
+  <path d="M120 630C120 420 300 300 600 300S1080 420 1080 630Z" fill="${P.salud}"/>
+  <circle cx="1030" cy="110" r="90" fill="${P.viaje}"/>
+  <circle cx="150" cy="150" r="60" fill="${P.comida}"/>
+  ${sparkle(240, 270, .9, HEART)}${sparkle(960, 260, .8, GREEN)}${sparkle(560, 70, .7, '#C9A27E')}
+  ${mark(60, 52)}
+  <ellipse cx="600" cy="604" rx="330" ry="16" fill="${INK}" opacity=".07"/>
+  <g transform="translate(300 196) scale(1.06)">${dog('qr')}</g>
+  <g transform="translate(640 296) scale(1.0)">${cat()}</g>
+  <g transform="translate(470 470) rotate(-3) scale(.62)">${booklet()}</g>
+  <g transform="translate(690 120)">${bubble(352, 'Le toca la antirrábica', 'Luna · en 3 días, el jueves', 'left')}</g>`, 'Mimitos: un perrito y un gatito con su libreta sanitaria abierta y el aviso de la antirrábica');
+
+/* C: el perrito se asoma por arriba de la libreta, con la chapita QR a la vista */
+const C = svg(1200, 630, `
+  <rect width="1200" height="630" fill="${BG}"/>
+  <rect x="0" y="420" width="1200" height="210" fill="${P.plata}" opacity=".7"/>
+  <circle cx="300" cy="250" r="190" fill="${P.salud}"/>
+  <circle cx="1010" cy="200" r="120" fill="${P.comida}" opacity=".8"/>
+  ${paws(110, 520, -20, '#E3D6BF')}${paws(160, 560, -10, '#E3D6BF')}${paws(1100, 520, 20, '#E3D6BF')}
+  ${sparkle(880, 380, .9, HEART)}${sparkle(150, 300, .8, GREEN)}
+  ${mark(60, 52)}
+  <g transform="translate(158 98) scale(1.18)">${dogHead('qr')}</g>
+  <g transform="translate(70 300) rotate(-3) scale(1.18)">${booklet()}</g>
+  <g transform="translate(262 304) rotate(-3)"><ellipse cx="0" cy="0" rx="30" ry="20" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/><path d="M-10 6V13M2 7V14" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g transform="translate(408 296) rotate(-3)"><ellipse cx="0" cy="0" rx="30" ry="20" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/><path d="M-2 6V13M10 7V14" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g transform="translate(640 150)">${bubble(372, 'Le toca la antirrábica', 'Luna · en 3 días, el jueves', 'none')}</g>
+  <g transform="translate(640 266)" filter="url(#sh2)"><rect width="372" height="74" rx="22" fill="#fff"/></g>
+  <g transform="translate(640 266)"><circle cx="40" cy="37" r="22" fill="${P.viaje}"/>${tag(40, 39, 13, 'qr').replace(/<circle cx="40" cy="22" r="5"[^>]*>/, '')}
+    <text x="76" y="33" font-family="${F}" font-size="17" font-weight="700" fill="${INK}" letter-spacing="-.2">Escanearon su chapita</text>
+    <text x="76" y="54" font-family="${F}" font-size="14" font-weight="500" fill="#6B625B">Cerca de Palermo · hace 2 min</text></g>`, 'Mimitos: un perrito asomado sobre su libreta sanitaria, con avisos de vacuna y de su chapita QR');
+
+/* bienvenida: misma familia que la portada C (el perrito asomado sobre su libreta), cuadrada y sin marca */
+const W = svg(560, 560, `
+  <circle cx="270" cy="250" r="200" fill="${P.salud}"/>
+  <circle cx="468" cy="468" r="80" fill="${P.comida}" opacity=".8"/>
+  ${sparkle(70, 120, .8, GREEN)}${sparkle(500, 330, .8, HEART)}
+  <g transform="translate(110 44) scale(1.1)">${dogHead('qr')}</g>
+  <g transform="translate(46 252) rotate(-3) scale(1.1)">${booklet()}</g>
+  <g transform="translate(206 254) rotate(-3)"><ellipse cx="0" cy="0" rx="29" ry="19" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/><path d="M-10 6V13M2 7V14" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g transform="translate(346 246) rotate(-3)"><ellipse cx="0" cy="0" rx="29" ry="19" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/><path d="M-2 6V13M10 7V14" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g transform="translate(262 10) scale(.74)">${bubble(352, 'Le toca la antirrábica', 'Luna · en 3 días, el jueves', 'none')}</g>`, '');
+
+for (const [n, s] of Object.entries({ A, B, C, W })) fs.writeFileSync(`${OUT}/mimitos-${n}.svg`, s);
+console.log('ok');

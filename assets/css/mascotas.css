@@ -207,14 +207,17 @@ main.wide{max-width:1180px}
 .gate .price-row small{color:var(--ink2);font-size:13.5px}
 .tbd{font:600 13px/1 var(--mono);letter-spacing:.08em;background:var(--soon-bg);color:var(--soon);border:1px dashed var(--soon);border-radius:8px;padding:6px 10px}
 .gate .cta{display:flex;flex-direction:column;gap:10px;width:100%}
-.gate .art{display:grid;place-items:center;padding:8px 0}
+.gate .art{display:grid;place-items:center;padding:8px 0;width:100%;max-width:420px;justify-self:center;aspect-ratio:1}
+.gate .art svg{width:100%;height:auto;display:block}
+@media (prefers-reduced-motion:no-preference){.gate .art svg{animation:mzArt .4s var(--out) both}}
+@keyframes mzArt{from{opacity:0;transform:translateY(8px)}}
 .gate .art .mini{width:220px;height:290px;border-radius:8px 18px 18px 8px}
 .gate .art .mini::after{inset:14px 14px 14px 24px}
 .gate .art .cvtxt{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;gap:10px;text-align:center}
 .gate .art .cvtxt .eyebrow{color:rgba(31,26,23,.62);letter-spacing:.14em}
 .gate .art .cvtxt b{font:700 26px/1 var(--f);letter-spacing:-.02em;color:var(--ink)}
 .gate .art .cvtxt svg{width:34px;height:34px}
-@media(min-width:900px){.gate .art{position:sticky;top:120px;align-self:start}.gate{grid-template-columns:1.05fr .95fr;align-items:start;gap:56px;padding-top:48px}.gate h1{font-size:56px}.gate .cta{max-width:380px}.gate .art .mini{width:300px;height:400px}.gate .art .cvtxt b{font-size:32px}}
+@media(min-width:900px){.gate .art{position:sticky;top:120px;align-self:start}.gate{grid-template-columns:1.05fr .95fr;align-items:start;gap:56px;padding-top:48px}.gate h1{font-size:56px}.gate .cta{max-width:380px}.gate .art{max-width:520px}.gate .art .cvtxt b{font-size:32px}}
 .state{display:flex;flex-direction:column;gap:14px;align-items:flex-start;padding-top:24px}
 
 /* ---------- primer ingreso ---------- */

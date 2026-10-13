@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 560 560" width="560" height="560" role="img" aria-label="">
+<title></title><defs>
+  <filter id="mzArtSh" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="10" stdDeviation="14" flood-color="#1F1A17" flood-opacity=".10"/></filter>
+  <filter id="mzArtSh2" x="-20%" y="-20%" width="140%" height="160%"><feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#1F1A17" flood-opacity=".10"/></filter>
+</defs>
+
+  <circle cx="270" cy="250" r="200" fill="#E3EDE6"/>
+  <circle cx="468" cy="468" r="80" fill="#F6E4DD" opacity=".8"/>
+  <path transform="translate(70 120) scale(0.8)" d="M0 -10Q1.5 -1.5 10 0Q1.5 1.5 0 10Q-1.5 1.5 -10 0Q-1.5 -1.5 0 -10Z" fill="#1F4D40"/><path transform="translate(500 330) scale(0.8)" d="M0 -10Q1.5 -1.5 10 0Q1.5 1.5 0 10Q-1.5 1.5 -10 0Q-1.5 -1.5 0 -10Z" fill="#D9694A"/>
+  <g transform="translate(110 44) scale(1.1)">
+  <path d="M150 30C205 30 236 68 236 118C236 168 198 196 150 196C102 196 64 168 64 118C64 68 95 30 150 30Z" fill="#EBDCC6" stroke="#1F1A17" stroke-width="3"/>
+  <ellipse cx="180" cy="104" rx="22" ry="20" fill="#DDBF9C"/>
+  <path d="M96 52C62 46 40 88 46 140C49 166 74 172 84 150C93 128 101 92 110 62C106 56 102 53 96 52Z" fill="#C99F78" stroke="#1F1A17" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M204 52C238 46 260 88 254 140C251 166 226 172 216 150C207 128 199 92 190 62C194 56 198 53 204 52Z" fill="#C99F78" stroke="#1F1A17" stroke-width="3" stroke-linejoin="round"/>
+  <ellipse cx="150" cy="152" rx="42" ry="31" fill="#F8F1E6" stroke="#1F1A17" stroke-width="2.5"/>
+  <circle cx="121" cy="108" r="6.5" fill="#1F1A17"/><circle cx="123" cy="105.5" r="2" fill="#fff"/>
+  <circle cx="179" cy="108" r="6.5" fill="#1F1A17"/><circle cx="181" cy="105.5" r="2" fill="#fff"/>
+  <path d="M110 92Q119 86 128 90M172 90Q181 86 190 92" fill="none" stroke="#1F1A17" stroke-width="2.5" stroke-linecap="round"/>
+  <ellipse cx="104" cy="138" rx="11" ry="6.5" fill="#D9694A" opacity=".16"/><ellipse cx="196" cy="138" rx="11" ry="6.5" fill="#D9694A" opacity=".16"/>
+  <path d="M136 136Q150 127 164 136Q161 150 150 152Q139 150 136 136Z" fill="#1F1A17"/>
+  <path d="M150 152V160M137 162Q144 170 150 161Q156 170 163 162" fill="none" stroke="#1F1A17" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M98 186Q150 214 202 186" fill="none" stroke="#1F1A17" stroke-width="20" stroke-linecap="round"/><path d="M98 186Q150 214 202 186" fill="none" stroke="#1F4D40" stroke-width="14" stroke-linecap="round"/>
+  <circle cx="150" cy="207" r="5" fill="none" stroke="#1F1A17" stroke-width="2.5"/><circle cx="150" cy="232" r="21" fill="#D9694A" stroke="#1F1A17" stroke-width="3"/><rect x="136.47" y="218.47" width="27.060000000000002" height="27.060000000000002" rx="3.3000000000000003" fill="#FFFDF9"/><rect x="139.10999999999999" y="221.10999999999999" width="7.92" height="7.92" rx="1.6500000000000001" fill="none" stroke="#1F1A17" stroke-width="1.8150000000000004"/><rect x="152.96999999999997" y="221.10999999999999" width="7.92" height="7.92" rx="1.6500000000000001" fill="none" stroke="#1F1A17" stroke-width="1.8150000000000004"/><rect x="139.10999999999999" y="234.96999999999997" width="7.92" height="7.92" rx="1.6500000000000001" fill="none" stroke="#1F1A17" stroke-width="1.8150000000000004"/><rect x="152.64" y="224.41" width="2.97" height="2.97" rx="0.6600000000000001" fill="#1F1A17"/><rect x="156.92999999999998" y="228.36999999999998" width="2.97" height="2.97" rx="0.6600000000000001" fill="#1F1A17"/><rect x="142.41" y="234.97" width="2.97" height="2.97" rx="0.6600000000000001" fill="#1F1A17"/><rect x="149.01" y="231.67" width="2.97" height="2.97" rx="0.6600000000000001" fill="#1F1A17"/><rect x="152.97" y="235.63" width="2.97" height="2.97" rx="0.6600000000000001" fill="#1F1A17"/><rect x="156.92999999999998" y="238.92999999999998" width="2.97" height="2.97" rx="0.6600000000000001" fill="#1F1A17"/><rect x="149.01" y="238.92999999999998" width="2.97" height="2.97" rx="0.6600000000000001" fill="#1F1A17"/><rect x="145.70999999999998" y="230.67999999999998" width="2.97" height="2.97" rx="0.6600000000000001" fill="#1F1A17"/></g>
+  <g transform="translate(46 252) rotate(-3) scale(1.1)">
+  <ellipse cx="200" cy="262" rx="190" ry="14" fill="#1F1A17" opacity=".07"/>
+  <path d="M8 26Q8 14 20 14H380Q392 14 392 26V246Q392 256 380 256H20Q8 256 8 246Z" fill="#1F4D40" stroke="#1F1A17" stroke-width="3"/>
+  <path d="M22 8H196V244H22Q14 244 14 236V16Q14 8 22 8Z" fill="#FFFDF9" stroke="#1F1A17" stroke-width="3"/>
+  <path d="M204 8H378Q386 8 386 16V236Q386 244 378 244H204Z" fill="#FFFDF9" stroke="#1F1A17" stroke-width="3"/>
+  <path d="M196 8Q200 14 204 8V244Q200 250 196 244Z" fill="#E8E1D8" stroke="#1F1A17" stroke-width="2"/>
+  <path transform="translate(46 40) scale(0.9)" d="M0 9C-6.3 4.8-11 .7-11-4.4-11-7.9-8.3-10.5-5.1-10.5c2.2 0 4 1.1 5.1 2.9 1.1-1.8 2.9-2.9 5.1-2.9 3.2 0 5.9 2.6 5.9 6.1C11 .7 6.3 4.8 0 9z" fill="#D9694A"/>
+  <text x="62" y="45" font-family="Geist, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1F1A17" letter-spacing="-.2">Libreta sanitaria</text>
+  <rect x="34" y="66" width="56" height="62" rx="10" fill="#E3EDE6" stroke="#1F1A17" stroke-width="2"/>
+  <path d="M62 112c-7-3.6-12-7.2-12-11.3 0-2.8 2.2-4.9 4.8-4.9 1.8 0 3.3.9 4.2 2.4.9-1.5 2.4-2.4 4.2-2.4 2.6 0 4.8 2.1 4.8 4.9 0 4.1-5 7.7-6 11.3z" fill="none"/>
+  <g transform="translate(62 98)"><circle cx="0" cy="4" r="8" fill="#1F4D40" opacity=".8"/><circle cx="-10" cy="-6" r="4" fill="#1F4D40" opacity=".8"/><circle cx="-3" cy="-11" r="4" fill="#1F4D40" opacity=".8"/><circle cx="5" cy="-11" r="4" fill="#1F4D40" opacity=".8"/><circle cx="11" cy="-5" r="4" fill="#1F4D40" opacity=".8"/></g>
+  <rect x="102" y="74" width="72" height="6" rx="3" fill="#1F1A17" opacity="0.5"/><rect x="102" y="90" width="58" height="6" rx="3" fill="#1F1A17" opacity="0.16"/><rect x="102" y="106" width="66" height="6" rx="3" fill="#1F1A17" opacity="0.16"/><rect x="102" y="122" width="44" height="6" rx="3" fill="#1F1A17" opacity="0.16"/>
+  <rect x="34" y="150" width="140" height="6" rx="3" fill="#1F1A17" opacity="0.12"/><rect x="34" y="168" width="120" height="6" rx="3" fill="#1F1A17" opacity="0.12"/><rect x="34" y="186" width="136" height="6" rx="3" fill="#1F1A17" opacity="0.12"/><rect x="34" y="204" width="96" height="6" rx="3" fill="#1F1A17" opacity="0.12"/>
+  <text x="34" y="232" font-family="Geist, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="10.5" font-weight="600" fill="#1F1A17" opacity=".5" letter-spacing="1.2">VACUNAS · CONTROLES</text>
+  <rect x="218" y="26" width="72" height="46" rx="8" fill="#E3EDE6" stroke="#1F1A17" stroke-width="2"/><rect x="227" y="36" width="39.6" height="6" rx="3" fill="#1F1A17" opacity=".55"/><rect x="227" y="49" width="51.839999999999996" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/><rect x="227" y="59" width="28.8" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/><rect x="298" y="26" width="72" height="46" rx="8" fill="#F6E4DD" stroke="#1F1A17" stroke-width="2"/><rect x="307" y="36" width="39.6" height="6" rx="3" fill="#1F1A17" opacity=".55"/><rect x="307" y="49" width="51.839999999999996" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/><rect x="307" y="59" width="28.8" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/>
+  <rect x="218" y="84" width="72" height="46" rx="8" fill="#E2E9F1" stroke="#1F1A17" stroke-width="2"/><rect x="227" y="94" width="39.6" height="6" rx="3" fill="#1F1A17" opacity=".55"/><rect x="227" y="107" width="51.839999999999996" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/><rect x="227" y="117" width="28.8" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/><rect x="298" y="84" width="72" height="46" rx="8" fill="#F3EAD7" stroke="#1F1A17" stroke-width="2"/><rect x="307" y="94" width="39.6" height="6" rx="3" fill="#1F1A17" opacity=".55"/><rect x="307" y="107" width="51.839999999999996" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/><rect x="307" y="117" width="28.8" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/>
+  <rect x="218" y="142" width="72" height="46" rx="8" fill="#ECE6F3" stroke="#1F1A17" stroke-width="2"/><rect x="227" y="152" width="39.6" height="6" rx="3" fill="#1F1A17" opacity=".55"/><rect x="227" y="165" width="51.839999999999996" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/><rect x="227" y="175" width="28.8" height="5" rx="2.5" fill="#1F1A17" opacity=".22"/>
+  <g transform="translate(336 182) rotate(-14)" opacity=".92">
+    <circle r="40" fill="none" stroke="#1F4D40" stroke-width="3.5"/>
+    <circle r="32" fill="none" stroke="#1F4D40" stroke-width="1.6" stroke-dasharray="3 4"/>
+    <path d="M-13 -6L-4 3L14 -15" fill="none" stroke="#1F4D40" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text y="21" text-anchor="middle" font-family="Geist, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="8" font-weight="700" fill="#1F4D40" letter-spacing=".6">VACUNADO</text>
+  </g></g>
+  <g transform="translate(206 254) rotate(-3)"><ellipse cx="0" cy="0" rx="29" ry="19" fill="#EBDCC6" stroke="#1F1A17" stroke-width="3"/><path d="M-10 6V13M2 7V14" stroke="#1F1A17" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g transform="translate(346 246) rotate(-3)"><ellipse cx="0" cy="0" rx="29" ry="19" fill="#EBDCC6" stroke="#1F1A17" stroke-width="3"/><path d="M-2 6V13M10 7V14" stroke="#1F1A17" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g transform="translate(262 10) scale(.74)"><g filter="url(#mzArtSh)">
+    <rect x="0" y="0" width="352" height="88" rx="24" fill="#fff"/>
+  </g>
+  <circle cx="44" cy="44" r="25" fill="#F6E4DD"/>
+  <g transform="translate(44 44)" fill="none" stroke="#D9694A" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M-8 6C-8 -3 -6 -9 0 -9S8 -3 8 6L10 9H-10Z"/><path d="M-3 12Q0 15 3 12"/></g>
+  <text x="82" y="40" font-family="Geist, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="19" font-weight="700" fill="#1F1A17" letter-spacing="-.3">Le toca la antirrábica</text>
+  <text x="82" y="64" font-family="Geist, system-ui, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14.5" font-weight="500" fill="#6B625B">Luna · en 3 días, el jueves</text></g>
+</svg>
