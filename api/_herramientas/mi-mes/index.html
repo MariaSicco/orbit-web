@@ -67,7 +67,7 @@
 <main id="principal" tabindex="-1">
   <!-- ════════ INICIO ════════ -->
   <section class="mm-vista mm-inicio" id="vista-inicio" aria-labelledby="mes-nombre">
-    <div class="mm-alertas" id="alertas" aria-label="Avisos" hidden></div>
+    <section class="mm-alertas" id="alertas" aria-label="Avisos" hidden></section>
     <div class="mm-col-a">
       <div class="mm-saldo" id="hero">
         <div class="mm-mesnav">
@@ -80,24 +80,24 @@
         <p class="mm-pasas" id="pasas" hidden></p>
         <button type="button" class="mm-tope" id="tope" data-ir="escalera" hidden></button>
         <dl class="mm-saldo-pie" id="saldo-pie">
-          <div><dt>Plata líquida</dt><dd id="s-liq">$ 0</dd></div>
-          <div><dt>Vence de tarjetas</dt><dd id="s-tar">$ 0</dd></div>
-          <div><dt>Debés en total</dt><dd id="s-cred">$ 0</dd></div>
+          <div><dt>Ingresos</dt><dd id="s-ing">$ 0</dd></div>
+          <div><dt>Gastos fijos</dt><dd id="s-gas">$ 0</dd></div>
+          <div><dt>Tarjetas y cuotas</dt><dd id="s-tar">$ 0</dd></div>
         </dl>
       </div>
 
-      <section class="mm-panel mm-contraste" id="contraste" aria-labelledby="t-contraste"></section>
-
       <nav class="mm-accesos" aria-label="Accesos rápidos">
+        <button type="button" class="mm-acceso" data-nuevo="cuota"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-cuota"/></svg></span><span>Cargar cuota</span></button>
         <button type="button" class="mm-acceso principal" id="accion-principal" data-agregar-tarjeta><span class="mm-acceso-ic"><svg class="ic"><use href="#i-subir"/></svg></span><span id="accion-texto">Agregar tarjeta</span></button>
         <button type="button" class="mm-acceso" data-nuevo="ingreso"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-ingreso"/></svg></span><span>Ingreso</span></button>
         <button type="button" class="mm-acceso" data-nuevo="gasto"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-gasto"/></svg></span><span>Gasto fijo</span></button>
-        <button type="button" class="mm-acceso" data-nuevo="cuota"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-cuota"/></svg></span><span>Compra nueva</span></button>
         <button type="button" class="mm-acceso" data-ir="tarjetas"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-tarjetas"/></svg></span><span>Mis tarjetas</span></button>
         <button type="button" class="mm-acceso" data-ir="escalera"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-escalera"/></svg></span><span>Escalera</span></button>
         <button type="button" class="mm-acceso" data-ir="simular"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-simular"/></svg></span><span>¿Y si compro?</span></button>
         <button type="button" class="mm-acceso" data-ir="contado"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-balanza"/></svg></span><span>¿Cuotas o contado?</span></button>
       </nav>
+
+      <section class="mm-panel mm-contraste" id="contraste" aria-labelledby="t-contraste"></section>
 
       <section class="mm-seccion" aria-labelledby="t-mis">
         <div class="mm-seccion-top"><h2 id="t-mis">Mis tarjetas</h2><button type="button" class="mm-link" data-ir="tarjetas">Ver todas</button></div>

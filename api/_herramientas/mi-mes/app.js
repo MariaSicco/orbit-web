@@ -114,9 +114,9 @@ function pintarInicio(animar = false) {
   $id('tope').innerHTML = lim.supera ? `${ic('alerta')} Las cuotas de este mes ${lim.ingresos ? `son el ${Math.round(lim.usado * 100)} % de tus ingresos` : 'no tienen ingresos que las cubran'}: tu tope es ${lim.pct} %. <u>Ver escalera</u>` : '';
   pintarAlertas();
   const cred = creditoTotal(datos, HOY_ISO);
-  $id('s-liq').textContent = $(r.liquida);
+  $id('s-ing').textContent = $(r.totIngresos);
+  $id('s-gas').textContent = $(r.totGastos);
   $id('s-tar').textContent = $(r.totTarjetas);
-  $id('s-cred').textContent = $(cred.total);
   pintarContraste(r, cred);
 
   /* acción principal: sin tarjetas, agregar una (subiendo el resumen); con tarjetas, subir el resumen */
@@ -1003,30 +1003,44 @@ dx.querySelector('form').addEventListener('submit', e => {
 
 
 /* ════════ AVISOS (alertas de tarjeta) ════════ */
-function alertaHTML(a, { descartable = false } = {}) {
-  if (a.tipo === 'credito') {
-    return `<div class="mm-alerta-t ${a.nivel} credito" role="${a.nivel === 'fuerte' ? 'alert' : 'status'}">
-      <span class="mm-alerta-ic">${ic('alerta')}</span>
-      <div class="mm-alerta-txt"><b>${esc(a.titulo)}</b><span>${esc(a.texto)}</span>
-        <span class="mm-alerta-acc"><button type="button" class="mm-link" data-ir="escalera">Ver mes a mes</button><button type="button" class="mm-link" data-ir="simular">¿Y si dejo de comprar?</button></span></div>
-      ${descartable ? `<button type="button" class="mm-alerta-x" data-descartar-alerta="${esc(a.id)}" aria-label="Descartar este aviso">${ic('cerrar')}</button>` : ''}
-    </div>`;
-  }
+/* Texto corto de una alerta (una línea), para la franja y las filas. */
+function alertaCorta(a) {
   const t = tarjetaDe(a.tarjetaId);
-  return `<div class="mm-alerta-t ${a.nivel}" role="${a.nivel === 'fuerte' ? 'alert' : 'status'}">
-    <span class="mm-alerta-ic">${ic(a.tipo === 'dolares' ? 'dolar' : a.tipo === 'cierre' ? 'calendario' : 'alerta')}</span>
-    <div class="mm-alerta-txt"><b>${esc(a.titulo)}</b><span>${esc(a.texto)}</span>
-      ${a.tipo === 'dolares' ? '<small>Orientativo, no es asesoramiento: depende de tu banco. Se paga entre la emisión del resumen y el vencimiento; con débito automático, puede hacer falta frenarlo. Si la percepción ya se cobró, en el resumen siguiente aparece devuelta como "DEV.IMP. RG 5617".</small>' : ''}
-      <span class="mm-alerta-acc">${descartable && t ? `<button type="button" class="mm-link" data-ir-tarjeta="${esc(t.id)}">Ver ${esc(t.nombre)}</button>` : ''}<button type="button" class="mm-link" data-ics="${esc(a.tarjetaId)}">${ic('calendario')} Agregar al calendario</button></span></div>
-    ${descartable ? `<button type="button" class="mm-alerta-x" data-descartar-alerta="${esc(a.id)}" aria-label="Descartar este aviso">${ic('cerrar')}</button>` : ''}
-  </div>`;
+  if (a.tipo === 'credito') return `Tarjetas > plata líquida en ${corto(a.mes)}: te faltan ${$(a.vence - a.liquida)}`;
+  if (a.tipo === 'vence') return `${a.dias === 0 ? 'Vence hoy' : a.dias === 1 ? 'Vence mañana' : `Vence en ${a.dias} días`} · ${t?.nombre || 'Tarjeta'}`;
+  if (a.tipo === 'cierre') return `Cerró el resumen de ${t?.nombre || 'tu tarjeta'}`;
+  if (a.tipo === 'dolares') return `${fm(a.usd, 'USD')} en ${t?.nombre || 'tu tarjeta'}: pagalos en dólares`;
+  return a.titulo;
+}
+/* color fuerte solo para vence hoy/mañana y para crédito > líquido */
+const nivelVisual = a => (a.tipo === 'credito' || (a.tipo === 'vence' && a.dias <= 1) ? 'fuerte' : 'suave');
+const iconoAlerta = a => (a.tipo === 'dolares' ? 'dolar' : a.tipo === 'cierre' ? 'calendario' : 'alerta');
+/* Una fila compacta que se abre para ver el detalle y las acciones. */
+function alertaHTML(a, { descartable = false } = {}) {
+  const t = tarjetaDe(a.tarjetaId);
+  const acciones = a.tipo === 'credito'
+    ? `<button type="button" class="mm-link" data-ir="escalera">Ver mes a mes</button><button type="button" class="mm-link" data-ir="simular">¿Y si dejo de comprar?</button>`
+    : `${descartable && t ? `<button type="button" class="mm-link" data-ir-tarjeta="${esc(t.id)}">Ver ${esc(t.nombre)}</button>` : ''}<button type="button" class="mm-link" data-ics="${esc(a.tarjetaId)}">${ic('calendario')} Agregar al calendario</button>`;
+  return `<details class="mm-fila-alerta ${nivelVisual(a)}">
+    <summary><span class="mm-fa-ic">${ic(iconoAlerta(a))}</span><span class="mm-fa-txt">${esc(alertaCorta(a))}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
+    <div class="mm-fa-det"><p><b>${esc(a.titulo)}</b></p><p>${esc(a.texto)}</p>
+      ${a.tipo === 'dolares' ? '<p class="mm-fuente">Orientativo, no es asesoramiento: depende de tu banco. Se paga entre la emisión del resumen y el vencimiento; con débito automático, puede hacer falta frenarlo. Si la percepción ya se cobró, en el resumen siguiente aparece devuelta como "DEV.IMP. RG 5617".</p>' : ''}
+      <div class="mm-fa-acc">${acciones}${descartable ? `<button type="button" class="mm-link" data-descartar-alerta="${esc(a.id)}">Descartar</button>` : ''}</div></div>
+  </details>`;
 }
 function pintarAlertas() {
   const as = [...alertasCredito(datos, HOY_ISO), ...alertasTarjetas(datos, HOY_ISO)];
-  $id('alertas').hidden = !as.length;
-  const VISIBLES = 2;
-  $id('alertas').innerHTML = as.map((a, i) => (i < VISIBLES || alertasAbiertas ? alertaHTML(a, { descartable: true }) : '')).join('') +
-    (as.length > VISIBLES ? `<button type="button" class="mm-link mm-mas-avisos" data-mas-avisos aria-expanded="${alertasAbiertas}">${alertasAbiertas ? 'Ver menos avisos' : `Ver ${as.length - VISIBLES} aviso${as.length - VISIBLES === 1 ? '' : 's'} más`}</button>` : '');
+  const caja = $id('alertas');
+  caja.hidden = !as.length;
+  if (!as.length) { caja.innerHTML = ''; return; }
+  /* la más urgente arriba: crédito > líquido y vence hoy/mañana primero */
+  const orden = a => (nivelVisual(a) === 'fuerte' ? 0 : 1);
+  as.sort((a, b) => orden(a) - orden(b));
+  const top = as[0];
+  caja.innerHTML = `<button type="button" class="mm-franja ${nivelVisual(top)}" data-franja aria-expanded="${alertasAbiertas}" aria-controls="alertas-lista">
+      <span class="mm-fa-ic">${ic(iconoAlerta(top))}</span><span class="mm-fa-txt">${esc(alertaCorta(top))}</span>
+      ${as.length > 1 ? `<span class="mm-franja-mas" aria-label="${as.length - 1} avisos más">+${as.length - 1}</span>` : ''}<svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></button>
+    <div class="mm-alertas-lista" id="alertas-lista" ${alertasAbiertas ? '' : 'hidden'}>${as.map(a => alertaHTML(a, { descartable: true })).join('')}</div>`;
 }
 let alertasAbiertas = false;
 function bajarICS(tarjetaId) {
@@ -1380,7 +1394,7 @@ document.addEventListener('click', e => {
   const desc = t.closest('[data-descartar-alerta]');
   if (desc) { datos.alertasVistas = [...datos.alertasVistas, desc.dataset.descartarAlerta].slice(-200); guardar(); pintarTodo(); return avisar('Aviso descartado'); }
   if (t.closest('[data-avisos-push]')) { pintarPush(); return abrir($id('dlg-push'), $id('dlg-push').querySelector('.mm-cerrar')); }
-  if (t.closest('[data-mas-avisos]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-mas-avisos]')?.focus(); }
+  if (t.closest('[data-franja]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-franja]')?.focus(); }
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
   if (t.closest('[data-exportar]')) return exportarCopia();
