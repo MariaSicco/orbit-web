@@ -9,6 +9,14 @@
     {
       "source": "/propuesta/:id",
       "destination": "/propuesta"
+    },
+    {
+      "source": "/mascota/:t",
+      "destination": "/mascota"
+    },
+    {
+      "source": "/cuida/:t",
+      "destination": "/mascota"
     }
   ],
   "crons": [
