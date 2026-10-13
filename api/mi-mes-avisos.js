@@ -3,9 +3,10 @@
    POST    { accion: 'activar', sub, tarjetas }  guarda la suscripción del celu y las fechas.
    POST    { accion: 'sincronizar', tarjetas }   actualiza solo las fechas (si ya activó).
    DELETE  { endpoint? }  con endpoint saca ese celu; sin endpoint borra TODO lo de la cuenta.
-   Lo que se guarda pasa por limpiarTarjetasAvisos: nombre, fechas y dólares sí/no. Sin montos. */
+   Lo que se guarda pasa por limpiarTarjetasAvisos (nombre, fechas y dólares sí/no) y
+   limpiarMeses (meses en que el crédito supera lo líquido). Sin montos. */
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
-import { getVapid, leerAvisos, guardarAvisos, borrarAvisos, limpiarSub } from './_lib/mi-mes-avisos.js';
+import { getVapid, leerAvisos, guardarAvisos, borrarAvisos, limpiarSub, limpiarMeses } from './_lib/mi-mes-avisos.js';
 import { limpiarTarjetasAvisos } from './_herramientas/mi-mes/calculos.js';
 
 const responder = (res, code, cuerpo) => { res.setHeader('Cache-Control', 'no-store'); return res.status(code).json(cuerpo); };
@@ -36,12 +37,14 @@ export default async function handler(req, res) {
       if (!sub) return responder(res, 400, { ok: false, error: 'No pudimos activar los avisos en este navegador.' });
       n.subs = [...n.subs.filter(s => s.endpoint !== sub.endpoint), sub].slice(-5);
       n.tarjetas = limpiarTarjetasAvisos(b.tarjetas);
+      n.credito = limpiarMeses(b.credito);
       await guardarAvisos(n);
       return responder(res, 200, { ok: true, activo: true, tarjetas: n.tarjetas.length });
     }
     if (b.accion === 'sincronizar') {
       if (!n.subs.length) return responder(res, 200, { ok: true, activo: false });
       n.tarjetas = limpiarTarjetasAvisos(b.tarjetas);
+      n.credito = limpiarMeses(b.credito);
       await guardarAvisos(n);
       return responder(res, 200, { ok: true, activo: true, tarjetas: n.tarjetas.length });
     }

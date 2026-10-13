@@ -1,9 +1,9 @@
 /* Mi Mes by Orbit: corre una vez por día (vercel.json → crons, 13:00 UTC =
    10:00 de Argentina). A cada cuenta con avisos le manda lo que toca hoy:
-   cerró el resumen, vence en 3 días / mañana / hoy y dólares (5 días
-   antes). Sin montos. Nunca repite un aviso (sent por tag). */
+   cerró el resumen, vence en 3 días / mañana / hoy, dólares (5 días
+   antes) y, una vez por mes, si lo que vence en tarjetas supera la plata líquida. Sin montos. Nunca repite un aviso (sent por tag). */
 import { kvKeys, kvMGet } from '../_lib/kv.js';
-import { mandarPush, guardarAvisos, hoyAR } from '../_lib/mi-mes-avisos.js';
+import { mandarPush, guardarAvisos, hoyAR, limpiarMeses } from '../_lib/mi-mes-avisos.js';
 import { avisosPushDeHoy, limpiarTarjetasAvisos } from '../_herramientas/mi-mes/calculos.js';
 
 export default async function handler(req, res) {
@@ -19,9 +19,9 @@ export default async function handler(req, res) {
   for (const raw of todas) {
     const email = String(raw.email || '').toLowerCase();
     if (!email || !Array.isArray(raw.subs) || !raw.subs.length) continue;
-    const n = { email, subs: raw.subs, tarjetas: limpiarTarjetasAvisos(raw.tarjetas), sent: raw.sent || {} };
+    const n = { email, subs: raw.subs, tarjetas: limpiarTarjetasAvisos(raw.tarjetas), credito: limpiarMeses(raw.credito), sent: raw.sent || {} };
     try {
-      const items = avisosPushDeHoy(n.tarjetas, hoy).filter(i => !n.sent[i.tag]);
+      const items = avisosPushDeHoy(n.tarjetas, hoy, n.credito).filter(i => !n.sent[i.tag]);
       if (!items.length) continue;
       for (const i of items) { out.push += await mandarPush(n, { title: i.title, body: i.body, url: '/herramientas/mi-mes', tag: i.tag }); out.avisos++; }
       for (const i of items) n.sent[i.tag] = hoy;

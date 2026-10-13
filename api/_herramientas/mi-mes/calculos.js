@@ -212,6 +212,15 @@ export function resumenMes(datos, mes) {
     return { ...r, tarjeta: tarjetas.get(r.tarjetaId)?.nombre || 'Tarjeta', monto: t.ars, porMoneda: t.porMoneda, faltaCambio: t.faltaCambio };
   });
   const conResumen = new Set(resumenes.map(r => r.tarjetaId));
+  /* meses que cubre la tabla "cuotas a vencer" del banco: manda la tabla para
+     las cuotas que vinieron de resúmenes; las compras nuevas se suman aparte */
+  const tabla = d.resumenes?.some(r => r.cuotasAVencer?.length) ? tablaCuotasAVencer(d) : {};
+  const delBanco = [];
+  for (const [tId, tb] of Object.entries(tabla)) {
+    if (conResumen.has(tId) || !(mes in tb.meses) || !tb.meses[mes]) continue;
+    delBanco.push({ tarjetaId: tId, tarjeta: tarjetas.get(tId)?.nombre || 'Tarjeta', monto: tb.meses[mes] });
+  }
+  const cubiertas = new Set(delBanco.map(x => x.tarjetaId));
   const cuotas = [];
   const dentroDeResumen = [];
   const sinCambio = [];
@@ -220,23 +229,27 @@ export function resumenMes(datos, mes) {
     if (!n) continue;
     const moneda = c.moneda || 'ARS';
     const original = repartirCuotas(c.total, c.cantidad)[n - 1];
-    const item = { ...c, moneda, numero: n, original, monto: aPesos(original, moneda, d),
+    const item = { ...c, moneda, numero: n, original, monto: aPesos(original, moneda, d), nueva: c.origen !== 'resumen',
       tarjeta: tarjetas.get(c.tarjetaId)?.nombre || 'Sin tarjeta', ultima: n === c.cantidad };
-    if (conResumen.has(c.tarjetaId)) dentroDeResumen.push(item);
+    if (conResumen.has(c.tarjetaId) || (cubiertas.has(c.tarjetaId) && !item.nueva)) dentroDeResumen.push(item);
     else if (item.monto === null) sinCambio.push(item);
     else cuotas.push(item);
   }
   const suma = xs => xs.reduce((s, x) => s + x.monto, 0);
   const totIngresos = suma(ingresos);
   const totGastos = suma(gastos);
-  const totCuotas = suma(cuotas);
+  const totCuotas = suma(cuotas) + suma(delBanco);
   const totResumenes = suma(resumenes);
+  const totNuevas = suma(cuotas.filter(c => c.nueva));
   return {
-    mes, ingresos, gastos, cuotas, resumenes, dentroDeResumen, sinCambio,
+    mes, ingresos, gastos, cuotas, delBanco, resumenes, dentroDeResumen, sinCambio,
     totIngresos, totGastos, totCuotas, totResumenes,
     totTarjetas: totCuotas + totResumenes,
+    /* plata líquida = lo que hay para pagar tarjetas; crédito que vence = lo que hay que pagar */
+    liquida: totIngresos - totGastos,
+    totNuevas, totAnteriores: totCuotas + totResumenes - totNuevas,
     libres: totIngresos - totGastos - totCuotas - totResumenes,
-    vacio: !ingresos.length && !gastos.length && !cuotas.length && !resumenes.length && !dentroDeResumen.length && !sinCambio.length,
+    vacio: !ingresos.length && !gastos.length && !cuotas.length && !resumenes.length && !dentroDeResumen.length && !sinCambio.length && !delBanco.length,
   };
 }
 
@@ -257,30 +270,119 @@ export function tarjetaEnMes(datos, tarjetaId, mes) {
   return { resumen, cuotas, total, faltaCambio: resumen ? resumen.faltaCambio : [...new Set(cuotas.filter(c => c.monto === null).map(c => c.moneda))] };
 }
 
-/* Límite de compra: lo que queda disponible, aproximado.
-   Usado = cuotas que faltan pagar (desde este mes) + consumos en un pago de
-   resúmenes que todavía no vencieron. Todo pasado a pesos. */
-export function disponibleTarjeta(datos, tarjetaId, mesHoy) {
-  const t = (datos?.tarjetas || []).find(x => x.id === tarjetaId);
-  if (!t || !Number.isSafeInteger(t.limite) || t.limite <= 0) return null;
-  let usado = 0;
+/* ── crédito: lo que se debe en tarjetas ──
+   Por tarjeta, a una fecha: el saldo del último resumen que todavía no
+   venció, las cuotas que vienen después (de la tabla "cuotas a vencer" del
+   banco o proyectadas) y las compras nuevas que todavía no salieron en un
+   resumen. Todo en pesos, con lo que es en otra moneda convertido. */
+const aFecha = h => (esFecha(h) ? h : `${h}-01`);
+export function creditoTarjeta(datos, tarjetaId, hoy) {
+  hoy = aFecha(hoy);
+  const mesHoy = hoy.slice(0, 7);
   const faltaCambio = new Set();
-  for (const c of (datos.cuotas || []).filter(x => x.tarjetaId === tarjetaId)) {
-    const partes = repartirCuotas(c.total, c.cantidad);
-    partes.forEach((p, i) => {
-      if (difMeses(mesHoy, sumarMeses(c.primerMes, i)) < 0) return;
-      const ars = aPesos(p, c.moneda || 'ARS', datos);
-      if (ars === null) faltaCambio.add(c.moneda); else usado += ars;
+  const pesos = (c, m) => { const a = aPesos(c, m || 'ARS', datos); if (a === null) { faltaCambio.add(m); return 0; } return a; };
+  const r = (datos?.resumenes || []).filter(x => x.tarjetaId === tarjetaId).sort((a, b) => difMeses(a.mes, b.mes)).pop() || null;
+  let resumen = 0;
+  if (r && (!esFecha(r.vencimiento) || diasEntre(hoy, r.vencimiento) >= 0)) {
+    const t = totalResumen(r, datos);
+    resumen = t.ars; t.faltaCambio.forEach(m => faltaCambio.add(m));
+  }
+  /* desde qué mes de pago cuentan las cuotas que vienen */
+  const desde = r ? (difMeses(mesHoy, sumarMeses(r.mes, 1)) >= 0 ? sumarMeses(r.mes, 1) : mesHoy) : mesHoy;
+  let futuras = 0, nuevas = 0;
+  const tb = r?.cuotasAVencer?.length ? tablaCuotasAVencer(datos)[tarjetaId] : null;
+  if (tb) {
+    for (const [m, v] of Object.entries(tb.meses)) if (difMeses(desde, m) >= 0) futuras += v;
+    if (tb.desde && difMeses(desde, tb.desde.mes) >= 0) futuras += tb.desde.monto;
+  }
+  for (const c of (datos?.cuotas || []).filter(x => x.tarjetaId === tarjetaId)) {
+    const nueva = c.origen !== 'resumen';
+    if (!nueva && tb) continue;                       // las del banco ya están en la tabla
+    repartirCuotas(c.total, c.cantidad).forEach((p, i) => {
+      const m = sumarMeses(c.primerMes, i);
+      if (difMeses(desde, m) < 0) return;
+      if (nueva) nuevas += pesos(p, c.moneda); else futuras += pesos(p, c.moneda);
     });
   }
-  for (const r of (datos.resumenes || []).filter(x => x.tarjetaId === tarjetaId && difMeses(mesHoy, x.mes) >= 0)) {
-    for (const c of r.consumos || []) {
-      if (c.cuota && c.cuota.de > 1) continue;            // ya contadas como cuotas
-      const ars = aPesos(c.monto, c.moneda, datos);
-      if (ars === null) faltaCambio.add(c.moneda); else usado += ars;
-    }
+  return { resumen, futuras, nuevas, total: resumen + futuras + nuevas, faltaCambio: [...faltaCambio], resumenMes: r?.mes || null };
+}
+export function creditoTotal(datos, hoy) {
+  const porTarjeta = (datos?.tarjetas || []).map(t => ({ tarjetaId: t.id, ...creditoTarjeta(datos, t.id, hoy) }));
+  const sum = k => porTarjeta.reduce((a, x) => a + x[k], 0);
+  return { porTarjeta, resumen: sum('resumen'), futuras: sum('futuras'), nuevas: sum('nuevas'), total: sum('total') };
+}
+/* Crédito disponible = límite − lo que se debe en esa tarjeta. */
+export function disponibleTarjeta(datos, tarjetaId, hoy) {
+  const t = (datos?.tarjetas || []).find(x => x.id === tarjetaId);
+  if (!t || !Number.isSafeInteger(t.limite) || t.limite <= 0) return null;
+  const c = creditoTarjeta(datos, tarjetaId, hoy);
+  return { limite: t.limite, usado: c.total, disponible: t.limite - c.total, faltaCambio: c.faltaCambio, credito: c };
+}
+
+/* ── alerta principal: lo que vence en tarjetas supera la plata líquida ──
+   Mes a mes hacia adelante, separando lo que viene de antes (resúmenes y
+   cuotas ya cargadas) de las compras nuevas. */
+export function alertasCredito(datos, hoy, meses = 6) {
+  const vistas = new Set(datos?.alertasVistas || []);
+  const desde = aFecha(hoy).slice(0, 7);
+  const out = [];
+  for (let k = 0; k < meses; k++) {
+    const mes = sumarMeses(desde, k);
+    const r = resumenMes(datos, mes);
+    if (r.totTarjetas <= 0 || r.totTarjetas <= r.liquida) continue;
+    out.push({ id: `credito:${mes}`, tipo: 'credito', mes, nivel: k === 0 ? 'fuerte' : 'aviso',
+      vence: r.totTarjetas, liquida: r.liquida, anteriores: r.totAnteriores, nuevas: r.totNuevas,
+      titulo: `Lo que debés en tarjetas para ${nombreMes(mes)} (${formatoPesos(r.totTarjetas)}) supera tu plata líquida (${formatoPesos(r.liquida)})`,
+      texto: r.totNuevas > 0
+        ? `${formatoPesos(r.totAnteriores)} viene de antes y ${formatoPesos(r.totNuevas)} son compras nuevas. Te faltan ${formatoPesos(r.totTarjetas - r.liquida)}.`
+        : `Es lo que ya venía comprometido. Te faltan ${formatoPesos(r.totTarjetas - r.liquida)}.` });
   }
-  return { limite: t.limite, usado, disponible: t.limite - usado, faltaCambio: [...faltaCambio] };
+  return out.filter(a => !vistas.has(a.id));
+}
+/* Para el push: solo los meses que se pasan, sin montos. */
+export const mesesCreditoSupera = (datos, hoy, meses = 6) =>
+  alertasCredito({ ...datos, alertasVistas: [] }, hoy, meses).map(a => a.mes);
+
+/* ── compras nuevas: en qué resumen caen ── */
+export function primerMesDeCompra(datos, tarjetaId, hoy) {
+  hoy = aFecha(hoy);
+  const ciclo = tarjetaId ? cicloTarjeta(datos, tarjetaId, hoy) : null;
+  if (!ciclo) return proximoResumen(new Date(`${hoy}T12:00:00`));
+  /* si el resumen ya cerró, la compra va al siguiente */
+  if (ciclo.cierre && diasEntre(ciclo.cierre, hoy) > 0) return sumarMeses(ciclo.mes, 1);
+  return ciclo.mes;
+}
+
+/* ── emisores de tarjetas de crédito en Argentina (octubre 2026) ──
+   Se elige de la lista, no se escribe. Fusiones: HSBC (Galicia Más) se
+   integró a Galicia en 2025; Itaú pasó a Macro (2023); Citi a Santander;
+   Francés es BBVA; Nevada se fusionó con Naranja. */
+export const EMISORES = [
+  ...['Galicia', 'Santander', 'BBVA', 'Macro', 'Nación', 'Provincia', 'Ciudad', 'ICBC', 'Supervielle', 'Patagonia', 'Credicoop',
+    'Comafi', 'Hipotecario', 'Columbia', 'Industrial (BIND)', 'Bancor (Córdoba)', 'Santa Fe', 'Entre Ríos', 'San Juan', 'Santa Cruz',
+    'Chubut', 'La Pampa', 'Corrientes', 'Nuevo Banco del Chaco', 'Formosa', 'Tierra del Fuego', 'Neuquén (BPN)', 'Santiago del Estero',
+    'Municipal de Rosario', 'Banco del Sol', 'Piano'].map(n => ({ nombre: n, tipo: 'banco' })),
+  ...['Naranja X', 'Mercado Pago', 'Ualá', 'Brubank', 'Cencosud', 'Shopping', 'Cordobesa'].map(n => ({ nombre: n, tipo: 'no bancario' })),
+];
+const ALIAS_EMISOR = { hsbc: 'Galicia', 'galicia mas': 'Galicia', itau: 'Macro', citi: 'Santander', citibank: 'Santander', frances: 'BBVA',
+  nevada: 'Naranja X', naranja: 'Naranja X', 'banco de la nacion': 'Nación', bna: 'Nación', 'banco provincia': 'Provincia', bapro: 'Provincia',
+  'banco de cordoba': 'Bancor (Córdoba)', bancor: 'Bancor (Córdoba)', bind: 'Industrial (BIND)', 'banco industrial': 'Industrial (BIND)',
+  bpn: 'Neuquén (BPN)', mercadopago: 'Mercado Pago', uala: 'Ualá', uilo: 'Ualá' };
+/* Nombre del banco que viene en el resumen → el de la lista, o '' si no se reconoce. */
+export function emisorDe(texto) {
+  const t = normalizarComercio(texto).toLowerCase();
+  if (!t) return '';
+  for (const [a, n] of Object.entries(ALIAS_EMISOR)) if (new RegExp(`\\b${a}\\b`).test(t)) return n;
+  for (const e of EMISORES) {
+    const base = normalizarComercio(e.nombre.replace(/\(.*\)/, '')).toLowerCase();
+    if (base && new RegExp(`\\b${base}\\b`).test(t)) return e.nombre;
+  }
+  return '';
+}
+/* Nombre de una tarjeta: banco + red, sin escribir nada. */
+export function nombreTarjeta({ banco, red, ultimos4 }, existentes = []) {
+  const base = [banco, red && red !== 'Otra' ? red : ''].filter(Boolean).join(' ') || 'Mi tarjeta';
+  return existentes.some(x => x.nombre === base) && ultimos4 ? `${base} ···${ultimos4}` : base;
 }
 
 /* ── rubros que recuerda la app ── */
@@ -393,8 +495,9 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
     if (ya) tId = ya.id;
     else {
       tId = nuevoId();
-      d.tarjetas.push({ id: tId, nombre: [t.banco, t.red].filter(Boolean).join(' ') || 'Tarjeta',
-        red: t.red, banco: t.banco, ultimos4: t.ultimos4,
+      const banco = emisorDe(t.banco) || t.banco;
+      d.tarjetas.push({ id: tId, nombre: nombreTarjeta({ banco, red: t.red, ultimos4: t.ultimos4 }, d.tarjetas),
+        red: t.red, banco, ultimos4: t.ultimos4,
         color: COLORES.find(c => !d.tarjetas.some(x => x.color === c)) || COLORES[d.tarjetas.length % COLORES.length] });
     }
   }
@@ -415,6 +518,11 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
     pagosYCreditos: (lectura.pagosYCreditos || []).map(c => ({ ...c })),
     cargos: (lectura.cargos || []).map(c => ({ ...c })),
     cuotasAVencer: (lectura.cuotasAVencer || []).map(c => ({ ...c, mesPago: sumarMeses(c.mes, desfase) })) });
+  /* compras nuevas cargadas a mano que ahora salen en el resumen: se
+     concilian solas (mismo monto de cuota, cantidad, moneda y fecha cercana);
+     si no es seguro, se pregunta */
+  const { conciliadas, dudosas } = conciliarCompras(d, tId, lectura);
+  d.cuotas = d.cuotas.filter(x => !conciliadas.includes(x.id));
   let nuevas = 0;
   for (const c of lectura.consumos) {
     if (!c.cuota || c.cuota.de < 2) continue;
@@ -427,7 +535,37 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
       cantidad: c.cuota.de, tarjetaId: tId, primerMes, origen: 'resumen' });
     nuevas++;
   }
-  return { datos: d, tarjetaId: tId, mes, cuotasNuevas: nuevas };
+  return { datos: d, tarjetaId: tId, mes, cuotasNuevas: nuevas, conciliadas, dudosas };
+}
+
+/* Compara las compras nuevas (cargadas a mano, pendientes) de la tarjeta con
+   los consumos del resumen. Seguro = misma moneda, misma cantidad de cuotas,
+   monto de la cuota igual (±$ 1) y fecha a 10 días o menos (si hay fecha), y
+   un único candidato. Parecido (±5 % o sin fecha cercana) = duda. */
+export function conciliarCompras(datos, tarjetaId, lectura) {
+  const pendientes = (datos.cuotas || []).filter(x => x.tarjetaId === tarjetaId && x.origen !== 'resumen');
+  const conciliadas = [], dudosas = [];
+  const usados = new Set();
+  for (const p of pendientes) {
+    const montoCuota = repartirCuotas(p.total, p.cantidad);
+    const cand = [];
+    lectura.consumos.forEach((c, i) => {
+      if (usados.has(i) || (c.moneda || 'ARS') !== (p.moneda || 'ARS') || (c.cuota?.de || 1) !== p.cantidad) return;
+      const esperado = montoCuota[(c.cuota?.n || 1) - 1] ?? montoCuota[0];
+      const dif = Math.abs(c.monto - esperado);
+      const cerca = esFecha(p.fecha) && esFecha(c.fecha) ? Math.abs(diasEntre(p.fecha, c.fecha)) <= 10 : null;
+      if (dif <= 100 && cerca !== false) cand.push({ i, seguro: true });
+      else if (dif <= Math.max(100, Math.round(esperado * 0.05))) cand.push({ i, seguro: false });
+    });
+    const seguros = cand.filter(x => x.seguro);
+    if (seguros.length === 1) { conciliadas.push(p.id); usados.add(seguros[0].i); }
+    else if (cand.length) {
+      const c = lectura.consumos[cand[0].i];
+      dudosas.push({ cuotaId: p.id, descripcion: p.descripcion || 'Compra cargada a mano', total: p.total, cantidad: p.cantidad, moneda: p.moneda || 'ARS',
+        comercio: c.comercio, monto: c.monto, cuota: c.cuota });
+    }
+  }
+  return { conciliadas, dudosas };
 }
 
 /* ── esquema y migración ── */
@@ -482,7 +620,7 @@ export function migrar(crudo) {
     out.cuotas.push({ id: String(c.id), descripcion: texto(c.descripcion), total: c.total,
       moneda: esMoneda(c.moneda) ? c.moneda : 'ARS',
       cantidad: c.cantidad, tarjetaId: String(c.tarjetaId), primerMes: c.primerMes,
-      ...(c.origen === 'resumen' ? { origen: 'resumen' } : {}) });
+      ...(c.origen === 'resumen' ? { origen: 'resumen' } : {}), ...(esFecha(c.fecha) ? { fecha: c.fecha } : {}) });
   }
   for (const r of Array.isArray(crudo.resumenes) ? crudo.resumenes : []) {
     if (!r?.id || !ids.has(String(r.tarjetaId)) || !esMes(r.mes)) continue;
@@ -861,8 +999,12 @@ export function limpiarTarjetasAvisos(lista) {
 }
 /* Qué avisos tocan hoy (sin montos). Si las fechas guardadas ya pasaron y
    hay días cargados, sigue con el ciclo siguiente. */
-export function avisosPushDeHoy(tarjetas, hoy) {
+export function avisosPushDeHoy(tarjetas, hoy, credito = []) {
   const out = [];
+  if (credito.includes(hoy.slice(0, 7))) {
+    out.push({ tag: `mm:credito:${hoy.slice(0, 7)}`, title: 'Este mes lo que vence en tus tarjetas supera tu plata líquida',
+      body: 'Abrí Mi Mes para ver cuánto te falta y qué viene de compras nuevas.' });
+  }
   for (const t of tarjetas || []) {
     let { cierre, vencimiento } = t;
     let dolares = t.dolares;

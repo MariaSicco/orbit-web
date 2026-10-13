@@ -5,10 +5,13 @@
      en KV en orbit:vapid (la misma clave que usa Mimitos, así comparten).
    - Por cuenta: orbit:mi-mes:avisos:<email> = { email, subs: [...],
      tarjetas: [{ id, nombre, cierre, vencimiento, dolares, diaCierre?, diaVence? }],
+     credito: ['AAAA-MM', ...] (meses en que lo que vence en tarjetas supera la plata líquida, sin montos),
      sent: { tag: fecha } }. Sin montos ni consumos. */
 import webpushReal from 'web-push';
 import { kvGet, kvSet, kvDel } from './kv.js';
-import { limpiarTarjetasAvisos } from '../_herramientas/mi-mes/calculos.js';
+import { limpiarTarjetasAvisos, esMes } from '../_herramientas/mi-mes/calculos.js';
+
+export const limpiarMeses = l => [...new Set((Array.isArray(l) ? l : []).filter(esMes))].sort().slice(0, 12);
 
 let webpush = webpushReal;
 export function __usarWebpush(w) { webpush = w; vapid = null; }
@@ -28,9 +31,9 @@ export async function getVapid() {
 
 export async function leerAvisos(email) {
   const n = (await kvGet(claveAvisos(email))) || {};
-  return { email: String(email).toLowerCase(), subs: Array.isArray(n.subs) ? n.subs : [], tarjetas: limpiarTarjetasAvisos(n.tarjetas), sent: n.sent || {} };
+  return { email: String(email).toLowerCase(), subs: Array.isArray(n.subs) ? n.subs : [], tarjetas: limpiarTarjetasAvisos(n.tarjetas), credito: limpiarMeses(n.credito), sent: n.sent || {} };
 }
-export const guardarAvisos = n => kvSet(claveAvisos(n.email), { email: n.email, subs: n.subs, tarjetas: limpiarTarjetasAvisos(n.tarjetas), sent: n.sent });
+export const guardarAvisos = n => kvSet(claveAvisos(n.email), { email: n.email, subs: n.subs, tarjetas: limpiarTarjetasAvisos(n.tarjetas), credito: limpiarMeses(n.credito), sent: n.sent });
 export const borrarAvisos = email => kvDel(claveAvisos(email));
 
 export function limpiarSub(s) {
