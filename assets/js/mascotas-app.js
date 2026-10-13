@@ -86,7 +86,7 @@ document.addEventListener('visibilitychange', async () => {
 
 /* ---------- utilidades ---------- */
 function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 3000); }
-const avatar = (p, big) => `<div class="av${big ? ' big' : ''}">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : esc((p.name || '?').slice(0, 1))}</div>`;
+const avatar = (p, big) => `<div class="av${big ? ' big' : ''}">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : Z.petIcon(p)}</div>`;
 const petById = id => doc.pets.find(p => p.id === id);
 function download(name, text, type = 'text/calendar') {
   const url = URL.createObjectURL(new Blob([text], { type }));
@@ -339,145 +339,167 @@ function tripForm(p) {
 }
 
 /* ---------- vistas ---------- */
+const I = Z.icon;
 function render() {
   if (mode === 'loading') { app.innerHTML = '<p class="dim">Cargando…</p>'; return; }
   const p = view.name === 'pet' && petById(view.id);
+  app.classList.toggle('has-nav', Boolean(p));
+  renderNav(p);
   if (p) return renderPet(p);
   view = { name: 'home' }; renderHome();
 }
+const bubble = (ic, c) => `<span class="ib c-${c}">${I(ic)}</span>`;
+const recTone = t => t === 'control' ? 'cuida' : 'salud';
 function dueRow(pet, r, s, showPet) {
-  return `<div class="row x4 ${s.c}"><span class="dot" aria-hidden="true"></span>
-    <span class="what"><b>${esc(r.name || TYPE[r.type])}</b><small>${showPet ? esc(pet.name) + ' · ' : ''}${TYPE[r.type]}</small></span>
-    <span class="when">${s.t}</span>
-    <button class="ibtn" data-act="icsRec" data-pet="${pet.id}" data-rec="${r.id}" aria-label="Agregar ${esc(r.name)} al calendario">${ICAL}</button></div>`;
+  return `<div class="row x4 ${s.c}">${bubble(Z.recIcon(r.type), recTone(r.type))}
+    <span class="what"><b>${esc(r.name || TYPE[r.type])}</b><small>${showPet ? esc(pet.name) + ', ' : ''}<span class="stt">${s.t}</span></small></span>
+    <span></span>
+    <button class="ibtn" data-act="icsRec" data-pet="${pet.id}" data-rec="${r.id}" aria-label="Agregar ${esc(r.name)} al calendario">${I('cal')}</button></div>`;
 }
 function medRow(p, m, compact) {
   const s = Z.medState(m, p.log);
-  const tx = { soon: ['st-ok', `Empieza ${Z.fmtWhen(s.next)}`], ok: ['st-done', s.next ? `Dada ✓ · próxima ${Z.fmtWhen(s.next)}` : 'Dada ✓ · última toma'], due: ['st-soon', `Toca ahora (${Z.fmtTime(s.due)})`], late: ['st-late', `Atrasada: tocaba ${Z.fmtWhen(s.due)}`], ended: ['', 'Tratamiento terminado'], nostart: ['', 'Sin fecha de inicio'] }[s.state];
-  const who = s.last ? ` · última: ${Z.fmtWhen(new Date(s.last.at))} (${esc(s.last.by || '')})` : '';
+  const tx = { soon: ['st-ok', `Empieza ${Z.fmtWhen(s.next)}`], ok: ['st-done', s.next ? `Dada. Próxima: ${Z.fmtWhen(s.next)}` : 'Dada. Era la última toma'], due: ['st-soon', `Le toca ahora (${Z.fmtTime(s.due)})`], late: ['st-late', `Atrasada: tocaba ${Z.fmtWhen(s.due)}`], ended: ['', 'Tratamiento terminado'], nostart: ['', 'Falta la primera toma'] }[s.state];
+  const who = !compact && s.last ? `<small>Última vez: ${Z.fmtWhen(new Date(s.last.at))}${s.last.by ? ', ' + esc(s.last.by) : ''}</small>` : '';
   const can = s.state === 'due' || s.state === 'late';
-  return `<div class="row x4 ${tx[0]}"><span class="dot" aria-hidden="true"></span>
-    <span class="what"><b>${compact ? esc(p.name) + ': ' : ''}${esc(m.name)}</b><small>${esc(m.dose || '')}${m.dose ? ' · ' : ''}${tx[1]}${compact ? '' : who}</small></span>
+  return `<div class="row x4 ${tx[0]}">${bubble('pill', 'med')}
+    <span class="what"><b>${compact ? esc(p.name) + ': ' : ''}${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}<span class="stt">${tx[1]}</span></small>${who}</span>
     ${can ? `<button class="ibtn go" data-act="give" data-pet="${p.id}" data-med="${m.id}">Ya se la di</button>` : '<span></span>'}
-    ${compact ? '<span></span>' : `<button class="ibtn" data-act="editMed" data-med="${m.id}" aria-label="Editar ${esc(m.name)}">Editar</button>`}</div>`;
+    ${compact ? '<span></span>' : `<button class="ibtn" data-act="editMed" data-med="${m.id}" aria-label="Editar ${esc(m.name)}">${I('edit')}</button>`}</div>`;
 }
+function petCard(p) {
+  const n = Z.upcoming(p)[0];
+  const st = p.lost.on ? '<span class="st late">Se perdió</span>' : n ? `<span class="st ${n.s.days < 0 ? 'late' : ''}">${esc(n.r.name)}: ${n.s.t.toLowerCase()}</span>` : '';
+  return `<button class="tagcard c-${Z.tone(p)}" data-act="open" data-id="${p.id}">${avatar(p)}<span><b>${esc(p.name)}</b><small>${esc([Z.species(p), Z.age(p.birth)].filter(Boolean).join(', '))}</small>${st}</span></button>`;
+}
+function greeting() { const h = new Date().getHours(); return h < 6 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'; }
 function renderHome() {
   if (!doc.pets.length) {
-    app.innerHTML = `<section class="sec"><div class="mono dim">Libreta de tu Mascota</div><h1>Todo lo de tu mascota, <i>en un lugar</i></h1></section>
-      <div class="empty"><h2>Empezá por tu mascota</h2><p>Cargá sus datos y la última vacuna o pipeta. Con eso ya te mostramos qué viene, y después sumás medicación, comida, gastos y viajes.</p><button class="btn blue" data-act="newPet">+ Agregar mascota</button></div>`;
+    app.innerHTML = `<section class="sec"><p class="hello">${greeting()}</p><h1>Todo lo de tu mascota, en un lugar</h1></section>
+      <div class="empty">${bubble('paw', 'comida')}<h2>Empezá por tu mascota</h2><p>Cargá sus datos y la última vacuna o pipeta. Con eso ya te mostramos qué viene. Después sumás medicación, comida, gastos y viajes.</p><button class="btn blue" data-act="newPet">${I('plus')} Agregar mascota</button></div>`;
     return;
   }
   const lost = doc.pets.filter(p => p.lost.on);
   const recs = doc.pets.flatMap(Z.upcoming).filter(x => x.s.days <= 30);
   const meds = doc.pets.flatMap(p => p.meds.map(m => ({ p, m, s: Z.medState(m, p.log) }))).filter(x => ['due', 'late', 'ok', 'soon'].includes(x.s.state));
   const foods = doc.pets.map(p => ({ p, f: Z.food(p.food) })).filter(x => x.f && x.f.left <= 7);
-  const late = recs.some(x => x.s.days < 0) || meds.some(x => x.s.state === 'late');
-  const any = recs.length || meds.length || foods.length;
+  const pending = recs.filter(x => x.s.days < 0).length + meds.filter(x => x.s.state === 'late' || x.s.state === 'due').length + foods.length;
+  const names = doc.pets.map(p => p.name);
+  const who = names.length === 1 ? names[0] : names.length === 2 ? `${names[0]} y ${names[1]}` : 'tus mascotas';
+  const title = lost.length ? `Buscando a ${lost[0].name}` : pending ? `${pending === 1 ? 'Hay una cosa' : `Hay ${pending} cosas`} para ${who}` : recs.length || meds.length ? `${who === 'tus mascotas' ? 'Tus mascotas están' : who + (names.length === 2 ? ' están' : ' está')} al día` : 'Todo en orden';
   app.innerHTML = `
-    <section class="sec"><div class="mono dim">Libreta de tu Mascota · ${Z.fmt(Z.today(), { weekday: 'long', day: 'numeric', month: 'long' })}</div>
-      <h1>${lost.length ? `Buscando a <i>${esc(lost[0].name)}</i>` : late ? 'Hay cosas <i>atrasadas</i>' : any ? 'Lo que <i>viene</i>' : 'Todo <i>al día</i>'}</h1></section>
-    ${lost.map(p => `<div class="banner lost"><b>${esc(p.name)} está en modo perdida.</b><span>Compartí el cartel y el link en los grupos de tu zona.</span><button class="btn sm" data-act="lost" data-pet="${p.id}">Ver cartel y pasos</button></div>`).join('')}
+    <section class="sec"><p class="hello">${greeting()} · ${Z.fmt(Z.today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p><h1>${esc(title)}</h1></section>
+    ${lost.map(p => `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:180px"><b>${esc(p.name)} está en modo perdida</b>Compartí el cartel y el link en los grupos de tu zona.</span><button class="btn sm" data-act="lost" data-pet="${p.id}">Ver cartel</button></div>`).join('')}
+    <div class="pets">${doc.pets.map(petCard).join('')}<button class="add" data-act="newPet">${I('plus')} Agregar mascota</button></div>
     ${meds.length ? `<section class="sec"><h2>Medicación</h2><div class="list">${meds.map(x => medRow(x.p, x.m, true)).join('')}</div></section>` : ''}
-    <section class="sec"><div class="sec-h"><h2>Próximos 30 días</h2>${doc.pets.some(p => Z.upcoming(p).length) ? '<button class="link" data-act="icsAll">Agregar todo al calendario</button>' : ''}</div>
-      ${recs.length || foods.length ? `<div class="list">${foods.map(({ p, f }) => `<div class="row x4 ${f.left < 0 ? 'st-late' : 'st-soon'}"><span class="dot"></span><span class="what"><b>Comprar alimento</b><small>${esc(p.name)} · ${esc(p.food.brand || 'Alimento')}</small></span><span class="when">${f.left < 0 ? 'Ya se terminó' : f.left === 0 ? 'Se termina hoy' : `Quedan ${f.left} días`}</span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar alimento">${ICAL}</button></div>`).join('')}${recs.map(x => dueRow(x.pet, x.r, x.s, true)).join('')}</div>`
-        : '<p class="dim">Nada en los próximos 30 días. Cuando cargues una vacuna o pipeta con próxima fecha, aparece acá.</p>'}</section>
-    <section class="sec"><h2>Tus mascotas</h2><div class="pets">
-      ${doc.pets.map(p => { const n = Z.upcoming(p)[0]; return `<button class="pet" data-act="open" data-id="${p.id}">${avatar(p)}<span><b>${esc(p.name)}</b><small>${esc(Z.species(p))}${p.birth ? ' · ' + Z.age(p.birth) : ''}</small>${p.lost.on ? '<small style="color:var(--or);font-weight:700">Perdida</small>' : n ? `<small class="${n.s.c}"><span class="when">${esc(n.r.name)}: ${n.s.t}</span></small>` : ''}</span></button>`; }).join('')}
-      <button class="pet add" data-act="newPet">+ Agregar mascota</button></div></section>`;
+    <section class="sec"><div class="sec-h"><h2>Lo que viene</h2>${doc.pets.some(p => Z.upcoming(p).length) ? `<button class="link" data-act="icsAll">${I('cal')} Sumar al calendario</button>` : ''}</div>
+      ${recs.length || foods.length ? `<div class="list">${foods.map(({ p, f }) => `<div class="row x4 ${f.left < 0 ? 'st-late' : 'st-soon'}">${bubble('bowl', 'comida')}<span class="what"><b>Comprar alimento</b><small>${esc(p.name)}, <span class="stt">${f.left < 0 ? 'ya se terminó' : f.left === 0 ? 'se termina hoy' : `quedan ${f.left} días`}</span></small></span><span></span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button></div>`).join('')}${recs.map(x => dueRow(x.pet, x.r, x.s, true)).join('')}</div>`
+        : '<p class="dim">Nada en los próximos 30 días. Cuando cargues una vacuna o pipeta con su próxima fecha, aparece acá.</p>'}</section>`;
 }
 
-const TABS = [['salud', 'Salud'], ['meds', 'Medicación'], ['comida', 'Comida y gastos'], ['viajes', 'Viajes'], ['datos', 'Datos y veterinaria']];
+const TABS = [['salud', 'Salud', 'heart', 'salud'], ['meds', 'Remedios', 'pill', 'med'], ['comida', 'Comida', 'bowl', 'comida'], ['viajes', 'Viajes', 'plane', 'viaje'], ['datos', 'Datos', 'doc', 'cuida']];
+let navEl = null;
+function renderNav(p) {
+  if (!p) { navEl?.remove(); navEl = null; return; }
+  if (!navEl) { navEl = document.createElement('nav'); navEl.className = 'nav'; navEl.setAttribute('aria-label', 'Secciones'); document.body.appendChild(navEl); navEl.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; view.tab = b.dataset.tab; render(); window.scrollTo({ top: 0 }); }); }
+  const tab = view.tab || 'salud';
+  navEl.innerHTML = `<div role="tablist">${TABS.map(([k, l, ic, c]) => `<button role="tab" aria-selected="${k === tab}" data-tab="${k}" class="c-${c}"><span class="ib">${I(ic)}</span>${l}</button>`).join('')}</div>`;
+}
 function renderPet(p) {
   const tab = view.tab || 'salud';
+  const pills = [Z.species(p), Z.age(p.birth), p.weight ? String(p.weight).replace('.', ',') + ' kg' : '', p.breed].filter(Boolean);
   app.innerHTML = `
-    <button class="link" data-act="home" style="align-self:flex-start">← Todas las mascotas</button>
-    <section class="head">${avatar(p, true)}<div><div class="mono dim">${esc(Z.species(p))}${p.birth ? ' · ' + Z.age(p.birth) : ''}${p.weight ? ' · ' + String(p.weight).replace('.', ',') + ' kg' : ''}</div><h1>${esc(p.name)}</h1></div></section>
-    ${p.lost.on ? `<div class="banner lost"><b>En modo perdida desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}.</b><button class="btn sm" data-act="lost">Ver cartel y pasos</button></div>` : ''}
-    ${p.allergies ? `<div class="banner info"><span class="mono">Alergias y cuidados</span><b>${esc(p.allergies)}</b></div>` : ''}
+    <button class="link" data-act="home" style="align-self:flex-start">${I('back')} Mis mascotas</button>
+    <section class="hero c-${Z.tone(p)}">
+      <div class="hero-top">${avatar(p, true)}<div><h1>${esc(p.name)}</h1></div></div>
+      <div class="pills">${pills.map(x => `<span class="pill">${esc(x)}</span>`).join('')}${p.allergies ? `<span class="pill warn">Alergia: ${esc(p.allergies)}</span>` : ''}</div>
+    </section>
+    ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:180px"><b>En modo perdida</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
     <div class="actions">
-      <button class="act" data-act="share"><b>Ficha y QR</b><small>Para el veterinario y la chapita</small></button>
-      <button class="act" data-act="sitter"><b>Modo cuidador</b><small>Link con todo para quien la cuida</small></button>
-      <button class="act" data-act="vetpdf"><b>Para el veterinario</b><small>Historial en PDF</small></button>
-      <button class="act lost" data-act="lost"><b>${p.lost.on ? 'Está perdida' : 'Se perdió'}</b><small>Cartel y primeros pasos</small></button>
+      <button class="act" data-act="share">${bubble('qr', 'viaje')}<b>Ficha y QR</b><small>Para la chapita y el veterinario</small></button>
+      <button class="act" data-act="sitter">${bubble('hand', 'cuida')}<b>Quién la cuida</b><small>Un link con todo lo que necesita</small></button>
+      <button class="act" data-act="vetpdf">${bubble('doc', 'salud')}<b>Para el veterinario</b><small>Su historial en PDF</small></button>
+      <button class="act lost" data-act="lost">${bubble('search', 'perdida')}<b>${p.lost.on ? 'Está perdida' : 'Se perdió'}</b><small>Cartel y qué hacer</small></button>
     </div>
-    <nav class="tabs" role="tablist" aria-label="Secciones">${TABS.map(([k, l]) => `<button role="tab" aria-selected="${k === tab}" data-act="tab" data-tab="${k}">${l}</button>`).join('')}</nav>
     <div role="tabpanel">${({ salud: tabSalud, meds: tabMeds, comida: tabComida, viajes: tabViajes, datos: tabDatos })[tab](p)}</div>`;
 }
 function tabSalud(p) {
   const up = Z.upcoming(p), recs = [...p.records].sort((a, b) => (b.date || b.next || '').localeCompare(a.date || a.next || ''));
   const anti = up.find(x => x.r.type === 'desparasitacion');
   return `<div class="sec">
-    <div class="chips"><button class="btn blue sm" data-act="newRec">+ Registro</button><button class="btn ghost sm" data-act="newAnti">+ Pipeta o antipulgas</button><button class="btn ghost sm" data-act="newSym">+ Algo que noté</button></div>
-    ${!anti ? '<p class="note">Tip: cargá la última pipeta o antipulgas con su próxima fecha. Es el olvido más común: casi la mitad de los dueños se lo saltearon el último año (Merck Animal Health, 2025).</p>' : ''}
-    <div class="sec-h"><h2>Próximas fechas</h2>${up.length ? '<button class="link" data-act="icsPet">Agregar al calendario</button>' : ''}</div>
-    ${up.length ? `<div class="list">${up.map(x => dueRow(p, x.r, x.s)).join('')}</div>` : '<p class="dim">Sin próximas fechas.</p>'}
-    <h2>Historial</h2>
-    ${recs.length ? `<div class="list">${recs.map(r => `<div class="row"><span class="tag">${TYPE[r.type]}</span><span class="what"><b>${esc(r.name)}</b><small>${r.date ? fmt(r.date) : 'Sin fecha'}${r.vet ? ' · ' + esc(r.vet) : ''}</small></span><button class="ibtn" data-act="editRec" data-rec="${r.id}" aria-label="Editar ${esc(r.name)}">Editar</button></div>`).join('')}</div>`
-      : '<div class="empty"><p>Todavía no hay registros. Abrí la libreta del veterinario y cargá la última vacuna: con eso ya te avisamos la próxima.</p></div>'}
-    <h2>Lo que notaste</h2>
-    ${p.symptoms.length ? `<div class="list">${[...p.symptoms].sort((a, b) => b.date.localeCompare(a.date)).map(s => `<div class="row"><span class="tag">${fmt(s.date, { day: 'numeric', month: 'short' })}</span><span class="what"><small style="color:var(--k);font-size:15px">${esc(s.text)}</small></span><button class="ibtn" data-act="editSym" data-sym="${s.id}">Editar</button></div>`).join('')}</div>`
+    <h2>Salud</h2>
+    <div class="chips"><button class="btn blue sm" data-act="newRec">${I('syringe')} Vacuna o control</button><button class="btn ghost sm" data-act="newAnti">${I('drop')} Pipeta o antipulgas</button><button class="btn ghost sm" data-act="newSym">${I('note')} Algo que noté</button></div>
+    ${!anti ? `<div class="banner care">${bubble('drop', 'perdida')}<span>Cargá la última pipeta o antipulgas con su próxima fecha. Es lo que más se olvida: casi la mitad de los dueños se lo saltearon el último año (Merck Animal Health, 2025).</span></div>` : ''}
+    <div class="sec-h"><h3>Próximas fechas</h3>${up.length ? `<button class="link" data-act="icsPet">${I('cal')} Sumar al calendario</button>` : ''}</div>
+    ${up.length ? `<div class="list">${up.map(x => dueRow(p, x.r, x.s)).join('')}</div>` : '<p class="dim">Todavía no hay próximas fechas.</p>'}
+    <h3>Historial</h3>
+    ${recs.length ? `<div class="list">${recs.map(r => `<div class="row">${bubble(Z.recIcon(r.type), recTone(r.type))}<span class="what"><b>${esc(r.name)}</b><small>${TYPE[r.type]}${r.date ? ', ' + fmt(r.date) : ''}${r.vet ? ', ' + esc(r.vet) : ''}</small></span><button class="ibtn" data-act="editRec" data-rec="${r.id}" aria-label="Editar ${esc(r.name)}">${I('edit')}</button></div>`).join('')}</div>`
+      : `<div class="empty"><p>Abrí la libreta del veterinario y cargá la última vacuna. Con eso ya te avisamos la próxima.</p></div>`}
+    <h3>Lo que notaste</h3>
+    ${p.symptoms.length ? `<div class="list">${[...p.symptoms].sort((a, b) => b.date.localeCompare(a.date)).map(s => `<div class="row">${bubble('note', 'plata')}<span class="what"><b style="font-weight:500">${esc(s.text)}</b><small>${fmt(s.date)}</small></span><button class="ibtn" data-act="editSym" data-sym="${s.id}" aria-label="Editar">${I('edit')}</button></div>`).join('')}</div>`
       : '<p class="dim">Si notás algo raro (no come, vomita, se rasca), anotalo con fecha. Sale en el PDF para el veterinario.</p>'}
   </div>`;
 }
 function tabMeds(p) {
-  const recent = [...p.log].reverse().slice(0, 12), medName = id => p.meds.find(m => m.id === id)?.name || 'Medicación';
-  const kind = { comida: 'Comió', paseo: 'Paseó', med: 'Medicación', ok: 'Todo bien', nota: 'Nota' };
+  const recent = [...p.log].reverse().slice(0, 12), medName = id => p.meds.find(m => m.id === id)?.name || 'Remedio';
+  const kind = { comida: ['Comió', 'bowl', 'comida'], paseo: ['Salió a pasear', 'walk', 'viaje'], med: ['Remedio', 'pill', 'med'], ok: ['Todo bien', 'check', 'salud'], nota: ['Nota', 'note', 'plata'] };
   return `<div class="sec">
-    <div class="chips"><button class="btn blue sm" data-act="newMed">+ Medicación</button>${p.meds.length ? '<button class="btn ghost sm" data-act="icsMeds">Avisos en el calendario</button>' : ''}</div>
-    ${p.meds.length ? `<div class="list">${p.meds.map(m => medRow(p, m)).join('')}</div>` : '<div class="empty"><p>Cuando el veterinario le recete algo, cargalo acá: te mostramos cuándo toca cada toma y quién se la dio, así nadie la repite ni la saltea.</p></div>'}
-    <h2>Registro del día a día</h2>
-    <p class="note">Lo que marcás vos y lo que marca el cuidador desde su link.</p>
-    <div class="chips"><button class="btn ghost sm" data-act="log" data-kind="comida">Comió</button><button class="btn ghost sm" data-act="log" data-kind="paseo">Paseó</button></div>
-    ${recent.length ? `<div class="list">${recent.map(l => `<div class="row"><span class="tag">${kind[l.kind]}</span><span class="what"><b>${l.kind === 'med' ? esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : kind[l.kind]}</b><small>${esc(l.by || '')}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`).join('')}</div>` : '<p class="dim">Todavía no hay anotaciones.</p>'}
+    <h2>Remedios</h2>
+    <div class="chips"><button class="btn blue sm" data-act="newMed">${I('plus')} Remedio</button>${p.meds.length ? `<button class="btn ghost sm" data-act="icsMeds">${I('cal')} Avisos en el calendario</button>` : ''}</div>
+    ${p.meds.length ? `<div class="list">${p.meds.map(m => medRow(p, m)).join('')}</div>` : `<div class="empty">${bubble('pill', 'med')}<p>Cuando el veterinario le recete algo, cargalo acá. Te mostramos cuándo toca cada toma y quién se la dio, así nadie la repite ni se la saltea.</p></div>`}
+    <h3>Su día</h3>
+    <p class="note">Lo que marcás vos y lo que marca quien la cuida desde su link.</p>
+    <div class="chips"><button class="btn ghost sm" data-act="log" data-kind="comida">${I('bowl')} Comió</button><button class="btn ghost sm" data-act="log" data-kind="paseo">${I('walk')} Salió a pasear</button></div>
+    ${recent.length ? `<div class="list">${recent.map(l => { const k = kind[l.kind]; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by || '')}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div>` : '<p class="dim">Todavía no hay nada anotado.</p>'}
   </div>`;
 }
 function tabComida(p) {
   const f = Z.food(p.food), now = Z.today(), ym = iso(now).slice(0, 7);
   const months = {}; for (const e of p.expenses) months[e.date.slice(0, 7)] = (months[e.date.slice(0, 7)] || 0) + e.amount;
-  const keys = Object.keys(months).sort().slice(-6), last3 = Object.entries(months).filter(([k]) => k < ym).sort().slice(-3);
+  const last3 = Object.entries(months).filter(([k]) => k < ym).sort().slice(-3);
   const avg = last3.length ? last3.reduce((a, [, v]) => a + v, 0) / last3.length : 0;
   const year = iso(now).slice(0, 4), byCat = {}; for (const e of p.expenses) if (e.date.startsWith(year)) byCat[e.cat] = (byCat[e.cat] || 0) + e.amount;
   const maxCat = Math.max(1, ...Object.values(byCat)), fund = p.fund, pct = fund.goal ? Math.min(1, (fund.saved || 0) / fund.goal) : 0;
   const monthsLeft = fund.goal && fund.monthly ? Math.ceil(Math.max(0, fund.goal - (fund.saved || 0)) / fund.monthly) : null;
   return `<div class="sec">
-    <div class="sec-h"><h2>Alimento</h2><button class="link" data-act="food">${f ? 'Editar' : 'Cargar'}</button></div>
-    ${f ? `<div class="card"><div class="sec-h"><b>${esc(p.food.brand || 'Alimento')}</b><span class="mono ${f.left <= 3 ? 'dim' : ''}">${p.food.bagKg} kg · ${p.food.dailyG} g/día</span></div>
-      <div class="bar" role="img" aria-label="Queda ${Math.round(f.pct * 100)}% de la bolsa"><i style="width:${Math.round(f.pct * 100)}%;background:${f.left <= 3 ? 'var(--or)' : 'var(--blue)'}"></i></div>
-      <p>${f.left < 0 ? '<b>Ya se terminó la bolsa.</b> Cuando abras otra, actualizá la fecha.' : `Quedan <b>${f.left} días</b>. Se termina alrededor del ${fmt(f.end)}.`}</p>
-      <div class="chips"><button class="btn ghost sm" data-act="icsFood">Aviso 3 días antes</button><button class="btn ghost sm" data-act="newBag">Abrí una bolsa nueva</button></div></div>`
-      : '<div class="empty"><p>Cargá cuánto trae la bolsa y cuánto come por día: te avisamos antes de que se termine, para no salir corriendo un domingo.</p></div>'}
-    <div class="sec-h"><h2>Gastos</h2><button class="btn blue sm" data-act="newExp">+ Gasto</button></div>
-    <div class="stats"><div class="stat"><span>Este mes</span><b>${money(months[ym] || 0)}</b></div><div class="stat"><span>Promedio</span><b>${money(avg)}</b><small>últimos ${last3.length || 0} meses</small></div><div class="stat"><span>En ${year}</span><b>${money(Object.values(byCat).reduce((a, b) => a + b, 0))}</b></div></div>
-    ${Object.keys(byCat).length ? `<div class="bars" aria-label="Gastos de ${year} por categoría">${Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<div class="bl"><span>${EXP[c]}</span><div class="bar"><i style="width:${Math.round(v / maxCat * 100)}%"></i></div><b>${money(v)}</b></div>`).join('')}</div>` : ''}
-    ${p.expenses.length ? `<div class="list">${[...p.expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8).map(e => `<div class="row"><span class="tag">${fmt(e.date, { day: 'numeric', month: 'short' })}</span><span class="what"><b>${money(e.amount)}</b><small>${EXP[e.cat]}${e.note ? ' · ' + esc(e.note) : ''}</small></span><button class="ibtn" data-act="editExp" data-exp="${e.id}">Editar</button></div>`).join('')}</div>` : '<p class="dim">Anotá lo que gastás en alimento, veterinaria, pipetas y peluquería para saber cuánto te sale por mes.</p>'}
-    <div class="sec-h"><h2>Fondo para imprevistos</h2><button class="link" data-act="fund">${fund.goal ? 'Editar' : 'Armar'}</button></div>
-    ${fund.goal ? `<div class="card"><div class="sec-h"><b>${money(fund.saved || 0)} de ${money(fund.goal)}</b><span class="mono">${Math.round(pct * 100)}%</span></div><div class="bar"><i style="width:${Math.round(pct * 100)}%"></i></div>
-      <p class="dim">${pct >= 1 ? 'Meta cumplida.' : monthsLeft ? `Separando ${money(fund.monthly)} por mes, llegás en ${monthsLeft} ${monthsLeft === 1 ? 'mes' : 'meses'}.` : 'Poné cuánto separás por mes para ver cuándo llegás.'}</p>
-      ${fund.monthly ? `<button class="btn ghost sm" data-act="fundAdd">Sumar ${money(fund.monthly)} de este mes</button>` : ''}</div>`
-      : '<div class="empty"><p>Una cirugía puede costar entre $300.000 y $450.000. Armá una meta y separá un poco por mes.</p></div>'}
+    <div class="sec-h"><h2>Comida</h2><button class="link" data-act="food">${f ? 'Editar' : 'Cargar'}</button></div>
+    ${f ? `<div class="card c-comida"><div style="display:flex;gap:12px;align-items:center">${bubble('bowl', 'comida')}<span><b>${esc(p.food.brand || 'Alimento')}</b><small class="dim" style="display:block">${String(p.food.bagKg).replace('.', ',')} kg, come ${p.food.dailyG} g por día</small></span></div>
+      <div class="bar" role="img" aria-label="Queda ${Math.round(f.pct * 100)}% de la bolsa"><i style="width:${Math.round(f.pct * 100)}%;${f.left <= 3 ? 'background:var(--perdida-i)' : ''}"></i></div>
+      <p>${f.left < 0 ? '<b>Ya se terminó la bolsa.</b> Cuando abras otra, tocá "Abrí una bolsa nueva".' : `Le quedan <b>${f.left} días</b> de alimento. Se termina alrededor del ${fmt(f.end, { day: 'numeric', month: 'long' })}.`}</p>
+      <div class="chips"><button class="btn ghost sm" data-act="icsFood">${I('cal')} Avisame 3 días antes</button><button class="btn ghost sm" data-act="newBag">Abrí una bolsa nueva</button></div></div>`
+      : `<div class="empty">${bubble('bowl', 'comida')}<p>Cargá cuánto trae la bolsa y cuánto come por día. Te avisamos antes de que se termine, para no salir corriendo un domingo.</p></div>`}
+    <div class="sec-h"><h2>Gastos</h2><button class="btn blue sm" data-act="newExp">${I('plus')} Gasto</button></div>
+    <div class="stats"><div class="stat"><span>Este mes</span><b>${money(months[ym] || 0)}</b></div><div class="stat"><span>Por mes, en promedio</span><b>${money(avg)}</b></div><div class="stat"><span>En ${year}</span><b>${money(Object.values(byCat).reduce((a, b) => a + b, 0))}</b></div></div>
+    ${Object.keys(byCat).length ? `<div class="bars c-plata" aria-label="Gastos de ${year} por rubro">${Object.entries(byCat).sort((a, b) => b[1] - a[1]).map(([c, v]) => `<div class="bl"><span>${EXP[c]}</span><div class="bar"><i style="width:${Math.round(v / maxCat * 100)}%"></i></div><b>${money(v)}</b></div>`).join('')}</div>` : ''}
+    ${p.expenses.length ? `<div class="list">${[...p.expenses].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8).map(e => `<div class="row">${bubble('wallet', 'plata')}<span class="what"><b>${money(e.amount)}</b><small>${EXP[e.cat]}${e.note ? ', ' + esc(e.note) : ''} · ${fmt(e.date, { day: 'numeric', month: 'short' })}</small></span><button class="ibtn" data-act="editExp" data-exp="${e.id}" aria-label="Editar">${I('edit')}</button></div>`).join('')}</div>` : '<p class="dim">Anotá lo que gastás en alimento, veterinaria, pipetas y peluquería para saber cuánto te sale por mes.</p>'}
+    <div class="sec-h"><h2>Ahorro para imprevistos</h2><button class="link" data-act="fund">${fund.goal ? 'Editar' : 'Armar'}</button></div>
+    ${fund.goal ? `<div class="card c-salud"><div style="display:flex;gap:12px;align-items:center">${bubble('piggy', 'salud')}<span><b>${money(fund.saved || 0)} de ${money(fund.goal)}</b><small class="dim" style="display:block">${pct >= 1 ? '¡Meta cumplida!' : monthsLeft ? `Separando ${money(fund.monthly)} por mes, llegás en ${monthsLeft} ${monthsLeft === 1 ? 'mes' : 'meses'}.` : 'Poné cuánto separás por mes para ver cuándo llegás.'}</small></span></div>
+      <div class="bar"><i style="width:${Math.round(pct * 100)}%"></i></div>
+      ${fund.monthly ? `<button class="btn ghost sm" data-act="fundAdd">${I('plus')} Sumar ${money(fund.monthly)} de este mes</button>` : ''}</div>`
+      : `<div class="empty">${bubble('piggy', 'salud')}<p>Una cirugía puede costar entre $300.000 y $450.000. Armá una meta y separá un poco por mes.</p></div>`}
   </div>`;
 }
 function tabViajes(p) {
   const t = Z.trip(p);
   return `<div class="sec">
-    ${t ? `<div class="sec-h"><h2>${esc(t.dest)} · ${fmt(t.date)}</h2><button class="link" data-act="trip">Cambiar</button></div>
-      <p class="dim">${t.daysTo < 0 ? 'La fecha ya pasó.' : `Faltan ${t.daysTo} días.`}</p>
-      <div>${t.items.map(i => `<div class="check ${i.st}"><span class="ic">${i.st === 'ok' ? '✓' : i.st === 'no' ? '!' : '•'}</span><span><b>${esc(i.t)}</b><small>${esc(i.d)}</small></span></div>`).join('')}</div>
-      <p class="note">Información general según SENASA (costos a octubre de 2025: trámite normal $1.604; digital o urgente $22.731). Los requisitos cambian: confirmalos en <a href="https://www.argentina.gob.ar/senasa" target="_blank" rel="noopener">argentina.gob.ar/senasa</a> antes de viajar.</p>`
-      : `<div class="empty"><h2>¿Viajás con ${esc(p.name)}?</h2><p>Poné destino y fecha y te armamos qué preparar y cuándo: antirrábica, certificado del veterinario, certificado de SENASA y lo que pide cada país.</p><button class="btn blue sm" data-act="trip">Planear un viaje</button></div>`}
+    ${t ? `<div class="sec-h"><h2>${esc(t.dest)}, ${fmt(t.date, { day: 'numeric', month: 'long' })}</h2><button class="link" data-act="trip">Cambiar</button></div>
+      <p class="dim">${t.daysTo < 0 ? 'La fecha ya pasó.' : `Faltan ${t.daysTo} días. Esto es lo que necesita ${esc(p.name)}:`}</p>
+      <div class="list">${t.items.map(i => `<div class="check ${i.st}"><span class="ic">${I(i.st === 'ok' ? 'check' : i.st === 'no' ? 'alert' : 'plus')}</span><span><b>${esc(i.t)}</b><small>${esc(i.d)}</small></span></div>`).join('')}</div>
+      <p class="note">Información general según SENASA (costos a octubre de 2025: trámite normal $1.604, digital o urgente $22.731). Los requisitos cambian: confirmalos en <a href="https://www.argentina.gob.ar/senasa" target="_blank" rel="noopener">argentina.gob.ar/senasa</a> antes de viajar.</p>`
+      : `<div class="empty">${bubble('plane', 'viaje')}<h2>¿Viajás con ${esc(p.name)}?</h2><p>Poné destino y fecha y te armamos qué preparar y cuándo: antirrábica, certificado del veterinario, certificado de SENASA y lo que pide cada país.</p><button class="btn blue sm" data-act="trip">Planear un viaje</button></div>`}
   </div>`;
 }
 function tabDatos(p) {
   const facts = [['Especie', Z.species(p)], ['Raza', p.breed], ['Sexo', p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : ''], ['Nacimiento', p.birth ? fmt(p.birth) : ''], ['Peso', p.weight ? String(p.weight).replace('.', ',') + ' kg' : ''], ['Color', p.color], ['Microchip', p.chip], ['Señas', p.marks], ['Carácter', p.temper]].filter(f => f[1]);
+  const call = n => `<a class="ibtn go" href="tel:${esc(n.replace(/[^\d+]/g, ''))}" aria-label="Llamar">${I('phone')}</a>`;
   return `<div class="sec">
-    <div class="sec-h"><h2>Datos</h2><button class="link" data-act="editPet">Editar</button></div>
+    <div class="sec-h"><h2>Sus datos</h2><button class="link" data-act="editPet">${I('edit')} Editar</button></div>
     ${facts.length ? `<div class="facts">${facts.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div>` : ''}
-    <div class="sec-h"><h2>Veterinaria y emergencias</h2><button class="link" data-act="vet">${p.vet.name || p.vet.er ? 'Editar' : 'Cargar'}</button></div>
+    <div class="sec-h"><h2>Veterinaria y urgencias</h2><button class="link" data-act="vet">${p.vet.name || p.vet.er ? 'Editar' : 'Cargar'}</button></div>
     ${p.vet.name || p.vet.er ? `<div class="list">
-      ${p.vet.name ? `<div class="row"><span class="tag">Veterinaria</span><span class="what"><b>${esc(p.vet.name)}</b><small>${esc(p.vet.address)}</small></span>${p.vet.phone ? `<a class="ibtn go" href="tel:${esc(p.vet.phone.replace(/[^\d+]/g, ''))}">Llamar</a>` : '<span></span>'}</div>` : ''}
-      ${p.vet.er ? `<div class="row"><span class="tag">24 h</span><span class="what"><b>${esc(p.vet.er)}</b><small>${esc(p.vet.erPhone)}</small></span>${p.vet.erPhone ? `<a class="ibtn go" href="tel:${esc(p.vet.erPhone.replace(/[^\d+]/g, ''))}">Llamar</a>` : '<span></span>'}</div>` : ''}</div>`
-      : '<div class="empty"><p>Cargá tu veterinaria y una guardia 24 horas. En una emergencia no hay tiempo de buscar.</p></div>'}
-    ${p.notes ? `<h2>Notas privadas</h2><p style="white-space:pre-wrap">${esc(p.notes)}</p>` : ''}
+      ${p.vet.name ? `<div class="row">${bubble('heart', 'salud')}<span class="what"><b>${esc(p.vet.name)}</b><small>${esc(p.vet.address || 'Su veterinaria')}</small></span>${p.vet.phone ? call(p.vet.phone) : '<span></span>'}</div>` : ''}
+      ${p.vet.er ? `<div class="row">${bubble('alert', 'perdida')}<span class="what"><b>${esc(p.vet.er)}</b><small>Guardia 24 horas</small></span>${p.vet.erPhone ? call(p.vet.erPhone) : '<span></span>'}</div>` : ''}</div>`
+      : `<div class="empty">${bubble('heart', 'salud')}<p>Cargá tu veterinaria y una guardia 24 horas. En una urgencia no hay tiempo de buscar.</p></div>`}
+    ${p.notes ? `<h3>Notas privadas</h3><div class="card"><p style="white-space:pre-wrap">${esc(p.notes)}</p></div>` : ''}
   </div>`;
 }
 
@@ -550,7 +572,7 @@ function sitterPanel(p) {
     { k: 'vetAuth', label: 'Avisé a la veterinaria que puede atenderla en mi nombre', type: 'check', hint: 'Es lo que más se olvida: sin ese aviso, en una emergencia pueden no atenderla si no te ubican.' },
   ];
   const link = p.sitterToken ? `${location.origin}/cuida/${p.sitterToken}` : '';
-  panel('Modo cuidador', `<p class="note">Completalo una vez. El cuidador abre un link con todo esto, la medicación con sus horarios y la veterinaria, y marca cada día si comió, paseó y le dio los remedios. Vos lo ves en "Medicación".</p>
+  panel(`Quién cuida a ${p.name}`, `<p class="note">Completalo una vez. El cuidador abre un link con todo esto, la medicación con sus horarios y la veterinaria, y marca cada día si comió, paseó y le dio los remedios. Vos lo ves en "Medicación".</p>
     <div class="fbody">${fields.map(f => Array.isArray(f) ? `<div class="two">${f.map(x => field(x, s[x.k])).join('')}</div>` : field(f, s[f.k])).join('')}</div>
     <button class="btn blue wide" id="sSave">${link ? 'Guardar cambios' : mode === 'full' ? 'Guardar y crear link' : 'Guardar'}</button>
     ${link ? `<div class="linkbox"><input readonly value="${esc(link)}" aria-label="Link del cuidador"><button class="btn sm" id="sCp" type="button">Copiar</button></div>
