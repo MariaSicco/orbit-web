@@ -1,4 +1,4 @@
-/* Libreta de tu Mascota · Orbit · interfaz. Necesita core.js (window.LB).
+/* Mimitos by Orbit · la libreta de tu mascota · interfaz. Necesita core.js (window.LB).
    Datos solo en el dispositivo: localStorage "orbit-libreta:v1". Sin storage, funciona en memoria y avisa. */
 (() => {
 'use strict';
@@ -62,7 +62,7 @@ function toast(t) {
   clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 3200);
 }
 const cur = () => doc.pets.find(p => p.id === doc.current) || doc.pets[0];
-const avatar = (p, cls = '') => `<span class="av ${cls}">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : L.petIcon(p)}</span>`;
+const avatar = (p, cls = '') => `<span class="av c-${L.tone(p)} ${cls}">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : L.petIcon(p)}</span>`;
 const kg = w => (w ? String(w).replace('.', ',') + ' kg' : '');
 const ageTxt = p => { const a = L.age(p.birth); return a ? (p.birthApprox ? `${a} aprox.` : a) : ''; };
 const recName = r => r.name || L.TYPE[r.type];
@@ -89,15 +89,15 @@ function render() {
 let lastView = '';
 const enterCls = v => { const c = v !== lastView ? ' enter' : ''; lastView = v; return c; };
 function renderWelcome() {
-  document.title = 'Libreta de tu Mascota · Orbit';
+  document.title = 'Mimitos by Orbit · la libreta de tu mascota';
   app.innerHTML = `<section class="welcome${enterCls('welcome:' + mode)}">
-    <p class="mono eyebrow">Orbit · Herramienta</p>
-    <h1 class="display w-title">Todo lo de tu mascota, <span class="it">en un lugar.</span></h1>
+    <span class="ib big c-comida">${I('paw')}</span>
+    <h1 class="w-title">La libreta de tu mascota, <span class="it">siempre a mano</span></h1>
     <p class="lead">Anotá vacunas, desparasitaciones y controles. La libreta te muestra qué le toca y cuándo.</p>
     <ol class="steps">
-      <li><span class="mono">01</span><b>Cargás a tu mascota</b><small>Nombre, especie y edad. Menos de un minuto.</small></li>
-      <li><span class="mono">02</span><b>Anotás lo último que le dieron</b><small>Vacunas, pipetas, antiparasitarios y controles.</small></li>
-      <li><span class="mono">03</span><b>Ves lo que le toca</b><small>Vencido, pronto o al día, en orden.</small></li>
+      <li><span class="num">1</span><b>Cargás a tu mascota</b><small>Nombre, especie y edad. Menos de un minuto.</small></li>
+      <li><span class="num">2</span><b>Anotás lo último que le dieron</b><small>Vacunas, pipetas, antiparasitarios y controles.</small></li>
+      <li><span class="num">3</span><b>Ves lo que le toca</b><small>Vencido, pronto o al día, en orden.</small></li>
     </ol>
     <div class="actions">
       <button class="btn btn-acid big" type="button" data-act="newPet" data-k="newPet">${I('plus')} Agregar a mi mascota</button>
@@ -114,7 +114,7 @@ const dueItems = p => DUE_SOURCES.flatMap(fn => fn(p)).sort((a, b) => a.s.days -
 const FILTERS = [['todo', 'Todo'], ['vacuna', 'Vacunas'], ['desp_int', 'Desp. interna'], ['desp_ext', 'Desp. externa'], ['control', 'Controles']];
 
 function renderPet(p) {
-  document.title = `${p.name} · Libreta de tu Mascota`;
+  document.title = `${p.name} · Mimitos`;
   const due = dueItems(p);
   const hist = L.history(p, filter);
   const counts = Object.fromEntries(FILTERS.map(([k]) => [k, L.history(p, k).length]));
@@ -128,10 +128,10 @@ function renderPet(p) {
   </nav>
   <div class="grid${enterCls('pet:' + p.id)}" data-pet="${esc(p.id)}">
     <div class="col-a">
-      <section class="pethead" aria-labelledby="petName">
+      <section class="pethead c-${L.tone(p)}" aria-labelledby="petName">
         ${avatar(p, 'big')}
         <div class="ph-txt">
-          <p class="mono dim">${esc(meta1)}</p>
+          <p class="ph-kind">${esc(meta1)}</p>
           <h1 class="ph-name" id="petName">${esc(p.name)}</h1>
           ${meta2 ? `<p class="ph-meta">${esc(meta2)}</p>` : ''}
         </div>
@@ -141,10 +141,10 @@ function renderPet(p) {
       <button class="btn btn-acid big wide main-cta" type="button" data-act="addRec" data-k="addRec">${I('plus')} Cargar algo de ${esc(p.name)}</button>
 
       <section class="block" aria-labelledby="dueT">
-        <div class="block-h"><h2 id="dueT">Lo que le toca a <span class="it">${esc(p.name)}</span></h2>${due.length ? `<span class="mono dim">${due.length}</span>` : ''}</div>
+        <div class="block-h"><h2 id="dueT">Lo que le toca a <span class="it">${esc(p.name)}</span></h2>${due.length ? `<span class="count">${due.length}</span>` : ''}</div>
         ${due.length ? `<p class="hint">Tocá una fecha para anotar que ya se la dieron.</p>
         <ul class="due-list" role="list">${due.map(x => `<li><button class="due st-${x.s.k}" type="button" data-act="renew" data-id="${esc(x.r.id)}" data-k="due-${esc(x.r.id)}" aria-label="${esc(recName(x.r))}, ${esc(L.TYPE[x.r.type])}. ${x.s.label}: ${esc(x.s.t)}. Anotar la nueva aplicación">
-          <span class="ic">${I(L.recIcon(x.r.type))}</span>
+          <span class="ic c-${L.recTone(x.r.type)}">${I(L.recIcon(x.r.type))}</span>
           <span class="what"><b>${esc(recName(x.r))}</b><small>${esc(L.TYPE_SHORT[x.r.type])} · ${esc(x.s.t)}</small></span>
           <span class="pill ${x.s.k}">${x.s.label}</span>
         </button></li>`).join('')}</ul>`
@@ -154,16 +154,16 @@ function renderPet(p) {
 
     <div class="col-b">
       <section class="block" aria-labelledby="histT">
-        <div class="block-h"><h2 id="histT">Historial</h2>${p.records.length ? `<span class="mono dim">${p.records.length}</span>` : ''}</div>
+        <div class="block-h"><h2 id="histT">Historial</h2>${p.records.length ? `<span class="count">${p.records.length}</span>` : ''}</div>
         ${p.records.length ? `<div class="filters" role="group" aria-label="Filtrar por tipo">${FILTERS.map(([k, l]) => `<button class="chip" type="button" data-act="filter" data-f="${k}" data-k="f-${k}" aria-pressed="${k === filter}">${l}<span class="n">${counts[k]}</span></button>`).join('')}</div>` : ''}
         ${hist.length ? `<ul class="hist" role="list">${hist.map(r => {
-          const y = r.date.slice(0, 4), head = y !== year ? `<li class="year mono" aria-hidden="true">${y}</li>` : ''; year = y;
+          const y = r.date.slice(0, 4), head = y !== year ? `<li class="year" aria-hidden="true">${y}</li>` : ''; year = y;
           const sub = [L.TYPE_SHORT[r.type], r.vet].filter(Boolean).join(' · ');
           return `${head}<li><button class="hrow" type="button" data-act="editRec" data-id="${esc(r.id)}" data-k="rec-${esc(r.id)}" aria-label="${esc(recName(r))}, ${esc(fmt(r.date))}. Editar">
-            <span class="h-date mono">${esc(fmt(r.date, { day: 'numeric', month: 'short' }))}</span>
-            <span class="ic">${I(L.recIcon(r.type))}</span>
+            <span class="h-date">${esc(fmt(r.date, { day: 'numeric', month: 'short' }))}</span>
+            <span class="ic c-${L.recTone(r.type)}">${I(L.recIcon(r.type))}</span>
             <span class="what"><b>${esc(recName(r))}</b><small>${esc(sub)}</small>${r.notes ? `<small class="notes">${esc(r.notes)}</small>` : ''}</span>
-            ${r.next ? `<span class="h-next mono">Próx. ${esc(fmt(r.next, { day: 'numeric', month: 'short', year: '2-digit' }))}</span>` : ''}
+            ${r.next ? `<span class="h-next">Próx. ${esc(fmt(r.next, { day: 'numeric', month: 'short', year: '2-digit' }))}</span>` : ''}
           </button></li>`;
         }).join('')}</ul>`
         : `<div class="empty"><p>${p.records.length ? 'No hay nada de este tipo todavía.' : `Su historial empieza acá. Cargá la última vacuna, pipeta o control de ${esc(p.name)} y queda en orden.`}</p></div>`}

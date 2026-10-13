@@ -1,4 +1,4 @@
-/* Libreta de tu Mascota · Orbit · lógica pura (sin DOM).
+/* Mimitos by Orbit · la libreta de tu mascota · lógica pura (sin DOM).
    Fechas, edad, estados, próximas fechas, modelo de datos e íconos.
    Base tomada a mano de Mimitos (origin/mascotas-libreta: assets/js/mascotas-core.js y mascotas-app.js), recortada. */
 (function (g) {
@@ -142,7 +142,12 @@
   };
   const icon = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">${P[n] || P.paw}</svg>`;
   const petIcon = p => icon(p.species === 'gato' ? 'cat' : 'dog');
+  /* color de cada mascota (como la chapita de Mimitos): sale del id, siempre el mismo */
+  const TONES = ['comida', 'viaje', 'salud', 'med', 'cuida', 'plata'];
+  const tone = p => { let h = 0; for (const ch of String(p.id || p.name || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return TONES[h % TONES.length]; };
+  /* color de la burbuja por tipo de registro */
+  const recTone = t => ({ vacuna: 'salud', desp_int: 'med', desp_ext: 'viaje', control: 'cuida' })[t] || 'salud';
   const recIcon = t => ({ vacuna: 'syringe', desp_int: 'pill', desp_ext: 'drop', control: 'steth' })[t] || 'steth';
 
-  g.LB = { DAY, SOON_DAYS, today, pd, iso, fmt, money, esc, isISO, addMonths, monthsSince, age, status, TYPE, TYPE_SHORT, TYPES, SUGGEST, suggest, BREEDS, species, uid, blankPet, blankRecord, norm, normRecord, normDoc, upcoming, history, icon, petIcon, recIcon };
+  g.LB = { DAY, SOON_DAYS, today, pd, iso, fmt, money, esc, isISO, addMonths, monthsSince, age, status, TYPE, TYPE_SHORT, TYPES, SUGGEST, suggest, BREEDS, species, uid, blankPet, blankRecord, norm, normRecord, normDoc, upcoming, history, icon, petIcon, recIcon, tone, recTone };
 })(typeof window !== 'undefined' ? window : globalThis);
