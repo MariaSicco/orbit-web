@@ -9,7 +9,7 @@
 <link rel="icon" href="/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Inter+Tight:wght@400;500;600;700&display=swap">
-<link rel="stylesheet" href="/assets/css/mascotas.css?v=2">
+<link rel="stylesheet" href="/assets/css/mascotas.css?v=4">
 </head>
 <body>
 <header class="top">
@@ -18,7 +18,7 @@
 </header>
 <main id="app"><p class="dim">Cargando…</p></main>
 <div class="toast" id="toast" role="status"></div>
-<script src="/assets/js/mascotas-core.js?v=2"></script>
+<script src="/assets/js/mascotas-core.js?v=4"></script>
 <script>
 (() => {
 'use strict';
@@ -55,6 +55,7 @@ function ficha(p, updatedAt) {
       <div class="pills"><span class="pill">${esc(Z.species(p))}</span>${p.temper ? `<span class="pill">${esc(p.temper)}</span>` : ''}${p.allergies ? `<span class="pill warn">Alergia: ${esc(p.allergies)}</span>` : ''}</div></section>
     ${!p.lost && c?.phone ? `<section class="card"><div style="display:flex;gap:12px;align-items:center">${bubble('hand', 'cuida')}<span><b>¿Me encontraste?</b><span class="dim" style="display:block">Avisale a ${esc(c.name || 'mi familia')}${c.note ? '. ' + esc(c.note) : ''}</span></span></div>${callBtns(`Hola, encontré a ${p.name}.`, 'blue')}</section>` : ''}
     ${facts.length ? `<div class="facts">${facts.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div>` : ''}
+    ${(p.conditions || []).length || (p.surgeries || []).length || p.neutered ? `<section class="sec"><h2>Antecedentes</h2><div class="list">${p.neutered ? `<div class="row" style="grid-template-columns:auto minmax(0,1fr)">${bubble('heart', 'salud')}<span class="what"><b>${p.neutered === 'si' ? 'Castración: sí' : 'Sin castrar'}</b></span></div>` : ''}${(p.conditions || []).map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr)">${bubble('heart', 'perdida')}<span class="what"><b>${esc(c.name)}</b><small>${c.status === 'controlada' ? 'Controlado' : 'Lo tiene'}</small></span></div>`).join('')}${(p.surgeries || []).map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr)">${bubble('scalpel', 'perdida')}<span class="what"><b>${esc(c.name)}</b><small>Cirugía${c.date ? ', ' + fmt(c.date) : ''}</small></span></div>`).join('')}</div></section>` : ''}
     <section class="sec"><h2>Vacunas y controles</h2>
       ${p.records.length ? `<div class="list">${[...p.records].sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(r => { const u = ups.find(x => x.r.name === r.name && x.r.type === r.type && x.r.date === r.date); return `<div class="row ${u ? u.s.c : ''}" style="grid-template-columns:auto minmax(0,1fr)">${bubble(Z.recIcon(r.type), r.type === 'control' ? 'cuida' : 'salud')}<span class="what"><b>${esc(r.name)}</b><small>${TYPE[r.type]}${r.date ? ', ' + fmt(r.date) : ''}${r.vet ? ', ' + esc(r.vet) : ''}</small>${u ? `<small class="stt">${u.s.days < 0 ? 'Vencida el ' + fmt(r.next) : 'Vigente hasta el ' + fmt(r.next)}</small>` : ''}</span></div>`; }).join('')}</div>` : '<p class="dim">Sin registros cargados.</p>'}
     </section>

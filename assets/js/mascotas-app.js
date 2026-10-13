@@ -19,6 +19,7 @@ const blankPet = () => ({ id: uid(), name: '', species: 'perro', speciesOther: '
   contact: { show: false, name: '', phone: '', note: '' }, vet: { name: '', phone: '', address: '', er: '', erPhone: '' }, lost: { on: false, since: '', place: '', note: '' },
   share: '', sitterToken: '', sitter: { name: '', from: '', to: '', food: '', walks: '', where: '', habits: '', emergency: '', key: '', vetAuth: false, contact: '' },
   food: { brand: '', bagKg: null, dailyG: null, opened: '' }, fund: { goal: null, monthly: null, saved: null }, trip: { dest: '', date: '' },
+  neutered: '', chronic: '', onboarded: false, conditions: [], surgeries: [], visits: [], studies: [], weights: [],
   records: [], meds: [], expenses: [], symptoms: [], log: [] });
 const norm = p => { const b = blankPet(); for (const k in b) if (p[k] == null) p[k] = b[k]; else if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) p[k] = { ...b[k], ...p[k] }; return p; };
 
@@ -40,8 +41,14 @@ function demoDoc() {
       { id: 'e3', date: d(-20), cat: 'veterinaria', amount: 34000, note: 'Consulta' }, { id: 'e4', date: d(-10), cat: 'peluqueria', amount: 40000, note: 'Baño y corte' },
       { id: 'e5', date: d(-64), cat: 'alimento', amount: 36000, note: '' } ],
     symptoms: [{ id: 's1', date: d(-3), text: 'Se rasca mucho la oreja izquierda.' }],
+    neutered: 'si', onboarded: true, chronic: '',
+    conditions: [{ id: 'c1', name: 'Otitis', since: '2025', status: 'controlada', notes: 'Oído izquierdo. Vuelve en verano.' }, { id: 'c2', name: 'Parvovirus', since: '2022', status: 'resuelta', notes: 'De cachorra, internada 4 días.' }],
+    surgeries: [{ id: 'q1', name: 'Castración', date: '2023-03-14', notes: '' }],
+    visits: [{ id: 'v1', date: d(-20), reason: 'Se rasca la oreja', vet: 'Veterinaria San Martín', findings: 'Otitis externa en el oído izquierdo.', plan: 'Gotas 2 veces por día durante 10 días. Control en 2 semanas.', weight: 14.2 }],
+    studies: [{ id: 'x1', date: d(-120), kind: 'sangre', title: 'Análisis de sangre completo', notes: 'Todo dentro de lo normal según la veterinaria.', files: [] }],
+    weights: [{ date: d(-400), kg: 12.8 }, { date: d(-240), kg: 13.6 }, { date: d(-120), kg: 14.0 }, { date: d(-20), kg: 14.2 }],
     log: [{ id: 'l1', at: at(-1, 20).toISOString(), kind: 'med', medId: 'm1', by: 'Majo', note: '' }, { id: 'l2', at: at(0, 8).toISOString(), kind: 'comida', medId: '', by: 'Majo', note: '' }] });
-  const michi = Object.assign(blankPet(), { id: 'demo2', name: 'Michi', species: 'gato', breed: 'Común europeo', sex: 'm', birth: d(-730), color: 'Atigrado', weight: 4.6,
+  const michi = Object.assign(blankPet(), { id: 'demo2', name: 'Michi', species: 'gato', breed: 'Común europeo', sex: 'm', birth: d(-730), color: 'Atigrado', weight: 4.6, neutered: 'si', onboarded: true,
     records: [{ id: 'r5', type: 'vacuna', name: 'Triple felina', date: d(-358), next: d(6), vet: '', notes: '' }] });
   return { pets: [lola, michi] };
 }
@@ -202,7 +209,9 @@ function petForm(p) {
       [{ k: 'color', label: 'Color', max: 80 }, { k: 'chip', label: 'Microchip', max: 40 }],
       { k: 'marks', label: 'Señas particulares', ph: 'Mancha blanca en el pecho, oreja caída…', max: 200, hint: 'Ayudan a reconocerla si se pierde.' },
       { k: 'temper', label: 'Carácter', ph: 'Miedosa con extraños, se escapa si abren la puerta…', max: 200 },
-      { k: 'allergies', label: 'Alergias o cuidados especiales', max: 300 },
+      { k: 'neutered', label: '¿Está castrado o castrada?', type: 'chips', options: [['si', 'Sí'], ['no', 'No'], ['', 'No sé']] },
+      { k: 'allergies', label: 'Alergias', max: 300, ph: 'A un alimento, a un remedio…' },
+      { k: 'chronic', label: 'Remedios que toma siempre', max: 300, ph: 'Nombre y dosis' },
       { k: 'notes', label: 'Notas privadas', type: 'textarea', max: 600, ph: 'Solo las ves vos.' },
     ],
     onChip: (k, v) => { if (k === 'species') $('#f_speciesOther').closest('.f').hidden = v !== 'otra'; },
@@ -212,7 +221,7 @@ function petForm(p) {
       if (!v.name) return 'Poné el nombre de tu mascota.';
       const w = numDec(v.weight); if (Number.isNaN(w)) return 'El peso tiene que ser un número, por ejemplo 12,5.';
       const pet = p || blankPet();
-      Object.assign(pet, { name: v.name, species: v.species || 'perro', speciesOther: v.speciesOther, breed: v.breed, sex: v.sex, birth: v.birth, weight: w, color: v.color, chip: v.chip, marks: v.marks, temper: v.temper, allergies: v.allergies, notes: v.notes });
+      Object.assign(pet, { name: v.name, species: v.species || 'perro', speciesOther: v.speciesOther, breed: v.breed, sex: v.sex, birth: v.birth, weight: w, color: v.color, chip: v.chip, marks: v.marks, temper: v.temper, allergies: v.allergies, neutered: v.neutered, chronic: v.chronic, notes: v.notes });
       if (v.photo) { try { pet.photo = await uploadPhoto(v.photo); } catch { toast('La foto no se pudo subir. El resto quedó guardado.'); } }
       if (!p) { doc.pets.push(pet); view = { name: 'pet', id: pet.id, tab: 'salud' }; window.scrollTo(0, 0); }
     },
@@ -338,120 +347,420 @@ function tripForm(p) {
   });
 }
 
-/* ---------- vistas ---------- */
-const I = Z.icon;
-function render() {
-  if (mode === 'loading') { app.innerHTML = '<p class="dim">Cargando…</p>'; return; }
-  const p = view.name === 'pet' && petById(view.id);
-  app.classList.toggle('has-nav', Boolean(p));
-  renderNav(p);
-  if (p) return renderPet(p);
-  view = { name: 'home' }; renderHome();
+/* ---------- formularios de la historia clínica ---------- */
+function visitForm(p, v) {
+  openForm({
+    title: v ? 'Consulta' : `Consulta de ${p.name}`, intro: v ? '' : 'Anotá lo que te dijo el veterinario para no olvidarte y tenerlo la próxima vez.',
+    values: v ? { ...v, weight: v.weight ? String(v.weight).replace('.', ',') : '' } : { date: iso(Z.today()), vet: p.vet.name || '' },
+    fields: [
+      [{ k: 'date', label: 'Fecha', type: 'date' }, { k: 'weight', label: 'Peso ese día (kg)', type: 'number', ph: '14,2' }],
+      { k: 'reason', label: '¿Por qué fueron?', max: 160, ph: 'Control anual, se rasca, no come…' },
+      { k: 'vet', label: 'Veterinaria o profesional', max: 80 },
+      { k: 'findings', label: '¿Qué te dijo el veterinario?', type: 'textarea', max: 600, ph: 'Diagnóstico o lo que encontró' },
+      { k: 'plan', label: 'Indicaciones', type: 'textarea', max: 600, ph: 'Remedios, cuidados, cuándo volver' },
+    ],
+    onDelete: v ? () => { p.visits = p.visits.filter(x => x !== v); } : null,
+    onSave(x) {
+      if (!x.date) return 'Poné la fecha.';
+      if (!x.reason && !x.findings) return 'Contá al menos por qué fueron o qué te dijeron.';
+      const w = numDec(x.weight); if (Number.isNaN(w)) return 'El peso tiene que ser un número, por ejemplo 14,2.';
+      const it = v || { id: uid() }; Object.assign(it, { date: x.date, reason: x.reason, vet: x.vet, findings: x.findings, plan: x.plan, weight: w });
+      if (!v) p.visits.push(it);
+      if (w) addWeight(p, x.date, w);
+      toast('Consulta guardada en su historia.');
+    },
+  });
 }
-const bubble = (ic, c) => `<span class="ib c-${c}">${I(ic)}</span>`;
-const recTone = t => t === 'control' ? 'cuida' : 'salud';
-function dueRow(pet, r, s, showPet) {
-  return `<div class="row x4 ${s.c}">${bubble(Z.recIcon(r.type), recTone(r.type))}
-    <span class="what"><b>${esc(r.name || TYPE[r.type])}</b><small>${showPet ? esc(pet.name) + ', ' : ''}<span class="stt">${s.t}</span></small></span>
-    <span></span>
-    <button class="ibtn" data-act="icsRec" data-pet="${pet.id}" data-rec="${r.id}" aria-label="Agregar ${esc(r.name)} al calendario">${I('cal')}</button></div>`;
+function addWeight(p, date, kg) {
+  p.weights = p.weights.filter(w => w.date !== date); p.weights.push({ date, kg }); p.weights.sort((a, b) => a.date.localeCompare(b.date));
+  p.weight = p.weights[p.weights.length - 1].kg;
 }
-function medRow(p, m, compact) {
-  const s = Z.medState(m, p.log);
-  const tx = { soon: ['st-ok', `Empieza ${Z.fmtWhen(s.next)}`], ok: ['st-done', s.next ? `Dada. Próxima: ${Z.fmtWhen(s.next)}` : 'Dada. Era la última toma'], due: ['st-soon', `Le toca ahora (${Z.fmtTime(s.due)})`], late: ['st-late', `Atrasada: tocaba ${Z.fmtWhen(s.due)}`], ended: ['', 'Tratamiento terminado'], nostart: ['', 'Falta la primera toma'] }[s.state];
-  const who = !compact && s.last ? `<small>Última vez: ${Z.fmtWhen(new Date(s.last.at))}${s.last.by ? ', ' + esc(s.last.by) : ''}</small>` : '';
-  const can = s.state === 'due' || s.state === 'late';
-  return `<div class="row x4 ${tx[0]}">${bubble('pill', 'med')}
-    <span class="what"><b>${compact ? esc(p.name) + ': ' : ''}${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}<span class="stt">${tx[1]}</span></small>${who}</span>
-    ${can ? `<button class="ibtn go" data-act="give" data-pet="${p.id}" data-med="${m.id}">Ya se la di</button>` : '<span></span>'}
-    ${compact ? '<span></span>' : `<button class="ibtn" data-act="editMed" data-med="${m.id}" aria-label="Editar ${esc(m.name)}">${I('edit')}</button>`}</div>`;
+function weightForm(p) {
+  openForm({
+    title: `Peso de ${p.name}`, values: { date: iso(Z.today()) },
+    fields: [[{ k: 'kg', label: 'Peso (kg)', type: 'number', ph: '14,2' }, { k: 'date', label: 'Fecha', type: 'date' }]],
+    onSave(x) { const kg = numDec(x.kg); if (!(kg > 0)) return 'Poné el peso, por ejemplo 14,2.'; if (!x.date) return 'Poné la fecha.'; addWeight(p, x.date, kg); toast('Peso guardado.'); },
+  });
 }
-function petCard(p) {
-  const n = Z.upcoming(p)[0];
-  const st = p.lost.on ? '<span class="st late">Se perdió</span>' : n ? `<span class="st ${n.s.days < 0 ? 'late' : ''}">${esc(n.r.name)}: ${n.s.t.toLowerCase()}</span>` : '';
-  return `<button class="tagcard c-${Z.tone(p)}" data-act="open" data-id="${p.id}">${avatar(p)}<span><b>${esc(p.name)}</b><small>${esc([Z.species(p), Z.age(p.birth)].filter(Boolean).join(', '))}</small>${st}</span></button>`;
+function conditionForm(p, c) {
+  openForm({
+    title: c ? c.name : 'Problema de salud', intro: 'Anotá lo que te dijo el veterinario. La app no diagnostica: solo lo registra para que no se pierda.',
+    values: c || { status: 'activa' },
+    fields: [
+      { k: 'name', label: '¿Qué tuvo o tiene?', type: 'datalist', options: Z.CONDITIONS[p.species] || Z.CONDITIONS.otra, ph: 'Otitis' },
+      { k: 'status', label: '¿Cómo está hoy?', type: 'chips', options: [['activa', 'Lo tiene'], ['controlada', 'Controlado'], ['resuelta', 'Ya pasó']] },
+      { k: 'since', label: '¿Desde cuándo? (año)', max: 10, ph: '2024' },
+      { k: 'notes', label: 'Notas', type: 'textarea', max: 300, ph: 'Tratamiento, qué lo empeora, a qué veterinario fueron' },
+    ],
+    onDelete: c ? () => { p.conditions = p.conditions.filter(x => x !== c); } : null,
+    onSave(x) { if (!x.name) return 'Poné qué tuvo.'; const it = c || { id: uid() }; Object.assign(it, { name: x.name, status: x.status || 'activa', since: x.since, notes: x.notes }); if (!c) p.conditions.push(it); },
+  });
 }
-function greeting() { const h = new Date().getHours(); return h < 6 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'; }
-function renderHome() {
-  if (!doc.pets.length) {
-    app.innerHTML = `<section class="sec"><p class="hello">${greeting()}</p><h1>Todo lo de tu mascota, en un lugar</h1></section>
-      <div class="empty">${bubble('paw', 'comida')}<h2>Empezá por tu mascota</h2><p>Cargá sus datos y la última vacuna o pipeta. Con eso ya te mostramos qué viene. Después sumás medicación, comida, gastos y viajes.</p><button class="btn blue" data-act="newPet">${I('plus')} Agregar mascota</button></div>`;
-    return;
-  }
-  const lost = doc.pets.filter(p => p.lost.on);
-  const recs = doc.pets.flatMap(Z.upcoming).filter(x => x.s.days <= 30);
-  const meds = doc.pets.flatMap(p => p.meds.map(m => ({ p, m, s: Z.medState(m, p.log) }))).filter(x => ['due', 'late', 'ok', 'soon'].includes(x.s.state));
-  const foods = doc.pets.map(p => ({ p, f: Z.food(p.food) })).filter(x => x.f && x.f.left <= 7);
-  const pending = recs.filter(x => x.s.days < 0).length + meds.filter(x => x.s.state === 'late' || x.s.state === 'due').length + foods.length;
-  const names = doc.pets.map(p => p.name);
-  const who = names.length === 1 ? names[0] : names.length === 2 ? `${names[0]} y ${names[1]}` : 'tus mascotas';
-  const title = lost.length ? `Buscando a ${lost[0].name}` : pending ? `${pending === 1 ? 'Hay una cosa' : `Hay ${pending} cosas`} para ${who}` : recs.length || meds.length ? `${who === 'tus mascotas' ? 'Tus mascotas están' : who + (names.length === 2 ? ' están' : ' está')} al día` : 'Todo en orden';
-  app.innerHTML = `
-    <section class="sec"><p class="hello">${greeting()} · ${Z.fmt(Z.today(), { weekday: 'long', day: 'numeric', month: 'long' })}</p><h1>${esc(title)}</h1></section>
-    ${lost.map(p => `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:180px"><b>${esc(p.name)} está en modo perdida</b>Compartí el cartel y el link en los grupos de tu zona.</span><button class="btn sm" data-act="lost" data-pet="${p.id}">Ver cartel</button></div>`).join('')}
-    <div class="pets">${doc.pets.map(petCard).join('')}<button class="add" data-act="newPet">${I('plus')} Agregar mascota</button></div>
-    ${meds.length ? `<section class="sec"><h2>Medicación</h2><div class="list">${meds.map(x => medRow(x.p, x.m, true)).join('')}</div></section>` : ''}
-    <section class="sec"><div class="sec-h"><h2>Lo que viene</h2>${doc.pets.some(p => Z.upcoming(p).length) ? `<button class="link" data-act="icsAll">${I('cal')} Sumar al calendario</button>` : ''}</div>
-      ${recs.length || foods.length ? `<div class="list">${foods.map(({ p, f }) => `<div class="row x4 ${f.left < 0 ? 'st-late' : 'st-soon'}">${bubble('bowl', 'comida')}<span class="what"><b>Comprar alimento</b><small>${esc(p.name)}, <span class="stt">${f.left < 0 ? 'ya se terminó' : f.left === 0 ? 'se termina hoy' : `quedan ${f.left} días`}</span></small></span><span></span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button></div>`).join('')}${recs.map(x => dueRow(x.pet, x.r, x.s, true)).join('')}</div>`
-        : '<p class="dim">Nada en los próximos 30 días. Cuando cargues una vacuna o pipeta con su próxima fecha, aparece acá.</p>'}</section>`;
+function surgeryForm(p, c) {
+  openForm({
+    title: c ? c.name : 'Cirugía', values: c || {},
+    fields: [{ k: 'name', label: '¿Qué cirugía?', type: 'datalist', options: Z.SURGERIES, ph: 'Castración' }, { k: 'date', label: 'Fecha (aproximada sirve)', type: 'date' }, { k: 'notes', label: 'Notas', type: 'textarea', max: 300 }],
+    onDelete: c ? () => { p.surgeries = p.surgeries.filter(x => x !== c); } : null,
+    onSave(x) {
+      if (!x.name) return 'Poné qué cirugía fue.';
+      const it = c || { id: uid() }; Object.assign(it, x); if (!c) p.surgeries.push(it);
+      if (/castra/i.test(x.name)) p.neutered = 'si';
+    },
+  });
+}
+let studyFiles = [];
+function studyForm(p, st) {
+  studyFiles = st ? [...st.files] : [];
+  openForm({
+    title: st ? (st.title || 'Estudio') : 'Estudio', intro: st ? '' : 'Subí la foto o el PDF que te dio el laboratorio o la veterinaria. Queda guardado en su historia.',
+    values: st || { date: iso(Z.today()), kind: 'sangre' },
+    fields: [
+      { k: 'kind', label: 'Tipo', type: 'chips', options: Object.entries(Z.STUDY) },
+      [{ k: 'date', label: 'Fecha', type: 'date' }, { k: 'title', label: 'Nombre', max: 120, ph: 'Hemograma completo' }],
+      { k: 'notes', label: 'Qué dijo el veterinario', type: 'textarea', max: 600, ph: 'Resultado o conclusión' },
+    ],
+    onDelete: st ? () => { p.studies = p.studies.filter(x => x !== st); } : null,
+    onSave(x) {
+      if (!x.date) return 'Poné la fecha.';
+      if (!x.title && !studyFiles.length) return 'Poné un nombre o subí el archivo.';
+      const it = st || { id: uid() }; Object.assign(it, { date: x.date, kind: x.kind || 'otro', title: x.title || Z.STUDY[x.kind], notes: x.notes, files: studyFiles });
+      if (!st) p.studies.push(it);
+      toast('Estudio guardado en su historia.');
+    },
+  });
+  const box = document.createElement('div'); box.className = 'f';
+  box.innerHTML = `<span class="lb">Archivos</span><div class="list" id="stFiles"></div><label class="btn ghost sm" for="stIn">${I('file')} Subir foto o PDF</label><input id="stIn" type="file" accept="image/*,application/pdf" multiple hidden><small id="stMsg"></small>`;
+  $('#fBody').appendChild(box); drawFiles();
+  $('#stIn').onchange = async e => {
+    const files = [...e.target.files]; e.target.value = '';
+    for (const f of files) {
+      if (f.size > 15 * 1024 * 1024) { toast(`"${f.name}" pesa más de 15 MB.`); continue; }
+      $('#stMsg').textContent = `Subiendo ${f.name}…`;
+      try { studyFiles.push(await uploadStudy(f)); drawFiles(); $('#stMsg').textContent = ''; }
+      catch { $('#stMsg').textContent = `No se pudo subir ${f.name}. Probá de nuevo.`; }
+    }
+  };
+}
+function fileUrl(f) { return f.ref.startsWith('blob:mascotas/') ? `/api/mascotas?file=${encodeURIComponent(f.ref)}` : f.ref; }
+function drawFiles() {
+  const box = $('#stFiles'); if (!box) return;
+  box.innerHTML = studyFiles.map((f, i) => `<div class="row">${bubble(f.type === 'application/pdf' ? 'file' : 'camera', 'viaje')}<span class="what"><b>${esc(f.name)}</b></span><button type="button" class="ibtn" data-rm="${i}" aria-label="Quitar ${esc(f.name)}">${I('x')}</button></div>`).join('');
+  box.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { studyFiles.splice(+b.dataset.rm, 1); drawFiles(); });
+}
+async function uploadStudy(file) {
+  if (mode !== 'full') return { ref: URL.createObjectURL(file), name: file.name, type: file.type };
+  const r = await fetch('/api/mascotas?upload=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: file.name, size: file.size, type: file.type || 'application/octet-stream' }) });
+  const d = await r.json(); if (!r.ok) throw new Error(d.error);
+  const put = await fetch(d.url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
+  if (!put.ok) throw new Error('put');
+  return { ref: d.ref, name: file.name, type: file.type };
 }
 
-const TABS = [['salud', 'Salud', 'heart', 'salud'], ['meds', 'Remedios', 'pill', 'med'], ['comida', 'Comida', 'bowl', 'comida'], ['viajes', 'Viajes', 'plane', 'viaje'], ['datos', 'Datos', 'doc', 'cuida']];
-let navEl = null;
-function renderNav(p) {
-  if (!p) { navEl?.remove(); navEl = null; return; }
-  if (!navEl) { navEl = document.createElement('nav'); navEl.className = 'nav'; navEl.setAttribute('aria-label', 'Secciones'); document.body.appendChild(navEl); navEl.addEventListener('click', e => { const b = e.target.closest('[data-tab]'); if (!b) return; view.tab = b.dataset.tab; render(); window.scrollTo({ top: 0 }); }); }
-  const tab = view.tab || 'salud';
-  navEl.innerHTML = `<div role="tablist">${TABS.map(([k, l, ic, c]) => `<button role="tab" aria-selected="${k === tab}" data-tab="${k}" class="c-${c}"><span class="ib">${I(ic)}</span>${l}</button>`).join('')}</div>`;
+/* ---------- vistas ---------- */
+const I = Z.icon;
+const bubble = (ic, c) => `<span class="ib c-${c}">${I(ic)}</span>`;
+const KIND_UI = { vacuna: ['syringe', 'salud'], anti: ['drop', 'salud'], control: ['steth', 'cuida'], consulta: ['steth', 'cuida'], estudio: ['flask', 'viaje'], sintoma: ['note', 'plata'], cirugia: ['scalpel', 'perdida'], remedio: ['pill', 'med'] };
+function render() {
+  if (mode === 'loading') { app.innerHTML = '<p class="dim">Cargando…</p>'; return; }
+  if (view.name === 'onboard') return renderOnboard();
+  if (view.name === 'scan') return renderScan();
+  if (!doc.pets.length) return renderWelcome();
+  let p = petById(view.id);
+  if (!p) { p = doc.pets[0]; view = { name: 'pet', id: p.id }; }
+  if (view.name === 'sub') return renderSub(p);
+  renderPet(p);
+}
+function renderWelcome() {
+  app.innerHTML = `<section class="welcome">
+    <div class="ib big c-comida">${I('paw')}</div>
+    <h1>La historia clínica de tu mascota, en el celu</h1>
+    <p class="lead">Vacunas, consultas, estudios y todo lo que le pasó, en un solo lugar. Te avisamos antes de cada fecha y lo compartís con el veterinario en un toque.</p>
+    <button class="btn blue wide big" data-act="newPet">${I('plus')} Agregar a mi mascota</button>
+    <p class="note">Te hacemos unas preguntas cortas y, si tenés la libreta a mano, le sacás una foto y la cargamos por vos.</p>
+  </section>`;
+}
+function switcher(p) {
+  if (doc.pets.length < 2) return '';
+  return `<nav class="switch" aria-label="Tus mascotas">${doc.pets.map(x => `<button class="sw${x.id === p.id ? ' on' : ''}" data-act="open" data-id="${x.id}" aria-current="${x.id === p.id}">${avatar(x)}<span>${esc(x.name)}</span></button>`).join('')}<button class="sw" data-act="newPet"><span class="av add-av">${I('plus')}</span><span>Agregar</span></button></nav>`;
+}
+function nextItems(p) {
+  const out = [];
+  for (const m of p.meds) { const s = Z.medState(m, p.log); if (s.state === 'due' || s.state === 'late') out.push({ order: s.state === 'late' ? -2 : -1, html: medRow(p, m) }); }
+  for (const x of Z.upcoming(p)) if (x.s.days <= 45) out.push({ order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(x.r.type === 'vacuna' ? 'syringe' : x.r.type === 'desparasitacion' ? 'drop' : 'steth', 'salud')}<span class="what"><b>${esc(x.r.name)}</b><small class="stt">${x.s.t}</small></span><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar al calendario">${I('cal')}</button></div>` });
+  const f = Z.food(p.food); if (f && f.left <= 5) out.push({ order: f.left, html: `<div class="row ${f.left < 0 ? 'st-late' : 'st-soon'}">${bubble('bowl', 'comida')}<span class="what"><b>Comprar alimento</b><small class="stt">${f.left < 0 ? 'Ya se terminó' : f.left === 0 ? 'Se termina hoy' : `Quedan ${f.left} días`}</small></span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar">${I('cal')}</button></div>` });
+  return out.sort((a, b) => a.order - b.order);
+}
+function medRow(p, m) {
+  const s = Z.medState(m, p.log);
+  const tx = { soon: ['st-ok', `Empieza ${Z.fmtWhen(s.next)}`], ok: ['st-done', s.next ? `Dada. Próxima: ${Z.fmtWhen(s.next)}` : 'Dada. Era la última toma'], due: ['st-soon', `Le toca ahora (${Z.fmtTime(s.due)})`], late: ['st-late', `Atrasada: tocaba ${Z.fmtWhen(s.due)}`], ended: ['', 'Tratamiento terminado'], nostart: ['', 'Falta la primera toma'] }[s.state];
+  const can = s.state === 'due' || s.state === 'late';
+  return `<div class="row ${tx[0]}">${bubble('pill', 'med')}<span class="what"><b>${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}<span class="stt">${tx[1]}</span></small></span>${can ? `<button class="ibtn go" data-act="give" data-pet="${p.id}" data-med="${m.id}">Ya se la di</button>` : `<button class="ibtn" data-act="editMed" data-med="${m.id}" aria-label="Editar ${esc(m.name)}">${I('edit')}</button>`}</div>`;
 }
 function renderPet(p) {
-  const tab = view.tab || 'salud';
-  const pills = [Z.species(p), Z.age(p.birth), p.weight ? String(p.weight).replace('.', ',') + ' kg' : '', p.breed].filter(Boolean);
+  const sm = Z.summary(p), next = nextItems(p).slice(0, 4);
+  const meta = [Z.species(p), p.breed, Z.age(p.birth), p.weight ? String(p.weight).replace('.', ',') + ' kg' : ''].filter(Boolean).join(' · ');
+  const filt = view.filter || 'todo';
+  const FIL = [['todo', 'Todo'], ['vacuna', 'Vacunas'], ['consulta', 'Consultas'], ['estudio', 'Estudios'], ['sintoma', 'Síntomas'], ['remedio', 'Remedios']];
+  const tl = Z.timeline(p).filter(e => filt === 'todo' || e.k === filt || (filt === 'vacuna' && (e.k === 'anti' || e.k === 'control')) || (filt === 'consulta' && e.k === 'cirugia'));
+  let year = '';
+  const activeMeds = p.meds.filter(m => ['ok', 'soon'].includes(Z.medState(m, p.log).state));
+  const vaccTxt = { ok: ['Al día', 'ok'], late: [`Vencida: ${sm.vaccLate.map(x => x.r.name).join(', ')}`, 'late'], none: ['Sin cargar', 'none'] }[sm.vacc];
+  const antiTxt = { ok: ['Al día', 'ok'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
   app.innerHTML = `
-    <button class="link" data-act="home" style="align-self:flex-start">${I('back')} Mis mascotas</button>
-    <section class="hero c-${Z.tone(p)}">
-      <div class="hero-top">${avatar(p, true)}<div><h1>${esc(p.name)}</h1></div></div>
-      <div class="pills">${pills.map(x => `<span class="pill">${esc(x)}</span>`).join('')}${p.allergies ? `<span class="pill warn">Alergia: ${esc(p.allergies)}</span>` : ''}</div>
+    ${switcher(p)}
+    <section class="pethead">
+      ${avatar(p, true)}
+      <div class="ph-txt"><h1>${esc(p.name)}</h1><p class="dim">${esc(meta)}</p></div>
     </section>
-    ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:180px"><b>En modo perdida</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
-    <div class="actions">
-      <button class="act" data-act="share">${bubble('qr', 'viaje')}<b>Ficha y QR</b><small>Para la chapita y el veterinario</small></button>
-      <button class="act" data-act="sitter">${bubble('hand', 'cuida')}<b>Quién la cuida</b><small>Un link con todo lo que necesita</small></button>
-      <button class="act" data-act="vetpdf">${bubble('doc', 'salud')}<b>Para el veterinario</b><small>Su historial en PDF</small></button>
-      <button class="act lost" data-act="lost">${bubble('search', 'perdida')}<b>${p.lost.on ? 'Está perdida' : 'Se perdió'}</b><small>Cartel y qué hacer</small></button>
-    </div>
-    <div role="tabpanel">${({ salud: tabSalud, meds: tabMeds, comida: tabComida, viajes: tabViajes, datos: tabDatos })[tab](p)}</div>`;
+    ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>En modo perdida</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
+    <button class="btn blue wide big" data-act="add">${I('plus')} Cargar algo de ${esc(p.name)}</button>
+
+    ${next.length ? `<section class="sec"><h2>Pendiente</h2><div class="list">${next.map(x => x.html).join('')}</div></section>` : ''}
+
+    <section class="sec">
+      <div class="sec-h"><h2>Su salud hoy</h2><button class="link" data-act="vetpdf">${I('doc')} PDF para el veterinario</button></div>
+      <div class="summary">
+        <button class="sum s-${vaccTxt[1]}" data-act="filter" data-f="vacuna"><span>Vacunas</span><b>${esc(vaccTxt[0])}</b></button>
+        <button class="sum s-${antiTxt[1]}" data-act="filter" data-f="vacuna"><span>Pipeta o antiparasitario</span><b>${esc(antiTxt[0])}</b></button>
+        <button class="sum ${sm.active.length ? 's-warn' : 's-none'}" data-act="sub" data-sub="clinica"><span>Problemas de salud</span><b>${sm.active.length ? esc(sm.active.map(c => c.name).join(', ')) : 'Ninguno cargado'}</b></button>
+        <button class="sum ${p.allergies ? 's-warn' : 's-none'}" data-act="sub" data-sub="clinica"><span>Alergias</span><b>${esc(p.allergies || 'Ninguna cargada')}</b></button>
+      </div>
+      <button class="row link-row" data-act="sub" data-sub="clinica">${bubble('heart', 'salud')}<span class="what"><b>Antecedentes</b><small>${esc([p.neutered === 'si' ? (p.sex === 'h' ? 'Castrada' : 'Castrado') : p.neutered === 'no' ? 'Sin castrar' : '', p.surgeries.length ? `${p.surgeries.length} cirugía${p.surgeries.length > 1 ? 's' : ''}` : '', sm.past.length ? `${sm.past.length} problema${sm.past.length > 1 ? 's' : ''} que ya pasó` : '', p.chronic ? 'Toma remedios siempre' : ''].filter(Boolean).join(' · ') || 'Enfermedades que tuvo, cirugías y remedios de siempre')}</small></span>${I('chevron')}</button>
+      ${activeMeds.length ? `<div class="list">${activeMeds.map(m => medRow(p, m)).join('')}</div>` : ''}
+    </section>
+
+    <section class="sec">
+      <h2>Historia clínica</h2>
+      <div class="chips scroll">${FIL.map(([k, l]) => `<button class="chip" data-act="filter" data-f="${k}" aria-pressed="${k === filt}">${l}</button>`).join('')}</div>
+      ${tl.length ? `<div class="timeline">${tl.map(e => { const y = e.date.slice(0, 4), head = y !== year ? `<div class="year">${y}</div>` : ''; year = y; const u = KIND_UI[e.k]; return `${head}<button class="tl" data-act="openEv" data-kind="${e.kind}" data-id="${e.ref.id}"><span class="tl-date">${fmt(e.date, { day: 'numeric', month: 'short' })}</span>${bubble(u[0], u[1])}<span class="what"><b>${esc(e.title)}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span></button>`; }).join('')}</div>`
+        : `<div class="empty"><p>${filt === 'todo' ? 'Su historia empieza acá. Cargá la libreta, una consulta o un estudio y aparece en orden.' : 'Todavía no hay nada de este tipo.'}</p>${filt === 'todo' ? `<button class="btn ghost sm" data-act="scan">${I('camera')} Sacarle foto a la libreta</button>` : ''}</div>`}
+    </section>
+
+    <section class="sec">
+      <h2>Más para ${esc(p.name)}</h2>
+      <div class="list">
+        ${[['share', 'qr', 'viaje', 'Ficha y QR', 'Para el veterinario, el paseador y la chapita'], ['sitter', 'hand', 'cuida', `Quién ${p.sex === 'm' ? 'lo' : 'la'} cuida`, `Un link con todo para quien ${p.sex === 'm' ? 'lo' : 'la'} cuida`], ['lost', 'search', 'perdida', p.lost.on ? (p.sex === 'm' ? 'Está perdido' : 'Está perdida') : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['sub:comida', 'bowl', 'comida', 'Comida y gastos', 'Cuándo se termina el alimento y cuánto gastás'], ['sub:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['sub:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos']].map(([a, ic, c, t, d]) => { const [act, sub] = a.split(':'); return `<button class="row link-row" data-act="${act}"${sub ? ` data-sub="${sub}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}
+      </div>
+    </section>`;
 }
-function tabSalud(p) {
-  const up = Z.upcoming(p), recs = [...p.records].sort((a, b) => (b.date || b.next || '').localeCompare(a.date || a.next || ''));
-  const anti = up.find(x => x.r.type === 'desparasitacion');
+
+/* subpáginas */
+function renderSub(p) {
+  const back = `<button class="link" data-act="back" style="align-self:flex-start">${I('back')} ${esc(p.name)}</button>`;
+  const body = { clinica: subClinica, comida: tabComida, viajes: tabViajes, datos: tabDatos }[view.sub] || subClinica;
+  app.innerHTML = back + body(p);
+}
+function subClinica(p) {
+  const sm = Z.summary(p);
+  const cRow = c => `<button class="row link-row" data-act="editCond" data-id="${c.id}">${bubble('heart', c.status === 'resuelta' ? 'salud' : 'perdida')}<span class="what"><b>${esc(c.name)}</b><small>${{ activa: 'Lo tiene', controlada: 'Controlado', resuelta: 'Ya pasó' }[c.status]}${c.since ? ' · desde ' + esc(c.since) : ''}${c.notes ? ' · ' + esc(c.notes) : ''}</small></span>${I('chevron')}</button>`;
   return `<div class="sec">
-    <h2>Salud</h2>
-    <div class="chips"><button class="btn blue sm" data-act="newRec">${I('syringe')} Vacuna o control</button><button class="btn ghost sm" data-act="newAnti">${I('drop')} Pipeta o antipulgas</button><button class="btn ghost sm" data-act="newSym">${I('note')} Algo que noté</button></div>
-    ${!anti ? `<div class="banner care">${bubble('drop', 'perdida')}<span>Cargá la última pipeta o antipulgas con su próxima fecha. Es lo que más se olvida: casi la mitad de los dueños se lo saltearon el último año (Merck Animal Health, 2025).</span></div>` : ''}
-    <div class="sec-h"><h3>Próximas fechas</h3>${up.length ? `<button class="link" data-act="icsPet">${I('cal')} Sumar al calendario</button>` : ''}</div>
-    ${up.length ? `<div class="list">${up.map(x => dueRow(p, x.r, x.s)).join('')}</div>` : '<p class="dim">Todavía no hay próximas fechas.</p>'}
-    <h3>Historial</h3>
-    ${recs.length ? `<div class="list">${recs.map(r => `<div class="row">${bubble(Z.recIcon(r.type), recTone(r.type))}<span class="what"><b>${esc(r.name)}</b><small>${TYPE[r.type]}${r.date ? ', ' + fmt(r.date) : ''}${r.vet ? ', ' + esc(r.vet) : ''}</small></span><button class="ibtn" data-act="editRec" data-rec="${r.id}" aria-label="Editar ${esc(r.name)}">${I('edit')}</button></div>`).join('')}</div>`
-      : `<div class="empty"><p>Abrí la libreta del veterinario y cargá la última vacuna. Con eso ya te avisamos la próxima.</p></div>`}
-    <h3>Lo que notaste</h3>
-    ${p.symptoms.length ? `<div class="list">${[...p.symptoms].sort((a, b) => b.date.localeCompare(a.date)).map(s => `<div class="row">${bubble('note', 'plata')}<span class="what"><b style="font-weight:500">${esc(s.text)}</b><small>${fmt(s.date)}</small></span><button class="ibtn" data-act="editSym" data-sym="${s.id}" aria-label="Editar">${I('edit')}</button></div>`).join('')}</div>`
-      : '<p class="dim">Si notás algo raro (no come, vomita, se rasca), anotalo con fecha. Sale en el PDF para el veterinario.</p>'}
+    <h1>Antecedentes</h1>
+    <p class="dim">Lo que le pasó a ${esc(p.name)} a lo largo de su vida. Es lo primero que pregunta un veterinario nuevo.</p>
+    <div class="sec-h"><h2>Problemas de salud</h2><button class="link" data-act="newCond">${I('plus')} Agregar</button></div>
+    ${sm.active.length ? `<div class="list">${sm.active.map(cRow).join('')}</div>` : '<p class="dim">Ninguno activo.</p>'}
+    ${sm.past.length ? `<h3>Ya pasaron</h3><div class="list">${sm.past.map(cRow).join('')}</div>` : ''}
+    <div class="sec-h"><h2>Cirugías</h2><button class="link" data-act="newSurg">${I('plus')} Agregar</button></div>
+    ${p.surgeries.length ? `<div class="list">${p.surgeries.map(c => `<button class="row link-row" data-act="editSurg" data-id="${c.id}">${bubble('scalpel', 'perdida')}<span class="what"><b>${esc(c.name)}</b><small>${c.date ? fmt(c.date) : 'Sin fecha'}</small></span>${I('chevron')}</button>`).join('')}</div>` : '<p class="dim">Ninguna cargada.</p>'}
+    <div class="sec-h"><h2>Alergias y remedios de siempre</h2><button class="link" data-act="editPet">Editar</button></div>
+    <div class="facts"><div><span>Alergias</span><b>${esc(p.allergies || 'Ninguna cargada')}</b></div><div><span>Remedios que toma siempre</span><b>${esc(p.chronic || 'Ninguno')}</b></div><div><span>Castración</span><b>${p.neutered === 'si' ? 'Sí' : p.neutered === 'no' ? 'No' : 'Sin dato'}</b></div></div>
+    <div class="sec-h"><h2>Peso</h2><button class="link" data-act="newWeight">${I('plus')} Anotar peso</button></div>
+    ${weightChart(p)}
   </div>`;
 }
-function tabMeds(p) {
-  const recent = [...p.log].reverse().slice(0, 12), medName = id => p.meds.find(m => m.id === id)?.name || 'Remedio';
-  const kind = { comida: ['Comió', 'bowl', 'comida'], paseo: ['Salió a pasear', 'walk', 'viaje'], med: ['Remedio', 'pill', 'med'], ok: ['Todo bien', 'check', 'salud'], nota: ['Nota', 'note', 'plata'] };
-  return `<div class="sec">
-    <h2>Remedios</h2>
-    <div class="chips"><button class="btn blue sm" data-act="newMed">${I('plus')} Remedio</button>${p.meds.length ? `<button class="btn ghost sm" data-act="icsMeds">${I('cal')} Avisos en el calendario</button>` : ''}</div>
-    ${p.meds.length ? `<div class="list">${p.meds.map(m => medRow(p, m)).join('')}</div>` : `<div class="empty">${bubble('pill', 'med')}<p>Cuando el veterinario le recete algo, cargalo acá. Te mostramos cuándo toca cada toma y quién se la dio, así nadie la repite ni se la saltea.</p></div>`}
-    <h3>Su día</h3>
-    <p class="note">Lo que marcás vos y lo que marca quien la cuida desde su link.</p>
-    <div class="chips"><button class="btn ghost sm" data-act="log" data-kind="comida">${I('bowl')} Comió</button><button class="btn ghost sm" data-act="log" data-kind="paseo">${I('walk')} Salió a pasear</button></div>
-    ${recent.length ? `<div class="list">${recent.map(l => { const k = kind[l.kind]; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by || '')}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div>` : '<p class="dim">Todavía no hay nada anotado.</p>'}
-  </div>`;
+function weightChart(p) {
+  const w = p.weights.slice(-12);
+  if (w.length < 2) return `<p class="dim">${w.length ? `Último: ${String(w[0].kg).replace('.', ',')} kg (${fmt(w[0].date)}).` : 'Anotá su peso en cada consulta para ver cómo cambia.'}</p>`;
+  const W = 320, H = 120, P = 24, min = Math.min(...w.map(x => x.kg)), max = Math.max(...w.map(x => x.kg)), r = max - min || 1;
+  const x = i => P + i * (W - 2 * P) / (w.length - 1), y = v => H - P - (v - min) / r * (H - 2 * P);
+  const pts = w.map((d, i) => `${x(i).toFixed(1)},${y(d.kg).toFixed(1)}`).join(' ');
+  return `<div class="card"><svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Peso de ${esc(p.name)}: de ${String(w[0].kg).replace('.', ',')} a ${String(w[w.length - 1].kg).replace('.', ',')} kg" style="width:100%;height:auto">
+    <polyline points="${pts}" fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>
+    ${w.map((d, i) => `<circle cx="${x(i).toFixed(1)}" cy="${y(d.kg).toFixed(1)}" r="${i === w.length - 1 ? 5 : 3}" fill="${i === w.length - 1 ? 'var(--blue)' : '#fff'}" stroke="var(--blue)" stroke-width="2"/>`).join('')}
+    <text x="${x(0)}" y="${H - 4}" font-size="11" fill="var(--ink2)">${fmt(w[0].date, { month: 'short', year: '2-digit' })}</text>
+    <text x="${x(w.length - 1)}" y="${H - 4}" font-size="11" fill="var(--ink2)" text-anchor="end">${fmt(w[w.length - 1].date, { month: 'short', year: '2-digit' })}</text>
+    <text x="${x(w.length - 1)}" y="${y(w[w.length - 1].kg) - 10}" font-size="13" font-weight="700" fill="var(--ink)" text-anchor="end">${String(w[w.length - 1].kg).replace('.', ',')} kg</text>
+  </svg></div>`;
 }
+
+/* ---------- "cargar algo" ---------- */
+function addPanel(p) {
+  const opt = (act, ic, c, t, d, hero) => `<button class="row link-row${hero ? ' hero-opt' : ''}" data-add="${act}">${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`;
+  panel(`¿Qué querés cargar?`, `<div class="list">
+    ${opt('scan', 'camera', 'viaje', 'Foto de la libreta', 'La leemos y cargamos las vacunas por vos', true)}
+    ${opt('vacuna', 'syringe', 'salud', 'Vacuna', 'Una vacuna que le pusieron')}
+    ${opt('anti', 'drop', 'salud', 'Pipeta o antiparasitario', 'Antipulgas, garrapatas o parásitos internos')}
+    ${opt('consulta', 'steth', 'cuida', 'Consulta al veterinario', 'Por qué fueron y qué te dijeron')}
+    ${opt('estudio', 'flask', 'viaje', 'Estudio', 'Análisis, radiografía o ecografía, con su archivo')}
+    ${opt('sintoma', 'note', 'plata', 'Algo que notaste', 'No come, vomita, se rasca…')}
+    ${opt('remedio', 'pill', 'med', 'Remedio', 'Con horarios y aviso en cada toma')}
+    ${opt('peso', 'scale', 'comida', 'Peso', 'Para ver cómo cambia')}
+    ${opt('problema', 'heart', 'perdida', 'Problema de salud o cirugía', 'Algo que tuvo o tiene')}
+  </div>`);
+  $('#pBody').onclick = e => {
+    const b = e.target.closest('[data-add]'); if (!b) return;
+    dPanel.close();
+    ({ scan: () => startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas' }), consulta: () => visitForm(p), estudio: () => studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
+  };
+}
+
+/* ---------- alta guiada ---------- */
+let ob = null;
+function startOnboard() { ob = { step: 0, pet: blankPet(), photo: null, conds: {}, otherCond: '', surg: new Set(), otherSurg: '' }; view = { name: 'onboard' }; render(); window.scrollTo(0, 0); }
+const OB_STEPS = 5;
+function obHead(title, sub) {
+  return `<div class="ob-top"><button class="link" data-ob="back">${I('back')} ${ob.step ? 'Atrás' : 'Cancelar'}</button><span class="dim">Paso ${ob.step + 1} de ${OB_STEPS}</span></div>
+    <div class="progress"><i style="width:${(ob.step + 1) / OB_STEPS * 100}%"></i></div>
+    <h1>${title}</h1>${sub ? `<p class="dim">${sub}</p>` : ''}`;
+}
+function tiles(name, opts, val) { return `<div class="tiles" data-tiles="${name}">${opts.map(([v, l, ic]) => `<button type="button" class="tile" data-v="${v}" aria-pressed="${v === val}">${ic ? I(ic) : ''}<span>${l}</span></button>`).join('')}</div>`; }
+function renderOnboard() {
+  const p = ob.pet, n = esc(p.name || 'tu mascota');
+  let h = '';
+  if (ob.step === 0) h = obHead('¿Cómo se llama?') + `
+    <div class="f"><label for="ob_name" class="sr">Nombre</label><input id="ob_name" class="big-input" maxlength="60" value="${esc(p.name)}" placeholder="Nombre" autocomplete="off"></div>
+    <div class="f"><span class="lb">Es un…</span>${tiles('species', [['perro', 'Perro', 'dog'], ['gato', 'Gato', 'cat'], ['otra', 'Otro', 'paw']], p.species)}</div>
+    <div class="f" ${p.species === 'otra' ? '' : 'hidden'} id="ob_otherW"><label for="ob_other">¿Qué es?</label><input id="ob_other" maxlength="40" value="${esc(p.speciesOther)}" placeholder="Conejo, hurón, loro…"></div>
+    <div class="photo-pick"><div class="av big" id="ob_prev">${ob.photo ? `<img src="${ob.photo}" alt="">` : Z.petIcon(p)}</div><div class="f"><label class="btn ghost sm" for="ob_photo">${I('camera')} ${ob.photo ? 'Cambiar foto' : 'Agregar una foto'}</label><input id="ob_photo" type="file" accept="image/*" hidden><small>Opcional. Sirve para la ficha y por si algún día se pierde.</small></div></div>`;
+  if (ob.step === 1) h = obHead(`Contanos de ${n}`, 'Si no sabés algo, dejalo vacío.') + `
+    <div class="two"><div class="f"><label for="ob_birth">Nacimiento</label><input id="ob_birth" type="date" value="${esc(p.birth)}"><small>Aproximado sirve.</small></div><div class="f"><label for="ob_weight">Peso (kg)</label><input id="ob_weight" inputmode="decimal" value="${p.weight ? String(p.weight).replace('.', ',') : ''}" placeholder="12,5"></div></div>
+    <div class="f"><span class="lb">Sexo</span>${tiles('sex', [['h', 'Hembra'], ['m', 'Macho']], p.sex)}</div>
+    <div class="f"><span class="lb">¿Está castrado o castrada?</span>${tiles('neutered', [['si', 'Sí'], ['no', 'No'], ['ns', 'No sé']], p.neutered || '')}</div>
+    <div class="f"><label for="ob_breed">Raza</label><input id="ob_breed" maxlength="60" value="${esc(p.breed)}" placeholder="Mestizo"></div>`;
+  if (ob.step === 2) {
+    const list = Z.CONDITIONS[p.species] || Z.CONDITIONS.otra;
+    h = obHead(`¿${n} tuvo algún problema de salud?`, 'Marcá lo que te haya dicho un veterinario alguna vez. Después podés sumar más.') + `
+      <div class="chips" data-conds>${list.map(c => `<button type="button" class="chip" data-c="${esc(c)}" aria-pressed="${Boolean(ob.conds[c])}">${esc(c)}</button>`).join('')}</div>
+      <div class="f"><label for="ob_ocond">Otro</label><input id="ob_ocond" maxlength="80" value="${esc(ob.otherCond)}" placeholder="Escribilo"></div>
+      ${Object.keys(ob.conds).length ? `<h3>¿Cómo está hoy?</h3><div class="list">${Object.entries(ob.conds).map(([c, st]) => `<div class="row" style="grid-template-columns:minmax(0,1fr) auto"><span class="what"><b>${esc(c)}</b></span><span class="seg" data-cst="${esc(c)}"><button type="button" data-v="activa" aria-pressed="${st === 'activa'}">Lo tiene</button><button type="button" data-v="resuelta" aria-pressed="${st === 'resuelta'}">Ya pasó</button></span></div>`).join('')}</div>` : ''}`;
+  }
+  if (ob.step === 3) h = obHead('Cirugías, alergias y remedios') + `
+    <div class="f"><span class="lb">¿Le hicieron alguna cirugía?</span><div class="chips" data-surg>${Z.SURGERIES.map(c => `<button type="button" class="chip" data-s="${esc(c)}" aria-pressed="${ob.surg.has(c)}">${esc(c)}</button>`).join('')}</div>
+      <input id="ob_osurg" maxlength="80" value="${esc(ob.otherSurg)}" placeholder="Otra cirugía"></div>
+    <div class="f"><label for="ob_all">¿Tiene alguna alergia?</label><input id="ob_all" maxlength="300" value="${esc(p.allergies)}" placeholder="A un alimento, a un remedio… o dejalo vacío"></div>
+    <div class="f"><label for="ob_chr">¿Toma algún remedio todos los días?</label><input id="ob_chr" maxlength="300" value="${esc(p.chronic)}" placeholder="Nombre y dosis, o dejalo vacío"></div>`;
+  if (ob.step === 4) h = obHead('Ahora, su libreta', `Si tenés la libreta del veterinario a mano, sacale una foto a cada página con vacunas. Las leemos y las cargamos por vos; vos solo revisás.`) + `
+    <div class="scanbox">${I('camera')}<b>Foto de la libreta</b><span>Hasta 4 páginas, con buena luz y sin reflejos</span></div>
+    <label class="btn blue wide big" for="ob_scan">${I('camera')} Sacar o elegir fotos</label><input id="ob_scan" type="file" accept="image/*" multiple hidden>
+    <button class="btn ghost wide" data-ob="skip">La cargo después</button>`;
+  app.innerHTML = `<section class="sec onboard">${h}${ob.step < 4 ? `<button class="btn blue wide big" data-ob="next">${ob.step === 0 ? 'Empezar' : 'Siguiente'}</button>${ob.step >= 2 ? `<button class="btn ghost wide" data-ob="skipstep">${ob.step === 2 ? 'No tuvo nada' : 'Nada de esto'}</button>` : ''}` : ''}<p class="err-msg" id="obErr" role="alert" hidden></p></section>`;
+  if (ob.step === 0 && !p.name) $('#ob_name')?.focus();
+}
+function obRead() {
+  const p = ob.pet, v = id => $(id)?.value.trim() ?? '';
+  if (ob.step === 0) { p.name = v('#ob_name'); p.speciesOther = v('#ob_other'); }
+  if (ob.step === 1) { p.birth = v('#ob_birth'); const w = numDec(v('#ob_weight')); p.weight = Number.isNaN(w) ? p.weight : w; p.breed = v('#ob_breed'); }
+  if (ob.step === 2) ob.otherCond = v('#ob_ocond');
+  if (ob.step === 3) { ob.otherSurg = v('#ob_osurg'); p.allergies = v('#ob_all'); p.chronic = v('#ob_chr'); }
+}
+function obErr(t) { const e = $('#obErr'); e.textContent = t; e.hidden = false; }
+async function obFinish(scanFiles) {
+  const p = ob.pet;
+  if (ob.otherCond) ob.conds[ob.otherCond] = ob.conds[ob.otherCond] || 'activa';
+  p.conditions = Object.entries(ob.conds).map(([name, status]) => ({ id: uid(), name, status, since: '', notes: '' }));
+  if (ob.otherSurg) ob.surg.add(ob.otherSurg);
+  p.surgeries = [...ob.surg].map(name => ({ id: uid(), name, date: '', notes: '' }));
+  if (ob.surg.has('Castración')) p.neutered = 'si';
+  if (p.neutered === 'ns') p.neutered = '';
+  if (p.weight) p.weights = [{ date: iso(Z.today()), kg: p.weight }];
+  p.onboarded = true;
+  if (ob.photo) { try { p.photo = await uploadPhoto(ob.photo); } catch { toast('La foto no se pudo subir. Podés agregarla después.'); } }
+  doc.pets.push(p); ob = null;
+  view = { name: 'pet', id: p.id };
+  changed();
+  if (scanFiles?.length) runScan(p, scanFiles); else { window.scrollTo(0, 0); toast(`Listo. Esta es la libreta de ${p.name}.`); }
+}
+app.addEventListener('click', e => {
+  if (view.name !== 'onboard') return;
+  const t = e.target.closest('[data-tiles] .tile');
+  if (t) { const k = t.parentNode.dataset.tiles; obRead(); ob.pet[k] = t.dataset.v; render(); return; }
+  const c = e.target.closest('[data-conds] .chip');
+  if (c) { obRead(); const n = c.dataset.c; if (ob.conds[n]) delete ob.conds[n]; else ob.conds[n] = 'activa'; render(); return; }
+  const st = e.target.closest('[data-cst] button');
+  if (st) { obRead(); ob.conds[st.parentNode.dataset.cst] = st.dataset.v; render(); return; }
+  const sg = e.target.closest('[data-surg] .chip');
+  if (sg) { obRead(); const n = sg.dataset.s; ob.surg.has(n) ? ob.surg.delete(n) : ob.surg.add(n); render(); return; }
+  const b = e.target.closest('[data-ob]'); if (!b) return;
+  const a = b.dataset.ob;
+  if (a === 'back') { if (!ob.step) { ob = null; view = { name: 'pet', id: doc.pets[0]?.id }; render(); return; } obRead(); ob.step--; render(); return; }
+  if (a === 'skip') return obFinish();
+  if (a === 'skipstep') { if (ob.step === 2) { ob.conds = {}; ob.otherCond = ''; } if (ob.step === 3) { ob.surg.clear(); ob.otherSurg = ''; } }
+  else obRead();
+  if (ob.step === 0 && !ob.pet.name) return obErr('Poné su nombre para seguir.');
+  ob.step++; render(); window.scrollTo(0, 0);
+});
+app.addEventListener('change', async e => {
+  if (view.name !== 'onboard') return;
+  if (e.target.id === 'ob_photo') { const f = e.target.files[0]; if (!f) return; try { ob.photo = await shrink(f, 640, .82); obRead(); render(); } catch { toast('No pudimos leer esa foto.'); } }
+  if (e.target.id === 'ob_scan') { const files = [...e.target.files].slice(0, 4); if (files.length) obFinish(files); }
+});
+
+/* ---------- leer la libreta ---------- */
+let scan = null;
+function startScan(p) {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+  inp.onchange = () => { const files = [...inp.files].slice(0, 4); if (files.length) runScan(p, files); };
+  inp.click();
+}
+async function runScan(p, files) {
+  const prev = scan?.state === 'review' && scan.petId === p.id ? scan.items : [];
+  scan = { petId: p.id, state: 'reading', n: files.length, items: [], warnings: [] };
+  view = { name: 'scan', id: p.id }; render(); window.scrollTo(0, 0);
+  try {
+    const images = []; for (const f of files) images.push(await shrink(f, 1600, .85));
+    let d;
+    if (mode === 'full') {
+      const r = await fetch('/api/mascotas?scan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, species: p.species }) });
+      d = await r.json();
+      if (!r.ok) throw Object.assign(new Error(d.error === 'limite_diario' ? 'Llegaste al límite de lecturas de hoy. Probá mañana o cargá las vacunas a mano.' : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
+    } else {
+      await new Promise(r => setTimeout(r, 1800));
+      const t = Z.today(), dd = n => { const x = new Date(t); x.setDate(x.getDate() + n); return iso(x); };
+      d = { demo: true, items: [
+        { type: 'vacuna', name: 'Antirrábica', product: 'Rabisin', date: dd(-340), next: dd(25), vet: 'Dra. Gómez MP 1234', confidence: 'alta' },
+        { type: 'vacuna', name: 'Séxtuple', product: 'Vanguard Plus', date: dd(-340), next: dd(25), vet: 'Dra. Gómez MP 1234', confidence: 'alta' },
+        { type: 'desparasitacion', name: 'Comprimido antipulgas', product: 'NexGard', date: dd(-40), next: '', vet: '', confidence: 'media' },
+        { type: 'vacuna', name: 'Tos de las perreras', product: '', date: dd(-700), next: '', vet: '', confidence: 'baja', note: 'La fecha se lee a medias' },
+      ], warnings: ['Ejemplo: así se ve lo que leemos. En la versión completa leemos tus fotos.'] };
+    }
+    scan = { ...scan, state: 'review', items: prev.concat(d.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) }))), warnings: d.warnings || [], demo: d.demo };
+  } catch (err) { scan = { ...scan, state: 'error', msg: err.message || 'No pudimos leer las fotos.', plain: Boolean(err.plain) }; }
+  render();
+}
+function renderScan() {
+  const p = petById(scan?.petId); if (!p || !scan) { view = { name: 'pet', id: doc.pets[0]?.id }; return render(); }
+  if (scan.state === 'reading') { app.innerHTML = `<section class="sec reading"><div class="ib big c-viaje spin">${I('sparkle')}</div><h1>Leyendo la libreta</h1><p class="dim">Estamos pasando ${scan.n === 1 ? 'la foto' : `las ${scan.n} fotos`} a la historia de ${esc(p.name)}. Tarda unos segundos.</p></section>`; return; }
+  if (scan.state === 'error') { app.innerHTML = `<section class="sec"><h1>No pudimos leerla</h1><p class="dim">${esc(scan.msg)}${scan.plain ? '' : ' Probá con una foto con más luz, de frente y sin reflejos, o cargá las vacunas a mano.'}</p><button class="btn blue wide" data-act="scan">${I('camera')} Probar con otra foto</button><button class="btn ghost wide" data-act="back">Volver a ${esc(p.name)}</button></section>`; return; }
+  const sel = scan.items.filter(x => x.keep).length;
+  app.innerHTML = `<section class="sec">
+    <button class="link" data-act="back" style="align-self:flex-start">${I('back')} ${esc(p.name)}</button>
+    <h1>Encontramos ${scan.items.length} ${scan.items.length === 1 ? 'registro' : 'registros'}</h1>
+    <p class="dim">Revisá que esté bien. Lo que tiene el borde naranja conviene mirarlo con la libreta al lado. Tocá cualquiera para corregirlo.</p>
+    ${scan.warnings.map(w => `<div class="banner care${scan.demo ? ' soft' : ''}">${bubble(scan.demo ? 'sparkle' : 'alert', scan.demo ? 'viaje' : 'perdida')}<span>${esc(w)}</span></div>`).join('')}
+    <div class="list">${scan.items.map((x, i) => `<div class="row scanrow${x.confidence === 'baja' ? ' doubt' : ''}" style="grid-template-columns:auto minmax(0,1fr) auto">
+      <label class="checkbox"><input type="checkbox" data-keep="${i}" ${x.keep ? 'checked' : ''} aria-label="Guardar ${esc(x.name)}"></label>
+      <button class="what plain" data-fix="${i}"><b>${esc(x.name || 'Sin nombre')}${x.product ? ` <span class="dim" style="font-weight:500">(${esc(x.product)})</span>` : ''}</b><small>${TYPE[x.type]} · ${x.date ? fmt(x.date) : 'sin fecha'}${x.next ? ' · próxima ' + fmt(x.next) : ''}${x.vet ? ' · ' + esc(x.vet) : ''}</small>${x.note ? `<small style="color:var(--warn)">${esc(x.note)}</small>` : ''}</button>
+      ${I('edit')}</div>`).join('')}</div>
+    <button class="btn blue wide big" data-act="scanSave" ${sel ? '' : 'disabled'}>Guardar ${sel} en la historia de ${esc(p.name)}</button>
+    <button class="btn ghost wide" data-act="scan">${I('camera')} Agregar otra página</button>
+  </section>`;
+}
+app.addEventListener('change', e => { const k = e.target.closest('[data-keep]'); if (k && scan) { scan.items[+k.dataset.keep].keep = k.checked; render(); } });
+function fixScanItem(i) {
+  const x = scan.items[i], p = petById(scan.petId);
+  openForm({
+    title: 'Corregir', values: x,
+    fields: [{ k: 'type', label: 'Tipo', type: 'chips', options: [['vacuna', 'Vacuna'], ['desparasitacion', 'Antiparasitario'], ['control', 'Control'], ['otro', 'Otro']] }, { k: 'name', label: 'Nombre', type: 'datalist', options: (SUGGEST[p.species] || SUGGEST.otra)[x.type] || [] }, [{ k: 'date', label: 'Se aplicó', type: 'date' }, { k: 'next', label: 'Próxima', type: 'date' }], { k: 'vet', label: 'Veterinario', max: 80 }],
+    onSave(v) { if (!v.name) return 'Poné el nombre.'; Object.assign(x, v, { confidence: 'alta', note: '', keep: true }); },
+  });
+}
+function saveScan() {
+  const p = petById(scan.petId), add = scan.items.filter(x => x.keep);
+  for (const x of add) p.records.push({ id: uid(), type: x.type, name: x.name, date: x.date, next: x.next, vet: x.vet, notes: x.product ? `Producto: ${x.product}` : '' });
+  scan = null; view = { name: 'pet', id: p.id }; changed(); window.scrollTo(0, 0);
+  toast(`Listo: ${add.length} ${add.length === 1 ? 'registro cargado' : 'registros cargados'} en la historia de ${p.name}.`);
+}
+
+/* subpáginas heredadas */
 function tabComida(p) {
   const f = Z.food(p.food), now = Z.today(), ym = iso(now).slice(0, 7);
   const months = {}; for (const e of p.expenses) months[e.date.slice(0, 7)] = (months[e.date.slice(0, 7)] || 0) + e.amount;
@@ -671,6 +980,15 @@ function vetPdf(p) {
   <button onclick="print()" style="float:right;padding:10px 16px;border-radius:999px;border:0;background:#0D0D0E;color:#fff;font-weight:700;cursor:pointer">Imprimir o guardar PDF</button>
   <h1>${esc(p.name)}</h1><div class="m">${esc([Z.species(p), p.breed, p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : '', p.birth ? `${Z.age(p.birth)} (nac. ${fmt(p.birth)})` : '', p.weight ? String(p.weight).replace('.', ',') + ' kg' : '', p.chip ? 'Chip ' + p.chip : ''].filter(Boolean).join(' · '))}</div>
   ${p.allergies ? `<div class="b"><b>Alergias y cuidados:</b> ${esc(p.allergies)}</div>` : ''}
+  <h2>Antecedentes</h2><table>
+    <tr>${td('<b>Castración</b>')}${td(p.neutered === 'si' ? 'Sí' : p.neutered === 'no' ? 'No' : 'Sin dato')}</tr>
+    <tr>${td('<b>Problemas de salud</b>')}${td(p.conditions.length ? p.conditions.map(c => `${esc(c.name)} (${{ activa: 'activo', controlada: 'controlado', resuelta: 'resuelto' }[c.status]}${c.since ? ', ' + esc(c.since) : ''})${c.notes ? ': ' + esc(c.notes) : ''}`).join('<br>') : 'Ninguno cargado')}</tr>
+    <tr>${td('<b>Cirugías</b>')}${td(p.surgeries.length ? p.surgeries.map(c => `${esc(c.name)}${c.date ? ' (' + fmt(c.date) + ')' : ''}`).join('<br>') : 'Ninguna cargada')}</tr>
+    <tr>${td('<b>Remedios de siempre</b>')}${td(esc(p.chronic || 'Ninguno'))}</tr>
+    ${p.weights.length ? `<tr>${td('<b>Peso</b>')}${td(p.weights.slice(-5).map(w => `${String(w.kg).replace('.', ',')} kg (${fmt(w.date)})`).join(' · '))}</tr>` : ''}
+  </table>
+  <h2>Consultas</h2>${p.visits.length ? `<table><tr><th>Fecha</th><th>Motivo</th><th>Lo que dijo el veterinario</th><th>Indicaciones</th></tr>${[...p.visits].sort((a, b) => b.date.localeCompare(a.date)).map(v => `<tr>${td(fmt(v.date))}${td(esc(v.reason))}${td(esc(v.findings))}${td(esc(v.plan))}</tr>`).join('')}</table>` : '<p class="m">Sin consultas cargadas.</p>'}
+  <h2>Estudios</h2>${p.studies.length ? `<table><tr><th>Fecha</th><th>Estudio</th><th>Resultado</th></tr>${[...p.studies].sort((a, b) => b.date.localeCompare(a.date)).map(x => `<tr>${td(fmt(x.date))}${td(esc(x.title || Z.STUDY[x.kind]))}${td(esc(x.notes))}</tr>`).join('')}</table>` : '<p class="m">Sin estudios cargados.</p>'}
   <h2>Lo que notamos</h2>${syms.length ? `<table>${syms.map(s => `<tr>${td(fmt(s.date))}${td(esc(s.text))}</tr>`).join('')}</table>` : '<p class="m">Sin anotaciones.</p>'}
   <h2>Medicación</h2>${meds.length ? `<table><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Desde</th><th>Estado</th></tr>${meds.map(({ m, s }) => `<tr>${td(esc(m.name))}${td(esc(m.dose))}${td('cada ' + m.every + ' h')}${td(m.start ? fmt(m.start) : '')}${td(s.state === 'ended' ? 'Terminado' : 'En curso')}</tr>`).join('')}</table>` : '<p class="m">Sin medicación cargada.</p>'}
   <h2>Vacunas, antiparasitarios y controles</h2>${recs.length ? `<table><tr><th>Fecha</th><th>Tipo</th><th>Nombre</th><th>Próxima</th><th>Profesional</th></tr>${recs.map(r => `<tr>${td(r.date ? fmt(r.date) : '')}${td(TYPE[r.type])}${td(esc(r.name))}${td(r.next ? fmt(r.next) : '')}${td(esc(r.vet))}</tr>`).join('')}</table>` : '<p class="m">Sin registros.</p>'}
@@ -683,40 +1001,52 @@ function vetPdf(p) {
 
 /* ---------- acciones ---------- */
 app.addEventListener('click', e => {
+  const fx = e.target.closest('[data-fix]'); if (fx && scan) return fixScanItem(+fx.dataset.fix);
   const b = e.target.closest('[data-act]'); if (!b) return;
-  const cur = view.name === 'pet' ? petById(view.id) : null;
+  const cur = petById(view.id);
   const p = b.dataset.pet ? petById(b.dataset.pet) : cur;
+  const go = v => { view = v; render(); window.scrollTo(0, 0); };
   switch (b.dataset.act) {
-    case 'newPet': return petForm();
-    case 'open': view = { name: 'pet', id: b.dataset.id, tab: 'salud' }; render(); return window.scrollTo(0, 0);
-    case 'home': view = { name: 'home' }; render(); return window.scrollTo(0, 0);
-    case 'tab': view.tab = b.dataset.tab; return render();
+    case 'newPet': return startOnboard();
+    case 'open': return go({ name: 'pet', id: b.dataset.id });
+    case 'back': scan = null; return go({ name: 'pet', id: cur?.id || view.id });
+    case 'sub': return go({ name: 'sub', id: cur.id, sub: b.dataset.sub });
+    case 'filter': view.filter = b.dataset.f; render(); return document.querySelector('.timeline, .sec:has(.chips.scroll)')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    case 'add': return addPanel(cur);
+    case 'scan': return startScan(cur);
+    case 'scanSave': return saveScan();
+    case 'openEv': {
+      const id = b.dataset.id, k = b.dataset.kind;
+      if (k === 'rec') return recForm(cur, cur.records.find(r => r.id === id));
+      if (k === 'visit') return visitForm(cur, cur.visits.find(r => r.id === id));
+      if (k === 'study') return studyForm(cur, cur.studies.find(r => r.id === id));
+      if (k === 'sym') return symptomForm(cur, cur.symptoms.find(r => r.id === id));
+      if (k === 'surg') return surgeryForm(cur, cur.surgeries.find(r => r.id === id));
+      if (k === 'med') return medForm(cur, cur.meds.find(r => r.id === id));
+      return;
+    }
     case 'editPet': return petForm(cur);
-    case 'newRec': return recForm(cur);
-    case 'newAnti': return recForm(cur, null, { type: 'desparasitacion', name: cur.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas' });
-    case 'editRec': return recForm(cur, cur.records.find(r => r.id === b.dataset.rec));
-    case 'newSym': return symptomForm(cur);
-    case 'editSym': return symptomForm(cur, cur.symptoms.find(s => s.id === b.dataset.sym));
-    case 'newMed': return medForm(cur);
+    case 'newCond': return conditionForm(cur);
+    case 'editCond': return conditionForm(cur, cur.conditions.find(c => c.id === b.dataset.id));
+    case 'newSurg': return surgeryForm(cur);
+    case 'editSurg': return surgeryForm(cur, cur.surgeries.find(c => c.id === b.dataset.id));
+    case 'newWeight': return weightForm(cur);
     case 'editMed': return medForm(cur, cur.meds.find(m => m.id === b.dataset.med));
     case 'give': { const m = p.meds.find(x => x.id === b.dataset.med); p.log.push({ id: uid(), at: new Date().toISOString(), kind: 'med', medId: m.id, by: 'Vos', note: '' }); changed(); return toast(`Listo: ${m.name} dada.`); }
-    case 'log': cur.log.push({ id: uid(), at: new Date().toISOString(), kind: b.dataset.kind, medId: '', by: 'Vos', note: '' }); changed(); return toast('Anotado.');
     case 'newExp': return expenseForm(cur);
     case 'editExp': return expenseForm(cur, cur.expenses.find(x => x.id === b.dataset.exp));
     case 'food': return foodForm(cur);
     case 'newBag': cur.food.opened = iso(Z.today()); changed(); return toast('Bolsa nueva: el contador arrancó de cero.');
     case 'fund': return fundForm(cur);
-    case 'fundAdd': cur.fund.saved = (cur.fund.saved || 0) + (cur.fund.monthly || 0); changed(); return toast('Sumado al fondo.');
+    case 'fundAdd': cur.fund.saved = (cur.fund.saved || 0) + (cur.fund.monthly || 0); changed(); return toast('Sumado al ahorro.');
     case 'trip': return tripForm(cur);
     case 'vet': return vetForm(cur);
     case 'share': return sharePanel(cur);
     case 'sitter': return sitterPanel(cur);
     case 'lost': return lostPanel(p);
     case 'vetpdf': return vetPdf(cur);
-    case 'icsAll': return calendar(doc.pets.flatMap(x => Z.upcoming(x).filter(u => u.s.days >= 0).map(u => Z.recordEvent(x, u.r))), 'mascotas');
-    case 'icsPet': return calendar(Z.upcoming(cur).filter(u => u.s.days >= 0).map(u => Z.recordEvent(cur, u.r)), cur.name);
     case 'icsRec': { const r = p.records.find(x => x.id === b.dataset.rec); return calendar([Z.recordEvent(p, r)], `${p.name} ${r.name}`); }
-    case 'icsMeds': return calendar(cur.meds.filter(m => m.start && Z.medState(m, cur.log).state !== 'ended').map(m => Z.medEvent(cur, m)), `${cur.name} medicación`);
+    case 'icsMeds': return calendar(cur.meds.filter(m => m.start && Z.medState(m, cur.log).state !== 'ended').map(m => Z.medEvent(cur, m)), `${cur.name} remedios`);
     case 'icsFood': return calendar([Z.foodEvent(p, p.food)], `${p.name} alimento`);
   }
 });
@@ -730,9 +1060,10 @@ app.addEventListener('click', e => {
   else {
     mode = 'demo'; doc = demoDoc();
     cta = st === 200 ? '<a class="btn blue wide" href="/productos">Conseguir la libreta</a>' : '<a class="btn blue wide" href="/acceso?next=mascotas">Ya la tengo: entrar</a><a class="btn ghost wide" href="/productos">Conseguir la libreta</a>';
-    $('#demoCta').innerHTML = st === 200 ? '<a href="/productos">Conseguila para guardar →</a>' : '<a href="/acceso?next=mascotas">Ya la compré: entrar →</a>';
+    $('#demoCta').innerHTML = st === 200 ? '<a href="/productos">Conseguila para guardar</a>' : '<a href="/acceso?next=mascotas">Ya la compré: entrar</a>';
     $('#demo').hidden = false;
   }
+  view = { name: 'pet', id: doc.pets[0]?.id };
   render();
 })();
 })();

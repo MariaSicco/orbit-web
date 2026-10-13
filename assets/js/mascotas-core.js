@@ -157,6 +157,15 @@
     piggy: '<path d="M19 11c0-3.3-3.1-5.5-7-5.5S4 8 4 11c0 1.7.8 3.1 2 4.2V19h3v-2h5v2h3v-3.6c.9-.7 1.6-1.6 2-2.4h1.5V10H19"/><circle cx="15.5" cy="10" r=".6"/><path d="M9.5 6.2 8 3.5"/>',
     share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6"/>',
     home: '<path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/>',
+    camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
+    flask: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/>',
+    steth: '<path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M10 12v3a5 5 0 0 0 10 0v-1"/><circle cx="20" cy="12" r="2"/>',
+    scalpel: '<path d="M3 21 14 10l3 3-6 6z"/><path d="m14 10 6-6 1 1-4 8"/>',
+    scale: '<rect x="4" y="5" width="16" height="15" rx="4"/><path d="M9 10a3 3 0 0 1 6 0M12 10l1.5-1.5"/>',
+    sparkle: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>',
+    more: '<circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/>',
+    chevron: '<path d="m9 5 7 7-7 7"/>',
+    file: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/>',
   };
   const icon = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || P.paw}</svg>`;
   const petIcon = p => icon(p.species === 'gato' ? 'cat' : p.species === 'perro' ? 'dog' : 'paw');
@@ -164,5 +173,40 @@
   const tone = p => { let h = 0; for (const ch of String(p.id || p.name || '')) h = (h * 31 + ch.charCodeAt(0)) >>> 0; return TONES[h % TONES.length]; };
   const recIcon = t => ({ vacuna: 'syringe', desparasitacion: 'drop', control: 'heart', otro: 'note' })[t] || 'note';
 
-  g.MZ = { icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
+  /* ---------- historia clínica ---------- */
+  /* Antecedentes frecuentes para elegir rápido en el alta. Son nombres para registrar lo que dijo
+     el veterinario, no un diagnóstico de la app. */
+  const CONDITIONS = {
+    perro: ['Otitis', 'Alergia o dermatitis', 'Problemas digestivos', 'Parvovirus', 'Moquillo', 'Ehrlichiosis (garrapata)', 'Leishmaniasis', 'Displasia de cadera', 'Problemas de columna', 'Epilepsia o convulsiones', 'Problemas de riñón', 'Problemas de corazón', 'Diabetes', 'Sobrepeso'],
+    gato: ['Problemas urinarios o cistitis', 'Enfermedad renal', 'Rinotraqueítis o gripe felina', 'Leucemia felina (FeLV)', 'Inmunodeficiencia felina (FIV)', 'Alergia o dermatitis', 'Problemas digestivos', 'Hipertiroidismo', 'Diabetes', 'Problemas dentales', 'Sobrepeso'],
+    otra: ['Problemas de piel', 'Problemas digestivos', 'Problemas respiratorios', 'Problemas dentales', 'Sobrepeso'],
+  };
+  const SURGERIES = ['Castración', 'Limpieza dental o extracción', 'Extracción de un bulto o tumor', 'Fractura', 'Cirugía de ojos', 'Cesárea'];
+  const STUDY = { sangre: 'Análisis de sangre', orina: 'Análisis de orina', materia: 'Análisis de materia fecal', rx: 'Radiografía', eco: 'Ecografía', otro: 'Otro estudio' };
+  /* todo lo que le pasó, en una sola línea de tiempo */
+  function timeline(p) {
+    const ev = [];
+    for (const r of p.records || []) if (r.date) ev.push({ k: r.type === 'vacuna' ? 'vacuna' : r.type === 'desparasitacion' ? 'anti' : 'control', date: r.date, title: r.name || TYPE[r.type], sub: [TYPE[r.type], r.vet].filter(Boolean).join(' · '), ref: r, kind: 'rec' });
+    for (const v of p.visits || []) ev.push({ k: 'consulta', date: v.date, title: v.reason || 'Consulta', sub: [v.vet, v.findings].filter(Boolean).join(' · '), ref: v, kind: 'visit' });
+    for (const x of p.studies || []) ev.push({ k: 'estudio', date: x.date, title: x.title || STUDY[x.kind], sub: [STUDY[x.kind], x.files?.length ? `${x.files.length} archivo${x.files.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · '), ref: x, kind: 'study' });
+    for (const s of p.symptoms || []) ev.push({ k: 'sintoma', date: s.date, title: s.text, sub: 'Algo que notaste', ref: s, kind: 'sym' });
+    for (const c of p.surgeries || []) if (/^\d{4}-\d{2}-\d{2}$/.test(c.date || '')) ev.push({ k: 'cirugia', date: c.date, title: c.name, sub: 'Cirugía', ref: c, kind: 'surg' });
+    for (const m of p.meds || []) if (m.start) ev.push({ k: 'remedio', date: m.start.slice(0, 10), title: m.name, sub: ['Remedio', m.dose].filter(Boolean).join(' · '), ref: m, kind: 'med' });
+    return ev.sort((a, b) => b.date.localeCompare(a.date));
+  }
+  /* el resumen que un veterinario quiere ver primero */
+  function summary(p) {
+    const up = upcoming(p);
+    const vacc = up.filter(x => x.r.type === 'vacuna'), anti = up.filter(x => x.r.type === 'desparasitacion');
+    const lastAnti = (p.records || []).filter(r => r.type === 'desparasitacion' && r.date).sort((a, b) => b.date.localeCompare(a.date))[0];
+    return {
+      vacc: !vacc.length ? 'none' : vacc.some(x => x.s.days < 0) ? 'late' : 'ok',
+      vaccLate: vacc.filter(x => x.s.days < 0),
+      anti: !anti.length ? (lastAnti ? 'unknown' : 'none') : anti.some(x => x.s.days < 0) ? 'late' : 'ok', lastAnti,
+      active: (p.conditions || []).filter(c => c.status !== 'resuelta'),
+      past: (p.conditions || []).filter(c => c.status === 'resuelta'),
+    };
+  }
+
+  g.MZ = { CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
 })(typeof window !== 'undefined' ? window : globalThis);
