@@ -94,7 +94,7 @@ document.addEventListener('visibilitychange', async () => {
 });
 
 /* ---------- utilidades ---------- */
-function toast(t) { const el = $('#toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 3000); }
+function toast(t) { const el = $('#toast'); const dlg = document.querySelector('dialog[open]'); (dlg || document.body).appendChild(el); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 3000); }
 const avatar = (p, big) => `<div class="av${big ? ' big' : ''}">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : Z.petIcon(p)}</div>`;
 const petById = id => doc.pets.find(p => p.id === id);
 function download(name, text, type = 'text/calendar') {
@@ -587,19 +587,34 @@ async function notifyPost(body) {
   const r = await fetch('/api/mascotas?notify=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
   const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status); notify = d; return d;
 }
-async function enablePush() {
-  if (mode !== 'full') return toast('En la demo no se activan. Creá tu cuenta gratis.');
-  if (!pushSupported()) return toast(isIOS ? 'Primero agregá Mimitos a la pantalla de inicio.' : 'Este navegador no acepta avisos. Probá con Chrome.');
-  try {
-    const reg = await navigator.serviceWorker.register('/mascotas-sw.js', { scope: '/mascotas' });
-    await navigator.serviceWorker.ready;
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return toast('No diste permiso. Lo podés cambiar en los ajustes del navegador.');
-    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(notify.publicKey) });
-    await notifyPost({ sub: sub.toJSON(), test: true });
-    toast('Listo: te mandamos uno de prueba.');
-  } catch { toast('No se pudo activar. Probá de nuevo.'); }
-  avisosPanel();
+const aMsg = (t, err) => { const el = $('#aMsg'); if (el) { el.textContent = t; el.hidden = !t; el.classList.toggle('err', Boolean(err)); } else toast(t); };
+const withTimeout = (pr, ms, what) => Promise.race([pr, new Promise((_, no) => setTimeout(() => no(new Error(what)), ms))]);
+function enablePush() {
+  if (mode !== 'full') return aMsg('Estás en la demo: entrá con tu cuenta (o creala gratis) para activar los avisos.', true);
+  if (!pushSupported()) return aMsg(isIOS ? 'En iPhone primero agregá Mimitos a la pantalla de inicio y abrila desde el ícono.' : 'Este navegador no acepta avisos. En Android usá Chrome.', true);
+  if (Notification.permission === 'denied') return aMsg('Los avisos están bloqueados para esta página. Habilitalos en los ajustes del navegador (Notificaciones) y volvé a tocar.', true);
+  const btn = $('#aOn'); if (btn) { btn.disabled = true; btn.textContent = 'Activando…'; }
+  aMsg('');
+  /* el permiso se pide en el mismo toque: Safari no lo deja pedir después de esperar otra cosa */
+  const perm = Notification.permission === 'granted' ? Promise.resolve('granted') : Notification.requestPermission();
+  (async () => {
+    try {
+      if (await perm !== 'granted') throw new Error('permiso');
+      if (!notify?.publicKey) notify = await (await fetch('/api/mascotas?notify=1')).json();
+      if (!notify?.publicKey) throw new Error('llave');
+      const reg = await withTimeout(navigator.serviceWorker.register('/mascotas-sw.js', { scope: '/mascotas' }), 15000, 'sw');
+      await withTimeout(navigator.serviceWorker.ready, 15000, 'sw');
+      const old = await reg.pushManager.getSubscription();
+      const sub = old || await withTimeout(reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(notify.publicKey) }), 20000, 'sub');
+      await notifyPost({ sub: sub.toJSON(), test: true });
+      await avisosPanel();
+      aMsg('Listo. Te mandamos uno de prueba: tiene que llegar en unos segundos.');
+    } catch (e) {
+      const m = { permiso: 'No diste permiso para los avisos. Si te arrepentís, habilitalos en los ajustes del navegador.', llave: 'No pudimos conectar con el servidor. Revisá tu conexión y probá de nuevo.', sw: 'El navegador no terminó de preparar los avisos. Cerrá y volvé a abrir Mimitos y probá otra vez.', sub: 'El servicio de avisos del navegador no respondió. Probá de nuevo en un rato.' }[e.message];
+      aMsg(m || `No se pudo activar (${String(e.message || e).slice(0, 80)}). Probá de nuevo.`, true);
+      if (btn) { btn.disabled = false; btn.innerHTML = `${I('cal')} Activar en este celu`; }
+    }
+  })();
 }
 async function disablePush() {
   const sub = await currentSub();
@@ -619,7 +634,7 @@ async function avisosPanel() {
   else if (!pushSupported()) celu = `<p class="note">Este navegador no acepta avisos. En Android usá Chrome; en iPhone, Safari con Mimitos agregada a inicio.</p>`;
   else celu = `<button class="btn blue wide big" id="aOn">${I('cal')} Activar en este celu</button><p class="note">Llegan como los de cualquier app, aunque no tengas Mimitos abierta. Gratis.</p>`;
   panel('Avisos', `<p class="lead-s">Te avisamos antes de cada fecha para que no se te pase nada.</p>
-    <h3>En el celu</h3>${celu}
+    <h3>En el celu</h3>${celu}<p class="amsg" id="aMsg" role="status" hidden></p>
     <h3>Por mail</h3>
     <label class="toggle"><input type="checkbox" id="aMail" ${n.mail ? 'checked' : ''}><span><b>Mandarme también un mail</b><br><small class="dim">Un solo mail con todo lo del día, a la mañana.</small></span></label>
     <h3>Qué te avisamos</h3>
