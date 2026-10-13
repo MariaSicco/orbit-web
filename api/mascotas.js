@@ -24,12 +24,14 @@ import { kvGet, kvSet, kvDel, getPurchases } from './_lib/kv.js';
 import { readSession, readBody } from './_lib/auth.js';
 import { isAdmin } from './_lib/admin.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath } from './_lib/blob.js';
+import { getVapid, getNotify, saveNotify, cleanSub, pushTo, KINDS } from './_lib/petpush.js';
 
 export const PRODUCT_ID = process.env.MASCOTAS_PRODUCT_ID || 'ob-018';
 const docKey = email => `orbit:pets:${email.toLowerCase()}`;
 const shareKey = t => `orbit:petshare:${t}`;
 const sitterKey = t => `orbit:petsitter:${t}`;
 const imgKey = id => `orbit:petimg:${id}`;
+const scansKey = email => `orbit:petscans:${email.toLowerCase()}`;
 const folder = email => 'mascotas/' + createHash('sha256').update('orbit-pets:' + email.toLowerCase()).digest('hex').slice(0, 16);
 const SCANS_PER_DAY = 25;
 const MAX_DOC = 700 * 1024;
@@ -200,6 +202,20 @@ async function access(email) {
 }
 const freeScanKey = email => `orbit:petscanfree:${String(email).toLowerCase()}`;
 const needPro = (res, acc) => { if (acc === 'pro') return false; res.status(402).json({ error: 'pro', access: acc }); return true; };
+async function scanAlert(email, pet, req) {
+  let city = '';
+  try { city = decodeURIComponent(String(req.headers['x-vercel-ip-city'] || '')).slice(0, 60); } catch {}
+  const list = (await kvGet(scansKey(email))) || [];
+  list.push({ petId: pet.id, at: new Date().toISOString(), city });
+  await kvSet(scansKey(email), list.slice(-20));
+  /* como mucho un push cada 30 minutos por mascota */
+  const ping = `orbit:petscanping:${email.toLowerCase()}:${pet.id}`;
+  if (await kvGet(ping)) return;
+  await kvSet(ping, 1, 30 * 60);
+  const n = await getNotify(email);
+  if (n.off.qr) return;
+  await pushTo(n, { title: `Alguien escaneó el QR de ${pet.name}`, body: (city ? `Cerca de ${city} (aproximado). ` : '') + (pet.lost?.on ? 'Está en modo perdida: mirá si te escribieron.' : 'Si no fuiste vos, puede que la hayan encontrado.'), url: '/mascotas', tag: `scan-${pet.id}` });
+}
 const bump = doc => { doc.rev = (doc.rev || 0) + 1; doc.updatedAt = new Date().toISOString(); return doc; };
 
 export default async function handler(req, res) {
@@ -223,6 +239,9 @@ export default async function handler(req, res) {
     const doc = link && await kvGet(docKey(link.email));
     const pet = doc?.pets?.find(p => p.id === link.petId && p.share === t);
     if (!pet) return res.status(404).json({ error: 'not_found' });
+    /* aviso a la familia: alguien abrió la ficha (no cuenta si la abre la misma dueña) */
+    const viewer = readSession(req);
+    if (!viewer || viewer.email.toLowerCase() !== link.email.toLowerCase()) await scanAlert(link.email, pet, req).catch(() => {});
     return res.status(200).json({ kind: 'ficha', pet: publicPet(pet), updatedAt: doc.updatedAt || null });
   }
 
@@ -253,6 +272,22 @@ export default async function handler(req, res) {
   if (!s) return res.status(401).json({ error: 'unauthorized' });
   const acc = await access(s.email);
 
+  /* avisos: push en este celu, mail y qué avisar */
+  if (q.notify) {
+    const n = await getNotify(s.email);
+    const view = async () => ({ publicKey: (await getVapid()).publicKey, devices: n.subs.length, mail: n.mail, off: n.off, endpoints: n.subs.map(x => x.endpoint.slice(-24)) });
+    if (req.method === 'GET') return res.status(200).json(await view());
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+    const b = await readBody(req);
+    if (b.sub) { const sub = cleanSub(b.sub); if (!sub) return res.status(400).json({ error: 'invalid' }); n.subs = [...n.subs.filter(x => x.endpoint !== sub.endpoint), sub].slice(-6); }
+    if (typeof b.remove === 'string') n.subs = n.subs.filter(x => x.endpoint !== b.remove);
+    if (typeof b.mail === 'boolean') n.mail = b.mail;
+    if (b.off && typeof b.off === 'object') n.off = Object.fromEntries(KINDS.map(k => [k, Boolean(b.off[k])]));
+    await saveNotify(n);
+    if (b.test) await pushTo(n, { title: 'Listo, los avisos andan', body: 'Así te vamos a avisar antes de cada vacuna, pipeta o bolsa de alimento.', url: '/mascotas', tag: 'test' });
+    return res.status(200).json(await view());
+  }
+
   if (req.method === 'GET' && q.file) {
     if (needPro(res, acc)) return;
     const ref = String(q.file);
@@ -263,7 +298,8 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const doc = (await kvGet(docKey(s.email))) || { pets: [], rev: 0 };
     const freeScan = acc === 'pro' || !(await kvGet(freeScanKey(s.email)));
-    return res.status(200).json({ access: acc, email: s.email, doc, freeScan });
+    const scans = ((await kvGet(scansKey(s.email))) || []).slice(-10);
+    return res.status(200).json({ access: acc, email: s.email, doc, freeScan, scans });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   const body = await readBody(req);

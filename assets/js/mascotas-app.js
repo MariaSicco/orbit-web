@@ -16,7 +16,7 @@ const SUGGEST = {
 /* ---------- estado ---------- */
 let mode = 'loading', doc = { pets: [] }, rev = 0, view = { name: 'home' }, cta = '';
 /* gratis con cualquier cuenta; Pro con la compra. En la demo se ve todo. */
-let pro = false, freeScan = false;
+let pro = false, freeScan = false, notify = null, scans = [];
 const blankPet = () => ({ id: uid(), name: '', species: 'perro', speciesOther: '', breed: '', sex: '', birth: '', color: '', marks: '', temper: '', chip: '', weight: null, allergies: '', photo: '', photos: [], notes: '',
   contact: { show: false, name: '', phone: '', note: '' }, vet: { name: '', phone: '', address: '', er: '', erPhone: '' }, lost: { on: false, since: '', place: '', note: '' },
   share: '', sitterToken: '', sitter: { name: '', from: '', to: '', food: '', walks: '', where: '', habits: '', emergency: '', key: '', vetAuth: false, contact: '' },
@@ -535,7 +535,9 @@ function renderPet(p) {
       <div class="ph-txt"><h1>${esc(p.name)}</h1><p class="dim">${esc(meta)}</p></div>
     </section>
     ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>En modo perdida</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
+    ${scanBanner(p)}
     <button class="btn blue wide big" data-act="add">${I('plus')} Cargar algo de ${esc(p.name)}</button>
+    ${mode === 'full' && notify && !notify.devices && !notify.mail ? `<button class="banner nudge" data-act="avisos">${bubble('cal', 'salud')}<span style="flex:1;text-align:left"><b>Que no se te pase ninguna fecha</b>Activá los avisos en el celu o por mail.</span>${I('chevron')}</button>` : ''}
 
     ${next.length ? `<section class="sec"><h2>Lo que le toca a ${esc(p.name)}</h2><div class="list">${next.map(x => x.html).join('')}</div></section>` : ''}
 
@@ -561,9 +563,78 @@ function renderPet(p) {
     <section class="sec">
       <h2>Más para ${esc(p.name)}</h2>
       <div class="list">
-        ${[['share', 'qr', 'viaje', 'Ficha y QR', 'Para el veterinario, el paseador y la chapita'], ['sitter', 'hand', 'cuida', `Quién ${p.sex === 'm' ? 'lo' : 'la'} cuida`, `Un link con todo para quien ${p.sex === 'm' ? 'lo' : 'la'} cuida`], ['lost', 'search', 'perdida', p.lost.on ? (p.sex === 'm' ? 'Está perdido' : 'Está perdida') : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['sub:comida', 'bowl', 'comida', 'Comida y gastos', 'Cuándo se termina el alimento y cuánto gastás'], ['sub:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['sub:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos']].map(([a, ic, c, t, d]) => { const [act, sub] = a.split(':'); return `<button class="row link-row" data-act="${act}"${sub ? ` data-sub="${sub}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}${proTag(sub || act)}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}
+        ${[['share', 'qr', 'viaje', 'Ficha y QR', 'Para el veterinario, el paseador y la chapita'], ['sitter', 'hand', 'cuida', `Quién ${p.sex === 'm' ? 'lo' : 'la'} cuida`, `Un link con todo para quien ${p.sex === 'm' ? 'lo' : 'la'} cuida`], ['lost', 'search', 'perdida', p.lost.on ? (p.sex === 'm' ? 'Está perdido' : 'Está perdida') : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['sub:comida', 'bowl', 'comida', 'Comida y gastos', 'Cuándo se termina el alimento y cuánto gastás'], ['sub:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['avisos', 'cal', 'salud', 'Avisos', notify && (notify.devices || notify.mail) ? 'Activados' + (notify.devices ? ' en el celu' : '') + (notify.mail ? (notify.devices ? ' y por mail' : ' por mail') : '') : 'En el celu, por mail o en tu calendario'], ['sub:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos']].map(([a, ic, c, t, d]) => { const [act, sub] = a.split(':'); return `<button class="row link-row" data-act="${act}"${sub ? ` data-sub="${sub}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}${proTag(sub || act)}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}
       </div>
     </section>`;
+}
+
+function scanBanner(p) {
+  const last = scans.filter(x => x.petId === p.id).pop();
+  if (!last || Date.now() - Date.parse(last.at) > 7 * 864e5) return '';
+  return `<button class="banner scanned" data-act="share">${'<span class="pulse" aria-hidden="true"></span>'}<span style="flex:1;text-align:left"><b>Alguien escaneó el QR de ${esc(p.name)}</b>${esc(Z.fmtWhen(new Date(last.at)))}${last.city ? ' · cerca de ' + esc(last.city) : ''}</span>${I('chevron')}</button>`;
+}
+
+/* ---------- avisos: push en el celu, mail y calendario ---------- */
+const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const b64 = s => { const p = '='.repeat((4 - s.length % 4) % 4), raw = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
+async function currentSub() {
+  if (!pushSupported()) return null;
+  try { const reg = await navigator.serviceWorker.getRegistration('/mascotas'); return reg ? await reg.pushManager.getSubscription() : null; } catch { return null; }
+}
+async function notifyPost(body) {
+  const r = await fetch('/api/mascotas?notify=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status); notify = d; return d;
+}
+async function enablePush() {
+  if (mode !== 'full') return toast('En la demo no se activan. Creá tu cuenta gratis.');
+  if (!pushSupported()) return toast(isIOS ? 'Primero agregá Mimitos a la pantalla de inicio.' : 'Este navegador no acepta avisos. Probá con Chrome.');
+  try {
+    const reg = await navigator.serviceWorker.register('/mascotas-sw.js', { scope: '/mascotas' });
+    await navigator.serviceWorker.ready;
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return toast('No diste permiso. Lo podés cambiar en los ajustes del navegador.');
+    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(notify.publicKey) });
+    await notifyPost({ sub: sub.toJSON(), test: true });
+    toast('Listo: te mandamos uno de prueba.');
+  } catch { toast('No se pudo activar. Probá de nuevo.'); }
+  avisosPanel();
+}
+async function disablePush() {
+  const sub = await currentSub();
+  if (sub) { try { await notifyPost({ remove: sub.endpoint }); } catch {} await sub.unsubscribe().catch(() => {}); }
+  toast('Apagados en este celu.'); avisosPanel();
+}
+const KINDS_UI = [['vac', 'Vacunas y controles', '3 días antes y el mismo día'], ['pip', 'Pipeta o antiparasitario', 'Cuando toca renovar'], ['food', 'Alimento', '5 días antes de que se termine'], ['check', 'Chequeo del mes', 'El primer domingo de cada mes'], ['qr', 'Alguien escaneó su QR', 'Al instante, en el celu']];
+async function avisosPanel() {
+  if (mode === 'full' && !notify) { try { notify = await (await fetch('/api/mascotas?notify=1')).json(); } catch {} }
+  const n = notify || { devices: 0, mail: false, off: {} };
+  const here = await currentSub();
+  const onHere = Boolean(here && n.endpoints?.some(e => here.endpoint.endsWith(e)));
+  let celu;
+  if (onHere) celu = `<div class="banner ok-b">${bubble('check', 'salud')}<span style="flex:1"><b>Activados en este celu</b>${n.devices > 1 ? `Y en ${n.devices - 1} dispositivo${n.devices > 2 ? 's' : ''} más.` : 'Te llegan aunque no tengas Mimitos abierta.'}</span></div>
+    <button class="btn ghost wide" id="aTest">Mandarme uno de prueba</button><button class="link" id="aOff" style="align-self:center">Apagar en este celu</button>`;
+  else if (isIOS && !standalone()) celu = `<div class="ios-steps"><b>En iPhone, primero instalala</b><ol><li>Tocá <b>Compartir</b> abajo en Safari (el cuadrado con la flecha).</li><li>Elegí <b>Agregar a inicio</b>.</li><li>Abrí Mimitos desde el ícono y volvé acá.</li></ol><small class="dim">Necesita iOS 16.4 o más nuevo.</small></div>`;
+  else if (!pushSupported()) celu = `<p class="note">Este navegador no acepta avisos. En Android usá Chrome; en iPhone, Safari con Mimitos agregada a inicio.</p>`;
+  else celu = `<button class="btn blue wide big" id="aOn">${I('cal')} Activar en este celu</button><p class="note">Llegan como los de cualquier app, aunque no tengas Mimitos abierta. Gratis.</p>`;
+  panel('Avisos', `<p class="lead-s">Te avisamos antes de cada fecha para que no se te pase nada.</p>
+    <h3>En el celu</h3>${celu}
+    <h3>Por mail</h3>
+    <label class="toggle"><input type="checkbox" id="aMail" ${n.mail ? 'checked' : ''}><span><b>Mandarme también un mail</b><br><small class="dim">Un solo mail con todo lo del día, a la mañana.</small></span></label>
+    <h3>Qué te avisamos</h3>
+    ${KINDS_UI.map(([k, t, d]) => `<label class="toggle"><input type="checkbox" data-kind="${k}" ${n.off?.[k] ? '' : 'checked'}><span><b>${t}</b><br><small class="dim">${d}</small></span></label>`).join('')}
+    <p class="note">¿Preferís tu calendario? En "Lo que le toca", tocá el ícono de calendario de cada fecha y queda agendada con su aviso.</p>`);
+  const body = $('#pBody');
+  body.querySelector('#aOn')?.addEventListener('click', enablePush);
+  body.querySelector('#aOff')?.addEventListener('click', disablePush);
+  body.querySelector('#aTest')?.addEventListener('click', async () => { try { await notifyPost({ test: true }); toast('Mandado. Llega en unos segundos.'); } catch { toast('No se pudo mandar.'); } });
+  body.querySelector('#aMail').addEventListener('change', async e => { if (mode !== 'full') { e.target.checked = !e.target.checked; return toast('En la demo no se guarda.'); } try { await notifyPost({ mail: e.target.checked }); toast(e.target.checked ? 'Listo: también por mail.' : 'Sin mails.'); render(); } catch { toast('No se guardó.'); } });
+  body.querySelectorAll('[data-kind]').forEach(c => c.addEventListener('change', async () => {
+    if (mode !== 'full') return toast('En la demo no se guarda.');
+    const off = {}; body.querySelectorAll('[data-kind]').forEach(x => { off[x.dataset.kind] = !x.checked; });
+    try { await notifyPost({ off }); } catch { toast('No se guardó.'); }
+  }));
 }
 
 /* subpáginas */
@@ -1069,6 +1140,7 @@ app.addEventListener('click', e => {
     case 'sitter': if (needPro('sitter')) return; return sitterPanel(cur);
     case 'lost': return lostPanel(p);
     case 'vetpdf': if (needPro('vetpdf')) return; return vetPdf(cur);
+    case 'avisos': return avisosPanel();
     case 'icsRec': { const r = p.records.find(x => x.id === b.dataset.rec); return calendar([Z.recordEvent(p, r)], `${p.name} ${r.name}`); }
     case 'icsMeds': return calendar(cur.meds.filter(m => m.start && Z.medState(m, cur.log).state !== 'ended').map(m => Z.medEvent(cur, m)), `${cur.name} remedios`);
     case 'icsFood': return calendar([Z.foodEvent(p, p.food)], `${p.name} alimento`);
@@ -1082,7 +1154,8 @@ app.addEventListener('click', e => {
   try { const r = await fetch('/api/mascotas', { credentials: 'same-origin' }); st = r.status; d = await r.json(); } catch {}
   if (st === 200 && d.doc) {
     mode = 'full'; pro = d.access === 'pro'; freeScan = Boolean(d.freeScan);
-    adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : '');
+    adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
+    fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => { if (x && x.publicKey) { notify = x; render(); } }).catch(() => {});
     document.body.classList.toggle('is-pro', pro);
     if (!pro) { const t = $('#plan'); if (t) { t.hidden = false; t.onclick = () => proPanel('scan'); } }
   } else {
