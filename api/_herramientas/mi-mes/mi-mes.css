@@ -60,13 +60,13 @@ h1,h2,h3{margin:0}
 @media (min-width:1000px){.mm-saldo{padding:22px 28px 26px}}
 .mm-mesnav{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .mm-mesnombre{font-size:16px;font-weight:600;text-align:center;flex:1}
-.mm-mesnombre[data-hoy="sí"]::after{content:" · este mes";font-weight:500;opacity:.85}
+.mm-mesnombre[data-hoy="sí"]::after{content:" · este mes";font-weight:500}
 .mm-flecha{display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,.14);color:inherit;transition:background .2s var(--ease)}
 .mm-flecha:hover:not(:disabled){background:rgba(255,255,255,.26)}
 .mm-flecha:disabled{opacity:.35;cursor:default}
 .mm-flecha.chica{background:var(--papel);color:var(--tinta);box-shadow:var(--sombra)}
 .mm-flecha.chica:hover:not(:disabled){background:var(--azul-suave)}
-.mm-saldo-lbl{margin:18px 0 2px;font-size:15px;font-weight:500;opacity:.92}
+.mm-saldo-lbl{margin:18px 0 2px;font-size:15px;font-weight:500}
 .mm-num{--n:9;margin:0;font-weight:800;letter-spacing:-.04em;line-height:1;white-space:nowrap;
   font-size:min(76px,calc(100cqi / (var(--n) * .58)))}
 .mm-entra .mm-num{animation:mm-sube .32s var(--ease) both}
@@ -74,7 +74,7 @@ h1,h2,h3{margin:0}
 .mm-pasas{display:inline-block;margin:10px 0 0;padding:6px 12px;border-radius:999px;background:#fff;color:var(--neg);font-weight:700;font-size:14px}
 .mm-saldo-pie{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:18px 0 0;padding-top:14px;border-top:1px solid rgba(255,255,255,.22)}
 .mm-saldo-pie div{min-width:0}
-.mm-saldo-pie dt{font-size:12px;opacity:.88}
+.mm-saldo-pie dt{font-size:12px}
 .mm-saldo-pie dd{margin:2px 0 0;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* ── accesos rápidos ── */
@@ -109,7 +109,7 @@ button.mm-tcard:hover{transform:translateY(-3px)}
 .mm-tcard .tc-chip{width:30px;height:22px;border-radius:5px;background:linear-gradient(135deg,rgba(255,255,255,.65),rgba(255,255,255,.3))}
 .mm-tcard .tc-abajo{display:flex;justify-content:space-between;align-items:flex-end;gap:8px}
 .mm-tcard .tc-num{font-family:var(--mono);font-size:14px;letter-spacing:.12em}
-.mm-tcard .tc-mes{text-align:right;font-size:11.5px;opacity:.92}
+.mm-tcard .tc-mes{text-align:right;font-size:11.5px}
 .mm-tcard .tc-mes b{display:block;font-size:17px;font-weight:800;letter-spacing:-.02em}
 .mm-tcard.azul{background:linear-gradient(135deg,#3047FF,#1F2FC2)}
 .mm-tcard.negro{background:linear-gradient(135deg,#2A2A2D,#0D0D0E)}
