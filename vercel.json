@@ -1,6 +1,18 @@
 {
   "cleanUrls": true,
   "trailingSlash": false,
+  "redirects": [
+    {
+      "source": "/herramientas/libreta",
+      "destination": "/mascotas",
+      "permanent": false
+    },
+    {
+      "source": "/herramientas/libreta/:path*",
+      "destination": "/mascotas",
+      "permanent": false
+    }
+  ],
   "rewrites": [
     {
       "source": "/p/:id",

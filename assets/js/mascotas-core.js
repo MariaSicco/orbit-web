@@ -128,6 +128,68 @@
     return { uid: `${pet.id}-food-${f.opened}`, allDay: true, start: st.buy, title: `Comprar alimento de ${pet.name}`, desc: `Se termina alrededor del ${fmt(st.end)}.`, alarms: ['PT9H'] };
   }
 
+  /* ---------- calendario sugerido ----------
+     Referencia general por especie y etapa (cachorro: menos de 12 meses). NO es una indicación médica:
+     arma fechas de partida que la persona edita y confirma con su veterinario.
+     first = en cuántos días proponer la fecha si no hay una aplicación anterior cargada; every = cada cuántos meses. */
+  const SCHEDULE = {
+    perro: {
+      cachorro: [
+        { type: 'vacuna', name: 'Séxtuple', every: 1, first: 21, note: 'En cachorros suelen ser varias dosis, separadas por 3 o 4 semanas.' },
+        { type: 'vacuna', name: 'Antirrábica', every: 12, first: 30, note: 'Suele aplicarse a partir de los 3 meses.' },
+        { type: 'desparasitacion', name: 'Antiparasitario interno', every: 1, first: 15, note: 'En cachorros suele ser más seguido.' },
+        { type: 'desparasitacion', name: 'Pipeta antipulgas', every: 1, first: 30 },
+        { type: 'control', name: 'Control de cachorro', every: 1, first: 30 },
+      ],
+      adulto: [
+        { type: 'vacuna', name: 'Antirrábica', every: 12, first: 30 },
+        { type: 'vacuna', name: 'Séxtuple', every: 12, first: 30, note: 'Refuerzo anual.' },
+        { type: 'desparasitacion', name: 'Antiparasitario interno', every: 3, first: 30 },
+        { type: 'desparasitacion', name: 'Pipeta antipulgas', every: 1, first: 30 },
+        { type: 'control', name: 'Control anual', every: 12, first: 60 },
+      ],
+    },
+    gato: {
+      cachorro: [
+        { type: 'vacuna', name: 'Triple felina', every: 1, first: 21, note: 'En cachorros suelen ser varias dosis, separadas por 3 o 4 semanas.' },
+        { type: 'vacuna', name: 'Antirrábica', every: 12, first: 30, note: 'Suele aplicarse a partir de los 3 meses.' },
+        { type: 'desparasitacion', name: 'Antiparasitario interno', every: 1, first: 15, note: 'En cachorros suele ser más seguido.' },
+        { type: 'control', name: 'Control de cachorro', every: 1, first: 30 },
+      ],
+      adulto: [
+        { type: 'vacuna', name: 'Triple felina', every: 12, first: 30, note: 'Refuerzo anual.' },
+        { type: 'vacuna', name: 'Antirrábica', every: 12, first: 30 },
+        { type: 'desparasitacion', name: 'Antiparasitario interno', every: 3, first: 30 },
+        { type: 'desparasitacion', name: 'Pipeta antipulgas', every: 1, first: 30 },
+        { type: 'control', name: 'Control anual', every: 12, first: 60 },
+      ],
+    },
+    otra: { cachorro: [{ type: 'control', name: 'Control', every: 6, first: 30 }], adulto: [{ type: 'control', name: 'Control anual', every: 12, first: 60 }] },
+  };
+  function stage(p) {
+    const b = pd(p.birth); if (!b) return 'adulto';
+    const t = today(); let m = (t.getFullYear() - b.getFullYear()) * 12 + t.getMonth() - b.getMonth(); if (t.getDate() < b.getDate()) m--;
+    return m >= 0 && m < 12 ? 'cachorro' : 'adulto';
+  }
+  const addMonths = (s, n) => { const d = pd(s); if (!d) return ''; const day = d.getDate(); const x = new Date(d.getFullYear(), d.getMonth() + n, 1); x.setDate(Math.min(day, new Date(x.getFullYear(), x.getMonth() + 1, 0).getDate())); return iso(x); };
+  const inDays = n => { const x = today(); x.setDate(x.getDate() + n); return iso(x); };
+  /* lo sugerido para esta mascota, sin lo que ya tiene con próxima fecha cargada */
+  function suggested(p) {
+    const st = stage(p), list = (SCHEDULE[p.species] || SCHEDULE.otra)[st];
+    const key = (t, n) => t + '|' + String(n || '').toLowerCase().trim();
+    const have = new Set((p.records || []).filter(r => r.next).map(r => key(r.type, r.name)));
+    return list.filter(x => !have.has(key(x.type, x.name))).map(x => {
+      const last = (p.records || []).filter(r => key(r.type, r.name) === key(x.type, x.name) && r.date).sort((a, b) => b.date.localeCompare(a.date))[0];
+      let next = last ? addMonths(last.date, x.every) : inDays(x.first);
+      if (next < iso(today())) next = inDays(7);
+      return { ...x, stage: st, next };
+    });
+  }
+
+  /* un registro del calendario sugerido: tiene próxima fecha, todavía no fecha de aplicación, y la marca en las notas */
+  const SUG_NOTE = 'Calendario sugerido: referencia general, confirmalo con tu veterinario.';
+  const isSug = r => Boolean(r) && !r.date && String(r.notes || '').startsWith('Calendario sugerido');
+
   /* ---------- íconos (línea, puntas redondeadas) ---------- */
   const P = {
     paw: '<circle cx="7" cy="9" r="1.9"/><circle cx="12" cy="6.5" r="1.9"/><circle cx="17" cy="9" r="1.9"/><path d="M12 12c-3 0-5.5 3.2-5.5 5.6 0 1.6 1.3 2.4 2.8 2.4 1 0 1.8-.5 2.7-.5s1.7.5 2.7.5c1.5 0 2.8-.8 2.8-2.4C17.5 15.2 15 12 12 12z"/>',
@@ -209,5 +271,5 @@
     };
   }
 
-  g.MZ = { BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
+  g.MZ = { SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -498,7 +498,8 @@ function renderWelcome() {
     <h1>Todo lo de tu mascota, en el celu</h1>
     <p class="lead">Vacunas, consultas y todo lo que le pasó, en un solo lugar. Te avisamos antes de cada fecha y, si se pierde, quien la encuentre te ubica con su QR. Gratis, para siempre.</p>
     <button class="btn blue wide big" data-act="newPet">${I('plus')} Agregar a mi mascota</button>
-    <p class="note">Te hacemos unas preguntas cortas y, si tenés la libreta a mano, le sacás una foto y la cargamos por vos.</p>
+    <p class="note">Te hacemos unas preguntas cortas y te armamos un calendario sugerido para empezar. Si tenés la libreta a mano, le sacás una foto y la cargamos por vos.</p>
+    <p class="note">Mimitos es un organizador: no reemplaza al veterinario.</p>
   </section>`;
 }
 function switcher(p) {
@@ -508,7 +509,7 @@ function switcher(p) {
 function nextItems(p) {
   const out = [];
   for (const m of p.meds) { const s = Z.medState(m, p.log); if (s.state === 'due' || s.state === 'late') out.push({ order: s.state === 'late' ? -2 : -1, html: medRow(p, m) }); }
-  for (const x of Z.upcoming(p)) if (x.s.days <= 45) out.push({ order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(x.r.type === 'vacuna' ? 'syringe' : x.r.type === 'desparasitacion' ? 'drop' : 'steth', 'salud')}<span class="what"><b>${esc(x.r.name)}</b><small class="stt">${x.s.t}</small></span><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar al calendario">${I('cal')}</button></div>` });
+  for (const x of Z.upcoming(p)) if (x.s.days <= 45) out.push({ order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(x.r.type === 'vacuna' ? 'syringe' : x.r.type === 'desparasitacion' ? 'drop' : 'steth', 'salud')}<span class="what"><b>${esc(x.r.name)}</b><small class="stt">${x.s.t}${Z.isSug(x.r) ? ' · sugerida' : ''}</small></span><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar al calendario">${I('cal')}</button></div>` });
   const f = Z.food(p.food); if (f && f.left <= 5) out.push({ order: f.left, html: `<div class="row ${f.left < 0 ? 'st-late' : 'st-soon'}">${bubble('bowl', 'comida')}<span class="what"><b>Comprar alimento</b><small class="stt">${f.left < 0 ? 'Ya se terminó' : f.left === 0 ? 'Se termina hoy' : `Quedan ${f.left} días`}</small></span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar">${I('cal')}</button></div>` });
   return out.sort((a, b) => a.order - b.order);
 }
@@ -563,7 +564,7 @@ function renderPet(p) {
     <section class="sec">
       <h2>Más para ${esc(p.name)}</h2>
       <div class="list">
-        ${[['share', 'qr', 'viaje', 'Ficha y QR', 'Para el veterinario, el paseador y la chapita'], ['sitter', 'hand', 'cuida', `Quién ${p.sex === 'm' ? 'lo' : 'la'} cuida`, `Un link con todo para quien ${p.sex === 'm' ? 'lo' : 'la'} cuida`], ['lost', 'search', 'perdida', p.lost.on ? (p.sex === 'm' ? 'Está perdido' : 'Está perdida') : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['sub:comida', 'bowl', 'comida', 'Comida y gastos', 'Cuándo se termina el alimento y cuánto gastás'], ['sub:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['avisos', 'cal', 'salud', 'Avisos', notify && (notify.devices || notify.mail) ? 'Activados' + (notify.devices ? ' en el celu' : '') + (notify.mail ? (notify.devices ? ' y por mail' : ' por mail') : '') : 'En el celu, por mail o en tu calendario'], ['sub:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos']].map(([a, ic, c, t, d]) => { const [act, sub] = a.split(':'); return `<button class="row link-row" data-act="${act}"${sub ? ` data-sub="${sub}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}${proTag(sub || act)}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}
+        ${[['share', 'qr', 'viaje', 'Ficha y QR', 'Para el veterinario, el paseador y la chapita'], ['sitter', 'hand', 'cuida', `Quién ${p.sex === 'm' ? 'lo' : 'la'} cuida`, `Un link con todo para quien ${p.sex === 'm' ? 'lo' : 'la'} cuida`], ['lost', 'search', 'perdida', p.lost.on ? (p.sex === 'm' ? 'Está perdido' : 'Está perdida') : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['sub:comida', 'bowl', 'comida', 'Comida y gastos', 'Cuándo se termina el alimento y cuánto gastás'], ['sub:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['avisos', 'cal', 'salud', 'Avisos', notify && (notify.devices || notify.mail) ? 'Activados' + (notify.devices ? ' en el celu' : '') + (notify.mail ? (notify.devices ? ' y por mail' : ' por mail') : '') : 'En el celu, por mail o en tu calendario'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia según especie y edad'], ['sub:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y copia de tus datos']].map(([a, ic, c, t, d]) => { const [act, sub] = a.split(':'); return `<button class="row link-row" data-act="${act}"${sub ? ` data-sub="${sub}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}${proTag(sub || act)}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}
       </div>
     </section>`;
 }
@@ -690,6 +691,33 @@ function weightChart(p) {
   </svg></div>`;
 }
 
+/* ---------- calendario sugerido: presets por especie y edad, editables ---------- */
+const everyTxt = n => n === 1 ? 'cada mes' : n === 12 ? 'cada año' : `cada ${n} meses`;
+const sugRows = list => `<div class="list sug-list">${list.map((x, i) => `<div class="row sug-row">
+  <input type="checkbox" id="sg_k${i}" data-sgk="${i}" ${x.keep !== false ? 'checked' : ''}>
+  <label for="sg_k${i}" class="what"><b>${esc(x.name)}</b><small>${TYPE[x.type]} · ${everyTxt(x.every)}${x.note ? ' · ' + esc(x.note) : ''}</small></label>
+  <span class="sug-d"><label for="sg_d${i}">Próxima</label><input type="date" id="sg_d${i}" data-sgd="${i}" value="${esc(x.next)}"></span></div>`).join('')}</div>`;
+const readSug = (root, list) => list.map((x, i) => ({ ...x, keep: Boolean(root.querySelector(`[data-sgk="${i}"]`)?.checked), next: root.querySelector(`[data-sgd="${i}"]`)?.value || x.next }));
+function applySug(p, list) {
+  let n = 0;
+  for (const x of list) if (x.keep && x.next) { p.records.push({ id: uid(), type: x.type, name: x.name, date: '', next: x.next, vet: '', notes: Z.SUG_NOTE }); n++; }
+  return n;
+}
+function suggestPanel(p) {
+  const list = Z.suggested(p).map(x => ({ ...x, keep: true }));
+  panel('Calendario sugerido', `<p class="lead-s">Fechas de referencia general para ${Z.stage(p) === 'cachorro' ? 'un cachorro' : 'un adulto'} (${esc(Z.species(p).toLowerCase())}). Si ya cargaste la última aplicación, la próxima se calcula desde ahí. <b>Es una referencia general: confirmalo con tu veterinario.</b></p>
+    ${list.length ? `${sugRows(list)}<button class="btn blue wide" id="sgSave" type="button">Sumar a lo que le toca</button>` : `<div class="empty"><p>${esc(p.name)} ya tiene próxima fecha para todo lo del calendario sugerido.</p></div>`}`);
+  const b = $('#sgSave');
+  if (b) b.onclick = () => { const n = applySug(p, readSug($('#pBody'), list)); dPanel.close(); changed(); toast(n ? `Listo: ${n} ${n === 1 ? 'fecha sumada' : 'fechas sumadas'} a lo que le toca.` : 'No marcaste ninguna fecha.'); };
+}
+
+/* ---------- copia de tus datos ---------- */
+function exportCopy() {
+  const data = { app: 'mimitos-by-orbit', version: 1, exportedAt: new Date().toISOString(), demo: mode !== 'full', pets: doc.pets };
+  download(`mimitos-copia-${iso(Z.today())}.json`, JSON.stringify(data, null, 1), 'application/json');
+  toast(mode === 'full' ? 'Copia descargada. Guardala en un lugar seguro.' : 'Descargaste la copia del ejemplo.');
+}
+
 /* ---------- "cargar algo" ---------- */
 function addPanel(p) {
   const opt = (act, ic, c, t, d, hero) => `<button class="row link-row${hero ? ' hero-opt' : ''}" data-add="${act}">${bubble(ic, c)}<span class="what"><b>${t}${proTag(act)}</b><small>${act === 'scan' && mode === 'full' && !pro && freeScan ? 'La primera es de regalo' : d}</small></span>${I('chevron')}</button>`;
@@ -713,8 +741,8 @@ function addPanel(p) {
 
 /* ---------- alta guiada ---------- */
 let ob = null;
-function startOnboard() { ob = { step: 0, pet: blankPet(), photo: null, conds: {}, otherCond: '', surg: new Set(), otherSurg: '' }; view = { name: 'onboard' }; render(); window.scrollTo(0, 0); }
-const OB_STEPS = 5;
+function startOnboard() { ob = { sug: [], step: 0, pet: blankPet(), photo: null, conds: {}, otherCond: '', surg: new Set(), otherSurg: '' }; view = { name: 'onboard' }; render(); window.scrollTo(0, 0); }
+const OB_STEPS = 6;
 function obHead(title, sub) {
   return `<div class="ob-top"><button class="link" data-ob="back">${I('back')} ${ob.step ? 'Atrás' : 'Cancelar'}</button><span class="dim">Paso ${ob.step + 1} de ${OB_STEPS}</span></div>
     <div class="progress"><i style="width:${(ob.step + 1) / OB_STEPS * 100}%"></i></div>
@@ -746,11 +774,12 @@ function renderOnboard() {
       <input id="ob_osurg" maxlength="80" value="${esc(ob.otherSurg)}" placeholder="Otra cirugía"></div>
     <div class="f"><label for="ob_all">¿Tiene alguna alergia?</label><input id="ob_all" maxlength="300" value="${esc(p.allergies)}" placeholder="A un alimento, a un remedio… o dejalo vacío"></div>
     <div class="f"><label for="ob_chr">¿Toma algún remedio todos los días?</label><input id="ob_chr" maxlength="300" value="${esc(p.chronic)}" placeholder="Nombre y dosis, o dejalo vacío"></div>`;
-  if (ob.step === 4) h = obHead('Ahora, su libreta', `Si tenés la libreta del veterinario a mano, sacale una foto a cada página con vacunas. Las leemos y las cargamos por vos; vos solo revisás.`) + `
+  if (ob.step === 4) h = obHead('Su calendario sugerido', `Fechas de referencia general para ${Z.stage(p) === 'cachorro' ? 'un cachorro' : 'un adulto'}. Cambiá lo que quieras: <b>es una referencia general, confirmalo con tu veterinario</b>.`) + (ob.sug.length ? sugRows(ob.sug) : '<p class="dim">No hay fechas sugeridas para cargar.</p>');
+  if (ob.step === 5) h = obHead('Ahora, su libreta', `Si tenés la libreta del veterinario a mano, sacale una foto a cada página con vacunas. Las leemos y las cargamos por vos; vos solo revisás.`) + `
     <div class="scanbox">${I('camera')}<b>Foto de la libreta</b><span>Hasta 4 páginas, con buena luz y sin reflejos</span></div>
     <label class="btn blue wide big" for="ob_scan">${I('camera')} Sacar o elegir fotos</label><input id="ob_scan" type="file" accept="image/*" multiple hidden>
     <button class="btn ghost wide" data-ob="skip">La cargo después</button>`;
-  app.innerHTML = `<section class="sec onboard">${h}${ob.step < 4 ? `<button class="btn blue wide big" data-ob="next">${ob.step === 0 ? 'Empezar' : 'Siguiente'}</button>${ob.step >= 2 ? `<button class="btn ghost wide" data-ob="skipstep">${ob.step === 2 ? 'No tuvo nada' : 'Nada de esto'}</button>` : ''}` : ''}<p class="err-msg" id="obErr" role="alert" hidden></p></section>`;
+  app.innerHTML = `<section class="sec onboard">${h}${ob.step < 5 ? `<button class="btn blue wide big" data-ob="next">${ob.step === 0 ? 'Empezar' : 'Siguiente'}</button>${ob.step >= 2 ? `<button class="btn ghost wide" data-ob="skipstep">${ob.step === 2 ? 'No tuvo nada' : ob.step === 4 ? 'Ahora no' : 'Nada de esto'}</button>` : ''}` : ''}<p class="err-msg" id="obErr" role="alert" hidden></p></section>`;
   if (ob.step === 0 && !p.name) $('#ob_name')?.focus();
 }
 function obRead() {
@@ -759,6 +788,7 @@ function obRead() {
   if (ob.step === 1) { p.birth = v('#ob_birth'); const w = numDec(v('#ob_weight')); p.weight = Number.isNaN(w) ? p.weight : w; p.breed = v('#ob_breed'); }
   if (ob.step === 2) ob.otherCond = v('#ob_ocond');
   if (ob.step === 3) { ob.otherSurg = v('#ob_osurg'); p.allergies = v('#ob_all'); p.chronic = v('#ob_chr'); }
+  if (ob.step === 4 && ob.sug.length) ob.sug = readSug(app, ob.sug);
 }
 function obErr(t) { const e = $('#obErr'); e.textContent = t; e.hidden = false; }
 async function obFinish(scanFiles) {
@@ -772,6 +802,7 @@ async function obFinish(scanFiles) {
   if (p.weight) p.weights = [{ date: iso(Z.today()), kg: p.weight }];
   p.onboarded = true;
   if (ob.photo) { try { p.photo = await uploadPhoto(ob.photo); } catch { toast('La foto no se pudo subir. Podés agregarla después.'); } }
+  applySug(p, ob.sug || []);
   doc.pets.push(p); ob = null;
   view = { name: 'pet', id: p.id };
   changed();
@@ -791,10 +822,12 @@ app.addEventListener('click', e => {
   const a = b.dataset.ob;
   if (a === 'back') { if (!ob.step) { ob = null; view = { name: 'pet', id: doc.pets[0]?.id }; render(); return; } obRead(); ob.step--; render(); return; }
   if (a === 'skip') return obFinish();
-  if (a === 'skipstep') { if (ob.step === 2) { ob.conds = {}; ob.otherCond = ''; } if (ob.step === 3) { ob.surg.clear(); ob.otherSurg = ''; } }
+  if (a === 'skipstep') { if (ob.step === 2) { ob.conds = {}; ob.otherCond = ''; } if (ob.step === 3) { ob.surg.clear(); ob.otherSurg = ''; } if (ob.step === 4) ob.sug = []; }
   else obRead();
   if (ob.step === 0 && !ob.pet.name) return obErr('Poné su nombre para seguir.');
-  ob.step++; render(); window.scrollTo(0, 0);
+  ob.step++;
+  if (ob.step === 4) ob.sug = Z.suggested(ob.pet).map(x => ({ ...x, keep: true }));
+  render(); window.scrollTo(0, 0);
 });
 app.addEventListener('change', async e => {
   if (view.name !== 'onboard') return;
@@ -919,6 +952,8 @@ function tabDatos(p) {
       ${p.vet.er ? `<div class="row">${bubble('alert', 'perdida')}<span class="what"><b>${esc(p.vet.er)}</b><small>Guardia 24 horas</small></span>${p.vet.erPhone ? call(p.vet.erPhone) : '<span></span>'}</div>` : ''}</div>`
       : `<div class="empty">${bubble('heart', 'salud')}<p>Cargá tu veterinaria y una guardia 24 horas. En una urgencia no hay tiempo de buscar.</p></div>`}
     ${p.notes ? `<h3>Notas privadas</h3><div class="card"><p style="white-space:pre-wrap">${esc(p.notes)}</p></div>` : ''}
+    <div class="sec-h"><h2>Copia de tus datos</h2></div>
+    <div class="card"><p class="dim">Bajá un archivo con todo lo que cargaste de tus mascotas (JSON). Sirve como respaldo y para llevártelo a otro lado.</p><button class="btn ghost sm" data-act="export" style="align-self:flex-start">${I('doc')} Exportar copia</button></div>
   </div>`;
 }
 
@@ -1088,6 +1123,7 @@ function vetPdf(p) {
   const html = `<!doctype html><html lang="es"><head><meta charset="utf-8"><title>${esc(p.name)} · historial</title>
   <style>body{font:13px/1.45 system-ui,sans-serif;color:#0D0D0E;margin:32px;max-width:760px}h1{font-size:28px;margin:0 0 4px}h2{font-size:15px;margin:22px 0 6px;text-transform:uppercase;letter-spacing:.06em}table{width:100%;border-collapse:collapse}td,th{text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;vertical-align:top}th{font-size:11px;text-transform:uppercase;color:#5F5D58}.m{color:#5F5D58}.b{background:#FFF1EC;border:1px solid #FF4F2E;padding:8px 10px;border-radius:6px;margin-top:10px}@media print{button{display:none}body{margin:12mm}}</style></head><body>
   <button onclick="print()" style="float:right;padding:10px 16px;border-radius:999px;border:0;background:#0D0D0E;color:#fff;font-weight:700;cursor:pointer">Imprimir o guardar PDF</button>
+  <p class="b" style="margin:0 0 14px;background:#F4F4F4;border-color:#999">Es un organizador cargado por el tutor: <b>no reemplaza al veterinario</b> ni su criterio.</p>
   <h1>${esc(p.name)}</h1><div class="m">${esc([Z.species(p), p.breed, p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : '', p.birth ? `${Z.age(p.birth)} (nac. ${fmt(p.birth)})` : '', p.weight ? String(p.weight).replace('.', ',') + ' kg' : '', p.chip ? 'Chip ' + p.chip : ''].filter(Boolean).join(' · '))}</div>
   ${p.allergies ? `<div class="b"><b>Alergias y cuidados:</b> ${esc(p.allergies)}</div>` : ''}
   <h2>Antecedentes</h2><table>
@@ -1101,9 +1137,9 @@ function vetPdf(p) {
   <h2>Estudios</h2>${p.studies.length ? `<table><tr><th>Fecha</th><th>Estudio</th><th>Resultado</th></tr>${[...p.studies].sort((a, b) => b.date.localeCompare(a.date)).map(x => `<tr>${td(fmt(x.date))}${td(esc(x.title || Z.STUDY[x.kind]))}${td(esc(x.notes))}</tr>`).join('')}</table>` : '<p class="m">Sin estudios cargados.</p>'}
   <h2>Lo que notamos</h2>${syms.length ? `<table>${syms.map(s => `<tr>${td(fmt(s.date))}${td(esc(s.text))}</tr>`).join('')}</table>` : '<p class="m">Sin anotaciones.</p>'}
   <h2>Medicación</h2>${meds.length ? `<table><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Desde</th><th>Estado</th></tr>${meds.map(({ m, s }) => `<tr>${td(esc(m.name))}${td(esc(m.dose))}${td('cada ' + m.every + ' h')}${td(m.start ? fmt(m.start) : '')}${td(s.state === 'ended' ? 'Terminado' : 'En curso')}</tr>`).join('')}</table>` : '<p class="m">Sin medicación cargada.</p>'}
-  <h2>Vacunas, antiparasitarios y controles</h2>${recs.length ? `<table><tr><th>Fecha</th><th>Tipo</th><th>Nombre</th><th>Próxima</th><th>Profesional</th></tr>${recs.map(r => `<tr>${td(r.date ? fmt(r.date) : '')}${td(TYPE[r.type])}${td(esc(r.name))}${td(r.next ? fmt(r.next) : '')}${td(esc(r.vet))}</tr>`).join('')}</table>` : '<p class="m">Sin registros.</p>'}
+  <h2>Vacunas, antiparasitarios y controles</h2>${recs.length ? `<table><tr><th>Fecha</th><th>Tipo</th><th>Nombre</th><th>Próxima</th><th>Profesional</th></tr>${recs.map(r => `<tr>${td(r.date ? fmt(r.date) : '')}${td(TYPE[r.type])}${td(esc(r.name) + (Z.isSug(r) ? ' <span class="m">(sugerida, sin confirmar)</span>' : ''))}${td(r.next ? fmt(r.next) : '')}${td(esc(r.vet))}</tr>`).join('')}</table>` : '<p class="m">Sin registros.</p>'}
   ${p.food.brand ? `<h2>Alimentación</h2><p>${esc(p.food.brand)}${p.food.dailyG ? ` · ${p.food.dailyG} g por día` : ''}</p>` : ''}
-  <p class="m" style="margin-top:28px">Generado el ${fmt(Z.today())} con Mimitos (hecho con Orbit). Datos cargados por el tutor.</p></body></html>`;
+  <p class="m" style="margin-top:28px">Generado el ${fmt(Z.today())} con Mimitos by Orbit. Datos cargados por el tutor. Mimitos es un organizador: no reemplaza al veterinario.</p></body></html>`;
   const w = window.open('', '_blank');
   if (!w) { download(`${p.name}-historial.html`, html, 'text/html'); return toast('Se descargó el historial. Abrilo e imprimilo como PDF.'); }
   w.document.open(); w.document.write(html); w.document.close();
@@ -1156,6 +1192,8 @@ app.addEventListener('click', e => {
     case 'lost': return lostPanel(p);
     case 'vetpdf': if (needPro('vetpdf')) return; return vetPdf(cur);
     case 'avisos': return avisosPanel();
+    case 'suggest': return suggestPanel(cur);
+    case 'export': return exportCopy();
     case 'icsRec': { const r = p.records.find(x => x.id === b.dataset.rec); return calendar([Z.recordEvent(p, r)], `${p.name} ${r.name}`); }
     case 'icsMeds': return calendar(cur.meds.filter(m => m.start && Z.medState(m, cur.log).state !== 'ended').map(m => Z.medEvent(cur, m)), `${cur.name} remedios`);
     case 'icsFood': return calendar([Z.foodEvent(p, p.food)], `${p.name} alimento`);
