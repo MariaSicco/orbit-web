@@ -175,8 +175,19 @@ test('biblioteca: el resto sigue con "Descargar"', () => {
   assert.equal(H.estado({ downloadable: false }, L), 'Archivo en preparación');
 });
 test('biblioteca: una ruta rara no se convierte en link', () => {
-  const html = H.accion({ id: 'x' }, { herramienta: 'javascript:alert(1)' }, L);
-  assert.match(html, /data-dl/);
+  for (const r of ['javascript:alert(1)', '//evil.test/x', 'https://evil.test', '/a/../b', '/a?x=1']) {
+    assert.match(H.accion({ id: 'x' }, { herramienta: r }, L), /data-dl/, r);
+  }
+});
+test('app con ruta propia (Mimitos en /mascotas): "Abrir" en biblioteca y email', () => {
+  assert.match(H.accion({ id: 'ob-018' }, { herramienta: '/mascotas' }, L), /href="\/mascotas"/);
+  const CAT = { 'ob-018': { herramienta: '/mascotas' }, x: { herramienta: '//evil.test' } };
+  assert.equal(herramientaDe(CAT, 'ob-018'), '/mascotas');
+  assert.equal(herramientaDe(CAT, 'x'), null);
+  const d = destinoComprobante([{ id: 'ob-018' }], CAT, 'https://x.test');
+  assert.deepEqual([d.tipo, d.url], ['herramienta', 'https://x.test/mascotas']);
+  /* el servidor de herramientas no la sirve: no está bajo /herramientas/ */
+  assert.equal(productoPorSlug(CAT, 'mascotas'), null);
 });
 test('biblioteca: herramienta que no está en products.js igual aparece', () => {
   const p = H.productoMinimo({ productId: DEMO, code: 'OB—DEMO', name: 'Herramienta de prueba', herramienta: '/herramientas/demo' });
