@@ -3,14 +3,19 @@
    alimento (5 días antes y el día) y el chequeo del mes. Nunca repite un aviso.
    Solo avisa a quien tiene la compra de Mimitos. */
 import { kvKeys, kvMGet, kvGet } from '../_lib/kv.js';
+import { sweepAll } from '../_lib/petfiles.js';
 import { dueToday, pushTo, mailDigest, saveNotify, todayAR, hasMimitos } from '../_lib/petpush.js';
 
 export default async function handler(req, res) {
+  /* Siempre con Authorization: Bearer ${CRON_SECRET} (Vercel lo manda solo si la variable existe).
+     Sin la variable, falla cerrado: no alcanza con el User-Agent, que se falsifica. */
   const secret = process.env.CRON_SECRET;
-  const ok = secret ? req.headers.authorization === `Bearer ${secret}` : /vercel-cron/i.test(req.headers['user-agent'] || '');
-  if (!ok) return res.status(401).json({ error: 'unauthorized' });
+  if (!secret) { console.error('[mimitos] cron bloqueado: falta CRON_SECRET'); return res.status(503).json({ error: 'cron_secret_no_configurado' }); }
+  if (req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
 
-  const today = String(req.query?.hoy || '').match(/^\d{4}-\d{2}-\d{2}$/) && !process.env.VERCEL_ENV?.startsWith('prod') ? req.query.hoy : todayAR();
+  /* ?hoy=AAAA-MM-DD solo para probar fuera de producción (y siempre con el secreto, chequeado arriba) */
+  const hoy = String(req.query?.hoy || '');
+  const today = /^\d{4}-\d{2}-\d{2}$/.test(hoy) && process.env.VERCEL_ENV !== 'production' ? hoy : todayAR();
   const keys = await kvKeys('orbit:petnotify:*');
   const all = (await kvMGet(keys)).filter(Boolean);
   const out = { cuentas: all.length, push: 0, mails: 0, sinCompra: 0, errores: 0 };
@@ -32,5 +37,7 @@ export default async function handler(req, res) {
       await saveNotify(n);
     } catch { out.errores++; }
   }
+  /* fotos y estudios borrados que quedaron en la papelera */
+  try { out.archivosBorrados = await sweepAll(email => kvGet(`orbit:pets:${email}`)); } catch { out.errores++; }
   res.status(200).json(out);
 }

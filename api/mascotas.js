@@ -27,6 +27,7 @@ import { kvGet, kvSet, kvDel, getPurchases } from './_lib/kv.js';
 import { readSession, readBody } from './_lib/auth.js';
 import { isAdmin } from './_lib/admin.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath } from './_lib/blob.js';
+import { QUOTA_BYTES, fits, addUsage, photoRef, sweep } from './_lib/petfiles.js';
 import { getVapid, getNotify, saveNotify, cleanSub, pushTo, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
@@ -36,7 +37,9 @@ const sitterKey = t => `orbit:petsitter:${t}`;
 const imgKey = id => `orbit:petimg:${id}`;
 const scansKey = email => `orbit:petscans:${email.toLowerCase()}`;
 const folder = email => 'mascotas/' + createHash('sha256').update('orbit-pets:' + email.toLowerCase()).digest('hex').slice(0, 16);
-const SCANS_PER_DAY = 25;
+/* tope de lecturas con foto (IA) por cuenta: fácil de cambiar acá */
+const SCANS_PER_DAY = 10;
+const SCANS_PER_MONTH = 60;
 const MAX_DOC = 700 * 1024;
 const MAX_IMG = 220 * 1024;
 const MAX_PETS = 12, MAX_RECS = 300, MAX_LOG = 300;
@@ -275,7 +278,9 @@ export default async function handler(req, res) {
   /* avisos: push en este celu, mail y qué avisar */
   if (q.notify) {
     const n = await getNotify(s.email);
-    const view = async () => ({ publicKey: (await getVapid()).publicKey, devices: n.subs.length, mail: n.mail, off: n.off, endpoints: n.subs.map(x => x.endpoint.slice(-24)) });
+    /* si el push no está configurado en producción, el resto (mail y tipos) sigue andando */
+    const key = async () => { try { return (await getVapid()).publicKey; } catch { return null; } };
+    const view = async () => { const publicKey = await key(); return { publicKey, pushReady: Boolean(publicKey), devices: n.subs.length, mail: n.mail, off: n.off, endpoints: n.subs.map(x => x.endpoint.slice(-24)) }; };
     if (req.method === 'GET') return res.status(200).json(await view());
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
     const b = await readBody(req);
@@ -290,6 +295,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET' && q.file) {
     const ref = String(q.file);
+    if (/\.\.|\/\//.test(ref)) return res.status(400).json({ error: 'invalid' });
     if (!isBlobRef(ref) || !refPath(ref).startsWith(folder(s.email) + '/')) return res.status(403).json({ error: 'forbidden' });
     try { return res.redirect(302, await signedGet(refPath(ref), { minutes: 10 })); }
     catch { return res.status(500).json({ error: 'no_pudimos_abrir' }); }
@@ -306,8 +312,10 @@ export default async function handler(req, res) {
     const data = String(body.data || '');
     if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(data)) return res.status(400).json({ error: 'invalid' });
     if (data.length > MAX_IMG) return res.status(413).json({ error: 'too_big' });
+    if (!(await fits(s.email, data.length))) return res.status(413).json({ error: 'cupo_lleno', quota: QUOTA_BYTES });
     const iid = randomBytes(10).toString('hex');
     await kvSet(imgKey(iid), data);
+    await addUsage(s.email, photoRef(iid), data.length);
     return res.status(200).json({ u: `/api/mascotas?img=${iid}` });
   }
 
@@ -318,8 +326,10 @@ export default async function handler(req, res) {
     if (size > 15 * 1024 * 1024) return res.status(413).json({ error: 'too_big' });
     if (!/^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/.test(String(body.type || ''))) return res.status(400).json({ error: 'tipo_no_permitido' });
     const clean = String(body.name || 'estudio').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80) || 'estudio';
+    if (!(await fits(s.email, size))) return res.status(413).json({ error: 'cupo_lleno', quota: QUOTA_BYTES });
     const pathname = `${folder(s.email)}/${randomBytes(6).toString('hex')}-${clean}`;
-    try { return res.status(200).json({ url: await signedPut(pathname, { maxBytes: 15 * 1024 * 1024, minutes: 15 }), ref: makeRef(pathname) }); }
+    /* se anota el tamaño declarado; si no se llega a usar en el doc, la limpieza lo borra */
+    try { const url = await signedPut(pathname, { maxBytes: 15 * 1024 * 1024, minutes: 15 }); await addUsage(s.email, makeRef(pathname), size); return res.status(200).json({ url, ref: makeRef(pathname) }); }
     catch { return res.status(500).json({ error: 'no_pudimos_firmar' }); }
   }
 
@@ -327,10 +337,13 @@ export default async function handler(req, res) {
   if (q.scan) {
     const images = (Array.isArray(body.images) ? body.images : []).filter(x => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(x || '') && x.length < 1.6e6).slice(0, 4);
     if (!images.length) return res.status(400).json({ error: 'sin_fotos' });
-    const k = `orbit:petscan:${s.email.toLowerCase()}:${new Date().toISOString().slice(0, 10)}`;
-    const n = (await kvGet(k)) || 0;
-    if (n >= SCANS_PER_DAY) return res.status(429).json({ error: 'limite_diario' });
+    const now = new Date().toISOString();
+    const k = `orbit:petscan:${s.email.toLowerCase()}:${now.slice(0, 10)}`, km = `orbit:petscanm:${s.email.toLowerCase()}:${now.slice(0, 7)}`;
+    const n = (await kvGet(k)) || 0, nm = (await kvGet(km)) || 0;
+    if (n >= SCANS_PER_DAY) return res.status(429).json({ error: 'limite_diario', limit: SCANS_PER_DAY });
+    if (nm >= SCANS_PER_MONTH) return res.status(429).json({ error: 'limite_mensual', limit: SCANS_PER_MONTH });
     await kvSet(k, n + 1, 60 * 60 * 26);
+    await kvSet(km, nm + 1, 60 * 60 * 24 * 32);
     try {
       const out = await scanBooklet(images, str(body.species, 10));
       return res.status(200).json(out);
@@ -375,5 +388,7 @@ export default async function handler(req, res) {
   const next = bump({ ...clean, rev: current.rev || 0 });
   if (JSON.stringify(next).length > MAX_DOC) return res.status(413).json({ error: 'too_big' });
   await kvSet(docKey(s.email), next);
+  /* fotos y estudios que ya no usa ningún registro ni mascota: a la papelera y, pasado el rato de gracia, se borran */
+  await sweep(s.email, next).catch(e => console.error('[mimitos] limpieza de archivos', e?.message));
   return res.status(200).json({ ok: true, doc: next });
 }

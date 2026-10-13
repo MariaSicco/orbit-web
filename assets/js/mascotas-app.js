@@ -123,9 +123,10 @@ function shrink(file, max, q) {
     img.src = url;
   });
 }
+const CUPO_MSG = 'Llegaste al espacio de fotos y estudios de tu cuenta (200 MB). Borrá estudios o fotos que no uses para subir más.';
 async function uploadPhoto(data) {
   const r = await fetch('/api/mascotas?photo=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data }) });
-  const d = await r.json(); if (!r.ok || !d.u) throw new Error('upload'); return d.u;
+  const d = await r.json().catch(() => ({})); if (!r.ok || !d.u) { if (d.error === 'cupo_lleno') toast(CUPO_MSG); throw new Error(d.error || 'upload'); } return d.u;
 }
 
 const BUY_URL = '/p/ob-018';
@@ -500,7 +501,7 @@ function drawFiles() {
 }
 async function uploadStudy(file) {
   const r = await fetch('/api/mascotas?upload=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: file.name, size: file.size, type: file.type || 'application/octet-stream' }) });
-  const d = await r.json(); if (!r.ok) throw new Error(d.error);
+  const d = await r.json(); if (!r.ok) { if (d.error === 'cupo_lleno') toast(CUPO_MSG); throw new Error(d.error); }
   const put = await fetch(d.url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
   if (!put.ok) throw new Error('put');
   return { ref: d.ref, name: file.name, type: file.type };
@@ -650,7 +651,7 @@ function petMeta(p) { return [Z.species(p), p.breed, Z.age(p.birth), p.weight ? 
 function nextItems(p) {
   const out = [];
   for (const m of p.meds) { const s = Z.medState(m, p.log); if (s.state === 'due' || s.state === 'late') out.push({ order: s.state === 'late' ? -2 : -1, html: medRow(p, m) }); }
-  for (const x of Z.upcoming(p)) if (x.s.days <= 60) out.push({ order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(recIcon(x.r), 'salud')}<button class="what plain" data-act="detail" data-kind="rec" data-id="${x.r.id}"><b>${esc(x.r.name)}</b><small><span class="stt">${x.s.t}</span>${Z.isSug(x.r) ? ' · sugerida' : ''}</small></button><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.r.name)} al calendario">${I('cal')}</button></div>` });
+  for (const x of Z.upcoming(p)) if (x.s.days <= 60) out.push({ order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(recIcon(x.r), 'salud')}<button class="what plain" data-act="detail" data-kind="rec" data-id="${x.r.id}"><b>${esc(x.r.name)}</b><small><span class="stt">${x.s.t}</span>${Z.isSug(x.r) ? ' · sugerida, confirmala con tu veterinario' : ''}</small></button><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.r.name)} al calendario">${I('cal')}</button></div>` });
   const f = Z.food(p.food); if (f && f.left <= 5) out.push({ order: f.left, html: `<div class="row ${f.left < 0 ? 'st-late' : 'st-soon'}">${bubble('bowl', 'comida')}<span class="what"><b>Comprar alimento</b><small class="stt">${f.left < 0 ? 'Ya se terminó' : f.left === 0 ? 'Se termina hoy' : `Quedan ${f.left} días`}</small></span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button></div>` });
   return out.sort((a, b) => a.order - b.order);
 }
@@ -1043,7 +1044,7 @@ function agendaRow(x) {
   const ic = x.kind === 'food' ? ['bowl', 'comida'] : x.kind === 'trip' ? ['plane', 'viaje'] : [recIcon(x.r), 'salud'];
   const act = x.kind === 'rec' ? `data-act="detailOf" data-pet="${x.pet.id}" data-kind="rec" data-id="${x.r.id}"` : x.kind === 'food' ? `data-act="goPet" data-pet="${x.pet.id}" data-to="gastos"` : `data-act="goPet" data-pet="${x.pet.id}" data-to="viajes"`;
   const ics = x.kind === 'rec' ? `<button class="ibtn" data-act="icsRec" data-pet="${x.pet.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.title)} al calendario">${I('cal')}</button>` : x.kind === 'food' ? `<button class="ibtn" data-act="icsFood" data-pet="${x.pet.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button>` : '<span></span>';
-  return `<div class="row ${x.s?.c || ''}"><span class="ag-date"><b>${fmt(x.date, { day: 'numeric' })}</b><small>${fmt(x.date, { month: 'short' }).replace('.', '')}</small></span><button class="what plain" ${act}><b>${esc(x.title)}</b><small>${esc(x.pet.name)} · ${x.s && x.s.days <= 14 ? `<span class="stt">${x.s.t}</span>` : esc(x.sub)}</small></button>${ics}</div>`;
+  return `<div class="row ${x.s?.c || ''}"><span class="ag-date"><b>${fmt(x.date, { day: 'numeric' })}</b><small>${fmt(x.date, { month: 'short' }).replace('.', '')}</small></span><button class="what plain" ${act}><b>${esc(x.title)}</b><small>${esc(x.pet.name)} · ${x.s && x.s.days <= 14 ? `<span class="stt">${x.s.t}</span>` : esc(x.sub)}${x.kind === 'rec' && Z.isSug(x.r) ? ' · sugerida, confirmala con tu veterinario' : ''}</small></button>${ics}</div>`;
 }
 function renderAgenda() {
   const all = Z.agenda(doc.pets), today = iso(Z.today());
@@ -1077,7 +1078,7 @@ function renderAgenda() {
         <section class="sec"><h2>Próximas fechas</h2>
           ${soon.length ? `<div class="list">${soon.map(agendaRow).join('')}</div>` : `<div class="empty dash"><p>Cuando cargues vacunas, antiparasitarios o controles con su próxima fecha, aparecen acá en orden, de todas tus mascotas.</p><button class="btn sm soft" data-act="suggest">${I('sparkle')} Armar calendario sugerido</button></div>`}
         </section>
-        <p class="note">Cada fecha tiene su botón de calendario: baja un archivo .ics con aviso 3 días antes y el mismo día, para Google Calendar, iPhone u Outlook.</p>
+        <p class="note">Cada fecha tiene su botón de calendario: baja un archivo .ics con aviso a las 9 de la mañana, 3 días antes y el mismo día. iPhone y Outlook avisan solos; en Google Calendar, activá el aviso en el evento.</p>
       </div>
     </div>`;
 }
@@ -1201,6 +1202,7 @@ function enablePush() {
     try {
       if (await perm !== 'granted') throw new Error('permiso');
       if (!notify?.publicKey) notify = await (await fetch('/api/mascotas?notify=1')).json();
+      if (notify?.pushReady === false) throw new Error('nopush');
       if (!notify?.publicKey) throw new Error('llave');
       const reg = await withTimeout(navigator.serviceWorker.register('/mascotas-sw.js', { scope: '/mascotas' }), 15000, 'sw');
       await withTimeout(navigator.serviceWorker.ready, 15000, 'sw');
@@ -1210,7 +1212,7 @@ function enablePush() {
       pushHere = true; render();
       aMsg('Listo. Te mandamos uno de prueba: tiene que llegar en unos segundos.');
     } catch (e) {
-      const m = { permiso: 'No diste permiso para los avisos. Si te arrepentís, habilitalos en los ajustes del navegador.', llave: 'No pudimos conectar con el servidor. Revisá tu conexión y probá de nuevo.', sw: 'El navegador no terminó de preparar los avisos. Cerrá y volvé a abrir Mimitos y probá otra vez.', sub: 'El servicio de avisos del navegador no respondió. Probá de nuevo en un rato.' }[e.message];
+      const m = { permiso: 'No diste permiso para los avisos. Si te arrepentís, habilitalos en los ajustes del navegador.', llave: 'No pudimos conectar con el servidor. Revisá tu conexión y probá de nuevo.', sw: 'El navegador no terminó de preparar los avisos. Cerrá y volvé a abrir Mimitos y probá otra vez.', sub: 'El servicio de avisos del navegador no respondió. Probá de nuevo en un rato.', nopush: 'Los avisos al celu no están disponibles en este momento. Activá los avisos por mail mientras tanto.' }[e.message];
       aMsg(m || `No se pudo activar (${String(e.message || e).slice(0, 80)}). Probá de nuevo.`, true);
       if (btn) { btn.disabled = false; btn.innerHTML = `${I('bell')} Activar en este celu`; }
     }
@@ -1251,7 +1253,7 @@ function renderAvisos() {
       <section class="sec"><h2>Qué te avisamos</h2>
         <div class="list">${KINDS_UI.map(([k, ic, t, d]) => `<label class="row toggle-row">${bubble(ic, 'salud')}<span class="what"><b>${t}</b><small>${d}</small></span><input type="checkbox" class="sw-in" data-kind="${k}" ${n.off?.[k] ? '' : 'checked'} aria-label="${t}"></label>`).join('')}</div></section>
       <section class="sec"><h2>En tu calendario</h2>
-        <div class="card"><p class="dim">Si preferís tu calendario, bajá todas las fechas en un archivo .ics: Google Calendar, iPhone y Outlook te avisan solos.</p><button class="btn ghost sm" data-act="icsAll" style="align-self:flex-start">${I('download')} Bajar todas las fechas</button></div></section>
+        <div class="card"><p class="dim">Si preferís tu calendario, bajá todas las fechas en un archivo .ics. iPhone y Outlook avisan solos a las 9; en Google Calendar, activá el aviso en el evento.</p><button class="btn ghost sm" data-act="icsAll" style="align-self:flex-start">${I('download')} Bajar todas las fechas</button></div></section>
     </div></div>`;
 }
 app.addEventListener('change', async e => {
@@ -1433,7 +1435,7 @@ async function runScan(p, files) {
     const r = await fetch('/api/mascotas?scan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, species: p.species }) });
     const d = await r.json();
     if (r.status === 402) { scan = null; mode = 'nopurchase'; return render(); }
-    if (!r.ok) throw Object.assign(new Error(d.error === 'limite_diario' ? 'Llegaste al límite de lecturas de hoy. Probá mañana o cargá las vacunas a mano.' : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
+    if (!r.ok) throw Object.assign(new Error(d.error === 'limite_diario' ? `Llegaste al límite de ${d.limit || 10} lecturas con foto por día. Probá mañana o cargá las vacunas a mano.` : d.error === 'limite_mensual' ? `Llegaste al límite de ${d.limit || 60} lecturas con foto de este mes. Se renueva el 1.º; mientras tanto, cargá las vacunas a mano.` : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
     scan = { ...scan, state: 'review', items: prev.concat(d.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) }))), warnings: d.warnings || [] };
   } catch (err) { scan = { ...scan, state: 'error', msg: err.message || 'No pudimos leer las fotos.', plain: Boolean(err.plain) }; }
   render();
@@ -1735,7 +1737,7 @@ async function boot() {
     mode = 'full'; purchase = d.purchase || null; me.email = d.email || '';
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
-    fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => { if (x && x.publicKey) { notify = x; render(); } }).catch(() => {});
+    fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => { if (x && 'devices' in x) { notify = x; render(); } }).catch(() => {});
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(x => { if (x?.name) { me.name = x.name; if (route.name === 'cuenta' || !doc.pets.length) render(); } }).catch(() => {});
   } else if (st === 402 && d?.error === 'no_purchase') { mode = 'nopurchase'; me.email = d.email || ''; }
   else if (st === 401 || st === 403) mode = 'guest';

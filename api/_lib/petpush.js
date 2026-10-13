@@ -5,6 +5,9 @@
 import webpush from 'web-push';
 import { kvGet, kvSet, getPurchases } from './kv.js';
 import { isAdmin } from './admin.js';
+/* reglas compartidas con la app (define globalThis.MZRULES): qué fecha está vigente y cuál es sugerida */
+import '../../assets/js/mascotas-rules.js';
+const R = globalThis.MZRULES;
 import { sendEmail, emailReady } from './email.js';
 
 /* Mimitos es paga: sin compra del producto no hay app, avisos ni links públicos.
@@ -24,9 +27,18 @@ export const KINDS = ['vac', 'pip', 'food', 'check', 'qr'];
 const SITE = () => process.env.SITE_URL || 'https://www.orbitando.com.ar';
 
 let vapid = null;
+/* En producción las llaves salen SOLO de VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY: si faltan, el push falla
+   cerrado (nunca se generan ni se guardan en KV, porque cambiarlas después rompe todas las suscripciones).
+   En preview y local se pueden autogenerar para probar. */
+export const isProd = () => process.env.VERCEL_ENV === 'production';
 export async function getVapid() {
   if (vapid) return vapid;
-  let v = process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY ? { publicKey: process.env.VAPID_PUBLIC_KEY, privateKey: process.env.VAPID_PRIVATE_KEY } : await kvGet('orbit:vapid');
+  const envKeys = process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY ? { publicKey: process.env.VAPID_PUBLIC_KEY, privateKey: process.env.VAPID_PRIVATE_KEY } : null;
+  if (!envKeys && isProd()) {
+    console.error('[mimitos] push desactivado: faltan VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY en producción');
+    throw Object.assign(new Error('vapid_no_configurado'), { status: 503 });
+  }
+  let v = envKeys || await kvGet('orbit:vapid');
   if (!v) { v = webpush.generateVAPIDKeys(); await kvSet('orbit:vapid', v); }
   webpush.setVapidDetails(process.env.VAPID_SUBJECT || 'mailto:hola@orbitando.com.ar', v.publicKey, v.privateKey);
   return (vapid = v);
@@ -46,7 +58,7 @@ export function cleanSub(s) {
 /* manda a todos los celus de la cuenta; borra los que ya no existen */
 export async function pushTo(n, payload) {
   if (!n.subs.length) return 0;
-  await getVapid();
+  try { await getVapid(); } catch { return 0; }
   let sent = 0; const alive = [];
   for (const s of n.subs) {
     try { await webpush.sendNotification(s, JSON.stringify(payload), { TTL: 60 * 60 * 24 }); sent++; alive.push(s); }
@@ -74,15 +86,20 @@ const KIND_OF = { vacuna: 'vac', desparasitacion: 'pip', control: 'vac', otro: '
 export function dueToday(doc, today = todayAR()) {
   const out = [];
   for (const p of doc?.pets || []) {
-    for (const r of p.records || []) {
-      if (!r.next) continue;
+    /* solo la próxima fecha vigente de cada tipo + nombre (la misma regla que muestra la app) */
+    for (const r of R.dueRecords(p.records)) {
       const d = diff(r.next, today);
       if (d !== 3 && d !== 0) continue;
       const what = phrase(r);
+      const sug = R.isSug(r);
       out.push({
-        tag: `rec:${p.id}:${r.id}:${r.next}:${d}`, kind: KIND_OF[r.type] || 'vac', pet: p.name,
-        title: d ? `A ${p.name} le toca ${what} el ${dayName(r.next)}` : `Hoy a ${p.name} le toca ${what}`,
-        body: d ? '¿Ya sacaste turno? Cuando se la pongan, marcala en Mimitos.' : 'Cuando esté hecho, marcalo en Mimitos y te avisamos de la próxima.',
+        tag: `rec:${p.id}:${r.id}:${r.next}:${d}`, kind: KIND_OF[r.type] || 'vac', pet: p.name, sug,
+        title: sug
+          ? (d ? `Fecha sugerida para ${p.name}: ${String(r.name || '').trim()}, el ${dayName(r.next)}` : `Fecha sugerida para ${p.name}: ${String(r.name || '').trim()}, hoy`)
+          : (d ? `A ${p.name} le toca ${what} el ${dayName(r.next)}` : `Hoy a ${p.name} le toca ${what}`),
+        body: sug
+          ? 'Es una fecha sugerida, de referencia general: confirmala con tu veterinario. Cuando la confirmes, editala en Mimitos.'
+          : (d ? '¿Ya sacaste turno? Cuando se la pongan, marcala en Mimitos.' : 'Cuando esté hecho, marcalo en Mimitos y te avisamos de la próxima.'),
       });
     }
     const f = p.food || {};

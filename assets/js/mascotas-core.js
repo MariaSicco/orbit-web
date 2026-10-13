@@ -37,15 +37,9 @@
     return { c: 'st-ok', t: fmt(next), days };
   }
   /* lo último de cada tipo + nombre manda: si ya cargaste la vacuna de este año, la del año pasado no vence */
-  function upcoming(p) {
-    const last = new Map();
-    for (const r of p.records || []) {
-      const k = r.type + '|' + (r.name || '').toLowerCase().trim();
-      const prev = last.get(k);
-      if (!prev || (r.date || '') > (prev.date || '')) last.set(k, r);
-    }
-    return [...last.values()].filter(r => r.next).map(r => ({ pet: p, r, s: status(r.next) })).sort((a, b) => a.r.next.localeCompare(b.r.next));
-  }
+  /* la regla vive en mascotas-rules.js: la usa también el cron de avisos */
+  const R = g.MZRULES;
+  function upcoming(p) { return R.dueRecords(p.records).map(r => ({ pet: p, r, s: status(r.next) })); }
 
   /* ---------- medicación ---------- */
   function medState(m, log, now = new Date()) {
@@ -114,8 +108,10 @@
     return L.join('\r\n');
   }
   const ics = events => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Orbit//Mimitos//ES', 'CALSCALE:GREGORIAN', ...events.map(vevent), 'END:VCALENDAR'].join('\r\n');
+  /* día completo: los avisos son relativos a las 00:00 del día. -P2DT15H = 9:00 de 3 días antes; PT9H = 9:00 del día */
   function recordEvent(pet, r) {
-    return { uid: `${pet.id}-${r.id}-${r.next}`, allDay: true, start: pd(r.next), title: `${pet.name}: ${r.name || TYPE[r.type]}`, desc: `${TYPE[r.type]} · Mimitos`, alarms: ['-P3D', 'PT9H'] };
+    const sug = R.isSug(r);
+    return { uid: `${pet.id}-${r.id}-${r.next}`, allDay: true, start: pd(r.next), title: `${pet.name}: ${r.name || TYPE[r.type]}${sug ? ' (sugerida, confirmala con tu veterinario)' : ''}`, desc: sug ? `Fecha sugerida: es una referencia general, confirmala con tu veterinario. ${TYPE[r.type]} · Mimitos` : `${TYPE[r.type]} · Mimitos`, alarms: ['-P2DT15H', 'PT9H'] };
   }
   function medEvent(pet, m) {
     const s = new Date(m.start), h = m.every;
@@ -187,8 +183,7 @@
   }
 
   /* un registro del calendario sugerido: tiene próxima fecha, todavía no fecha de aplicación, y la marca en las notas */
-  const SUG_NOTE = 'Calendario sugerido: referencia general, confirmalo con tu veterinario.';
-  const isSug = r => Boolean(r) && !r.date && String(r.notes || '').startsWith('Calendario sugerido');
+  const { SUG_NOTE, isSug } = R;
 
   /* ---------- íconos (línea, puntas redondeadas) ---------- */
   const P = {
@@ -310,7 +305,8 @@
       for (const x of upcoming(p)) {
         const k = KIND_OF[x.r.type] || 'vac'; if (off[k]) continue;
         const d0 = pd(x.r.next), d3 = new Date(d0); d3.setDate(d3.getDate() - 3);
-        for (const [d, early] of [[d3, true], [d0, false]]) if (iso(d) >= t) out.push({ date: iso(d), kind: k, pet: p, text: early ? `${p.name}: ${x.r.name} en 3 días` : `${p.name}: hoy toca ${x.r.name}` });
+        const sg = isSug(x.r) ? ' (sugerida, confirmala con tu veterinario)' : '';
+        for (const [d, early] of [[d3, true], [d0, false]]) if (iso(d) >= t) out.push({ date: iso(d), kind: k, pet: p, text: (early ? `${p.name}: ${x.r.name} en 3 días` : `${p.name}: hoy toca ${x.r.name}`) + sg });
       }
       const f = food(p.food);
       if (f && !off.food) for (const back of [5, 0]) { const d = new Date(f.end); d.setDate(d.getDate() - back); d.setHours(0, 0, 0, 0); if (iso(d) >= t) out.push({ date: iso(d), kind: 'food', pet: p, text: back ? `${p.name}: quedan 5 días de alimento` : `${p.name}: se termina el alimento` }); }
