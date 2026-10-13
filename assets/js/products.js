@@ -393,6 +393,46 @@ window.ORBIT_PRODUCTS = [
       {es: 'Quien concilia a mano el sistema contra ARCA', en: 'Anyone reconciling their system against ARCA by hand'},
     ],
   },
+  {
+    /* Mimitos: herramienta online (app en /mascotas), una sola versión paga.
+       Se entrega como acceso desde Mi cuenta, igual que Orbit IVA. */
+    id: 'ob-018', cover: 'libro', code: 'OB\u2014018', n: '18', name: 'Mimitos',
+    family: 'systems', status: 'soon', price: 79, // PRECIO PENDIENTE: mismo valor que el otro producto 'soon' (ob-005); no se muestra mientras sea 'soon'
+    accent: 'blue', checkout: '', photo: 'ob-018',
+    acceso: '/mascotas',
+    pantallasDir: 'ob-018',
+    pantallas: [
+      ['p1', {es: 'Inicio', en: 'Home'},
+             {es: 'Lo que le toca, su salud hoy y el historial con búsqueda.', en: 'What’s due, health at a glance and a searchable history.'}],
+      ['p2', {es: 'Libreta sanitaria', en: 'Health booklet'},
+             {es: 'Tapa e identificación, como la libreta del veterinario.', en: 'Cover and ID page, like the vet’s booklet.'}],
+      ['p3', {es: 'Vacunas y desparasitaciones', en: 'Vaccines and deworming'},
+             {es: 'Cada dosis con fecha, próxima dosis, lote y la foto del sticker.', en: 'Each dose with date, next dose, batch and a photo of the sticker.'}],
+      ['p4', {es: 'Agenda', en: 'Calendar'},
+             {es: 'Todas las fechas de todas tus mascotas, con archivo para tu calendario.', en: 'Every date for all your pets, with a file for your calendar.'}],
+    ],
+    tagline: {es: 'La libreta sanitaria de tu mascota en el celu: vacunas, desparasitaciones, consultas y peso, con avisos antes de cada fecha.', en: 'Your pet’s health booklet on your phone: vaccines, deworming, vet visits and weight, with reminders before every date.'},
+    specs: [
+      [{es: 'Formato', en: 'Format'}, {es: 'Online, sin instalar', en: 'Online, no install'}],
+      [{es: 'Mascotas', en: 'Pets'}, {es: 'Todas las que tengas', en: 'As many as you have'}],
+      [{es: 'Pago', en: 'Payment'}, {es: 'Único, una sola versión', en: 'One-time, a single version'}],
+      [{es: 'Acceso', en: 'Access'}, {es: 'Con tu cuenta de Orbit', en: 'With your Orbit account'}],
+      [{es: 'Alcance', en: 'Scope'}, {es: 'Organizador, no reemplaza al veterinario', en: 'An organizer, not a substitute for your vet'}],
+    ],
+    includes: [
+      [{es: 'Libreta sanitaria digital', en: 'Digital health booklet'}, {es: 'Tapa, identificación, vacunas con su sticker, desparasitaciones internas y externas, controles y consultas, y peso. Se imprime o se guarda en PDF para llevar al veterinario', en: 'Cover, ID, vaccines with their sticker, internal and external deworming, check-ups and visits, and weight. Print it or save it as a PDF for your vet'}],
+      [{es: 'Avisos antes de cada fecha', en: 'Reminders before every date'}, {es: 'En el celu o por mail, 3 días antes y el mismo día. En iPhone, para los avisos al celu, la agregás a la pantalla de inicio. También podés bajar las fechas a tu calendario', en: 'On your phone or by email, 3 days before and on the day. On iPhone, add it to your home screen to get phone reminders. You can also download the dates to your calendar'}],
+      [{es: 'Foto de la libreta', en: 'Booklet photo'}, {es: 'Le sacás foto (hasta 4 páginas) y se leen vacunas, antiparasitarios y controles con su fecha, la próxima dosis si está escrita, la marca y el veterinario. Lo revisás antes de guardar', en: 'Take a photo (up to 4 pages) and it reads vaccines, deworming and check-ups with their date, the next dose if written, the brand and the vet. You review it before saving'}],
+      [{es: 'QR y modo perdida', en: 'QR and lost mode'}, {es: 'Un link y un QR con su ficha para el veterinario o la chapita, y un cartel de búsqueda listo para compartir', en: 'A link and QR with their profile for the vet or the tag, and a ready-to-share lost poster'}],
+      [{es: 'Modo cuidador', en: 'Sitter mode'}, {es: 'Un link con comida, paseos y remedios para quien la cuida. Marca si comió, paseó y le dio la pastilla, y vos lo ves en la app', en: 'A link with food, walks and meds for whoever looks after them. They mark meals, walks and pills, and you see it in the app'}],
+      [{es: 'Estudios, agenda y gastos', en: 'Tests, calendar and spending'}, {es: 'Análisis y radiografías en foto o PDF, todas las fechas en un calendario y cuánto gastás por mes. Mimitos es un organizador: no reemplaza al veterinario', en: 'Lab tests and X-rays as photos or PDFs, every date in one calendar and what you spend each month. Mimitos is an organizer: it does not replace your vet'}],
+    ],
+    for: [
+      {es: 'Quien tiene la libreta del veterinario en un cajón', en: 'Anyone whose vet booklet lives in a drawer'},
+      {es: 'Familias con más de una mascota', en: 'Households with more than one pet'},
+      {es: 'Quien se olvida de la pipeta o de la vacuna anual', en: 'Anyone who forgets the flea treatment or the yearly shot'},
+    ],
+  },
 ];
 
 window.ORBIT_FAMILIES = {

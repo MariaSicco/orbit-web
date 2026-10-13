@@ -582,17 +582,28 @@ function renderGate() {
     <div class="gate-copy">
       <span class="eyebrow">Mimitos by Orbit</span>
       <h1>La libreta sanitaria de tu mascota, <em>siempre con vos</em>.</h1>
-      <p class="lead">Vacunas, desparasitaciones, consultas y peso en una libreta digital que se completa sola. Te avisamos antes de cada fecha.</p>
-      <div class="feat">
-        <div>${bubble('book', 'salud')}<span><b>Libreta digital</b><small>Como la del veterinario, lista para imprimir.</small></span></div>
-        <div>${bubble('bell', 'plata')}<span><b>Avisos a tiempo</b><small>En el celu o por mail, antes de cada dosis.</small></span></div>
-        <div>${bubble('qr', 'viaje')}<span><b>QR por si se pierde</b><small>Quien la encuentre te ubica al instante.</small></span></div>
+      <p class="lead">Vacunas, desparasitaciones, consultas y peso en una libreta digital que se arma con lo que cargás y queda lista para imprimir. Te avisamos antes de cada fecha.</p>
+      <div class="feat" aria-label="Qué incluye">
+        <div>${bubble('book', 'salud')}<span><b>Libreta digital</b><small>Como la del veterinario, con sus stickers. Se imprime o se guarda en PDF.</small></span></div>
+        <div>${bubble('bell', 'plata')}<span><b>Avisos antes de cada dosis</b><small>En el celu o por mail, o en tu calendario.</small></span></div>
+        <div>${bubble('qr', 'viaje')}<span><b>QR y modo perdida</b><small>Quien la encuentre escanea el QR y ve cómo contactarte.</small></span></div>
+        <div>${bubble('grid', 'cuida')}<span><b>Agenda y gastos</b><small>Todas las fechas y lo que gastás, de todas tus mascotas.</small></span></div>
+      </div>
+      <div class="hooks">
+        <span class="eyebrow">Lo que te ahorra trabajo</span>
+        <div class="hook">${bubble('camera', 'viaje')}<span><b>Le sacás foto a la libreta y se cargan las vacunas</b><small>Hasta 4 páginas. Leemos vacunas, antiparasitarios y controles con su fecha, próxima dosis si está escrita, marca y veterinario. Vos revisás antes de guardar.</small></span></div>
+        <div class="hook">${bubble('hand', 'cuida')}<span><b>Modo cuidador</b><small>Le mandás un link a quien la cuida con comida, paseos y remedios. Ahí marca si comió, paseó y le dio la pastilla, y vos lo ves en Mimitos.</small></span></div>
+        <div class="hook">${bubble('flask', 'salud')}<span><b>Estudios guardados en su historia</b><small>Análisis, radiografías y ecografías en foto o PDF, con lo que dijo el veterinario.</small></span></div>
+      </div>
+      <div class="price-row">
+        <span><span class="eyebrow">Todo incluido</span><b class="tbd">${/* PRECIO PENDIENTE */ 'PENDIENTE'}</b></span>
+        <small>Pago único. Una sola versión, para todas tus mascotas.</small>
       </div>
       <div class="cta">
-        <a class="btn big wide" href="/acceso?next=mascotas">Ingresar</a>
-        <a class="btn ghost wide" href="${BUY_URL}">Conseguir Mimitos</a>
+        <a class="btn big wide" href="${BUY_URL}">Conseguir Mimitos</a>
+        <a class="btn ghost wide" href="/acceso?next=mascotas">Ya la compré · Ingresar</a>
       </div>
-      <p class="note">Entrá con el mail con el que compraste en Orbit. Tus datos quedan en tu cuenta, no en el celu.</p>
+      <p class="note">Necesitás una cuenta de Orbit con el mail de la compra. Tus datos quedan en tu cuenta, no en el celu. En iPhone, para recibir los avisos en el celu, agregás Mimitos a la pantalla de inicio.</p>
     </div>
     <div class="art" aria-hidden="true"><div class="mini c-salud"><div class="cvtxt"><span class="eyebrow">Libreta sanitaria</span>${HEART}<b>Tu mascota</b></div></div></div>
   </section>`;
@@ -686,6 +697,7 @@ function renderInicio(p) {
       </section>
     </div>
     <div class="col">
+      ${sitterLog(p)}
       ${historySection(p)}
       <section class="sec" aria-labelledby="h-more">
         <h2 id="h-more">Accesos rápidos</h2>
@@ -693,6 +705,14 @@ function renderInicio(p) {
       </section>
     </div>
   </div>`;
+}
+/* lo que anotó el cuidador desde su link (últimos 10 días) */
+function sitterLog(p) {
+  const since = Date.now() - 10 * 864e5, KL = { comida: ['Comió', 'bowl', 'comida'], paseo: ['Salió a pasear', 'walk', 'viaje'], med: ['Remedio', 'pill', 'med'], ok: ['Todo bien', 'check', 'salud'], nota: ['Nota', 'note', 'plata'] };
+  const list = p.log.filter(l => l.by !== 'Vos' && Date.parse(l.at) > since).slice(-6).reverse();
+  if (!list.length) return '';
+  const medName = id => p.meds.find(m => m.id === id)?.name || 'Remedio';
+  return `<section class="sec"><h2>Lo que anotó quien ${la(p)} cuida</h2><div class="list">${list.map(l => { const k = KL[l.kind] || KL.nota; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? 'Le dio ' + esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by)}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div></section>`;
 }
 function scanBanner(p) {
   const last = scans.filter(x => x.petId === p.id).pop();
@@ -796,7 +816,7 @@ function detail(p, kind, id) {
 function panel(title, html) { $('#dPanelT').textContent = title; $('#pBody').innerHTML = html; $('#pBody').onclick = null; if (!dPanel.open) dPanel.showModal(); }
 
 /* ---------- LIBRETA SANITARIA DIGITAL ----------
-   Imita la libreta del veterinario y se completa sola con el mismo doc de la mascota:
+   Imita la libreta del veterinario y se arma con el mismo doc de la mascota:
    records (vacunas, desparasitaciones, controles), visits, weights y los datos de la ficha. */
 const dd = s => s ? fmt(s, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 const PER_PAGE = 5;
@@ -1121,7 +1141,7 @@ function renderCuenta() {
       <section class="card profile"><span class="ini" aria-hidden="true">${esc(initial)}</span><span class="what"><b>${esc(me.name || 'Tu cuenta de Orbit')}</b><small>${esc(me.email)}</small></span></section>
       <section class="card buy-card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span><span class="eyebrow">Tu compra</span><b style="display:block;font-size:22px;line-height:1.15;font-weight:700;letter-spacing:-.02em">Mimitos by Orbit</b></span><span class="badge ok">Activa</span></div>
-        <p class="dim">${purchase?.date ? `Comprada el ${fmt(purchase.date.slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' })}. ` : ''}Pago único: tenés la app completa, para todas tus mascotas, con actualizaciones sin cargo.</p>
+        <p class="dim">${purchase?.date ? `Comprada el ${fmt(purchase.date.slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' })}. ` : ''}Pago único: tenés la app completa, para todas tus mascotas.</p>
       </section>
       <section class="sec"><div class="sec-h"><h2>Tus mascotas</h2><button class="link" data-act="newPet">${I('plus')} Agregar</button></div>
         ${doc.pets.length ? `<div class="list">${doc.pets.map(p => `<button class="row link-row" data-act="editPetId" data-id="${p.id}">${avatar(p)}<span class="what"><b>${esc(p.name)}</b><small>${esc(petMeta(p))}</small></span>${I('edit')}</button>`).join('')}</div>` : `<div class="empty dash"><p>Todavía no cargaste ninguna.</p></div>`}
@@ -1283,7 +1303,7 @@ function renderOnboard() {
     <div class="two"><div class="f"><label for="ob_vdate">Se aplicó el</label><input id="ob_vdate" type="date" max="${iso(Z.today())}" value="${esc(ob.vac.date)}"></div><div class="f"><label for="ob_vnext">Próxima dosis</label><input id="ob_vnext" type="date" value="${esc(ob.vac.next)}"></div></div>
     <div class="chips"><button type="button" class="chip" data-ob="plus" data-m="1">+1 mes</button><button type="button" class="chip" data-ob="plus" data-m="12">+1 año</button></div>
     <div class="or">o</div>
-    <label class="scanbox" for="ob_scan">${bubble('camera', 'viaje')}<span><b>Sacarle foto a la libreta</b><small>La leemos y cargamos todas las vacunas. Vos solo revisás.</small></span></label><input id="ob_scan" type="file" accept="image/*" multiple class="sr">`;
+    <label class="scanbox" for="ob_scan">${bubble('camera', 'viaje')}<span><b>Sacarle foto a la libreta</b><small>Leemos vacunas, antiparasitarios y controles con sus fechas. Vos revisás antes de guardar.</small></span></label><input id="ob_scan" type="file" accept="image/*" multiple class="sr">`;
     skip = 'Todavía no tiene vacunas o no sé';
   }
   if (ob.step === 3) {
@@ -1389,7 +1409,7 @@ function addPanel(p) {
     ${opt('sintoma', 'note', 'plata', 'Algo que notaste', 'No come, vomita, se rasca…')}
     ${opt('problema', 'heart', 'perdida', 'Problema de salud', 'Algo que tuvo o tiene')}
   </div>
-  <button class="scanbox" data-add="scan">${bubble('camera', 'viaje')}<span><b>Foto de la libreta</b><small>La leemos y cargamos las vacunas por vos.</small></span></button>`);
+  <button class="scanbox" data-add="scan">${bubble('camera', 'viaje')}<span><b>Foto de la libreta</b><small>Leemos vacunas, antiparasitarios y controles con sus fechas. Vos revisás antes de guardar.</small></span></button>`);
   $('#pBody').onclick = e => {
     const b = e.target.closest('[data-add]'); if (!b) return;
     dPanel.close();
@@ -1553,7 +1573,7 @@ function sitterPanel(p) {
     { k: 'vetAuth', label: `Avisé a la veterinaria que puede atender${la(p)} en mi nombre`, type: 'check', hint: 'Es lo que más se olvida: sin ese aviso, en una emergencia pueden no atenderla si no te ubican.' },
   ];
   const link = p.sitterToken ? `${location.origin}/cuida/${p.sitterToken}` : '';
-  panel(`Quién cuida a ${p.name}`, `<p class="lead-s">Completalo una vez. El cuidador abre un link con todo esto, los remedios con sus horarios y la veterinaria, y marca cada día si comió, paseó y le dio los remedios.</p>
+  panel(`Quién cuida a ${p.name}`, `<p class="lead-s">Completalo una vez. El cuidador abre un link con todo esto, los remedios con sus horarios y la veterinaria, y marca cada día si comió, paseó y le dio los remedios. Lo ves en Inicio, en "Lo que anotó quien ${la(p)} cuida". No te llega un aviso al celu.</p>
     <div class="fbody">${fields.map(f => Array.isArray(f) ? `<div class="two">${f.map(x => field(x, s[x.k])).join('')}</div>` : field(f, s[f.k])).join('')}</div>
     <button class="btn wide" id="sSave">${link ? 'Guardar cambios' : 'Guardar y crear link'}</button>
     ${link ? `<div class="linkbox"><input readonly value="${esc(link)}" aria-label="Link del cuidador"><button class="btn sm" id="sCp" type="button">Copiar</button></div>

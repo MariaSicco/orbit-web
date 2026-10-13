@@ -35,6 +35,9 @@ export const CATALOG = {
     bajada: 'Sabé cuánto te deben, quién y cuándo vas a cobrar.' },
   'ob-005': { code: 'OB—005', name: 'Orbit IVA',          usd: 79, ars: 79000, soon: true, foto: 'ob-005',
     bajada: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.' },
+  /* Mimitos: herramienta online en /mascotas, una sola versión paga */
+  'ob-018': { code: 'OB—018', name: 'Mimitos',            usd: 79, ars: 79000, soon: true, foto: 'ob-018', // PRECIO PENDIENTE: mismo valor que ob-005 (soon)
+    bajada: 'La libreta sanitaria de tu mascota en el celu, con avisos antes de cada fecha. Organizador: no reemplaza al veterinario.' },
 };
 
 const OVER_KEY = 'orbit:catalog';
