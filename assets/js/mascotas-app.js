@@ -24,7 +24,7 @@ const ui = { hist: { type: 'todo', year: '', q: '' }, lib: { year: '', q: '', pa
 const store = { get(k) { try { return localStorage.getItem('mimitos:' + k); } catch { return null; } }, set(k, v) { try { localStorage.setItem('mimitos:' + k, v); } catch {} } };
 
 const blankPet = () => ({ id: uid(), name: '', species: 'perro', speciesOther: '', breed: '', sex: '', birth: '', color: '', marks: '', temper: '', chip: '', weight: null, allergies: '', photo: '', photos: [], notes: '',
-  contact: { show: false, name: '', phone: '', note: '' }, vet: { name: '', phone: '', address: '', er: '', erPhone: '' }, lost: { on: false, since: '', place: '', note: '' }, qrNote: { show: false, text: '' },
+  contact: { show: false, name: '', phone: '', note: '' }, vet: { name: '', phone: '', address: '', er: '', erPhone: '' }, lost: { on: false, since: '', place: '', note: '' }, qrNote: { show: false, text: '' }, hue: '', photoFull: '',
   share: '', sitterToken: '', sitter: { name: '', from: '', to: '', food: '', walks: '', where: '', habits: '', emergency: '', key: '', vetAuth: false, contact: '' },
   food: { brand: '', bagKg: null, dailyG: null, opened: '' }, fund: { goal: null, monthly: null, saved: null }, trip: { dest: '', date: '' },
   neutered: '', chronic: '', onboarded: false, conditions: [], surgeries: [], visits: [], studies: [], weights: [],
@@ -43,6 +43,11 @@ const norm = p => {
   p.records.forEach(normRec);
   return p;
 };
+/* color de cada mascota: fondo del Inicio, tapa de la libreta y pasaporte. Texto encima siempre en tinta (AA ≥ 5,2:1) */
+const HUES = { azul: ['#4A90E2', '#FFF0F3', 'Azul'], verde: ['#34A574', '#FBF4EA', 'Verde'], rosa: ['#F2789F', '#FFF5EC', 'Rosa'], lila: ['#A58BF0', '#FFF4EE', 'Lila'], naranja: ['#FF8A4C', '#FFF7EC', 'Naranja'], amarillo: ['#F5C430', '#FFFBEE', 'Amarillo'], turquesa: ['#2FB5C0', '#FFF1EE', 'Turquesa'] };
+const hueOf = p => HUES[p?.hue] || HUES.azul;
+function applyHue(p) { const h = hueOf(p); document.body.style.setProperty('--hero', h[0]); document.body.style.setProperty('--sheet', h[1]); }
+const swatches = (name, val) => `<div class="tiles swatches" role="group" aria-label="Color de su perfil" data-tiles="${name}">${Object.entries(HUES).map(([k, [c, , l]]) => `<button type="button" class="tile sw-c" data-v="${k}" aria-pressed="${(val || 'azul') === k}" style="--sw:${c}"><span class="dot" aria-hidden="true"></span><span>${l}</span></button>`).join('')}</div>`;
 const petById = id => doc.pets.find(p => p.id === id);
 const curPet = () => petById(curId) || doc.pets[0] || null;
 function selectPet(id) { curId = id; store.set('pet', id); }
@@ -101,7 +106,7 @@ const drop = (arr, x) => { const i = arr.indexOf(x); if (i < 0) return () => {};
 function undoable(msg, restore) { changed(); toast(msg, { label: 'Deshacer', fn: () => { restore(); changed(); toast('Listo, volvió.'); } }); }
 
 /* ---------- utilidades ---------- */
-const avatar = (p, cls = '') => `<div class="av ${cls} c-${Z.tone(p)}">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : Z.petIcon(p)}</div>`;
+const avatar = (p, cls = '') => `<div class="av ${cls}${p.photoFull ? ' cut' : ''}" style="background:${hueOf(p)[0]};color:var(--ink)">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : Z.petIcon(p)}</div>`;
 const bubble = (ic, c) => `<span class="ib c-${c}">${I(ic)}</span>`;
 const la = p => p.sex === 'm' ? 'lo' : 'la';
 function download(name, text, type = 'text/calendar') {
@@ -121,6 +126,63 @@ function shrink(file, max, q) {
     img.onload = () => { const s = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c.toDataURL('image/jpeg', q)); };
     img.onerror = () => { URL.revokeObjectURL(url); no(); };
     img.src = url;
+  });
+}
+/* ---------- recorte de la foto (MediaPipe, en el navegador; se carga recién acá) ---------- */
+let cutLib = null;
+function loadCut() {
+  if (window.MZCUT) return Promise.resolve(window.MZCUT);
+  if (!cutLib) cutLib = new Promise((ok, no) => { const sc = document.createElement('script'); sc.type = 'module'; sc.src = '/assets/js/mascotas-cutout.js?v=2'; sc.onload = () => setTimeout(() => window.MZCUT ? ok(window.MZCUT) : no(new Error('cut')), 0); sc.onerror = () => { cutLib = null; no(new Error('cut')); }; document.head.appendChild(sc); });
+  return cutLib;
+}
+function cutFlow(file, pet) {
+  const dlg = $('#dCut'), body = $('#cutBody'), name = esc(pet.name || 'tu mascota'), bg = hueOf(pet)[0];
+  return new Promise(async done => {
+    let full, result = null, settled = false;
+    const finish = v => { if (settled) return; settled = true; dlg.close(); done(v); };
+    dlg.onclose = () => finish(null);
+    try { full = await shrink(file, 1024, .85); } catch { toast('No pudimos leer esa foto. Probá con otra.'); return done(null); }
+    const show = (html) => { body.innerHTML = html; };
+    const actions = (cutPng, msg) => {
+      result = cutPng;
+      show(`<div class="cut-prev" style="--bg:${bg}">${CLOUDS}<img src="${cutPng}" alt="Recorte de ${name}"></div>
+        <p class="dim">${msg}</p>
+        <button class="btn big wide" id="cutUse">Usar recorte</button>
+        <button class="btn ghost wide" id="cutFull">Usar foto entera</button>
+        <button class="link" id="cutTouch">${I('hand')} No quedó bien: tocá a ${name} en la foto</button>`);
+      $('#cutUse').onclick = async () => finish({ photo: result, photoFull: await shrink(file, 900, .8) });
+      $('#cutFull').onclick = () => finish({ photo: full, photoFull: '' });
+      $('#cutTouch').onclick = touchStep;
+    };
+    const touchStep = () => {
+      show(`<p class="lead-s"><b>Tocá a ${name}</b> en la foto, en el medio del cuerpo.</p>
+        <button class="cut-touch" id="cutPick" aria-label="Foto: tocá a tu mascota"><img src="${full}" alt=""></button>
+        <p class="amsg" id="cutMsg" role="status"></p>
+        <button class="btn ghost wide" id="cutRound">Mejor un recorte redondo</button>
+        <button class="btn ghost wide" id="cutFull2">Usar foto entera</button>`);
+      $('#cutFull2').onclick = () => finish({ photo: full, photoFull: '' });
+      $('#cutRound').onclick = async () => { const r = await (await loadCut().catch(() => null))?.round(full).catch(() => null); finish(r ? { photo: r, photoFull: await shrink(file, 900, .8) } : { photo: full, photoFull: '' }); };
+      $('#cutPick').onclick = async e => {
+        const im = e.currentTarget.querySelector('img').getBoundingClientRect();
+        const x = (e.clientX - im.left) / im.width, y = (e.clientY - im.top) / im.height;
+        $('#cutMsg').textContent = 'Recortando…';
+        try { const C = await loadCut(); const r = await C.touch(full, x, y); window.MZCUT_LAST = { ...(window.MZCUT_LAST || {}), touch: r.ms };
+          if (r.found) actions(r.png, 'Así queda sobre su color.'); else $('#cutMsg').textContent = 'No la pudimos separar. Probá tocando en otro lugar o usá el recorte redondo.'; }
+        catch { $('#cutMsg').textContent = 'Esto necesita conexión. Probá de nuevo o usá la foto entera.'; }
+      };
+    };
+    show(`<div class="cut-prev busy" style="--bg:${bg}">${CLOUDS}<img src="${full}" alt=""><span class="cut-spin" aria-hidden="true"></span></div>
+      <p class="dim" role="status">Recortando a ${name} del fondo… La primera vez tarda unos segundos.</p>
+      <button class="btn ghost wide" id="cutFull0">Usar foto entera</button>`);
+    $('#cutFull0').onclick = () => finish({ photo: full, photoFull: '' });
+    if (!dlg.open) dlg.showModal();
+    try {
+      const t = performance.now(), C = await loadCut(), r = await C.auto(full);
+      window.MZCUT_LAST = { auto: r.ms, model: r.loadMs, total: Math.round(performance.now() - t), found: r.found, label: r.label };
+      if (settled) return;
+      if (r.found) actions(r.png, `Así queda ${name} sobre su color. Si el recorte salió raro, usá la foto entera.`);
+      else { touchStep(); $('#cutMsg').textContent = `No encontramos ${pet.species === 'gato' ? 'un gato' : pet.species === 'perro' ? 'un perro' : 'a tu mascota'} sola. Tocala en la foto.`; }
+    } catch { if (!settled) { touchStep(); $('#cutMsg').textContent = 'El recorte necesita conexión. Podés usar la foto entera o un recorte redondo.'; } }
   });
 }
 const CUPO_MSG = 'Llegaste al espacio de fotos y estudios de tu cuenta (200 MB). Borrá estudios o fotos que no uses para subir más.';
@@ -152,6 +214,7 @@ function field(f, v) {
       const prev = f.square ? `<div class="stk ${val ? 'has' : 'empty-s'}" id="${id}_prev">${val ? `<img src="${esc(val)}" alt="">` : 'Sin foto'}</div>` : `<div class="av big" id="${id}_prev">${val ? `<img src="${esc(val)}" alt="">` : I('camera')}</div>`;
       return `<div class="photo-pick" data-f="${f.k}">${prev}<div class="f">${f.label ? `<span class="lb">${esc(f.label)}${opt}</span>` : ''}<label class="btn ghost sm" for="${id}">${I('camera')} ${val ? 'Cambiar foto' : 'Elegir foto'}</label><input id="${id}" type="file" accept="image/*" class="sr" data-square="${f.square ? 1 : ''}">${hint}</div></div>`;
     }
+    case 'hue': return `<div class="f" data-f="${f.k}" id="${id}"><span class="lb">${esc(f.label)}${opt}</span>${swatches(f.k, val)}${hint}</div>`;
     case 'datalist': return `<div class="f" data-f="${f.k}">${lab}<input id="${id}" list="${id}_dl" maxlength="${f.max || 80}" value="${esc(val)}" placeholder="${esc(f.ph || '')}" autocomplete="off"${desc}><datalist id="${id}_dl">${(f.options || []).map(o => `<option value="${esc(o)}">`).join('')}</datalist>${hint}</div>`;
     default: {
       const t = f.type === 'datetime' ? 'datetime-local' : f.type || 'text';
@@ -172,6 +235,8 @@ function openForm(o) {
   const first = $('#fBody input:not([type=file]):not([type=checkbox]),#fBody textarea'); if (first && !o.values?.name && !o.noFocus) first.focus();
 }
 $('#fBody').addEventListener('click', e => {
+  const sw = e.target.closest('.swatches .tile');
+  if (sw) { sw.parentNode.querySelectorAll('.tile').forEach(x => x.setAttribute('aria-pressed', String(x === sw))); form.onHue?.(sw.dataset.v); return; }
   const c = e.target.closest('[data-chips] .chip');
   if (c) { c.parentNode.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', String(x === c))); form.onChip?.(c.parentNode.id.slice(2), c.dataset.v); return; }
   const q = e.target.closest('[data-quick]');
@@ -180,6 +245,15 @@ $('#fBody').addEventListener('click', e => {
 $('#fBody').addEventListener('change', async e => {
   if (e.target.type !== 'file' || !e.target.id.startsWith('f_')) return;
   const f = e.target.files[0]; if (!f) return;
+  if (e.target.id === 'f_photo') {
+    e.target.value = '';
+    const hue = $('#f_hue [aria-pressed="true"]')?.dataset.v || '';
+    const r = await cutFlow(f, { name: $('#f_name')?.value.trim() || 'tu mascota', hue }); if (!r) return;
+    form.photo = r.photo; form.photoFull = r.photoFull;
+    const prev = $('#f_photo_prev'); prev.innerHTML = `<img src="${r.photo}" alt="Foto elegida">`; prev.style.background = hueOf({ hue }).at(0); prev.classList.toggle('cut', Boolean(r.photoFull));
+    const lb = $('label[for="f_photo"]'); if (lb) lb.innerHTML = `${I('camera')} Cambiar foto`;
+    return;
+  }
   try {
     form.photo = await shrink(f, e.target.dataset.square ? 520 : 640, .8);
     const prev = $(`#${e.target.id}_prev`); prev.innerHTML = `<img src="${form.photo}" alt="Foto elegida">`; if (prev.classList.contains('stk')) prev.className = 'stk has';
@@ -191,7 +265,7 @@ function readForm() {
   const out = {};
   for (const f of form.fields.flat()) {
     const el = $('#f_' + f.k); if (!el) continue;
-    out[f.k] = f.type === 'chips' ? (el.querySelector('[aria-pressed="true"]')?.dataset.v || '') : f.type === 'check' ? el.checked : f.type === 'photo' ? form.photo : el.value.trim();
+    out[f.k] = f.type === 'hue' ? (el.querySelector('[aria-pressed="true"]')?.dataset.v || '') : f.type === 'chips' ? (el.querySelector('[aria-pressed="true"]')?.dataset.v || '') : f.type === 'check' ? el.checked : f.type === 'photo' ? form.photo : el.value.trim();
   }
   return out;
 }
@@ -222,7 +296,8 @@ function petForm(p) {
     title: p ? 'Datos de ' + p.name : 'Nueva mascota',
     values: p ? { ...p, weight: p.weight ? String(p.weight).replace('.', ',') : '', ownerName: p.contact.name, ownerPhone: p.contact.phone } : { species: 'perro' },
     fields: [
-      { k: 'photo', type: 'photo', hint: 'Una foto clara de frente. Va en la tapa de la libreta y en el cartel si se pierde.' },
+      { k: 'photo', type: 'photo', hint: 'Una foto clara, con la mascota entera. La recortamos sola y la ponemos sobre su color.' },
+      { k: 'hue', type: 'hue', label: 'Su color', hint: 'El fondo de su Inicio, la tapa de su libreta y su pasaporte.' },
       { k: 'name', label: 'Nombre', max: 60 },
       { k: 'species', label: 'Especie', type: 'chips', options: [['perro', 'Perro'], ['gato', 'Gato'], ['otra', 'Otra']] },
       { k: 'speciesOther', label: '¿Qué especie?', ph: 'Conejo, hurón, loro…', max: 40 },
@@ -241,7 +316,9 @@ function petForm(p) {
     after: () => showField('speciesOther', (p?.species || 'perro') === 'otra'),
     onDelete: p ? () => { const undo = drop(doc.pets, p); if (curId === p.id) selectPet(doc.pets[0]?.id || ''); return { msg: `${p.name} se borró con toda su historia.`, undo: () => { undo(); selectPet(p.id); } }; } : null,
     deleteLabel: 'Borrar mascota', confirm: p ? `Tocá de nuevo para borrar a ${p.name} y toda su historia` : '',
+    onHue(h) { applyHue({ hue: h }); },
     async onSave(v) {
+      const full = form.photoFull;
       if (!v.name) return 'Poné el nombre de tu mascota.';
       const w = numDec(v.weight); if (Number.isNaN(w)) return 'El peso tiene que ser un número, por ejemplo 12,5.';
       if (v.birth && v.birth > iso(Z.today())) return 'La fecha de nacimiento no puede ser futura.';
@@ -249,7 +326,8 @@ function petForm(p) {
       Object.assign(pet, { name: v.name, species: v.species || 'perro', speciesOther: v.speciesOther, breed: v.breed, sex: v.sex, birth: v.birth, color: v.color, chip: v.chip, marks: v.marks, temper: v.temper, allergies: v.allergies, neutered: v.neutered, chronic: v.chronic, notes: v.notes });
       pet.contact = { ...pet.contact, name: v.ownerName, phone: v.ownerPhone };
       if (w !== pet.weight) { if (w) addWeight(pet, iso(Z.today()), w); else pet.weight = w; }
-      if (v.photo) { try { pet.photo = await uploadPhoto(v.photo); } catch { toast('La foto no se pudo subir. El resto quedó guardado.'); } }
+      pet.hue = v.hue || pet.hue || '';
+      if (v.photo) { try { pet.photo = await uploadPhoto(v.photo); pet.photoFull = full ? await uploadPhoto(full) : ''; } catch { toast('La foto no se pudo subir. El resto quedó guardado.'); } }
       if (!p) { doc.pets.push(pet); selectPet(pet.id); }
       toast(p ? 'Datos guardados.' : `${pet.name} ya está en Mimitos.`);
     },
@@ -509,6 +587,8 @@ async function uploadStudy(file) {
 
 /* ---------- rutas y navegación ---------- */
 const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['agenda', 'grid', 'Agenda'], ['gastos', 'wallet', 'Gastos'], ['cuenta', 'user', 'Cuenta']];
+/* en el celu: 4 secciones y el + en el medio; Cuenta queda en el avatar de arriba */
+const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
 const TAB_OF = { antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta' };
 const BARE = ['alta', 'lectura'];
 const nav = $('#nav');
@@ -518,9 +598,26 @@ window.addEventListener('hashchange', () => { route = parseHash(); if (dPanel.op
 function drawNav() {
   const tab = TAB_OF[route.name] || route.name;
   nav.innerHTML = `<a class="brand side-only" href="#/inicio" aria-label="Mimitos, inicio">${HEART}<b>mimitos</b><span class="by">by Orbit</span></a>
-    <div class="nav-items">${TABS.map(([k, ic, l]) => `<a href="#/${k}" class="nav-i" ${tab === k ? 'aria-current="page"' : ''}>${I(ic)}<span>${l}</span></a>`).join('')}</div>
+    <button type="button" class="nav-add side-only" data-act="add">${I('plus')}<span>Cargar algo</span></button>
+    <div class="nav-items">${PILL.map(k => k === '+' ? `<button type="button" class="nav-plus" data-act="add" aria-label="Cargar algo">${I('plus')}</button>` : (([kk, ic, l]) => `<a href="#/${kk}" class="nav-i" aria-label="${l}" ${tab === kk ? 'aria-current="page"' : ''}>${I(ic)}<span>${l}</span></a>`)(TABS.find(t => t[0] === k))).join('')}<a href="#/cuenta" class="nav-i side-only" ${tab === 'cuenta' ? 'aria-current="page"' : ''}>${I('user')}<span>Cuenta</span></a></div>
     <div class="side-only side-pets">${doc.pets.length ? `<span class="eyebrow">Tus mascotas</span>${doc.pets.map(p => `<button type="button" class="side-pet" data-act="pick" data-id="${p.id}" ${p.id === curPet()?.id ? 'aria-current="true"' : ''}>${avatar(p)}<span>${esc(p.name)}</span></button>`).join('')}<button type="button" class="side-pet add" data-act="newPet">${I('plus')}<span>Agregar mascota</span></button>` : ''}</div>`;
 }
+function drawTop(bare) {
+  const box = $('#topActs'), hi = $('#hi');
+  if (bare) { box.innerHTML = ''; hi.hidden = true; $('#tnavBox').innerHTML = ''; return; }
+  const ini = (me.name || me.email || '?').trim().charAt(0).toUpperCase();
+  const p = curPet(), onHome = route.name === 'inicio' && p;
+  hi.hidden = !onHome;
+  hi.innerHTML = onHome ? `<a class="me" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a><span><small>${greet()}${me.name ? ',' : ''}</small><b>${me.name ? esc(me.name.split(' ')[0]) : 'Hola'}</b></span>` : '';
+  const tab = TAB_OF[route.name] || route.name;
+  /* escritorio: barra liviana con las secciones, las mascotas y el + */
+  const desk = `<nav class="tnav desk-only" aria-label="Secciones">${TABS.filter(t => t[0] !== 'cuenta').map(([k, , l]) => `<a href="#/${k}" ${tab === k ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>
+    ${doc.pets.length ? `<div class="tpets desk-only" aria-label="Tus mascotas">${doc.pets.map(x => `<button type="button" class="tpet" data-act="pick" data-id="${x.id}" aria-current="${x.id === p?.id}" title="${esc(x.name)}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}<button type="button" class="tpet add" data-act="newPet" aria-label="Agregar mascota">${I('plus')}</button></div>` : ''}
+    <button type="button" class="btn sm lime desk-only" data-act="add">${I('plus')} Cargar algo</button>`;
+  $('#tnavBox').innerHTML = desk;
+  box.innerHTML = `<a class="round" href="#/avisos" aria-label="Avisos">${I('bell')}</a><a class="me${onHome ? ' desk-only' : ''}" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a>`;
+}
+const greet = () => { const h = new Date().getHours(); return h < 6 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'; };
 const HEART = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27.5c-6.3-4.2-11-8.3-11-13.4C5 10.6 7.7 8 10.9 8c2.2 0 4 1.1 5.1 2.9C17.1 9.1 18.9 8 21.1 8 24.3 8 27 10.6 27 14.1c0 5.1-4.7 9.2-11 13.4z" fill="#D9694A"/><circle cx="12" cy="16" r="1.5" fill="#1F1A17"/><circle cx="20" cy="16" r="1.5" fill="#1F1A17"/><path d="M14 19.6c1.1.9 2.9.9 4 0" fill="none" stroke="#1F1A17" stroke-width="1.5" stroke-linecap="round"/></svg>';
 window.addEventListener('scroll', () => $('.top').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 
@@ -530,6 +627,9 @@ function render() {
   document.body.dataset.shell = bare ? 'bare' : 'app';
   nav.hidden = bare;
   if (!bare) drawNav();
+  document.body.dataset.route = bare ? '' : route.name;
+  applyHue(route.name === 'alta' && ob ? ob.pet : curPet());
+  drawTop(bare);
   app.className = mode === 'full' && (BARE.includes(route.name) || !doc.pets.length && route.name !== 'cuenta' && route.name !== 'avisos') ? '' : 'wide';
   const key = mode + ':' + route.name + ':' + (route.name === 'inicio' || route.name === 'libreta' ? curId : '');
   const html = view();
@@ -614,7 +714,7 @@ let gateSvg = '';
 async function gateArt() {
   const box = $('#gateArt'); if (!box) return;
   try { if (!gateSvg) { const r = await fetch('/assets/img/mimitos/bienvenida.svg?v=1'); if (r.ok) gateSvg = (await r.text()).replace(/<title>[^<]*<\/title>/, ''); } } catch {}
-  if (gateSvg && $('#gateArt')) $('#gateArt').innerHTML = gateSvg;
+  if (gateSvg && $('#gateArt')) $('#gateArt').innerHTML = CLOUDS + gateSvg;
 }
 
 /* con sesión pero sin la compra de Mimitos */
@@ -658,7 +758,7 @@ function petMeta(p) { return [Z.species(p), p.breed, Z.age(p.birth), p.weight ? 
 function nextItems(p) {
   const out = [];
   for (const m of p.meds) { const s = Z.medState(m, p.log); if (s.state === 'due' || s.state === 'late') out.push({ order: s.state === 'late' ? -2 : -1, html: medRow(p, m) }); }
-  for (const x of Z.upcoming(p)) if (x.s.days <= 60) out.push({ order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(recIcon(x.r), 'salud')}<button class="what plain" data-act="detail" data-kind="rec" data-id="${x.r.id}"><b>${esc(x.r.name)}</b><small><span class="stt">${x.s.t}</span>${Z.isSug(x.r) ? ' · sugerida, confirmala con tu veterinario' : ''}</small></button><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.r.name)} al calendario">${I('cal')}</button></div>` });
+  for (const x of Z.upcoming(p)) if (x.s.days <= 60) out.push({ kind: 'rec', order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(recIcon(x.r), 'salud')}<button class="what plain" data-act="detail" data-kind="rec" data-id="${x.r.id}"><b>${esc(x.r.name)}</b><small><span class="stt">${x.s.t}</span>${Z.isSug(x.r) ? ' · sugerida, confirmala con tu veterinario' : ''}</small></button><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.r.name)} al calendario">${I('cal')}</button></div>` });
   const f = Z.food(p.food); if (f && f.left <= 5) out.push({ order: f.left, html: `<div class="row ${f.left < 0 ? 'st-late' : 'st-soon'}">${bubble('bowl', 'comida')}<span class="what"><b>Comprar alimento</b><small class="stt">${f.left < 0 ? 'Ya se terminó' : f.left === 0 ? 'Se termina hoy' : `Quedan ${f.left} días`}</small></span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button></div>` });
   return out.sort((a, b) => a.order - b.order);
 }
@@ -670,31 +770,28 @@ function medRow(p, m) {
   return `<div class="row ${tx[0]}">${bubble('pill', 'med')}<button class="what plain" data-act="detail" data-kind="med" data-id="${m.id}"><b>${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}<span class="stt">${tx[1]}</span></small></button>${can ? `<button class="ibtn go" data-act="give" data-pet="${p.id}" data-med="${m.id}">Ya se la di</button>` : `<button class="ibtn" data-act="editMed" data-med="${m.id}" aria-label="Editar ${esc(m.name)}">${I('edit')}</button>`}</div>`;
 }
 function renderInicio(p) {
-  const sm = Z.summary(p), next = nextItems(p).slice(0, 5);
+  /* las vacunas y pipetas van en Próximos cuidados; acá quedan remedios y alimento */
+  const sm = Z.summary(p), next = nextItems(p).filter(x => x.kind !== 'rec').slice(0, 5);
   const activeMeds = p.meds.filter(m => ['ok', 'soon'].includes(Z.medState(m, p.log).state));
   const vacc = { ok: ['Al día', 'ok'], late: [`Vencida: ${sm.vaccLate.map(x => x.r.name).join(', ')}`, 'late'], none: ['Sin cargar', 'none'] }[sm.vacc];
   const anti = { ok: ['Al día', 'ok'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
   const recs = p.records.filter(r => r.date).length;
   const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', `Quién ${la(p)} cuida`, 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
-  return `${doc.pets.length > 1 ? switcher(p) : ''}
-  <div class="cols">
-    <div class="col">
-      <section class="pethead">
-        ${avatar(p, 'big')}
-        <div class="ph-txt"><h1>${esc(p.name)}</h1><p>${esc(petMeta(p)) || 'Completá sus datos'}</p></div>
-        <button class="ibtn" data-act="editPet" aria-label="Editar datos de ${esc(p.name)}">${I('edit')}</button>
-      </section>
+  return `<div class="dash">
+    <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
+    <div class="dash-r">
       ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
       ${scanBanner(p)}
-      <button class="btn big wide" data-act="add">${I('plus')} Cargar algo de ${esc(p.name)}</button>
-      ${notify && !notify.devices && !notify.mail ? `<button class="banner nudge" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span style="flex:1"><b>Que no se te pase ninguna fecha</b><small class="dim">Activá los avisos en el celu o por mail.</small></span>${I('chevron')}</button>` : ''}
-      <section class="sec" aria-labelledby="h-next">
-        <div class="sec-h"><h2 id="h-next">Lo que le toca</h2><button class="link" data-act="go" data-to="agenda">Agenda ${I('next')}</button></div>
-        ${next.length ? `<div class="list">${next.map(x => x.html).join('')}</div>` : `<div class="empty dash"><p>${p.records.some(r => r.next) ? `Nada en los próximos 60 días. ${esc(p.name)} está al día.` : `Cuando cargues una vacuna con su próxima dosis, acá vas a ver qué le toca y cuándo.`}</p>${p.records.some(r => r.next) ? '' : `<button class="btn sm soft" data-act="suggest">${I('sparkle')} Armar calendario sugerido</button>`}</div>`}
-      </section>
-      <button class="bookcard c-${Z.tone(p)}" data-act="go" data-to="libreta"><span class="mini">${avatar(p)}</span><span><span class="eyebrow">Libreta sanitaria</span><b>La libreta de ${esc(p.name)}</b><small>${recs ? `${recs} ${recs === 1 ? 'registro' : 'registros'} entre vacunas, desparasitaciones y controles. Lista para imprimir.` : 'Se completa sola con lo que cargás: vacunas, desparasitaciones, controles y peso.'}</small><span class="go">Abrir libreta ${I('next')}</span></span></button>
-      <section class="sec" aria-labelledby="h-health">
-        <h2 id="h-health">Su salud hoy</h2>
+      ${notify && !notify.devices && !notify.mail ? `<button class="banner nudge span2" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span style="flex:1"><b>Que no se te pase ninguna fecha</b><small class="dim">Activá los avisos en el celu o por mail.</small></span>${I('chevron')}</button>` : ''}
+      ${next.length ? `<section class="sec card2 span2" aria-labelledby="h-next">
+        <div class="sec-h"><h2 id="h-next">Hoy y estos días</h2><button class="link" data-act="go" data-to="agenda">Agenda ${I('next')}</button></div>
+        <div class="list">${next.map(x => x.html).join('')}</div>
+      </section>` : ''}
+      ${careCard(p)}
+      ${weightCard(p)}
+      ${spendCard(p)}
+      <section class="sec card2" aria-labelledby="h-health">
+        <h2 id="h-health">Antecedentes y remedios</h2>
         <div class="summary">
           <button class="sum" data-act="libsec" data-sec="vac"><span>Vacunas</span><span class="badge ${vacc[1] === 'late' ? 'late' : vacc[1] === 'ok' ? 'ok' : 'none'}">${esc(vacc[0])}</span></button>
           <button class="sum" data-act="libsec" data-sec="des"><span>Antiparasitario</span><span class="badge ${anti[1] === 'late' ? 'late' : anti[1] === 'ok' ? 'ok' : 'none'}">${esc(anti[0])}</span></button>
@@ -703,16 +800,81 @@ function renderInicio(p) {
         </div>
         ${activeMeds.length ? `<div class="list">${activeMeds.map(m => medRow(p, m)).join('')}</div>` : ''}
       </section>
-    </div>
-    <div class="col">
+      <button class="bookcard span2 c-${Z.tone(p)}" data-act="go" data-to="libreta"><span class="mini">${avatar(p)}</span><span><span class="eyebrow">Libreta sanitaria</span><b>La libreta de ${esc(p.name)}</b><small>${recs ? `${recs} ${recs === 1 ? 'registro' : 'registros'} entre vacunas, desparasitaciones y controles. Lista para imprimir.` : 'Se completa sola con lo que cargás: vacunas, desparasitaciones, controles y peso.'}</small><span class="go">Abrir libreta ${I('next')}</span></span></button>
       ${sitterLog(p)}
-      ${historySection(p)}
-      <section class="sec" aria-labelledby="h-more">
+      <div class="span2">${historySection(p)}</div>
+      <section class="sec span2" aria-labelledby="h-more">
         <h2 id="h-more">Accesos rápidos</h2>
         <div class="list">${quick.map(([a, ic, c, t, d]) => { const [act, to] = a.split(':'); return `<button class="row link-row" data-act="${act}"${to ? ` data-to="${to}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}</div>
       </section>
     </div>
   </div>`;
+}
+/* Inicio: foto grande de la mascota y la hoja que sube encima con su estado */
+const CLOUDS = `<svg class="clouds" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-20 250C60 170 140 300 230 210S360 120 430 170" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round" opacity=".7"/><path d="M-10 90C80 40 150 140 260 80S380 30 420 60" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round" opacity=".5"/><path d="M262 64a22 22 0 0 1 42-6 16 16 0 0 1 22 15H250a12 12 0 0 1 12-9z" fill="#fff" opacity=".85"/><path d="M24 168a18 18 0 0 1 34-5 13 13 0 0 1 18 12H14a10 10 0 0 1 10-7z" fill="#fff" opacity=".75"/></svg>`;
+let heroArt = '';
+async function loadHeroArt() {
+  const box = $('#heroArt'); if (!box) return;
+  try { if (!heroArt) { const r = await fetch('/assets/img/mimitos/sin-foto.svg?v=1'); if (r.ok) heroArt = await r.text(); } } catch {}
+  if (heroArt && $('#heroArt')) $('#heroArt').innerHTML = heroArt;
+}
+function petHero(p, sm, vacc, anti) {
+  const up = Z.upcoming(p), d = r => fmt(r.next, { day: 'numeric', month: 'short' }).replace('.', '');
+  const pip = up.find(x => x.r.type === 'desparasitacion'), ctl = up.find(x => x.r.type === 'control');
+  const stat = (act, to, ic, c, k, v, late) => `<button class="pstat" data-act="${act}"${to}><span class="sic s-${c}">${I(ic)}</span><span><small>${k}</small><b${late ? ' class="late"' : ''}>${v}</b></span></button>`;
+  const sexIc = p.sex === 'h' ? ['female', 'Hembra'] : p.sex === 'm' ? ['male', 'Macho'] : null;
+  const cut = Boolean(p.photo && p.photoFull);
+  if (!p.photo) after(loadHeroArt);
+  /* selector de mascotas sobre el color: cada una en su propio color */
+  const strip = `<nav class="pstrip" aria-label="Tus mascotas">${doc.pets.map(x => `<button class="pchip" data-act="pick" data-id="${x.id}" aria-current="${x.id === p.id}" aria-label="${esc(x.name)}">${avatar(x)}<span>${esc(x.name)}</span></button>`).join('')}<button class="pchip add" data-act="newPet" aria-label="Agregar mascota"><span class="av">${I('plus')}</span><span>Agregar</span></button></nav>`;
+  return `<section class="phero${p.photo ? (cut ? ' has-cut' : ' has-photo') : ''}" aria-label="${esc(p.name)}">
+    <div class="ph-stage">${CLOUDS}${strip}${p.photo ? `<img class="ph-img" src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">`
+      : `<div class="ph-art" id="heroArt" aria-hidden="true"></div><button class="ph-up" data-act="editPet">${I('camera')} Subí su foto</button>`}</div>
+    <div class="psheet">
+      <span class="grab" aria-hidden="true"></span>
+      <div class="ps-top">
+        <div class="ps-name"><h1>${esc(p.name)}</h1><p>${esc([p.breed || Z.species(p), Z.age(p.birth)].filter(Boolean).join(' · ')) || 'Completá sus datos'}</p></div>
+        <div class="ps-ic"><span class="round s-violeta" role="img" aria-label="${esc(Z.species(p))}">${Z.petIcon(p)}</span>${sexIc ? `<span class="round s-rosa" role="img" aria-label="${sexIc[1]}">${I(sexIc[0])}</span>` : ''}<button class="round" data-act="editPet" aria-label="Editar perfil de ${esc(p.name)}">${I('edit')}</button></div>
+      </div>
+      <div class="pstats">
+        ${stat('libsec', ' data-sec="vac"', 'syringe', 'rosa', 'Vacunas', esc(vacc[1] === 'late' ? 'Vencida' : vacc[0]), vacc[1] === 'late')}
+        ${stat('libsec', ' data-sec="des"', 'drop', 'naranja', 'Pipeta', pip ? (pip.s.days < 0 ? 'Vencida' : d(pip.r)) : esc(anti[0]), pip ? pip.s.days < 0 : anti[1] === 'late')}
+        ${stat('go', ' data-to="agenda"', 'steth', 'violeta', 'Control', ctl ? d(ctl.r) : 'Sin turno', ctl && ctl.s.days < 0)}
+        ${stat('go', ' data-to="datos"', 'scale', 'verde', 'Peso', p.weight ? kg(p.weight) : 'Sin cargar', false)}
+      </div>
+    </div>
+  </section>`;
+}
+/* próximos cuidados con la cinta de fecha a la derecha */
+const RIB = { vacuna: 'r-azul', desparasitacion: 'r-rosa', control: 'r-naranja', otro: 'r-lila' };
+function careCard(p) {
+  const list = Z.upcoming(p).filter(x => x.s.days <= 180).slice(0, 4);
+  const when = x => x.s.days < 0 ? `Vencida hace ${-x.s.days} d` : x.s.days === 0 ? 'Hoy' : x.s.days === 1 ? 'Mañana' : `En ${x.s.days} días`;
+  return `<section class="sec card2 care-card" aria-labelledby="h-care"><h2 id="h-care">Próximos cuidados</h2>
+    ${list.length ? `<div class="care">${list.map(x => `<button class="care-row" data-act="detail" data-kind="rec" data-id="${x.r.id}">
+      <span class="sic s-${x.r.type === 'vacuna' ? 'violeta' : x.r.type === 'desparasitacion' ? 'rosa' : 'naranja'}">${I(recIcon(x.r))}</span>
+      <span class="what"><b>${esc(x.r.name)}</b><small>${esc(x.r.vet || x.r.lot || Z.TYPE[x.r.type] || '')}${Z.isSug(x.r) ? ' · sugerida' : ''}</small></span>
+      <span class="rib ${x.s.days < 0 ? 'r-late' : RIB[x.r.type] || 'r-lila'}"><b>${fmt(x.r.next, { day: 'numeric', month: 'short' }).replace('.', '')}</b><small>${when(x)}</small></span></button>`).join('')}</div>`
+      : `<p class="dim">Cuando cargues una vacuna o una pipeta con su próxima fecha, aparece acá.</p>${p.records.some(r => r.next) ? '' : `<button class="btn sm soft" data-act="suggest" style="align-self:flex-start">${I('sparkle')} Armar el calendario sugerido</button>`}`}
+    <button class="btn ghost sm" data-act="go" data-to="agenda" style="align-self:flex-start">Ver más</button></section>`;
+}
+/* barras finas: la última, activa */
+const bars = (vals, tone) => { const mx = Math.max(...vals, 1); return `<div class="vbars ${tone}" aria-hidden="true">${vals.map((v, i) => `<i style="height:${Math.max(8, Math.round(v / mx * 100))}%"${i === vals.length - 1 ? ' class="on"' : ''}></i>`).join('')}</div>`; };
+function weightCard(p) {
+  const w = [...(p.weights || [])].sort((a, b) => a.date.localeCompare(b.date)).slice(-10);
+  const last = w[w.length - 1], prev = w[w.length - 2], dif = last && prev ? Math.round((last.kg - prev.kg) * 10) / 10 : 0;
+  return `<section class="sec card2 mini-stat w-card" aria-labelledby="h-w"><div class="ms-h"><h2 id="h-w">Peso</h2><span class="sic s-verde">${I('scale')}</span></div>
+    ${last ? `<p class="big-num">${kg(last.kg)}</p><small class="dim">${prev ? `${dif > 0 ? '+' : ''}${String(dif).replace('.', ',')} kg desde el ${fmt(prev.date, { day: 'numeric', month: 'short' })}` : 'Primer registro'}</small>${w.length > 1 ? bars(w.map(x => x.kg - Math.min(...w.map(y => y.kg)) * .8), 'violeta') : ''}`
+      : `<p class="dim">Cargá su peso cada tanto y ves cómo va.</p><button class="btn ghost sm" data-act="newWeight" style="align-self:flex-start">${I('plus')} Cargar peso</button>`}</section>`;
+}
+function spendCard(p) {
+  const now = iso(Z.today()).slice(0, 7), months = [];
+  for (let i = 5; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); months.push(iso(d).slice(0, 7)); }
+  const tot = m => p.expenses.filter(x => x.date.startsWith(m)).reduce((a, x) => a + x.amount, 0);
+  const vals = months.map(tot), has = vals.some(Boolean);
+  return `<section class="sec card2 mini-stat" aria-labelledby="h-g"><div class="ms-h"><h2 id="h-g">Gastos</h2><span class="sic s-naranja">${I('wallet')}</span></div>
+    ${has ? `<p class="big-num">${Z.money(tot(now))}</p><small class="dim">Este mes. Promedio: ${Z.money(vals.reduce((a, b) => a + b, 0) / 6)}</small>${bars(vals, 'naranja')}`
+      : `<p class="dim">Anotá lo que gastás en ${esc(p.name)} y ves cuánto es por mes.</p><button class="btn ghost sm" data-act="newExp" style="align-self:flex-start">${I('plus')} Anotar un gasto</button>`}</section>`;
 }
 /* lo que anotó el cuidador desde su link (últimos 10 días) */
 function sitterLog(p) {
@@ -942,7 +1104,26 @@ function weightPage(p) {
     <ol class="entries">${rows.map((x, i) => { const prev = w[w.length - 2 - i]; const d = prev ? Math.round((x.kg - prev.kg) * 10) / 10 : null; return `<li class="entry noseal wrow"><div class="e-main"><span class="e-dates"><span><em>Fecha</em> ${dd(x.date)}</span></span></div><span class="wkg">${kg(x.kg)}${d ? `<small>${d > 0 ? '+' : ''}${String(d).replace('.', ',')}</small>` : ''}</span><button class="e-edit" data-act="editWeight" data-date="${x.date}" aria-label="Editar peso del ${dd(x.date)}">${I('more')}</button></li>`; }).join('')}</ol>
     <button class="link add-line" data-act="newWeight">${I('plus')} Anotar peso</button>`;
 }
+/* pasaporte: la primera página de la libreta y del PDF, con la foto original y el color de la mascota */
+function passport(p, print = false) {
+  const img = p.photoFull || p.photo, id = p.chip || p.id.toUpperCase();
+  const upd = fmt((doc.updatedAt || new Date().toISOString()).slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' });
+  const f = [['Nacimiento', p.birth ? dd(p.birth) : '—'], ['Sexo', p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : '—'], ['Especie', Z.species(p)], [p.chip ? 'Microchip' : 'ID Mimitos', id]];
+  const band = `Libreta sanitaria · Actualizada el ${upd} · `;
+  return `<div class="passport" style="--hero:${hueOf(p)[0]}">
+    <div class="pp-top"><span class="pp-k">${HEART}Pasaporte</span><span class="pp-id num">N.º ${esc(id)}</span></div>
+    <div class="pp-body">
+      <div class="pp-photo">${img ? `<img src="${esc(img)}" alt="Foto de ${esc(p.name)}">` : Z.petIcon(p)}</div>
+      <dl>${f.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+    </div>
+    <div class="pp-band" aria-label="Actualizada el ${upd}"><span aria-hidden="true">${band.repeat(4)}</span></div>
+    <div class="pp-name"><div><h2>${esc(p.name)},</h2><p>${esc(p.breed || Z.species(p))}${p.birth ? ' · ' + Z.age(p.birth) : ''}</p></div>${print ? '' : `<button class="pp-more" data-act="editPet" aria-label="Editar datos de ${esc(p.name)}">${I('more')}</button>`}</div>
+  </div>`;
+}
 function coverPage(p) {
+  return `${passport(p)}<span class="mark">${HEART}mimitos <small>by Orbit</small></span>`;
+}
+function coverPageOld(p) {
   const meta = [Z.species(p), p.breed].filter(Boolean).join(' · ');
   return `<div class="frame" aria-hidden="true"></div>
     <span class="kicker">Libreta sanitaria</span>
@@ -957,12 +1138,12 @@ function bookHtml(p) {
   return `<div class="book">
     <div class="pages" id="pages" tabindex="0" role="region" aria-roledescription="libreta" aria-label="Libreta de ${esc(p.name)}. Usá las flechas para pasar de página.">
       ${pages.map((pg, i) => pg.cover
-        ? `<section class="page cover c-${Z.tone(p)}" aria-label="Tapa">${coverPage(p)}<div class="page-f"><span>Mimitos</span><span>${String(i + 1).padStart(2, '0')}</span></div></section>`
+        ? `<section class="page cover" style="--hero:${hueOf(p)[0]}" aria-label="Pasaporte">${coverPage(p)}<div class="page-f"><span>Mimitos</span><span>${String(i + 1).padStart(2, '0')}</span></div></section>`
         : `<section class="page" aria-label="${pg.title}, página ${i + 1} de ${total}"><div class="page-h"><h2>${pg.title}${pg.cont ? ' <span class="dim" style="font-size:.6em">(sigue)</span>' : ''}</h2><span class="eyebrow">${esc(p.name)}</span></div>${pg.html}<div class="page-f"><span>Libreta de ${esc(p.name)}</span><span>${String(i + 1).padStart(2, '0')}</span></div></section>`).join('')}
     </div>
     <div class="pager">
       <button class="ibtn" data-act="lprev" aria-label="Página anterior">${I('back')}</button>
-      <div class="pg-mid"><div class="dots" role="group" aria-label="Páginas">${pages.map((pg, i) => `<button type="button" data-act="lgo" data-i="${i}" aria-label="Página ${i + 1}: ${pg.cover ? 'Tapa' : pg.title}"><i></i></button>`).join('')}</div><span class="pg-label" id="pgLabel" aria-live="polite"></span></div>
+      <div class="pg-mid"><div class="dots" role="group" aria-label="Páginas">${pages.map((pg, i) => `<button type="button" data-act="lgo" data-i="${i}" aria-label="Página ${i + 1}: ${pg.cover ? 'Pasaporte' : pg.title}"><i></i></button>`).join('')}</div><span class="pg-label" id="pgLabel" aria-live="polite"></span></div>
       <button class="ibtn" data-act="lnext" aria-label="Página siguiente">${I('next')}</button>
     </div>
   </div>`;
@@ -1025,8 +1206,7 @@ function libretaDoc(p) {
   const kv = rows => `<div class="kv">${rows.map(([k, v]) => `<div><span>${k}</span><b>${v || '—'}</b></div>`).join('')}</div>`;
   const syms = [...p.symptoms].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
   return `<article class="sheetdoc">
-    <div class="pd-head"><div class="pd-id">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : ''}<div><h1>${esc(p.name)}</h1><div class="pd-sub">${esc(petMeta(p))}</div></div></div>
-      <div class="pd-brand">Libreta sanitaria<br>Mimitos by Orbit<br>Generada el ${dd(iso(Z.today()))}</div></div>
+    <div class="pd-pass">${passport(p, true)}<div class="pd-brand">Libreta sanitaria<br>Mimitos by Orbit<br>Generada el ${dd(iso(Z.today()))}</div></div>
     <p class="pd-warn"><b>Mimitos es un organizador, no reemplaza al veterinario.</b> Datos cargados por el tutor o la tutora.</p>
     ${p.allergies ? `<p class="pd-alert"><b>Alergias:</b> ${esc(p.allergies)}</p>` : ''}
     <h2>Identificación</h2>
@@ -1307,7 +1487,8 @@ function renderOnboard() {
     <div class="f"><label for="ob_name" class="sr">Nombre</label><input id="ob_name" class="big-input" maxlength="60" value="${esc(p.name)}" placeholder="Nombre" autocomplete="off"></div>
     <div class="f"><span class="lb">Es un…</span>${tiles('species', [['perro', 'Perro', 'dog'], ['gato', 'Gato', 'cat'], ['otra', 'Otro', 'paw']], p.species)}</div>
     <div class="f" ${p.species === 'otra' ? '' : 'hidden'}><label for="ob_other">¿Qué es?</label><input id="ob_other" maxlength="40" value="${esc(p.speciesOther)}" placeholder="Conejo, hurón, loro…"></div>
-    <div class="photo-pick"><div class="av big c-${Z.tone(p)}" id="ob_prev">${ob.photo ? `<img src="${ob.photo}" alt="">` : Z.petIcon(p)}</div><div class="f"><label class="btn ghost sm" for="ob_photo">${I('camera')} ${ob.photo ? 'Cambiar foto' : 'Agregar una foto'}</label><input id="ob_photo" type="file" accept="image/*" class="sr"><small>Opcional. Va en la tapa de su libreta.</small></div></div>`;
+    <div class="photo-pick"><div class="av big${ob.photoFull ? ' cut' : ''}" id="ob_prev" style="background:${hueOf(p)[0]}">${ob.photo ? `<img src="${ob.photo}" alt="">` : Z.petIcon(p)}</div><div class="f"><label class="btn ghost sm" for="ob_photo">${I('camera')} ${ob.photo ? 'Cambiar foto' : 'Agregar una foto'}</label><input id="ob_photo" type="file" accept="image/*" class="sr"><small>Opcional. La recortamos sola y la ponemos sobre su color.</small></div></div>
+    <div class="f"><span class="lb">Su color <span class="opt">(opcional)</span></span>${swatches('hue', p.hue)}<small>Lo podés cambiar cuando quieras.</small></div>`;
     primary = 'Empezar';
     if (!p.name) after(() => $('#ob_name')?.focus());
   }
@@ -1359,7 +1540,7 @@ async function obFinish(scanFiles) {
   if (p.weight) p.weights = [{ date: iso(Z.today()), kg: p.weight }];
   if (ob.vac.name && (ob.vac.date || ob.vac.next)) p.records.push(normRec({ id: uid(), type: 'vacuna', name: ob.vac.name, date: ob.vac.date, next: ob.vac.next, vet: '', notes: '', lot: '' }));
   p.onboarded = true;
-  if (ob.photo) { try { p.photo = await uploadPhoto(ob.photo); } catch { toast('La foto no se pudo subir. Podés agregarla después.'); } }
+  if (ob.photo) { try { p.photo = await uploadPhoto(ob.photo); p.photoFull = ob.photoFull ? await uploadPhoto(ob.photoFull) : ''; } catch { toast('La foto no se pudo subir. Podés agregarla después.'); } }
   applySug(p, ob.sug || []);
   doc.pets.push(p); selectPet(p.id); ob = null;
   if (scanFiles?.length) { changed(); return runScan(p, scanFiles); }
@@ -1395,7 +1576,7 @@ app.addEventListener('click', e => {
 });
 app.addEventListener('change', async e => {
   if (route.name !== 'alta' || !ob) return;
-  if (e.target.id === 'ob_photo') { const f = e.target.files[0]; if (!f) return; try { obRead(); ob.photo = await shrink(f, 640, .82); render(); } catch { toast('No pudimos leer esa foto.'); } }
+  if (e.target.id === 'ob_photo') { const f = e.target.files[0]; if (!f) return; e.target.value = ''; obRead(); const r = await cutFlow(f, ob.pet); if (r) { ob.photo = r.photo; ob.photoFull = r.photoFull; render(); } }
   if (e.target.id === 'ob_scan') { const files = [...e.target.files].slice(0, 4); if (!files.length) return; obRead(); obFinish(files); }
 });
 
@@ -1705,7 +1886,7 @@ document.addEventListener('click', e => {
     case 'go': return go(b.dataset.to);
     case 'goPet': selectPet(b.dataset.pet); return go(b.dataset.to);
     case 'relogin': return relogin();
-    case 'add': return addPanel(cur);
+    case 'add': return cur ? addPanel(cur) : startOnboard();
     case 'scan': return startScan(petById(scan?.petId) || cur);
     case 'scanSave': return saveScan();
     case 'scanBack': scan = null; return go('inicio');
@@ -1768,7 +1949,7 @@ async function boot() {
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
     fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => { if (x && 'devices' in x) { notify = x; render(); } }).catch(() => {});
-    fetch('/api/me').then(r => r.ok ? r.json() : null).then(x => { if (x?.name) { me.name = x.name; if (route.name === 'cuenta' || !doc.pets.length) render(); } }).catch(() => {});
+    fetch('/api/me').then(r => r.ok ? r.json() : null).then(x => { if (x?.name) { me.name = x.name; if (route.name === 'cuenta' || !doc.pets.length) render(); else if (mode === 'full') drawTop(false); } }).catch(() => {});
   } else if (st === 402 && d?.error === 'no_purchase') { mode = 'nopurchase'; me.email = d.email || ''; }
   else if (st === 401 || st === 403) mode = 'guest';
   else mode = 'error';

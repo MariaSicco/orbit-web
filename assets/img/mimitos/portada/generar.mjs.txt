@@ -194,5 +194,10 @@ const W = svg(560, 560, `
   <g transform="translate(346 246) rotate(-3)"><ellipse cx="0" cy="0" rx="29" ry="19" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/><path d="M-2 6V13M10 7V14" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/></g>
   <g transform="translate(262 10) scale(.74)">${bubble(352, 'Le toca la antirrábica', 'Luna · en 3 días, el jueves', 'none')}</g>`, '');
 
-for (const [n, s] of Object.entries({ A, B, C, W })) fs.writeFileSync(`${OUT}/mimitos-${n}.svg`, s);
+/* Inicio sin foto: el perrito asomado, sin fondo (lo pone la pantalla); la hoja tapa el borde de abajo */
+const H = svg(360, 300, `
+  <g transform="translate(30 20) scale(1.0)">${dogHead('heart')}</g>
+  <g transform="translate(118 288)"><ellipse rx="30" ry="19" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/><path d="M-10 6V13M2 7V14" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/></g>
+  <g transform="translate(242 288)"><ellipse rx="30" ry="19" fill="${DOG}" stroke="${INK}" stroke-width="${sw}"/><path d="M-2 6V13M10 7V14" stroke="${INK}" stroke-width="2.5" stroke-linecap="round"/></g>`, '');
+for (const [n, s] of Object.entries({ A, B, C, W, H })) fs.writeFileSync(`${OUT}/mimitos-${n}.svg`, s);
 console.log('ok');

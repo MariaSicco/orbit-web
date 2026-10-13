@@ -8,8 +8,8 @@
 <meta name="theme-color" content="#F7F3EE">
 <link rel="icon" href="/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="/assets/css/mascotas.css?v=24">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/css/mascotas.css?v=27">
 </head>
 <body>
 <header class="top">
@@ -20,8 +20,8 @@
 <main id="app"><p class="dim">Cargando…</p></main>
 <footer class="made">hecho con <a href="/"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M74.6 80.5A39 39 0 1 1 89 50" fill="none" stroke="#2B2119" stroke-width="22"/><circle cx="75" cy="80" r="12.5" fill="#3047FF"/></svg>Orbit</a></footer>
 <div class="toast" id="toast" role="status"></div>
-<script src="/assets/js/mascotas-rules.js?v=24"></script>
-<script src="/assets/js/mascotas-core.js?v=24"></script>
+<script src="/assets/js/mascotas-rules.js?v=27"></script>
+<script src="/assets/js/mascotas-core.js?v=27"></script>
 <script>
 (() => {
 'use strict';
@@ -48,20 +48,24 @@ async function load() {
 const I = Z.icon, bubble = (ic, c) => `<span class="ib c-${c}">${I(ic)}</span>`;
 const av = p => `<div class="av big">${p.photo ? `<img src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">` : Z.petIcon(p)}</div>`;
 let F = null, here = null;
+/* el mismo color que la familia eligió para su mascota (texto encima siempre en tinta) */
+const HUES = { azul: '#4A90E2', verde: '#34A574', rosa: '#F2789F', lila: '#A58BF0', naranja: '#FF8A4C', amarillo: '#F5C430', turquesa: '#2FB5C0' };
 function ficha(p, updatedAt, owner) {
   F = p;
   document.title = `${p.name} · ¿La encontraste?`;
   const ella = p.sex === 'm' ? 'lo' : 'la', perdid = p.sex === 'm' ? 'perdido' : 'perdida';
   const facts = [['Especie', Z.species(p)], ['Raza', p.breed], ['Sexo', p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : ''], ['Color', p.color], ['Señas', p.marks]].filter(f => f[1]);
-  const c = p.contact, tone = Z.tone({ id: token });
+  const c = p.contact;
   const callBtns = msg => c?.phone ? `<div class="qr-call"><a class="btn big" href="tel:${esc(tel(c.phone))}">${I('phone')} Llamar a ${esc(c.name || 'su familia')}</a><a class="btn big ghost" href="https://wa.me/${esc(wa(c.phone))}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${I('chat')} Mandar WhatsApp</a></div>` : '';
   const extra = (p.photos || []).filter(u => u && u !== p.photo).slice(0, 3);
   app.innerHTML = `
     ${owner ? `<p class="banner ok-b" style="font-size:14px">${bubble('qr', 'viaje')}<span>Así ve tu ficha quien escanea el QR. Tu visita no cuenta como escaneo.</span></p>` : ''}
     ${p.lost ? `<section class="banner lost qr-lost"><span class="eyebrow">Se perdió</span><h1>Estoy ${perdid}</h1><p>${p.lost.since ? 'Desde ' + esc(Z.fmtWhen(new Date(p.lost.since))) : ''}${p.lost.place ? (p.lost.since ? ', ' : '') + esc(p.lost.place) : ''}${p.lost.since || p.lost.place ? '.' : ''}${p.lost.note ? ' ' + esc(p.lost.note) : ''}</p><p><b>Si me ves, no me persigas.</b> Avisale a mi familia.</p></section>` : ''}
-    <section class="hero c-${tone}"><div class="hero-top">${av(p)}<div><p class="hello">${p.lost ? 'Me están buscando' : '¡Hola! Me llamo'}</p><h1>${esc(p.name)}</h1></div></div>
-      <div class="pills">${p.temper ? `<span class="pill">${esc(p.temper)}</span>` : ''}</div>
-      ${extra.length ? `<div class="qr-photos">${extra.map(u => `<img src="${esc(u)}" alt="Otra foto de ${esc(p.name)}" loading="lazy">`).join('')}</div>` : ''}</section>
+    <section class="qr-hero${p.photo && p.photoFull ? ' cut' : ''}" style="--hero:${HUES[p.hue] || HUES.azul}">
+      <div class="qh-stage">${p.photo ? `<img src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">` : `<span class="qh-ic">${Z.petIcon(p)}</span>`}</div>
+      <div class="qh-txt"><p class="hello">${p.lost ? 'Me están buscando' : '¡Hola! Me llamo'}</p><h1>${esc(p.name)}</h1>
+      ${p.temper ? `<div class="pills"><span class="pill">${esc(p.temper)}</span></div>` : ''}
+      ${extra.length ? `<div class="qr-photos">${extra.map(u => `<img src="${esc(u)}" alt="Otra foto de ${esc(p.name)}" loading="lazy">`).join('')}</div>` : ''}</div></section>
     ${p.urgent ? `<section class="banner qr-urgent" role="note">${bubble('alert', 'perdida')}<span><b>Importante</b>${esc(p.urgent)}</span></section>` : ''}
     <section class="card qr-contact">
       <h2>¿${p.lost ? 'Me viste' : 'Me encontraste'}? Avisale a mi familia</h2>

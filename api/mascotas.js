@@ -44,7 +44,8 @@ const folder = email => 'mascotas/' + createHash('sha256').update('orbit-pets:' 
 const SCANS_PER_DAY = 10;
 const SCANS_PER_MONTH = 60;
 const MAX_DOC = 700 * 1024;
-const MAX_IMG = 220 * 1024;
+/* foto recortada con transparencia (PNG o WebP, ~800 px) o foto entera en JPEG */
+const MAX_IMG = 450 * 1024;
 const MAX_PETS = 12, MAX_RECS = 300, MAX_LOG = 300;
 
 const str = (v, n = 120) => String(v == null ? '' : v).replace(/[\u0000-\u0009\u000b-\u001f]/g, ' ').trim().slice(0, n);
@@ -57,6 +58,8 @@ const photo = v => /^\/api\/mascotas\?img=[a-f0-9]{8,32}$/.test(v || '') ? v : '
 const pick = (v, list, def) => list.includes(v) ? v : def;
 const TYPES = ['vacuna', 'desparasitacion', 'control', 'otro'];
 const SPECIES = ['perro', 'gato', 'otra'];
+/* color de fondo de cada mascota (Inicio, tapa de la libreta y pasaporte); vacío = azul */
+export const HUES = ['azul', 'verde', 'rosa', 'lila', 'naranja', 'amarillo', 'turquesa'];
 const EXP = ['alimento', 'veterinaria', 'salud', 'peluqueria', 'accesorios', 'otros'];
 const LOG = ['comida', 'paseo', 'med', 'ok', 'nota'];
 
@@ -84,6 +87,9 @@ export function cleanDoc(d) {
     weight: num(p?.weight, 2000),
     allergies: str(p?.allergies, 300),
     photo: photo(p?.photo),
+    /* la foto original cuando photo es el recorte */
+    photoFull: photo(p?.photoFull),
+    hue: pick(p?.hue, HUES, ''),
     photos: (Array.isArray(p?.photos) ? p.photos : []).map(photo).filter(Boolean).slice(0, 4),
     notes: str(p?.notes, 600),
     contact: { show: Boolean(p?.contact?.show), name: str(p?.contact?.name, 60), phone: str(p?.contact?.phone, 40), note: str(p?.contact?.note, 200) },
@@ -143,7 +149,7 @@ export function publicPet(p) {
   return {
     name: p.name, species: p.species, speciesOther: p.speciesOther, breed: p.breed, sex: p.sex,
     color: p.color, marks: p.marks, temper: p.temper,
-    photo: p.photo, photos: p.photos,
+    photo: p.photo, photoFull: p.photoFull, hue: p.hue || '', photos: p.photos,
     contact: (p.contact?.show || lost) && (p.contact?.phone || p.contact?.name) ? { name: p.contact.name, phone: p.contact.phone, note: p.contact.note } : null,
     lost: lost ? { since: p.lost.since, place: p.lost.place, note: p.lost.note } : null,
     urgent: p.qrNote?.show && p.qrNote?.text ? p.qrNote.text : '',

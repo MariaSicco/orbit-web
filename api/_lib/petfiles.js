@@ -19,7 +19,7 @@ const imgRef = url => { const m = /\?img=([a-f0-9]{8,32})$/.exec(String(url || '
 export function refsOf(doc) {
   const out = new Set();
   for (const p of doc?.pets || []) {
-    for (const u of [p.photo, ...(p.photos || []), ...(p.records || []).map(r => r.sticker)]) { const r = imgRef(u); if (r) out.add(r); }
+    for (const u of [p.photo, p.photoFull, ...(p.photos || []), ...(p.records || []).map(r => r.sticker)]) { const r = imgRef(u); if (r) out.add(r); }
     for (const x of p.studies || []) for (const f of x.files || []) if (isBlobRef(f.ref)) out.add(f.ref);
   }
   return out;
