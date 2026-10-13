@@ -1018,3 +1018,22 @@ dialog{background:var(--bg)}
   .dash-r{gap:14px}
   .card2{padding:16px 18px}
 }
+.passport{min-width:0}
+.page.cover .passport{width:100%}
+.pp-band{max-width:100%}
+.pp-name{background:#fff;border-top:0}
+.pp-name h2{font-size:38px}
+@media(min-width:1024px){
+  .dash-l{max-height:1040px}
+  .dash-r{grid-auto-flow:row dense}
+}
+@media(min-width:1024px) and (max-width:1279px){
+  .dash-r>.card2[aria-labelledby="h-next"]{grid-column:auto}
+}
+@media(min-width:1680px){
+  .dash-r>.care-card,.dash-r>.w-card,.dash-r>.s-card{order:1}
+  .dash-r>.card2[aria-labelledby="h-next"]{order:2}
+  .dash-r>.care-card{grid-row:span 2}
+}
+.page{min-width:0;max-width:var(--pw)}
+.pp-band{contain:inline-size}

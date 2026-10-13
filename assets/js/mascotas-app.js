@@ -872,7 +872,7 @@ function spendCard(p) {
   for (let i = 5; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); months.push(iso(d).slice(0, 7)); }
   const tot = m => p.expenses.filter(x => x.date.startsWith(m)).reduce((a, x) => a + x.amount, 0);
   const vals = months.map(tot), has = vals.some(Boolean);
-  return `<section class="sec card2 mini-stat" aria-labelledby="h-g"><div class="ms-h"><h2 id="h-g">Gastos</h2><span class="sic s-naranja">${I('wallet')}</span></div>
+  return `<section class="sec card2 mini-stat s-card" aria-labelledby="h-g"><div class="ms-h"><h2 id="h-g">Gastos</h2><span class="sic s-naranja">${I('wallet')}</span></div>
     ${has ? `<p class="big-num">${Z.money(tot(now))}</p><small class="dim">Este mes. Promedio: ${Z.money(vals.reduce((a, b) => a + b, 0) / 6)}</small>${bars(vals, 'naranja')}`
       : `<p class="dim">Anotá lo que gastás en ${esc(p.name)} y ves cuánto es por mes.</p><button class="btn ghost sm" data-act="newExp" style="align-self:flex-start">${I('plus')} Anotar un gasto</button>`}</section>`;
 }
@@ -1004,7 +1004,7 @@ function panel(title, html) { $('#dPanelT').textContent = title; $('#pBody').inn
    records (vacunas, desparasitaciones, controles), visits, weights y los datos de la ficha. */
 const dd = s => s ? fmt(s, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 const PER_PAGE = 5;
-const LIB_SECS = [['tapa', 'Tapa'], ['id', 'Identificación'], ['vac', 'Vacunas'], ['des', 'Desparasitaciones'], ['ctl', 'Controles y consultas'], ['peso', 'Peso']];
+const LIB_SECS = [['tapa', 'Pasaporte'], ['id', 'Identificación'], ['vac', 'Vacunas'], ['des', 'Desparasitaciones'], ['ctl', 'Controles y consultas'], ['peso', 'Peso']];
 const byDate = (a, b) => (a.date || '9999').localeCompare(b.date || '9999') || (a.next || '').localeCompare(b.next || '');
 function libFilter(text, date) {
   const q = norm1(ui.lib.q);
@@ -1180,7 +1180,7 @@ function initBook(start) {
     const total = ui.lib.total, last = Math.min(total - 1, bookIdx + step() - 1);
     document.querySelectorAll('.dots button').forEach((b, i) => b.setAttribute('aria-current', String(i >= bookIdx && i <= last)));
     const pg = ui.lib.pages[bookIdx];
-    $('#pgLabel').textContent = `${pg.cover ? 'Tapa' : pg.title} · ${bookIdx + 1}${last > bookIdx ? '–' + (last + 1) : ''} de ${total}`;
+    $('#pgLabel').textContent = `${pg.cover ? 'Pasaporte' : pg.title} · ${bookIdx + 1}${last > bookIdx ? '–' + (last + 1) : ''} de ${total}`;
     $('[data-act="lprev"]').disabled = bookIdx <= 0; $('[data-act="lnext"]').disabled = last >= total - 1;
     const secs = ui.lib.pages.slice(bookIdx, last + 1).map(x => x.sec);
     document.querySelectorAll('#libSecs .chip').forEach(c => c.setAttribute('aria-pressed', String(secs.includes(c.dataset.sec))));
