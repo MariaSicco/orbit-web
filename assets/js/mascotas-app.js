@@ -1,4 +1,4 @@
-/* Libreta de tu Mascota · app de la dueña o el dueño. Necesita mascotas-core.js (window.MZ). */
+/* Mimitos × Orbit · app de la dueña o el dueño. Necesita mascotas-core.js (window.MZ). */
 (() => {
 'use strict';
 const Z = window.MZ;
@@ -15,6 +15,8 @@ const SUGGEST = {
 
 /* ---------- estado ---------- */
 let mode = 'loading', doc = { pets: [] }, rev = 0, view = { name: 'home' }, cta = '';
+/* gratis con cualquier cuenta; Pro con la compra. En la demo se ve todo. */
+let pro = false, freeScan = false;
 const blankPet = () => ({ id: uid(), name: '', species: 'perro', speciesOther: '', breed: '', sex: '', birth: '', color: '', marks: '', temper: '', chip: '', weight: null, allergies: '', photo: '', photos: [], notes: '',
   contact: { show: false, name: '', phone: '', note: '' }, vet: { name: '', phone: '', address: '', er: '', erPhone: '' }, lost: { on: false, since: '', place: '', note: '' },
   share: '', sitterToken: '', sitter: { name: '', from: '', to: '', food: '', walks: '', where: '', habits: '', emergency: '', key: '', vetAuth: false, contact: '' },
@@ -119,7 +121,27 @@ async function uploadPhoto(data) {
   const r = await fetch('/api/mascotas?photo=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data }) });
   const d = await r.json(); if (!r.ok || !d.u) throw new Error('upload'); return d.u;
 }
-const needFull = () => { if (mode === 'full') return false; toast('En la demo esto no se guarda. Conseguí la libreta para usarlo.'); return true; };
+const needFull = () => { if (mode === 'full') return false; toast('En la demo esto no se guarda. Creá tu cuenta gratis para usarlo.'); return true; };
+const PRO_URL = '/p/ob-018';
+const PRO = {
+  scan: ['camera', 'viaje', 'Leer la libreta con una foto', 'Le sacás foto y cargamos todas las vacunas por vos.'],
+  estudio: ['flask', 'viaje', 'Estudios con sus archivos', 'Análisis, radiografías y ecografías guardados en su historia.'],
+  vetpdf: ['doc', 'plata', 'PDF para el veterinario', 'Toda su historia en una hoja, lista para mandar o imprimir.'],
+  sitter: ['hand', 'cuida', 'Modo cuidador', 'Un link con todo para quien la cuida, y te avisa qué hizo.'],
+  comida: ['bowl', 'comida', 'Comida y gastos', 'Cuándo se termina el alimento y cuánto gastás por mes.'],
+  viajes: ['plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo sacarlos.'],
+};
+const isLocked = k => k in PRO && mode === 'full' && !pro && (k !== 'scan' || !freeScan);
+const proTag = k => isLocked(k) ? '<span class="pro-tag">Pro</span>' : '';
+function needPro(k) { if (!isLocked(k)) return false; proPanel(k); return true; }
+function proPanel(k) {
+  const order = [k, ...Object.keys(PRO).filter(x => x !== k)];
+  panel('Mimitos Pro', `<p class="lead-s">${k === 'scan' && !freeScan ? 'Ya usaste la lectura de regalo. ' : ''}Lo gratis es para siempre. Pro suma lo que te ahorra trabajo.</p>
+    <div class="list">${order.map((x, i) => { const [ic, c, t, d] = PRO[x]; return `<div class="row${i ? '' : ' hero-opt'}">${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span></div>`; }).join('')}</div>
+    <p class="note">Pago único, sin suscripción. Sirve para todas tus mascotas.</p>
+    <a class="btn blue wide big" href="${PRO_URL}">Pasar a Pro</a>
+    <button class="btn ghost wide" type="button" onclick="location.reload()">Ya lo compré</button>`);
+}
 
 /* ---------- formulario genérico ---------- */
 const dForm = $('#dForm'), dPanel = $('#dPanel');
@@ -473,8 +495,8 @@ function render() {
 function renderWelcome() {
   app.innerHTML = `<section class="welcome">
     <div class="ib big c-comida">${I('paw')}</div>
-    <h1>La historia clínica de tu mascota, en el celu</h1>
-    <p class="lead">Vacunas, consultas, estudios y todo lo que le pasó, en un solo lugar. Te avisamos antes de cada fecha y lo compartís con el veterinario en un toque.</p>
+    <h1>Todo lo de tu mascota, en el celu</h1>
+    <p class="lead">Vacunas, consultas y todo lo que le pasó, en un solo lugar. Te avisamos antes de cada fecha y, si se pierde, quien la encuentre te ubica con su QR. Gratis, para siempre.</p>
     <button class="btn blue wide big" data-act="newPet">${I('plus')} Agregar a mi mascota</button>
     <p class="note">Te hacemos unas preguntas cortas y, si tenés la libreta a mano, le sacás una foto y la cargamos por vos.</p>
   </section>`;
@@ -515,10 +537,10 @@ function renderPet(p) {
     ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>En modo perdida</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
     <button class="btn blue wide big" data-act="add">${I('plus')} Cargar algo de ${esc(p.name)}</button>
 
-    ${next.length ? `<section class="sec"><h2>Pendiente</h2><div class="list">${next.map(x => x.html).join('')}</div></section>` : ''}
+    ${next.length ? `<section class="sec"><h2>Lo que le toca a ${esc(p.name)}</h2><div class="list">${next.map(x => x.html).join('')}</div></section>` : ''}
 
     <section class="sec">
-      <div class="sec-h"><h2>Su salud hoy</h2><button class="link" data-act="vetpdf">${I('doc')} PDF para el veterinario</button></div>
+      <div class="sec-h"><h2>Su salud hoy</h2><button class="link" data-act="vetpdf">${I('doc')} PDF para el veterinario${proTag('vetpdf')}</button></div>
       <div class="summary">
         <button class="sum c-salud s-${vaccTxt[1]}" data-act="filter" data-f="vacuna"><span>Vacunas</span><b>${esc(vaccTxt[0])}</b></button>
         <button class="sum c-viaje s-${antiTxt[1]}" data-act="filter" data-f="vacuna"><span>Pipeta o antiparasitario</span><b>${esc(antiTxt[0])}</b></button>
@@ -539,7 +561,7 @@ function renderPet(p) {
     <section class="sec">
       <h2>Más para ${esc(p.name)}</h2>
       <div class="list">
-        ${[['share', 'qr', 'viaje', 'Ficha y QR', 'Para el veterinario, el paseador y la chapita'], ['sitter', 'hand', 'cuida', `Quién ${p.sex === 'm' ? 'lo' : 'la'} cuida`, `Un link con todo para quien ${p.sex === 'm' ? 'lo' : 'la'} cuida`], ['lost', 'search', 'perdida', p.lost.on ? (p.sex === 'm' ? 'Está perdido' : 'Está perdida') : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['sub:comida', 'bowl', 'comida', 'Comida y gastos', 'Cuándo se termina el alimento y cuánto gastás'], ['sub:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['sub:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos']].map(([a, ic, c, t, d]) => { const [act, sub] = a.split(':'); return `<button class="row link-row" data-act="${act}"${sub ? ` data-sub="${sub}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}
+        ${[['share', 'qr', 'viaje', 'Ficha y QR', 'Para el veterinario, el paseador y la chapita'], ['sitter', 'hand', 'cuida', `Quién ${p.sex === 'm' ? 'lo' : 'la'} cuida`, `Un link con todo para quien ${p.sex === 'm' ? 'lo' : 'la'} cuida`], ['lost', 'search', 'perdida', p.lost.on ? (p.sex === 'm' ? 'Está perdido' : 'Está perdida') : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['sub:comida', 'bowl', 'comida', 'Comida y gastos', 'Cuándo se termina el alimento y cuánto gastás'], ['sub:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['sub:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos']].map(([a, ic, c, t, d]) => { const [act, sub] = a.split(':'); return `<button class="row link-row" data-act="${act}"${sub ? ` data-sub="${sub}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}${proTag(sub || act)}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}
       </div>
     </section>`;
 }
@@ -584,7 +606,7 @@ function weightChart(p) {
 
 /* ---------- "cargar algo" ---------- */
 function addPanel(p) {
-  const opt = (act, ic, c, t, d, hero) => `<button class="row link-row${hero ? ' hero-opt' : ''}" data-add="${act}">${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`;
+  const opt = (act, ic, c, t, d, hero) => `<button class="row link-row${hero ? ' hero-opt' : ''}" data-add="${act}">${bubble(ic, c)}<span class="what"><b>${t}${proTag(act)}</b><small>${act === 'scan' && mode === 'full' && !pro && freeScan ? 'La primera es de regalo' : d}</small></span>${I('chevron')}</button>`;
   panel(`¿Qué querés cargar?`, `<div class="list">
     ${opt('scan', 'camera', 'viaje', 'Foto de la libreta', 'La leemos y cargamos las vacunas por vos', true)}
     ${opt('vacuna', 'syringe', 'salud', 'Vacuna', 'Una vacuna que le pusieron')}
@@ -599,7 +621,7 @@ function addPanel(p) {
   $('#pBody').onclick = e => {
     const b = e.target.closest('[data-add]'); if (!b) return;
     dPanel.close();
-    ({ scan: () => startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas' }), consulta: () => visitForm(p), estudio: () => studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
+    ({ scan: () => needPro('scan') || startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas' }), consulta: () => visitForm(p), estudio: () => needPro('estudio') || studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
   };
 }
 
@@ -711,6 +733,7 @@ async function runScan(p, files) {
     if (mode === 'full') {
       const r = await fetch('/api/mascotas?scan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, species: p.species }) });
       d = await r.json();
+      if (r.status === 402) { freeScan = false; scan = null; view = { name: 'pet', id: p.id }; render(); return proPanel('scan'); }
       if (!r.ok) throw Object.assign(new Error(d.error === 'limite_diario' ? 'Llegaste al límite de lecturas de hoy. Probá mañana o cargá las vacunas a mano.' : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
     } else {
       await new Promise(r => setTimeout(r, 1800));
@@ -722,6 +745,7 @@ async function runScan(p, files) {
         { type: 'vacuna', name: 'Tos de las perreras', product: '', date: dd(-700), next: '', vet: '', confidence: 'baja', note: 'La fecha se lee a medias' },
       ], warnings: ['Ejemplo: así se ve lo que leemos. En la versión completa leemos tus fotos.'] };
     }
+    if (mode === 'full' && !pro) freeScan = false;
     scan = { ...scan, state: 'review', items: prev.concat(d.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) }))), warnings: d.warnings || [], demo: d.demo };
   } catch (err) { scan = { ...scan, state: 'error', msg: err.message || 'No pudimos leer las fotos.', plain: Boolean(err.plain) }; }
   render();
@@ -832,7 +856,7 @@ function copyBtn(sel, url) { $(sel).onclick = async () => { try { await navigato
 
 /* ficha + QR */
 function sharePanel(p) {
-  if (mode !== 'full') return panel('Ficha y QR', `<p class="note">Con la libreta completa generás un link y un QR con los datos y las vacunas de ${esc(p.name)}: para mandar al veterinario por WhatsApp o imprimir y pegar en la chapita que ya tiene.</p>${cta}`);
+  if (mode !== 'full') return panel('Ficha y QR', `<p class="note">Con tu cuenta gratis generás un link y un QR con los datos y las vacunas de ${esc(p.name)}: para mandar al veterinario por WhatsApp o imprimir y pegar en la chapita que ya tiene.</p>${cta}`);
   const contact = `<div class="f" style="border-top:1px solid var(--b2);padding-top:14px">
     <label class="toggle"><input type="checkbox" id="cShow" ${p.contact.show ? 'checked' : ''}><span><b>Mostrar mi contacto</b><br><small class="dim">Para quien la encuentre si se pierde. En modo perdida se muestra siempre.</small></span></label>
     <div class="two"><div class="f"><label for="cName">Tu nombre</label><input id="cName" maxlength="60" value="${esc(p.contact.name)}"></div><div class="f"><label for="cPhone">Teléfono</label><input id="cPhone" type="tel" maxlength="40" value="${esc(p.contact.phone)}"></div></div></div>`;
@@ -891,7 +915,7 @@ function sitterPanel(p) {
     const v = {}; for (const f of fields.flat()) { const el = $('#f_' + f.k); v[f.k] = f.type === 'check' ? el.checked : el.value.trim(); }
     if (v.from && v.to && v.to < v.from) return toast('La fecha "hasta" no puede ser anterior a "desde".');
     p.sitter = v; changed();
-    if (mode !== 'full') return toast('Guardado en la demo. Con la libreta completa se genera el link.');
+    if (mode !== 'full') return toast('Guardado en la demo. Con tu cuenta gratis se genera el link.');
     if (!p.sitterToken) { try { sitterPanel(await makeLink(p, 'sitter')); toast('Link creado. Mandáselo a quien la cuida.'); } catch { toast('No pudimos crear el link. Probá de nuevo.'); } }
     else toast('Guardado. El cuidador ve los cambios al recargar.');
   };
@@ -993,7 +1017,7 @@ function vetPdf(p) {
   <h2>Medicación</h2>${meds.length ? `<table><tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Desde</th><th>Estado</th></tr>${meds.map(({ m, s }) => `<tr>${td(esc(m.name))}${td(esc(m.dose))}${td('cada ' + m.every + ' h')}${td(m.start ? fmt(m.start) : '')}${td(s.state === 'ended' ? 'Terminado' : 'En curso')}</tr>`).join('')}</table>` : '<p class="m">Sin medicación cargada.</p>'}
   <h2>Vacunas, antiparasitarios y controles</h2>${recs.length ? `<table><tr><th>Fecha</th><th>Tipo</th><th>Nombre</th><th>Próxima</th><th>Profesional</th></tr>${recs.map(r => `<tr>${td(r.date ? fmt(r.date) : '')}${td(TYPE[r.type])}${td(esc(r.name))}${td(r.next ? fmt(r.next) : '')}${td(esc(r.vet))}</tr>`).join('')}</table>` : '<p class="m">Sin registros.</p>'}
   ${p.food.brand ? `<h2>Alimentación</h2><p>${esc(p.food.brand)}${p.food.dailyG ? ` · ${p.food.dailyG} g por día` : ''}</p>` : ''}
-  <p class="m" style="margin-top:28px">Generado el ${fmt(Z.today())} con Libreta de tu Mascota (Orbit). Datos cargados por el tutor.</p></body></html>`;
+  <p class="m" style="margin-top:28px">Generado el ${fmt(Z.today())} con Mimitos (hecho con Orbit). Datos cargados por el tutor.</p></body></html>`;
   const w = window.open('', '_blank');
   if (!w) { download(`${p.name}-historial.html`, html, 'text/html'); return toast('Se descargó el historial. Abrilo e imprimilo como PDF.'); }
   w.document.open(); w.document.write(html); w.document.close();
@@ -1010,10 +1034,10 @@ app.addEventListener('click', e => {
     case 'newPet': return startOnboard();
     case 'open': return go({ name: 'pet', id: b.dataset.id });
     case 'back': scan = null; return go({ name: 'pet', id: cur?.id || view.id });
-    case 'sub': return go({ name: 'sub', id: cur.id, sub: b.dataset.sub });
+    case 'sub': if (needPro(b.dataset.sub)) return; return go({ name: 'sub', id: cur.id, sub: b.dataset.sub });
     case 'filter': view.filter = b.dataset.f; render(); return document.querySelector('.timeline, .sec:has(.chips.scroll)')?.scrollIntoView({ block: 'start', behavior: 'smooth' });
     case 'add': return addPanel(cur);
-    case 'scan': return startScan(cur);
+    case 'scan': if (needPro('scan')) return; return startScan(cur);
     case 'scanSave': return saveScan();
     case 'openEv': {
       const id = b.dataset.id, k = b.dataset.kind;
@@ -1042,9 +1066,9 @@ app.addEventListener('click', e => {
     case 'trip': return tripForm(cur);
     case 'vet': return vetForm(cur);
     case 'share': return sharePanel(cur);
-    case 'sitter': return sitterPanel(cur);
+    case 'sitter': if (needPro('sitter')) return; return sitterPanel(cur);
     case 'lost': return lostPanel(p);
-    case 'vetpdf': return vetPdf(cur);
+    case 'vetpdf': if (needPro('vetpdf')) return; return vetPdf(cur);
     case 'icsRec': { const r = p.records.find(x => x.id === b.dataset.rec); return calendar([Z.recordEvent(p, r)], `${p.name} ${r.name}`); }
     case 'icsMeds': return calendar(cur.meds.filter(m => m.start && Z.medState(m, cur.log).state !== 'ended').map(m => Z.medEvent(cur, m)), `${cur.name} remedios`);
     case 'icsFood': return calendar([Z.foodEvent(p, p.food)], `${p.name} alimento`);
@@ -1056,11 +1080,15 @@ app.addEventListener('click', e => {
   render();
   let d = null, st = 0;
   try { const r = await fetch('/api/mascotas', { credentials: 'same-origin' }); st = r.status; d = await r.json(); } catch {}
-  if (st === 200 && d.access === 'full') { mode = 'full'; adopt(d.doc || { pets: [], rev: 0 }); setSave(doc.pets.length ? 'Guardado' : ''); }
-  else {
+  if (st === 200 && d.doc) {
+    mode = 'full'; pro = d.access === 'pro'; freeScan = Boolean(d.freeScan);
+    adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : '');
+    document.body.classList.toggle('is-pro', pro);
+    if (!pro) { const t = $('#plan'); if (t) { t.hidden = false; t.onclick = () => proPanel('scan'); } }
+  } else {
     mode = 'demo'; doc = demoDoc();
-    cta = st === 200 ? '<a class="btn blue wide" href="/productos">Conseguir la libreta</a>' : '<a class="btn blue wide" href="/acceso?next=mascotas">Ya la tengo: entrar</a><a class="btn ghost wide" href="/productos">Conseguir la libreta</a>';
-    $('#demoCta').innerHTML = st === 200 ? '<a href="/productos">Conseguila para guardar</a>' : '<a href="/acceso?next=mascotas">Ya la compré: entrar</a>';
+    cta = '<a class="btn blue wide" href="/acceso?nuevo=1&next=mascotas">Crear mi cuenta gratis</a><a class="btn ghost wide" href="/acceso?next=mascotas">Ya tengo cuenta: entrar</a>';
+    $('#demoCta').innerHTML = '<a href="/acceso?nuevo=1&next=mascotas">Crear mi cuenta gratis</a>';
     $('#demo').hidden = false;
   }
   view = { name: 'pet', id: doc.pets[0]?.id };

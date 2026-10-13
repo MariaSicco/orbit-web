@@ -3,7 +3,7 @@
    pierden si el celular borra el almacenamiento del sitio.
 
    Dueña o dueño (con sesión):
-   GET                        → { access, doc }
+   GET                        → { access: 'free'|'pro', doc }
    POST {doc, rev}            → guarda la libreta. Si otro dispositivo guardó antes, 409 con la versión nueva
    POST ?photo=1 {data}       → sube una foto (ya comprimida en el navegador) → { u }
    POST ?share=1 {petId}      → crea (o devuelve) el link público de la ficha
@@ -192,11 +192,14 @@ async function scanBooklet(images, species) {
   };
 }
 
+/* Mimitos × Orbit: el perfil es gratis con cualquier cuenta; la compra del producto habilita Pro */
 async function access(email) {
-  if (isAdmin(email)) return 'full';
+  if (isAdmin(email)) return 'pro';
   const list = await getPurchases(email);
-  return list.some(p => p.productId === PRODUCT_ID) ? 'full' : 'none';
+  return list.some(p => p.productId === PRODUCT_ID) ? 'pro' : 'free';
 }
+const freeScanKey = email => `orbit:petscanfree:${String(email).toLowerCase()}`;
+const needPro = (res, acc) => { if (acc === 'pro') return false; res.status(402).json({ error: 'pro', access: acc }); return true; };
 const bump = doc => { doc.rev = (doc.rev || 0) + 1; doc.updatedAt = new Date().toISOString(); return doc; };
 
 export default async function handler(req, res) {
@@ -251,19 +254,18 @@ export default async function handler(req, res) {
   const acc = await access(s.email);
 
   if (req.method === 'GET' && q.file) {
-    if (acc !== 'full') return res.status(403).json({ error: 'not_purchased' });
+    if (needPro(res, acc)) return;
     const ref = String(q.file);
     if (!isBlobRef(ref) || !refPath(ref).startsWith(folder(s.email) + '/')) return res.status(403).json({ error: 'forbidden' });
     try { return res.redirect(302, await signedGet(refPath(ref), { minutes: 10 })); }
     catch { return res.status(500).json({ error: 'no_pudimos_abrir' }); }
   }
   if (req.method === 'GET') {
-    if (acc !== 'full') return res.status(200).json({ access: acc, email: s.email });
     const doc = (await kvGet(docKey(s.email))) || { pets: [], rev: 0 };
-    return res.status(200).json({ access: acc, email: s.email, doc });
+    const freeScan = acc === 'pro' || !(await kvGet(freeScanKey(s.email)));
+    return res.status(200).json({ access: acc, email: s.email, doc, freeScan });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
-  if (acc !== 'full') return res.status(403).json({ error: 'not_purchased' });
   const body = await readBody(req);
 
   if (q.photo) {
@@ -277,6 +279,7 @@ export default async function handler(req, res) {
 
   /* estudios: el archivo viaja del navegador a Blob privado, en la carpeta de esta cuenta */
   if (q.upload) {
+    if (needPro(res, acc)) return;
     if (!blobReady()) return res.status(503).json({ error: 'blob_no_configurado' });
     const size = Number(body.size) || 0;
     if (size > 15 * 1024 * 1024) return res.status(413).json({ error: 'too_big' });
@@ -289,19 +292,26 @@ export default async function handler(req, res) {
 
   /* leer la libreta con IA: devuelve registros para que la persona los revise; no guarda nada */
   if (q.scan) {
+    /* la cuenta gratis tiene una lectura de regalo: es la mejor forma de mostrar Pro */
+    const freeK = freeScanKey(s.email);
+    if (acc !== 'pro' && await kvGet(freeK)) return res.status(402).json({ error: 'pro', access: acc });
     const images = (Array.isArray(body.images) ? body.images : []).filter(x => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(x || '') && x.length < 1.6e6).slice(0, 4);
     if (!images.length) return res.status(400).json({ error: 'sin_fotos' });
     const k = `orbit:petscan:${s.email.toLowerCase()}:${new Date().toISOString().slice(0, 10)}`;
     const n = (await kvGet(k)) || 0;
     if (n >= SCANS_PER_DAY) return res.status(429).json({ error: 'limite_diario' });
     await kvSet(k, n + 1, 60 * 60 * 26);
-    try { return res.status(200).json(await scanBooklet(images, str(body.species, 10))); }
-    catch (e) { return res.status(e.status || 502).json({ error: e.message || 'ia_error' }); }
+    try {
+      const out = await scanBooklet(images, str(body.species, 10));
+      if (acc !== 'pro') await kvSet(freeK, new Date().toISOString());
+      return res.status(200).json({ ...out, freeScan: acc === 'pro' });
+    } catch (e) { return res.status(e.status || 502).json({ error: e.message || 'ia_error' }); }
   }
 
   const current = (await kvGet(docKey(s.email))) || { pets: [], rev: 0 };
 
   if (q.share || q.unshare || q.sitter || q.unsitter) {
+    if (q.sitter && needPro(res, acc)) return;
     const pet = current.pets.find(p => p.id === String(body.petId || ''));
     if (!pet) return res.status(404).json({ error: 'not_found' });
     const field = q.share || q.unshare ? 'share' : 'sitterToken';

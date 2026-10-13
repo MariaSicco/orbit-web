@@ -283,3 +283,34 @@ input:focus,select:focus,textarea:focus{outline:3px solid rgba(48,71,255,.25);bo
 .demo{background:var(--med);color:var(--ink)}.demo a{color:var(--med-i)}
 .act.lost,.banner.lost{background:var(--perdida);color:var(--ink)}.banner.lost .ib{background:#fff}.banner.lost .btn{background:var(--perdida-i);color:#fff}
 .row.st-late{background:#FFF1EE}.row.st-soon{background:#FFF7EA}
+
+/* ---------- Mimitos × Orbit ---------- */
+:root{
+  --bg:#FBF2E7;--card:#FFFDF9;--ink:#2B2119;--ink2:#6B5A4E;--line:#EFE1D0;
+  --coral:#E2734A;--mostaza:#E6A52C;--verde:#1E5D4C;
+  --salud:#D5EADF;--salud-i:#1E5D4C;
+  --comida:#FBDCCD;--comida-i:#A8462A;
+  --plata:#FBEABF;--plata-i:#7A5600;
+  --blue:#1E5D4C;--ok:#1E5D4C;
+  --display:'Fraunces',Georgia,serif;--f:'Hanken Grotesk',system-ui,-apple-system,sans-serif;
+}
+body{background:var(--bg);color:var(--ink);font-family:var(--f)}
+h1{font-weight:700;letter-spacing:-.02em;font-variation-settings:'SOFT' 100,'opsz' 96}
+h2,h3,.sum b,.year,.brand b{font-variation-settings:'SOFT' 100}
+.top{background:rgba(251,242,231,.92)}
+.btn.blue{background:var(--verde);color:#fff}
+.btn.blue:hover{background:#174A3C}
+input:focus,select:focus,textarea:focus{outline-color:rgba(30,93,76,.25)}
+.tile[aria-pressed="true"]{background:#F1F7F3}
+.brand.mimi{gap:7px}
+.brand.mimi svg{width:26px;height:26px}
+.brand.mimi b{font:700 21px/1 var(--display);letter-spacing:-.02em;color:var(--ink)}
+.plan{border:0;background:var(--plata);color:var(--plata-i);font:700 12.5px var(--f);border-radius:999px;padding:0 12px;min-height:32px;cursor:pointer;white-space:nowrap}
+.plan:hover{background:#F8E0A3}
+.pro-tag{display:inline-block;vertical-align:2px;margin-left:8px;background:var(--plata);color:var(--plata-i);font:700 10.5px/1 var(--f);letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:4px 7px}
+.lead-s{margin:0 0 4px;color:var(--ink2);font-size:15px;line-height:1.45}
+.made{display:flex;align-items:center;justify-content:center;gap:6px;padding:28px 16px calc(28px + env(safe-area-inset-bottom,0px));color:var(--ink2);font-size:12.5px}
+.made a{display:inline-flex;align-items:center;gap:5px;color:var(--ink);font-weight:700;text-decoration:none}
+.made svg{width:14px;height:14px}
+.hero-opt{background:var(--comida)}.hero-opt b{color:var(--comida-i)}
+.demo{background:var(--salud);color:var(--ink)}.demo a{color:var(--verde)}

@@ -1,4 +1,4 @@
-/* Libreta de tu Mascota · lógica compartida (app y ficha pública).
+/* Mimitos ×  Orbit · lógica compartida (app y ficha pública).
    Funciones puras: fechas, próximas fechas, medicación, alimento, viajes y calendario. */
 (function (g) {
   'use strict';
@@ -108,20 +108,20 @@
     if (o.allDay) { const n = new Date(o.start); n.setDate(n.getDate() + 1); L.push(`DTSTART;VALUE=DATE:${iso(o.start).replace(/-/g, '')}`, `DTEND;VALUE=DATE:${iso(n).replace(/-/g, '')}`); }
     else { const e = new Date(o.start.getTime() + 15 * 60000); L.push(`DTSTART:${dt(o.start)}`, `DTEND:${dt(e)}`); }
     if (o.rrule) L.push(`RRULE:${o.rrule}`);
-    L.push(`SUMMARY:${icsEsc(o.title)}`, `DESCRIPTION:${icsEsc(o.desc || 'Libreta de tu Mascota · Orbit')}`);
+    L.push(`SUMMARY:${icsEsc(o.title)}`, `DESCRIPTION:${icsEsc(o.desc || 'Mimitos')}`);
     for (const a of o.alarms || []) L.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(o.title)}`, `TRIGGER:${a}`, 'END:VALARM');
     L.push('END:VEVENT');
     return L.join('\r\n');
   }
-  const ics = events => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Orbit//Libreta de tu Mascota//ES', 'CALSCALE:GREGORIAN', ...events.map(vevent), 'END:VCALENDAR'].join('\r\n');
+  const ics = events => ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Orbit//Mimitos//ES', 'CALSCALE:GREGORIAN', ...events.map(vevent), 'END:VCALENDAR'].join('\r\n');
   function recordEvent(pet, r) {
-    return { uid: `${pet.id}-${r.id}-${r.next}`, allDay: true, start: pd(r.next), title: `${pet.name}: ${r.name || TYPE[r.type]}`, desc: `${TYPE[r.type]} · Libreta de tu Mascota (Orbit)`, alarms: ['-P3D', 'PT9H'] };
+    return { uid: `${pet.id}-${r.id}-${r.next}`, allDay: true, start: pd(r.next), title: `${pet.name}: ${r.name || TYPE[r.type]}`, desc: `${TYPE[r.type]} · Mimitos`, alarms: ['-P3D', 'PT9H'] };
   }
   function medEvent(pet, m) {
     const s = new Date(m.start), h = m.every;
     const rrule = h % 168 === 0 ? `FREQ=WEEKLY;INTERVAL=${h / 168}` : h % 24 === 0 ? `FREQ=DAILY;INTERVAL=${h / 24}` : `FREQ=HOURLY;INTERVAL=${h}`;
     const count = m.days ? Math.max(1, Math.round(m.days * 24 / h)) : Math.min(500, Math.round(365 * 24 / h));
-    return { uid: `${pet.id}-med-${m.id}`, start: s, rrule: `${rrule};COUNT=${count}`, title: `${pet.name}: ${m.name}${m.dose ? ' (' + m.dose + ')' : ''}`, desc: 'Medicación · Libreta de tu Mascota (Orbit)', alarms: ['PT0M'] };
+    return { uid: `${pet.id}-med-${m.id}`, start: s, rrule: `${rrule};COUNT=${count}`, title: `${pet.name}: ${m.name}${m.dose ? ' (' + m.dose + ')' : ''}`, desc: 'Medicación · Mimitos', alarms: ['PT0M'] };
   }
   function foodEvent(pet, f) {
     const st = food(f); if (!st) return null;
