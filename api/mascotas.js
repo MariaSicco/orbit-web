@@ -14,6 +14,7 @@
    POST ?sitter=1 {petId}     → crea (o devuelve) el link del cuidador
    POST ?unsitter=1 {petId}   → apaga el link del cuidador
    POST ?scan=1 {images}      → lee fotos de la libreta con IA y devuelve los registros para revisar (no guarda nada)
+   POST ?studyscan=1 {ref}    → lee un estudio ya subido (foto o PDF) con IA: fecha, tipo, laboratorio y un resumen fiel (no guarda nada)
    POST ?upload=1 {name,size,type} → URL firmada para subir un estudio a Blob privado
    GET  ?file=ref             → abre un estudio propio (URL firmada que vence en minutos)
 
@@ -116,7 +117,7 @@ export function cleanDoc(d) {
       id: id(v?.id), date: day(v?.date), reason: str(v?.reason, 160), vet: str(v?.vet, 80), findings: str(v?.findings, 600), plan: str(v?.plan, 600), weight: num(v?.weight, 2000),
     })).filter(v => v.date && (v.reason || v.findings)),
     studies: (Array.isArray(p?.studies) ? p.studies : []).slice(-150).map(x => ({
-      id: id(x?.id), date: day(x?.date), kind: pick(x?.kind, ['sangre', 'orina', 'materia', 'rx', 'eco', 'otro'], 'otro'), title: str(x?.title, 120), notes: str(x?.notes, 600),
+      id: id(x?.id), date: day(x?.date), kind: pick(x?.kind, ['sangre', 'orina', 'materia', 'rx', 'eco', 'otro'], 'otro'), title: str(x?.title, 120), notes: str(x?.notes, 600), lab: str(x?.lab, 80),
       files: (Array.isArray(x?.files) ? x.files : []).slice(0, 10).map(f => ({ ref: isBlobRef(f?.ref) && /^blob:mascotas\/[a-f0-9]{16}\//.test(f.ref) ? f.ref : '', name: str(f?.name, 120), type: str(f?.type, 60) })).filter(f => f.ref),
     })).filter(x => x.date && (x.title || x.files.length)),
     weights: (Array.isArray(p?.weights) ? p.weights : []).slice(-200).map(w => ({ date: day(w?.date), kg: num(w?.kg, 2000) })).filter(w => w.date && w.kg),
@@ -239,6 +240,58 @@ async function canNotify(kind, token) {
 }
 const placeOf = w => [w.city, w.region].filter(Boolean).join(', ');
 const hm = d => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(d);
+
+/* ---------- lectura de estudios con IA ----------
+   Solo transcribe: no interpreta, no diagnostica, no completa valores que no se leen. */
+const STUDY_PROMPT = `Sos un asistente que ordena estudios veterinarios (análisis, ecografías, radiografías) de mascotas de Argentina.
+Leé el documento y devolvé SOLO un JSON con esta forma:
+{"date":"AAAA-MM-DD","kind":"sangre|orina|materia|rx|eco|otro","title":"","lab":"","summary":"","confidence":"alta|media|baja","warnings":[""]}
+Reglas:
+- "date": la fecha en que se hizo el estudio, tal como figura (convertí DD/MM/AA a AAAA-MM-DD). Si no figura o no se lee, dejala vacía. No la inventes.
+- "kind": sangre (hemograma, bioquímica, perfil), orina, materia (coproparasitológico), rx (radiografía), eco (ecografía), otro.
+- "title": el nombre del estudio como figura, corto (por ejemplo "Hemograma y bioquímica", "Ecografía abdominal").
+- "lab": el laboratorio, la veterinaria o el profesional que lo firma, si figura.
+- "summary": un resumen corto y fiel (máximo 400 caracteres) de lo que dice el informe, en español rioplatense neutro. Si el informe tiene una conclusión escrita, copiala casi textual. Si hay valores fuera de rango marcados por el laboratorio, nombralos tal como figuran, con su valor. NO interpretes, NO diagnostiques, NO sugieras tratamientos ni des opinión médica. No agregues valores que no se lean con claridad.
+- Si algo es ilegible o dudoso, decilo en "warnings" (por ejemplo "La fecha está cortada", "No se lee el valor de urea") y poné "confidence":"baja".`;
+async function scanStudy(buf, type) {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) throw Object.assign(new Error('ia_no_configurada'), { status: 503 });
+  const b64 = buf.toString('base64');
+  const block = type === 'application/pdf'
+    ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } }
+    : { type: 'image', source: { type: 'base64', media_type: type, data: b64 } };
+  const r = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+    body: JSON.stringify({ model: process.env.ORBIT_VISION_MODEL || process.env.ORBIT_MODEL || 'claude-sonnet-5-5', max_tokens: 1500, messages: [{ role: 'user', content: [block, { type: 'text', text: STUDY_PROMPT }] }] }),
+  });
+  if (!r.ok) {
+    const t = await r.text().catch(() => '');
+    /* PDF de más de 100 páginas o demasiado pesado para leerlo entero */
+    if (r.status === 400 && /page|pdf|too large|exceed/i.test(t)) throw Object.assign(new Error('pdf_muy_largo'), { status: 422 });
+    throw Object.assign(new Error('ia_error_' + r.status), { status: 502 });
+  }
+  const d = await r.json();
+  const t = (d.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  let j; try { j = JSON.parse(t.slice(a, b + 1)); } catch { throw Object.assign(new Error('ia_respuesta_invalida'), { status: 502 }); }
+  return {
+    date: day(j.date), kind: pick(j.kind, ['sangre', 'orina', 'materia', 'rx', 'eco', 'otro'], 'otro'), title: str(j.title, 120), lab: str(j.lab, 80),
+    summary: str(j.summary, 600), confidence: pick(j.confidence, ['alta', 'media', 'baja'], 'media'),
+    warnings: (Array.isArray(j.warnings) ? j.warnings : []).map(w => str(w, 200)).filter(Boolean).slice(0, 4),
+  };
+}
+/* el mismo tope de lecturas con IA que la libreta: cada archivo cuenta una */
+async function takeScan(email) {
+  const now = new Date().toISOString();
+  const k = `orbit:petscan:${email.toLowerCase()}:${now.slice(0, 10)}`, km = `orbit:petscanm:${email.toLowerCase()}:${now.slice(0, 7)}`;
+  const n = (await kvGet(k)) || 0, nm = (await kvGet(km)) || 0;
+  if (n >= SCANS_PER_DAY) return { error: 'limite_diario', limit: SCANS_PER_DAY };
+  if (nm >= SCANS_PER_MONTH) return { error: 'limite_mensual', limit: SCANS_PER_MONTH };
+  await kvSet(k, n + 1, 60 * 60 * 26);
+  await kvSet(km, nm + 1, 60 * 60 * 24 * 32);
+  return null;
+}
 
 async function scanAlert(email, pet, token, req) {
   const w = where(req);
@@ -405,6 +458,24 @@ export default async function handler(req, res) {
     /* se anota el tamaño declarado; si no se llega a usar en el doc, la limpieza lo borra */
     try { const url = await signedPut(pathname, { maxBytes: 15 * 1024 * 1024, minutes: 15 }); await addUsage(s.email, makeRef(pathname), size); return res.status(200).json({ url, ref: makeRef(pathname) }); }
     catch { return res.status(500).json({ error: 'no_pudimos_firmar' }); }
+  }
+
+  /* leer un estudio ya subido a Blob (foto o PDF): devuelve los datos para revisar; no guarda nada */
+  if (q.studyscan) {
+    const ref = String(body.ref || '');
+    if (!isBlobRef(ref) || /\.\.|\/\//.test(ref) || !refPath(ref).startsWith(folder(s.email) + '/')) return res.status(403).json({ error: 'forbidden' });
+    const stop = await takeScan(s.email); if (stop) return res.status(429).json(stop);
+    try {
+      const f = await fetch(await signedGet(refPath(ref), { minutes: 5 }));
+      if (!f.ok) return res.status(404).json({ error: 'archivo_no_encontrado' });
+      const ext = { pdf: 'application/pdf', jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp' }[(ref.split('.').pop() || '').toLowerCase()];
+      let type = String(f.headers.get('content-type') || '').split(';')[0];
+      if (!/^(image\/|application\/pdf)/.test(type) && ext) type = ext;
+      if (!/^(image\/(jpeg|png|webp|gif)|application\/pdf)$/.test(type)) return res.status(415).json({ error: 'tipo_no_legible' });
+      const buf = Buffer.from(await f.arrayBuffer());
+      if (buf.length > 20 * 1024 * 1024) return res.status(413).json({ error: 'too_big' });
+      return res.status(200).json(await scanStudy(buf, type));
+    } catch (e) { return res.status(e.status || 502).json({ error: e.message || 'ia_error' }); }
   }
 
   /* leer la libreta con IA: devuelve registros para que la persona los revise; no guarda nada */

@@ -591,7 +591,7 @@ const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['ag
 /* en el celu: 4 secciones y el + en el medio; Cuenta queda en el avatar de arriba */
 const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
 const TAB_OF = { antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta' };
-const BARE = ['alta', 'lectura'];
+const BARE = ['alta', 'lectura', 'estudios'];
 const nav = $('#nav'), topBar = $('.top');
 function parseHash() { const [name = 'inicio', arg = ''] = location.hash.replace(/^#\/?/, '').split('/'); return { name: name || 'inicio', arg: decodeURIComponent(arg) }; }
 function go(name, arg) { const h = '#/' + name + (arg ? '/' + encodeURIComponent(arg) : ''); if (location.hash === h) render(); else location.hash = h; }
@@ -645,6 +645,7 @@ function view() {
   if (mode === 'error') return renderError();
   if (route.name === 'alta') return renderOnboard();
   if (route.name === 'lectura') return renderScan();
+  if (route.name === 'estudios') return renderBulk();
   if (!doc.pets.length && route.name !== 'cuenta' && route.name !== 'avisos') return renderFirst();
   const p = curPet(); if (p && p.id !== curId) curId = p.id;
   switch (route.name) {
@@ -1005,7 +1006,7 @@ function panel(title, html) { $('#dPanelT').textContent = title; $('#pBody').inn
    records (vacunas, desparasitaciones, controles), visits, weights y los datos de la ficha. */
 const dd = s => s ? fmt(s, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 const PER_PAGE = 5;
-const LIB_SECS = [['tapa', 'Pasaporte'], ['id', 'Identificación'], ['vac', 'Vacunas'], ['des', 'Desparasitaciones'], ['ctl', 'Controles y consultas'], ['peso', 'Peso']];
+const LIB_SECS = [['tapa', 'Pasaporte'], ['id', 'Identificación'], ['vac', 'Vacunas'], ['des', 'Desparasitaciones'], ['ctl', 'Controles y consultas'], ['hist', 'Historial clínico'], ['peso', 'Peso']];
 const byDate = (a, b) => (a.date || '9999').localeCompare(b.date || '9999') || (a.next || '').localeCompare(b.next || '');
 function libFilter(text, date) {
   const q = norm1(ui.lib.q);
@@ -1096,6 +1097,9 @@ function libPages(p) {
     ...p.visits.filter(v => libFilter(`${v.reason} ${v.vet} ${v.findings} ${v.plan}`, v.date)).map(v => ({ date: v.date, html: `<li class="entry noseal"><div class="e-main"><span class="e-name">${esc(v.reason || 'Consulta')}</span><span class="e-dates"><span><em>Fecha</em> ${dd(v.date)}</span>${v.weight ? `<span><em>Peso</em> ${kg(v.weight)}</span>` : ''}</span>${v.vet || v.findings ? `<span class="e-sub">${esc([v.vet, v.findings].filter(Boolean).join(' · '))}</span>` : ''}</div><button class="e-edit" data-act="detail" data-kind="visit" data-id="${v.id}" aria-label="Ver consulta">${I('more')}</button></li>` })),
   ].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   chunk('ctl', 'Controles y consultas', ctl, emptyPg('Cada control o consulta queda acá con fecha, veterinaria y lo que te dijeron.', 'newVisit', 'Anotar consulta'));
+  const hist = histEvents(p).filter(e => libFilter(`${e.title} ${e.sub} ${e.ref?.notes || ''} ${e.ref?.lab || ''}`, e.date));
+  const intro = { html: `<li class="hist-intro"><p>${HIST_NOTE}</p><button class="btn sm" data-act="bulkStudies">${I('file')} Subir estudios</button></li>` };
+  chunk('hist', 'Historial clínico', hist.length ? [intro, ...hist.map(e => ({ html: histEntry(e) }))] : [], emptyPg(`Consultas, estudios, cirugías, problemas de salud y lo que notaste, en orden. ${HIST_NOTE}`, 'bulkStudies', 'Subir estudios'));
   pages.push({ sec: 'peso', title: 'Peso', html: weightPage(p) });
   return pages;
 }
@@ -1187,7 +1191,7 @@ function bookHtml(p) {
 }
 function renderLibreta(p) {
   const years = [...new Set([...p.records.map(r => (r.date || r.next || '').slice(0, 4)), ...p.visits.map(v => v.date.slice(0, 4)), ...p.weights.map(w => w.date.slice(0, 4))].filter(Boolean))].sort().reverse();
-  after(() => initBook(ui.lib.jump));
+  after(() => { const j = ui.lib.jumpSec ? ui.lib.secFirst?.[ui.lib.jumpSec] : ui.lib.jump; ui.lib.jumpSec = null; initBook(j); });
   return `${doc.pets.length > 1 ? switcher(p) : ''}
     <div class="lib-top">
       <div><span class="eyebrow">Libreta sanitaria</span><h1>La libreta de ${esc(p.name)}</h1></div>
@@ -1260,7 +1264,7 @@ function libretaDoc(p) {
     ${p.weights.length ? t(`<tr><th>Fecha</th><th>Peso</th></tr>${[...p.weights].reverse().slice(0, 10).map(w => `<tr><td>${dd(w.date)}</td><td>${kg(w.kg)}</td></tr>`).join('')}`) : '<p class="m">Sin pesos cargados.</p>'}
     <h2>Antecedentes</h2>
     ${kv([['Problemas de salud', p.conditions.length ? p.conditions.map(c => `${esc(c.name)} (${{ activa: 'activo', controlada: 'controlado', resuelta: 'resuelto' }[c.status]})`).join(', ') : 'Ninguno cargado'], ['Cirugías', p.surgeries.length ? p.surgeries.map(c => esc(c.name) + (c.date ? ' ' + dd(c.date) : '')).join(', ') : 'Ninguna cargada'], ['Remedios de siempre', esc(p.chronic) || 'Ninguno']])}
-    ${p.studies.length ? `<h2>Estudios</h2>${t(`<tr><th>Fecha</th><th>Estudio</th><th>Resultado</th></tr>${[...p.studies].sort((a, b) => b.date.localeCompare(a.date)).map(x => `<tr><td>${dd(x.date)}</td><td>${esc(x.title || Z.STUDY[x.kind])}</td><td>${esc(x.notes)}</td></tr>`).join('')}`)}` : ''}
+    ${(() => { const h = histEvents(p); return h.length ? `<h2>Historial clínico</h2><p class="m">${HIST_NOTE}</p>${t(`<tr><th>Fecha</th><th>Qué</th><th>Detalle</th></tr>${h.map(e => `<tr><td>${e.date ? dd(e.date) : '—'}</td><td><b>${esc(e.title)}</b><br><span class="m">${HK[e.k][2]}</span></td><td>${esc(e.kind === 'study' ? [e.ref.lab, e.ref.notes].filter(Boolean).join(' · ') : e.sub)}${e.kind === 'study' && e.ref.files?.length ? ` <span class="m">(${e.ref.files.length} archivo${e.ref.files.length > 1 ? 's' : ''} en Mimitos)</span>` : ''}</td></tr>`).join('')}`)}` : ''; })()}
     ${p.meds.length ? `<h2>Medicación</h2>${t(`<tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Desde</th><th>Estado</th></tr>${p.meds.map(m => `<tr><td>${esc(m.name)}</td><td>${esc(m.dose)}</td><td>cada ${m.every} h</td><td>${m.start ? dd(m.start.slice(0, 10)) : ''}</td><td>${Z.medState(m, p.log).state === 'ended' ? 'Terminado' : 'En curso'}</td></tr>`).join('')}`)}` : ''}
     ${syms.length ? `<h2>Lo que notamos</h2>${t(syms.map(s => `<tr><td style="width:90px">${dd(s.date)}</td><td>${esc(s.text)}</td></tr>`).join(''))}` : ''}
     <p class="foot">Generado con Mimitos by Orbit (orbitando.com.ar/mascotas). Mimitos es un organizador: no reemplaza al veterinario ni su criterio.</p>
@@ -1649,6 +1653,7 @@ function addPanel(p) {
     ${opt('peso', 'scale', 'comida', 'Peso', 'Para ver cómo cambia')}
     ${opt('remedio', 'pill', 'med', 'Remedio', 'Con horarios y aviso en cada toma')}
     ${opt('estudio', 'flask', 'viaje', 'Estudio', 'Análisis, radiografía o ecografía')}
+    ${opt('estudios', 'file', 'viaje', 'Subir varios estudios', 'Fotos o PDF de una: los leemos y los ordenamos')}
     ${opt('sintoma', 'note', 'plata', 'Algo que notaste', 'No come, vomita, se rasca…')}
     ${opt('problema', 'heart', 'perdida', 'Problema de salud', 'Algo que tuvo o tiene')}
   </div>
@@ -1656,8 +1661,110 @@ function addPanel(p) {
   $('#pBody').onclick = e => {
     const b = e.target.closest('[data-add]'); if (!b) return;
     dPanel.close();
-    ({ scan: () => startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas', scope: 'externa' }), consulta: () => visitForm(p), estudio: () => studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
+    ({ estudios: () => startBulk(p), scan: () => startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas', scope: 'externa' }), consulta: () => visitForm(p), estudio: () => studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
   };
+}
+
+/* ---------- historial clínico: consultas, estudios, cirugías, problemas y síntomas, en orden ---------- */
+const HK = { consulta: ['steth', 'cuida', 'Consulta'], estudio: ['flask', 'viaje', 'Estudio'], cirugia: ['scalpel', 'perdida', 'Cirugía'], sintoma: ['note', 'plata', 'Algo que notaste'], problema: ['heart', 'med', 'Problema de salud'] };
+const HIST_NOTE = 'Mimitos guarda y ordena tus estudios; no los interpreta. Consultá siempre a tu veterinario.';
+function histEvents(p) {
+  const ev = Z.timeline(p).filter(e => HK[e.k]);
+  const st = { activa: 'Lo tiene', controlada: 'Controlado', resuelta: 'Resuelto' };
+  for (const c of p.conditions || []) ev.push({ k: 'problema', date: /^\d{4}-\d{2}-\d{2}$/.test(c.since || '') ? c.since : /^\d{4}-\d{2}$/.test(c.since || '') ? c.since + '-01' : '', title: c.name, sub: [st[c.status], c.notes].filter(Boolean).join(' · '), kind: 'cond', ref: c });
+  for (const c of p.surgeries || []) if (!/^\d{4}-\d{2}-\d{2}$/.test(c.date || '')) ev.push({ k: 'cirugia', date: '', title: c.name, sub: 'Cirugía', kind: 'surg', ref: c });
+  return ev.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
+}
+function histEntry(e) {
+  const [ic, c, lab] = HK[e.k], st = e.kind === 'study' ? e.ref : null;
+  const files = st?.files?.length ? `<span class="h-files">${st.files.map(f => `<a href="/api/mascotas?file=${encodeURIComponent(f.ref)}" target="_blank" rel="noopener">${I('file')} ${esc(f.name)}</a>`).join('')}</span>` : '';
+  const sub = st ? [st.lab, st.notes].filter(Boolean).join(' · ') : e.sub;
+  const det = e.kind && e.kind !== 'cond' ? `<button class="e-edit" data-act="detail" data-kind="${e.kind}" data-id="${e.ref.id}" aria-label="Ver ${esc(e.title)}">${I('more')}</button>` : '<span></span>';
+  return `<li class="entry noseal hist"><div class="e-main"><span class="h-k">${bubble(ic, c)}<span><span class="e-name">${esc(e.title)}</span><span class="e-dates"><span>${e.date ? dd(e.date) : 'Sin fecha'}</span><span><em>${lab}</em></span></span></span></span>${sub ? `<span class="e-sub">${esc(sub)}</span>` : ''}${files}</div>${det}</li>`;
+}
+
+/* ---------- subir varios estudios de una: se suben, se leen con IA y se revisan antes de guardar ---------- */
+let bulk = null;
+const BULK_MAX = 20;
+const dataToFile = (d, name) => { const [h, b] = d.split(','); const bin = atob(b); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new File([u], name, { type: /data:(.*?);/.exec(h)[1] }); };
+function startBulk(p) {
+  if (!p) return;
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*,application/pdf'; inp.multiple = true;
+  inp.onchange = () => { const files = [...inp.files]; if (files.length) runBulk(p, files); };
+  inp.click();
+}
+async function runBulk(p, files) {
+  const extra = files.length > BULK_MAX;
+  bulk = { petId: p.id, state: 'working', note: extra ? `Elegiste ${files.length} archivos: subimos los primeros ${BULK_MAX}.` : '', items: files.slice(0, BULK_MAX).map((f, i) => ({ i, file: f, name: f.name, status: 'pendiente', keep: true, data: { date: '', kind: 'otro', title: f.name.replace(/\.[^.]+$/, ''), lab: '', summary: '', confidence: '', warnings: [] } })) };
+  setRoute('estudios'); render(); window.scrollTo(0, 0);
+  for (const it of bulk.items) {
+    if (!bulk) return;
+    if (bulk.full) { it.status = 'error'; it.keep = false; it.msg = 'No se subió: no hay más espacio en tu cuenta.'; continue; }
+    try {
+      it.status = 'subiendo'; render();
+      let f = it.file;
+      if (/^image\/(jpeg|png|webp)$/.test(f.type)) { try { f = dataToFile(await shrink(f, 1800, .85), f.name.replace(/\.[^.]+$/, '') + '.jpg'); } catch {} }
+      if (f.size > 15 * 1024 * 1024) { it.status = 'error'; it.keep = false; it.msg = 'Pesa más de 15 MB: no se pudo subir.'; continue; }
+      it.ref = await uploadStudy(f);
+      if (!/^(image\/(jpeg|png|webp)|application\/pdf)$/.test(f.type)) { it.status = 'manual'; it.msg = 'Este formato no se puede leer: quedó adjunto, completalo a mano.'; continue; }
+      if (bulk.noIA) { it.status = 'manual'; it.msg = bulk.noIA + ' Quedó adjunto: completalo a mano.'; continue; }
+      it.status = 'leyendo'; render();
+      const r = await fetch('/api/mascotas?studyscan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: it.ref.ref }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 429) { bulk.noIA = d.error === 'limite_mensual' ? `Llegaste al tope de ${d.limit} lecturas con IA de este mes.` : `Llegaste al tope de ${d.limit} lecturas con IA por hoy.`; it.status = 'manual'; it.msg = bulk.noIA + ' Quedó adjunto: completalo a mano.'; continue; }
+      if (!r.ok) { it.status = 'manual'; it.msg = d.error === 'pdf_muy_largo' ? 'El PDF es demasiado largo para leerlo entero (hasta 100 páginas). Quedó adjunto: completalo a mano.' : d.error === 'tipo_no_legible' ? 'Este formato no se puede leer. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; continue; }
+      it.data = { ...it.data, ...d, title: d.title || it.data.title }; it.status = d.confidence === 'baja' || d.warnings?.length || !d.date ? 'revisar' : 'listo';
+    } catch (e) {
+      if (String(e.message) === 'cupo_lleno') { bulk.full = true; it.msg = 'No se subió: no hay más espacio en tu cuenta (200 MB).'; }
+      else it.msg = 'No se pudo subir. Revisá la conexión.';
+      it.status = 'error'; it.keep = false;
+    }
+  }
+  if (bulk) { bulk.state = 'review'; render(); }
+}
+const BULK_ST = { pendiente: ['En espera', 'none'], subiendo: ['Subiendo…', 'none'], leyendo: ['Leyendo…', 'none'], listo: ['Leído', 'ok'], revisar: ['Revisalo', 'soon'], manual: ['Completalo a mano', 'soon'], error: ['No se subió', 'late'] };
+function renderBulk() {
+  const p = petById(bulk?.petId); if (!p || !bulk) { setTimeout(() => go('libreta')); return ''; }
+  const working = bulk.state === 'working', done = bulk.items.filter(x => !['pendiente', 'subiendo', 'leyendo'].includes(x.status)).length;
+  const keep = bulk.items.filter(x => x.keep && x.ref).length;
+  const card = it => {
+    const [st, cls] = BULK_ST[it.status], d = it.data, id = 'bk' + it.i, edit = !working && it.ref;
+    return `<article class="bk-card ${it.status}">
+      <div class="bk-h">${bubble(/pdf$/i.test(it.name) ? 'doc' : 'file', 'viaje')}<span class="what"><b>${esc(it.name)}</b></span><span class="badge ${cls}">${st}</span></div>
+      ${it.msg ? `<p class="bk-msg">${esc(it.msg)}</p>` : ''}
+      ${d.warnings?.length ? `<ul class="warn-list">${d.warnings.map(w => `<li>${I('alert')}<span>${esc(w)}</span></li>`).join('')}</ul>` : ''}
+      ${edit ? `<div class="two"><div class="f"><label for="${id}_date">Fecha</label><input id="${id}_date" type="date" value="${esc(d.date)}" max="${iso(Z.today())}"></div>
+        <div class="f"><label for="${id}_kind">Tipo</label><select id="${id}_kind">${Object.entries(Z.STUDY).map(([k, l]) => `<option value="${k}"${k === d.kind ? ' selected' : ''}>${l}</option>`).join('')}</select></div></div>
+        <div class="two"><div class="f"><label for="${id}_title">Nombre</label><input id="${id}_title" maxlength="120" value="${esc(d.title)}"></div>
+        <div class="f"><label for="${id}_lab">Laboratorio o veterinaria <span class="opt">(opcional)</span></label><input id="${id}_lab" maxlength="80" value="${esc(d.lab)}"></div></div>
+        <div class="f"><label for="${id}_sum">Qué dice <span class="opt">(resumen, sin interpretar)</span></label><textarea id="${id}_sum" maxlength="600" rows="3">${esc(d.summary)}</textarea></div>
+        <label class="toggle"><input type="checkbox" id="${id}_keep" ${it.keep ? 'checked' : ''}><span><b>Guardar este estudio</b></span></label>` : ''}
+    </article>`;
+  };
+  return `<section class="sec bulk">
+    <button class="link" data-act="bulkBack" style="align-self:flex-start">${I('back')} Libreta de ${esc(p.name)}</button>
+    <div><span class="eyebrow">Historial clínico</span><h1 class="h-xl">${working ? `Subiendo y leyendo ${done} de ${bulk.items.length}` : `Revisá ${bulk.items.length === 1 ? 'el estudio' : `los ${bulk.items.length} estudios`}`}</h1>
+      <p class="lead-s" style="margin-top:6px">${working ? 'Cada archivo se sube y lo leemos para sacar la fecha, el tipo y un resumen. Podés esperar acá.' : 'Corregí lo que haga falta antes de guardar. Lo que no se pudo leer quedó adjunto para que lo completes.'}</p>
+      ${bulk.note ? `<p class="note">${esc(bulk.note)}</p>` : ''}</div>
+    ${working ? `<div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${bulk.items.length}" aria-valuenow="${done}"><i style="width:${Math.round(done / bulk.items.length * 100)}%"></i></div>` : ''}
+    <div class="bk-list">${bulk.items.map(card).join('')}</div>
+    <p class="note">${HIST_NOTE} Cada archivo leído cuenta como una lectura con IA (${10} por día, 60 por mes).</p>
+    ${working ? '' : `<p class="err-msg" id="bkErr" role="alert" hidden></p><button class="btn big wide" data-act="bulkSave"${keep ? '' : ' disabled'}>Guardar ${keep} ${keep === 1 ? 'estudio' : 'estudios'} en su historial</button>`}
+  </section>`;
+}
+function saveBulk() {
+  const p = petById(bulk?.petId); if (!p) return;
+  const out = [], v = id => ($('#' + id)?.value || '').trim();
+  for (const it of bulk.items) {
+    const id = 'bk' + it.i; if (!it.ref || !$('#' + id + '_keep')?.checked) continue;
+    const date = v(id + '_date');
+    if (!date) { const e = $('#bkErr'); e.hidden = false; e.textContent = `Falta la fecha de "${it.name}". Si no figura, poné una aproximada.`; $('#' + id + '_date').focus(); return; }
+    const kind = v(id + '_kind') || 'otro';
+    out.push({ id: uid(), date, kind, title: v(id + '_title') || Z.STUDY[kind], lab: v(id + '_lab'), notes: v(id + '_sum'), files: [it.ref] });
+  }
+  if (!out.length) return;
+  p.studies.push(...out); bulk = null; ui.lib.jumpSec = 'hist'; setRoute('libreta'); changed(); window.scrollTo(0, 0);
+  toast(`${out.length} ${out.length === 1 ? 'estudio guardado' : 'estudios guardados'} en su historial.`);
 }
 
 /* ---------- leer la libreta con IA ---------- */
@@ -1922,6 +2029,9 @@ document.addEventListener('click', e => {
   switch (b.dataset.act) {
     case 'retry': mode = 'loading'; render(); return boot();
     case 'newPet': return startOnboard();
+    case 'bulkStudies': return startBulk(cur);
+    case 'bulkSave': return saveBulk();
+    case 'bulkBack': bulk = null; return go('libreta');
     case 'pick': selectPet(b.dataset.id); if (TAB_OF[route.name] === 'inicio') return go('inicio'); return render();
     case 'go': return go(b.dataset.to);
     case 'goPet': selectPet(b.dataset.pet); return go(b.dataset.to);

@@ -1080,3 +1080,24 @@ dialog{background:var(--bg)}
 .warn-list li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:start;padding:9px 0;font-size:14.5px;line-height:1.4;text-align:left}
 .warn-list li+li{border-top:1px solid var(--line)}
 .warn-list svg.i{color:var(--late);width:18px;height:18px;margin-top:2px}
+
+/* ---------- historial clínico ---------- */
+.entry.hist{grid-template-columns:minmax(0,1fr) auto}
+.entry.hist .h-k{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center}
+.entry.hist .ib{width:36px;height:36px}.entry.hist .ib svg.i{width:17px;height:17px}
+.entry.hist .e-sub{margin-left:48px;white-space:pre-wrap}
+.h-files{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 0 48px}
+.h-files a{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 12px;border-radius:999px;background:var(--sunk);color:var(--ink);font-size:13px;font-weight:600;text-decoration:none;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.h-files a svg.i{width:15px;height:15px;flex:none}
+.hist-intro{list-style:none;display:flex;flex-direction:column;gap:10px;align-items:flex-start;padding:4px 0 14px;border-bottom:1px solid var(--line)}
+.hist-intro p{font-size:13.5px;color:var(--ink2);line-height:1.45}
+/* subir varios estudios */
+.bk-list{display:flex;flex-direction:column;gap:14px}
+.bk-card{background:#fff;border-radius:24px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.bk-card.error{opacity:.75}
+.bk-h{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center}
+.bk-h b{display:block;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk-msg{font-size:14px;color:var(--ink2);background:var(--sunk);border-radius:14px;padding:10px 12px}
+.bk-card .warn-list{background:var(--bg)}
+.progress-bar{height:8px;border-radius:999px;background:#fff;overflow:hidden}
+.progress-bar i{display:block;height:100%;background:var(--ink);border-radius:999px;transition:width .3s var(--out)}

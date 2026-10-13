@@ -36,3 +36,19 @@ test('alta: la foto demasiado pesada se rechaza con un error claro', async () =>
   const r = await call('POST', { photo: '1' }, { data: 'data:image/png;base64,' + 'A'.repeat(460 * 1024) });
   assert.equal(r.code, 413); assert.equal(r.body.error, 'too_big');
 });
+
+test('estudios: no se puede leer con IA un archivo de otra cuenta', async () => {
+  const r = await call('POST', { studyscan: '1' }, { ref: 'blob:mascotas/ffffffffffffffff/x-ajeno.pdf' });
+  assert.equal(r.code, 403);
+  const r2 = await call('POST', { studyscan: '1' }, { ref: 'https://evil.example/x.pdf' });
+  assert.equal(r2.code, 403);
+});
+
+test('estudios: el resumen y el laboratorio se guardan en el estudio (sin modelo aparte)', async () => {
+  const cur = await call('GET', {}, null);
+  const pets = cur.body.doc.pets.map(p => p.id === 'toto0001' ? { ...p, studies: [{ id: 'st000001', date: '2026-09-01', kind: 'eco', title: 'Ecografía abdominal', lab: 'Diagnovet', notes: 'Conclusión: sin alteraciones.', files: [] }] } : p);
+  const r = await call('POST', {}, { doc: { pets }, rev: cur.body.doc.rev });
+  assert.equal(r.code, 200);
+  const st = r.body.doc.pets.find(p => p.id === 'toto0001').studies[0];
+  assert.equal(st.lab, 'Diagnovet'); assert.equal(st.kind, 'eco');
+});
