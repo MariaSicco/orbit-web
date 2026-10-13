@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Libreta de tu Mascota · Orbit</title>
+<meta name="description" content="Vacunas, desparasitaciones y controles de tu mascota en un solo lugar, con lo que le toca y cuándo.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0D0D0E">
+<link rel="icon" href="/favicon-32.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="/assets/css/orbit.css?v=61">
+<link rel="stylesheet" href="/herramientas/libreta/app.css?v=1">
+</head>
+<body class="lb">
+<a class="skip" href="#app">Saltar al contenido</a>
+<header class="lb-top">
+  <a class="lb-brand" href="/" aria-label="Orbit, ir al inicio"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M74.6 80.5A39 39 0 1 1 89 50" fill="none" stroke="currentColor" stroke-width="20"/><circle cx="75" cy="80" r="12.5" fill="#3047FF"/></svg><b>Orbit</b></a>
+  <span class="mono lb-name">Libreta de tu Mascota</span>
+  <span class="lb-sp"></span>
+  <span class="mono lb-local" id="localTag"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="3" width="10" height="18" rx="2.5"/><path d="M11 18h2"/></svg><span>Solo en este dispositivo</span></span>
+</header>
+
+<div class="lb-banner demo" id="demoBar" role="status" hidden>
+  <span><b>Estás viendo un ejemplo.</b> Podés tocar todo, pero nada de esto se guarda.</span>
+  <button class="btn btn-line sm" type="button" id="demoExit">Salir del ejemplo</button>
+</div>
+<div class="lb-banner warn" id="memBar" role="alert" hidden>
+  <span><b>Este navegador no deja guardar.</b> La app funciona igual, pero lo que cargues se pierde al cerrar la pestaña. Probá fuera del modo incógnito.</span>
+</div>
+
+<main id="app" tabindex="-1"></main>
+
+<footer class="lb-foot">
+  <section class="lb-foot-box" aria-labelledby="ftData">
+    <h2 class="mono" id="ftData">Tus datos</h2>
+    <p>Lo que cargás queda guardado solo en este navegador y en este dispositivo. No lo subimos a ningún lado. Si borrás los datos del navegador o cambiás de celular, se pierde.</p>
+    <!-- Paso 3: exportar / importar copia va en este lugar -->
+    <div class="lb-backup" id="backupSlot" data-slot="backup">
+      <span class="mono">Copia de seguridad</span>
+      <span>Exportar e importar una copia: llega en la próxima versión.</span>
+    </div>
+  </section>
+  <section class="lb-foot-box" aria-labelledby="ftVet">
+    <h2 class="mono" id="ftVet">Importante</h2>
+    <p><b>Es un organizador, no reemplaza al veterinario.</b> Las fechas y los nombres los cargás vos; ante cualquier duda sobre vacunas o tratamientos, consultá con tu veterinaria.</p>
+  </section>
+  <p class="mono lb-made">Hecho por <a href="/">Orbit</a></p>
+</footer>
+
+<dialog id="dlg" class="lb-dlg" aria-labelledby="dlgT">
+  <form method="dialog" class="sheet" id="dlgForm" novalidate>
+    <div class="sheet-h">
+      <h2 id="dlgT"></h2>
+      <button class="x" type="button" data-close aria-label="Cerrar"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+    </div>
+    <div class="sheet-b" id="dlgBody"></div>
+    <p class="err" id="dlgErr" role="alert" hidden></p>
+    <div class="sheet-f" id="dlgFoot"></div>
+  </form>
+</dialog>
+
+<dialog id="cfm" class="lb-dlg small" aria-labelledby="cfmT" aria-describedby="cfmD">
+  <form method="dialog" class="sheet">
+    <h2 id="cfmT"></h2>
+    <p id="cfmD"></p>
+    <div class="sheet-f row2">
+      <button class="btn btn-line" value="no" type="submit" id="cfmNo">Cancelar</button>
+      <button class="btn btn-danger" value="yes" type="submit" id="cfmYes">Sí, borrar</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="/herramientas/libreta/core.js?v=1"></script>
+<script src="/herramientas/libreta/app.js?v=1"></script>
+</body>
+</html>
