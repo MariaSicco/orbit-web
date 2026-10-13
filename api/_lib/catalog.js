@@ -4,7 +4,13 @@
    Los valores de acá abajo son el punto de partida. Lo que se edita
    desde el panel de administración se guarda en la base y pisa esto,
    así que no hace falta tocar código para cambiar un precio, publicar
-   un producto o cargar el archivo que se descarga. */
+   un producto o cargar el archivo que se descarga.
+
+   Herramientas online: un producto con `herramienta: '/herramientas/<slug>'`
+   no se descarga, se abre en el sitio. La compra da acceso a esa ruta
+   (api/herramienta.js valida sesión + compra) y la biblioteca y el email
+   muestran "Abrir". Los archivos de la herramienta viven en
+   api/_herramientas/<slug>/, fuera de lo que el sitio sirve público. */
 import { kvGet, kvSet } from './kv.js';
 
 export const CATALOG = {
@@ -36,6 +42,16 @@ export const CATALOG = {
   'ob-005': { code: 'OB—005', name: 'Orbit IVA',          usd: 79, ars: 79000, soon: true, foto: 'ob-005',
     bajada: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.' },
 };
+
+/* Herramienta de prueba para revisar el acceso de punta a punta. Solo existe
+   fuera de producción (preview y local), no se puede comprar (soon) y no está
+   en products.js, así que no aparece en la tienda. Se entra con una cuenta
+   administradora. */
+if (process.env.VERCEL_ENV !== 'production') {
+  CATALOG['ob-demo'] = { code: 'OB—DEMO', name: 'Herramienta de prueba', usd: 0, ars: 0, soon: true, oculto: true,
+    foto: 'landing', herramienta: '/herramientas/demo',
+    bajada: 'Página mínima para probar el acceso a las herramientas online.' };
+}
 
 const OVER_KEY = 'orbit:catalog';
 export const PRODUCT_IDS = Object.keys(CATALOG);

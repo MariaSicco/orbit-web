@@ -9,6 +9,14 @@
     {
       "source": "/propuesta/:id",
       "destination": "/propuesta"
+    },
+    {
+      "source": "/herramientas/:slug",
+      "destination": "/api/herramienta?slug=:slug"
+    },
+    {
+      "source": "/herramientas/:slug/:path*",
+      "destination": "/api/herramienta?slug=:slug&path=:path*"
     }
   ],
   "crons": [
@@ -16,5 +24,21 @@
       "path": "/api/cron/leads",
       "schedule": "0 13 * * *"
     }
-  ]
+  ],
+  "headers": [
+    {
+      "source": "/herramientas/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "api/herramienta.js": {
+      "includeFiles": "api/_herramientas/**"
+    }
+  }
 }
