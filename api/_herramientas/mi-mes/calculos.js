@@ -20,7 +20,7 @@
    - Te quedan libres = ingresos − gastos fijos − cuotas − resúmenes del mes.
      Puede ser negativo. */
 
-export const ESQUEMA = 2;
+export const ESQUEMA = 3;
 
 export const CATEGORIAS = [
   'Alquiler', 'Expensas', 'Servicios', 'Suscripciones', 'Seguros',
@@ -382,15 +382,21 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
 }
 
 /* ── esquema y migración ── */
-export const datosVacios = () => ({ v: ESQUEMA, ingresos: [], gastos: [], cuotas: [], tarjetas: [], resumenes: [], cambio: {}, rubrosComercio: {} });
+export const LIMITE_DEFECTO = 30;
+export const datosVacios = () => ({ v: ESQUEMA, ingresos: [], gastos: [], cuotas: [], tarjetas: [], resumenes: [], cambio: {}, rubrosComercio: {},
+  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {} });
 
 const entero = x => Number.isSafeInteger(x) && x > 0;
+const dia = x => Number.isInteger(x) && x >= 1 && x <= 31;
 const texto = (x, max = 60) => (typeof x === 'string' ? x.trim().slice(0, max) : '');
 
 /* Datos guardados (de cualquier versión) → esquema actual, sin basura.
    Lo inválido se descarta en vez de romper la pantalla.
    v1 → v2: las cuotas pasan a tener moneda (ARS), las tarjetas red, banco,
-   últimos 4 y color, y aparecen resúmenes, tipo de cambio y rubros. */
+   últimos 4 y color, y aparecen resúmenes, tipo de cambio y rubros.
+   v2 → v3: tope de cuotas (% de ingresos, 30 por defecto), días de cierre
+   y vencimiento cargados a mano por tarjeta, alertas descartadas y los
+   supuestos de "¿cuotas o contado?". */
 export function migrar(crudo) {
   const out = datosVacios();
   if (!crudo || typeof crudo !== 'object') return out;
@@ -403,7 +409,9 @@ export function migrar(crudo) {
       banco: texto(t.banco, 40),
       ultimos4: /^\d{4}$/.test(String(t.ultimos4 || '')) ? String(t.ultimos4) : '',
       color: COLORES.includes(t.color) ? t.color : 'azul',
-      ...(entero(t.limite) ? { limite: t.limite } : {}) });
+      ...(entero(t.limite) ? { limite: t.limite } : {}),
+      ...(dia(t.diaCierre) ? { diaCierre: t.diaCierre } : {}),
+      ...(dia(t.diaVence) ? { diaVence: t.diaVence } : {}) });
   }
   const ids = new Set(out.tarjetas.map(t => t.id));
   for (const i of Array.isArray(crudo.ingresos) ? crudo.ingresos : []) {
@@ -448,6 +456,14 @@ export function migrar(crudo) {
   for (const [k, v] of Object.entries(crudo.rubrosComercio && typeof crudo.rubrosComercio === 'object' ? crudo.rubrosComercio : {})) {
     if (RUBROS.includes(v) && normalizarComercio(k)) out.rubrosComercio[normalizarComercio(k)] = v;
   }
+  const lim = Number(crudo.limiteCuotas);
+  out.limiteCuotas = Number.isFinite(lim) && lim > 0 && lim <= 100 ? Math.round(lim) : LIMITE_DEFECTO;
+  out.alertasVistas = (Array.isArray(crudo.alertasVistas) ? crudo.alertasVistas : []).filter(x => typeof x === 'string').slice(-200);
+  const sup = crudo.supuestos && typeof crudo.supuestos === 'object' ? crudo.supuestos : {};
+  for (const k of ['inflacion', 'rendimiento']) {
+    const v = Number(sup[k]?.valor);
+    if (Number.isFinite(v) && v >= 0 && v < 100) out.supuestos[k] = { valor: v, fecha: esFecha(sup[k].fecha) ? sup[k].fecha : '' };
+  }
   return out;
 }
 
@@ -479,4 +495,213 @@ export function cuadreLectura(json) {
   }
   for (const m of sumas.keys()) if (!totales.has(m) && sumas.get(m) !== 0) motivos.push(`Hay consumos en ${MONEDAS[m].nombre} sin un total para esa moneda.`);
   return { ok: motivos.length === 0, motivos: [...new Set(motivos)] };
+}
+
+/* ═══════════════ Paso 4 ═══════════════ */
+
+/* ── escalera de cuotas ──
+   Cuánto está comprometido en cuotas cada mes, por tarjeta (en pesos, con
+   la moneda extranjera convertida), y el primer mes sin cuotas. Acá cuentan
+   todas las cuotas, también las que ya están adentro de un resumen. */
+export function escalera(datos, desde, meses = 12) {
+  const filas = Array.from({ length: meses }, (_, k) => {
+    const mes = sumarMeses(desde, k);
+    const porTarjeta = {};
+    const sinCambio = new Set();
+    let total = 0;
+    for (const c of datos?.cuotas || []) {
+      const n = numeroDeCuota(c, mes);
+      if (!n) continue;
+      const ars = aPesos(repartirCuotas(c.total, c.cantidad)[n - 1], c.moneda || 'ARS', datos);
+      if (ars === null) { sinCambio.add(c.moneda); continue; }
+      porTarjeta[c.tarjetaId] = (porTarjeta[c.tarjetaId] || 0) + ars;
+      total += ars;
+    }
+    return { mes, porTarjeta, total, sinCambio: [...sinCambio], ...limiteDelMes(datos, mes, total) };
+  });
+  return { filas, mesLibre: mesLibreDeCuotas(datos, desde) };
+}
+/* Primer mes, desde `desde`, a partir del cual no queda ninguna cuota. */
+export function mesLibreDeCuotas(datos, desde) {
+  let ultimo = null;
+  for (const c of datos?.cuotas || []) {
+    const u = ultimoMes(c);
+    if (difMeses(desde, u) >= 0 && (!ultimo || difMeses(ultimo, u) > 0)) ultimo = u;
+  }
+  return ultimo ? sumarMeses(ultimo, 1) : desde;
+}
+
+/* ── alerta de límite ── tope = % de los ingresos del mes que puede ir a cuotas. */
+export function limiteDelMes(datos, mes, cuotasDelMes = null) {
+  const pct = datos?.limiteCuotas || LIMITE_DEFECTO;
+  const ingresos = resumenMes(datos, mes).totIngresos;
+  const cuotas = cuotasDelMes ?? escalera(datos, mes, 1).filas[0].total;
+  const tope = Math.round((ingresos * pct) / 100);
+  return { pct, ingresos, tope, cuotas, supera: cuotas > 0 && cuotas > tope, usado: ingresos ? cuotas / ingresos : null };
+}
+
+/* ── fechas ── */
+const aUTC = f => { const [a, m, d] = f.split('-').map(Number); return Date.UTC(a, m - 1, d); };
+export const diasEntre = (desde, hasta) => Math.round((aUTC(hasta) - aUTC(desde)) / 86_400_000);
+const diasDelMes = m => { const [a, b] = m.split('-').map(Number); return new Date(Date.UTC(a, b, 0)).getUTCDate(); };
+/* El día `d` de ese mes; si el mes es más corto, su último día (31 → 30/28). */
+export const fechaConDia = (mes, d) => `${mes}-${String(Math.min(d, diasDelMes(mes))).padStart(2, '0')}`;
+
+/* Cierre y vencimiento vigentes de una tarjeta para `hoy` (AAAA-MM-DD).
+   Primero el resumen importado que todavía no venció; si no hay, los días
+   que cargó la persona (el vencimiento es el primero que cae después del
+   cierre). Devuelve null si no hay con qué calcular. */
+export function cicloTarjeta(datos, tarjetaId, hoy) {
+  const res = (datos?.resumenes || []).filter(r => r.tarjetaId === tarjetaId && esFecha(r.vencimiento) && diasEntre(hoy, r.vencimiento) >= 0)
+    .sort((a, b) => diasEntre(b.vencimiento, a.vencimiento))[0];
+  if (res) return { cierre: res.cierre || null, vencimiento: res.vencimiento, mes: res.mes, resumen: res, origen: 'resumen' };
+  const t = (datos?.tarjetas || []).find(x => x.id === tarjetaId);
+  if (!t?.diaCierre || !t?.diaVence) return null;
+  const mesHoy = hoy.slice(0, 7);
+  /* último cierre que ya pasó (o es hoy) */
+  let cierre = fechaConDia(mesHoy, t.diaCierre);
+  if (diasEntre(cierre, hoy) < 0) cierre = fechaConDia(sumarMeses(mesHoy, -1), t.diaCierre);
+  let vencimiento = fechaConDia(cierre.slice(0, 7), t.diaVence);
+  if (diasEntre(cierre, vencimiento) <= 0) vencimiento = fechaConDia(sumarMeses(cierre.slice(0, 7), 1), t.diaVence);
+  if (diasEntre(hoy, vencimiento) < 0) {
+    /* ya venció: el ciclo que viene */
+    cierre = fechaConDia(sumarMeses(cierre.slice(0, 7), 1), t.diaCierre);
+    vencimiento = fechaConDia(cierre.slice(0, 7), t.diaVence);
+    if (diasEntre(cierre, vencimiento) <= 0) vencimiento = fechaConDia(sumarMeses(cierre.slice(0, 7), 1), t.diaVence);
+  }
+  return { cierre, vencimiento, mes: vencimiento.slice(0, 7), resumen: null, origen: 'manual' };
+}
+
+/* ── alertas de tarjeta ── (cierre, vencimiento próximo y dólares)
+   Cada alerta tiene un id por ciclo: descartarla oculta solo esa. */
+export const DIAS_AVISO_VENCE = 5;
+export const PERCEPCION = 0.30;
+export function alertasTarjetas(datos, hoy) {
+  const out = [];
+  const vistas = new Set(datos?.alertasVistas || []);
+  for (const t of datos?.tarjetas || []) {
+    const ciclo = cicloTarjeta(datos, t.id, hoy);
+    if (!ciclo) continue;
+    const { cierre, vencimiento } = ciclo;
+    const faltan = diasEntre(hoy, vencimiento);
+    const cerrado = !cierre || diasEntre(cierre, hoy) >= 0;
+    const montoMes = tarjetaEnMes(datos, t.id, ciclo.mes).total;
+    if (cerrado && faltan >= 0) {
+      out.push({ id: `cierre:${t.id}:${vencimiento}`, tipo: 'cierre', tarjetaId: t.id, nivel: 'info', fecha: cierre,
+        titulo: `Ya cerró el resumen de ${t.nombre}`,
+        texto: `Lo que compres ahora va al resumen de ${nombreMes(sumarMeses(ciclo.mes, 1))}.` });
+    }
+    if (faltan >= 0 && faltan <= DIAS_AVISO_VENCE) {
+      const cuando = faltan === 0 ? 'Vence hoy' : faltan === 1 ? 'Vence mañana' : `Vence en ${faltan} días`;
+      out.push({ id: `vence:${t.id}:${vencimiento}`, tipo: 'vence', tarjetaId: t.id, nivel: faltan <= 1 ? 'fuerte' : 'aviso', fecha: vencimiento, dias: faltan,
+        titulo: `${cuando}: ${formatoPesos(montoMes)}`, texto: `Resumen de ${t.nombre}, vence el ${fechaCorta(vencimiento)}.` });
+    }
+    const usd = ciclo.resumen?.totales?.USD || 0;
+    if (usd > 0 && cerrado && faltan >= 0) {
+      const ahorro = ahorroPagandoEnDolares(usd, datos);
+      out.push({ id: `dolares:${t.id}:${vencimiento}`, tipo: 'dolares', tarjetaId: t.id, nivel: 'info', fecha: vencimiento, usd, ahorro,
+        titulo: `Tenés ${formatoMoneda(usd, 'USD')} en ${t.nombre}`,
+        texto: `Si pagás ese saldo con dólares propios antes del ${fechaCorta(vencimiento)}, no te cobran la percepción del 30 % (unos ${formatoPesos(ahorro)} de diferencia, aproximado).` });
+    }
+  }
+  const orden = { fuerte: 0, aviso: 1, info: 2 };
+  return out.filter(a => !vistas.has(a.id)).sort((a, b) => orden[a.nivel] - orden[b.nivel] || diasEntre(b.fecha, a.fecha));
+}
+/* Diferencia aproximada entre pagar US$ X en pesos (dólar tarjeta) y con
+   dólares propios: el 30 % de percepción sobre el oficial. El oficial se
+   estima como dólar tarjeta / 1,30. */
+export function ahorroPagandoEnDolares(usdCentavos, datos) {
+  const c = cambioDe(datos, 'USD');
+  if (!c) return 0;
+  const oficial = c.valor / (1 + PERCEPCION);
+  return Math.round((usdCentavos * (c.valor - oficial)) / 100);
+}
+
+/* ── calendario (.ics) ── cierre, vencimiento y recordatorio de dólares,
+   con avisos que suenan en el teléfono sin servidor ni push. */
+const escICS = s => String(s).replace(/\\/g, '\\\\').replace(/[,;]/g, m => '\\' + m).replace(/\r?\n/g, '\\n');
+const plegar = l => { const out = []; let x = l; while (x.length > 74) { out.push(x.slice(0, 74)); x = ' ' + x.slice(74); } out.push(x); return out.join('\r\n'); };
+const sinGuiones = f => f.replace(/-/g, '');
+export const sumarDias = (f, k) => new Date(aUTC(f) + k * 86_400_000).toISOString().slice(0, 10);
+const diaSiguiente = f => sumarDias(f, 1);
+export function generarICS(eventos, { ahora = new Date() } = {}) {
+  const stamp = ahora.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z');
+  const lineas = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Orbit//Mi Mes by Orbit//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'];
+  for (const e of eventos) {
+    lineas.push('BEGIN:VEVENT', `UID:${e.uid}@mi-mes.orbitando.com.ar`, `DTSTAMP:${stamp}`,
+      `DTSTART;VALUE=DATE:${sinGuiones(e.fecha)}`, `DTEND;VALUE=DATE:${sinGuiones(diaSiguiente(e.fecha))}`,
+      `SUMMARY:${escICS(e.titulo)}`, ...(e.detalle ? [`DESCRIPTION:${escICS(e.detalle)}`] : []), 'TRANSP:TRANSPARENT');
+    for (const a of e.avisos || ['-PT15H']) lineas.push('BEGIN:VALARM', 'ACTION:DISPLAY', `DESCRIPTION:${escICS(e.titulo)}`, `TRIGGER:${a}`, 'END:VALARM');
+    lineas.push('END:VEVENT');
+  }
+  lineas.push('END:VCALENDAR');
+  return lineas.map(plegar).join('\r\n') + '\r\n';
+}
+/* Eventos de una tarjeta para su ciclo vigente. */
+export function eventosTarjeta(datos, tarjetaId, hoy) {
+  const t = (datos?.tarjetas || []).find(x => x.id === tarjetaId);
+  const ciclo = t && cicloTarjeta(datos, tarjetaId, hoy);
+  if (!ciclo) return [];
+  const total = tarjetaEnMes(datos, tarjetaId, ciclo.mes).total;
+  const ev = [];
+  if (ciclo.cierre && diasEntre(hoy, ciclo.cierre) >= 0) {
+    ev.push({ uid: `cierre-${tarjetaId}-${ciclo.cierre}`, fecha: ciclo.cierre, titulo: `Cierra el resumen de ${t.nombre}`,
+      detalle: 'Lo que compres después de hoy va al resumen siguiente.', avisos: ['PT9H'] });
+  }
+  ev.push({ uid: `vence-${tarjetaId}-${ciclo.vencimiento}`, fecha: ciclo.vencimiento, titulo: `Vence ${t.nombre}: ${formatoPesos(total)}`,
+    detalle: 'Recordatorio de Mi Mes by Orbit. El monto es el de la app: confirmalo con tu resumen.', avisos: ['-P2DT15H', '-PT15H', 'PT9H'] });
+  const usd = ciclo.resumen?.totales?.USD || 0;
+  if (usd > 0) {
+    const f = diasEntre(hoy, ciclo.vencimiento) >= 2 ? sumarDias(ciclo.vencimiento, -2) : ciclo.vencimiento;
+    ev.push({ uid: `dolares-${tarjetaId}-${ciclo.vencimiento}`, fecha: f, titulo: `${t.nombre}: ${formatoMoneda(usd, 'USD')} para pagar en dólares`,
+      detalle: `Si pagás ese saldo con dólares propios antes del vencimiento, no te cobran la percepción del 30 % (unos ${formatoPesos(ahorroPagandoEnDolares(usd, datos))}). Orientativo: confirmá con tu banco cómo hacerlo.`,
+      avisos: ['PT9H'] });
+  }
+  return ev;
+}
+
+/* ── ¿cuotas o contado? ──
+   Tenés la plata del precio de contado hoy. O pagás contado, o la dejás
+   rindiendo (plazo fijo o billetera) y pagás las cuotas sin interés mes a
+   mes. Lo que te sobra al final, llevado a plata de hoy con la inflación
+   esperada, dice cuál conviene. Orientativo, no asesoramiento. */
+export const SUPUESTOS_DEFECTO = {
+  inflacion: { valor: 1.7, fecha: '2026-08-06', fuente: 'Inflación mensual esperada para octubre, REM del BCRA de agosto 2026 (vía NoticiasNQN)',
+    url: 'https://www.noticiasnqn.com.ar/noticias/2026/08/06/346909-el-bcra-proyecta-inflacion-por-debajo-del-2por_ciento-y-un-dolar-a-1652-para-fin-de-2026' },
+  rendimiento: { valor: 1.56, fecha: '2026-10-01', fuente: 'Plazo fijo a 30 días en Banco Nación: 18,75 % TNA ≈ 1,56 % por mes (calcularsueldo.com.ar)',
+    url: 'https://calcularsueldo.com.ar/?p=16106' },
+};
+export const supuesto = (datos, k) => (datos?.supuestos?.[k] ? { ...SUPUESTOS_DEFECTO[k], ...datos.supuestos[k], fuente: 'Lo cargaste vos', url: '' } : SUPUESTOS_DEFECTO[k]);
+export function cuotasOContado({ precioCuotas, descuentoContado = 0, cuotas, inflacion, rendimiento, precioContado = null }) {
+  const n = Math.max(1, Math.floor(cuotas));
+  const contado = precioContado ?? Math.round(precioCuotas * (1 - descuentoContado / 100));
+  const pagos = repartirCuotas(precioCuotas, n);
+  const r = rendimiento / 100, pi = inflacion / 100;
+  /* la plata del contado rinde todo el período; cada cuota se paga al mes k */
+  let saldo = contado;
+  for (let k = 1; k <= n; k++) saldo = saldo * (1 + r) - pagos[k - 1];
+  const sobraFinal = Math.round(saldo);
+  const sobraHoy = Math.round(saldo / (1 + pi) ** n);
+  /* las cuotas en plata de hoy (lo que "se licúan" con la inflación) */
+  const cuotasHoy = Math.round(pagos.reduce((s, p, i) => s + p / (1 + pi) ** (i + 1), 0));
+  const umbral = Math.max(100, Math.round(contado * 0.005));
+  return { contado, cuota: pagos[pagos.length - 1], pagos, cuotasHoy, sobraFinal, sobraHoy,
+    conviene: sobraHoy > umbral ? 'cuotas' : sobraHoy < -umbral ? 'contado' : 'da igual' };
+}
+
+/* ── simulador ── "¿y si compro esto en N cuotas?": te quedan libres antes y
+   después, mes a mes, con la alerta de límite. No toca los datos. */
+export function simularCompra(datos, compra, desde, meses = 12) {
+  const moneda = compra.moneda || 'ARS';
+  const partes = repartirCuotas(compra.total, compra.cantidad);
+  const conCompra = { ...datos, cuotas: [...(datos?.cuotas || []), { id: '__sim', descripcion: 'Simulación', total: compra.total, moneda,
+    cantidad: compra.cantidad, tarjetaId: compra.tarjetaId || '__sim', primerMes: compra.primerMes }] };
+  return Array.from({ length: meses }, (_, k) => {
+    const mes = sumarMeses(desde, k);
+    const antes = resumenMes(datos, mes).libres;
+    const n = numeroDeCuota({ primerMes: compra.primerMes, cantidad: compra.cantidad }, mes);
+    const nueva = n ? aPesos(partes[n - 1], moneda, datos) : 0;
+    const lim = limiteDelMes(conCompra, mes);
+    return { mes, antes, nueva, despues: nueva === null ? null : antes - nueva, cuota: n || null, supera: lim.supera, limite: lim };
+  });
 }

@@ -154,7 +154,8 @@ test('migrar v1 → v2: limpia lo inválido, suma moneda, red y color, y deja la
       { id: 'e', total: 300, cantidad: 0, tarjetaId: 't1', primerMes: '2026-11' }],
   });
   assert.equal(d.v, M.ESQUEMA);
-  assert.equal(M.ESQUEMA, 2);
+  assert.equal(M.ESQUEMA, 3);
+  assert.deepEqual([d.limiteCuotas, d.alertasVistas, d.supuestos], [30, [], {}]);
   assert.deepEqual(d.tarjetas, [{ id: 't1', nombre: 'Visa', red: 'Otra', banco: '', ultimos4: '', color: 'azul' }]);
   assert.deepEqual(d.ingresos.map(i => [i.id, i.nombre]), [['a', 'Ingreso']]);
   assert.deepEqual([d.gastos[0].categoria, d.gastos[0].hasta], ['Otros', undefined]);
@@ -306,6 +307,131 @@ test('cuadre: consumos + ajustes tienen que dar el total de cada moneda', () => 
   const sinTotal = structuredClone(base); sinTotal.consumos.push({ monto: 9, moneda: 'EUR' });
   assert.match(M.cuadreLectura(sinTotal).motivos.join(' '), /sin un total/);
   assert.equal(M.cuadreLectura({}).ok, false);
+});
+
+/* ═══════ Paso 4 ═══════ */
+const conTarjetas = () => {
+  const d = migrar(base());
+  d.cambio = { USD: { valor: $(2_000), fuente: 'p', fecha: '2026-10-13' } };
+  d.cuotas.push({ id: 'u1', descripcion: 'Notebook', total: $(600), moneda: 'USD', cantidad: 3, tarjetaId: 't2', primerMes: '2026-12' });
+  return d;
+};
+test('escalera: comprometido por mes y por tarjeta, con USD convertido, y mes en que quedás libre', () => {
+  const e = M.escalera(conTarjetas(), '2026-11', 7);
+  assert.deepEqual(e.filas.map(f => f.total / 100), [183_334, 183_333 + 400_000, 183_333 + 400_000, 150_000 + 400_000, 150_000, 150_000, 0]);
+  assert.deepEqual(e.filas[1].porTarjeta, { t1: $(150_000), t2: $(33_333) + $(400_000) });
+  assert.equal(e.mesLibre, '2027-05');
+  assert.equal(M.mesLibreDeCuotas(M.datosVacios(), '2026-10'), '2026-10');
+});
+test('límite: % de los ingresos que puede ir a cuotas; avisa el mes que se pasa (cuenta USD)', () => {
+  const d = conTarjetas();
+  assert.equal(d.limiteCuotas, 30);
+  const nov = M.limiteDelMes(d, '2026-11');               // 183.334 de 1.200.000 = 15 %
+  assert.deepEqual([nov.tope, nov.supera], [$(360_000), false]);
+  const dic = M.limiteDelMes(d, '2026-12');               // 583.333 > 360.000 por los dólares
+  assert.equal(dic.supera, true);
+  d.limiteCuotas = 50;
+  assert.equal(M.limiteDelMes(d, '2026-12').supera, false);
+  const sinIngresos = M.migrar({ ...base(), ingresos: [] });
+  assert.equal(M.limiteDelMes(sinIngresos, '2026-11').supera, true, 'cuotas sin ingresos supera');
+  assert.equal(M.escalera(d, '2026-12', 1).filas[0].supera, false);
+});
+test('fechas: días que faltan, cambio de mes y de año, meses cortos', () => {
+  assert.equal(M.diasEntre('2026-10-30', '2026-11-02'), 3);
+  assert.equal(M.diasEntre('2026-12-29', '2027-01-03'), 5);
+  assert.equal(M.diasEntre('2026-11-10', '2026-11-08'), -2);
+  assert.equal(M.fechaConDia('2027-02', 31), '2027-02-28');
+  assert.equal(M.fechaConDia('2028-02', 30), '2028-02-29');
+  assert.equal(M.sumarDias('2027-01-01', -2), '2026-12-30');
+});
+test('ciclo manual: cierre y vencimiento con días cargados, cruzando el año', () => {
+  const d = migrar({ ...base(), tarjetas: [{ id: 't1', nombre: 'Visa', diaCierre: 26, diaVence: 8 }, { id: 't2', nombre: 'Master' }] });
+  assert.deepEqual(M.cicloTarjeta(d, 't1', '2026-10-13'), { cierre: '2026-10-26', vencimiento: '2026-11-08', mes: '2026-11', resumen: null, origen: 'manual' }, 'antes del cierre: el ciclo que viene');
+  assert.equal(M.cicloTarjeta(d, 't1', '2026-12-28').vencimiento, '2027-01-08', 'después del cierre de diciembre vence en enero');
+  assert.equal(M.cicloTarjeta(d, 't1', '2027-01-05').cierre, '2026-12-26');
+  assert.equal(M.cicloTarjeta(d, 't1', '2027-01-09').vencimiento, '2027-02-08', 'ya vencido: pasa al siguiente');
+  assert.equal(M.cicloTarjeta(d, 't2', '2026-10-13'), null, 'sin días ni resumen no hay ciclo');
+});
+const conResumen = () => {
+  const { lectura } = M.validarLectura(lecturaEjemplo());   // cierre 29/10, vence 10/11, US$ 30,50
+  let n = 0;
+  const r = M.importarResumen(M.datosVacios(), lectura, { nuevoId: () => `id${n++}` });
+  r.datos.cambio = { USD: { valor: $(1_950), fuente: 'p', fecha: '2026-10-13' } };
+  return r;
+};
+test('alertas: antes del cierre nada; cerrado avisa a qué resumen va lo nuevo, y los dólares', () => {
+  const { datos } = conResumen();
+  assert.deepEqual(M.alertasTarjetas(datos, '2026-10-20').map(a => a.tipo), [], 'antes del cierre');
+  const a = M.alertasTarjetas(datos, '2026-10-30');
+  assert.deepEqual(a.map(x => x.tipo).sort(), ['cierre', 'dolares']);
+  assert.match(a.find(x => x.tipo === 'cierre').texto, /resumen de diciembre 2026/);
+  const usd = a.find(x => x.tipo === 'dolares');
+  assert.equal(usd.usd, 3_050);
+  // US$ 30,50 × (1.950 − 1.950/1,3) = 30,5 × 450 = 13.725
+  assert.equal(usd.ahorro, $(13_725));
+  assert.match(usd.texto, /dólares propios antes del 10 nov/);
+});
+test('alertas: vence en N días desde 5 antes, fuerte el día anterior y el mismo día, nada después', () => {
+  const { datos } = conResumen();
+  const vence = h => M.alertasTarjetas(datos, h).find(a => a.tipo === 'vence');
+  assert.equal(vence('2026-11-04'), undefined);
+  assert.deepEqual([vence('2026-11-05').dias, vence('2026-11-05').nivel], [5, 'aviso']);
+  assert.match(vence('2026-11-05').titulo, /^Vence en 5 días: \$ /);
+  assert.deepEqual([vence('2026-11-09').titulo.startsWith('Vence mañana'), vence('2026-11-09').nivel], [true, 'fuerte']);
+  assert.ok(vence('2026-11-10').titulo.startsWith('Vence hoy'));
+  assert.equal(M.alertasTarjetas(datos, '2026-11-11').length, 0, 'vencido: no queda ninguna');
+  assert.equal(M.alertasTarjetas(datos, '2026-11-09')[0].tipo, 'vence', 'la fuerte va primero');
+});
+test('alertas: descartar oculta solo esa alerta de ese ciclo', () => {
+  const { datos } = conResumen();
+  const id = M.alertasTarjetas(datos, '2026-11-09').find(a => a.tipo === 'vence').id;
+  datos.alertasVistas = [id];
+  assert.equal(M.alertasTarjetas(datos, '2026-11-09').some(a => a.tipo === 'vence'), false);
+  assert.equal(M.alertasTarjetas(datos, '2026-11-09').some(a => a.tipo === 'dolares'), true);
+});
+test('calendario: .ics válido con cierre, vencimiento con avisos y recordatorio de dólares', () => {
+  const { datos, tarjetaId } = conResumen();
+  const ev = M.eventosTarjeta(datos, tarjetaId, '2026-10-20');
+  assert.deepEqual(ev.map(e => [e.fecha, e.uid.split('-')[0]]), [['2026-10-29', 'cierre'], ['2026-11-10', 'vence'], ['2026-11-08', 'dolares']]);
+  const ics = M.generarICS(ev, { ahora: new Date(Date.UTC(2026, 9, 13, 12)) });
+  assert.match(ics, /^BEGIN:VCALENDAR\r\n/);
+  assert.match(ics, /END:VCALENDAR\r\n$/);
+  assert.equal((ics.match(/BEGIN:VEVENT/g) || []).length, 3);
+  assert.match(ics, /DTSTART;VALUE=DATE:20261110\r\nDTEND;VALUE=DATE:20261111/);
+  assert.match(ics, /TRIGGER:-P2DT15H/);
+  assert.match(ics, /DTSTAMP:20261013T120000Z/);
+  assert.ok(ics.split('\r\n').every(l => l.length <= 75), 'líneas plegadas');
+  assert.match(M.generarICS([{ uid: 'x', fecha: '2026-12-31', titulo: 'A, b; c' }]), /SUMMARY:A\\, b\\; c/);
+  assert.match(M.generarICS([{ uid: 'x', fecha: '2026-12-31', titulo: 'fin de año' }]), /DTEND;VALUE=DATE:20270101/);
+});
+test('¿cuotas o contado?: con descuento grande conviene contado; sin descuento y con rendimiento, cuotas', () => {
+  const base4 = { precioCuotas: $(1_200_000), cuotas: 6, inflacion: 1.7, rendimiento: 1.56 };
+  const sinDesc = M.cuotasOContado({ ...base4, descuentoContado: 0 });
+  assert.equal(sinDesc.contado, $(1_200_000));
+  assert.equal(sinDesc.conviene, 'cuotas');
+  assert.ok(sinDesc.sobraHoy > 0 && sinDesc.cuotasHoy < $(1_200_000));
+  const desc20 = M.cuotasOContado({ ...base4, descuentoContado: 20 });
+  assert.equal(desc20.contado, $(960_000));
+  assert.equal(desc20.conviene, 'contado');
+  assert.ok(desc20.sobraHoy < 0);
+  // sin rendimiento ni inflación, 0 % de descuento da igual
+  assert.equal(M.cuotasOContado({ precioCuotas: $(100_000), cuotas: 3, inflacion: 0, rendimiento: 0 }).conviene, 'da igual');
+  // cuenta a mano: 100.000 en 2 cuotas, 1 % de rendimiento, 0 % de inflación
+  // saldo = (100.000×1,01 − 50.000)×1,01 − 50.000 = 1.510
+  assert.equal(M.cuotasOContado({ precioCuotas: $(100_000), cuotas: 2, inflacion: 0, rendimiento: 1 }).sobraFinal, $(1_510));
+  assert.ok(M.SUPUESTOS_DEFECTO.inflacion.url.startsWith('https://') && M.esFecha(M.SUPUESTOS_DEFECTO.rendimiento.fecha));
+});
+test('simulador: muestra libres antes y después sin tocar los datos, y la alerta de límite', () => {
+  const d = conTarjetas();
+  const copia = JSON.stringify(d);
+  const s = M.simularCompra(d, { total: $(900_000), cantidad: 3, primerMes: '2026-11', moneda: 'ARS', tarjetaId: 't1' }, '2026-11', 4);
+  assert.deepEqual(s.map(x => x.nueva / 100), [300_000, 300_000, 300_000, 0]);
+  assert.equal(s[0].despues, s[0].antes - $(300_000));
+  assert.deepEqual(s.slice(0, 3).map(x => x.supera), [true, true, true]);
+  assert.equal(s[3].supera, M.limiteDelMes(d, '2027-02').supera, 'sin la compra, el mes queda como estaba');
+  assert.equal(JSON.stringify(d), copia, 'no modifica los datos');
+  const usd = M.simularCompra(d, { total: $(100), cantidad: 1, primerMes: '2026-11', moneda: 'USD' }, '2026-11', 1);
+  assert.equal(usd[0].nueva, $(200_000));
 });
 
 /* ── entrega: la herramienta pasa por el control de compra ── */
