@@ -307,3 +307,98 @@ fieldset.mm-campo>legend{margin-bottom:8px}
 .mm-toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translate(-50%,16px);opacity:0;z-index:95;background:var(--k);color:#fff;padding:12px 18px;border-radius:999px;font-weight:600;font-size:14px;transition:opacity .25s var(--ease),transform .25s var(--ease);pointer-events:none;max-width:calc(100% - 32px);text-align:center}
 .mm-toast.on{opacity:1;transform:translate(-50%,0)}
 @media (min-width:1000px){.mm-toast{bottom:28px}}
+
+/* ═══════ Paso 4 ═══════ */
+.mm-h1{font-size:clamp(26px,6vw,36px);font-weight:800;letter-spacing:-.035em;margin:0 0 6px;outline:none}
+.mm-h2{font-size:18px;font-weight:700;letter-spacing:-.02em;margin:0 0 10px}
+.mm-total-num.neg,.mm-sim-tabla .neg{color:var(--neg)}
+.mm-btn.chico{min-height:44px;padding:0 16px;font-size:15px}
+.mm-tcard .tc-banco small{display:block;font-size:12px;font-weight:500;opacity:1;margin-top:2px}
+.mm-dias{font-weight:500;color:var(--tinta2)}
+
+/* avisos arriba del inicio, como en un home banking */
+.mm-inicio>.mm-alertas{grid-column:1/-1}
+.mm-alertas{display:grid;gap:10px}
+@media (min-width:1000px){.mm-alertas{grid-template-columns:repeat(auto-fit,minmax(340px,1fr))}}
+.mm-alerta-t{position:relative;display:flex;gap:12px;align-items:flex-start;padding:14px 48px 12px 14px;border-radius:var(--r2);background:var(--azul-suave);color:var(--tinta);animation:mm-sube .3s var(--ease) both}
+.mm-panel .mm-alerta-t{padding-right:14px;margin:0 0 10px}
+.mm-alerta-t.aviso{background:var(--neg-suave)}
+.mm-alerta-t.fuerte{background:var(--or);color:var(--k)}
+.mm-alerta-ic{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--papel);color:var(--azul);flex:none}
+.mm-alerta-t.aviso .mm-alerta-ic{color:var(--neg)}
+.mm-alerta-t.fuerte .mm-alerta-ic{color:var(--k)}
+.mm-alerta-txt{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mm-alerta-txt b{font-size:15.5px}
+.mm-alerta-txt span{font-size:14px}
+.mm-alerta-txt small{font-size:12.5px;color:var(--tinta2);margin-top:4px}
+.mm-alerta-t.fuerte .mm-alerta-txt small{color:var(--k)}
+.mm-alerta-acc{display:flex;flex-wrap:wrap;gap:0 12px;margin-top:2px}
+.mm-alerta-acc .mm-link{display:inline-flex;align-items:center;gap:6px;padding:0;min-height:40px}
+.mm-alerta-acc .mm-link .ic{width:18px;height:18px}
+.mm-alerta-t.fuerte .mm-link{color:var(--k);text-decoration:underline;text-underline-offset:3px}
+.mm-alerta-x{position:absolute;top:4px;right:4px;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;color:inherit}
+.mm-alerta-x:hover{background:rgba(13,13,14,.08)}
+.mm-alerta-x .ic{width:18px;height:18px}
+
+/* tope pasado, dentro del saldo */
+.mm-tope{display:flex;gap:8px;align-items:flex-start;text-align:left;margin-top:12px;padding:10px 12px;border-radius:12px;background:#fff;color:var(--neg);font-weight:600;font-size:14px;min-height:44px;width:100%}
+.mm-tope .ic{width:18px;height:18px;flex:none;margin-top:1px}
+
+/* vistas con formulario + resultado */
+.mm-esc-grid{display:grid;gap:16px}
+@media (min-width:1000px){.mm-esc-grid{grid-template-columns:minmax(0,5fr) minmax(0,7fr);align-items:start;gap:24px}}
+.mm-form-vista{display:flex;flex-direction:column;gap:16px;padding-bottom:18px}
+.mm-libre .mm-total-num{color:var(--azul)}
+.mm-tope-form{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;font-weight:600}
+.mm-tope-form input{width:84px;min-height:48px;font:inherit;font-size:20px;font-weight:700;text-align:center;border:1.5px solid #CFCAC0;border-radius:12px;padding:0 8px}
+.mm-tope-form input:focus{outline:3px solid var(--azul-suave);border-color:var(--azul)}
+
+/* escalera */
+.mm-leyenda{display:flex;flex-wrap:wrap;gap:6px 14px;margin:0 0 10px;font-size:13px;color:var(--tinta2)}
+.mm-leyenda span{display:inline-flex;align-items:center;gap:6px}
+.mm-leyenda i{width:12px;height:12px;border-radius:3px;background:var(--azul)}
+.mm-leyenda i.tope{width:3px;height:14px;border-radius:0;background:var(--neg)}
+.mm-esc{list-style:none;margin:0;padding:0 0 8px;display:grid;gap:8px}
+.mm-esc li{display:grid;grid-template-columns:64px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:32px}
+.esc-mes{font-size:13px;font-weight:600;color:var(--tinta2)}
+.esc-barra{position:relative;display:flex;height:22px;border-radius:6px;background:var(--fondo);overflow:visible}
+.esc-barra i{display:block;height:100%;transform-origin:left;animation:mm-crece .4s var(--ease) both}
+.esc-barra i:first-child{border-radius:6px 0 0 6px}
+.esc-barra i:last-of-type{border-radius:0 6px 6px 0}
+.esc-barra i:only-of-type{border-radius:6px}
+.esc-barra i.azul{background:#3047FF}.esc-barra i.negro{background:#0D0D0E}.esc-barra i.naranja{background:#FF4F2E}.esc-barra i.violeta{background:#6B3BD9}.esc-barra i.verde{background:#0F7B5F}.esc-barra i.gris{background:#5C5C62}
+.mm-leyenda i.negro{background:#0D0D0E}.mm-leyenda i.naranja{background:#FF4F2E}.mm-leyenda i.violeta{background:#6B3BD9}.mm-leyenda i.verde{background:#0F7B5F}.mm-leyenda i.gris{background:#5C5C62}
+.esc-tope{position:absolute;top:-4px;bottom:-4px;width:3px;margin-left:-1.5px;background:var(--neg);border-radius:2px}
+.esc-monto{font-weight:700;font-size:14px;text-align:right;white-space:nowrap;min-width:92px}
+.esc-monto small{display:block;font-size:11.5px;color:var(--neg);font-weight:700}
+.mm-esc li.pasa .esc-mes{color:var(--neg)}
+
+/* ¿cuotas o contado? */
+.mm-veredicto-tit{font-size:clamp(28px,7vw,40px);font-weight:800;letter-spacing:-.035em;margin:2px 0 10px;color:var(--azul)}
+.mm-veredicto-tit.contado{color:var(--k)}
+.mm-letra{font-size:13px;color:var(--tinta2);margin:0;padding:0 4px}
+.mm-veredicto .mm-btn{margin:6px 0 12px}
+
+/* simulador */
+.mm-sim-tabla{display:grid;font-size:14px}
+.mm-sim-tabla>div{display:grid;grid-template-columns:minmax(58px,.8fr) 1fr 1fr 1.1fr;gap:6px;padding:9px 4px;border-top:1px solid var(--linea);text-align:right;white-space:nowrap}
+@media (max-width:420px){.mm-sim-tabla{font-size:13px}.mm-sim-tabla>div{gap:4px}}
+.mm-sim-tabla>div>span:first-child{text-align:left;font-weight:600}
+.mm-sim-tabla>.cab{border-top:0;font-size:12.5px;color:var(--tinta2);font-weight:600}
+.mm-sim-tabla>.pasa{background:var(--neg-suave);border-radius:8px}
+
+/* copia */
+.mm-copia{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 20px;margin-bottom:16px;padding-bottom:16px}
+.mm-copia>div:first-child{flex:1 1 280px}
+
+/* guía de primer uso */
+.mm-pasos{margin:0;font-size:13px;font-weight:700;color:var(--azul)}
+.mm-guia-tit{font-size:26px;font-weight:800;letter-spacing:-.035em;margin:0}
+.mm-guia #gu-cuerpo{display:flex;flex-direction:column;gap:12px}
+.mm-guia-fila{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.mm-guia-fila select,.mm-guia-fila input{min-height:50px;font:inherit;font-size:16px;padding:0 12px;border:1.5px solid #CFCAC0;border-radius:12px;background:var(--papel);color:var(--tinta);width:100%}
+.mm-guia-fila select:focus,.mm-guia-fila input:focus{outline:3px solid var(--azul-suave);border-color:var(--azul)}
+.mm-guia-fin{text-align:center;padding:8px 0}
+.mm-guia-fin .mm-total-num{color:var(--azul)}
+
+.mm-mas-avisos{justify-self:start}

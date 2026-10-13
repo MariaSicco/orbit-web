@@ -6,6 +6,8 @@ import {
   repartirCuotas, ultimoMes, numeroDeCuota, resumenMes, tarjetaEnMes, totalResumen,
   gastoPorRubro, disponibleTarjeta, rubroPara, normalizarComercio,
   validarLectura, importarResumen, datosVacios, migrar,
+  escalera, limiteDelMes, alertasTarjetas, cicloTarjeta, eventosTarjeta, generarICS, diasEntre,
+  cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
 
@@ -13,6 +15,7 @@ const CLAVE = 'orbit:mi-mes';
 const ATRAS = 6, ADELANTE = 60;          // meses que se pueden mirar
 const MAX_PDF = 4 * 1024 * 1024;
 const HOY = mesDe();
+const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 
 /* ── datos en el dispositivo ── */
@@ -83,9 +86,9 @@ function tcard(t, { mesTotal = null, boton = true, grande = false } = {}) {
   const cierre = boton ? 'button' : 'div';
   const red = t.red && t.red !== 'Otra' ? t.red : '';
   return `<${tag} class="mm-tcard ${esc(t.color || 'azul')}${grande ? ' grande' : ''}" ${boton ? `data-ir-tarjeta="${esc(t.id)}" aria-label="${esc(`${t.nombre}${t.ultimos4 ? `, terminada en ${t.ultimos4}` : ''}${mesTotal !== null ? `, este mes ${$(mesTotal)}` : ''}`)}"` : ''}>
-    <span class="tc-arriba"><span class="tc-banco">${esc(t.banco || t.nombre)}</span><span class="tc-red">${esc(red)}</span></span>
+    <span class="tc-arriba"><span class="tc-banco">${esc(t.nombre)}${t.banco && !t.nombre.toLowerCase().includes(t.banco.toLowerCase()) ? `<small>${esc(t.banco)}</small>` : ''}</span><span class="tc-red">${esc(red)}</span></span>
     <span class="tc-chip" aria-hidden="true"></span>
-    <span class="tc-abajo"><span class="tc-num">${t.ultimos4 ? `•••• ${esc(t.ultimos4)}` : esc(t.banco ? t.nombre : '')}</span>
+    <span class="tc-abajo"><span class="tc-num">${t.ultimos4 ? `•••• ${esc(t.ultimos4)}` : ''}</span>
     ${mesTotal !== null ? `<span class="tc-mes">${esc(corto(mes))}<b>${esc($(mesTotal))}</b></span>` : ''}</span>
   </${cierre}>`;
 }
@@ -105,6 +108,10 @@ function pintarInicio(animar = false) {
   num.style.setProperty('--n', Math.max(8, num.textContent.length));
   $id('pasas').hidden = !(r.libres < 0);
   $id('pasas').textContent = r.libres < 0 ? `Te pasás por ${$(-r.libres)}` : '';
+  const lim = limiteDelMes(datos, mes);
+  $id('tope').hidden = !lim.supera;
+  $id('tope').innerHTML = lim.supera ? `${ic('alerta')} Las cuotas de este mes ${lim.ingresos ? `son el ${Math.round(lim.usado * 100)} % de tus ingresos` : 'no tienen ingresos que las cubran'}: tu tope es ${lim.pct} %. <u>Ver escalera</u>` : '';
+  pintarAlertas();
   $id('s-ing').textContent = $(r.totIngresos);
   $id('s-gas').textContent = $(r.totGastos);
   $id('s-tar').textContent = $(r.totTarjetas);
@@ -239,6 +246,14 @@ function pintarUna() {
       <div class="mm-moneda-tit">En ${esc(MONEDAS[m].nombre)} <span>${esc(fm(cs.reduce((s, c) => s + c.monto, 0), m))}</span></div>
       <ul class="mm-lista">${cs.map(c => `<li><div class="mm-item"><span class="mm-item-txt"><span class="mm-item-tit">${esc(c.comercio)}${c.cuota ? ` <span class="mm-tag ext">${c.cuota.n}/${c.cuota.de}</span>` : ''}</span><span class="mm-item-meta">${esc([fechaCorta(c.fecha), c.rubro].filter(Boolean).join(' · '))}</span></span><span class="mm-item-monto">${esc(fm(c.monto, m))}</span></div></li>`).join('')}</ul>`).join('') : '';
 
+  const ciclo = cicloTarjeta(datos, t.id, HOY_ISO);
+  const avisos = alertasTarjetas({ ...datos, alertasVistas: [] }, HOY_ISO).filter(a => a.tarjetaId === t.id);
+  const fechasHTML = ciclo ? `<section class="mm-panel" aria-labelledby="u-fe"><div class="mm-seccion-top"><h2 id="u-fe">Fechas y avisos</h2></div>
+      <dl class="mm-datos"><div><dt>Cierre</dt><dd>${esc(ciclo.cierre ? fechaCorta(ciclo.cierre) : '—')}</dd></div><div><dt>Vence</dt><dd>${esc(fechaCorta(ciclo.vencimiento))}${diasEntre(HOY_ISO, ciclo.vencimiento) >= 0 ? ` <small class="mm-dias">(${diasEntre(HOY_ISO, ciclo.vencimiento) === 0 ? 'hoy' : `en ${diasEntre(HOY_ISO, ciclo.vencimiento)} días`})</small>` : ''}</dd></div></dl>
+      ${avisos.map(alertaHTML).join('')}
+      <button type="button" class="mm-btn sec" data-ics="${esc(t.id)}">${ic('calendario')} Agregar al calendario</button>
+      <p class="mm-fuente" style="margin:8px 0 10px">Baja un archivo con el cierre y el vencimiento${ciclo.resumen?.totales?.USD ? ' (y el recordatorio de dólares)' : ''}. Abrilo en el teléfono y te avisa aunque no abras la app.</p></section>`
+    : `<section class="mm-panel"><p class="mm-vacio">Para recibir avisos de cierre y vencimiento, subí el resumen de esta tarjeta o <button type="button" class="mm-link" data-editar-tarjeta="${esc(t.id)}">cargá los días</button>.</p></section>`;
   $id('una').innerHTML = `
     <div class="mm-una-a">
       ${tcard(t, { boton: false })}
@@ -246,6 +261,7 @@ function pintarUna() {
         <button type="button" class="mm-btn" data-importar="${esc(t.id)}">${ic('subir')} Subir resumen de esta tarjeta</button>
         <button type="button" class="mm-btn sec" data-editar-tarjeta="${esc(t.id)}">${ic('editar')} Editar</button>
       </div>
+      ${fechasHTML}
       <section class="mm-panel" aria-label="Resumen del mes">${resumenHTML}</section>
       ${dispHTML}
     </div>
@@ -481,6 +497,8 @@ function pintarTodo(animar) {
   pintarTarjetas();
   if (tarjetaVista) pintarUna();
   pintarCargado();
+  if (vista === 'escalera') pintarEscalera();
+  if (vista === 'simular') pintarSimular();
 }
 function irAMes(nuevo) {
   if (difMeses(nuevo, HOY) > ATRAS || difMeses(HOY, nuevo) > ADELANTE) return;
@@ -492,18 +510,22 @@ function irAMes(nuevo) {
 $id('mes-ant').addEventListener('click', () => irAMes(sumarMeses(mes, -1)));
 $id('mes-sig').addEventListener('click', () => irAMes(sumarMeses(mes, 1)));
 
-const VISTAS = ['inicio', 'tarjetas', 'tarjeta', 'cargado', 'revisar'];
+const VISTAS = ['inicio', 'tarjetas', 'tarjeta', 'cargado', 'revisar', 'escalera', 'contado', 'simular'];
+const TITULOS = { tarjetas: 't-tarjetas', tarjeta: 't-una', cargado: 't-cargado', revisar: 't-revisar', escalera: 't-escalera', contado: 't-contado', simular: 't-simular' };
 function verVista(v, { foco = true } = {}) {
   vista = v;
-  const nav = v === 'tarjeta' ? 'tarjetas' : v === 'revisar' ? '' : v;
+  const nav = v === 'tarjeta' ? 'tarjetas' : ['tarjetas', 'cargado', 'inicio'].includes(v) ? v : '';
   for (const b of document.querySelectorAll('[data-vista]')) {
     if (b.dataset.vista === nav) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
   }
   for (const x of VISTAS) $id(`vista-${x}`).hidden = x !== v;
   if (v === 'tarjeta') pintarUna();
+  if (v === 'escalera') pintarEscalera();
+  if (v === 'contado') pintarContado(true);
+  if (v === 'simular') pintarSimular(true);
   try { history.replaceState(null, '', v === 'inicio' ? location.pathname : `#${v}`); } catch {}
   window.scrollTo({ top: 0, behavior: 'instant' });
-  if (foco && v !== 'inicio') $id({ tarjetas: 't-tarjetas', tarjeta: 't-una', cargado: 't-cargado', revisar: 't-revisar' }[v])?.focus();
+  if (foco && v !== 'inicio') $id(TITULOS[v])?.focus();
 }
 document.querySelector('.mm-nav').addEventListener('click', e => {
   const b = e.target.closest('[data-vista]');
@@ -547,7 +569,7 @@ for (const dlg of document.querySelectorAll('dialog')) {
     if (!destino?.isConnected) {
       const id = abiertoDesde?.dataset?.id;
       destino = (id && document.querySelector(`#vista-${vista} [data-id="${CSS.escape(id)}"]`)) ||
-        (vista === 'inicio' ? $id('accion-principal') : $id({ tarjetas: 't-tarjetas', tarjeta: 't-una', cargado: 't-cargado', revisar: 't-revisar' }[vista]));
+        (vista === 'inicio' ? $id('accion-principal') : $id(TITULOS[vista]));
     }
     destino?.focus?.();
   });
@@ -796,6 +818,8 @@ function abrirTarjeta(id = null) {
   const auto = t && t.nombre === [t.banco, t.red !== 'Otra' ? t.red : ''].filter(Boolean).join(' ');
   $id('t-nombre').value = t && !auto ? t.nombre : '';
   $id('t-limite').value = t?.limite ? sinSimbolo(t.limite, 'ARS') : '';
+  $id('t-cierre').value = t?.diaCierre || '';
+  $id('t-vence').value = t?.diaVence || '';
   $id('t-borrar').hidden = !t;
   if (t) {
     const nc = datos.cuotas.filter(c => c.tarjetaId === id).length;
@@ -821,7 +845,14 @@ dt.querySelector('form').addEventListener('submit', e => {
   const limite = limTxt ? leerMonto(limTxt) : null;
   if (limTxt && !limite) { error($id('t-limite'), 't-limite-err', 'Revisá el límite (los centavos van con coma), o dejalo vacío.').focus(); return; }
   limpiarError($id('t-limite'), 't-limite-err');
-  const v = valoresTarjeta();
+  const leerDia = id => { const x = $id(id).value.trim(); if (!x) return null; const n = Number(x); return Number.isInteger(n) && n >= 1 && n <= 31 ? n : NaN; };
+  const diaCierre = leerDia('t-cierre'), diaVence = leerDia('t-vence');
+  if (Number.isNaN(diaCierre) || Number.isNaN(diaVence) || (diaCierre === null) !== (diaVence === null)) {
+    error($id(Number.isNaN(diaVence) || (diaCierre !== null && diaVence === null) ? 't-vence' : 't-cierre'), 't-dias-err', 'Cargá los dos días (de 1 a 31), o dejá los dos vacíos.').focus(); return;
+  }
+  $id('t-dias-err').textContent = '';
+  const dias = diaCierre ? { diaCierre, diaVence } : {};
+  const v = { ...valoresTarjeta(), ...dias };
   if (editTarjeta) {
     datos.tarjetas = datos.tarjetas.map(t => (t.id === editTarjeta ? { id: t.id, ...v, ...(limite ? { limite } : {}) } : t));
   } else {
@@ -881,6 +912,260 @@ dx.querySelector('form').addEventListener('submit', e => {
   guardar(); pintarTodo(); if (vista === 'revisar') pintarRevisar(); cerrar(dx); avisar('Tipo de cambio guardado');
 });
 
+
+/* ════════ AVISOS (alertas de tarjeta) ════════ */
+function alertaHTML(a, { descartable = false } = {}) {
+  const t = tarjetaDe(a.tarjetaId);
+  return `<div class="mm-alerta-t ${a.nivel}" role="${a.nivel === 'fuerte' ? 'alert' : 'status'}">
+    <span class="mm-alerta-ic">${ic(a.tipo === 'dolares' ? 'dolar' : a.tipo === 'cierre' ? 'calendario' : 'alerta')}</span>
+    <div class="mm-alerta-txt"><b>${esc(a.titulo)}</b><span>${esc(a.texto)}</span>
+      ${a.tipo === 'dolares' ? '<small>Orientativo, no es asesoramiento: depende de tu banco. Se paga entre la emisión del resumen y el vencimiento; con débito automático, puede hacer falta frenarlo.</small>' : ''}
+      <span class="mm-alerta-acc">${descartable && t ? `<button type="button" class="mm-link" data-ir-tarjeta="${esc(t.id)}">Ver ${esc(t.nombre)}</button>` : ''}<button type="button" class="mm-link" data-ics="${esc(a.tarjetaId)}">${ic('calendario')} Agregar al calendario</button></span></div>
+    ${descartable ? `<button type="button" class="mm-alerta-x" data-descartar-alerta="${esc(a.id)}" aria-label="Descartar este aviso">${ic('cerrar')}</button>` : ''}
+  </div>`;
+}
+function pintarAlertas() {
+  const as = alertasTarjetas(datos, HOY_ISO);
+  $id('alertas').hidden = !as.length;
+  const VISIBLES = 2;
+  $id('alertas').innerHTML = as.map((a, i) => (i < VISIBLES || alertasAbiertas ? alertaHTML(a, { descartable: true }) : '')).join('') +
+    (as.length > VISIBLES ? `<button type="button" class="mm-link mm-mas-avisos" data-mas-avisos aria-expanded="${alertasAbiertas}">${alertasAbiertas ? 'Ver menos avisos' : `Ver ${as.length - VISIBLES} aviso${as.length - VISIBLES === 1 ? '' : 's'} más`}</button>` : '');
+}
+let alertasAbiertas = false;
+function bajarICS(tarjetaId) {
+  const ev = eventosTarjeta(datos, tarjetaId, HOY_ISO);
+  if (!ev.length) return avisar('Cargá los días de cierre y vencimiento de esta tarjeta primero.');
+  const t = tarjetaDe(tarjetaId);
+  bajarArchivo(generarICS(ev), `mi-mes-${normalizarComercio(t?.nombre || 'tarjeta').toLowerCase().replace(/ /g, '-') || 'tarjeta'}.ics`, 'text/calendar');
+  avisar('Abrí el archivo para sumarlo a tu calendario');
+}
+function bajarArchivo(contenido, nombre, tipo) {
+  const url = URL.createObjectURL(new Blob([contenido], { type: `${tipo};charset=utf-8` }));
+  const a = Object.assign(document.createElement('a'), { href: url, download: nombre });
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+/* ════════ ESCALERA ════════ */
+function pintarEscalera() {
+  const e = escalera(datos, HOY, 18);
+  const ultimaConCuotas = e.filas.reduce((u, f, i) => (f.total > 0 ? i : u), -1);
+  const filas = e.filas.slice(0, Math.max(6, ultimaConCuotas + 2));
+  const max = Math.max(1, ...filas.map(f => Math.max(f.total, f.tope || 0)));
+  const usadas = datos.tarjetas.filter(t => filas.some(f => f.porTarjeta[t.id]));
+  const pasados = filas.filter(f => f.supera).length;
+  $id('esc-libre').innerHTML = !datos.cuotas.length
+    ? `<p class="mm-vacio"><b>No tenés cuotas cargadas.</b> Cuando cargues una compra en cuotas o subas un resumen, acá ves mes a mes cuánto está comprometido.</p><button type="button" class="mm-btn" data-nuevo="cuota">Cargar una cuota</button>`
+    : `<p class="mm-item-meta">Quedás libre de cuotas en</p><p class="mm-total-num">${esc(capital(nombreMes(e.mesLibre)))}</p>
+       <p class="${pasados ? 'mm-err' : 'mm-fuente'}">${pasados ? `${pasados === 1 ? 'Un mes pasa' : `${pasados} meses pasan`} tu tope de ${datos.limiteCuotas} % de los ingresos.` : `Ningún mes pasa tu tope de ${datos.limiteCuotas} % de los ingresos.`}</p>`;
+  $id('tope-pct').value = datos.limiteCuotas;
+  $id('esc-leyenda').innerHTML = usadas.map(t => `<span><i class="${esc(t.color)}"></i>${esc(t.nombre)}</span>`).join('') + (filas.some(f => f.tope) ? '<span><i class="tope"></i>Tu tope</span>' : '');
+  $id('esc').innerHTML = filas.map(f => `<li class="${f.supera ? 'pasa' : ''}">
+    <span class="esc-mes">${esc(corto(f.mes))}</span>
+    <span class="esc-barra" role="img" aria-label="${esc(`${nombreMes(f.mes)}: ${$(f.total)} en cuotas${f.tope ? `, tope ${$(f.tope)}` : ''}${f.supera ? ', se pasa del tope' : ''}`)}">
+      ${usadas.map(t => f.porTarjeta[t.id] ? `<i class="${esc(t.color)}" style="width:${(f.porTarjeta[t.id] / max) * 100}%"></i>` : '').join('')}
+      ${f.tope ? `<b class="esc-tope" style="left:${Math.min(100, (f.tope / max) * 100)}%"></b>` : ''}
+    </span>
+    <span class="esc-monto">${esc($(f.total))}${f.supera ? '<small>Te pasás</small>' : ''}</span></li>`).join('');
+}
+$id('tope-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const n = Number($id('tope-pct').value);
+  if (!Number.isInteger(n) || n < 1 || n > 100) { error($id('tope-pct'), 'tope-err', 'Poné un número entre 1 y 100.').focus(); return; }
+  limpiarError($id('tope-pct'), 'tope-err');
+  datos.limiteCuotas = n;
+  guardar(); pintarTodo(); pintarEscalera(); avisar(`Tope guardado: ${n} %`);
+});
+
+/* ════════ ¿CUOTAS O CONTADO? ════════ */
+const numero = txt => { const v = Number(String(txt).replace(',', '.').replace(/[^\d.]/g, '')); return String(txt).trim() !== '' && Number.isFinite(v) ? v : null; };
+const pctTxt = v => String(Math.round(v * 100) / 100).replace('.', ',');
+function pintarContado(cargarSupuestos = false) {
+  const inf = supuesto(datos, 'inflacion'), ren = supuesto(datos, 'rendimiento');
+  if (cargarSupuestos) { $id('cc-inf').value = pctTxt(inf.valor); $id('cc-ren').value = pctTxt(ren.valor); }
+  $id('cc-inf-f').innerHTML = fuenteHTML(inf);
+  $id('cc-ren-f').innerHTML = fuenteHTML(ren);
+  for (const b of document.querySelectorAll('[data-cc]')) b.setAttribute('aria-pressed', String(b.dataset.cc === $id('cc-cant').value));
+  const precio = leerMonto($id('cc-precio').value);
+  const n = Number($id('cc-cant').value);
+  const desc = numero($id('cc-desc').value) ?? 0;
+  const pi = numero($id('cc-inf').value), r = numero($id('cc-ren').value);
+  const res = $id('cc-res');
+  if (!precio || !Number.isInteger(n) || n < 1 || n > 72 || pi === null || r === null || desc < 0 || desc >= 100) {
+    res.innerHTML = `<p class="mm-vacio"><b>Cargá el precio y las cuotas</b> y te decimos qué conviene, con la cuenta a la vista.</p>`;
+    return;
+  }
+  const c = cuotasOContado({ precioCuotas: precio, descuentoContado: desc, cuotas: n, inflacion: pi, rendimiento: r });
+  const titulo = { cuotas: 'Conviene en cuotas', contado: 'Conviene de contado', 'da igual': 'Da prácticamente igual' }[c.conviene];
+  res.innerHTML = `<p class="mm-item-meta">Con estos supuestos</p><p class="mm-veredicto-tit ${c.conviene === 'contado' ? 'contado' : ''}">${titulo}</p>
+    <dl class="mm-datos"><div><dt>De contado</dt><dd>${esc($(c.contado))}</dd></div><div><dt>${n} cuotas de</dt><dd>${esc($(c.cuota))}</dd></div>
+    <div><dt>Las cuotas en plata de hoy</dt><dd>${esc($(c.cuotasHoy))}</dd></div><div><dt>${c.sobraHoy >= 0 ? 'Te sobra, en plata de hoy' : 'Te falta, en plata de hoy'}</dt><dd>${esc($(Math.abs(c.sobraHoy)))}</dd></div></dl>
+    <p class="mm-fuente">La cuenta: si en vez de pagar ${esc($(c.contado))} hoy dejás esa plata rindiendo ${esc(pctTxt(r))} % por mes y pagás las cuotas, al final ${c.sobraFinal >= 0 ? `te sobran ${esc($(c.sobraFinal))}` : `te faltan ${esc($(-c.sobraFinal))}`} (${esc($(Math.abs(c.sobraHoy)))} con la inflación de ${esc(pctTxt(pi))} % por mes descontada).</p>
+    <button type="button" class="mm-btn sec" data-simular-desde-contado>${ic('simular')} Ver cómo queda mi mes</button>`;
+}
+$id('cc-form').addEventListener('input', e => {
+  if (e.target.id === 'cc-inf' || e.target.id === 'cc-ren') {
+    const k = e.target.id === 'cc-inf' ? 'inflacion' : 'rendimiento';
+    const v = numero(e.target.value);
+    if (v !== null && v >= 0 && v < 100) { datos.supuestos = { ...datos.supuestos, [k]: { valor: v, fecha: HOY_ISO } }; guardar(); }
+  }
+  pintarContado();
+});
+$id('cc-form').addEventListener('submit', e => e.preventDefault());
+$id('cc-rapidas').addEventListener('click', e => { const b = e.target.closest('[data-cc]'); if (b) { $id('cc-cant').value = b.dataset.cc; pintarContado(); } });
+$id('cc-precio').addEventListener('blur', e => { const c = leerMonto(e.target.value); if (c) e.target.value = sinSimbolo(c, 'ARS'); });
+function simularDesdeContado() {
+  $id('sim-total').value = $id('cc-precio').value;
+  $id('sim-cant').value = $id('cc-cant').value;
+  $id('sim-form').querySelector('[name="sim-moneda"][value="ARS"]').checked = true;
+  verVista('simular');
+}
+
+/* ════════ SIMULADOR ════════ */
+const monedaSim = () => $id('sim-form').querySelector('[name="sim-moneda"]:checked')?.value || 'ARS';
+function pintarSimular(inicial = false) {
+  if (inicial || !$id('sim-mes').options.length) opcionesMes($id('sim-mes'), HOY, sumarMeses(HOY, 24), $id('sim-mes').value || proximoResumen());
+  for (const b of document.querySelectorAll('[data-sc]')) b.setAttribute('aria-pressed', String(b.dataset.sc === $id('sim-cant').value));
+  const total = leerMonto($id('sim-total').value);
+  const n = Number($id('sim-cant').value);
+  const res = $id('sim-res');
+  if (!total || !Number.isInteger(n) || n < 1 || n > 72) {
+    res.innerHTML = `<p class="mm-vacio"><b>Poné el monto y las cuotas.</b> No se guarda nada hasta que toques "Cargar esta compra".</p>`;
+    return;
+  }
+  const m = monedaSim();
+  const primer = $id('sim-mes').value;
+  const filas = simularCompra(datos, { total, cantidad: n, primerMes: primer, moneda: m }, primer, Math.min(24, n + 2));
+  if (filas.some(f => f.despues === null)) {
+    res.innerHTML = `<p class="mm-err">Falta el tipo de cambio de ${esc(MONEDAS[m].nombre)}. <button type="button" class="mm-link" data-cambio>Cargarlo</button></p>`;
+    return;
+  }
+  const peor = filas.filter(f => f.cuota).reduce((a, f) => (f.despues < a.despues ? f : a));
+  const pasan = filas.filter(f => f.cuota && f.supera).length;
+  res.innerHTML = `<p class="mm-item-meta">Con esta compra, el mes más justo es ${esc(nombreMes(peor.mes))}</p>
+    <p class="mm-total-num ${peor.despues < 0 ? 'neg' : ''}">${esc($(peor.despues))}</p>
+    ${pasan ? `<p class="mm-alerta" style="width:auto;margin:0 0 12px">${ic('alerta')} En ${pasan === 1 ? 'un mes' : `${pasan} meses`} las cuotas pasarían tu tope de ${datos.limiteCuotas} % de los ingresos.</p>` : `<p class="mm-fuente" style="margin:0 0 12px">Ningún mes pasa tu tope de ${datos.limiteCuotas} %.</p>`}
+    <div class="mm-sim-tabla" role="table" aria-label="Te quedan libres, antes y después de la compra">
+      <div role="row" class="cab"><span role="columnheader">Mes</span><span role="columnheader">Hoy</span><span role="columnheader">Cuota</span><span role="columnheader">Con la compra</span></div>
+      ${filas.map(f => `<div role="row" class="${f.supera && f.cuota ? 'pasa' : ''}"><span role="cell">${esc(corto(f.mes))}</span><span role="cell">${esc($(f.antes))}</span><span role="cell">${f.cuota ? `−${esc($(f.nueva))}` : '—'}</span><span role="cell" class="${f.despues < 0 ? 'neg' : ''}"><b>${esc($(f.despues))}</b></span></div>`).join('')}
+    </div>
+    <button type="button" class="mm-btn" data-cargar-simulada style="margin-top:14px;width:100%">${ic('cuota')} Cargar esta compra</button>`;
+}
+$id('sim-form').addEventListener('input', () => pintarSimular());
+$id('sim-form').addEventListener('change', () => pintarSimular());
+$id('sim-form').addEventListener('submit', e => e.preventDefault());
+$id('sim-rapidas').addEventListener('click', e => { const b = e.target.closest('[data-sc]'); if (b) { $id('sim-cant').value = b.dataset.sc; pintarSimular(); } });
+function cargarSimulada() {
+  abrirCuota(null, null);
+  const m = monedaSim();
+  dc.querySelector(`[name="moneda"][value="${m}"]`).checked = true;
+  $id('c-total').value = $id('sim-total').value;
+  $id('c-cant').value = $id('sim-cant').value;
+  opcionesMes($id('c-mes'), sumarMeses(HOY, -24), sumarMeses(HOY, 24), $id('sim-mes').value);
+  marcarCantRapida(); previewCuota();
+}
+
+/* ════════ COPIA ════════ */
+function exportarCopia() {
+  const copia = { app: 'mi-mes-by-orbit', version: datos.v, exportado: new Date().toISOString(), datos };
+  bajarArchivo(JSON.stringify(copia, null, 2), `mi-mes-copia-${HOY_ISO}.json`, 'application/json');
+  avisar('Copia descargada');
+}
+let copiaPendiente = null;
+$id('archivo-copia').addEventListener('change', async e => {
+  const f = e.target.files?.[0];
+  if (!f) return;
+  try {
+    if (f.size > 5 * 1024 * 1024) throw new Error('grande');
+    const json = JSON.parse(await f.text());
+    if (json?.app !== 'mi-mes-by-orbit' || !json.datos) throw new Error('formato');
+    copiaPendiente = migrar(json.datos);
+    const d = copiaPendiente;
+    $id('dm-txt').textContent = `Copia del ${json.exportado ? new Date(json.exportado).toLocaleDateString('es-AR') : 'archivo'}: ${d.ingresos.length} ingresos, ${d.gastos.length} gastos fijos, ${d.cuotas.length} cuotas, ${d.tarjetas.length} tarjetas y ${d.resumenes.length} resúmenes.`;
+    abrir($id('dlg-importar'), $id('dlg-importar').querySelector('[type="submit"]'));
+  } catch {
+    avisar('Ese archivo no es una copia de Mi Mes by Orbit.');
+  }
+});
+$id('dlg-importar').querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  if (!copiaPendiente) return;
+  datos = copiaPendiente; copiaPendiente = null; tarjetaVista = null;
+  guardar(); cerrar($id('dlg-importar')); pintarTodo(); avisar('Copia importada');
+});
+
+/* ════════ PRIMER USO GUIADO ════════ */
+const GUIA = 'orbit:mi-mes:guia-vista';
+const dgu = $id('dlg-guia');
+let pasoGuia = 0;
+function iniciarGuiaSiHaceFalta() {
+  const vacio = !datos.ingresos.length && !datos.gastos.length && !datos.cuotas.length && !datos.resumenes.length;
+  let vista = false;
+  try { vista = localStorage.getItem(GUIA) === '1'; } catch {}
+  if (vacio && !vista) abrirGuia();
+}
+function abrirGuia() { pasoGuia = 0; pintarGuia(); abrir(dgu, dgu.querySelector('input')); }
+function terminarGuia() { try { localStorage.setItem(GUIA, '1'); } catch {} cerrar(dgu); }
+function pintarGuia() {
+  const titulos = ['¿Cuánto cobrás por mes?', 'Tus gastos fijos principales', 'Una compra en cuotas', ''];
+  $id('gu-paso').textContent = pasoGuia < 3 ? `Paso ${pasoGuia + 1} de 3` : 'Listo';
+  $id('gu-tit').textContent = titulos[pasoGuia];
+  $id('gu-atras').hidden = pasoGuia === 0 || pasoGuia === 3;
+  dgu.querySelector('[data-saltear-guia]').hidden = pasoGuia === 3;
+  $id('gu-sig').textContent = pasoGuia === 3 ? 'Ir a mi mes' : pasoGuia === 2 ? 'Ver cuánto me queda' : 'Seguir';
+  const cuerpo = $id('gu-cuerpo');
+  if (pasoGuia === 0) {
+    cuerpo.innerHTML = `<p class="mm-ayuda">Tu sueldo o lo que cobres todos los meses, en pesos. Después podés sumar otros.</p>
+      <div class="mm-campo"><label for="gu-ing">Monto por mes</label><input id="gu-ing" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 1.200.000" aria-describedby="gu-ing-err"><p class="mm-err" id="gu-ing-err"></p></div>`;
+  } else if (pasoGuia === 1) {
+    const cats = ['Alquiler', 'Expensas', 'Servicios'];
+    cuerpo.innerHTML = `<p class="mm-ayuda">Los que pagás sí o sí todos los meses. Dejá vacío el que no tengas.</p>` + cats.map((c, i) => `
+      <div class="mm-guia-fila"><label class="mm-sr" for="gu-cat${i}">Categoría ${i + 1}</label><select id="gu-cat${i}">${CATEGORIAS.map(x => `<option${x === c ? ' selected' : ''}>${x}</option>`).join('')}</select>
+      <label class="mm-sr" for="gu-g${i}">Monto de ${c}</label><input id="gu-g${i}" type="text" inputmode="decimal" autocomplete="off" placeholder="$ por mes" aria-describedby="gu-g-err"></div>`).join('') + '<p class="mm-err" id="gu-g-err"></p>';
+  } else if (pasoGuia === 2) {
+    cuerpo.innerHTML = `<p class="mm-ayuda">Una que estés pagando. Si no tenés, seguí sin completar.</p>
+      <div class="mm-campo"><label for="gu-c">Monto total de la compra</label><input id="gu-c" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 300.000" aria-describedby="gu-c-err"><p class="mm-err" id="gu-c-err"></p></div>
+      <div class="mm-fila"><div class="mm-campo"><label for="gu-n">Cuotas</label><input id="gu-n" type="number" inputmode="numeric" min="1" max="72" value="6"></div>
+      <div class="mm-campo"><label for="gu-t">Tarjeta</label><input id="gu-t" type="text" maxlength="40" autocomplete="off" placeholder="Ej: Visa del banco"></div></div>`;
+  } else {
+    const r = resumenMes(datos, HOY);
+    cuerpo.innerHTML = `<div class="mm-guia-fin"><p>Este mes te quedan libres</p><p class="mm-total-num ${r.libres < 0 ? 'neg' : ''}">${esc($(r.libres))}</p>
+      <p class="mm-ayuda">Ya está. Ahora podés subir el resumen de tu tarjeta para que se carguen solas las cuotas, o mirar los meses que vienen.</p></div>`;
+  }
+}
+$id('gu-atras').addEventListener('click', () => { pasoGuia = Math.max(0, pasoGuia - 1); pintarGuia(); dgu.querySelector('input,select')?.focus(); });
+dgu.addEventListener('click', e => { if (e.target.closest('[data-saltear-guia]')) terminarGuia(); });
+dgu.addEventListener('cancel', () => { try { localStorage.setItem(GUIA, '1'); } catch {} });
+dgu.querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  if (pasoGuia === 0) {
+    const m = leerMonto($id('gu-ing').value);
+    if (!m) { error($id('gu-ing'), 'gu-ing-err', 'Escribí cuánto cobrás, por ejemplo 1.200.000.').focus(); return; }
+    datos.ingresos = datos.ingresos.filter(i => i.id !== 'guia-ing');
+    datos.ingresos.push({ id: 'guia-ing', nombre: 'Sueldo', monto: m, repite: true, desde: HOY });
+  } else if (pasoGuia === 1) {
+    const filas = [0, 1, 2].map(i => ({ cat: $id(`gu-cat${i}`).value, txt: $id(`gu-g${i}`).value.trim() }));
+    const malos = filas.findIndex(f => f.txt && !leerMonto(f.txt));
+    if (malos >= 0) { error($id(`gu-g${malos}`), 'gu-g-err', 'Revisá ese monto (los centavos van con coma).').focus(); return; }
+    datos.gastos = datos.gastos.filter(g => !g.id.startsWith('guia-g'));
+    filas.forEach((f, i) => { if (f.txt) datos.gastos.push({ id: `guia-g${i}`, nombre: f.cat, categoria: f.cat, monto: leerMonto(f.txt), repite: true, desde: HOY }); });
+  } else if (pasoGuia === 2) {
+    const txt = $id('gu-c').value.trim();
+    datos.cuotas = datos.cuotas.filter(c => c.id !== 'guia-c');
+    if (txt) {
+      const total = leerMonto(txt);
+      const n = Number($id('gu-n').value);
+      if (!total || !Number.isInteger(n) || n < 1 || n > 72) { error($id('gu-c'), 'gu-c-err', 'Revisá el monto y la cantidad de cuotas.').focus(); return; }
+      const nombre = $id('gu-t').value.trim() || 'Mi tarjeta';
+      const tId = datos.tarjetas.find(t => t.nombre.toLowerCase() === nombre.toLowerCase())?.id || nuevaTarjeta(nombre);
+      datos.cuotas.push({ id: 'guia-c', descripcion: '', total, moneda: 'ARS', cantidad: n, tarjetaId: tId, primerMes: proximoResumen() });
+    }
+  } else { terminarGuia(); return; }
+  guardar(); pintarTodo();
+  pasoGuia++; pintarGuia();
+  requestAnimationFrame(() => (dgu.querySelector('#gu-cuerpo input, #gu-cuerpo select') || $id('gu-sig')).focus());
+});
+
 /* ── clics de toda la app ── */
 const ABRIR = { cuota: abrirCuota, ingreso: abrirIngreso, gasto: abrirGasto };
 document.addEventListener('click', e => {
@@ -904,7 +1189,15 @@ document.addEventListener('click', e => {
   if (t.closest('[data-revisar-igual]')) { pendiente.estado = 'ok'; pintarRevisar(); return; }
   const mm = t.closest('[data-mes]');
   if (mm) return irAMes(sumarMeses(mes, Number(mm.dataset.mes)));
-  if (t.closest('.mm-acceso.pronto')) return avisar('Llega en la próxima actualización.');
+  const desc = t.closest('[data-descartar-alerta]');
+  if (desc) { datos.alertasVistas = [...datos.alertasVistas, desc.dataset.descartarAlerta].slice(-200); guardar(); pintarTodo(); return avisar('Aviso descartado'); }
+  if (t.closest('[data-mas-avisos]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-mas-avisos]')?.focus(); }
+  const ics = t.closest('[data-ics]');
+  if (ics) return bajarICS(ics.dataset.ics);
+  if (t.closest('[data-exportar]')) return exportarCopia();
+  if (t.closest('[data-importar-copia]')) { $id('archivo-copia').value = ''; return $id('archivo-copia').click(); }
+  if (t.closest('[data-simular-desde-contado]')) return simularDesdeContado();
+  if (t.closest('[data-cargar-simulada]')) return cargarSimulada();
 });
 /* incluir o no un consumo en la revisión */
 $id('revisar').addEventListener('change', e => {
@@ -923,4 +1216,5 @@ else {
 if (LOCAL) $id('modo-local').hidden = false;
 pintarTodo();
 const inicial = location.hash.slice(1);
-if (['tarjetas', 'cargado'].includes(inicial)) verVista(inicial, { foco: false });
+if (['tarjetas', 'cargado', 'escalera', 'contado', 'simular'].includes(inicial)) verVista(inicial, { foco: false });
+iniciarGuiaSiHaceFalta();

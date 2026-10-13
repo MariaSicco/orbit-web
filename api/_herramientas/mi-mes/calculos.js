@@ -586,15 +586,18 @@ export function alertasTarjetas(datos, hoy) {
     const faltan = diasEntre(hoy, vencimiento);
     const cerrado = !cierre || diasEntre(cierre, hoy) >= 0;
     const montoMes = tarjetaEnMes(datos, t.id, ciclo.mes).total;
-    if (cerrado && faltan >= 0) {
+    const avisaVence = faltan >= 0 && faltan <= DIAS_AVISO_VENCE;
+    const proximo = `Lo que compres ahora va al resumen de ${nombreMes(sumarMeses(ciclo.mes, 1))}.`;
+    /* si ya avisamos que vence, el cierre va adentro de ese mismo aviso */
+    if (cerrado && faltan >= 0 && !avisaVence) {
       out.push({ id: `cierre:${t.id}:${vencimiento}`, tipo: 'cierre', tarjetaId: t.id, nivel: 'info', fecha: cierre,
         titulo: `Ya cerró el resumen de ${t.nombre}`,
-        texto: `Lo que compres ahora va al resumen de ${nombreMes(sumarMeses(ciclo.mes, 1))}.` });
+        texto: proximo });
     }
-    if (faltan >= 0 && faltan <= DIAS_AVISO_VENCE) {
+    if (avisaVence) {
       const cuando = faltan === 0 ? 'Vence hoy' : faltan === 1 ? 'Vence mañana' : `Vence en ${faltan} días`;
       out.push({ id: `vence:${t.id}:${vencimiento}`, tipo: 'vence', tarjetaId: t.id, nivel: faltan <= 1 ? 'fuerte' : 'aviso', fecha: vencimiento, dias: faltan,
-        titulo: `${cuando}: ${formatoPesos(montoMes)}`, texto: `Resumen de ${t.nombre}, vence el ${fechaCorta(vencimiento)}.` });
+        titulo: `${cuando}: ${formatoPesos(montoMes)}`, texto: `Resumen de ${t.nombre}, vence el ${fechaCorta(vencimiento)}.${cerrado ? ` ${proximo}` : ''}` });
     }
     const usd = ciclo.resumen?.totales?.USD || 0;
     if (usd > 0 && cerrado && faltan >= 0) {

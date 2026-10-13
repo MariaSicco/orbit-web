@@ -33,6 +33,9 @@
     <symbol id="i-alerta" viewBox="0 0 24 24"><path d="M12 4 2.5 20h19z"/><path d="M12 10v4M12 17v.5"/></symbol>
     <symbol id="i-candado" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
     <symbol id="i-editar" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16z"/></symbol>
+    <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-simular" viewBox="0 0 24 24"><path d="M4 19V5M4 19h16"/><path d="M7 15l4-4 3 3 5-6"/></symbol>
+    <symbol id="i-bajar" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5"/><path d="M4 20h16"/></symbol>
   </defs>
 </svg>
 <a class="mm-skip" href="#principal">Saltar al contenido</a>
@@ -57,6 +60,7 @@
 <main id="principal" tabindex="-1">
   <!-- ════════ INICIO ════════ -->
   <section class="mm-vista mm-inicio" id="vista-inicio" aria-labelledby="mes-nombre">
+    <div class="mm-alertas" id="alertas" aria-label="Avisos" hidden></div>
     <div class="mm-col-a">
       <div class="mm-saldo" id="hero">
         <div class="mm-mesnav">
@@ -67,6 +71,7 @@
         <p class="mm-saldo-lbl">Te quedan libres</p>
         <p class="mm-num" id="libres">$ 0</p>
         <p class="mm-pasas" id="pasas" hidden></p>
+        <button type="button" class="mm-tope" id="tope" data-ir="escalera" hidden></button>
         <dl class="mm-saldo-pie" id="saldo-pie">
           <div><dt>Ingresos</dt><dd id="s-ing">$ 0</dd></div>
           <div><dt>Gastos fijos</dt><dd id="s-gas">$ 0</dd></div>
@@ -80,9 +85,9 @@
         <button type="button" class="mm-acceso" id="acceso-otro" data-nuevo="ingreso"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-ingreso"/></svg></span><span>Ingreso</span></button>
         <button type="button" class="mm-acceso" data-nuevo="gasto"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-gasto"/></svg></span><span>Gasto fijo</span></button>
         <button type="button" class="mm-acceso" data-ir="tarjetas"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-tarjetas"/></svg></span><span>Mis tarjetas</span></button>
-        <button type="button" class="mm-acceso" data-cambio><span class="mm-acceso-ic"><svg class="ic"><use href="#i-dolar"/></svg></span><span>Dólar</span></button>
-        <button type="button" class="mm-acceso pronto" aria-disabled="true"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-escalera"/></svg></span><span>Escalera<small>Próximamente</small></span></button>
-        <button type="button" class="mm-acceso pronto" aria-disabled="true"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-balanza"/></svg></span><span>¿Cuotas o contado?<small>Próximamente</small></span></button>
+        <button type="button" class="mm-acceso" data-ir="escalera"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-escalera"/></svg></span><span>Escalera</span></button>
+        <button type="button" class="mm-acceso" data-ir="simular"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-simular"/></svg></span><span>¿Y si compro?</span></button>
+        <button type="button" class="mm-acceso" data-ir="contado"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-balanza"/></svg></span><span>¿Cuotas o contado?</span></button>
       </nav>
 
       <section class="mm-seccion" aria-labelledby="t-mis">
@@ -135,10 +140,84 @@
   <section class="mm-vista" id="vista-cargado" aria-labelledby="t-cargado" hidden>
     <div class="mm-vista-top"><h1 id="t-cargado" tabindex="-1">Lo cargado</h1></div>
     <p class="mm-sub">Tocá cualquier ítem para editarlo o borrarlo.</p>
+    <section class="mm-panel mm-copia" aria-labelledby="t-copia">
+      <div><h2 id="t-copia" class="mm-h2">Tu copia de seguridad</h2>
+      <p class="mm-ayuda">Tus datos viven solo en este dispositivo. Bajá una copia de vez en cuando y, si cambiás de celular, importala ahí.</p></div>
+      <div class="mm-acciones"><button type="button" class="mm-btn sec" data-exportar><svg class="ic"><use href="#i-bajar"/></svg> Exportar copia</button><button type="button" class="mm-btn sec" data-importar-copia><svg class="ic"><use href="#i-subir"/></svg> Importar copia</button></div>
+    </section>
     <div class="mm-cargado-grid">
       <section class="mm-panel" aria-labelledby="c-ing"><div class="mm-seccion-top"><h2 id="c-ing">Ingresos</h2><button type="button" class="mm-link" data-nuevo="ingreso">+ Agregar</button></div><ul class="mm-lista" id="todo-ing"></ul></section>
       <section class="mm-panel" aria-labelledby="c-gas"><div class="mm-seccion-top"><h2 id="c-gas">Gastos fijos</h2><button type="button" class="mm-link" data-nuevo="gasto">+ Agregar</button></div><ul class="mm-lista" id="todo-gas"></ul></section>
       <section class="mm-panel" aria-labelledby="c-cuo"><div class="mm-seccion-top"><h2 id="c-cuo">Cuotas</h2><button type="button" class="mm-link" data-nuevo="cuota">+ Agregar</button></div><ul class="mm-lista" id="todo-cuo"></ul></section>
+    </div>
+  </section>
+
+  <!-- ════════ ESCALERA ════════ -->
+  <section class="mm-vista" id="vista-escalera" aria-labelledby="t-escalera" hidden>
+    <div class="mm-vista-top"><button type="button" class="mm-atras" data-ir="inicio"><svg class="ic"><use href="#i-izq"/></svg> Inicio</button></div>
+    <h1 class="mm-h1" id="t-escalera" tabindex="-1">Escalera de cuotas</h1>
+    <p class="mm-sub">Cuánto de cada mes ya está comprometido en cuotas, por tarjeta, y cuándo quedás libre.</p>
+    <div class="mm-esc-grid">
+      <div class="mm-col-a">
+        <section class="mm-panel mm-libre" id="esc-libre" aria-live="polite"></section>
+        <section class="mm-panel" aria-labelledby="esc-tope-t">
+          <h2 id="esc-tope-t" class="mm-h2">Tu tope de cuotas</h2>
+          <form class="mm-tope-form" id="tope-form" novalidate>
+            <label for="tope-pct">Hasta</label>
+            <input id="tope-pct" type="number" inputmode="numeric" min="1" max="100" step="1" aria-describedby="tope-ayuda tope-err">
+            <span>% de tus ingresos de cada mes</span>
+            <button type="submit" class="mm-btn sec chico">Guardar</button>
+          </form>
+          <p class="mm-ayuda" id="tope-ayuda">Si un mes las cuotas pasan ese porcentaje, te avisamos en el inicio y acá. Mucha gente usa 30 %.</p>
+          <p class="mm-err" id="tope-err"></p>
+        </section>
+      </div>
+      <section class="mm-panel" aria-labelledby="esc-t"><h2 id="esc-t" class="mm-h2">Mes a mes</h2><div id="esc-leyenda" class="mm-leyenda"></div><ol class="mm-esc" id="esc"></ol></section>
+    </div>
+  </section>
+
+  <!-- ════════ ¿CUOTAS O CONTADO? ════════ -->
+  <section class="mm-vista" id="vista-contado" aria-labelledby="t-contado" hidden>
+    <div class="mm-vista-top"><button type="button" class="mm-atras" data-ir="inicio"><svg class="ic"><use href="#i-izq"/></svg> Inicio</button></div>
+    <h1 class="mm-h1" id="t-contado" tabindex="-1">¿Cuotas o contado?</h1>
+    <p class="mm-sub">Antes de comprar: ¿te conviene pagar en cuotas sin interés o de contado con descuento? Hacemos la cuenta con la inflación y con lo que te rinde la plata mientras tanto.</p>
+    <div class="mm-esc-grid">
+      <form class="mm-panel mm-form-vista" id="cc-form" novalidate>
+        <div class="mm-campo"><label for="cc-precio">Precio total en cuotas sin interés</label><input id="cc-precio" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 1.200.000" aria-describedby="cc-precio-err"><p class="mm-err" id="cc-precio-err"></p></div>
+        <div class="mm-campo"><label for="cc-cant">Cantidad de cuotas</label>
+          <div class="mm-chips" id="cc-rapidas" role="group" aria-label="Cuotas frecuentes"><button type="button" class="mm-chip" data-cc="3">3</button><button type="button" class="mm-chip" data-cc="6">6</button><button type="button" class="mm-chip" data-cc="9">9</button><button type="button" class="mm-chip" data-cc="12">12</button><button type="button" class="mm-chip" data-cc="18">18</button></div>
+          <input id="cc-cant" type="number" inputmode="numeric" min="1" max="72" step="1" value="6"></div>
+        <div class="mm-campo"><label for="cc-desc">Descuento por pagar de contado (%)</label><input id="cc-desc" type="text" inputmode="decimal" autocomplete="off" value="0" aria-describedby="cc-desc-err"><p class="mm-err" id="cc-desc-err"></p></div>
+        <div class="mm-fila">
+          <div class="mm-campo"><label for="cc-inf">Inflación por mes (%)</label><input id="cc-inf" type="text" inputmode="decimal" autocomplete="off" aria-describedby="cc-inf-f"><p class="mm-fuente" id="cc-inf-f"></p></div>
+          <div class="mm-campo"><label for="cc-ren">Lo que rinde tu plata por mes (%)</label><input id="cc-ren" type="text" inputmode="decimal" autocomplete="off" aria-describedby="cc-ren-f"><p class="mm-fuente" id="cc-ren-f"></p></div>
+        </div>
+      </form>
+      <div class="mm-col-b">
+        <section class="mm-panel mm-veredicto" id="cc-res" aria-live="polite"></section>
+        <p class="mm-letra">Es una cuenta orientativa, no asesoramiento financiero. Supone que la plata del contado queda rindiendo a esa tasa hasta pagar la última cuota, que las cuotas no tienen interés ni cargos y que la inflación es pareja. Si tu plata no rinde nada, poné 0 %.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ════════ SIMULADOR ════════ -->
+  <section class="mm-vista" id="vista-simular" aria-labelledby="t-simular" hidden>
+    <div class="mm-vista-top"><button type="button" class="mm-atras" data-ir="inicio"><svg class="ic"><use href="#i-izq"/></svg> Inicio</button></div>
+    <h1 class="mm-h1" id="t-simular" tabindex="-1">¿Y si compro esto?</h1>
+    <p class="mm-sub">Probá una compra en cuotas y mirá cómo quedaría "te quedan libres" cada mes, antes de cargarla.</p>
+    <div class="mm-esc-grid">
+      <form class="mm-panel mm-form-vista" id="sim-form" novalidate>
+        <div class="mm-campo"><label for="sim-total">Monto total</label>
+          <div class="mm-monto-fila"><div class="mm-seg" role="radiogroup" aria-label="Moneda" id="sim-moneda"><label><input type="radio" name="sim-moneda" value="ARS" checked><span>$</span></label><label><input type="radio" name="sim-moneda" value="USD"><span>US$</span></label></div>
+          <input id="sim-total" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 900.000" aria-describedby="sim-total-err"></div><p class="mm-err" id="sim-total-err"></p></div>
+        <div class="mm-campo"><label for="sim-cant">Cantidad de cuotas</label>
+          <div class="mm-chips" id="sim-rapidas" role="group" aria-label="Cuotas frecuentes"><button type="button" class="mm-chip" data-sc="1">1</button><button type="button" class="mm-chip" data-sc="3">3</button><button type="button" class="mm-chip" data-sc="6">6</button><button type="button" class="mm-chip" data-sc="12">12</button><button type="button" class="mm-chip" data-sc="18">18</button></div>
+          <input id="sim-cant" type="number" inputmode="numeric" min="1" max="72" step="1" value="6"></div>
+        <div class="mm-campo"><label for="sim-mes">Primera cuota</label><select id="sim-mes"></select></div>
+      </form>
+      <div class="mm-col-b">
+        <section class="mm-panel" id="sim-res" aria-live="polite"></section>
+      </div>
     </div>
   </section>
 
@@ -237,6 +316,12 @@
     </div>
     <div class="mm-campo"><label for="t-nombre">Cómo la llamás <span class="opc">(opcional)</span></label><input id="t-nombre" type="text" maxlength="40" autocomplete="off" placeholder="Ej: La del sueldo"></div>
     <fieldset class="mm-campo"><legend>Color</legend><div class="mm-colores" id="t-colores"></div></fieldset>
+    <div class="mm-fila">
+      <div class="mm-campo"><label for="t-cierre">Día de cierre <span class="opc">(opcional)</span></label><input id="t-cierre" type="number" inputmode="numeric" min="1" max="31" placeholder="Ej: 26" aria-describedby="t-dias-err"></div>
+      <div class="mm-campo"><label for="t-vence">Día de vencimiento <span class="opc">(opcional)</span></label><input id="t-vence" type="number" inputmode="numeric" min="1" max="31" placeholder="Ej: 8" aria-describedby="t-dias-err"></div>
+    </div>
+    <p class="mm-ayuda">Con los dos días te avisamos cuándo cierra y cuándo vence, aunque no subas el resumen.</p>
+    <p class="mm-err" id="t-dias-err"></p>
     <div class="mm-campo"><label for="t-limite">Límite de compra en pesos <span class="opc">(opcional)</span></label><input id="t-limite" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 2.500.000" aria-describedby="t-limite-err"><p class="mm-ayuda">Si lo cargás, te mostramos cuánto te queda disponible.</p><p class="mm-err" id="t-limite-err"></p></div>
     <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="t-borrar" hidden>Borrar tarjeta</button><button type="submit" class="mm-btn">Guardar tarjeta</button></div>
   </form>
@@ -266,6 +351,27 @@
     <div class="mm-dlg-pie"><button type="submit" class="mm-btn"><svg class="ic"><use href="#i-subir"/></svg> Elegir PDF</button></div>
   </form>
 </dialog>
+
+<!-- ── Primer uso guiado ── -->
+<dialog class="mm-dlg mm-guia" id="dlg-guia" aria-labelledby="gu-tit">
+  <form class="mm-form" novalidate>
+    <div class="mm-dlg-top"><p class="mm-pasos" id="gu-paso" aria-live="polite"></p><button type="button" class="mm-link" data-saltear-guia>Saltear</button></div>
+    <h2 id="gu-tit" class="mm-guia-tit"></h2>
+    <div id="gu-cuerpo"></div>
+    <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="gu-atras" hidden>Atrás</button><button type="submit" class="mm-btn" id="gu-sig">Seguir</button></div>
+  </form>
+</dialog>
+
+<!-- ── Importar copia ── -->
+<dialog class="mm-dlg" id="dlg-importar" aria-labelledby="dm-tit">
+  <form class="mm-form" novalidate>
+    <div class="mm-dlg-top"><h2 id="dm-tit">Importar copia</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <p id="dm-txt"></p>
+    <p class="mm-alerta" style="width:auto;margin:0">Esto <b>reemplaza</b> lo que tenés cargado en este dispositivo.</p>
+    <div class="mm-dlg-pie"><button type="button" class="mm-btn sec" data-cerrar>Cancelar</button><button type="submit" class="mm-btn">Reemplazar mis datos</button></div>
+  </form>
+</dialog>
+<input type="file" id="archivo-copia" accept="application/json,.json" hidden>
 
 <div class="mm-toast" id="toast" role="status" aria-live="polite"></div>
 <script type="module" src="app.js"></script>
