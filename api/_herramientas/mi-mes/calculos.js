@@ -450,3 +450,33 @@ export function migrar(crudo) {
   }
   return out;
 }
+
+/* ── control de la lectura: ¿la suma da? ──
+   Recibe la lectura cruda (montos en unidades, como viene de la API).
+   Por moneda: consumos + ajustes (saldo anterior, pagos, intereses,
+   impuestos) tienen que dar el total del resumen, con una tolerancia
+   chica por redondeos. Si no da, la lectura NO es confiable. */
+export function cuadreLectura(json) {
+  const motivos = [];
+  const c = x => (typeof x === 'number' && Number.isFinite(x) ? Math.round(x * 100) : null);
+  const totales = new Map();
+  for (const t of Array.isArray(json?.totales) ? json.totales : []) {
+    if (esMoneda(t?.moneda) && c(t.monto) !== null) totales.set(t.moneda, c(t.monto));
+  }
+  if (!totales.size) motivos.push('No encontramos el total a pagar.');
+  const sumas = new Map();
+  const sumar = (m, v) => sumas.set(m, (sumas.get(m) || 0) + v);
+  for (const x of [...(Array.isArray(json?.consumos) ? json.consumos : []), ...(Array.isArray(json?.ajustes) ? json.ajustes : [])]) {
+    const v = c(x?.monto);
+    if (v === null) { motivos.push('Hay líneas sin monto legible.'); continue; }
+    if (!esMoneda(x?.moneda)) { motivos.push('Hay montos en una moneda que no pudimos identificar.'); continue; }
+    sumar(x.moneda, v);
+  }
+  for (const [m, total] of totales) {
+    const suma = sumas.get(m) || 0;
+    const tolerancia = Math.max(100, Math.round(Math.abs(total) * 0.005));
+    if (Math.abs(suma - total) > tolerancia) motivos.push(`Lo que leímos en ${MONEDAS[m].nombre} no suma el total del resumen.`);
+  }
+  for (const m of sumas.keys()) if (!totales.has(m) && sumas.get(m) !== 0) motivos.push(`Hay consumos en ${MONEDAS[m].nombre} sin un total para esa moneda.`);
+  return { ok: motivos.length === 0, motivos: [...new Set(motivos)] };
+}

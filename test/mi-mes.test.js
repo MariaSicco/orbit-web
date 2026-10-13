@@ -294,6 +294,20 @@ test('rubros: la corrección del usuario gana para ese comercio, aunque cambie e
   assert.equal(M.normalizarComercio('Café* Martínez 12'), 'CAFE MARTINEZ');
 });
 
+test('cuadre: consumos + ajustes tienen que dar el total de cada moneda', () => {
+  const base = { totales: [{ moneda: 'ARS', monto: 1000 }, { moneda: 'USD', monto: 20 }],
+    consumos: [{ monto: 700, moneda: 'ARS' }, { monto: 20, moneda: 'USD' }], ajustes: [{ concepto: 'Impuestos', monto: 300, moneda: 'ARS' }] };
+  assert.deepEqual(M.cuadreLectura(base), { ok: true, motivos: [] });
+  assert.equal(M.cuadreLectura({ ...base, ajustes: [] }).ok, false, 'faltan 300');
+  const centavos = structuredClone(base); centavos.consumos[0].monto = 700.6;
+  assert.equal(M.cuadreLectura(centavos).ok, true, 'tolera redondeos chicos');
+  const rara = structuredClone(base); rara.consumos.push({ monto: 5, moneda: 'XYZ' });
+  assert.match(M.cuadreLectura(rara).motivos.join(' '), /moneda que no pudimos identificar/);
+  const sinTotal = structuredClone(base); sinTotal.consumos.push({ monto: 9, moneda: 'EUR' });
+  assert.match(M.cuadreLectura(sinTotal).motivos.join(' '), /sin un total/);
+  assert.equal(M.cuadreLectura({}).ok, false);
+});
+
 /* ── entrega: la herramienta pasa por el control de compra ── */
 test('catálogo y acceso: ob-019 es herramienta, no se compra todavía y sin sesión no entra', async () => {
   for (const k of ['KV_REST_API_URL', 'KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'VERCEL_ENV']) delete process.env[k];

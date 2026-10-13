@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.129.0",
     "@vercel/blob": "^2.8.0"
   },
   "scripts": {

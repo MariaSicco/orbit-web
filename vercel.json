@@ -39,6 +39,9 @@
   "functions": {
     "api/herramienta.js": {
       "includeFiles": "api/_herramientas/**"
+    },
+    "api/leer-resumen.js": {
+      "maxDuration": 60
     }
   }
 }

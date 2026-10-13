@@ -2,15 +2,17 @@
    Recibe el PDF del resumen de una tarjeta (cuerpo crudo, application/pdf u
    octet-stream) y devuelve sus datos con el esquema fijo de la app.
 
-   Hoy (Paso 2) responde SIEMPRE datos de ejemplo ("modo prueba"): la lectura
-   con la API de Claude se conecta en el Paso 5, con ANTHROPIC_API_KEY.
-   El PDF no se guarda: se valida en memoria y se descarta.
+   Con ANTHROPIC_API_KEY en el entorno lee el PDF con Claude ("real"); sin
+   key responde el resumen de ejemplo ("prueba"). La respuesta siempre dice
+   en qué modo se leyó. GET devuelve solo el modo, para que la app avise antes.
+   El PDF no se guarda: se procesa en memoria y se descarta.
 
    Controles: compra de ob-019 (o admin), tamaño, que sea PDF, páginas y un
    tope de lecturas por persona por día. El log no lleva datos del resumen. */
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
 import { kvGet, kvSet } from './_lib/kv.js';
 import { resumenEjemplo } from './_herramientas/mi-mes/ejemplo.js';
+import { hayKey, leerResumenConClaude, ErrorLectura, MODELO } from './_lib/mi-mes-lector.js';
 
 export const PRODUCTO = 'ob-019';
 export const MAX_BYTES = 4 * 1024 * 1024;   // Vercel corta el cuerpo en 4,5 MB
@@ -39,10 +41,13 @@ async function leerCuerpo(req, max) {
 
 const responder = (res, code, cuerpo) => { res.setHeader('Cache-Control', 'no-store'); return res.status(code).json(cuerpo); };
 
+const ESTADO_ERROR = { timeout: 504, limite: 503, api: 502, rechazo: 422, invalida: 422 };
+
 export default async function handler(req, res) {
-  if (req.method !== 'POST') { res.setHeader('Allow', 'POST'); return responder(res, 405, { ok: false, error: 'Usá POST con el PDF.' }); }
+  if (req.method !== 'POST' && req.method !== 'GET') { res.setHeader('Allow', 'GET, POST'); return responder(res, 405, { ok: false, error: 'Usá POST con el PDF.' }); }
   const acc = await requireHerramienta(req, res, PRODUCTO);
   if (!acc) return;
+  if (req.method === 'GET') return responder(res, 200, { ok: true, modo: hayKey() ? 'real' : 'prueba' });
 
   const largo = Number(req.headers['content-length'] || 0);
   if (largo > MAX_BYTES) return responder(res, 413, { ok: false, motivo: 'grande', error: 'El PDF pesa más de 4 MB. Probá descargarlo de nuevo desde el banco o cargalo a mano.' });
@@ -60,7 +65,22 @@ export default async function handler(req, res) {
   if (usadas >= TOPE_DIA) return responder(res, 429, { ok: false, motivo: 'tope', error: `Llegaste a ${TOPE_DIA} lecturas por hoy. Mañana podés seguir, o cargá este resumen a mano.` });
   try { await kvSet(clave, usadas + 1, 60 * 60 * 36); } catch { /* sin base no frenamos la lectura */ }
 
-  /* Paso 5: acá va la llamada a Claude cuando exista ANTHROPIC_API_KEY. */
-  console.log(JSON.stringify({ evento: 'leer-resumen', modo: 'prueba', bytes: buf.length, paginas }));
-  return responder(res, 200, { ok: true, modo: 'prueba', lectura: resumenEjemplo() });
+  if (!hayKey()) {
+    console.log(JSON.stringify({ evento: 'leer-resumen', modo: 'prueba', bytes: buf.length, paginas }));
+    return responder(res, 200, { ok: true, modo: 'prueba', lectura: resumenEjemplo() });
+  }
+  const t0 = Date.now();
+  try {
+    const r = await leerResumenConClaude(buf);
+    /* costo por lectura: tokens de entrada y salida, sin datos del resumen */
+    console.log(JSON.stringify({ evento: 'leer-resumen', modo: 'real', modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida,
+      intentos: r.intentos, confiable: r.confiable, bytes: buf.length, paginas, ms: Date.now() - t0 }));
+    return responder(res, 200, { ok: true, modo: 'real', confiable: r.confiable, lectura: r.lectura });
+  } catch (e) {
+    const tipo = e instanceof ErrorLectura ? e.tipo : 'api';
+    console.warn(JSON.stringify({ evento: 'leer-resumen', modo: 'real', modelo: MODELO, resultado: tipo,
+      entrada: e?.uso?.entrada ?? 0, salida: e?.uso?.salida ?? 0, bytes: buf.length, paginas, ms: Date.now() - t0 }));
+    return responder(res, ESTADO_ERROR[tipo] || 502, { ok: false, modo: 'real', motivo: tipo,
+      error: e instanceof ErrorLectura ? e.message : 'No pudimos leer el resumen ahora. Cargalo a mano.' });
+  }
 }

@@ -260,9 +260,9 @@
     <ul class="mm-puntos">
       <li>Subí el PDF tal como lo descargás del banco, de una sola tarjeta (hasta 4 MB y 15 páginas).</li>
       <li>Antes de guardar vas a ver todo lo que leímos, y podés corregirlo o descartarlo.</li>
-      <li><b>Qué pasa con tu PDF:</b> se manda a Orbit para leerlo y se descarta, no se guarda. Cuando la lectura automática esté activa, también pasa por un servicio de IA (Claude, de Anthropic). En tu dispositivo quedan solo los datos que confirmes.</li>
+      <li><b>Qué pasa con tu PDF:</b> para leerlo pasa por el servidor de Orbit y por la API de Anthropic (Claude). No se guarda: se procesa y se descarta. En tu dispositivo quedan solo los datos que confirmes.</li>
     </ul>
-    <p class="mm-cartel"><b>Modo prueba:</b> todavía no leemos tu PDF. Te mostramos un resumen de ejemplo para que veas cómo funciona.</p>
+    <p class="mm-cartel" id="s-prueba" hidden><b>Modo prueba:</b> la lectura automática todavía no está activa. Te mostramos un resumen de ejemplo para que veas cómo funciona.</p>
     <div class="mm-dlg-pie"><button type="submit" class="mm-btn"><svg class="ic"><use href="#i-subir"/></svg> Elegir PDF</button></div>
   </form>
 </dialog>

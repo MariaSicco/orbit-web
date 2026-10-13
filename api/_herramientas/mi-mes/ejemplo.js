@@ -34,6 +34,7 @@ export function resumenEjemplo(hoy = new Date()) {
       { fecha: fecha(a, m, 12), comercio: 'TIENDA ONLINE INTL', monto: 45.2, moneda: 'USD', rubro: 'Entretenimiento', cuota: null },
       { fecha: fecha(a, m, 18), comercio: 'MUSEO EJEMPLO MADRID', monto: 18, moneda: 'EUR', rubro: 'Entretenimiento', cuota: null },
     ],
+    ajustes: [],
     confianza: 'alta',
     avisos: ['Modo prueba: estos datos son de ejemplo, no salen de tu PDF.'],
   };

@@ -413,7 +413,16 @@ function abrirSubir(tarjetaId = null) {
   tarjetaDestino = tarjetaId || null;
   const t = tarjetaDe(tarjetaDestino);
   $id('s-para').textContent = t ? `Resumen de ${t.nombre}${t.ultimos4 ? ` ···${t.ultimos4}` : ''}.` : 'El resumen en PDF de una de tus tarjetas.';
+  $id('s-prueba').hidden = modoLectura !== 'prueba';
   abrir($id('dlg-subir'), $id('dlg-subir').querySelector('[type="submit"]'));
+}
+/* ¿la lectura es real o de prueba? Se pregunta una vez; sin servidor, prueba. */
+let modoLectura = LOCAL ? 'prueba' : null;
+if (!LOCAL) {
+  fetch('/api/leer-resumen', { credentials: 'same-origin' })
+    .then(r => (r.ok ? r.json() : { modo: r.status === 404 || r.status === 501 ? 'prueba' : null }))
+    .then(j => { modoLectura = j?.modo || null; })
+    .catch(() => { modoLectura = 'prueba'; });
 }
 $id('dlg-subir').querySelector('form').addEventListener('submit', e => {
   e.preventDefault();
