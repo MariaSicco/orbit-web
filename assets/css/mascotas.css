@@ -665,3 +665,26 @@ body[data-shell="app"] .toast{bottom:calc(88px + env(safe-area-inset-bottom,0px)
   *,*::before,*::after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
 }
 .photo-pick .stk{flex:none;width:80px;height:80px}
+
+/* ---------- ficha pública del QR ---------- */
+.qr-lost{flex-direction:column;align-items:stretch;gap:8px}
+.qr-lost .eyebrow{color:inherit;opacity:.8}
+.qr-lost h1{font:700 36px/1.05 var(--f);letter-spacing:-.03em}
+.qr-contact h2,.qr-form h2{font:600 19px/1.25 var(--f);letter-spacing:-.015em}
+.qr-call{display:flex;flex-direction:column;gap:10px}
+.qr-call .btn{width:100%}
+.qr-urgent{align-items:flex-start;background:var(--perdida);box-shadow:none}
+.qr-urgent b{display:block;color:var(--late)}
+.qr-photos{display:flex;gap:8px}
+.qr-photos img{width:64px;height:64px;border-radius:12px;object-fit:cover;background:#fff}
+.qr-loc{display:flex;flex-direction:column;gap:6px}
+.qr-loc .banner{padding:12px}
+.qr-loc .banner b{display:block}
+.qr-done{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.hp{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}
+@media(min-width:700px){.qr-call{flex-direction:row}.qr-call .btn{flex:1}}
+/* registro de escaneos (dueña o dueño) */
+.scanlog .row{grid-template-columns:auto minmax(0,1fr)}
+.scanlog .what small{display:block}
+.scanlog .acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.scanlog .msg{color:var(--ink);font-size:14.5px;white-space:pre-wrap;margin-top:4px}

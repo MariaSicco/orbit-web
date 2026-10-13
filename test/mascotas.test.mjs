@@ -83,3 +83,66 @@ test('limpieza: lo que se borra del doc se elimina después del rato de gracia',
   assert.equal(await kvGet('orbit:petimg:abcdef0123'), null);
   assert.equal((await getUsage(email)).bytes, 0);
 });
+
+/* ---------- QR del collar ---------- */
+import mascotas, { publicPet, cleanDoc } from '../api/mascotas.js';
+const QR_EMAIL = 'qr@ejemplo.com', QR_TOKEN = 'tokQRprueba123';
+async function qrSetup() {
+  const pet = cleanDoc({ pets: [{ id: 'luna01', name: 'Luna', species: 'perro', sex: 'h', birth: '2022-01-01', chip: '123', allergies: 'pollo', color: 'Marrón', marks: 'Mancha en el ojo',
+    vet: { name: 'Vete', phone: '1' }, conditions: [{ name: 'Otitis' }], surgeries: [{ name: 'Castración' }], records: [{ type: 'vacuna', name: 'Antirrábica', date: '2026-01-01' }],
+    contact: { show: true, name: 'Majo', phone: '+54 9 11 5555-5555' }, qrNote: { show: false, text: 'Toma fenobarbital' } }] }).pets[0];
+  pet.share = QR_TOKEN;
+  await kvSet(`orbit:pets:${QR_EMAIL}`, { pets: [pet], rev: 1 });
+  await kvSet(`orbit:petshare:${QR_TOKEN}`, { email: QR_EMAIL, petId: 'luna01' });
+  await kvSet(`orbit:purchases:${QR_EMAIL}`, [{ productId: 'ob-018', date: '2026-10-12' }]);
+  return pet;
+}
+const qrCall = (method, query, body, ip = '1.1.1.1', city = 'Palermo') => new Promise(ok => {
+  const res = { code: 200, setHeader() {}, status(c) { this.code = c; return this; }, json(o) { ok({ code: this.code, body: o }); }, end() { ok({ code: this.code }); } };
+  mascotas({ method, query, body, headers: { 'x-forwarded-for': ip, 'x-vercel-ip-city': city, 'x-vercel-ip-country-region': 'C' } }, res);
+});
+
+test('QR: la ficha pública muestra solo lo necesario para devolverla', async () => {
+  const pet = await qrSetup();
+  const pub = publicPet(pet);
+  for (const k of ['birth', 'chip', 'vet', 'conditions', 'surgeries', 'records', 'allergies', 'weight', 'neutered']) assert.equal(pub[k], undefined, k);
+  assert.equal(pub.urgent, '');
+  assert.equal(pub.contact.phone, '+54 9 11 5555-5555');
+  assert.equal(publicPet({ ...pet, qrNote: { show: true, text: 'Toma fenobarbital' } }).urgent, 'Toma fenobarbital');
+});
+
+test('QR: escaneo anotado una vez por celu y aviso con tope de 10 minutos', async () => {
+  await qrSetup();
+  await kvSet(`orbit:petscans:${QR_EMAIL}`, []);
+  const r = await qrCall('GET', { s: QR_TOKEN });
+  assert.equal(r.code, 200); assert.equal(r.body.pet.chip, undefined);
+  await qrCall('GET', { s: QR_TOKEN });                 /* mismo celu: no se duplica */
+  await qrCall('GET', { s: QR_TOKEN }, null, '2.2.2.2'); /* otro celu: se anota */
+  const list = await kvGet(`orbit:petscans:${QR_EMAIL}`);
+  assert.equal(list.length, 2); assert.equal(list[0].city, 'Palermo'); assert.equal(list[0].kind, 'scan');
+  assert.ok(await kvGet(`orbit:petqrping:scan:${QR_TOKEN}`));
+  assert.ok(!JSON.stringify(list).includes('1.1.1.1'), 'la IP no se guarda');
+});
+
+test('QR: quien la encuentra avisa con ubicación; 5 mensajes por hora por IP', async () => {
+  await qrSetup();
+  await kvSet(`orbit:petscans:${QR_EMAIL}`, []);
+  assert.equal((await qrCall('POST', { s: QR_TOKEN, found: '1' }, {}, '3.3.3.3')).code, 400);
+  const ok = await qrCall('POST', { s: QR_TOKEN, found: '1' }, { loc: { lat: -34.58712345, lng: -58.4301, acc: 25 }, name: 'Caro', phone: '11 4444<b>', msg: 'La tengo en casa' }, '3.3.3.3');
+  assert.equal(ok.code, 200);
+  const e = (await kvGet(`orbit:petscans:${QR_EMAIL}`)).at(-1);
+  assert.deepEqual(e.loc, { lat: -34.58712, lng: -58.4301, acc: 25 });
+  assert.equal(e.phone, '11 4444'); assert.equal(e.kind, 'msg');
+  for (let i = 0; i < 4; i++) assert.equal((await qrCall('POST', { s: QR_TOKEN, found: '1' }, { msg: 'hola ' + i }, '3.3.3.3')).code, 200);
+  assert.equal((await qrCall('POST', { s: QR_TOKEN, found: '1' }, { msg: 'spam' }, '3.3.3.3')).code, 429);
+  assert.equal((await qrCall('POST', { s: QR_TOKEN, found: '1' }, { msg: 'otra persona' }, '4.4.4.4')).code, 200);
+  assert.equal((await qrCall('POST', { s: QR_TOKEN, found: '1' }, { website: 'bot', msg: 'x' }, '5.5.5.5')).code, 200);
+  const fin = await kvGet(`orbit:petscans:${QR_EMAIL}`); assert.equal(fin.length, 6, "el bot no queda anotado");
+});
+
+test('QR: sin la compra el link deja de andar', async () => {
+  await qrSetup();
+  await kvSet(`orbit:purchases:${QR_EMAIL}`, []);
+  assert.equal((await qrCall('GET', { s: QR_TOKEN })).code, 404);
+  assert.equal((await qrCall('POST', { s: QR_TOKEN, found: '1' }, { msg: 'x' })).code, 404);
+});

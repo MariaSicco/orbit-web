@@ -9,7 +9,7 @@
 <link rel="icon" href="/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="/assets/css/mascotas.css?v=23">
+<link rel="stylesheet" href="/assets/css/mascotas.css?v=24">
 </head>
 <body>
 <header class="top">
@@ -20,8 +20,8 @@
 <main id="app"><p class="dim">Cargando…</p></main>
 <footer class="made">hecho con <a href="/"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M74.6 80.5A39 39 0 1 1 89 50" fill="none" stroke="#2B2119" stroke-width="22"/><circle cx="75" cy="80" r="12.5" fill="#3047FF"/></svg>Orbit</a></footer>
 <div class="toast" id="toast" role="status"></div>
-<script src="/assets/js/mascotas-rules.js?v=23"></script>
-<script src="/assets/js/mascotas-core.js?v=23"></script>
+<script src="/assets/js/mascotas-rules.js?v=24"></script>
+<script src="/assets/js/mascotas-core.js?v=24"></script>
 <script>
 (() => {
 'use strict';
@@ -40,30 +40,86 @@ async function load() {
     const r = await fetch(`/api/mascotas?${kind}=${token}`);
     if (!r.ok) return notFound();
     const d = await r.json();
-    kind === 's' ? ficha(d.pet, d.updatedAt) : cuidador(d.pet);
+    kind === 's' ? ficha(d.pet, d.updatedAt, d.owner) : cuidador(d.pet);
   } catch { app.innerHTML = '<div class="empty"><h2>No pudimos cargar la ficha</h2><p>Revisá tu conexión y recargá la página.</p></div>'; }
 }
 
-/* ficha pública: veterinario, paseador o quien la encuentre */
+/* ficha pública del QR del collar: solo lo necesario para que la devuelvan */
 const I = Z.icon, bubble = (ic, c) => `<span class="ib c-${c}">${I(ic)}</span>`;
 const av = p => `<div class="av big">${p.photo ? `<img src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">` : Z.petIcon(p)}</div>`;
-function ficha(p, updatedAt) {
-  document.title = `${p.name} · Ficha`;
-  const facts = [['Raza', p.breed], ['Sexo', p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : ''], ['Edad', Z.age(p.birth)], ['Peso', p.weight ? String(p.weight).replace('.', ',') + ' kg' : ''], ['Color', p.color], ['Señas', p.marks], ['Microchip', p.chip]].filter(f => f[1]);
-  const ups = Z.upcoming(p), c = p.contact, tone = Z.tone({ id: token });
-  const callBtns = (msg, cls) => c?.phone ? `<div class="two"><a class="btn ${cls}" href="tel:${esc(tel(c.phone))}">${I('phone')} Llamar</a><a class="btn ghost" href="https://wa.me/${esc(wa(c.phone))}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">WhatsApp</a></div>` : '';
+let F = null, here = null;
+function ficha(p, updatedAt, owner) {
+  F = p;
+  document.title = `${p.name} · ¿La encontraste?`;
+  const ella = p.sex === 'm' ? 'lo' : 'la', perdid = p.sex === 'm' ? 'perdido' : 'perdida';
+  const facts = [['Especie', Z.species(p)], ['Raza', p.breed], ['Sexo', p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : ''], ['Color', p.color], ['Señas', p.marks]].filter(f => f[1]);
+  const c = p.contact, tone = Z.tone({ id: token });
+  const callBtns = msg => c?.phone ? `<div class="qr-call"><a class="btn big" href="tel:${esc(tel(c.phone))}">${I('phone')} Llamar a ${esc(c.name || 'su familia')}</a><a class="btn big ghost" href="https://wa.me/${esc(wa(c.phone))}?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">${I('chat')} Mandar WhatsApp</a></div>` : '';
+  const extra = (p.photos || []).filter(u => u && u !== p.photo).slice(0, 3);
   app.innerHTML = `
-    ${p.lost ? `<section class="banner lost" style="flex-direction:column;align-items:stretch"><h1 style="font-size:40px">Estoy perdida</h1><p>${p.lost.since ? 'Desde ' + Z.fmtWhen(new Date(p.lost.since)) : ''}${p.lost.place ? ', ' + esc(p.lost.place) : ''}.${p.lost.note ? ' ' + esc(p.lost.note) : ''}</p><p><b>Si me ves, no me persigas.</b> Avisale a mi familia:</p>${callBtns(`Hola, vi a ${p.name}.`, '')}</section>` : ''}
-    <section class="hero c-${tone}"><div class="hero-top">${av(p)}<div><h1>${esc(p.name)}</h1></div></div>
-      <div class="pills"><span class="pill">${esc(Z.species(p))}</span>${p.temper ? `<span class="pill">${esc(p.temper)}</span>` : ''}${p.allergies ? `<span class="pill warn">Alergia: ${esc(p.allergies)}</span>` : ''}</div></section>
-    ${!p.lost && c?.phone ? `<section class="card"><div style="display:flex;gap:12px;align-items:center">${bubble('hand', 'cuida')}<span><b>¿Me encontraste?</b><span class="dim" style="display:block">Avisale a ${esc(c.name || 'mi familia')}${c.note ? '. ' + esc(c.note) : ''}</span></span></div>${callBtns(`Hola, encontré a ${p.name}.`, 'blue')}</section>` : ''}
-    ${facts.length ? `<div class="facts">${facts.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div>` : ''}
-    ${(p.conditions || []).length || (p.surgeries || []).length || p.neutered ? `<section class="sec"><h2>Antecedentes</h2><div class="list">${p.neutered ? `<div class="row" style="grid-template-columns:auto minmax(0,1fr)">${bubble('heart', 'salud')}<span class="what"><b>${p.neutered === 'si' ? 'Castración: sí' : 'Sin castrar'}</b></span></div>` : ''}${(p.conditions || []).map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr)">${bubble('heart', 'perdida')}<span class="what"><b>${esc(c.name)}</b><small>${c.status === 'controlada' ? 'Controlado' : 'Lo tiene'}</small></span></div>`).join('')}${(p.surgeries || []).map(c => `<div class="row" style="grid-template-columns:auto minmax(0,1fr)">${bubble('scalpel', 'perdida')}<span class="what"><b>${esc(c.name)}</b><small>Cirugía${c.date ? ', ' + fmt(c.date) : ''}</small></span></div>`).join('')}</div></section>` : ''}
-    <section class="sec"><h2>Vacunas y controles</h2>
-      ${p.records.length ? `<div class="list">${[...p.records].sort((a, b) => (b.date || '').localeCompare(a.date || '')).map(r => { const u = ups.find(x => x.r.name === r.name && x.r.type === r.type && x.r.date === r.date); return `<div class="row ${u ? u.s.c : ''}" style="grid-template-columns:auto minmax(0,1fr)">${bubble(Z.recIcon(r.type), r.type === 'control' ? 'cuida' : 'salud')}<span class="what"><b>${esc(r.name)}</b><small>${TYPE[r.type]}${r.date ? ', ' + fmt(r.date) : ''}${r.vet ? ', ' + esc(r.vet) : ''}</small>${u ? `<small class="stt">${u.s.days < 0 ? 'Vencida el ' + fmt(r.next) : 'Vigente hasta el ' + fmt(r.next)}</small>` : ''}</span></div>`; }).join('')}</div>` : '<p class="dim">Sin registros cargados.</p>'}
+    ${owner ? `<p class="banner ok-b" style="font-size:14px">${bubble('qr', 'viaje')}<span>Así ve tu ficha quien escanea el QR. Tu visita no cuenta como escaneo.</span></p>` : ''}
+    ${p.lost ? `<section class="banner lost qr-lost"><span class="eyebrow">Se perdió</span><h1>Estoy ${perdid}</h1><p>${p.lost.since ? 'Desde ' + esc(Z.fmtWhen(new Date(p.lost.since))) : ''}${p.lost.place ? (p.lost.since ? ', ' : '') + esc(p.lost.place) : ''}${p.lost.since || p.lost.place ? '.' : ''}${p.lost.note ? ' ' + esc(p.lost.note) : ''}</p><p><b>Si me ves, no me persigas.</b> Avisale a mi familia.</p></section>` : ''}
+    <section class="hero c-${tone}"><div class="hero-top">${av(p)}<div><p class="hello">${p.lost ? 'Me están buscando' : '¡Hola! Me llamo'}</p><h1>${esc(p.name)}</h1></div></div>
+      <div class="pills">${p.temper ? `<span class="pill">${esc(p.temper)}</span>` : ''}</div>
+      ${extra.length ? `<div class="qr-photos">${extra.map(u => `<img src="${esc(u)}" alt="Otra foto de ${esc(p.name)}" loading="lazy">`).join('')}</div>` : ''}</section>
+    ${p.urgent ? `<section class="banner qr-urgent" role="note">${bubble('alert', 'perdida')}<span><b>Importante</b>${esc(p.urgent)}</span></section>` : ''}
+    <section class="card qr-contact">
+      <h2>¿${p.lost ? 'Me viste' : 'Me encontraste'}? Avisale a mi familia</h2>
+      ${c?.phone ? `<p class="dim">${esc(c.name || 'Mi familia')}${c.note ? '. ' + esc(c.note) : ''}</p>${callBtns(`Hola, encontré a ${p.name}. Escaneé el QR de su collar.`)}`
+        : `<p class="dim">Su familia no dejó un teléfono a la vista. Usá el aviso de abajo: le llega al instante.</p>`}
     </section>
-    ${p.vet ? `<div class="row">${bubble('heart', 'salud')}<span class="what"><b>${esc(p.vet.name || 'Su veterinaria')}</b><small>Su veterinaria</small></span>${p.vet.phone ? `<a class="ibtn go" href="tel:${esc(tel(p.vet.phone))}" aria-label="Llamar a la veterinaria">${I('phone')}</a>` : '<span></span>'}</div>` : ''}
-    <p class="note">${updatedAt ? 'Actualizado el ' + fmt(updatedAt.slice(0, 10)) + '. ' : ''}Datos cargados por su familia en Mimitos.</p>`;
+    <section class="card qr-form" id="found" aria-labelledby="hFound">
+      <h2 id="hFound">Avisale dónde ${ella} encontraste</h2>
+      <p class="dim">Todo es opcional. Le llega solo a su familia, en el celu y por mail.</p>
+      <div class="qr-loc" id="locBox">
+        <button class="btn soft wide" type="button" id="locBtn">${I('pin')} Compartir mi ubicación</button>
+        <small class="dim">Te la pedimos solo si tocás el botón. La podés quitar antes de mandar.</small>
+      </div>
+      <div class="f"><label for="fName">Tu nombre <span class="opt">(opcional)</span></label><input id="fName" maxlength="60" autocomplete="name"></div>
+      <div class="f"><label for="fPhone">Tu teléfono <span class="opt">(opcional)</span></label><input id="fPhone" type="tel" maxlength="40" autocomplete="tel" inputmode="tel"></div>
+      <div class="f"><label for="fMsg">Mensaje <span class="opt">(opcional)</span></label><textarea id="fMsg" maxlength="500" rows="3" placeholder="La tengo conmigo en casa. Está bien."></textarea></div>
+      <div class="hp" aria-hidden="true"><label for="fWeb">No completar</label><input id="fWeb" tabindex="-1" autocomplete="off"></div>
+      <p class="err-msg" id="fErr" role="alert" hidden></p>
+      <button class="btn big wide" type="button" id="fSend">Avisar a su familia</button>
+    </section>
+    ${facts.length ? `<section class="sec"><h2>Para reconocer${ella === 'lo' ? 'lo' : 'la'}</h2><div class="facts">${facts.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div></section>` : ''}
+    <p class="note">Esta ficha muestra solo lo necesario para que ${esc(p.name)} vuelva a casa. Cuando la abrís, su familia recibe un aviso con la hora y la ciudad aproximada de tu conexión. Mimitos by Orbit.</p>`;
+  wireFound();
+}
+function locView() {
+  const box = document.getElementById('locBox');
+  if (here) box.innerHTML = `<div class="banner ok-b">${bubble('pin', 'salud')}<span style="flex:1"><b>Ubicación lista</b>${here.acc ? `Con un margen de unos ${here.acc < 1000 ? here.acc + ' m' : Math.round(here.acc / 100) / 10 + ' km'}.` : ''}</span><button class="btn ghost sm" type="button" id="locOff">Quitar</button></div>`;
+  else box.innerHTML = `<button class="btn soft wide" type="button" id="locBtn">${I('pin')} Compartir mi ubicación</button><small class="dim">Te la pedimos solo si tocás el botón. La podés quitar antes de mandar.</small>`;
+  wireFound();
+}
+function wireFound() {
+  const lb = document.getElementById('locBtn'), lo = document.getElementById('locOff'), send = document.getElementById('fSend');
+  if (lb) lb.onclick = () => {
+    if (!navigator.geolocation) return toast('Este navegador no comparte la ubicación. Contalo en el mensaje.');
+    lb.disabled = true; lb.textContent = 'Buscando tu ubicación…';
+    navigator.geolocation.getCurrentPosition(
+      pos => { here = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round(pos.coords.accuracy || 0) }; locView(); },
+      err => { here = null; locView(); toast(err.code === 1 ? 'No diste permiso. Podés contar dónde está en el mensaje.' : 'No pudimos ubicarte. Contalo en el mensaje.'); },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
+  };
+  if (lo) lo.onclick = () => { here = null; locView(); };
+  if (send) send.onclick = sendFound;
+}
+async function sendFound() {
+  const v = id => (document.getElementById(id)?.value || '').trim();
+  const body = { loc: here, name: v('fName'), phone: v('fPhone'), msg: v('fMsg'), website: v('fWeb') };
+  const err = document.getElementById('fErr'), btn = document.getElementById('fSend');
+  if (!here && !body.name && !body.phone && !body.msg) { err.hidden = false; err.textContent = 'Compartí tu ubicación, dejá un teléfono o escribí un mensaje.'; return; }
+  err.hidden = true; btn.disabled = true; btn.textContent = 'Avisando…';
+  try {
+    const r = await fetch(`/api/mascotas?s=${token}&found=1`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (r.status === 429) throw new Error('limite');
+    if (!r.ok) throw new Error('x');
+    document.getElementById('found').innerHTML = `<div class="qr-done">${bubble('check', 'salud')}<h2>¡Gracias! Ya le avisamos a su familia</h2><p class="dim">${body.phone ? 'Si pueden, te van a llamar o escribir al número que dejaste.' : 'Si no dejaste un teléfono, usá los botones de arriba para hablar con su familia.'}</p></div>`;
+  } catch (e) {
+    btn.disabled = false; btn.textContent = 'Avisar a su familia';
+    err.hidden = false; err.textContent = e.message === 'limite' ? 'Ya se mandaron varios avisos desde esta conexión. Probá de nuevo en un rato o usá los botones de arriba.' : 'No se pudo mandar. Revisá la conexión y probá de nuevo.';
+  }
 }
 
 /* quien la cuida */

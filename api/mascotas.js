@@ -18,7 +18,10 @@
    GET  ?file=ref             → abre un estudio propio (URL firmada que vence en minutos)
 
    Sin sesión:
-   GET  ?s=token              → ficha pública (veterinario, paseador, QR del collar)
+   POST ?scanclear=1          → borra el registro de escaneos del QR
+
+   GET  ?s=token              → ficha pública del QR del collar: solo lo necesario para devolverla
+   POST ?s=token&found=1 {loc?,name?,phone?,msg?} → quien la encontró le avisa a la familia (opcional, con topes)
    GET  ?c=token              → vista del cuidador (instrucciones, medicación y registro del día)
    POST ?c=token {kind,…}     → el cuidador anota "comió", "paseó", "le di la medicación" o una nota
    GET  ?img=id               → una foto */
@@ -28,7 +31,7 @@ import { readSession, readBody } from './_lib/auth.js';
 import { isAdmin } from './_lib/admin.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath } from './_lib/blob.js';
 import { QUOTA_BYTES, fits, addUsage, photoRef, sweep } from './_lib/petfiles.js';
-import { getVapid, getNotify, saveNotify, cleanSub, pushTo, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
+import { getVapid, getNotify, saveNotify, cleanSub, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
 const docKey = email => `orbit:pets:${email.toLowerCase()}`;
@@ -86,6 +89,8 @@ export function cleanDoc(d) {
     contact: { show: Boolean(p?.contact?.show), name: str(p?.contact?.name, 60), phone: str(p?.contact?.phone, 40), note: str(p?.contact?.note, 200) },
     vet: { name: str(p?.vet?.name, 80), phone: str(p?.vet?.phone, 40), address: str(p?.vet?.address, 120), er: str(p?.vet?.er, 120), erPhone: str(p?.vet?.erPhone, 40) },
     lost: { on: Boolean(p?.lost?.on), since: stamp(p?.lost?.since), place: str(p?.lost?.place, 160), note: str(p?.lost?.note, 300) },
+    /* lo único de salud que puede verse en el QR, y solo si la familia lo marca */
+    qrNote: { show: Boolean(p?.qrNote?.show), text: str(p?.qrNote?.text, 200) },
     share: tok(p?.share),
     sitterToken: tok(p?.sitterToken),
     sitter: {
@@ -130,20 +135,18 @@ export function cleanDoc(d) {
   return { pets };
 }
 
-/* lo que ve quien abre el link de la ficha: sin notas privadas, gastos ni contacto si está apagado */
+/* lo que ve quien escanea el QR del collar: SOLO lo necesario para devolverla.
+   Nada de salud (ni vacunas, problemas, cirugías, microchip, nacimiento o veterinaria), salvo el dato
+   urgente que la familia marque a propósito para mostrar en el QR. */
 export function publicPet(p) {
   const lost = p.lost?.on;
   return {
     name: p.name, species: p.species, speciesOther: p.speciesOther, breed: p.breed, sex: p.sex,
-    birth: p.birth, color: p.color, marks: p.marks, temper: p.temper, chip: p.chip, weight: p.weight, allergies: p.allergies,
+    color: p.color, marks: p.marks, temper: p.temper,
     photo: p.photo, photos: p.photos,
     contact: (p.contact?.show || lost) && (p.contact?.phone || p.contact?.name) ? { name: p.contact.name, phone: p.contact.phone, note: p.contact.note } : null,
     lost: lost ? { since: p.lost.since, place: p.lost.place, note: p.lost.note } : null,
-    vet: p.vet?.name || p.vet?.phone ? { name: p.vet.name, phone: p.vet.phone } : null,
-    neutered: p.neutered || '',
-    conditions: (p.conditions || []).filter(c => c.status !== 'resuelta').map(c => ({ name: c.name, status: c.status })),
-    surgeries: (p.surgeries || []).map(c => ({ name: c.name, date: c.date })),
-    records: p.records.map(r => ({ type: r.type, name: r.name, date: r.date, next: r.next, vet: r.vet })),
+    urgent: p.qrNote?.show && p.qrNote?.text ? p.qrNote.text : '',
   };
 }
 
@@ -202,19 +205,78 @@ async function scanBooklet(images, species) {
   };
 }
 
-async function scanAlert(email, pet, req) {
-  let city = '';
-  try { city = decodeURIComponent(String(req.headers['x-vercel-ip-city'] || '')).slice(0, 60); } catch {}
-  const list = (await kvGet(scansKey(email))) || [];
-  list.push({ petId: pet.id, at: new Date().toISOString(), city });
-  await kvSet(scansKey(email), list.slice(-20));
-  /* como mucho un push cada 30 minutos por mascota */
-  const ping = `orbit:petscanping:${email.toLowerCase()}:${pet.id}`;
-  if (await kvGet(ping)) return;
-  await kvSet(ping, 1, 30 * 60);
+/* ---------- escaneos del QR ----------
+   Registro por cuenta (orbit:petscans:<email>): últimos MAX_SCANS, se borra solo a los SCAN_DAYS días.
+   La IP nunca se guarda: solo un hash con sal, en llaves de tope que vencen en una hora. */
+const MAX_SCANS = 50, SCAN_DAYS = 90;
+const NOTIFY_EVERY = 10 * 60;      /* un aviso cada 10 minutos por QR (escaneo y mensaje, por separado) */
+const MSGS_PER_HOUR_IP = 5;        /* mensajes por hora por IP */
+const MSGS_PER_DAY_QR = 20;        /* mensajes por día por QR, aunque vengan de muchas IP */
+const hdr = (req, k) => { try { return decodeURIComponent(String(req.headers[k] || '')).slice(0, 60); } catch { return ''; } };
+const where = req => ({ city: hdr(req, 'x-vercel-ip-city'), region: hdr(req, 'x-vercel-ip-country-region'), country: hdr(req, 'x-vercel-ip-country') });
+const ipHash = req => {
+  const ip = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+  return createHash('sha256').update('orbit-qr:' + (process.env.SESSION_SECRET || 'mimitos') + ':' + ip).digest('hex').slice(0, 20);
+};
+async function addScan(email, entry) {
+  const since = Date.now() - SCAN_DAYS * 864e5;
+  const list = ((await kvGet(scansKey(email))) || []).filter(x => Date.parse(x.at) > since);
+  list.push({ id: randomBytes(5).toString('hex'), at: new Date().toISOString(), ...entry });
+  await kvSet(scansKey(email), list.slice(-MAX_SCANS), SCAN_DAYS * 86400);
+}
+/* true si se puede avisar (y deja anotado el aviso); false si ya se avisó en los últimos 10 minutos */
+async function canNotify(kind, token) {
+  const k = `orbit:petqrping:${kind}:${token}`;
+  if (await kvGet(k)) return false;
+  await kvSet(k, 1, NOTIFY_EVERY);
+  return true;
+}
+const placeOf = w => [w.city, w.region].filter(Boolean).join(', ');
+const hm = d => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(d);
+
+async function scanAlert(email, pet, token, req) {
+  const w = where(req);
+  /* el mismo celu escaneando varias veces seguidas cuenta una sola vez en el registro */
+  const seen = `orbit:petqrseen:${token}:${ipHash(req)}`;
+  if (await kvGet(seen)) return;
+  await kvSet(seen, 1, NOTIFY_EVERY);
+  await addScan(email, { petId: pet.id, kind: 'scan', ...w });
+  if (!(await canNotify('scan', token))) return;
   const n = await getNotify(email);
   if (n.off.qr) return;
-  await pushTo(n, { title: `Alguien escaneó el QR de ${pet.name}`, body: (city ? `Cerca de ${city} (aproximado). ` : '') + (pet.lost?.on ? 'Está en modo perdida: mirá si te escribieron.' : 'Si no fuiste vos, puede que la hayan encontrado.'), url: '/mascotas', tag: `scan-${pet.id}` });
+  const place = placeOf(w);
+  const title = `Escanearon el QR de ${pet.name}`;
+  const body = `${place ? `Cerca de ${place} (aproximado por la conexión)` : 'Sin ubicación'}, ${hm(new Date())}. ` + (pet.lost?.on ? 'Está en modo perdida: si te escriben, te avisamos.' : 'Si no fuiste vos, puede que alguien la haya encontrado.');
+  await pushTo(n, { title, body, url: '/mascotas#/inicio', tag: `scan-${pet.id}` });
+  if (n.mail) await mailNotice(email, { title, body }).catch(() => {});
+}
+
+/* quien la encontró deja ubicación, nombre, teléfono o un mensaje (todo opcional) */
+async function foundReport(email, pet, token, req, b) {
+  if (str(b.website, 10)) return { ok: true };   /* trampa para bots: el campo está oculto */
+  const lat = Number(b.loc?.lat), lng = Number(b.loc?.lng), acc = Number(b.loc?.acc);
+  const loc = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && (lat || lng)
+    ? { lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5, acc: Number.isFinite(acc) && acc > 0 ? Math.min(Math.round(acc), 50000) : null } : null;
+  const name = str(b.name, 60), phone = str(b.phone, 40).replace(/[^\d+()\- ]/g, '').trim(), msg = str(b.msg, 500);
+  if (!loc && !phone && !msg && !name) return { error: 'vacio', status: 400 };
+  const hour = new Date().toISOString().slice(0, 13), dayk = hour.slice(0, 10);
+  const kIp = `orbit:petqrmsg:ip:${ipHash(req)}:${hour}`, kQr = `orbit:petqrmsg:qr:${token}:${dayk}`;
+  const nIp = (await kvGet(kIp)) || 0, nQr = (await kvGet(kQr)) || 0;
+  if (nIp >= MSGS_PER_HOUR_IP || nQr >= MSGS_PER_DAY_QR) return { error: 'limite', status: 429 };
+  await kvSet(kIp, nIp + 1, 3600);
+  await kvSet(kQr, nQr + 1, 86400);
+  const w = where(req);
+  await addScan(email, { petId: pet.id, kind: 'msg', ...w, loc, name, phone, msg });
+  if (!(await canNotify('msg', token))) return { ok: true };
+  const n = await getNotify(email);
+  if (n.off.qr) return { ok: true };
+  const who = name || 'Alguien';
+  const title = `${who} te avisó por ${pet.name}`;
+  const parts = [loc ? 'Compartió su ubicación' : (placeOf(w) ? `Cerca de ${placeOf(w)} (aproximado)` : ''), phone ? `Tel.: ${phone}` : '', msg ? `"${msg.slice(0, 120)}"` : ''].filter(Boolean);
+  const body = parts.join('. ') + '. Abrí Mimitos para ver el detalle.';
+  await pushTo(n, { title, body, url: '/mascotas#/inicio', tag: `found-${pet.id}` });
+  if (n.mail) await mailNotice(email, { title, body: `${hm(new Date())}. ${body}`, map: loc ? `https://www.google.com/maps?q=${loc.lat},${loc.lng}` : '', phone }).catch(() => {});
+  return { ok: true };
 }
 const bump = doc => { doc.rev = (doc.rev || 0) + 1; doc.updatedAt = new Date().toISOString(); return doc; };
 
@@ -232,18 +294,24 @@ export default async function handler(req, res) {
     return res.status(200).end(Buffer.from(m[2], 'base64'));
   }
 
-  /* ficha pública */
-  if (req.method === 'GET' && q.s) {
+  /* ficha pública del QR */
+  if (q.s) {
     const t = tok(String(q.s));
     const link = t && await kvGet(shareKey(t));
     const doc = link && await kvGet(docKey(link.email));
     const pet = doc?.pets?.find(p => p.id === link.petId && p.share === t);
     /* si la dueña o el dueño ya no tiene la compra, el link deja de mostrar datos */
     if (!pet || !(await hasMimitos(link.email))) return res.status(404).json({ error: 'not_found' });
-    /* aviso a la familia: alguien abrió la ficha (no cuenta si la abre la misma dueña) */
     const viewer = readSession(req);
-    if (!viewer || viewer.email.toLowerCase() !== link.email.toLowerCase()) await scanAlert(link.email, pet, req).catch(() => {});
-    return res.status(200).json({ kind: 'ficha', pet: publicPet(pet), updatedAt: doc.updatedAt || null });
+    const owner = viewer && viewer.email.toLowerCase() === link.email.toLowerCase();
+    if (req.method === 'POST' && q.found) {
+      const out = await foundReport(link.email, pet, t, req, await readBody(req)).catch(() => ({ error: 'error', status: 500 }));
+      return out.ok ? res.status(200).json({ ok: true }) : res.status(out.status).json({ error: out.error });
+    }
+    if (req.method !== 'GET') return res.status(405).json({ error: 'method_not_allowed' });
+    /* aviso a la familia: alguien abrió la ficha (no cuenta si la abre la misma dueña) */
+    if (!owner) await scanAlert(link.email, pet, t, req).catch(() => {});
+    return res.status(200).json({ kind: 'ficha', pet: publicPet(pet), owner: Boolean(owner), updatedAt: doc.updatedAt || null });
   }
 
   /* cuidador */
@@ -302,7 +370,7 @@ export default async function handler(req, res) {
   }
   if (req.method === 'GET') {
     const doc = (await kvGet(docKey(s.email))) || { pets: [], rev: 0 };
-    const scans = ((await kvGet(scansKey(s.email))) || []).slice(-10);
+    const scans = ((await kvGet(scansKey(s.email))) || []).filter(x => Date.parse(x.at) > Date.now() - SCAN_DAYS * 864e5).slice(-MAX_SCANS);
     return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
@@ -348,6 +416,13 @@ export default async function handler(req, res) {
       const out = await scanBooklet(images, str(body.species, 10));
       return res.status(200).json(out);
     } catch (e) { return res.status(e.status || 502).json({ error: e.message || 'ia_error' }); }
+  }
+
+  if (q.scanclear) {
+    const keep = String(body.petId || '');
+    const list = keep ? ((await kvGet(scansKey(s.email))) || []).filter(x => x.petId !== keep) : [];
+    if (list.length) await kvSet(scansKey(s.email), list, SCAN_DAYS * 86400); else await kvDel(scansKey(s.email));
+    return res.status(200).json({ ok: true, scans: list });
   }
 
   const current = (await kvGet(docKey(s.email))) || { pets: [], rev: 0 };

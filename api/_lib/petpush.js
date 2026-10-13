@@ -133,3 +133,21 @@ ${items.map(i => `<tr><td bgcolor="#FFFDF9" style="background:#FFFDF9;border-rad
   await sendEmail({ to: email, subject, html, text });
   return true;
 }
+
+/* aviso suelto por mail (escaneo del QR o mensaje de quien la encontró), con la estética de Mimitos */
+export async function mailNotice(email, { title, body, map = '', phone = '' }) {
+  if (!emailReady()) return false;
+  const url = `${SITE()}/mascotas#/inicio`, tel = String(phone || '').replace(/[^\d+]/g, '');
+  const btn = (href, label, bg, fg) => `<a href="${esc(href)}" style="display:inline-block;background:${bg};color:${fg};text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:13px 22px;margin:0 8px 8px 0">${label}</a>`;
+  const html = `<!doctype html><html><body style="margin:0;background:#F7F3EE;font-family:Helvetica,Arial,sans-serif;color:#1F1A17">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F7F3EE"><tr><td align="center" style="padding:28px 16px">
+<table role="presentation" width="100%" style="max-width:480px" cellpadding="0" cellspacing="0">
+<tr><td style="padding:0 0 16px;font:700 22px Helvetica,Arial,sans-serif;color:#1F1A17">mimitos</td></tr>
+<tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border-radius:18px;padding:18px 20px"><b style="font-size:17px">${esc(title)}</b><br><span style="font-size:14px;line-height:1.55;color:#5E554E">${esc(body)}</span></td></tr>
+<tr><td style="padding:16px 0 0">${map ? btn(map, 'Ver la ubicación', '#1F4D40', '#FFFFFF') : ''}${tel ? btn('tel:' + tel, 'Llamar', '#1F4D40', '#FFFFFF') : ''}${btn(url, 'Abrir Mimitos', map || tel ? '#E3EDE6' : '#1F4D40', map || tel ? '#1F4D40' : '#FFFFFF')}</td></tr>
+<tr><td style="padding:18px 0 0;font-size:12px;color:#5E554E;line-height:1.5">Te llega porque activaste los avisos por mail en Mimitos y el aviso del QR. Los apagás desde Avisos en la app. Hecho con Orbit.</td></tr>
+</table></td></tr></table></body></html>`;
+  const text = `${title}\n${body}${map ? `\nUbicación: ${map}` : ''}\n\nAbrir Mimitos: ${url}`;
+  await sendEmail({ to: email, subject: title, html, text });
+  return true;
+}

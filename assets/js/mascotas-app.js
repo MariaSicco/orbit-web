@@ -24,7 +24,7 @@ const ui = { hist: { type: 'todo', year: '', q: '' }, lib: { year: '', q: '', pa
 const store = { get(k) { try { return localStorage.getItem('mimitos:' + k); } catch { return null; } }, set(k, v) { try { localStorage.setItem('mimitos:' + k, v); } catch {} } };
 
 const blankPet = () => ({ id: uid(), name: '', species: 'perro', speciesOther: '', breed: '', sex: '', birth: '', color: '', marks: '', temper: '', chip: '', weight: null, allergies: '', photo: '', photos: [], notes: '',
-  contact: { show: false, name: '', phone: '', note: '' }, vet: { name: '', phone: '', address: '', er: '', erPhone: '' }, lost: { on: false, since: '', place: '', note: '' },
+  contact: { show: false, name: '', phone: '', note: '' }, vet: { name: '', phone: '', address: '', er: '', erPhone: '' }, lost: { on: false, since: '', place: '', note: '' }, qrNote: { show: false, text: '' },
   share: '', sitterToken: '', sitter: { name: '', from: '', to: '', food: '', walks: '', where: '', habits: '', emergency: '', key: '', vetAuth: false, contact: '' },
   food: { brand: '', bagKg: null, dailyG: null, opened: '' }, fund: { goal: null, monthly: null, saved: null }, trip: { dest: '', date: '' },
   neutered: '', chronic: '', onboarded: false, conditions: [], surgeries: [], visits: [], studies: [], weights: [],
@@ -539,7 +539,7 @@ function render() {
 }
 function view() {
   if (mode === 'loading') return skeleton();
-  if (mode === 'guest') return renderGate();
+  if (mode === 'guest') { after(gateArt); return renderGate(); }
   if (mode === 'nopurchase') return renderNoPurchase();
   if (mode === 'error') return renderError();
   if (route.name === 'alta') return renderOnboard();
@@ -606,8 +606,15 @@ function renderGate() {
       </div>
       <p class="note">Necesitás una cuenta de Orbit con el mail de la compra. Tus datos quedan en tu cuenta, no en el celu. En iPhone, para recibir los avisos en el celu, agregás Mimitos a la pantalla de inicio.</p>
     </div>
-    <div class="art" aria-hidden="true"><div class="mini c-salud"><div class="cvtxt"><span class="eyebrow">Libreta sanitaria</span>${HEART}<b>Tu mascota</b></div></div></div>
+    <div class="art" id="gateArt" aria-hidden="true"></div>
   </section>`;
+}
+/* ilustración de la bienvenida: se inserta el SVG en línea para que use Geist; si no carga, queda el espacio vacío */
+let gateSvg = '';
+async function gateArt() {
+  const box = $('#gateArt'); if (!box) return;
+  try { if (!gateSvg) { const r = await fetch('/assets/img/mimitos/bienvenida.svg?v=1'); if (r.ok) gateSvg = (await r.text()).replace(/<title>[^<]*<\/title>/, ''); } } catch {}
+  if (gateSvg && $('#gateArt')) $('#gateArt').innerHTML = gateSvg;
 }
 
 /* con sesión pero sin la compra de Mimitos */
@@ -668,7 +675,7 @@ function renderInicio(p) {
   const vacc = { ok: ['Al día', 'ok'], late: [`Vencida: ${sm.vaccLate.map(x => x.r.name).join(', ')}`, 'late'], none: ['Sin cargar', 'none'] }[sm.vacc];
   const anti = { ok: ['Al día', 'ok'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
   const recs = p.records.filter(r => r.date).length;
-  const quick = [['share', 'qr', 'viaje', 'Ficha y QR', 'Para el veterinario y la chapita'], ['sitter', 'hand', 'cuida', `Quién ${la(p)} cuida`, 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
+  const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', `Quién ${la(p)} cuida`, 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
   return `${doc.pets.length > 1 ? switcher(p) : ''}
   <div class="cols">
     <div class="col">
@@ -718,7 +725,21 @@ function sitterLog(p) {
 function scanBanner(p) {
   const last = scans.filter(x => x.petId === p.id).pop();
   if (!last || Date.now() - Date.parse(last.at) > 7 * 864e5) return '';
-  return `<button class="banner scanned" data-act="share"><span class="pulse" aria-hidden="true"></span><span style="flex:1;text-align:left"><b>Alguien escaneó el QR de ${esc(p.name)}</b>${esc(Z.fmtWhen(new Date(last.at)))}${last.city ? ' · cerca de ' + esc(last.city) : ''}</span>${I('chevron')}</button>`;
+  const t = last.kind === 'msg' ? `${last.name ? esc(last.name) : 'Alguien'} te avisó por ${esc(p.name)}` : `Escanearon el QR de ${esc(p.name)}`;
+  const sub = last.kind === 'msg' ? [last.loc ? 'compartió su ubicación' : '', last.phone ? 'dejó su teléfono' : '', last.msg ? 'te dejó un mensaje' : ''].filter(Boolean).join(', ') : (last.city ? 'cerca de ' + esc(last.city) : '');
+  return `<button class="banner scanned" data-act="share"><span class="pulse" aria-hidden="true"></span><span style="flex:1;text-align:left"><b>${t}</b>${esc(Z.fmtWhen(new Date(last.at)))}${sub ? ' · ' + sub : ''}</span>${I('chevron')}</button>`;
+}
+/* registro de escaneos del QR: quién avisó, desde dónde y cuándo */
+function scanLog(p) {
+  const list = scans.filter(x => x.petId === p.id).slice().reverse();
+  if (!list.length) return `<section class="sec"><h2>Registro de escaneos</h2><p class="dim">Todavía nadie escaneó el QR. Cuando pase, te avisamos y queda anotado acá.</p></section>`;
+  const telx = v => String(v || '').replace(/[^\d+]/g, '');
+  const place = x => [x.city, x.region].filter(Boolean).join(', ');
+  return `<section class="sec scanlog"><h2>Registro de escaneos</h2><div class="list">${list.slice(0, 30).map(x => x.kind === 'msg'
+    ? `<div class="row">${bubble('pin', 'perdida')}<span class="what"><b>${x.name ? esc(x.name) + ' te avisó' : 'Te dejaron un aviso'}</b><small>${esc(Z.fmtWhen(new Date(x.at)))}${x.loc ? ' · con su ubicación' : place(x) ? ' · cerca de ' + esc(place(x)) + ' (aprox.)' : ''}${x.phone ? ' · ' + esc(x.phone) : ''}</small>${x.msg ? `<p class="msg">${esc(x.msg)}</p>` : ''}
+        <span class="acts">${x.loc ? `<a class="btn sm" href="https://www.google.com/maps?q=${x.loc.lat},${x.loc.lng}" target="_blank" rel="noopener">${I('pin')} Ver en el mapa</a>` : ''}${x.phone ? `<a class="btn ghost sm" href="tel:${esc(telx(x.phone))}">${I('phone')} Llamar</a><a class="btn ghost sm" href="https://wa.me/${esc(telx(x.phone).replace(/^\+/, ''))}?text=${encodeURIComponent(`Hola, soy la familia de ${p.name}. Gracias por avisar.`)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}</span></span></div>`
+    : `<div class="row">${bubble('qr', 'viaje')}<span class="what"><b>Escanearon el QR</b><small>${esc(Z.fmtWhen(new Date(x.at)))}${place(x) ? ' · cerca de ' + esc(place(x)) + ' (aproximado por la conexión)' : ' · sin ubicación'}</small></span></div>`).join('')}</div>
+    <button class="link danger" id="scanClear" type="button">Borrar el registro de ${esc(p.name)}</button></section>`;
 }
 
 /* historial con filtros: tipo, año y texto */
@@ -1152,7 +1173,7 @@ function renderCuenta() {
         <div class="list">
           <button class="row link-row" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span class="what"><b>Centro de avisos</b><small>${nOn ? 'Activados' + (notify.devices ? ` en ${notify.devices} ${notify.devices === 1 ? 'dispositivo' : 'dispositivos'}` : '') + (notify.mail ? (notify.devices ? ' y por mail' : ' por mail') : '') : 'Apagados: activalos para no perderte fechas'}</small></span>${I('chevron')}</button>
           <button class="row link-row" data-act="export">${bubble('download', 'viaje')}<span class="what"><b>Exportar copia de tus datos</b><small>Un archivo con todo lo que cargaste (JSON)</small></span>${I('chevron')}</button>
-          <a class="row link-row" href="/privacidad" target="_blank" rel="noopener">${bubble('shield', 'salud')}<span class="what"><b>Privacidad</b><small>Tus datos viven en tu cuenta. El QR solo muestra la ficha que elegís compartir.</small></span>${I('chevron')}</a>
+          <a class="row link-row" href="/privacidad" target="_blank" rel="noopener">${bubble('shield', 'salud')}<span class="what"><b>Privacidad</b><small>Tus datos viven en tu cuenta. El QR solo muestra lo necesario para que te la devuelvan.</small></span>${I('chevron')}</a>
           <a class="row link-row" href="/terminos" target="_blank" rel="noopener">${bubble('doc', 'med')}<span class="what"><b>Términos y condiciones</b><small>Licencia, arrepentimiento y soporte</small></span>${I('chevron')}</a>
         </div>
       </section>
@@ -1223,7 +1244,7 @@ async function disablePush() {
   if (sub) { try { await notifyPost({ remove: sub.endpoint }); } catch {} await sub.unsubscribe().catch(() => {}); }
   pushHere = false; render(); toast('Avisos apagados en este celu.');
 }
-const KINDS_UI = [['vac', 'syringe', 'Vacunas y controles', '3 días antes y el mismo día'], ['pip', 'drop', 'Pipeta o antiparasitario', '3 días antes y el mismo día'], ['food', 'bowl', 'Alimento', '5 días antes de que se termine'], ['check', 'heart', 'Chequeo del mes', 'El primer domingo de cada mes'], ['qr', 'qr', 'Alguien escaneó su QR', 'Al instante, en el celu']];
+const KINDS_UI = [['vac', 'syringe', 'Vacunas y controles', '3 días antes y el mismo día'], ['pip', 'drop', 'Pipeta o antiparasitario', '3 días antes y el mismo día'], ['food', 'bowl', 'Alimento', '5 días antes de que se termine'], ['check', 'heart', 'Chequeo del mes', 'El primer domingo de cada mes'], ['qr', 'qr', 'Escanearon su QR o te dejaron un aviso', 'Al instante, en el celu y por mail si lo activaste']];
 function renderAvisos() {
   const n = notify || { devices: 0, mail: false, off: {} };
   after(refreshHere);
@@ -1248,7 +1269,7 @@ function renderAvisos() {
       </section>
       <section class="sec"><h2>En el celu</h2>${celu}<p class="amsg" id="aMsg" role="status" hidden></p></section>
       <section class="sec"><h2>Por mail</h2>
-        <label class="toggle"><input type="checkbox" id="aMail" ${n.mail ? 'checked' : ''}><span><b>Mandarme también un mail</b><br><small class="dim">Un solo mail con todo lo del día, a la mañana, a ${esc(me.email || 'tu casilla')}.</small></span></label></section>
+        <label class="toggle"><input type="checkbox" id="aMail" ${n.mail ? 'checked' : ''}><span><b>Mandarme también un mail</b><br><small class="dim">Un solo mail con todo lo del día, a la mañana, a ${esc(me.email || 'tu casilla')}. Si escanean el QR, al momento.</small></span></label></section>
     </div><div class="col">
       <section class="sec"><h2>Qué te avisamos</h2>
         <div class="list">${KINDS_UI.map(([k, ic, t, d]) => `<label class="row toggle-row">${bubble(ic, 'salud')}<span class="what"><b>${t}</b><small>${d}</small></span><input type="checkbox" class="sw-in" data-kind="${k}" ${n.off?.[k] ? '' : 'checked'} aria-label="${t}"></label>`).join('')}</div></section>
@@ -1530,16 +1551,20 @@ function sharePanel(p) {
   const contact = `<div class="fbody" style="border-top:1px solid var(--line);padding-top:16px">
     <label class="toggle"><input type="checkbox" id="cShow" ${p.contact.show ? 'checked' : ''}><span><b>Mostrar mi contacto</b><br><small class="dim">Para quien ${la(p)} encuentre si se pierde. En modo perdida se muestra siempre.</small></span></label>
     <div class="two"><div class="f"><label for="cName">Tu nombre</label><input id="cName" maxlength="60" value="${esc(p.contact.name)}"></div><div class="f"><label for="cPhone">Teléfono</label><input id="cPhone" type="tel" maxlength="40" value="${esc(p.contact.phone)}"></div></div></div>`;
+  const urgent = `<div class="fbody" style="border-top:1px solid var(--line);padding-top:16px">
+    <label class="toggle"><input type="checkbox" id="uShow" ${p.qrNote.show ? 'checked' : ''}><span><b>Mostrar en el QR un dato urgente</b><br><small class="dim">Solo si hace falta: una alergia o una medicación que no puede cortar. Es lo único de salud que se ve en el QR.</small></span></label>
+    <div class="f"><label for="uText">Dato urgente</label><textarea id="uText" maxlength="200" rows="2" placeholder="Es alérgica a la penicilina. Toma un remedio para la epilepsia 2 veces por día.">${esc(p.qrNote.text)}</textarea></div></div>`;
   if (!p.share) {
-    panel('Ficha y QR', `<p class="lead-s">Un link y un QR con los datos y las vacunas de ${esc(p.name)}: para mandar al veterinario o pegar en la chapita. No muestra tus notas, gastos ni medicación.</p><button class="btn wide" id="mk">Crear link y QR</button>${contact}`);
+    panel('QR del collar', `<p class="lead-s">Un QR para la chapita de ${esc(p.name)}. Quien ${la(p)} encuentre ve su foto, su nombre, cómo reconocer${la(p)} y botones para llamarte o mandarte un WhatsApp. No muestra nada de salud. Para el veterinario usá la libreta en PDF.</p><button class="btn wide" id="mk">Crear el QR</button>${contact}${urgent}`);
     $('#mk').onclick = async () => { $('#mk').disabled = true; try { sharePanel(await makeLink(p, 'share')); render(); } catch { toast('No pudimos crear el link. Probá de nuevo.'); $('#mk').disabled = false; } };
   } else {
     const url = `${location.origin}/mascota/${p.share}`;
-    panel('Ficha y QR', `<div class="qr" id="qrBox" role="img" aria-label="QR de la ficha de ${esc(p.name)}"></div>
+    panel('QR del collar', `<div class="qr" id="qrBox" role="img" aria-label="QR de la ficha de ${esc(p.name)}"></div>
       <div class="linkbox"><input readonly value="${esc(url)}" aria-label="Link de la ficha"><button class="btn sm" id="cp" type="button">Copiar</button></div>
       <div class="btns"><a class="btn sm" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`Ficha de ${p.name}: ${url}`)}">WhatsApp</a><button class="btn ghost sm" id="tag" type="button">QR para la chapita</button><a class="btn ghost sm" href="${esc(url)}" target="_blank" rel="noopener">Ver ficha</a></div>
       <p class="note">"QR para la chapita" baja una imagen con el QR y el nombre. Imprimila en papel autoadhesivo o llevala a cualquier grabado.</p>
-      ${contact}<button class="link danger" id="off" type="button">Apagar link</button>`);
+      <p class="note">Cuando alguien lo escanea te avisamos al momento (celu y mail, según tengas activado) con la hora y la ciudad aproximada. Si quien ${la(p)} encontró comparte su ubicación o te deja un mensaje, también te llega.</p>
+      ${contact}${urgent}${scanLog(p)}<button class="link danger" id="off" type="button">Apagar link</button>`);
     const c = qrCanvas(url); if (c) $('#qrBox').appendChild(c); else $('#qrBox').textContent = 'No se pudo dibujar el QR. Usá el link.';
     copyBtn('#cp', url);
     $('#tag').onclick = () => tagImage(p, url);
@@ -1548,8 +1573,13 @@ function sharePanel(p) {
       try { sharePanel(await makeLink(p, 'unshare')); render(); toast('Link apagado.'); } catch { toast('No pudimos apagar el link.'); }
     };
   }
-  const upd = () => { p.contact = { ...p.contact, show: $('#cShow').checked, name: $('#cName').value.trim(), phone: $('#cPhone').value.trim() }; changed(); };
-  ['#cShow', '#cName', '#cPhone'].forEach(s => $(s).addEventListener('change', upd));
+  const upd = () => { p.contact = { ...p.contact, show: $('#cShow').checked, name: $('#cName').value.trim(), phone: $('#cPhone').value.trim() }; p.qrNote = { show: $('#uShow').checked, text: $('#uText').value.trim() }; changed(); };
+  ['#cShow', '#cName', '#cPhone', '#uShow', '#uText'].forEach(s => $(s).addEventListener('change', upd));
+  const clr = $('#scanClear');
+  if (clr) clr.onclick = async () => {
+    if (clr.dataset.sure !== '1') { clr.dataset.sure = '1'; clr.textContent = 'Tocá de nuevo para borrar el registro'; return; }
+    try { const r = await fetch('/api/mascotas?scanclear=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ petId: p.id }) }); const d = await r.json(); if (!r.ok) throw 0; scans = d.scans || []; sharePanel(p); render(); toast('Registro borrado.'); } catch { toast('No pudimos borrar el registro.'); }
+  };
 }
 function tagImage(p, url) {
   const q = qrCanvas(url, 600); if (!q) return toast('No se pudo dibujar el QR.');
