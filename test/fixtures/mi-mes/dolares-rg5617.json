@@ -1,0 +1,221 @@
+{
+ "tarjeta": {
+  "banco": "Banco Inventado Tres",
+  "red": "Visa",
+  "ultimos4": "4444"
+ },
+ "tarjetas": [
+  {
+   "ultimos4": "4444",
+   "adicional": false,
+   "totales": [
+    {
+     "moneda": "ARS",
+     "monto": 483500.0
+    },
+    {
+     "moneda": "USD",
+     "monto": 55.0
+    }
+   ]
+  }
+ ],
+ "periodo": {
+  "desde": null,
+  "hasta": null
+ },
+ "cierre": "2026-10-01",
+ "vencimiento": "2026-10-09",
+ "cierreAnterior": "2026-08-27",
+ "vencimientoAnterior": "2026-09-04",
+ "proximoCierre": "2026-10-29",
+ "proximoVencimiento": "2026-11-11",
+ "saldoAnterior": [
+  {
+   "moneda": "ARS",
+   "monto": 1200000.0
+  },
+  {
+   "moneda": "USD",
+   "monto": 300.0
+  }
+ ],
+ "totales": [
+  {
+   "moneda": "ARS",
+   "monto": 507130.0
+  },
+  {
+   "moneda": "USD",
+   "monto": 55.0
+  }
+ ],
+ "pagoMinimo": {
+  "moneda": "ARS",
+  "monto": 120000
+ },
+ "limites": {
+  "compra": 3000000,
+  "financiacion": 2700000
+ },
+ "consumos": [
+  {
+   "fecha": "2026-07-13",
+   "comercio": "TIENDA ELECTRO GENERICA",
+   "monto": 30000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": {
+    "n": 3,
+    "de": 3
+   },
+   "tarjeta": "4444"
+  },
+  {
+   "fecha": "2026-09-02",
+   "comercio": "DELIVERY GENERICO",
+   "monto": 25000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": null,
+   "tarjeta": "4444"
+  },
+  {
+   "fecha": "2026-09-05",
+   "comercio": "ESCUELA GENERICA",
+   "monto": 300000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": null,
+   "tarjeta": "4444"
+  },
+  {
+   "fecha": "2026-09-05",
+   "comercio": "CORRALON GENERICO",
+   "monto": 120000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": {
+    "n": 1,
+    "de": 12
+   },
+   "tarjeta": "4444"
+  },
+  {
+   "fecha": "2026-09-09",
+   "comercio": "CAFE GENERICO",
+   "monto": 8500.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": null,
+   "tarjeta": "4444"
+  },
+  {
+   "fecha": "2026-09-01",
+   "comercio": "SOFTWARE GENERICO USD 15,00",
+   "monto": 15.0,
+   "moneda": "USD",
+   "rubro": "Suscripciones",
+   "cuota": null,
+   "tarjeta": "4444"
+  },
+  {
+   "fecha": "2026-09-08",
+   "comercio": "SERVICIO WEB GENERICO USD 40,00",
+   "monto": 40.0,
+   "moneda": "USD",
+   "rubro": "Suscripciones",
+   "cuota": null,
+   "tarjeta": "4444"
+  }
+ ],
+ "pagosYCreditos": [
+  {
+   "fecha": "2026-08-30",
+   "concepto": "SU PAGO EN USD",
+   "monto": -300.0,
+   "moneda": "USD",
+   "tipo": "pago"
+  },
+  {
+   "fecha": "2026-09-03",
+   "concepto": "SU PAGO EN PESOS",
+   "monto": -1000000.0,
+   "moneda": "ARS",
+   "tipo": "pago"
+  },
+  {
+   "fecha": "2026-09-04",
+   "concepto": "SU PAGO EN PESOS",
+   "monto": -110000.0,
+   "moneda": "ARS",
+   "tipo": "pago"
+  }
+ ],
+ "cargos": [
+  {
+   "fecha": "2026-09-04",
+   "concepto": "DEV.IMP. RG 5617 30%",
+   "monto": -110000.0,
+   "moneda": "ARS",
+   "tipo": "devolucion"
+  },
+  {
+   "fecha": "2026-10-01",
+   "concepto": "IMPUESTO DE SELLOS",
+   "monto": 15000.0,
+   "moneda": "ARS",
+   "tipo": "sellos"
+  },
+  {
+   "fecha": "2026-10-01",
+   "concepto": "INTERESES FINANCIACION",
+   "monto": 3000.0,
+   "moneda": "ARS",
+   "tipo": "interes"
+  },
+  {
+   "fecha": "2026-10-01",
+   "concepto": "DB IVA 21%",
+   "monto": 630.0,
+   "moneda": "ARS",
+   "tipo": "iva"
+  },
+  {
+   "fecha": "2026-10-01",
+   "concepto": "DB.RG 5617 30%",
+   "monto": 25000.0,
+   "moneda": "ARS",
+   "tipo": "percepcion"
+  }
+ ],
+ "cuotasAVencer": [
+  {
+   "mes": "2026-10",
+   "monto": 120000.0,
+   "moneda": "ARS",
+   "desde": false
+  },
+  {
+   "mes": "2026-11",
+   "monto": 120000.0,
+   "moneda": "ARS",
+   "desde": false
+  },
+  {
+   "mes": "2026-12",
+   "monto": 120000.0,
+   "moneda": "ARS",
+   "desde": false
+  },
+  {
+   "mes": "2027-01",
+   "monto": 960000.0,
+   "moneda": "ARS",
+   "desde": true
+  }
+ ],
+ "confianza": "alta",
+ "avisos": [],
+ "_nota": "Fixture INVENTADO para tests: misma estructura que un resumen real, datos 100% falsos."
+}

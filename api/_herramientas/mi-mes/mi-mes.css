@@ -413,3 +413,11 @@ fieldset.mm-campo>legend{margin-bottom:8px}
 .mm-push-sec h3:empty{display:none}
 .mm-push-sec p{margin:0;font-size:15px}
 .mm-ok{display:flex;gap:8px;align-items:center;color:var(--azul);font-weight:700}
+
+/* resúmenes reales: adicionales, cargos, banco */
+.mm-sub-tarjeta{margin:8px 0 0;font-size:13px;font-weight:700;color:var(--tinta2)}
+.mm-tcard .tc-num small{display:block;font-family:var(--sans);letter-spacing:0;font-size:11.5px;margin-top:2px}
+.mm-nota-suave{padding:10px 14px;border-radius:var(--r2);background:var(--azul-suave);color:var(--tinta);font-size:14px}
+.esc-monto small.banco{color:var(--tinta2);font-weight:600}
+.mm-esc li.esc-dif{display:block}
+.mm-esc li.esc-dif .ic{width:16px;height:16px;display:inline;vertical-align:-3px;color:var(--neg)}

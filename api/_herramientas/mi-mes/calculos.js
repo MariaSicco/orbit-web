@@ -297,63 +297,99 @@ export function rubroPara(comercio, sugerido, memoria = {}) {
 const aCentavos = x => (typeof x === 'number' && Number.isFinite(x) ? Math.round(x * 100) : null);
 const mesDeFecha = f => f.slice(0, 7);
 
-/* Valida y pasa a centavos. Nunca completa montos que no vinieron:
-   un consumo sin monto válido se descarta y se avisa. */
+export const TIPOS_PAGO = ['pago', 'credito', 'reversion'];
+export const TIPOS_CARGO = ['interes', 'iva', 'sellos', 'percepcion', 'devolucion', 'comision', 'otro'];
+const fecha = f => (esFecha(f) ? f : null);
+const porMoneda = lista => {
+  const o = {};
+  for (const t of Array.isArray(lista) ? lista : []) { const c = aCentavos(t?.monto); if (esMoneda(t?.moneda) && c !== null) o[t.moneda] = c; }
+  return o;
+};
+const u4 = x => (/^\d{4}$/.test(String(x ?? '')) ? String(x) : '');
+
+/* Valida y pasa a centavos. Nunca completa montos que no vinieron: una
+   línea sin monto válido se descarta y se avisa. Separa consumos de pagos
+   y créditos y de cargos e impuestos (esquema v2 de la lectura). */
 export function validarLectura(json) {
   const errores = [];
   const avisos = Array.isArray(json?.avisos) ? json.avisos.map(String).slice(0, 10) : [];
   if (!json || typeof json !== 'object') return { ok: false, errores: ['La respuesta no tiene el formato esperado.'] };
-  const vencimiento = esFecha(json.vencimiento) ? json.vencimiento : null;
+  const vencimiento = fecha(json.vencimiento);
   if (!vencimiento) errores.push('No encontramos la fecha de vencimiento.');
-  const totales = {};
-  for (const t of Array.isArray(json.totales) ? json.totales : []) {
-    const c = aCentavos(t?.monto);
-    if (esMoneda(t?.moneda) && c !== null) totales[t.moneda] = c;
-  }
+  const totales = porMoneda(json.totales);
   if (!Object.keys(totales).length) errores.push('No encontramos el total a pagar.');
-  const consumos = [];
   let descartados = 0;
+  const consumos = [];
   for (const c of Array.isArray(json.consumos) ? json.consumos : []) {
     const monto = aCentavos(c?.monto);
     if (monto === null || !esMoneda(c?.moneda) || !String(c?.comercio || '').trim()) { descartados++; continue; }
     const n = Number(c?.cuota?.n), de = Number(c?.cuota?.de);
     consumos.push({
-      fecha: esFecha(c.fecha) ? c.fecha : null,
-      comercio: String(c.comercio).trim().slice(0, 60),
-      monto, moneda: c.moneda,
+      fecha: fecha(c.fecha), comercio: String(c.comercio).trim().slice(0, 60), monto, moneda: c.moneda,
       rubro: RUBROS.includes(c.rubro) ? c.rubro : 'Otros',
       cuota: Number.isInteger(n) && Number.isInteger(de) && n >= 1 && de >= n && de <= 72 ? { n, de } : null,
+      tarjeta: u4(c.tarjeta) || null,
     });
   }
+  const lineas = (lista, tipos) => {
+    const out = [];
+    for (const x of Array.isArray(lista) ? lista : []) {
+      const monto = aCentavos(x?.monto);
+      if (monto === null || !esMoneda(x?.moneda)) { descartados++; continue; }
+      out.push({ fecha: fecha(x.fecha), concepto: String(x.concepto || '').trim().slice(0, 60) || 'Sin detalle', monto, moneda: x.moneda,
+        tipo: tipos.includes(x.tipo) ? x.tipo : tipos[tipos.length - 1] });
+    }
+    return out;
+  };
+  const pagosYCreditos = lineas(json.pagosYCreditos, TIPOS_PAGO);
+  const cargos = lineas(json.cargos, TIPOS_CARGO);
   if (descartados) avisos.push(`Dejamos afuera ${descartados} línea${descartados === 1 ? '' : 's'} que no pudimos leer bien.`);
+  const tarjetas = (Array.isArray(json.tarjetas) ? json.tarjetas : []).filter(t => u4(t?.ultimos4)).slice(0, 6)
+    .map(t => ({ ultimos4: u4(t.ultimos4), adicional: t.adicional === true, totales: porMoneda(t.totales) }));
+  const cuotasAVencer = [];
+  for (const c of Array.isArray(json.cuotasAVencer) ? json.cuotasAVencer : []) {
+    const monto = aCentavos(c?.monto);
+    if (esMes(c?.mes) && monto !== null && monto >= 0) cuotasAVencer.push({ mes: c.mes, monto, moneda: esMoneda(c.moneda) ? c.moneda : 'ARS', desde: c.desde === true });
+  }
   const tj = json.tarjeta || {};
   const pm = json.pagoMinimo && esMoneda(json.pagoMinimo.moneda) ? { moneda: json.pagoMinimo.moneda, monto: aCentavos(json.pagoMinimo.monto) } : null;
+  const lim = json.limites || {};
   const lectura = {
-    tarjeta: {
-      banco: String(tj.banco || '').trim().slice(0, 40),
-      red: REDES.includes(tj.red) ? tj.red : 'Otra',
-      ultimos4: /^\d{4}$/.test(String(tj.ultimos4 || '')) ? String(tj.ultimos4) : '',
-    },
-    periodo: { desde: esFecha(json.periodo?.desde) ? json.periodo.desde : null, hasta: esFecha(json.periodo?.hasta) ? json.periodo.hasta : null },
-    cierre: esFecha(json.cierre) ? json.cierre : null,
-    vencimiento, totales, consumos,
+    tarjeta: { banco: String(tj.banco || '').trim().slice(0, 40), red: REDES.includes(tj.red) ? tj.red : 'Otra', ultimos4: u4(tj.ultimos4) || tarjetas.find(t => !t.adicional)?.ultimos4 || '' },
+    tarjetas,
+    periodo: { desde: fecha(json.periodo?.desde), hasta: fecha(json.periodo?.hasta) },
+    cierre: fecha(json.cierre), vencimiento,
+    cierreAnterior: fecha(json.cierreAnterior), vencimientoAnterior: fecha(json.vencimientoAnterior),
+    proximoCierre: fecha(json.proximoCierre), proximoVencimiento: fecha(json.proximoVencimiento),
+    saldoAnterior: porMoneda(json.saldoAnterior), totales, consumos, pagosYCreditos, cargos, cuotasAVencer,
     pagoMinimo: pm && pm.monto !== null ? pm : null,
+    limites: { compra: aCentavos(lim.compra) || null, financiacion: aCentavos(lim.financiacion) || null },
     confianza: json.confianza === 'alta' ? 'alta' : 'baja',
     avisos,
   };
   return { ok: errores.length === 0, errores, lectura };
 }
 
-/* Guarda una lectura revisada: crea o usa la tarjeta, reemplaza el resumen de
-   ese mes y suma las cuotas detectadas sin duplicarlas si se importa el
-   resumen siguiente. Devuelve datos nuevos (no toca los de entrada). */
+/* Mes de la tabla "cuotas a vencer" → mes en que se paga. La tabla nombra el
+   mes del cierre; se paga cuando vence ese resumen (en general, al mes
+   siguiente). Si viene el próximo cierre y vencimiento, se usa esa distancia. */
+export function desfaseCuotasAVencer(l) {
+  if (esFecha(l?.proximoCierre) && esFecha(l?.proximoVencimiento)) return Math.max(0, difMeses(l.proximoCierre.slice(0, 7), l.proximoVencimiento.slice(0, 7)));
+  return 1;
+}
+
+/* Guarda una lectura revisada: crea o usa la tarjeta (también si coincide una
+   adicional), carga los límites que traiga, reemplaza el resumen de ese mes
+   y suma las cuotas detectadas sin duplicarlas si se importa el resumen
+   siguiente. Devuelve datos nuevos (no toca los de entrada). */
 export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = () => Math.random().toString(36).slice(2) } = {}) {
   const d = structuredClone(datos);
   const mes = mesDeFecha(lectura.vencimiento);
+  const finales = [...new Set([lectura.tarjeta.ultimos4, ...(lectura.tarjetas || []).map(t => t.ultimos4)].filter(Boolean))];
   let tId = tarjetaId;
   if (!tId) {
     const t = lectura.tarjeta;
-    const ya = t.ultimos4 && d.tarjetas.find(x => x.ultimos4 === t.ultimos4 && x.red === t.red);
+    const ya = finales.length && d.tarjetas.find(x => x.red === t.red && (finales.includes(x.ultimos4) || (x.adicionales || []).some(a => finales.includes(a))));
     if (ya) tId = ya.id;
     else {
       tId = nuevoId();
@@ -362,17 +398,30 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
         color: COLORES.find(c => !d.tarjetas.some(x => x.color === c)) || COLORES[d.tarjetas.length % COLORES.length] });
     }
   }
-  const resumenId = nuevoId();
+  const tarjeta = d.tarjetas.find(x => x.id === tId);
+  if (tarjeta) {
+    const adic = (lectura.tarjetas || []).filter(x => x.adicional && x.ultimos4 !== tarjeta.ultimos4).map(x => x.ultimos4);
+    if (adic.length) tarjeta.adicionales = [...new Set([...(tarjeta.adicionales || []), ...adic])].slice(0, 6);
+    if (lectura.limites?.compra) tarjeta.limite = lectura.limites.compra;
+    if (lectura.limites?.financiacion) tarjeta.limiteFinanciacion = lectura.limites.financiacion;
+  }
+  const desfase = desfaseCuotasAVencer(lectura);
   d.resumenes = d.resumenes.filter(r => !(r.tarjetaId === tId && r.mes === mes));
-  d.resumenes.push({ id: resumenId, tarjetaId: tId, mes, cierre: lectura.cierre, vencimiento: lectura.vencimiento,
-    periodo: lectura.periodo, totales: lectura.totales, pagoMinimo: lectura.pagoMinimo,
-    consumos: lectura.consumos.map(c => ({ ...c })) });
+  d.resumenes.push({ id: nuevoId(), tarjetaId: tId, mes, cierre: lectura.cierre, vencimiento: lectura.vencimiento,
+    proximoCierre: lectura.proximoCierre || null, proximoVencimiento: lectura.proximoVencimiento || null,
+    periodo: lectura.periodo, saldoAnterior: lectura.saldoAnterior || {}, totales: lectura.totales, pagoMinimo: lectura.pagoMinimo,
+    tarjetas: lectura.tarjetas || [],
+    consumos: lectura.consumos.map(c => ({ ...c })),
+    pagosYCreditos: (lectura.pagosYCreditos || []).map(c => ({ ...c })),
+    cargos: (lectura.cargos || []).map(c => ({ ...c })),
+    cuotasAVencer: (lectura.cuotasAVencer || []).map(c => ({ ...c, mesPago: sumarMeses(c.mes, desfase) })) });
   let nuevas = 0;
   for (const c of lectura.consumos) {
     if (!c.cuota || c.cuota.de < 2) continue;
     const primerMes = sumarMeses(mes, -(c.cuota.n - 1));
     const igual = x => x.tarjetaId === tId && x.cantidad === c.cuota.de && x.primerMes === primerMes &&
-      (x.moneda || 'ARS') === c.moneda && normalizarComercio(x.descripcion) === normalizarComercio(c.comercio);
+      (x.moneda || 'ARS') === c.moneda && normalizarComercio(x.descripcion) === normalizarComercio(c.comercio) &&
+      repartirCuotas(x.total, x.cantidad)[1] === c.monto;
     if (d.cuotas.some(igual)) continue;
     d.cuotas.push({ id: nuevoId(), descripcion: c.comercio, total: c.monto * c.cuota.de, moneda: c.moneda,
       cantidad: c.cuota.de, tarjetaId: tId, primerMes, origen: 'resumen' });
@@ -410,6 +459,8 @@ export function migrar(crudo) {
       ultimos4: /^\d{4}$/.test(String(t.ultimos4 || '')) ? String(t.ultimos4) : '',
       color: COLORES.includes(t.color) ? t.color : 'azul',
       ...(entero(t.limite) ? { limite: t.limite } : {}),
+      ...(entero(t.limiteFinanciacion) ? { limiteFinanciacion: t.limiteFinanciacion } : {}),
+      ...(Array.isArray(t.adicionales) ? { adicionales: t.adicionales.filter(a => /^\d{4}$/.test(String(a))).map(String).slice(0, 6) } : {}),
       ...(dia(t.diaCierre) ? { diaCierre: t.diaCierre } : {}),
       ...(dia(t.diaVence) ? { diaVence: t.diaVence } : {}) });
   }
@@ -441,9 +492,19 @@ export function migrar(crudo) {
       Number.isSafeInteger(c?.monto) && esMoneda(c?.moneda) && texto(c?.comercio)).map(c => ({
       fecha: esFecha(c.fecha) ? c.fecha : null, comercio: texto(c.comercio), monto: c.monto, moneda: c.moneda,
       rubro: RUBROS.includes(c.rubro) ? c.rubro : 'Otros',
-      cuota: c.cuota && Number.isInteger(c.cuota.n) && Number.isInteger(c.cuota.de) ? { n: c.cuota.n, de: c.cuota.de } : null }));
+      cuota: c.cuota && Number.isInteger(c.cuota.n) && Number.isInteger(c.cuota.de) ? { n: c.cuota.n, de: c.cuota.de } : null,
+      tarjeta: /^\d{4}$/.test(String(c.tarjeta || '')) ? String(c.tarjeta) : null }));
+    const centMon = o => Object.fromEntries(Object.entries(o && typeof o === 'object' ? o : {}).filter(([m, v]) => esMoneda(m) && Number.isSafeInteger(v)));
+    const lin = (l, tipos) => (Array.isArray(l) ? l : []).filter(x => Number.isSafeInteger(x?.monto) && esMoneda(x?.moneda)).slice(0, 200)
+      .map(x => ({ fecha: esFecha(x.fecha) ? x.fecha : null, concepto: texto(x.concepto) || 'Sin detalle', monto: x.monto, moneda: x.moneda, tipo: tipos.includes(x.tipo) ? x.tipo : tipos[tipos.length - 1] }));
     out.resumenes.push({ id: String(r.id), tarjetaId: String(r.tarjetaId), mes: r.mes,
       cierre: esFecha(r.cierre) ? r.cierre : null, vencimiento: esFecha(r.vencimiento) ? r.vencimiento : null,
+      proximoCierre: esFecha(r.proximoCierre) ? r.proximoCierre : null, proximoVencimiento: esFecha(r.proximoVencimiento) ? r.proximoVencimiento : null,
+      saldoAnterior: centMon(r.saldoAnterior),
+      pagosYCreditos: lin(r.pagosYCreditos, TIPOS_PAGO), cargos: lin(r.cargos, TIPOS_CARGO),
+      tarjetas: (Array.isArray(r.tarjetas) ? r.tarjetas : []).filter(t => /^\d{4}$/.test(String(t?.ultimos4))).slice(0, 6).map(t => ({ ultimos4: String(t.ultimos4), adicional: t.adicional === true, totales: centMon(t.totales) })),
+      cuotasAVencer: (Array.isArray(r.cuotasAVencer) ? r.cuotasAVencer : []).filter(c => esMes(c?.mes) && esMes(c?.mesPago) && Number.isSafeInteger(c?.monto))
+        .slice(0, 24).map(c => ({ mes: c.mes, mesPago: c.mesPago, monto: c.monto, moneda: esMoneda(c.moneda) ? c.moneda : 'ARS', desde: c.desde === true })),
       periodo: r.periodo && typeof r.periodo === 'object' ? { desde: esFecha(r.periodo.desde) ? r.periodo.desde : null, hasta: esFecha(r.periodo.hasta) ? r.periodo.hasta : null } : { desde: null, hasta: null },
       totales, pagoMinimo: r.pagoMinimo && esMoneda(r.pagoMinimo.moneda) && Number.isSafeInteger(r.pagoMinimo.monto) ? { moneda: r.pagoMinimo.moneda, monto: r.pagoMinimo.monto } : null,
       consumos });
@@ -469,9 +530,11 @@ export function migrar(crudo) {
 
 /* ── control de la lectura: ¿la suma da? ──
    Recibe la lectura cruda (montos en unidades, como viene de la API).
-   Por moneda: consumos + ajustes (saldo anterior, pagos, intereses,
-   impuestos) tienen que dar el total del resumen, con una tolerancia
-   chica por redondeos. Si no da, la lectura NO es confiable. */
+   Por moneda: saldo anterior + pagos y créditos + consumos + cargos e
+   impuestos = total a pagar, con tolerancia de centavos. Si hay varias
+   tarjetas (adicionales), los consumos de cada una tienen que dar su
+   subtotal. Si algo no da, la lectura NO es confiable. */
+export const TOLERANCIA_CUADRE = 10;          // centavos
 export function cuadreLectura(json) {
   const motivos = [];
   const c = x => (typeof x === 'number' && Number.isFinite(x) ? Math.round(x * 100) : null);
@@ -482,18 +545,31 @@ export function cuadreLectura(json) {
   if (!totales.size) motivos.push('No encontramos el total a pagar.');
   const sumas = new Map();
   const sumar = (m, v) => sumas.set(m, (sumas.get(m) || 0) + v);
-  for (const x of [...(Array.isArray(json?.consumos) ? json.consumos : []), ...(Array.isArray(json?.ajustes) ? json.ajustes : [])]) {
+  for (const t of Array.isArray(json?.saldoAnterior) ? json.saldoAnterior : []) {
+    if (esMoneda(t?.moneda) && c(t.monto) !== null) sumar(t.moneda, c(t.monto));
+  }
+  const lineas = [json?.consumos, json?.pagosYCreditos, json?.cargos, json?.ajustes].flatMap(l => (Array.isArray(l) ? l : []));
+  for (const x of lineas) {
     const v = c(x?.monto);
     if (v === null) { motivos.push('Hay líneas sin monto legible.'); continue; }
     if (!esMoneda(x?.moneda)) { motivos.push('Hay montos en una moneda que no pudimos identificar.'); continue; }
     sumar(x.moneda, v);
   }
   for (const [m, total] of totales) {
-    const suma = sumas.get(m) || 0;
-    const tolerancia = Math.max(100, Math.round(Math.abs(total) * 0.005));
-    if (Math.abs(suma - total) > tolerancia) motivos.push(`Lo que leímos en ${MONEDAS[m].nombre} no suma el total del resumen.`);
+    if (Math.abs((sumas.get(m) || 0) - total) > TOLERANCIA_CUADRE) motivos.push(`Lo que leímos en ${MONEDAS[m].nombre} no suma el total del resumen.`);
   }
-  for (const m of sumas.keys()) if (!totales.has(m) && sumas.get(m) !== 0) motivos.push(`Hay consumos en ${MONEDAS[m].nombre} sin un total para esa moneda.`);
+  for (const m of sumas.keys()) {
+    if (!totales.has(m) && Math.abs(sumas.get(m)) > TOLERANCIA_CUADRE) motivos.push(`Hay movimientos en ${MONEDAS[m].nombre} sin un total para esa moneda.`);
+  }
+  /* subtotales por tarjeta (titular y adicionales) */
+  for (const t of Array.isArray(json?.tarjetas) ? json.tarjetas : []) {
+    for (const st of Array.isArray(t?.totales) ? t.totales : []) {
+      const esperado = c(st?.monto);
+      if (esperado === null || !esMoneda(st?.moneda)) continue;
+      const suma = (json.consumos || []).filter(x => String(x?.tarjeta) === String(t.ultimos4) && x?.moneda === st.moneda).reduce((s, x) => s + (c(x.monto) || 0), 0);
+      if (Math.abs(suma - esperado) > TOLERANCIA_CUADRE) motivos.push('Los consumos de una de las tarjetas no suman su subtotal.');
+    }
+  }
   return { ok: motivos.length === 0, motivos: [...new Set(motivos)] };
 }
 
@@ -503,23 +579,62 @@ export function cuadreLectura(json) {
    Cuánto está comprometido en cuotas cada mes, por tarjeta (en pesos, con
    la moneda extranjera convertida), y el primer mes sin cuotas. Acá cuentan
    todas las cuotas, también las que ya están adentro de un resumen. */
+/* Tabla "cuotas a vencer" del último resumen de cada tarjeta, por mes de
+   pago: { tarjetaId: { 'AAAA-MM': centavosARS } } y el tramo "a partir de". */
+export function tablaCuotasAVencer(datos) {
+  const out = {};
+  for (const t of datos?.tarjetas || []) {
+    const r = (datos.resumenes || []).filter(x => x.tarjetaId === t.id && x.cuotasAVencer?.length).sort((a, b) => difMeses(a.mes, b.mes)).pop();
+    if (!r) continue;
+    const meses = {};
+    let desde = null;
+    for (const c of r.cuotasAVencer) {
+      const ars = aPesos(c.monto, c.moneda || 'ARS', datos);
+      if (ars === null) continue;
+      if (c.desde) desde = { mes: c.mesPago, monto: ars }; else meses[c.mesPago] = (meses[c.mesPago] || 0) + ars;
+    }
+    out[t.id] = { meses, desde, resumenMes: r.mes };
+  }
+  return out;
+}
+/* Cuánto está comprometido en cuotas cada mes, por tarjeta. Si el banco
+   trajo la tabla "cuotas a vencer", para esos meses manda la tabla y se
+   cruza con la proyección propia (diferencias a la vista). */
 export function escalera(datos, desde, meses = 12) {
+  const tabla = tablaCuotasAVencer(datos);
+  const diferencias = [];
   const filas = Array.from({ length: meses }, (_, k) => {
     const mes = sumarMeses(desde, k);
-    const porTarjeta = {};
+    const propio = {};
     const sinCambio = new Set();
-    let total = 0;
     for (const c of datos?.cuotas || []) {
       const n = numeroDeCuota(c, mes);
       if (!n) continue;
       const ars = aPesos(repartirCuotas(c.total, c.cantidad)[n - 1], c.moneda || 'ARS', datos);
       if (ars === null) { sinCambio.add(c.moneda); continue; }
-      porTarjeta[c.tarjetaId] = (porTarjeta[c.tarjetaId] || 0) + ars;
-      total += ars;
+      propio[c.tarjetaId] = (propio[c.tarjetaId] || 0) + ars;
     }
-    return { mes, porTarjeta, total, sinCambio: [...sinCambio], ...limiteDelMes(datos, mes, total) };
+    const porTarjeta = { ...propio };
+    const delBanco = [];
+    for (const [tId, tb] of Object.entries(tabla)) {
+      if (!(mes in tb.meses)) continue;
+      const banco = tb.meses[mes];
+      const p = propio[tId] || 0;
+      if (Math.abs(banco - p) > Math.max(10_000, Math.round(banco * 0.01))) diferencias.push({ mes, tarjetaId: tId, banco, propio: p });
+      porTarjeta[tId] = banco;
+      delBanco.push(tId);
+    }
+    for (const t of Object.keys(porTarjeta)) if (!porTarjeta[t]) delete porTarjeta[t];
+    const total = Object.values(porTarjeta).reduce((a, b) => a + b, 0);
+    return { mes, porTarjeta, total, delBanco, sinCambio: [...sinCambio], ...limiteDelMes(datos, mes, total) };
   });
-  return { filas, mesLibre: mesLibreDeCuotas(datos, desde) };
+  /* si el banco dice que quedan cuotas "a partir de" un mes, no estás libre antes */
+  let mesLibre = mesLibreDeCuotas(datos, desde);
+  for (const tb of Object.values(tabla)) {
+    if (tb.desde?.monto > 0 && difMeses(mesLibre, tb.desde.mes) >= 0) mesLibre = sumarMeses(tb.desde.mes, 1);
+    for (const [m, v] of Object.entries(tb.meses)) if (v > 0 && difMeses(mesLibre, m) >= 0) mesLibre = sumarMeses(m, 1);
+  }
+  return { filas, mesLibre, diferencias };
 }
 /* Primer mes, desde `desde`, a partir del cual no queda ninguna cuota. */
 export function mesLibreDeCuotas(datos, desde) {
@@ -555,6 +670,10 @@ export function cicloTarjeta(datos, tarjetaId, hoy) {
   const res = (datos?.resumenes || []).filter(r => r.tarjetaId === tarjetaId && esFecha(r.vencimiento) && diasEntre(hoy, r.vencimiento) >= 0)
     .sort((a, b) => diasEntre(b.vencimiento, a.vencimiento))[0];
   if (res) return { cierre: res.cierre || null, vencimiento: res.vencimiento, mes: res.mes, resumen: res, origen: 'resumen' };
+  /* el resumen ya venció pero trajo el próximo cierre y vencimiento */
+  const prox = (datos?.resumenes || []).filter(r => r.tarjetaId === tarjetaId && esFecha(r.proximoVencimiento) && diasEntre(hoy, r.proximoVencimiento) >= 0)
+    .sort((a, b) => diasEntre(a.proximoVencimiento, b.proximoVencimiento))[0];
+  if (prox) return { cierre: prox.proximoCierre || null, vencimiento: prox.proximoVencimiento, mes: prox.proximoVencimiento.slice(0, 7), resumen: null, origen: 'proximo' };
   const t = (datos?.tarjetas || []).find(x => x.id === tarjetaId);
   if (!t?.diaCierre || !t?.diaVence) return null;
   const mesHoy = hoy.slice(0, 7);
@@ -719,6 +838,7 @@ export function datosParaAvisos(datos, hoy) {
     return {
       id: String(t.id).slice(0, 60), nombre: String(t.nombre).slice(0, 40),
       cierre: ciclo?.cierre || null, vencimiento: ciclo?.vencimiento || null, dolares,
+      ...(r?.proximoCierre && r?.proximoVencimiento ? { proximoCierre: r.proximoCierre, proximoVencimiento: r.proximoVencimiento } : {}),
       ...(t.diaCierre && t.diaVence ? { diaCierre: t.diaCierre, diaVence: t.diaVence } : {}),
     };
   }).filter(t => t.vencimiento || t.diaCierre);
@@ -731,6 +851,7 @@ export function limpiarTarjetasAvisos(lista) {
     const nombre = typeof t?.nombre === 'string' ? t.nombre.trim().slice(0, 40) : '';
     if (!id || !nombre) continue;
     const x = { id, nombre, cierre: esFecha(t.cierre) ? t.cierre : null, vencimiento: esFecha(t.vencimiento) ? t.vencimiento : null, dolares: t.dolares === true };
+    if (esFecha(t.proximoCierre) && esFecha(t.proximoVencimiento)) { x.proximoCierre = t.proximoCierre; x.proximoVencimiento = t.proximoVencimiento; }
     if (Number.isInteger(t.diaCierre) && Number.isInteger(t.diaVence) && t.diaCierre >= 1 && t.diaCierre <= 31 && t.diaVence >= 1 && t.diaVence <= 31) {
       x.diaCierre = t.diaCierre; x.diaVence = t.diaVence;
     }
@@ -744,7 +865,10 @@ export function avisosPushDeHoy(tarjetas, hoy) {
   const out = [];
   for (const t of tarjetas || []) {
     let { cierre, vencimiento } = t;
-    if ((!vencimiento || diasEntre(hoy, vencimiento) < 0) && t.diaCierre) {
+    let dolares = t.dolares;
+    if ((!vencimiento || diasEntre(hoy, vencimiento) < 0) && t.proximoVencimiento && diasEntre(hoy, t.proximoVencimiento) >= 0) {
+      ({ proximoCierre: cierre, proximoVencimiento: vencimiento } = t); dolares = false;   // de ese resumen todavía no sabemos si hay dólares
+    } else if ((!vencimiento || diasEntre(hoy, vencimiento) < 0) && t.diaCierre) {
       const c = cicloTarjeta({ tarjetas: [{ id: t.id, diaCierre: t.diaCierre, diaVence: t.diaVence }], resumenes: [] }, t.id, hoy);
       if (c) ({ cierre, vencimiento } = c);
     }
@@ -755,7 +879,7 @@ export function avisosPushDeHoy(tarjetas, hoy) {
       const cuando = d === 0 ? 'vence hoy' : d === 1 ? 'vence mañana' : 'vence en 3 días';
       out.push({ tag: `mm:vence:${t.id}:${vencimiento}:${d}`, title: `Tu ${t.nombre} ${cuando}`, body: 'Abrí Mi Mes para ver el total y agendar el pago.' });
     }
-    if (t.dolares && d === 5) {
+    if (dolares && d === 5) {
       out.push({ tag: `mm:dolares:${t.id}:${vencimiento}`, title: `Tu ${t.nombre} tiene consumos en dólares`,
         body: `Si los pagás con dólares propios antes del ${fechaCorta(vencimiento)}, no te cobran la percepción del 30 %. Orientativo: confirmalo con tu banco.` });
     }

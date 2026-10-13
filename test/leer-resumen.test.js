@@ -10,7 +10,8 @@ process.env.ADMIN_EMAILS = 'admin@orbit.test';
 const { makeSession } = await import('../api/_lib/auth.js');
 const { addPurchase } = await import('../api/_lib/kv.js');
 const api = await import('../api/leer-resumen.js');
-const { validarLectura, MONEDAS } = await import('../api/_herramientas/mi-mes/calculos.js');
+const { validarLectura, cuadreLectura, MONEDAS } = await import('../api/_herramientas/mi-mes/calculos.js');
+const lector = await import('../api/_lib/mi-mes-lector.js');
 const leer = api.default;
 
 await addPurchase('compro@orbit.test', { productId: 'ob-019', orderId: 'OBTEST:ob-019', via: 'mercadopago', amount: 0, currency: 'ARS', date: new Date().toISOString() });
@@ -66,16 +67,14 @@ test('leer-resumen: con compra responde el ejemplo en modo prueba, con el esquem
   assert.equal(r.body.modo, 'prueba');
   assert.equal(r.headers['cache-control'], 'no-store');
   const l = r.body.lectura;
-  for (const k of ['tarjeta', 'periodo', 'cierre', 'vencimiento', 'totales', 'consumos', 'pagoMinimo']) assert.ok(k in l, k);
+  for (const k of lector.ESQUEMA.required) assert.ok(k in l, k);
   for (const k of ['banco', 'red', 'ultimos4']) assert.ok(l.tarjeta[k], k);
   const monedas = new Set(l.consumos.map(c => c.moneda));
   assert.ok(monedas.has('USD') && [...monedas].some(m => m !== 'ARS' && m !== 'USD'), 'trae USD y otra moneda');
-  assert.ok(l.consumos.every(c => c.fecha && c.comercio && typeof c.monto === 'number' && MONEDAS[c.moneda] && c.rubro && 'cuota' in c));
-  // los totales por moneda cierran con la suma de los consumos del ejemplo
-  for (const t of l.totales) {
-    const suma = l.consumos.filter(c => c.moneda === t.moneda).reduce((s, c) => s + Math.round(c.monto * 100), 0);
-    assert.equal(suma, Math.round(t.monto * 100), t.moneda);
-  }
+  assert.ok(l.consumos.every(c => c.fecha && c.comercio && typeof c.monto === 'number' && MONEDAS[c.moneda] && c.rubro && 'cuota' in c && 'tarjeta' in c));
+  assert.ok(l.tarjetas.some(t => t.adicional), 'trae una adicional');
+  assert.ok(l.cargos.some(c => c.tipo === 'percepcion') && l.pagosYCreditos.some(c => c.tipo === 'pago'));
+  assert.deepEqual(cuadreLectura(l), { ok: true, motivos: [] }, 'el ejemplo cierra la cuenta completa');
   assert.equal(validarLectura(l).ok, true);
 });
 test('leer-resumen: tope de lecturas por día', async () => {
@@ -87,7 +86,6 @@ test('leer-resumen: tope de lecturas por día', async () => {
 });
 
 /* ── lectura real con Claude (cliente falso, sin red) ── */
-const lector = await import('../api/_lib/mi-mes-lector.js');
 const { default: Anthropic } = await import('@anthropic-ai/sdk');
 const { resumenEjemplo } = await import('../api/_herramientas/mi-mes/ejemplo.js');
 const respuestaClaude = json => ({ model: 'claude-opus-5-5', stop_reason: 'end_turn', usage: { input_tokens: 12000, output_tokens: 2500 },
@@ -146,10 +144,24 @@ test('claude: si la suma no da → no confiable, con el motivo', () => conKey(as
   assert.deepEqual([r.code, r.body.confiable, r.body.lectura.confianza], [200, false, 'baja']);
   assert.match(r.body.lectura.avisos.join(' '), /no suma el total/);
 }));
-test('claude: si Claude marca dudas → no confiable aunque la suma dé', () => conKey(async () => {
-  lector.__usarCliente(falso(respuestaClaude({ ...resumenEjemplo(), confianza: 'baja' })));
+test('claude: si la cuenta cierra, dudas que no tocan montos son aviso suave (sigue confiable)', () => conKey(async () => {
+  // lo que pasó en la primera lectura real: cerraba al centavo pero volvió "baja" por el período
+  lector.__usarCliente(falso(respuestaClaude({ ...resumenEjemplo(), confianza: 'baja',
+    dudas: [{ campo: 'periodo', detalle: 'El resumen no indica la fecha de inicio del período.' }] })));
   const r = await leerReal();
-  assert.equal(r.body.confiable, false);
+  assert.deepEqual([r.body.confiable, r.body.lectura.confianza], [true, 'alta']);
+  assert.match(r.body.lectura.avisos.join(' '), /Dato dudoso \(período\)/, 'dice sobre qué campo');
+  // sin saldo anterior ni pagos, pero cerrando la cuenta: confiable
+  const simple = { ...resumenEjemplo(), saldoAnterior: [], pagosYCreditos: [], cargos: [], confianza: 'baja', dudas: [] };
+  simple.totales = ['ARS', 'USD', 'EUR'].map(m => ({ moneda: m, monto: Math.round(simple.consumos.filter(c => c.moneda === m).reduce((a, c) => a + c.monto * 100, 0)) / 100 }));
+  lector.__usarCliente(falso(respuestaClaude(simple)));
+  assert.equal((await leerReal()).body.confiable, true);
+}));
+test('claude: dudas sobre montos sí la bajan a no confiable, aunque la suma dé', () => conKey(async () => {
+  lector.__usarCliente(falso(respuestaClaude({ ...resumenEjemplo(), dudas: [{ campo: 'montos', detalle: 'Un consumo se ve borroso.' }] })));
+  const r = await leerReal();
+  assert.deepEqual([r.body.confiable, r.body.lectura.confianza], [false, 'baja']);
+  assert.match(r.body.lectura.avisos[0], /Dato dudoso \(montos\): Un consumo se ve borroso/);
 }));
 test('claude: error de la API → 502; timeout → 504; rechazo → 422', () => conKey(async () => {
   lector.__usarCliente(falso(Anthropic.APIError.generate(500, { error: { message: 'x' } }, 'boom', new Headers())));

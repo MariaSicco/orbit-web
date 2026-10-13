@@ -295,13 +295,18 @@ test('rubros: la corrección del usuario gana para ese comercio, aunque cambie e
   assert.equal(M.normalizarComercio('Café* Martínez 12'), 'CAFE MARTINEZ');
 });
 
-test('cuadre: consumos + ajustes tienen que dar el total de cada moneda', () => {
+test('cuadre: saldo anterior + pagos y créditos + consumos + cargos = total, por moneda, con tolerancia de centavos', () => {
   const base = { totales: [{ moneda: 'ARS', monto: 1000 }, { moneda: 'USD', monto: 20 }],
-    consumos: [{ monto: 700, moneda: 'ARS' }, { monto: 20, moneda: 'USD' }], ajustes: [{ concepto: 'Impuestos', monto: 300, moneda: 'ARS' }] };
+    saldoAnterior: [{ moneda: 'ARS', monto: 500 }, { moneda: 'USD', monto: 5 }],
+    pagosYCreditos: [{ concepto: 'Pago', monto: -500, moneda: 'ARS', tipo: 'pago' }, { concepto: 'Pago USD', monto: -5, moneda: 'USD', tipo: 'pago' }],
+    consumos: [{ monto: 700, moneda: 'ARS' }, { monto: 20, moneda: 'USD' }],
+    cargos: [{ concepto: 'Impuestos', monto: 300, moneda: 'ARS', tipo: 'otro' }] };
   assert.deepEqual(M.cuadreLectura(base), { ok: true, motivos: [] });
-  assert.equal(M.cuadreLectura({ ...base, ajustes: [] }).ok, false, 'faltan 300');
-  const centavos = structuredClone(base); centavos.consumos[0].monto = 700.6;
-  assert.equal(M.cuadreLectura(centavos).ok, true, 'tolera redondeos chicos');
+  assert.equal(M.cuadreLectura({ ...base, cargos: [] }).ok, false, 'faltan 300');
+  const centavos = structuredClone(base); centavos.consumos[0].monto = 700.08;
+  assert.equal(M.cuadreLectura(centavos).ok, true, 'tolera centavos');
+  const peso = structuredClone(base); peso.consumos[0].monto = 701;
+  assert.equal(M.cuadreLectura(peso).ok, false, 'un peso de diferencia ya no cierra');
   const rara = structuredClone(base); rara.consumos.push({ monto: 5, moneda: 'XYZ' });
   assert.match(M.cuadreLectura(rara).motivos.join(' '), /moneda que no pudimos identificar/);
   const sinTotal = structuredClone(base); sinTotal.consumos.push({ monto: 9, moneda: 'EUR' });

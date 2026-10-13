@@ -88,7 +88,7 @@ function tcard(t, { mesTotal = null, boton = true, grande = false } = {}) {
   return `<${tag} class="mm-tcard ${esc(t.color || 'azul')}${grande ? ' grande' : ''}" ${boton ? `data-ir-tarjeta="${esc(t.id)}" aria-label="${esc(`${t.nombre}${t.ultimos4 ? `, terminada en ${t.ultimos4}` : ''}${mesTotal !== null ? `, este mes ${$(mesTotal)}` : ''}`)}"` : ''}>
     <span class="tc-arriba"><span class="tc-banco">${esc(t.nombre)}${t.banco && !t.nombre.toLowerCase().includes(t.banco.toLowerCase()) ? `<small>${esc(t.banco)}</small>` : ''}</span><span class="tc-red">${esc(red)}</span></span>
     <span class="tc-chip" aria-hidden="true"></span>
-    <span class="tc-abajo"><span class="tc-num">${t.ultimos4 ? `•••• ${esc(t.ultimos4)}` : ''}</span>
+    <span class="tc-abajo"><span class="tc-num">${t.ultimos4 ? `•••• ${esc(t.ultimos4)}` : ''}${t.adicionales?.length ? `<small>+ ${t.adicionales.length === 1 ? `adicional ···${esc(t.adicionales[0])}` : `${t.adicionales.length} adicionales`}</small>` : ''}</span>
     ${mesTotal !== null ? `<span class="tc-mes">${esc(corto(mes))}<b>${esc($(mesTotal))}</b></span>` : ''}</span>
   </${cierre}>`;
 }
@@ -242,9 +242,19 @@ function pintarUna() {
   const maxR = Math.max(1, ...rubros.map(x => x.ars));
   const rubrosHTML = rubros.length ? `<ul class="mm-barras">${rubros.map(x => `<li><div class="mm-barra-top"><span>${esc(x.rubro)}</span><span>${esc($(x.ars))}</span></div><div class="mm-barra"><i style="width:${(x.ars / maxR) * 100}%"></i></div></li>`).join('')}</ul>`
     : `<p class="mm-vacio">Cuando subas el resumen de este mes, acá ves en qué se fue la plata.</p>`;
+  const lineaConsumo = (c, m) => `<li><div class="mm-item"><span class="mm-item-txt"><span class="mm-item-tit">${esc(c.comercio)}${c.cuota ? ` <span class="mm-tag ext">${c.cuota.n}/${c.cuota.de}</span>` : ''}</span><span class="mm-item-meta">${esc([fechaCorta(c.fecha), c.rubro].filter(Boolean).join(' · '))}</span></span><span class="mm-item-monto">${esc(fm(c.monto, m))}</span></div></li>`;
+  const variasTarjetas = res && new Set(res.consumos.map(c => c.tarjeta).filter(Boolean)).size > 1;
+  const quien = u => (u === t.ultimos4 || !u ? `Titular${u ? ` ···${u}` : ''}` : (t.adicionales || []).includes(u) || res?.tarjetas?.some(x => x.ultimos4 === u && x.adicional) ? `Adicional ···${u}` : `···${u}`);
   const consumosHTML = res ? Object.entries(agruparPorMoneda(res.consumos)).map(([m, cs]) => `
       <div class="mm-moneda-tit">En ${esc(MONEDAS[m].nombre)} <span>${esc(fm(cs.reduce((s, c) => s + c.monto, 0), m))}</span></div>
-      <ul class="mm-lista">${cs.map(c => `<li><div class="mm-item"><span class="mm-item-txt"><span class="mm-item-tit">${esc(c.comercio)}${c.cuota ? ` <span class="mm-tag ext">${c.cuota.n}/${c.cuota.de}</span>` : ''}</span><span class="mm-item-meta">${esc([fechaCorta(c.fecha), c.rubro].filter(Boolean).join(' · '))}</span></span><span class="mm-item-monto">${esc(fm(c.monto, m))}</span></div></li>`).join('')}</ul>`).join('') : '';
+      ${variasTarjetas
+        ? [...new Set(cs.map(c => c.tarjeta || ''))].map(u => `<p class="mm-sub-tarjeta">${esc(quien(u))} · ${esc(fm(cs.filter(c => (c.tarjeta || '') === u).reduce((s, c) => s + c.monto, 0), m))}</p>
+            <ul class="mm-lista">${cs.filter(c => (c.tarjeta || '') === u).map(c => lineaConsumo(c, m)).join('')}</ul>`).join('')
+        : `<ul class="mm-lista">${cs.map(c => lineaConsumo(c, m)).join('')}</ul>`}`).join('') : '';
+  const cargosHTML = res?.cargos?.length ? `<section class="mm-panel" aria-labelledby="u-car"><div class="mm-seccion-top"><h2 id="u-car">Cargos e impuestos</h2></div>
+      <p class="mm-fuente" style="margin:0 0 4px">Intereses, IVA, sellos y percepciones. Suman al total a pagar pero no son gastos tuyos por rubro.</p>${listaMovs(res.cargos)}</section>` : '';
+  const pagosHTML = res?.pagosYCreditos?.length ? `<section class="mm-panel" aria-labelledby="u-pag"><div class="mm-seccion-top"><h2 id="u-pag">Pagos y créditos</h2></div>
+      ${Object.keys(res.saldoAnterior || {}).length ? `<p class="mm-fuente" style="margin:0 0 4px">Saldo anterior: ${Object.entries(res.saldoAnterior).map(([m, v]) => esc(fm(v, m))).join(' y ')}.</p>` : ''}${listaMovs(res.pagosYCreditos)}</section>` : '';
 
   const ciclo = cicloTarjeta(datos, t.id, HOY_ISO);
   const avisos = alertasTarjetas({ ...datos, alertasVistas: [] }, HOY_ISO).filter(a => a.tarjetaId === t.id);
@@ -269,8 +279,14 @@ function pintarUna() {
       <section class="mm-panel" aria-labelledby="u-cuo"><div class="mm-seccion-top"><h2 id="u-cuo">Cuotas activas</h2><button type="button" class="mm-link" data-nuevo="cuota" data-tarjeta="${esc(t.id)}">+ Agregar</button></div><ul class="mm-lista">${cuotasHTML}</ul></section>
       <section class="mm-panel" aria-labelledby="u-rub"><div class="mm-seccion-top"><h2 id="u-rub">Gasto por rubro</h2></div>${rubrosHTML}</section>
       ${consumosHTML ? `<section class="mm-panel" aria-labelledby="u-con"><div class="mm-seccion-top"><h2 id="u-con">Consumos del resumen</h2></div>${consumosHTML}</section>` : ''}
+      ${cargosHTML}
+      ${pagosHTML}
     </div>`;
 }
+const TIPO_MOV = { interes: 'Intereses', iva: 'IVA', sellos: 'Sellos', percepcion: 'Percepción 30 %', devolucion: 'Devolución de percepción', comision: 'Comisión', otro: 'Cargo', pago: 'Pago', credito: 'Crédito', reversion: 'Reversión de crédito' };
+const listaMovs = lista => Object.entries(agruparPorMoneda(lista)).map(([m, xs]) => `
+      <div class="mm-moneda-tit">En ${esc(MONEDAS[m].nombre)} <span>${esc(fm(xs.reduce((s, x) => s + x.monto, 0), m, { signo: true }))}</span></div>
+      <ul class="mm-lista">${xs.map(x => `<li><div class="mm-item"><span class="mm-item-txt"><span class="mm-item-tit">${esc(x.concepto)}</span><span class="mm-item-meta">${esc([TIPO_MOV[x.tipo], fechaCorta(x.fecha)].filter(Boolean).join(' · '))}</span></span><span class="mm-item-monto ${x.monto < 0 ? 'mas' : ''}">${esc(fm(x.monto, m, { signo: true }))}</span></div></li>`).join('')}</ul>`).join('');
 const resumenDelMesDe = id => datos.resumenes.find(r => r.tarjetaId === id && r.mes === mes) || null;
 function agruparPorMoneda(consumos) {
   const g = {};
@@ -338,7 +354,7 @@ function pintarRevisar() {
     <div class="mm-moneda-tit">En ${esc(MONEDAS[m].nombre)} <span>${cs.length} consumo${cs.length === 1 ? '' : 's'}</span></div>
     ${cs.map(c => `<div class="mm-consumo" data-i="${c.i}">
       <span class="cm-tit">${esc(c.comercio)}${c.cuota ? ` <span class="mm-tag ext">Cuota ${c.cuota.n}/${c.cuota.de}</span>` : ''}</span>
-      <span class="cm-meta">${esc(fechaCorta(c.fecha))}</span>
+      <span class="cm-meta">${esc([fechaCorta(c.fecha), l.tarjetas?.length > 1 && c.tarjeta ? (l.tarjetas.find(x => x.ultimos4 === c.tarjeta)?.adicional ? `adicional ···${c.tarjeta}` : `···${c.tarjeta}`) : ''].filter(Boolean).join(' · '))}</span>
       <div class="cm-ctrl">
         <label class="mm-sr" for="rm-${c.i}">Monto de ${esc(c.comercio)} en ${esc(MONEDAS[m].nombre)}</label>
         <span aria-hidden="true">${esc(MONEDAS[m].simbolo)}</span><input type="text" inputmode="decimal" id="rm-${c.i}" data-monto value="${esc(sinSimbolo(c.monto, m))}" aria-describedby="rm-${c.i}-err">
@@ -350,7 +366,7 @@ function pintarRevisar() {
 
   box.innerHTML = `
     ${pendiente.modo !== 'real' ? `<p class="mm-cartel" style="margin-bottom:16px"><b>Modo prueba</b> · ${pendiente.modo === 'local' ? 'sin conexión con Orbit: ' : ''}estos datos son de ejemplo, no salen de tu PDF. Así se va a ver cuando la lectura esté activa.</p>` : ''}
-    ${l.avisos.filter(a => !/^Modo prueba/.test(a)).map(a => `<p class="mm-alerta" style="width:auto;margin:0 0 12px">${esc(a)}</p>`).join('')}
+    ${l.avisos.filter(a => !/^Modo prueba/.test(a)).map(a => `<p class="${l.confianza === 'alta' ? 'mm-nota-suave' : 'mm-alerta'}" style="width:auto;margin:0 0 12px">${esc(a)}</p>`).join('')}
     <div class="mm-rev">
       <div class="mm-rev-a">
         <section class="mm-panel" aria-labelledby="rv-t">
@@ -370,6 +386,12 @@ function pintarRevisar() {
           ${totalesHTML}
           <p class="mm-fuente" style="margin:6px 0 10px">El total a pagar sale del resumen: es lo que se descuenta de "te quedan libres" en ${esc(nombreMes(mesCuenta))}. Si no coincide con tu PDF, corregilo.</p>
         </section>
+        ${Object.keys(l.saldoAnterior || {}).length || l.pagosYCreditos?.length ? `<section class="mm-panel" aria-labelledby="rv-p"><div class="mm-seccion-top"><h2 id="rv-p">Saldo anterior, pagos y créditos</h2></div>
+          ${Object.keys(l.saldoAnterior || {}).length ? `<p class="mm-fuente" style="margin:0 0 4px">Saldo anterior: ${Object.entries(l.saldoAnterior).map(([m, v]) => esc(fm(v, m))).join(' y ')}.</p>` : ''}
+          ${listaMovs(l.pagosYCreditos || [])}<p class="mm-fuente" style="margin:6px 0 10px">No cuentan como gasto: solo sirven para controlar que la cuenta cierre.</p></section>` : ''}
+        ${l.cargos?.length ? `<section class="mm-panel" aria-labelledby="rv-g"><div class="mm-seccion-top"><h2 id="rv-g">Cargos e impuestos</h2></div>${listaMovs(l.cargos)}</section>` : ''}
+        ${l.limites?.compra ? `<p class="mm-fuente" style="padding:0 4px">Límite de compra ${esc($(l.limites.compra))}${l.limites.financiacion ? ` y de financiación ${esc($(l.limites.financiacion))}` : ''}: se cargan en la tarjeta al guardar.</p>` : ''}
+        ${l.cuotasAVencer?.length ? `<p class="mm-fuente" style="padding:0 4px">Trae la tabla "cuotas a vencer" (${l.cuotasAVencer.length} filas): la usamos en la escalera.</p>` : ''}
       </div>
       <div class="mm-rev-b">
         <section class="mm-panel" aria-labelledby="rv-c">
@@ -919,7 +941,7 @@ function alertaHTML(a, { descartable = false } = {}) {
   return `<div class="mm-alerta-t ${a.nivel}" role="${a.nivel === 'fuerte' ? 'alert' : 'status'}">
     <span class="mm-alerta-ic">${ic(a.tipo === 'dolares' ? 'dolar' : a.tipo === 'cierre' ? 'calendario' : 'alerta')}</span>
     <div class="mm-alerta-txt"><b>${esc(a.titulo)}</b><span>${esc(a.texto)}</span>
-      ${a.tipo === 'dolares' ? '<small>Orientativo, no es asesoramiento: depende de tu banco. Se paga entre la emisión del resumen y el vencimiento; con débito automático, puede hacer falta frenarlo.</small>' : ''}
+      ${a.tipo === 'dolares' ? '<small>Orientativo, no es asesoramiento: depende de tu banco. Se paga entre la emisión del resumen y el vencimiento; con débito automático, puede hacer falta frenarlo. Si la percepción ya se cobró, en el resumen siguiente aparece devuelta como "DEV.IMP. RG 5617".</small>' : ''}
       <span class="mm-alerta-acc">${descartable && t ? `<button type="button" class="mm-link" data-ir-tarjeta="${esc(t.id)}">Ver ${esc(t.nombre)}</button>` : ''}<button type="button" class="mm-link" data-ics="${esc(a.tarjetaId)}">${ic('calendario')} Agregar al calendario</button></span></div>
     ${descartable ? `<button type="button" class="mm-alerta-x" data-descartar-alerta="${esc(a.id)}" aria-label="Descartar este aviso">${ic('cerrar')}</button>` : ''}
   </div>`;
@@ -966,7 +988,8 @@ function pintarEscalera() {
       ${usadas.map(t => f.porTarjeta[t.id] ? `<i class="${esc(t.color)}" style="width:${(f.porTarjeta[t.id] / max) * 100}%"></i>` : '').join('')}
       ${f.tope ? `<b class="esc-tope" style="left:${Math.min(100, (f.tope / max) * 100)}%"></b>` : ''}
     </span>
-    <span class="esc-monto">${esc($(f.total))}${f.supera ? '<small>Te pasás</small>' : ''}</span></li>`).join('');
+    <span class="esc-monto">${esc($(f.total))}${f.supera ? '<small>Te pasás</small>' : f.delBanco.length ? '<small class="banco">según el banco</small>' : ''}</span></li>`).join('') +
+    (e.diferencias.length ? `<li class="esc-dif"><p class="mm-fuente">${ic('alerta')} En ${e.diferencias.length === 1 ? 'un mes' : `${e.diferencias.length} meses`} la tabla del banco no coincide con lo que proyecta la app (por ejemplo ${esc(corto(e.diferencias[0].mes))}: banco ${esc($(e.diferencias[0].banco))}, app ${esc($(e.diferencias[0].propio))}). Usamos la del banco; si falta cargar alguna cuota, sumala.</p></li>` : '');
 }
 $id('tope-form').addEventListener('submit', e => {
   e.preventDefault();

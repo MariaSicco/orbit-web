@@ -1,0 +1,78 @@
+{
+ "tarjeta": {
+  "banco": "Banco Inventado Uno",
+  "red": "Visa",
+  "ultimos4": "1111"
+ },
+ "tarjetas": [
+  {
+   "ultimos4": "1111",
+   "adicional": false,
+   "totales": [
+    {
+     "moneda": "ARS",
+     "monto": 215340.25
+    },
+    {
+     "moneda": "USD",
+     "monto": 0
+    }
+   ]
+  }
+ ],
+ "periodo": {
+  "desde": null,
+  "hasta": null
+ },
+ "cierre": "2026-08-20",
+ "vencimiento": "2026-09-01",
+ "cierreAnterior": "2026-07-23",
+ "vencimientoAnterior": "2026-08-04",
+ "proximoCierre": "2026-09-24",
+ "proximoVencimiento": "2026-10-06",
+ "saldoAnterior": [
+  {
+   "moneda": "ARS",
+   "monto": 0
+  },
+  {
+   "moneda": "USD",
+   "monto": 0
+  }
+ ],
+ "totales": [
+  {
+   "moneda": "ARS",
+   "monto": 215340.25
+  },
+  {
+   "moneda": "USD",
+   "monto": 0
+  }
+ ],
+ "pagoMinimo": {
+  "moneda": "ARS",
+  "monto": 32000
+ },
+ "limites": {
+  "compra": 900000,
+  "financiacion": 700000
+ },
+ "consumos": [
+  {
+   "fecha": "2026-08-13",
+   "comercio": "MAYORISTA GENERICO SUC 9",
+   "monto": 215340.25,
+   "moneda": "ARS",
+   "rubro": "Supermercado",
+   "cuota": null,
+   "tarjeta": "1111"
+  }
+ ],
+ "pagosYCreditos": [],
+ "cargos": [],
+ "cuotasAVencer": [],
+ "confianza": "alta",
+ "avisos": [],
+ "_nota": "Fixture INVENTADO para tests: misma estructura que un resumen real, datos 100% falsos."
+}
