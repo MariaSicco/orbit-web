@@ -663,11 +663,11 @@ export function eventosTarjeta(datos, tarjetaId, hoy) {
   return ev;
 }
 
-/* ── ¿cuotas o contado? ──
-   Tenés la plata del precio de contado hoy. O pagás contado, o la dejás
-   rindiendo (plazo fijo o billetera) y pagás las cuotas sin interés mes a
-   mes. Lo que te sobra al final, llevado a plata de hoy con la inflación
-   esperada, dice cuál conviene. Orientativo, no asesoramiento. */
+/* ── ¿cuotas o contado? ── UN método: valor presente.
+   Cada cuota se lleva a plata de hoy con la tasa más alta entre la
+   inflación esperada y lo que rinde la plata (tener la plata hoy vale, como
+   mínimo, eso). VP de las cuotas − precio de contado = diferencia: si es
+   negativa, las cuotas salen más baratas. Orientativo, no asesoramiento. */
 export const SUPUESTOS_DEFECTO = {
   inflacion: { valor: 1.7, fecha: '2026-08-06', fuente: 'Inflación mensual esperada para octubre, REM del BCRA de agosto 2026 (vía NoticiasNQN)',
     url: 'https://www.noticiasnqn.com.ar/noticias/2026/08/06/346909-el-bcra-proyecta-inflacion-por-debajo-del-2por_ciento-y-un-dolar-a-1652-para-fin-de-2026' },
@@ -679,17 +679,15 @@ export function cuotasOContado({ precioCuotas, descuentoContado = 0, cuotas, inf
   const n = Math.max(1, Math.floor(cuotas));
   const contado = precioContado ?? Math.round(precioCuotas * (1 - descuentoContado / 100));
   const pagos = repartirCuotas(precioCuotas, n);
-  const r = rendimiento / 100, pi = inflacion / 100;
-  /* la plata del contado rinde todo el período; cada cuota se paga al mes k */
-  let saldo = contado;
-  for (let k = 1; k <= n; k++) saldo = saldo * (1 + r) - pagos[k - 1];
-  const sobraFinal = Math.round(saldo);
-  const sobraHoy = Math.round(saldo / (1 + pi) ** n);
-  /* las cuotas en plata de hoy (lo que "se licúan" con la inflación) */
-  const cuotasHoy = Math.round(pagos.reduce((s, p, i) => s + p / (1 + pi) ** (i + 1), 0));
+  const usaRendimiento = rendimiento >= inflacion;
+  const tasa = Math.max(inflacion, rendimiento);
+  const t = tasa / 100;
+  /* la primera cuota se paga al mes siguiente */
+  const vp = Math.round(pagos.reduce((s, p, i) => s + p / (1 + t) ** (i + 1), 0));
+  const diferencia = vp - contado;                 // > 0: las cuotas salen más caras
   const umbral = Math.max(100, Math.round(contado * 0.005));
-  return { contado, cuota: pagos[pagos.length - 1], pagos, cuotasHoy, sobraFinal, sobraHoy,
-    conviene: sobraHoy > umbral ? 'cuotas' : sobraHoy < -umbral ? 'contado' : 'da igual' };
+  return { contado, cuota: pagos[pagos.length - 1], pagos, tasa, tasaUsada: usaRendimiento ? 'rendimiento' : 'inflacion', vp, diferencia,
+    conviene: diferencia < -umbral ? 'cuotas' : diferencia > umbral ? 'contado' : 'da igual' };
 }
 
 /* ── simulador ── "¿y si compro esto en N cuotas?": te quedan libres antes y

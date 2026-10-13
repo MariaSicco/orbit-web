@@ -997,10 +997,11 @@ function pintarContado(cargarSupuestos = false) {
   }
   const c = cuotasOContado({ precioCuotas: precio, descuentoContado: desc, cuotas: n, inflacion: pi, rendimiento: r });
   const titulo = { cuotas: 'Conviene en cuotas', contado: 'Conviene de contado', 'da igual': 'Da prácticamente igual' }[c.conviene];
+  const cual = c.tasaUsada === 'rendimiento' ? `lo que rinde tu plata (${pctTxt(c.tasa)} % por mes)` : `la inflación (${pctTxt(c.tasa)} % por mes)`;
   res.innerHTML = `<p class="mm-item-meta">Con estos supuestos</p><p class="mm-veredicto-tit ${c.conviene === 'contado' ? 'contado' : ''}">${titulo}</p>
-    <dl class="mm-datos"><div><dt>De contado</dt><dd>${esc($(c.contado))}</dd></div><div><dt>${n} cuotas de</dt><dd>${esc($(c.cuota))}</dd></div>
-    <div><dt>Las cuotas en plata de hoy</dt><dd>${esc($(c.cuotasHoy))}</dd></div><div><dt>${c.sobraHoy >= 0 ? 'Te sobra, en plata de hoy' : 'Te falta, en plata de hoy'}</dt><dd>${esc($(Math.abs(c.sobraHoy)))}</dd></div></dl>
-    <p class="mm-fuente">La cuenta: si en vez de pagar ${esc($(c.contado))} hoy dejás esa plata rindiendo ${esc(pctTxt(r))} % por mes y pagás las cuotas, al final ${c.sobraFinal >= 0 ? `te sobran ${esc($(c.sobraFinal))}` : `te faltan ${esc($(-c.sobraFinal))}`} (${esc($(Math.abs(c.sobraHoy)))} con la inflación de ${esc(pctTxt(pi))} % por mes descontada).</p>
+    <dl class="mm-datos"><div><dt>${n} cuotas de</dt><dd>${esc($(c.cuota))}</dd></div><div><dt>Las cuotas, en plata de hoy</dt><dd>${esc($(c.vp))}</dd></div>
+    <div><dt>De contado</dt><dd>${esc($(c.contado))}</dd></div><div><dt>${c.diferencia > 0 ? 'Las cuotas te salen' : 'Las cuotas te ahorran'}</dt><dd>${esc($(Math.abs(c.diferencia)))}</dd></div></dl>
+    <p class="mm-fuente">La cuenta: llevamos cada cuota a plata de hoy con ${esc(cual)}, la más alta de las dos: tener la plata hoy vale por lo menos eso. ${esc($(c.vp))} − ${esc($(c.contado))} = ${c.diferencia >= 0 ? '' : '−'}${esc($(Math.abs(c.diferencia)))}.</p>
     <button type="button" class="mm-btn sec" data-simular-desde-contado>${ic('simular')} Ver cómo queda mi mes</button>`;
 }
 $id('cc-form').addEventListener('input', e => {

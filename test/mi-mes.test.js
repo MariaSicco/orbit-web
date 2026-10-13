@@ -381,6 +381,8 @@ test('alertas: vence en N días desde 5 antes, fuerte el día anterior y el mism
   assert.ok(vence('2026-11-10').titulo.startsWith('Vence hoy'));
   assert.equal(M.alertasTarjetas(datos, '2026-11-11').length, 0, 'vencido: no queda ninguna');
   assert.equal(M.alertasTarjetas(datos, '2026-11-09')[0].tipo, 'vence', 'la fuerte va primero');
+  assert.equal(M.alertasTarjetas(datos, '2026-11-09').some(a => a.tipo === 'cierre'), false, 'el cierre va adentro del aviso de vencimiento');
+  assert.match(vence('2026-11-09').texto, /va al resumen de diciembre 2026/);
 });
 test('alertas: descartar oculta solo esa alerta de ese ciclo', () => {
   const { datos } = conResumen();
@@ -404,21 +406,23 @@ test('calendario: .ics válido con cierre, vencimiento con avisos y recordatorio
   assert.match(M.generarICS([{ uid: 'x', fecha: '2026-12-31', titulo: 'A, b; c' }]), /SUMMARY:A\\, b\\; c/);
   assert.match(M.generarICS([{ uid: 'x', fecha: '2026-12-31', titulo: 'fin de año' }]), /DTEND;VALUE=DATE:20270101/);
 });
-test('¿cuotas o contado?: con descuento grande conviene contado; sin descuento y con rendimiento, cuotas', () => {
+test('¿cuotas o contado?: un solo método (VP con la tasa mayor) y diferencia = VP − contado', () => {
   const base4 = { precioCuotas: $(1_200_000), cuotas: 6, inflacion: 1.7, rendimiento: 1.56 };
   const sinDesc = M.cuotasOContado({ ...base4, descuentoContado: 0 });
-  assert.equal(sinDesc.contado, $(1_200_000));
-  assert.equal(sinDesc.conviene, 'cuotas');
-  assert.ok(sinDesc.sobraHoy > 0 && sinDesc.cuotasHoy < $(1_200_000));
-  const desc20 = M.cuotasOContado({ ...base4, descuentoContado: 20 });
-  assert.equal(desc20.contado, $(960_000));
-  assert.equal(desc20.conviene, 'contado');
-  assert.ok(desc20.sobraHoy < 0);
-  // sin rendimiento ni inflación, 0 % de descuento da igual
+  assert.deepEqual([sinDesc.contado, sinDesc.tasa, sinDesc.tasaUsada, sinDesc.conviene], [$(1_200_000), 1.7, 'inflacion', 'cuotas']);
+  const desc10 = M.cuotasOContado({ ...base4, descuentoContado: 10 });
+  assert.equal(desc10.contado, $(1_080_000));
+  assert.equal(desc10.conviene, 'contado');
+  // lo que se muestra cierra a ojo: diferencia = VP − contado, exacto
+  for (const c of [sinDesc, desc10, M.cuotasOContado({ ...base4, descuentoContado: 3, rendimiento: 2.5 })]) {
+    assert.equal(c.diferencia, c.vp - c.contado);
+    assert.equal(c.vp, Math.round(c.pagos.reduce((s, p, i) => s + p / (1 + c.tasa / 100) ** (i + 1), 0)));
+  }
+  assert.equal(M.cuotasOContado({ ...base4, rendimiento: 2.5 }).tasaUsada, 'rendimiento', 'usa la mayor');
+  // cuenta a mano: 100.000 en 2 cuotas al 1 %: 50.000/1,01 + 50.000/1,0201 = 98.519,75 → 98.520
+  const mano = M.cuotasOContado({ precioCuotas: $(100_000), cuotas: 2, inflacion: 0, rendimiento: 1 });
+  assert.deepEqual([mano.vp, mano.diferencia, mano.conviene], [9_851_975, -148_025, 'cuotas']);
   assert.equal(M.cuotasOContado({ precioCuotas: $(100_000), cuotas: 3, inflacion: 0, rendimiento: 0 }).conviene, 'da igual');
-  // cuenta a mano: 100.000 en 2 cuotas, 1 % de rendimiento, 0 % de inflación
-  // saldo = (100.000×1,01 − 50.000)×1,01 − 50.000 = 1.510
-  assert.equal(M.cuotasOContado({ precioCuotas: $(100_000), cuotas: 2, inflacion: 0, rendimiento: 1 }).sobraFinal, $(1_510));
   assert.ok(M.SUPUESTOS_DEFECTO.inflacion.url.startsWith('https://') && M.esFecha(M.SUPUESTOS_DEFECTO.rendimiento.fecha));
 });
 test('simulador: muestra libres antes y después sin tocar los datos, y la alerta de límite', () => {
