@@ -1011,19 +1011,31 @@ function libFilter(text, date) {
   return (!ui.lib.year || String(date || '').startsWith(ui.lib.year)) && (!q || norm1(text).includes(q));
 }
 const filtering = () => Boolean(ui.lib.q || ui.lib.year);
+/* color del sticker según qué es: vacuna, desparasitación interna o externa */
+const stkTone = r => r.type === 'vacuna' ? 't-vac' : r.type === 'desparasitacion' ? (Z.scopeOf(r) === 'externa' ? 't-ext' : 't-int') : 't-otro';
 function seal(r) {
-  if (r.sticker) return `<div class="stk has"><img src="${esc(r.sticker)}" alt="Sticker de ${esc(r.name)}" loading="lazy"></div>`;
-  if (!r.date) return `<div class="stk empty-s" aria-hidden="true">Pendiente</div>`;
-  return `<div class="stk typed" aria-hidden="true"><b>${esc(r.name)}</b>${esc(r.lot || 'Sello')}</div>`;
+  const t = stkTone(r);
+  if (r.sticker) return `<div class="stk has ${t}"><img src="${esc(r.sticker)}" alt="Sticker de ${esc(r.name)}" loading="lazy"></div>`;
+  if (!r.date) return `<div class="stk empty-s ${t}" aria-hidden="true">Pendiente</div>`;
+  return `<div class="stk typed ${t}" aria-hidden="true"><b>${esc(r.name)}</b>${esc(r.lot || 'Sello')}</div>`;
 }
-function recEntry(r, isLate) {
+/* Cartelito de la próxima fecha: solo en el registro que manda (el último de cada vacuna o dosis). */
+function nextTag(r, s) {
+  const que = r.type === 'vacuna' ? 'Próxima vacuna' : r.type === 'desparasitacion' ? 'Próxima dosis' : 'Próximo control';
+  const cls = s.days < 0 ? 'late' : s.days <= 14 ? 'soon' : 'ok';
+  const txt = s.days < 0 ? s.t : s.days <= 14 ? `${que}: ${s.t.toLowerCase()}` : `${que}: ${dd(r.next)}`;
+  return `<span class="badge next-tag ${cls}">${txt}</span>`;
+}
+function recEntry(r, isLate, isCurrent) {
   const s = r.next ? Z.status(r.next) : null;
-  const nextTxt = r.next ? `<span><em>Próx.</em> ${dd(r.next)}</span>` : '';
+  const tag = s && (isCurrent || isLate) ? nextTag(r, s) : '';
+  const nextTxt = r.next && !(tag && s.days > 14) ? `<span><em>Próx.</em> ${dd(r.next)}</span>` : '';
   return `<li class="entry${r.date ? '' : ' planned'}">${seal(r)}
     <div class="e-main"><span class="e-name">${esc(r.name)}</span>
+      ${tag}
       <span class="e-dates">${r.date ? `<span><em>Aplic.</em> ${dd(r.date)}</span>` : '<span><em>Sin aplicar</em></span>'}${nextTxt}</span>
       ${r.lot || r.vet ? `<span class="e-sub">${esc([r.lot ? 'Lote/marca: ' + r.lot : '', r.vet].filter(Boolean).join(' · '))}</span>` : ''}
-      ${isLate && s ? `<span class="badge late" style="align-self:flex-start;margin-top:2px">${s.t}</span>` : Z.isSug(r) ? '<span class="badge none" style="align-self:flex-start;margin-top:2px">Sugerida, sin confirmar</span>' : ''}
+      ${Z.isSug(r) ? '<span class="badge none" style="align-self:flex-start;margin-top:2px">Sugerida, sin confirmar</span>' : ''}
     </div>
     <button class="e-edit" data-act="detail" data-kind="rec" data-id="${r.id}" aria-label="Ver ${esc(r.name)}">${I('more')}</button></li>`;
 }
@@ -1031,7 +1043,8 @@ function recEntry(r, isLate) {
 function lateIds(p) { return new Set(Z.upcoming(p).filter(x => x.s.days < 0).map(x => x.r.id)); }
 function libPages(p) {
   const late = lateIds(p);
-  const recE = r => recEntry(r, late.has(r.id));
+  const current = new Set(Z.upcoming(p).map(x => x.r.id));
+  const recE = r => recEntry(r, late.has(r.id), current.has(r.id));
   const pages = [];
   const chunk = (sec, title, items, empty) => {
     if (!items.length) { pages.push({ sec, title, html: empty }); return; }

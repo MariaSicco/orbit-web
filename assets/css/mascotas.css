@@ -1037,3 +1037,14 @@ dialog{background:var(--bg)}
 }
 .page{min-width:0;max-width:var(--pw)}
 .pp-band{contain:inline-size}
+
+/* Libreta: cartelito de la próxima fecha y stickers con color por tipo */
+.entry .next-tag{align-self:flex-start;margin:1px 0 2px;font-size:12px;padding:4px 10px}
+.stk.t-vac{--stk:var(--s-violeta);--stk-i:var(--s-violeta-i)}
+.stk.t-int{--stk:var(--s-verde);--stk-i:var(--s-verde-i)}
+.stk.t-ext{--stk:var(--s-naranja);--stk-i:var(--s-naranja-i)}
+.stk.t-otro{--stk:var(--s-rosa);--stk-i:var(--s-rosa-i)}
+.stk.typed[class*=" t-"]{background:var(--stk);border-color:transparent;color:var(--stk-i)}
+.stk.typed[class*=" t-"] b{color:var(--stk-i)}
+.stk.has[class*=" t-"]{background:var(--stk)}
+.stk.empty-s[class*=" t-"]{border-color:var(--stk-i);color:var(--stk-i);opacity:.75}
