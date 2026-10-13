@@ -1000,7 +1000,7 @@ function pintarContado(cargarSupuestos = false) {
   const cual = c.tasaUsada === 'rendimiento' ? `lo que rinde tu plata (${pctTxt(c.tasa)} % por mes)` : `la inflación (${pctTxt(c.tasa)} % por mes)`;
   res.innerHTML = `<p class="mm-item-meta">Con estos supuestos</p><p class="mm-veredicto-tit ${c.conviene === 'contado' ? 'contado' : ''}">${titulo}</p>
     <dl class="mm-datos"><div><dt>${n} cuotas de</dt><dd>${esc($(c.cuota))}</dd></div><div><dt>Las cuotas, en plata de hoy</dt><dd>${esc($(c.vp))}</dd></div>
-    <div><dt>De contado</dt><dd>${esc($(c.contado))}</dd></div><div><dt>${c.diferencia > 0 ? 'Las cuotas te salen' : 'Las cuotas te ahorran'}</dt><dd>${esc($(Math.abs(c.diferencia)))}</dd></div></dl>
+    <div><dt>De contado</dt><dd>${esc($(c.contado))}</dd></div><div><dt>${c.diferencia > 0 ? 'Las cuotas te salen más caras por' : 'Las cuotas te ahorran'}</dt><dd>${esc($(Math.abs(c.diferencia)))}</dd></div></dl>
     <p class="mm-fuente">La cuenta: llevamos cada cuota a plata de hoy con ${esc(cual)}, la más alta de las dos: tener la plata hoy vale por lo menos eso. ${esc($(c.vp))} − ${esc($(c.contado))} = ${c.diferencia >= 0 ? '' : '−'}${esc($(Math.abs(c.diferencia)))}.</p>
     <button type="button" class="mm-btn sec" data-simular-desde-contado>${ic('simular')} Ver cómo queda mi mes</button>`;
 }
