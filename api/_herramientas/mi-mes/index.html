@@ -80,17 +80,19 @@
         <p class="mm-pasas" id="pasas" hidden></p>
         <button type="button" class="mm-tope" id="tope" data-ir="escalera" hidden></button>
         <dl class="mm-saldo-pie" id="saldo-pie">
-          <div><dt>Ingresos</dt><dd id="s-ing">$ 0</dd></div>
-          <div><dt>Gastos fijos</dt><dd id="s-gas">$ 0</dd></div>
-          <div><dt>Tarjetas y cuotas</dt><dd id="s-tar">$ 0</dd></div>
+          <div><dt>Plata líquida</dt><dd id="s-liq">$ 0</dd></div>
+          <div><dt>Vence de tarjetas</dt><dd id="s-tar">$ 0</dd></div>
+          <div><dt>Debés en total</dt><dd id="s-cred">$ 0</dd></div>
         </dl>
       </div>
 
+      <section class="mm-panel mm-contraste" id="contraste" aria-labelledby="t-contraste"></section>
+
       <nav class="mm-accesos" aria-label="Accesos rápidos">
-        <button type="button" class="mm-acceso principal" id="accion-principal" data-nuevo="cuota"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-cuota"/></svg></span><span id="accion-texto">Cargar cuota</span></button>
-        <button type="button" class="mm-acceso" data-importar><span class="mm-acceso-ic"><svg class="ic"><use href="#i-subir"/></svg></span><span>Subir resumen</span></button>
-        <button type="button" class="mm-acceso" id="acceso-otro" data-nuevo="ingreso"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-ingreso"/></svg></span><span>Ingreso</span></button>
+        <button type="button" class="mm-acceso principal" id="accion-principal" data-agregar-tarjeta><span class="mm-acceso-ic"><svg class="ic"><use href="#i-subir"/></svg></span><span id="accion-texto">Agregar tarjeta</span></button>
+        <button type="button" class="mm-acceso" data-nuevo="ingreso"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-ingreso"/></svg></span><span>Ingreso</span></button>
         <button type="button" class="mm-acceso" data-nuevo="gasto"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-gasto"/></svg></span><span>Gasto fijo</span></button>
+        <button type="button" class="mm-acceso" data-nuevo="cuota"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-cuota"/></svg></span><span>Compra nueva</span></button>
         <button type="button" class="mm-acceso" data-ir="tarjetas"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-tarjetas"/></svg></span><span>Mis tarjetas</span></button>
         <button type="button" class="mm-acceso" data-ir="escalera"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-escalera"/></svg></span><span>Escalera</span></button>
         <button type="button" class="mm-acceso" data-ir="simular"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-simular"/></svg></span><span>¿Y si compro?</span></button>
@@ -245,7 +247,8 @@
 <!-- ── Cuota ── -->
 <dialog class="mm-dlg" id="dlg-cuota" aria-labelledby="dc-tit">
   <form class="mm-form" novalidate>
-    <div class="mm-dlg-top"><h2 id="dc-tit">Nueva cuota</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <div class="mm-dlg-top"><h2 id="dc-tit">Compra nueva</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <p class="mm-sub" id="c-intro" style="margin:-8px 0 0">¿Compraste algo que todavía no está en el resumen? Cargalo y lo sumamos a lo que debés hasta que llegue el resumen; ahí se concilia solo.</p>
     <div class="mm-campo">
       <label for="c-total">Monto total de la compra</label>
       <div class="mm-monto-fila">
@@ -269,17 +272,19 @@
     <fieldset class="mm-campo">
       <legend>Tarjeta</legend>
       <div class="mm-chips" id="c-tarjetas"></div>
-      <div id="c-nueva-wrap" hidden><label for="c-nueva" class="mm-sr">Nombre de la tarjeta nueva</label><input id="c-nueva" type="text" maxlength="40" autocomplete="off" placeholder="Ej: Visa del banco" aria-describedby="c-tarj-err"></div>
       <p class="mm-err" id="c-tarj-err"></p>
     </fieldset>
     <div class="mm-campo"><label for="c-desc">Qué compraste <span class="opc">(opcional)</span></label><input id="c-desc" type="text" maxlength="60" autocomplete="off" placeholder="Ej: Heladera"></div>
-    <div class="mm-campo">
-      <label for="c-mes">Mes de la primera cuota</label>
-      <select id="c-mes"></select>
-      <p class="mm-ayuda">Viene con el próximo resumen. Si ya venías pagándola, elegí el mes en que pagaste la primera.</p>
-    </div>
+    <details class="mm-mas" id="c-mes-wrap">
+      <summary id="c-mes-txt">Primera cuota: —</summary>
+      <div class="mm-campo" style="margin-top:10px">
+        <label for="c-mes">Mes de la primera cuota</label>
+        <select id="c-mes"></select>
+        <p class="mm-ayuda">Lo calculamos con el cierre de la tarjeta. Si ya venías pagándola, elegí el mes en que pagaste la primera.</p>
+      </div>
+    </details>
     <p class="mm-preview" id="c-preview" aria-live="polite"></p>
-    <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="c-borrar" hidden>Borrar</button><button type="submit" class="mm-btn">Guardar cuota</button></div>
+    <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="c-borrar" hidden>Borrar</button><button type="submit" class="mm-btn">Guardar compra</button></div>
   </form>
 </dialog>
 
@@ -288,7 +293,7 @@
   <form class="mm-form" novalidate>
     <div class="mm-dlg-top"><h2 id="di-tit">Nuevo ingreso</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
     <div class="mm-campo"><label for="i-monto">Monto en pesos</label><input id="i-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 1.200.000" aria-describedby="i-monto-err" required><p class="mm-err" id="i-monto-err"></p></div>
-    <div class="mm-campo"><label for="i-nombre">Nombre <span class="opc">(opcional)</span></label><input id="i-nombre" type="text" maxlength="60" autocomplete="off" placeholder="Sueldo"></div>
+    <fieldset class="mm-campo"><legend>Qué es</legend><div class="mm-chips" id="i-tipos"></div></fieldset>
     <label class="mm-check"><input type="checkbox" id="i-repite" checked> <span>Se repite todos los meses</span></label>
     <div class="mm-campo"><label for="i-desde" id="i-desde-lbl">Desde</label><select id="i-desde"></select></div>
     <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="i-borrar" hidden>Borrar</button><button type="submit" class="mm-btn">Guardar ingreso</button></div>
@@ -301,7 +306,6 @@
     <div class="mm-dlg-top"><h2 id="dg-tit">Nuevo gasto fijo</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
     <fieldset class="mm-campo"><legend>Categoría</legend><div class="mm-chips" id="g-cats"></div></fieldset>
     <div class="mm-campo"><label for="g-monto">Monto por mes, en pesos</label><input id="g-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 450.000" aria-describedby="g-monto-err" required><p class="mm-err" id="g-monto-err"></p></div>
-    <div class="mm-campo"><label for="g-nombre">Nombre <span class="opc">(opcional)</span></label><input id="g-nombre" type="text" maxlength="60" autocomplete="off" placeholder="Alquiler"></div>
     <label class="mm-check"><input type="checkbox" id="g-repite" checked> <span>Se repite todos los meses</span></label>
     <div class="mm-fila">
       <div class="mm-campo"><label for="g-desde" id="g-desde-lbl">Desde</label><select id="g-desde"></select></div>
@@ -314,14 +318,14 @@
 <!-- ── Tarjeta ── -->
 <dialog class="mm-dlg" id="dlg-tarjeta" aria-labelledby="dt-tit">
   <form class="mm-form" novalidate>
-    <div class="mm-dlg-top"><h2 id="dt-tit">Nueva tarjeta</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <div class="mm-dlg-top"><h2 id="dt-tit">Agregar tarjeta a mano</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
     <div class="mm-tarjeta-prev" id="t-prev" aria-hidden="true"></div>
-    <fieldset class="mm-campo"><legend>Red</legend><div class="mm-chips" id="t-redes"></div></fieldset>
     <div class="mm-fila">
-      <div class="mm-campo"><label for="t-banco">Banco <span class="opc">(opcional)</span></label><input id="t-banco" type="text" maxlength="40" autocomplete="off" placeholder="Ej: Mi banco"></div>
+      <div class="mm-campo"><label for="t-banco">Banco o emisor</label><select id="t-banco" aria-describedby="t-banco-err"></select>
+        <input id="t-banco-otro" type="text" maxlength="40" autocomplete="off" placeholder="¿Cuál?" aria-label="Nombre del emisor" hidden><p class="mm-err" id="t-banco-err"></p></div>
       <div class="mm-campo"><label for="t-u4">Últimos 4 números <span class="opc">(opcional)</span></label><input id="t-u4" type="text" inputmode="numeric" maxlength="4" autocomplete="off" placeholder="1234" aria-describedby="t-u4-err"><p class="mm-err" id="t-u4-err"></p></div>
     </div>
-    <div class="mm-campo"><label for="t-nombre">Cómo la llamás <span class="opc">(opcional)</span></label><input id="t-nombre" type="text" maxlength="40" autocomplete="off" placeholder="Ej: La del sueldo"></div>
+    <fieldset class="mm-campo"><legend>Red</legend><div class="mm-chips" id="t-redes"></div></fieldset>
     <fieldset class="mm-campo"><legend>Color</legend><div class="mm-colores" id="t-colores"></div></fieldset>
     <div class="mm-fila">
       <div class="mm-campo"><label for="t-cierre">Día de cierre <span class="opc">(opcional)</span></label><input id="t-cierre" type="number" inputmode="numeric" min="1" max="31" placeholder="Ej: 26" aria-describedby="t-dias-err"></div>
@@ -354,6 +358,7 @@
       <li>Antes de guardar vas a ver todo lo que leímos, y podés corregirlo o descartarlo.</li>
       <li><b>Qué pasa con tu PDF:</b> para leerlo pasa por el servidor de Orbit y por la API de Anthropic (Claude). No se guarda: se procesa y se descarta. En tu dispositivo quedan solo los datos que confirmes.</li>
     </ul>
+    <button type="button" class="mm-link" id="s-manual" data-tarjeta-manual hidden>No tengo el resumen a mano: la agrego eligiendo el banco</button>
     <p class="mm-cartel" id="s-prueba" hidden><b>Modo prueba:</b> la lectura automática todavía no está activa. Te mostramos un resumen de ejemplo para que veas cómo funciona.</p>
     <div class="mm-dlg-pie"><button type="submit" class="mm-btn"><svg class="ic"><use href="#i-subir"/></svg> Elegir PDF</button></div>
   </form>
@@ -374,6 +379,15 @@
   <div class="mm-form">
     <div class="mm-dlg-top"><h2 id="dp-tit">Avisos en el celular</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
     <div id="dp-cuerpo" aria-live="polite"></div>
+  </div>
+</dialog>
+
+<!-- ── ¿Es la misma compra? (conciliación con un toque) ── -->
+<dialog class="mm-dlg" id="dlg-concilia" aria-labelledby="dq-tit">
+  <div class="mm-form">
+    <div class="mm-dlg-top"><h2 id="dq-tit">¿Es la misma compra?</h2></div>
+    <p id="dq-txt"></p>
+    <div class="mm-dlg-pie"><button type="button" class="mm-btn sec" data-concilia="no">No, son distintas</button><button type="button" class="mm-btn" data-concilia="si">Sí, es la misma</button></div>
   </div>
 </dialog>
 

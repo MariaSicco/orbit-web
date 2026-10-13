@@ -229,7 +229,7 @@ export function resumenMes(datos, mes) {
     if (!n) continue;
     const moneda = c.moneda || 'ARS';
     const original = repartirCuotas(c.total, c.cantidad)[n - 1];
-    const item = { ...c, moneda, numero: n, original, monto: aPesos(original, moneda, d), nueva: c.origen !== 'resumen',
+    const item = { ...c, moneda, numero: n, original, monto: aPesos(original, moneda, d), nueva: c.origen === 'manual',
       tarjeta: tarjetas.get(c.tarjetaId)?.nombre || 'Sin tarjeta', ultima: n === c.cantidad };
     if (conResumen.has(c.tarjetaId) || (cubiertas.has(c.tarjetaId) && !item.nueva)) dentroDeResumen.push(item);
     else if (item.monto === null) sinCambio.push(item);
@@ -296,8 +296,8 @@ export function creditoTarjeta(datos, tarjetaId, hoy) {
     if (tb.desde && difMeses(desde, tb.desde.mes) >= 0) futuras += tb.desde.monto;
   }
   for (const c of (datos?.cuotas || []).filter(x => x.tarjetaId === tarjetaId)) {
-    const nueva = c.origen !== 'resumen';
-    if (!nueva && tb) continue;                       // las del banco ya están en la tabla
+    const nueva = c.origen === 'manual';             // compra nueva: todavía no salió en un resumen
+    if (!nueva && tb) continue;                       // las de antes ya están en la tabla del banco
     repartirCuotas(c.total, c.cantidad).forEach((p, i) => {
       const m = sumarMeses(c.primerMes, i);
       if (difMeses(desde, m) < 0) return;
@@ -543,7 +543,7 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
    monto de la cuota igual (±$ 1) y fecha a 10 días o menos (si hay fecha), y
    un único candidato. Parecido (±5 % o sin fecha cercana) = duda. */
 export function conciliarCompras(datos, tarjetaId, lectura) {
-  const pendientes = (datos.cuotas || []).filter(x => x.tarjetaId === tarjetaId && x.origen !== 'resumen');
+  const pendientes = (datos.cuotas || []).filter(x => x.tarjetaId === tarjetaId && x.origen === 'manual');
   const conciliadas = [], dudosas = [];
   const usados = new Set();
   for (const p of pendientes) {
@@ -620,7 +620,7 @@ export function migrar(crudo) {
     out.cuotas.push({ id: String(c.id), descripcion: texto(c.descripcion), total: c.total,
       moneda: esMoneda(c.moneda) ? c.moneda : 'ARS',
       cantidad: c.cantidad, tarjetaId: String(c.tarjetaId), primerMes: c.primerMes,
-      ...(c.origen === 'resumen' ? { origen: 'resumen' } : {}), ...(esFecha(c.fecha) ? { fecha: c.fecha } : {}) });
+      ...(c.origen === 'resumen' || c.origen === 'manual' ? { origen: c.origen } : {}), ...(esFecha(c.fecha) ? { fecha: c.fecha } : {}) });
   }
   for (const r of Array.isArray(crudo.resumenes) ? crudo.resumenes : []) {
     if (!r?.id || !ids.has(String(r.tarjetaId)) || !esMes(r.mes)) continue;

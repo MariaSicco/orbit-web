@@ -421,3 +421,33 @@ fieldset.mm-campo>legend{margin-bottom:8px}
 .esc-monto small.banco{color:var(--tinta2);font-weight:600}
 .mm-esc li.esc-dif{display:block}
 .mm-esc li.esc-dif .ic{width:16px;height:16px;display:inline;vertical-align:-3px;color:var(--neg)}
+
+/* plata líquida vs. crédito */
+.mm-contraste .mm-seccion-top{margin-bottom:4px}
+.mm-cx{display:grid;gap:14px;padding:6px 0 12px}
+.mm-cx-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.mm-cx-top span{font-size:15px}
+.mm-cx-top small{display:block;font-size:12.5px;color:var(--tinta2);margin-top:2px}
+.mm-cx-top>b{font-size:20px;font-weight:800;letter-spacing:-.02em;white-space:nowrap}
+.mm-cx-barra{display:flex;height:14px;border-radius:999px;background:var(--fondo);overflow:hidden;margin-top:8px}
+.mm-cx-barra i{display:block;height:100%;transform-origin:left;animation:mm-crece .4s var(--ease) both}
+.mm-cx-barra i.liq,.mm-cx-ley i.liq{background:var(--azul)}
+.mm-cx-barra i.ant,.mm-cx-ley i.ant{background:var(--k)}
+.mm-cx-barra i.nue,.mm-cx-ley i.nue{background:var(--or)}
+.mm-cx-ley{display:flex;flex-wrap:wrap;gap:4px 14px;margin:6px 0 0;font-size:12.5px;color:var(--tinta2)}
+.mm-cx-ley span{display:inline-flex;align-items:center;gap:6px}
+.mm-cx-ley i{width:10px;height:10px;border-radius:3px}
+.mm-cx-res{margin:0;padding:10px 12px;border-radius:12px;background:var(--azul-suave);font-weight:700}
+.mm-cx-res.neg{background:var(--neg-suave);color:var(--neg)}
+.mm-cx-deuda{display:grid;gap:8px;padding:12px 0;border-top:1px solid var(--linea)}
+.mm-cx-total{margin:0;font-size:28px;font-weight:800;letter-spacing:-.03em}
+.mm-cx-deuda dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0}
+.mm-cx-deuda dt{font-size:12px;color:var(--tinta2)}
+.mm-cx-deuda dd{margin:2px 0 0;font-weight:700;font-size:14.5px}
+.mm-contraste>.mm-btn{width:100%;margin:6px 0 10px}
+.mm-contraste>.mm-link{margin:0 0 6px}
+.mm-mas summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-weight:600;color:var(--azul)}
+.mm-mas summary::-webkit-details-marker{display:none}
+.mm-guia-fila{align-items:center}
+.mm-guia-fila label{font-weight:600}
+.mm-alerta-t.credito.aviso{background:var(--neg-suave)}

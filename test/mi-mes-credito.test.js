@@ -20,7 +20,7 @@ function persona() {
   d.ingresos.push({ id: 'i', nombre: 'Sueldo', monto: $(1_000_000), repite: true, desde: '2026-09' });
   d.gastos.push({ id: 'g', nombre: 'Alquiler', categoria: 'Alquiler', monto: $(400_000), repite: true, desde: '2026-09' });
   d.tarjetas.push({ id: 'otra', nombre: 'Ualá Mastercard', red: 'Mastercard', banco: 'Ualá', ultimos4: '', color: 'verde', limite: $(500_000) });
-  d.cuotas.push({ id: 'nueva', descripcion: 'Zapatillas', total: $(90_000), moneda: 'ARS', cantidad: 3, tarjetaId: 'otra', primerMes: '2026-11', fecha: '2026-10-05' });
+  d.cuotas.push({ id: 'nueva', descripcion: 'Zapatillas', total: $(90_000), moneda: 'ARS', cantidad: 3, tarjetaId: 'otra', primerMes: '2026-11', fecha: '2026-10-05', origen: 'manual' });
   return { d, tarjeta: r.tarjetaId };
 }
 
@@ -55,6 +55,13 @@ test('crédito por tarjeta: resumen sin vencer + cuotas que vienen (tabla) + com
   assert.equal(tot.total, c.total + otra.total);
   assert.equal(tot.nuevas, $(90_000));
 });
+test('cuotas cargadas a mano antes de este cambio (sin origen) cuentan como "de antes", no como compras nuevas', () => {
+  const { d } = persona();
+  d.cuotas.push({ id: 'vieja', descripcion: 'Heladera', total: $(60_000), moneda: 'ARS', cantidad: 6, tarjetaId: 'otra', primerMes: '2026-09' });
+  const c = M.creditoTarjeta(d, 'otra', '2026-10-05');
+  assert.deepEqual([c.futuras, c.nuevas], [$(10_000) * 5, $(90_000)]);
+  assert.equal(M.resumenMes(d, '2026-11').totNuevas, $(30_000));
+});
 test('crédito disponible = límite − lo que se debe (con dólares convertidos)', () => {
   const { d, tarjeta } = persona();
   const disp = M.disponibleTarjeta(d, tarjeta, '2026-10-05');
@@ -71,7 +78,7 @@ test('alerta principal: mes a mes, cuando lo que vence supera la plata líquida,
   assert.equal(a[0].nivel, 'fuerte');
   assert.match(a[0].titulo, /octubre 2026 \(\$ 617\.130\) supera tu plata líquida \(\$ 600\.000\)/);
   // una compra nueva grande en noviembre hace que noviembre también se pase
-  d.cuotas.push({ id: 'tele', descripcion: 'Tele', total: $(1_400_000), moneda: 'ARS', cantidad: 2, tarjetaId: 'otra', primerMes: '2026-11', fecha: '2026-10-06' });
+  d.cuotas.push({ id: 'tele', descripcion: 'Tele', total: $(1_400_000), moneda: 'ARS', cantidad: 2, tarjetaId: 'otra', primerMes: '2026-11', fecha: '2026-10-06', origen: 'manual' });
   const b = M.alertasCredito(d, '2026-10-05', 6);
   const nov = b.find(x => x.mes === '2026-11');
   assert.equal(nov.nivel, 'aviso');
@@ -95,7 +102,7 @@ const lecturaCon = consumos => M.validarLectura({ ...fixture('simple'), tarjetas
 function conPendiente(extra = {}) {
   const v = M.validarLectura(fixture('simple'));
   const r = M.importarResumen(M.datosVacios(), v.lectura, { nuevoId: () => 'x' + Math.random() });
-  r.datos.cuotas.push({ id: 'manual', descripcion: 'Heladera', total: $(600_000), moneda: 'ARS', cantidad: 6, tarjetaId: r.tarjetaId, primerMes: '2026-10', fecha: '2026-09-02', ...extra });
+  r.datos.cuotas.push({ id: 'manual', descripcion: 'Heladera', total: $(600_000), moneda: 'ARS', cantidad: 6, tarjetaId: r.tarjetaId, primerMes: '2026-10', fecha: '2026-09-02', origen: 'manual', ...extra });
   return r;
 }
 test('conciliación: la compra nueva aparece en el resumen → se reemplaza sola, sin duplicar', () => {
