@@ -204,7 +204,7 @@ function petForm(p) {
       { k: 'name', label: 'Nombre', max: 60 },
       { k: 'species', label: 'Especie', type: 'chips', options: [['perro', 'Perro'], ['gato', 'Gato'], ['otra', 'Otra']] },
       { k: 'speciesOther', label: '¿Qué especie?', ph: 'Conejo, hurón, loro…', max: 40 },
-      [{ k: 'breed', label: 'Raza', ph: 'Mestizo', max: 60 }, { k: 'sex', label: 'Sexo', type: 'select', options: [['', '—'], ['h', 'Hembra'], ['m', 'Macho']] }],
+      [{ k: 'breed', label: 'Raza', type: 'datalist', options: Z.BREEDS[p?.species || 'perro'] || [], ph: 'Escribí para buscar', max: 60 }, { k: 'sex', label: 'Sexo', type: 'select', options: [['', '—'], ['h', 'Hembra'], ['m', 'Macho']] }],
       [{ k: 'birth', label: 'Nacimiento', type: 'date', hint: 'Aproximado sirve.' }, { k: 'weight', label: 'Peso (kg)', type: 'number', ph: '12,5' }],
       [{ k: 'color', label: 'Color', max: 80 }, { k: 'chip', label: 'Microchip', max: 40 }],
       { k: 'marks', label: 'Señas particulares', ph: 'Mancha blanca en el pecho, oreja caída…', max: 200, hint: 'Ayudan a reconocerla si se pierde.' },
@@ -625,7 +625,7 @@ function renderOnboard() {
     <div class="two"><div class="f"><label for="ob_birth">Nacimiento</label><input id="ob_birth" type="date" value="${esc(p.birth)}"><small>Aproximado sirve.</small></div><div class="f"><label for="ob_weight">Peso (kg)</label><input id="ob_weight" inputmode="decimal" value="${p.weight ? String(p.weight).replace('.', ',') : ''}" placeholder="12,5"></div></div>
     <div class="f"><span class="lb">Sexo</span>${tiles('sex', [['h', 'Hembra'], ['m', 'Macho']], p.sex)}</div>
     <div class="f"><span class="lb">¿Está castrado o castrada?</span>${tiles('neutered', [['si', 'Sí'], ['no', 'No'], ['ns', 'No sé']], p.neutered || '')}</div>
-    <div class="f"><label for="ob_breed">Raza</label><input id="ob_breed" maxlength="60" value="${esc(p.breed)}" placeholder="Mestizo"></div>`;
+    <div class="f"><label for="ob_breed">Raza</label><input id="ob_breed" list="ob_breeds" maxlength="60" value="${esc(p.breed)}" placeholder="Escribí para buscar"><datalist id="ob_breeds">${(Z.BREEDS[p.species] || []).map(b => `<option value="${esc(b)}">`).join('')}</datalist><small>${p.species === 'otra' ? 'Si sabés la raza, escribila.' : 'Empezá a escribir y elegí de la lista. Si no está, escribila igual.'}</small></div>`;
   if (ob.step === 2) {
     const list = Z.CONDITIONS[p.species] || Z.CONDITIONS.otra;
     h = obHead(`¿${n} tuvo algún problema de salud?`, 'Marcá lo que te haya dicho un veterinario alguna vez. Después podés sumar más.') + `
