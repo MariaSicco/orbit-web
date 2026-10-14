@@ -10,12 +10,17 @@
      micTrack(): la pista del detector de sonidos (mascotas-audio.js). Si está viva se manda un clon: el detector y la
        transmisión comparten el micrófono (en iPhone, un segundo getUserMedia corta el primero). Si no, se pide uno nuevo.
      onAudio({ on, error? }): avisa cuando el sonido en vivo se prende o se apaga (lo pide la dueña desde su celu).
+     voiceEl: <audio> donde suena la voz de la dueña ("Hablarle"). Conviene darle play() en el toque de "Prender cámara".
+     onTalk({ on, blocked? }): la dueña empezó o terminó de hablar; blocked = el navegador no dejó reproducir.
+       Mientras habla, la cámara no manda su micrófono (medio dúplex: sin eco de vuelta).
    Lado dueña (con sesión):
      const v = MZRTC.startViewer({ camId, videoEl, onStatus })
      v.setMuted(false)          el sonido arranca silenciado (autoplay)
      v.setAudio(true|false)     le pide a la cámara que prenda o apague el micrófono (canal de datos P2P, sin servidor)
                                 → Promise<{ on, error? }>; error: 'sin-permiso' | 'sin-microfono' | 'sin-respuesta'
      Llamar setAudio(true) y setMuted(false) DENTRO del click (los navegadores piden un gesto para el sonido).
+     v.talk(true|false)         "Hablarle": manda el micrófono de la dueña a la cámara (el permiso se pide la primera vez)
+                                → Promise<{ on, error? }>; error: 'sin-permiso' | 'sin-microfono' | 'sin-conexion'
      v.retry()                  volver a intentar después de un fallo
      v.stop()
    onStatus({ state, message }) con message listo para mostrar. Estados:
@@ -83,7 +88,8 @@ async function addIce(pc, list) {
 }
 
 /* ======================= lado cámara ======================= */
-function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServers, micTrack = null, onAudio = () => {} } = {}) {
+function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServers, micTrack = null, onAudio = () => {}, voiceEl = null, onTalk = () => {} } = {}) {
+  let talking = false, talkOffTimer = null;
   let stopped = false, stream = null, mic = null, pc = null, sid = null, since = 0, timer = null, wake = null, polls = 0, lastBeat = 0, linger = null;
   let ice = iceServers || DEFAULT_ICE, wantAudio = Boolean(audio), sender = null, warmUntil = Date.now() + 120000;
   const status = (state, key = state) => { if (!stopped || state === 'detenida') onStatus({ state, message: MSG[key] }); };
@@ -126,10 +132,30 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
   function bindControl(ch) {
     ch.onmessage = async e => {
       let m = {}; try { m = JSON.parse(e.data); } catch {}
+      if (m.t === 'talk') return setTalk(Boolean(m.on));
       if (m.t !== 'audio') return;
       const r = await setAudio(Boolean(m.on));
       try { ch.readyState === 'open' && ch.send(JSON.stringify({ t: 'audio', ...r })); } catch {}
     };
+  }
+  /* la dueña habla: suena por el parlante y, mientras tanto, la cámara no manda su micrófono (sin eco) */
+  function outgoingMic(enabled) {
+    const at = pc && pc.getTransceivers().find(t => t.receiver.track.kind === 'audio');
+    const tr = at && at.sender.track; if (tr) tr.enabled = enabled;
+  }
+  async function setTalk(on) {
+    clearTimeout(talkOffTimer);
+    if (on) {
+      talking = true; outgoingMic(false);
+      let blocked = false;
+      if (voiceEl) { voiceEl.muted = false; try { await voiceEl.play(); } catch { blocked = true; } }
+      try { onTalk({ on: true, blocked }); } catch {}
+    } else {
+      talking = false;
+      /* un respiro para que no vuelva la cola de la voz */
+      talkOffTimer = setTimeout(() => { if (!talking) outgoingMic(true); }, 400);
+      try { onTalk({ on: false }); } catch {}
+    }
   }
   async function keepAwake() {
     try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wake = await navigator.wakeLock.request('screen'); } catch {}
@@ -139,7 +165,9 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
   function closePc() {
     if (sid) warmUntil = Date.now() + 120000;
     if (sender) sender.clear();
-    if (pc) { pc.onconnectionstatechange = null; pc.onicecandidate = null; pc.ondatachannel = null; try { pc.close(); } catch {} }
+    if (pc) { pc.onconnectionstatechange = null; pc.onicecandidate = null; pc.ondatachannel = null; pc.ontrack = null; try { pc.close(); } catch {} }
+    if (talking) { talking = false; try { onTalk({ on: false }); } catch {} }
+    if (voiceEl) try { voiceEl.srcObject = null; } catch {}
     pc = null; sid = null; since = 0; sender = null;
     /* nadie mira: el sonido en vivo se apaga (privacidad) y la cámara se suelta en un rato */
     if (wantAudio && !stopped) setAudio(false);
@@ -155,6 +183,8 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
     sender = iceSender(cands => { if (sid === mySid) call('ice', { token: camToken, sid: mySid, cands }); });
     pc.onicecandidate = e => { if (e.candidate) sender.add(e.candidate); };
     pc.ondatachannel = e => { if (e.channel.label === 'ctl') bindControl(e.channel); };
+    /* la voz de la dueña ("Hablarle") */
+    pc.ontrack = e => { if (e.track.kind === 'audio' && voiceEl) { voiceEl.srcObject = new MediaStream([e.track]); voiceEl.play().catch(() => {}); } };
     pc.onconnectionstatechange = () => {
       if (!pc || sid !== mySid) return;
       const s = pc.connectionState;
@@ -164,7 +194,8 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
     await pc.setRemoteDescription({ type: 'offer', sdp: offer });
     for (const t of pc.getTransceivers()) {
       const kind = t.receiver.track.kind;
-      t.direction = 'sendonly';
+      /* el audio va en los dos sentidos: la cámara manda su micrófono (si lo piden) y recibe la voz de la dueña */
+      t.direction = kind === 'audio' ? 'sendrecv' : 'sendonly';
       if (kind === 'video') {
         await ensureVideo();
         await t.sender.replaceTrack(stream.getVideoTracks()[0]);
@@ -238,6 +269,7 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
     if (!wantAudio && mic) { mic.stop(); mic = null; }
     const at = pc && pc.getTransceivers().find(t => t.receiver.track.kind === 'audio');
     if (at) await at.sender.replaceTrack(wantAudio ? mic : null).catch(() => {});
+    if (mic) mic.enabled = !talking;
     const r = error ? { on: false, error } : { on: wantAudio };
     try { onAudio(r); } catch {}
     return r;
@@ -263,6 +295,7 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
 /* ======================= lado dueña ======================= */
 function startViewer({ camId, videoEl, onStatus = () => {}, onAudio = () => {}, iceServers, takeover = true } = {}) {
   let stopped = false, pc = null, sid = null, since = 0, timer = null, deadline = null, dropTimer = null, ctl = null, wantAudio = false, waiting = [];
+  let talkTx = null, talkMic = null, talkOn = false;
   let ice = iceServers || DEFAULT_ICE, answered = false, live = false, reported = false, attempts = 0, offline = 0, sender = null;
   const status = state => { if (!stopped || state === 'detenido') onStatus({ state, message: MSG[state] }); };
 
@@ -272,6 +305,8 @@ function startViewer({ camId, videoEl, onStatus = () => {}, onAudio = () => {}, 
     if (sid) call('hangup', { camId, sid, reason }, true);
     if (pc) { pc.ontrack = null; pc.onconnectionstatechange = null; pc.onicecandidate = null; try { pc.close(); } catch {} }
     if (ctl) { ctl.onopen = null; ctl.onmessage = null; }
+    if (talkMic) talkMic.enabled = false;
+    talkOn = false; talkTx = null;
     pc = null; sid = null; since = 0; answered = false; live = false; reported = false; sender = null; ctl = null;
   }
 
@@ -293,7 +328,8 @@ function startViewer({ camId, videoEl, onStatus = () => {}, onAudio = () => {}, 
     const early = [];
     pc.onicecandidate = e => { if (e.candidate) (sender ? sender.add(e.candidate) : early.push(e.candidate)); };
     pc.addTransceiver('video', { direction: 'recvonly' });
-    pc.addTransceiver('audio', { direction: 'recvonly' });
+    /* audio en los dos sentidos: se recibe el de la casa y, solo mientras la dueña habla, se manda su voz */
+    talkTx = pc.addTransceiver('audio', { direction: 'sendrecv' });
     /* canal de control P2P (pedir el sonido); si se reconecta, se vuelve a pedir lo que estaba */
     ctl = pc.createDataChannel('ctl');
     const myCtl = ctl;
@@ -402,7 +438,7 @@ function startViewer({ camId, videoEl, onStatus = () => {}, onAudio = () => {}, 
   connect().catch(e => { console.warn('[mimitos-rtc]', e); fail(); });
 
   return {
-    stop() { if (stopped) return; stopped = true; window.removeEventListener('pagehide', onHide); teardown('viewer'); try { videoEl.srcObject = null; } catch {} status('detenido'); },
+    stop() { if (stopped) return; stopped = true; window.removeEventListener('pagehide', onHide); teardown('viewer'); if (talkMic) { talkMic.stop(); talkMic = null; } try { videoEl.srcObject = null; } catch {} status('detenido'); },
     retry() { if (stopped) return; teardown('viewer'); attempts = 0; offline = 0; connect().catch(fail); },
     setMuted(m) { videoEl.muted = Boolean(m); if (!m) videoEl.play().catch(() => {}); },
     /* pedirle a la cámara el micrófono (o apagarlo). Responde la cámara por el canal; si no contesta en 8 s, 'sin-respuesta' */
@@ -417,6 +453,30 @@ function startViewer({ camId, videoEl, onStatus = () => {}, onAudio = () => {}, 
       });
     },
     get audioWanted() { return wantAudio; },
+    /* "Hablarle": el micrófono se pide la primera vez (con cancelación de eco) y queda listo, apagado entre usos */
+    async talk(on) {
+      on = Boolean(on);
+      if (!pc || !talkTx || !ctl || ctl.readyState !== 'open') return { on: false, error: 'sin-conexion' };
+      if (on) {
+        if (!talkMic || talkMic.readyState !== 'live') {
+          try {
+            const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+            talkMic = s.getAudioTracks()[0];
+          } catch (e) { return { on: false, error: e && (e.name === 'NotAllowedError' || e.name === 'SecurityError') ? 'sin-permiso' : 'sin-microfono' }; }
+        }
+        talkMic.enabled = true;
+        await talkTx.sender.replaceTrack(talkMic).catch(() => {});
+        talkOn = true;
+        try { ctl.send(JSON.stringify({ t: 'talk', on: true })); } catch {}
+        return { on: true };
+      }
+      talkOn = false;
+      try { ctl.send(JSON.stringify({ t: 'talk', on: false })); } catch {}
+      if (talkMic) talkMic.enabled = false;
+      await talkTx.sender.replaceTrack(null).catch(() => {});
+      return { on: false };
+    },
+    get talking() { return talkOn; },
     /* para medir (pruebas y soporte): las estadísticas de la conexión en curso */
     getStats: () => (pc ? pc.getStats() : Promise.resolve(null)),
   };

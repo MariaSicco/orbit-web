@@ -59,3 +59,8 @@ p{margin:0}
 .chip input{accent-color:var(--on);margin:0}
 .chip:has(input:checked){background:#24302A;color:var(--on)}
 .sens .chips .chip{min-height:44px;padding:0 16px;cursor:pointer}
+/* "Te están hablando": bien visible (también con la pantalla atenuada se vuelve a mostrar) */
+.talk{display:flex;flex-direction:column;gap:10px;align-items:center;text-align:center;padding:18px;border-radius:20px;background:#E3EDE6;color:#123328}
+.talk b{font-size:22px;letter-spacing:-.01em}
+.talk span{font-size:14.5px}
+.talk .btn{background:#123328;color:#E3EDE6}

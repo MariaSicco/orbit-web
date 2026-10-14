@@ -270,7 +270,7 @@ async function revoke(b) {
 /* ---------- ver en vivo (módulo aparte, se carga al tocar) ---------- */
 function loadRtc() {
   if (window.MZRTC) return Promise.resolve(window.MZRTC);
-  return new Promise(ok => { const s = document.createElement('script'); s.src = '/assets/js/mascotas-rtc.js?v=3'; s.onload = () => ok(window.MZRTC || null); s.onerror = () => ok(null); document.head.appendChild(s); });
+  return new Promise(ok => { const s = document.createElement('script'); s.src = '/assets/js/mascotas-rtc.js?v=4'; s.onload = () => ok(window.MZRTC || null); s.onerror = () => ok(null); document.head.appendChild(s); });
 }
 const WAKING = 'Despertando la cámara… puede tardar hasta 30 segundos.';
 /* íconos de los controles del video (trazo, como el resto de la app) */
@@ -280,6 +280,7 @@ const IC = {
   off: SV('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/>'),
   full: SV('<path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>'),
   exit: SV('<path d="M9 4v5H4"/><path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/>'),
+  mic: SV('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/>'),
   hang: SV('<path d="M3 15.5c5-4.7 13-4.7 18 0l-2.4 2.4-3.3-1.6v-2.7a10 10 0 0 0-6.6 0v2.7l-3.3 1.6z"/>'),
 };
 const AUDIO_ERR = {
@@ -295,6 +296,7 @@ async function live(camId) {
       <p class="mf-live-st" id="mfLiveSt" role="status">${WAKING}</p>
       <div class="mf-ctl" role="group" aria-label="Controles del video">
         <button type="button" class="mf-cb" data-mfp="sound" aria-pressed="false">${IC.off}<span>Escuchar</span></button>
+        <button type="button" class="mf-cb talk" id="mfTalk" aria-pressed="false">${IC.mic}<span>Mantené para hablar</span></button>
         <button type="button" class="mf-cb" data-mfp="full" aria-pressed="false">${IC.full}<span>Pantalla completa</span></button>
         <button type="button" class="mf-cb hang" data-mfp="close">${IC.hang}<span>Colgar</span></button>
       </div>
@@ -307,6 +309,44 @@ async function live(camId) {
   const fit = () => { if (v.videoWidth && v.videoHeight) wrap.style.setProperty('--ar', `${v.videoWidth} / ${v.videoHeight}`); };
   v.addEventListener('loadedmetadata', fit); v.addEventListener('resize', fit);
   const soundBtn = () => $('#pBody [data-mfp="sound"]');
+  /* "Hablarle": mantener apretado para hablar; o tocar para empezar y tocar para terminar (teclado y lectores) */
+  const TALK_ERR = { 'sin-permiso': 'Para hablarle, dale permiso al micrófono de este celu.', 'sin-microfono': 'No encontramos un micrófono en este celu.', 'sin-conexion': 'Esperá a que conecte el video para hablarle.' };
+  const talkBtn = $('#mfTalk');
+  let talkHold = null, talkBusy = false;
+  /* solo cambia el texto (no el botón entero): reemplazar el contenido bajo el dedo dispara pointerleave */
+  const talkUI = on => { talkBtn.setAttribute('aria-pressed', String(on)); talkBtn.querySelector('span').textContent = on ? 'Hablando… soltá o tocá para terminar' : 'Mantené para hablar'; wrap.classList.toggle('is-talking', on); };
+  let talkNext = null;
+  async function talk(on) {
+    if (!viewer?.talk) return;
+    /* si todavía se está prendiendo (permiso del micrófono), el soltar queda anotado y se aplica al terminar */
+    if (talkBusy) { talkNext = on; return; }
+    talkBusy = true;
+    let r = await viewer.talk(on);
+    while (talkNext !== null && talkNext !== r.on) { const n = talkNext; talkNext = null; r = await viewer.talk(n); }
+    talkNext = null;
+    talkBusy = false;
+    talkUI(r.on);
+    note.textContent = r.error ? TALK_ERR[r.error] || TALK_ERR['sin-conexion'] : r.on ? 'Te está escuchando por el parlante del celu cámara.' : note.textContent;
+  }
+  talkBtn.addEventListener('pointerdown', e => {
+    if (e.button > 0) return;
+    e.preventDefault();
+    /* captura: el soltar llega acá aunque el dedo se corra del botón */
+    try { talkBtn.setPointerCapture(e.pointerId); } catch {}
+    const was = talkBtn.getAttribute('aria-pressed') === 'true';
+    talkHold = { t: Date.now(), was };
+    if (!was) talk(true);
+  });
+  const release = () => {
+    if (!talkHold) return;
+    const { t, was } = talkHold; talkHold = null;
+    /* apretado más de medio segundo: era "mantener"; un toque corto deja hablando (o corta si ya hablaba) */
+    if (was || Date.now() - t > 500) talk(false);
+  };
+  talkBtn.addEventListener('pointerup', release); talkBtn.addEventListener('pointercancel', release);
+  talkBtn.addEventListener('contextmenu', e => e.preventDefault());
+  /* teclado (Enter o Espacio): alterna */
+  talkBtn.addEventListener('click', e => { if (e.detail === 0) talk(talkBtn.getAttribute('aria-pressed') !== 'true'); });
   const setSound = (on, msg) => {
     const b = soundBtn(); if (!b) return;
     b.setAttribute('aria-pressed', String(on));
@@ -356,6 +396,7 @@ async function live(camId) {
     dlg.classList.remove('mf-live-open');
     document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs);
     if (isFull()) try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch {}
+    try { viewer?.talk?.(false); } catch {}
     try { viewer?.stop?.(); } catch {}
     st.viewer = null;
   }, { once: true });

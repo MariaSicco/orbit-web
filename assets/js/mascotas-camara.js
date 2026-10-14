@@ -103,9 +103,11 @@ function renderReady(note = '') {
   const ok = $('#okP'), go = $('#go');
   ok.onchange = () => { go.disabled = !ok.checked; };
   bindSens();
-  go.onclick = () => { pref.set('video', $('#okV').checked ? '1' : '0'); start(); };
+  go.onclick = () => { pref.set('video', $('#okV').checked ? '1' : '0'); primeVoice(); start(); };
   $('#unpair').onclick = unpair;
 }
+/* en el toque de "Prender cámara": deja el parlante habilitado para la voz de la dueña */
+function primeVoice() { const v = $('#voice'); if (!v) return; v.muted = true; v.play().catch(() => {}); }
 async function unpair() {
   const b = $('#unpair');
   if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tocá de nuevo para desvincular'; return; }
@@ -124,13 +126,15 @@ async function start() {
   await listen();
   /* video en vivo (opcional) */
   if (pref.get('video', '1') === '1') {
-    const rtc = await loadScript('/assets/js/mascotas-rtc.js?v=3', 'MZRTC');
+    const rtc = await loadScript('/assets/js/mascotas-rtc.js?v=4', 'MZRTC');
     if (rtc?.startBroadcast) {
       try {
         S.rtc = rtc.startBroadcast({ camToken: tok, onStatus: s => { S.video = s.state; S.videoMsg = s.message || ''; if (s.state === 'invalida') revoked(); else paint(); },
           /* el detector y el sonido en vivo comparten el micrófono */
           micTrack: () => S.audio?.track || null,
-          onAudio: a => { S.liveAudio = a.on; S.liveAudioErr = a.error || ''; paint(); } });
+          onAudio: a => { S.liveAudio = a.on; S.liveAudioErr = a.error || ''; paint(); },
+          /* "Hablarle": la voz de la dueña suena acá; mientras tanto (y 3 s después) no se detectan sonidos */
+          voiceEl: $('#voice'), onTalk });
       }
       catch { S.video = 'error'; paint(); }
     } else { S.video = 'no-disponible'; paint(); }
@@ -181,6 +185,19 @@ function bindSens() {
     if (S.started && S.audioSens !== S.sens) listen();
   }));
 }
+function onTalk(t) {
+  clearTimeout(S.talkTimer);
+  if (t.on) {
+    S.talking = true; S.voiceBlocked = Boolean(t.blocked);
+    try { S.audio?.pause?.(); } catch {}
+  } else {
+    S.talking = false; S.voiceBlocked = false;
+    S.talkTimer = setTimeout(() => { if (!S.talking) try { S.audio?.resume?.(); } catch {} }, 3000);
+  }
+  /* si la pantalla estaba atenuada, se muestra quién habla */
+  if (t.on) $('#dim').hidden = true;
+  paint();
+}
 function loadScript(src, global) {
   if (window[global]) return Promise.resolve(window[global]);
   return new Promise(ok => { const s = document.createElement('script'); s.src = src; s.onload = () => ok(window[global] || null); s.onerror = () => ok(null); document.head.appendChild(s); });
@@ -227,6 +244,7 @@ function revoked() { stopAll(); store.clear(); main.innerHTML = `${head}<h1>Esta
 function renderActive() {
   main.innerHTML = `${head}
     <section class="live" id="live" aria-labelledby="liveT"><span class="live-dot" aria-hidden="true"></span><b id="liveT">Cámara activa</b><p class="dim2" id="liveSub">Prendiendo…</p><div class="meter" aria-hidden="true"><span id="lvl"></span></div></section>
+    <div class="talk" id="talk" role="status" aria-live="assertive" hidden></div>
     <div class="chips" id="chips" aria-label="Estado"></div>
     <p class="dim2" id="note"></p>
     <section class="card" aria-labelledby="evT"><b id="evT">Lo que detectó</b><ul class="evs" id="evs"></ul></section>
@@ -243,8 +261,14 @@ function paint() {
   if (!$('#live')) return;
   const L = S.listen;
   const live = $('#live'); live.classList.toggle('paused', L === 'pausado' || L === 'cargando'); live.classList.toggle('off', L === 'error' || L === 'detenido');
+  const tk = $('#talk');
+  if (tk) {
+    tk.hidden = !S.talking;
+    tk.innerHTML = S.talking ? (S.voiceBlocked ? '<b>Te están hablando</b><button class="btn" id="voiceOn">Tocá para activar el parlante</button>' : '<b>Te están hablando</b><span>Mientras tanto, no se detectan sonidos.</span>') : '';
+    const vb = $('#voiceOn'); if (vb) vb.onclick = async () => { try { const v = $('#voice'); v.muted = false; await v.play(); S.voiceBlocked = false; paint(); } catch {} };
+  }
   $('#liveT').textContent = L === 'error' ? 'No está escuchando' : L === 'pausado' ? 'En pausa: no escucha' : L === 'cargando' ? 'Preparando…' : 'Cámara activa · Escuchando';
-  $('#liveSub').textContent = L === 'escuchando' ? `Escuchando desde las ${hm(S.started)}. El audio no sale de este celu.` : L === 'cargando' ? 'Preparando el reconocimiento de sonidos…' : L === 'pausado' ? (S.listenMsg || 'Se pausó porque la pantalla se bloqueó o cambiaste de app. Volvé a esta pantalla y dejala prendida.') : S.listenMsg || 'Prendiendo…';
+  $('#liveSub').textContent = S.talking && L === 'pausado' ? 'En pausa mientras te hablan. Sigue sola 3 segundos después.' : L === 'escuchando' ? `Escuchando desde las ${hm(S.started)}. El audio no sale de este celu.` : L === 'cargando' ? 'Preparando el reconocimiento de sonidos…' : L === 'pausado' ? (S.listenMsg || 'Se pausó porque la pantalla se bloqueó o cambiaste de app. Volvé a esta pantalla y dejala prendida.') : S.listenMsg || 'Prendiendo…';
   const b = S.battery;
   $('#chips').innerHTML = [
     chip(S.wakeSt === 'si', S.wakeSt === 'si' ? 'Pantalla siempre prendida' : 'La pantalla se puede apagar'),
