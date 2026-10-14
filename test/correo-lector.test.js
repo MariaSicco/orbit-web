@@ -117,3 +117,14 @@ test('leerMail: monto lejos por los saltos de Outlook y monto sin "$"', () => {
   const prefiereTotal = C.leerMail({ asunto: 'Factura', fecha: '2026-10-05', texto: 'Importe consumo $ 30.000,00 · Impuestos $ 9.000,00 · Total a pagar $ 39.000,00 · Vence 22/10/2026' });
   assert.equal(prefiereTotal.monto, 3900000);
 });
+
+test('recibos: una fecha lejana del recibo no se toma como próximo cobro, y las suscripciones son mensuales', () => {
+  const mails = [1, 2, 3].map(k => ({ id: `i${k}`, de: 'Apple <no_reply@email.apple.com>', asunto: 'Tu recibo de Apple · iCloud+', fecha: `2026-0${6 + k}-27`,
+    texto: `iCloud+ 50 GB  $ 1.199\nSe renovará el 27/07/2027 (fecha de la garantía)` }));
+  const ic = C.cuentasDesdeMails(mails, '2026-10-14').find(c => c.preset === 'icloud');
+  assert.equal(ic.frecuencia, 1);
+  assert.equal(ic.proximo, '2026-10-27');
+  assert.equal(ic.monto, 119900);
+  assert.equal(C.servicioDelRemitente('store-news@amazon.com', 'Llega Prime Day: ofertas'), null);
+  assert.equal(C.servicioDelRemitente('digital-no-reply@amazon.com', 'Tu membresía Prime se renovó'), 'prime');
+});

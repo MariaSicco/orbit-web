@@ -56,7 +56,7 @@ export function servicioDelRemitente(de, asunto = '') {
     if (id === 'google-one' && /youtube/i.test(asunto)) return 'youtube';
     if (id === 'google-one' && !/google one|almacenamiento|storage/i.test(asunto)) return null; // google.com manda de todo
     if (id === 'm365' && !/microsoft 365|office|suscripci|subscription/i.test(asunto)) return null;
-    if (id === 'prime' && !/prime/i.test(asunto)) return null;     // amazon manda pedidos y promos
+    if (id === 'prime' && !/(membres[ií]a|suscripci[oó]n|cobro|pago|recibo|renov).*prime|prime.*(membres[ií]a|suscripci[oó]n|cobro|pago|recibo|renov)/i.test(asunto)) return null; // amazon manda pedidos y promos (Prime Day)
     if (id === 'meli' && !/meli\+|suscripci/i.test(asunto)) return null;
     if (id === 'icloud' && !/icloud|apple music|apple one|suscripci|subscription|factura|recibo|receipt/i.test(asunto)) return null;
     return id;
@@ -69,7 +69,10 @@ const CLAVE_PROX = /(proxima fecha de (facturacion|cobro|pago)|proximo (cobro|pa
 export function leerRecibo(msg) {
   const texto = `${msg.asunto || ''}\n${msg.texto || ''}`.replace(/[ \t\u00a0]+/g, ' ').replace(/\s*\n\s*/g, '\n').slice(0, 20000);
   if (/(cancelaste|cancelada|se cancel|fallo el pago|no pudimos procesar|actualiza tu (forma|metodo) de pago)/.test(sinTildes(texto.toLowerCase()))) return null;
-  const prox = cercanos(fechasEn(texto), texto, CLAVE_PROX).sort((a, b) => a.d - b.d)[0]?.fecha || null;
+  // la "próxima fecha" tiene que caer entre el mail y 40 días después (si no, es otra fecha del recibo)
+  const prox = cercanos(fechasEn(texto), texto, CLAVE_PROX)
+    .filter(x => !msg.fecha || (difDias(msg.fecha, x.fecha) >= 0 && difDias(msg.fecha, x.fecha) <= 40))
+    .sort((a, b) => a.d - b.d)[0]?.fecha || null;
   const re = /(total|importe|monto|precio|cobro|cargo|pagaste|abonaste|plan)/g;
   const montos = cercanos(montosEn(texto), texto, re).sort((a, b) => a.d - b.d || a.i - b.i);
   const monto = montos[0]?.monto ?? montosEn(texto)[0]?.monto ?? null;
@@ -168,7 +171,9 @@ export function cuentasDesdeMails(mensajes, hoy) {
     /* frecuencia: la mediana de los meses entre vencimientos (1 o 2 casi siempre) */
     const saltos = porFecha.slice(1).map((f, i) => Math.round(difDias(porFecha[i].vence, f.vence) / 30.4)).filter(n => n >= 1 && n <= 12).sort((a, b) => a - b);
     const s = SERVICIOS.find(x => x.id === clave) || null;
-    const frecuencia = saltos.length ? saltos[Math.floor(saltos.length / 2)] : (s?.frecuencia || 1);
+    /* suscripciones: mensuales (anual solo si los cobros están a ~12 meses); el resto, la mediana */
+    const frecuencia = esSuscripcion(clave) ? (saltos.length && saltos.every(n => n >= 11) ? 12 : 1)
+      : saltos.length ? saltos[Math.floor(saltos.length / 2)] : (s?.frecuencia || 1);
     let proximo = ultima.vence;
     let estimado = false;
     while (proximo < hoy && frecuencia) { proximo = sumarMeses(proximo, frecuencia); estimado = true; }
