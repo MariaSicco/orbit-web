@@ -58,6 +58,7 @@ export default async function handler(req, res) {
       total: pedidos.length,
       pagados: pagados.length,
       pendientes: pedidos.length - pagados.length,
+      contracargos: pagados.filter(o => o.contracargo).length,
       ultimos30: pagados.filter(o => days(o.paidAt, 30)).length,
     },
     ingresos: {
@@ -79,6 +80,7 @@ export default async function handler(req, res) {
     ultimosPedidos: pedidos.slice(0, 25).map(o => ({
       id: o.id, email: o.email, via: o.via, status: o.status, ref: o.ref || null,
       fecha: o.paidAt || o.date, ars: o.ars || 0, usd: o.usd || 0, mail: o.mail || null, capi: o.capi || null, recordatorio: o.recordatorio || null,
+      contracargo: o.contracargo || null,
       items: (o.items || []).map(i => ({ code: i.code, name: i.name, qty: i.qty || 1 })),
     })),
   });
