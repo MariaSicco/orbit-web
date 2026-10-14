@@ -4,6 +4,8 @@ import * as V from './calculos.js';
 import { SERVICIOS, CATEGORIAS, PRIMER_USO, PRECIOS, servicio, monograma, tintaSobre } from './servicios.js';
 import { datosEjemplo } from './ejemplo.js';
 import { propuestaDesde, cuentaQueCoincide } from './factura.js';
+import { cuentasDesdeMails } from './correo-lector.js';
+import { configCorreo, buscarEnGmail, buscarEnOutlook, mailsDemo } from './correo.js';
 
 const CLAVE = 'orbit:vencimientos:v1';
 const $id = id => document.getElementById(id);
@@ -168,8 +170,13 @@ function primerUso() {
       <h1 class="display" id="t-inicio">Todo lo que <span class="it">vence,</span> en un lugar.</h1>
       <p class="lead">Luz, gas, ABL, expensas, la VTV. Te avisa antes y te dice cuánto te falta pagar este mes.</p>
     </div>
+    <div class="primer primer-mail">
+      <h2>Que las busque <span class="it">la app</span></h2>
+      <p>Conectá tu mail y encontramos tus facturas de luz, gas, agua, expensas y más, con sus fechas y montos. Se lee en tu teléfono y no guardamos tus mails.</p>
+      <button type="button" class="bt prim ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar mis facturas en el mail</button>
+    </div>
     <div class="primer">
-      <h2>¿Qué se paga en tu casa?</h2>
+      <h2>O elegí <span class="it">a mano</span></h2>
       <p>Tocá todo lo que corresponda. Después ponés el día y listo.</p>
       <div class="chips">${chips}<button type="button" class="vchip" data-acc="agregar">Otra…</button></div>
       <div class="acciones">
@@ -513,7 +520,8 @@ function elegirServicio(filtro = '') {
 function abrirAgregar() {
   abrir('Agregar', `
     <button type="button" class="bt prim ancho foto-bt" data-acc="leer"><svg><use href="#i-camara"/></svg> Sacale una foto a la factura</button>
-    <p class="leyenda" style="margin:8px 2px 16px">Leemos la fecha, el 2º vencimiento y el monto. También sirve el PDF que te llega por mail.</p>
+    <button type="button" class="bt sec ancho" data-acc="correo" style="margin-top:10px"><svg><use href="#i-sobre"/></svg> Buscar en mi mail</button>
+    <p class="leyenda" style="margin:8px 2px 16px">Leemos la fecha, el 2º vencimiento y el monto, de una foto, del PDF o directo de tu mail.</p>
     <div class="buscar"><svg><use href="#i-buscar"/></svg><input type="search" id="buscar-serv" placeholder="Buscá: luz, ABL, prepaga, VTV…" aria-label="Buscar un servicio o vencimiento" autocomplete="off"></div>
     <button type="button" class="bt sec ancho" data-acc="elegir" data-s=""><svg><use href="#i-mas"/></svg> Otra cuenta, con nombre propio</button>
     <div id="lista-serv">${elegirServicio()}</div>`);
@@ -701,6 +709,98 @@ function guardarLectura(form) {
   toast(`${nombre}: vence el ${V.fechaLarga(vence)}${monto != null ? ` · ${plata(monto, p.moneda)}` : ''}.`, [{ t: 'Otra factura', fn: () => $id('f-factura').click() }, { t: 'Al calendario', fn: () => descargarICS(cid) }], 8000);
 }
 
+/* ── buscar en mi mail ──
+   Todo pasa en este teléfono: el permiso es de solo lectura, se pide al tocar y se
+   revoca al terminar. Se guarda solo lo que la persona elige, en este dispositivo. */
+const DEMO_CORREO = /[?&]correo=demo\b/.test(location.search) && /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
+let encontrados = [];
+async function abrirCorreo() {
+  const cfg = DEMO_CORREO ? { google: 'demo', microsoft: 'demo' } : await configCorreo();
+  const boton = (acc, nombre, ok) => `<button type="button" class="bt ${ok ? 'prim' : 'sec'} ancho" data-acc="${acc}" ${ok ? '' : 'disabled'}>${nombre}${ok ? '' : ' · pronto'}</button>`;
+  abrir('Buscar en tu mail', `
+    <p class="lead-s">Revisamos los mails de los últimos 6 meses de las empresas que suelen mandar facturas y te mostramos qué encontramos. Vos elegís qué cargar.</p>
+    <ul class="checks">
+      <li>Permiso de <b>solo lectura</b>: no podemos mandar, borrar ni mover nada.</li>
+      <li>Los mails se leen <b>en este teléfono</b>. No pasan por Orbit ni se guardan.</li>
+      <li>Al terminar, <b>cerramos el permiso</b>. Para buscar de nuevo, lo pedimos otra vez.</li>
+    </ul>
+    <div class="acciones">${boton('correo-gmail', 'Con Gmail', !!cfg.google)}${boton('correo-outlook', 'Con Outlook o Hotmail', !!cfg.microsoft)}</div>
+    ${!cfg.google && !cfg.microsoft ? '<p class="leyenda">La conexión con el mail se está habilitando. Mientras tanto, sacale una foto a la factura.</p>' : ''}`);
+}
+async function buscarCorreo(proveedor) {
+  const cfg = DEMO_CORREO ? {} : await configCorreo();
+  abrir('Buscando tus facturas', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p><b id="correo-avance">Esperando el permiso…</b><br>Se abre una ventana de ${proveedor === 'gmail' ? 'Google' : 'Microsoft'} para que des el permiso.</p></div>`);
+  const avance = (n, total) => { const el = $id('correo-avance'); if (el) el.textContent = total ? `Revisando ${n} de ${total} mails…` : 'Buscando…'; };
+  let mails;
+  try {
+    if (DEMO_CORREO) { await new Promise(r => setTimeout(r, 900)); mails = mailsDemo(hoy); }
+    else mails = proveedor === 'gmail' ? await buscarEnGmail(cfg.google, avance) : await buscarEnOutlook(cfg.microsoft, avance);
+  } catch (e) {
+    abrir('No se pudo buscar', `<p class="nota">${esc(e.message || 'No pudimos revisar el mail.')}</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="correo">Probar de nuevo</button><button type="button" class="bt sec ancho" data-acc="leer">Sacarle una foto a una factura</button></div>`);
+    return;
+  }
+  encontrados = cuentasDesdeMails(mails, hoy);
+  mostrarEncontrados(mails.length);
+}
+function mostrarEncontrados(revisados) {
+  if (!encontrados.length) {
+    abrir('No encontramos facturas', `<p class="nota">Revisamos ${revisados} mails y no encontramos facturas con fecha de vencimiento. Puede que te lleguen a otro mail o en papel.</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="leer"><svg><use href="#i-camara"/></svg> Sacale una foto a una factura</button><button type="button" class="bt sec ancho" data-acc="leer-manual">Cargar a mano</button></div>`);
+    return;
+  }
+  const filas = encontrados.map((c, i) => {
+    const ya = cuentaQueCoincide(d.cuentas, c);
+    const sub = [`${c.proximoEstimado ? 'próximo ≈ ' : 'vence '}${V.fechaCorta(c.proximo)} ${V.mesDe(c.proximo) !== V.mesDe(hoy) ? `de ${V.nombreMes(V.mesDe(c.proximo))}` : ''}`.trim(),
+      V.nombreFrecuencia(c.frecuencia).toLowerCase(), `${c.encontradas} factura${c.encontradas > 1 ? 's' : ''}`, ya ? `ya la tenés: se actualiza` : ''].filter(Boolean).join(' · ');
+    return `<li><label class="encontrada">
+      <input type="checkbox" name="c" value="${i}" ${c.conocido || ya || c.nombre === 'Expensas' ? 'checked' : ''}>
+      ${avatar({ nombre: c.nombre, color: c.color })}
+      <span class="fila-txt"><b>${esc(c.nombre)}</b><small>${esc(sub)}</small></span>
+      <span class="fila-monto">${c.monto != null ? plata(c.monto) : '<small>Sin monto</small>'}</span>
+    </label></li>`;
+  }).join('');
+  abrir(`Encontramos ${encontrados.length}`, `
+    <p class="leyenda" style="margin-top:0">Revisamos ${revisados} mails. Destildá lo que no sea tuyo o no quieras cargar. Las fechas con ≈ son estimadas a partir de las facturas anteriores.</p>
+    <form data-form="correo"><ul class="lista lista-sel">${filas}</ul>
+    <div class="acciones" style="margin-top:16px"><button class="bt prim ancho" type="submit"><svg><use href="#i-check"/></svg> Cargar las elegidas</button>
+    <button type="button" class="bt sec ancho" data-acc="cerrar">Ahora no</button></div></form>`);
+}
+/* Cuenta nueva: arranca en el próximo vencimiento (así lo viejo no aparece como vencido)
+   y guarda la historia de montos como facturas, para "cuánto subió". */
+function guardarDesdeMail(form) {
+  const elegidas = [...form.querySelectorAll('input[name=c]:checked')].map(x => encontrados[Number(x.value)]).filter(Boolean);
+  if (!elegidas.length) { cerrar(); return; }
+  let n = d.ejemplo ? V.estadoVacio() : d;
+  let nuevas = 0, actualizadas = 0;
+  for (const e of elegidas) {
+    let c = cuentaQueCoincide(n.cuentas, e);
+    if (c) {
+      c = { ...c }; delete c.fechaAConfirmar;
+      if (e.segundoVto && !c.segundoVto) c.segundoVto = e.segundoVto;
+      if (!V.claves(c, V.sumarDias(e.proximo, -10), V.sumarDias(e.proximo, 10)).length) c.primerVto = e.proximo;
+      actualizadas++;
+    } else {
+      c = { id: V.nuevoId(), nombre: e.nombre, categoria: e.categoria, frecuencia: e.frecuencia, primerVto: e.proximo,
+        ...(e.preset ? { preset: e.preset } : {}), ...(e.color ? { color: e.color } : {}),
+        ...(e.monto != null ? { monto: e.monto } : {}), ...(e.segundoVto ? { segundoVto: e.segundoVto } : {}),
+        ...(servicio(e.preset)?.debito ? { debito: true } : {}), ...(servicio(e.preset)?.habil ? { habil: true } : {}) };
+      nuevas++;
+    }
+    n = V.guardarCuenta(n, c);
+    for (const h of e.historia) {
+      if (h.vence >= c.primerVto && !(h.vence === e.proximo && !e.proximoEstimado)) continue;
+      n = V.cargarFactura(n, c.id, h.vence, { monto: h.monto });
+    }
+    if (!e.proximoEstimado) {
+      const k = V.claves(c, V.sumarDias(e.proximo, -10), V.sumarDias(e.proximo, 10))[0];
+      if (k) n = V.cargarFactura(n, c.id, k, { ...(e.monto != null ? { monto: e.monto } : {}), fecha: e.proximo });
+    }
+  }
+  ui.onb = { paso: 1, sel: new Set() };
+  guardar(n);
+  cerrar();
+  toast(`Listo: ${nuevas ? `${nuevas} cuenta${nuevas > 1 ? 's' : ''} nueva${nuevas > 1 ? 's' : ''}` : ''}${nuevas && actualizadas ? ' y ' : ''}${actualizadas ? `${actualizadas} actualizada${actualizadas > 1 ? 's' : ''}` : ''}.`, [{ t: 'Al calendario', fn: () => descargarICS() }], 8000);
+}
+
 /* ── archivos ── */
 function bajar(nombre, texto, tipo) {
   const blob = new Blob([texto], { type: tipo });
@@ -741,6 +841,10 @@ function abrirAjustes() {
     </form>
     <p class="leyenda">Después de cambiarlos, volvé a sumar el calendario. En iPhone los avisos llegan solos; en Google Calendar, revisá las notificaciones del evento.</p>
     <div class="acciones" style="margin-top:12px"><button type="button" class="bt prim ancho" data-acc="ics"><svg><use href="#i-campana"/></svg> Sumar todo al calendario</button></div>
+  </div>
+  <div class="ajustes-sec"><h3>Tu mail</h3>
+    <p class="leyenda" style="margin-top:0">Buscá facturas nuevas cuando quieras. El permiso es de solo lectura y se cierra al terminar.</p>
+    <div class="acciones"><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar facturas en el mail</button></div>
   </div>
   <div class="ajustes-sec"><h3>Tu copia</h3>
     <p class="leyenda" style="margin-top:0">Tus datos viven solo en este dispositivo. ${ult}</p>
@@ -836,6 +940,9 @@ document.addEventListener('click', e => {
     case 'leer': leerPara = b.dataset.para || null; $id('f-factura').click(); break;
     case 'leer-reintentar': $id('f-factura').click(); break;
     case 'leer-manual': abrirAgregar(); break;
+    case 'correo': abrirCorreo(); break;
+    case 'correo-gmail': buscarCorreo('gmail'); break;
+    case 'correo-outlook': buscarCorreo('outlook'); break;
     case 'ejemplo': cerrar(); guardar(datosEjemplo(hoy)); ui.mes = V.mesDe(hoy); toast('Datos de ejemplo cargados.'); break;
     case 'salir-ejemplo': guardar(V.estadoVacio()); ui.onb = { paso: 1, sel: new Set() }; break;
     case 'borrar-todo': {
@@ -918,6 +1025,8 @@ document.addEventListener('submit', e => {
     guardar(V.guardarCuenta(salirEjemplo ? V.estadoVacio() : d, c));
     cerrar();
     toast(salirEjemplo ? `Sacamos el ejemplo. ${c.nombre} es tu primera cuenta.` : nueva ? `${c.nombre} agregada.` : 'Cambios guardados.', nueva ? [{ t: 'Al calendario', fn: () => descargarICS(c.id) }] : [], 6000);
+  } else if (tipo === 'correo') {
+    guardarDesdeMail(form);
   } else if (tipo === 'lectura') {
     guardarLectura(form);
   } else if (tipo === 'avisos') {

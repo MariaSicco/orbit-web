@@ -130,6 +130,19 @@ main{max-width:760px;margin:0 auto;padding:4px 16px 24px;outline:none}
 .avisos-l li+li{margin-top:4px}
 .badge.rev{background:#FFE2DA;color:#7A1D0C;border-color:#FFC9BA}
 
+.primer-mail{background:var(--tinta);color:#F2EFE8}
+.primer-mail p{color:rgba(242,239,232,.75)}
+.primer-mail .it{font-weight:400}
+.lead-s{font-size:15.5px;line-height:1.5;margin:0 0 14px}
+.checks{list-style:none;margin:0 0 18px;padding:0;display:grid;gap:10px;font-size:14.5px}
+.checks li{position:relative;padding-left:28px;line-height:1.4}
+.checks li::before{content:"✓";position:absolute;left:0;top:0;width:20px;height:20px;border-radius:50%;background:var(--ok);display:grid;place-items:center;font-size:12px;font-weight:800}
+.lista-sel li{border-top:1px solid var(--linea)}
+.lista-sel li:first-child{border-top:0}
+.encontrada{display:flex;align-items:center;gap:12px;padding:12px 14px;min-height:64px;cursor:pointer}
+.encontrada input{width:22px;height:22px;min-height:0!important;accent-color:var(--azul);flex:none;margin:0}
+.encontrada .fila-monto{padding-left:4px}
+
 /* ── botones ── */
 .bt{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 20px;border-radius:14px;font-weight:600;font-size:16px;transition:transform .25s var(--ease),background .2s,opacity .2s;text-decoration:none}
 .bt:active{transform:scale(.98)}
