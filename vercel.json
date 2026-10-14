@@ -46,7 +46,7 @@
     },
     {
       "path": "/api/cron/mascotas",
-      "schedule": "0 12 * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }

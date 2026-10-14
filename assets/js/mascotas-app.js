@@ -1435,8 +1435,10 @@ async function refreshHere() {
   const on = Boolean(here && notify?.endpoints?.some(e => here.endpoint.endsWith(e)));
   if (on !== pushHere) { pushHere = on; if (route.name === 'avisos') render(); }
 }
+/* zona horaria del navegador: el servidor manda los avisos a las 9 de acá */
+const localTz = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch { return ''; } };
 async function notifyPost(body) {
-  const r = await fetch('/api/mascotas?notify=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  const r = await fetch('/api/mascotas?notify=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, tz: localTz() }) });
   const d = await r.json(); if (!r.ok) throw new Error(d.error || r.status); notify = d; return d;
 }
 const aMsg = (t, err) => { const el = $('#aMsg'); if (el) { el.textContent = t; el.hidden = !t; el.classList.toggle('err', Boolean(err)); } else if (t) toast(t); };
@@ -2366,7 +2368,12 @@ async function boot() {
     mode = 'full'; purchase = d.purchase || null; me.email = d.email || '';
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
-    fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => { if (x && 'devices' in x) { notify = x; render(); } }).catch(() => {});
+    fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => {
+      if (!x || !('devices' in x)) return;
+      notify = x; render();
+      /* quien activó los avisos antes de que guardáramos la zona (o cambió de país): la actualizamos sin hacer ruido */
+      if ((x.devices || x.mail) && localTz() && x.tz !== localTz()) notifyPost({}).catch(() => {});
+    }).catch(() => {});
     loadMail();
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(x => { if (x?.name) { me.name = x.name; if (route.name === 'cuenta' || !doc.pets.length) render(); else if (mode === 'full') drawTop(false); } }).catch(() => {});
   } else if (st === 402 && d?.error === 'no_purchase') { mode = 'nopurchase'; me.email = d.email || ''; }

@@ -37,7 +37,7 @@ import { handleMail } from './_lib/petmail.js';
 import { gmail } from './_lib/petgmail.js';
 import { outlook } from './_lib/petoutlook.js';
 import { QUOTA_BYTES, fits, addUsage, photoRef, sweep } from './_lib/petfiles.js';
-import { getVapid, getNotify, saveNotify, cleanSub, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
+import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
 const docKey = email => `orbit:pets:${email.toLowerCase()}`;
@@ -447,7 +447,7 @@ export default async function handler(req, res) {
     const n = await getNotify(s.email);
     /* si el push no está configurado en producción, el resto (mail y tipos) sigue andando */
     const key = async () => { try { return (await getVapid()).publicKey; } catch { return null; } };
-    const view = async () => { const publicKey = await key(); return { publicKey, pushReady: Boolean(publicKey), devices: n.subs.length, mail: n.mail, off: n.off, endpoints: n.subs.map(x => x.endpoint.slice(-24)) }; };
+    const view = async () => { const publicKey = await key(); return { publicKey, pushReady: Boolean(publicKey), devices: n.subs.length, mail: n.mail, off: n.off, tz: n.tz, endpoints: n.subs.map(x => x.endpoint.slice(-24)) }; };
     if (req.method === 'GET') return res.status(200).json(await view());
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
     const b = await readBody(req);
@@ -455,6 +455,8 @@ export default async function handler(req, res) {
     if (typeof b.remove === 'string') n.subs = n.subs.filter(x => x.endpoint !== b.remove);
     if (typeof b.mail === 'boolean') n.mail = b.mail;
     if (b.off && typeof b.off === 'object') n.off = Object.fromEntries(KINDS.map(k => [k, Boolean(b.off[k])]));
+    /* zona horaria del navegador, para mandar los avisos a las 9 de la persona */
+    if (cleanTz(b.tz)) n.tz = cleanTz(b.tz);
     await saveNotify(n);
     if (b.test) await pushTo(n, { title: 'Listo, los avisos andan', body: 'Así te vamos a avisar antes de cada vacuna, pipeta o bolsa de alimento.', url: '/mascotas', tag: 'test' });
     return res.status(200).json(await view());

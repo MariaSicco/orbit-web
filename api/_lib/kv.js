@@ -28,6 +28,23 @@ export async function kvSet(key, val, ttlSeconds) {
   await cmd(...args);
 }
 export async function kvDel(key) { if (!hasKV) { mem.delete(key); return; } await cmd('DEL', key); }
+/* SET NX: guarda solo si la clave no existe. Devuelve true si la tomó esta llamada (sirve de candado idempotente). */
+export async function kvSetNX(key, val, ttlSeconds) {
+  if (!hasKV) {
+    const v = mem.get(key);
+    if (v && (!v.exp || v.exp > Date.now())) return false;
+    mem.set(key, { val, exp: ttlSeconds ? Date.now() + ttlSeconds * 1000 : 0 });
+    return true;
+  }
+  const args = ['SET', key, JSON.stringify(val), 'NX'];
+  if (ttlSeconds) args.push('EX', String(ttlSeconds));
+  return (await cmd(...args)) === 'OK';
+}
+/* conjuntos (índices chicos): agregar, sacar y listar */
+const memSet = key => { let v = mem.get(key); if (!v || !(v.val instanceof Set)) { v = { val: new Set(), exp: 0 }; mem.set(key, v); } return v.val; };
+export async function kvSAdd(key, member) { if (!hasKV) { memSet(key).add(member); return; } await cmd('SADD', key, member); }
+export async function kvSRem(key, member) { if (!hasKV) { memSet(key).delete(member); return; } await cmd('SREM', key, member); }
+export async function kvSMembers(key) { if (!hasKV) return [...memSet(key)]; return (await cmd('SMEMBERS', key)) || []; }
 
 /* Recorrido para los informes del panel: SCAN por patrón + lectura en tandas. */
 export async function kvKeys(pattern, max = 5000) {

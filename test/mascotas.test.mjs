@@ -5,7 +5,8 @@ import assert from 'node:assert/strict';
 import { dueToday } from '../api/_lib/petpush.js';
 import { sweep, addUsage, photoRef, getUsage, TRASH_GRACE_MS } from '../api/_lib/petfiles.js';
 import { kvGet, kvSet } from '../api/_lib/kv.js';
-import cron from '../api/cron/mascotas.js';
+import cron, { runAvisos } from '../api/cron/mascotas.js';
+import { saveNotify, localClock, DEFAULT_TZ } from '../api/_lib/petpush.js';
 import '../assets/js/mascotas-rules.js';
 import '../assets/js/mascotas-core.js';
 
@@ -63,7 +64,8 @@ test('.ics: el aviso de 3 días antes suena a las 9:00, no a las 00:00', () => {
 const call = async (headers = {}, query = {}) => { let st = 0; const res = { status(c) { st = c; return this; }, json() { return this; } }; await cron({ headers, query }, res); return st; };
 test('QA A2: el cron sin CRON_SECRET falla cerrado y no alcanza con el User-Agent', async () => {
   delete process.env.CRON_SECRET;
-  assert.equal(await call({ 'user-agent': 'vercel-cron/1.0' }), 503);
+  const err = console.error; console.error = () => {};   // el aviso de "falta CRON_SECRET" es esperado acá
+  try { assert.equal(await call({ 'user-agent': 'vercel-cron/1.0' }), 503); } finally { console.error = err; }
   process.env.CRON_SECRET = 'prueba';
   assert.equal(await call({ 'user-agent': 'vercel-cron/1.0' }), 401);
   assert.equal(await call({ authorization: 'Bearer otro' }), 401);
@@ -145,4 +147,64 @@ test('QR: sin la compra el link deja de andar', async () => {
   await kvSet(`orbit:purchases:${QR_EMAIL}`, []);
   assert.equal((await qrCall('GET', { s: QR_TOKEN })).code, 404);
   assert.equal((await qrCall('POST', { s: QR_TOKEN, found: '1' }, { msg: 'x' })).code, 404);
+});
+
+/* ---------- cron cada hora: una sola vez y a las 9 de cada persona ---------- */
+const sendSpy = () => { const log = []; return { log, send: { push: async (n, p) => { log.push(['push', n.email, p.tag]); return 1; }, mail: async (email, items) => { log.push(['mail', email, items.length]); return true; } } }; };
+const vacunaEn = (date, next) => ({ pets: [{ id: 'p1', name: 'Luna', records: [{ id: 'r1', type: 'vacuna', name: 'Antirrábica', date, next }] }] });
+async function cuenta(email, tz, docDate) {
+  await kvSet(`orbit:purchases:${email}`, [{ productId: 'ob-018', orderId: 'o-' + email, date: '2026-10-01' }]);
+  await kvSet(`orbit:pets:${email}`, vacunaEn('2025-10-16', docDate));
+  await saveNotify({ email, subs: [{ endpoint: 'https://push.example/' + email, keys: { p256dh: 'x', auth: 'y' } }], mail: true, off: {}, tz, sent: {} });
+}
+
+test('cron horario: dos corridas en la misma hora mandan una sola vez', async () => {
+  await cuenta('dedupe@prueba.com', 'America/Argentina/Buenos_Aires', '2026-10-16');   // 3 días después del 13/10
+  const { log, send } = sendSpy();
+  const now = new Date('2026-10-13T12:00:00Z');                                         // 9:00 en Buenos Aires
+  const a = await runAvisos({ now, send });
+  const b = await runAvisos({ now, send });
+  const c = await runAvisos({ now: new Date('2026-10-13T15:00:00Z'), send });           // y tampoco más tarde ese día
+  assert.equal(a.avisos, 1);
+  assert.equal(b.avisos + c.avisos, 0);
+  assert.deepEqual(log.filter(x => x[1] === 'dedupe@prueba.com'), [['push', 'dedupe@prueba.com', 'rec:p1:r1:2026-10-16:3'], ['mail', 'dedupe@prueba.com', 1]]);
+  /* aunque se borre la marca del día (reintento a medias), el candado del aviso no deja repetir */
+  await kvSet('orbit:petday:dedupe@prueba.com', null);
+  assert.equal((await runAvisos({ now, send })).avisos, 0);
+});
+
+test('cron horario: cada persona recibe a las 9 de su zona (Madrid y Buenos Aires)', async () => {
+  await cuenta('madrid@prueba.com', 'Europe/Madrid', '2026-11-05');
+  await cuenta('baires@prueba.com', 'America/Argentina/Buenos_Aires', '2026-11-05');
+  const { log, send } = sendSpy();
+  const quien = () => log.filter(x => x[0] === 'push').map(x => x[1]).filter(e => e === 'madrid@prueba.com' || e === 'baires@prueba.com');
+  await runAvisos({ now: new Date('2026-11-02T07:00:00Z'), send });   // 8:00 Madrid, 4:00 Buenos Aires
+  assert.deepEqual(quien(), []);
+  await runAvisos({ now: new Date('2026-11-02T08:00:00Z'), send });   // 9:00 Madrid (horario de invierno)
+  assert.deepEqual(quien(), ['madrid@prueba.com']);
+  await runAvisos({ now: new Date('2026-11-02T11:00:00Z'), send });   // 8:00 Buenos Aires
+  assert.deepEqual(quien(), ['madrid@prueba.com']);
+  await runAvisos({ now: new Date('2026-11-02T12:00:00Z'), send });   // 9:00 Buenos Aires
+  assert.deepEqual(quien(), ['madrid@prueba.com', 'baires@prueba.com']);
+});
+
+test('cron horario: sin zona guardada usa Buenos Aires; una zona inválida también', async () => {
+  assert.equal(DEFAULT_TZ, 'America/Argentina/Buenos_Aires');
+  assert.deepEqual(localClock(undefined, new Date('2026-10-20T11:59:00Z')), { date: '2026-10-20', hour: 8 });
+  assert.deepEqual(localClock('Nada/Inventada', new Date('2026-10-20T12:00:00Z')), { date: '2026-10-20', hour: 9 });
+  await cuenta('sintz@prueba.com', undefined, '2026-10-23');
+  const { log, send } = sendSpy();
+  const mios = () => log.filter(x => x[1] === 'sintz@prueba.com');
+  await runAvisos({ now: new Date('2026-10-20T11:00:00Z'), send });   // 8:00 en Buenos Aires: todavía no
+  assert.equal(mios().length, 0);
+  await runAvisos({ now: new Date('2026-10-20T12:00:00Z'), send });   // 9:00: sale
+  assert.equal(mios().filter(x => x[0] === 'push').length, 1);
+});
+
+test('cron horario: quien apaga push y mail sale del índice y no se vuelve a mirar', async () => {
+  await cuenta('baja@prueba.com', 'America/Argentina/Buenos_Aires', '2026-12-04');
+  await saveNotify({ email: 'baja@prueba.com', subs: [], mail: false, off: {}, sent: {} });
+  const { log, send } = sendSpy();
+  await runAvisos({ now: new Date('2026-12-01T12:00:00Z'), send });
+  assert.equal(log.filter(x => x[1] === 'baja@prueba.com').length, 0);
 });

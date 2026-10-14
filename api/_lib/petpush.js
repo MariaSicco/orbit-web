@@ -1,9 +1,11 @@
 /* Avisos de Mimitos: push en el celu (web push, gratis) y mail por Brevo.
    - Las llaves VAPID salen de las variables VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY;
      si no están, se generan una vez y quedan guardadas en KV (no hay que configurar nada).
-   - Por cuenta: orbit:petnotify:<email> = { subs: [...], mail, off: {vac,pip,food,check,qr}, sent: {tag: fecha} } */
+   - Por cuenta: orbit:petnotify:<email> = { subs: [...], mail, off: {vac,pip,food,check,qr}, tz, sent: {tag: fecha} }
+     (tz: zona horaria IANA del navegador; sent: solo lectura, lo usaba el cron diario anterior)
+   - orbit:petidx: conjunto de emails con avisos activos (push o mail), para que el cron horario no recorra todo. */
 import webpush from 'web-push';
-import { kvGet, kvSet, getPurchases } from './kv.js';
+import { kvGet, kvSet, kvSAdd, kvSRem, getPurchases } from './kv.js';
 import { isAdmin } from './admin.js';
 /* reglas compartidas con la app (define globalThis.MZRULES): qué fecha está vigente y cuál es sugerida */
 import '../../assets/js/mascotas-rules.js';
@@ -44,11 +46,15 @@ export async function getVapid() {
   return (vapid = v);
 }
 
-export async function getNotify(email) {
-  const n = (await kvGet(notifyKey(email))) || {};
-  return { email: String(email).toLowerCase(), subs: Array.isArray(n.subs) ? n.subs : [], mail: Boolean(n.mail), off: n.off || {}, sent: n.sent || {} };
+export const shapeNotify = (email, n = {}) => ({ email: String(email).toLowerCase(), subs: Array.isArray(n.subs) ? n.subs : [], mail: Boolean(n.mail), off: n.off || {}, tz: cleanTz(n.tz), sent: n.sent || {} });
+export async function getNotify(email) { return shapeNotify(email, (await kvGet(notifyKey(email))) || {}); }
+/* guarda y mantiene el índice de cuentas con avisos activos */
+export const INDEX_KEY = 'orbit:petidx';
+export const notifyActive = n => Boolean(n && ((Array.isArray(n.subs) && n.subs.length) || n.mail));
+export async function saveNotify(n) {
+  await kvSet(notifyKey(n.email), n);
+  await (notifyActive(n) ? kvSAdd(INDEX_KEY, n.email) : kvSRem(INDEX_KEY, n.email));
 }
-export const saveNotify = n => kvSet(notifyKey(n.email), n);
 
 export function cleanSub(s) {
   const ok = s && typeof s.endpoint === 'string' && /^https:\/\//.test(s.endpoint) && s.endpoint.length < 1000 && s.keys && typeof s.keys.p256dh === 'string' && typeof s.keys.auth === 'string';
@@ -70,7 +76,18 @@ export async function pushTo(n, payload) {
 
 /* ---------- qué toca avisar hoy ---------- */
 const TZ = 'America/Argentina/Buenos_Aires';
+export const DEFAULT_TZ = TZ;
 export const todayAR = (d = new Date()) => new Intl.DateTimeFormat('en-CA', { timeZone: TZ }).format(d);
+/* zona horaria IANA válida, o null */
+export function cleanTz(tz) {
+  if (typeof tz !== 'string' || !tz || tz.length > 64 || !/^[A-Za-z0-9_+\-/]+$/.test(tz)) return null;
+  try { new Intl.DateTimeFormat('en-US', { timeZone: tz }); return tz; } catch { return null; }
+}
+/* fecha (AAAA-MM-DD) y hora (0-23) locales de la persona; sin zona guardada, Buenos Aires */
+export function localClock(tz, d = new Date()) {
+  const parts = Object.fromEntries(new Intl.DateTimeFormat('en-CA', { timeZone: cleanTz(tz) || TZ, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' }).formatToParts(d).map(p => [p.type, p.value]));
+  return { date: `${parts.year}-${parts.month}-${parts.day}`, hour: Number(parts.hour) % 24 };
+}
 const pd = s => new Date(s + 'T12:00:00Z');
 const diff = (a, b) => Math.round((pd(a) - pd(b)) / 864e5);
 const dayName = s => new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', timeZone: 'UTC' }).format(pd(s));
@@ -93,7 +110,7 @@ export function dueToday(doc, today = todayAR()) {
       const what = phrase(r);
       const sug = R.isSug(r);
       out.push({
-        tag: `rec:${p.id}:${r.id}:${r.next}:${d}`, kind: KIND_OF[r.type] || 'vac', pet: p.name, sug,
+        tag: `rec:${p.id}:${r.id}:${r.next}:${d}`, kind: KIND_OF[r.type] || 'vac', petId: p.id, pet: p.name, sug,
         title: sug
           ? (d ? `Fecha sugerida para ${p.name}: ${String(r.name || '').trim()}, el ${dayName(r.next)}` : `Fecha sugerida para ${p.name}: ${String(r.name || '').trim()}, hoy`)
           : (d ? `A ${p.name} le toca ${what} el ${dayName(r.next)}` : `Hoy a ${p.name} le toca ${what}`),
@@ -105,13 +122,13 @@ export function dueToday(doc, today = todayAR()) {
     const f = p.food || {};
     if (f.opened && f.bagKg && f.dailyG) {
       const left = Math.floor(f.bagKg * 1000 / f.dailyG) - diff(today, f.opened);
-      if (left === 5 || left === 0) out.push({ tag: `food:${p.id}:${f.opened}:${left}`, kind: 'food', pet: p.name, title: left ? `A ${p.name} le quedan 5 días de alimento` : `Hoy se termina el alimento de ${p.name}`, body: left ? 'Buen momento para comprar la bolsa nueva.' : 'Si ya compraste, marcá "bolsa nueva" en Mimitos.' });
+      if (left === 5 || left === 0) out.push({ tag: `food:${p.id}:${f.opened}:${left}`, kind: 'food', petId: p.id, pet: p.name, title: left ? `A ${p.name} le quedan 5 días de alimento` : `Hoy se termina el alimento de ${p.name}`, body: left ? 'Buen momento para comprar la bolsa nueva.' : 'Si ya compraste, marcá "bolsa nueva" en Mimitos.' });
     }
   }
   const t = pd(today);
   if (t.getUTCDay() === 0 && t.getUTCDate() <= 7 && (doc?.pets || []).length) {
     const names = doc.pets.map(p => p.name);
-    out.push({ tag: `check:${today.slice(0, 7)}`, kind: 'check', pet: names[0], title: `Chequeo del mes de ${names.length > 1 ? 'tus mascotas' : names[0]}`, body: 'Son 2 minutos: dientes, orejas, piel, peso y cómo come.' });
+    out.push({ tag: `check:${today.slice(0, 7)}`, kind: 'check', petId: 'todas', pet: names[0], title: `Chequeo del mes de ${names.length > 1 ? 'tus mascotas' : names[0]}`, body: 'Son 2 minutos: dientes, orejas, piel, peso y cómo come.' });
   }
   return out;
 }
