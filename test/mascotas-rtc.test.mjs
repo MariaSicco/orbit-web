@@ -1,6 +1,8 @@
 /* Mimitos · "Me fui": señalización del video en vivo (api/_lib/petrtc.js) por /api/mascotas?rtc=…
-   TTL, acceso ajeno → 403, un viewer por vez, limpieza al colgar, topes y contador de fallos.
-   Corre sin servicios: KV en memoria. Usa el emparejado real de api/_lib/petaway.js. */
+   TTL, acceso ajeno → 403, un viewer por vez, limpieza al colgar, topes, contador de fallos y COSTO:
+   cuántos comandos de KV gasta una cámara prendida todo el día en reposo (objetivo: menos de 3.000).
+   Corre sin servicios: un Upstash simulado (misma API REST) que cuenta cada comando.
+   Usa el emparejado real de api/_lib/petaway.js. */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
@@ -9,7 +11,45 @@ process.env.SESSION_SECRET = 'prueba-secreta-de-mimitos-rtc-1234567890';
 process.env.ADMIN_EMAILS = 'admin@orbit.test';
 process.env.MIMITOS_MEFUI = '1';
 process.env.MIMITOS_MEFUI_ALLOW = 'duena@x.com, otra@x.com';
-globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({}), text: async () => '' });
+process.env.KV_REST_API_URL = 'https://kv.test';
+process.env.KV_REST_API_TOKEN = 'token-de-prueba';
+
+/* ---------- Upstash simulado: lo justo de Redis, con vencimientos sobre Date.now ---------- */
+const db = new Map();
+const kv = { cmds: 0, byName: {} };
+const live = k => { const e = db.get(k); if (e && e.exp && e.exp <= Date.now()) { db.delete(k); return null; } return e || null; };
+function redis(args) {
+  const [name, ...a] = args.map(String);
+  const op = name.toUpperCase();
+  kv.cmds++; kv.byName[op] = (kv.byName[op] || 0) + 1;
+  if (op === 'GET') return live(a[0])?.v ?? null;
+  if (op === 'MGET') return a.map(k => live(k)?.v ?? null);
+  if (op === 'DEL') { let n = 0; for (const k of a) if (live(k)) { db.delete(k); n++; } return n; }
+  if (op === 'SET') {
+    const [k, v, ...o] = a; const up = o.map(x => x.toUpperCase());
+    const cur = live(k);
+    if (up.includes('NX') && cur) return null;
+    if (up.includes('XX') && !cur) return null;
+    const ex = up.indexOf('EX');
+    const exp = ex >= 0 ? Date.now() + Number(o[ex + 1]) * 1000 : (up.includes('KEEPTTL') && cur ? cur.exp : 0);
+    db.set(k, { v, exp });
+    return up.includes('GET') ? (cur?.v ?? null) : 'OK';
+  }
+  if (op === 'INCRBY') { const cur = live(a[0]); const v = (Number(cur?.v) || 0) + Number(a[1]); db.set(a[0], { v: String(v), exp: cur?.exp || 0 }); return v; }
+  if (op === 'EXPIRE') { const cur = live(a[0]); if (!cur) return 0; cur.exp = Date.now() + Number(a[1]) * 1000; return 1; }
+  if (op === 'SCAN') {
+    const re = new RegExp('^' + a[2].split('*').map(x => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('.*') + '$');
+    return ['0', [...db.keys()].filter(k => live(k) && re.test(k))];
+  }
+  throw new Error('comando no simulado: ' + op);
+}
+globalThis.fetch = async (url, opt = {}) => {
+  if (String(url).startsWith('https://kv.test')) {
+    const result = redis(JSON.parse(opt.body));
+    return { ok: true, status: 200, json: async () => ({ result }) };
+  }
+  return { ok: true, status: 200, json: async () => ({}), text: async () => '' };
+};
 
 const { makeSession } = await import('../api/_lib/auth.js');
 const { kvSet, kvGet, kvKeys } = await import('../api/_lib/kv.js');
@@ -133,7 +173,7 @@ test('colgar limpia todo y la cámara se entera', async () => {
   assert.deepEqual([v.body.ended, v.body.reason], [true, 'camera']);
 });
 
-test('TTL: la cámara deja de figurar a los 30 s; la sesión y el candado vencen solos', async () => {
+test('TTL: la cámara deja de figurar a los 150 s; la sesión y el candado vencen solos', async () => {
   const real = Date.now;
   try {
     await cam('poll', { beat: true });
@@ -142,9 +182,9 @@ test('TTL: la cámara deja de figurar a los 30 s; la sesión y el candado vencen
     Date.now = () => t;
     t += (R.TTL.lock + 1) * 1000;
     assert.equal(await kvGet(`orbit:rtc:lock:${A.camId}`), null, 'el candado vence si el viewer deja de preguntar');
+    t += (R.TTL.up - R.TTL.lock) * 1000;
     assert.equal(await kvGet(`orbit:rtc:up:${A.camId}`), null, 'la cámara apagada deja de figurar');
     assert.equal((await viewer('offer', { sdp: SDP })).body.error, 'cam_offline');
-    t += (R.TTL.sess + 1) * 1000;
     assert.equal(await kvGet(`orbit:rtc:offer:${sid}`), null, 'el SDP no queda guardado');
     const left = (await kvKeys('orbit:rtc:*')).filter(k => !/:stat|:rl:|statmark|:end:/.test(k));
     const alive = (await Promise.all(left.map(kvGet))).filter(v => v != null);
@@ -188,13 +228,60 @@ test('topes: muchas ofertas por minuto → 429; tokens malos desde una IP → 42
   let bad;
   for (let i = 0; i < R.LIMITS.badToken + 2; i++) bad = await llamar('poll', { token: 'y'.repeat(43) }, { addr: '9.9.9.9' });
   assert.equal(bad.code, 429);
+  Object.assign(R.LIMITS, { offer: 1000, viewer: 1000, cam: 1000 });
 });
 
-test('revocar la cámara corta su acceso (pasado el recuerdo de 60 s)', async () => {
+test('revocar la cámara corta su acceso (pasado el recuerdo de 10 min por instancia)', async () => {
   const C = await pair('duena@x.com');
   assert.equal((await llamar('poll', { token: C.token, beat: true })).code, 200);
   await W.revokeCamera('duena@x.com', C.camId);
   R._clearCamCache();
   assert.equal((await llamar('poll', { token: C.token })).code, 401);
   assert.equal((await llamar('offer', { camId: C.camId, sdp: SDP }, { email: 'duena@x.com' })).code, 403);
+});
+
+test('timbre: la cámara en reposo gasta UN comando por consulta y se despierta cuando alguien quiere mirar', async () => {
+  const D = await pair('duena@x.com');
+  const camD = (body = {}) => llamar('poll', { token: D.token, ...body });
+  await camD();                                  /* primera: valida el token (3 GET) + 1 */
+  const before = kv.cmds;
+  const idle = await camD();
+  assert.equal(kv.cmds - before, 1, 'en reposo: solo SET … GET');
+  assert.equal(kv.byName.SET >= 1, true);
+  assert.deepEqual([idle.body.sid, idle.body.wait], [null, R.IDLE_MS]);
+  const o = await llamar('offer', { camId: D.camId, sdp: SDP }, { email: 'duena@x.com' });
+  assert.equal(o.body.wake, R.IDLE_MS, 'el viewer sabe cuánto puede tardar en despertar');
+  const woke = await camD();
+  assert.deepEqual([woke.body.sid, woke.body.offer, woke.body.wait], [o.body.sid, SDP, R.FAST_MS], 'leyó el timbre y pasa a rápido');
+  const again = await camD({ sid: o.body.sid, since: woke.body.next });
+  assert.equal(again.body.sid, o.body.sid);
+  await llamar('hangup', { camId: D.camId, sid: o.body.sid }, { email: 'duena@x.com' });
+  const back = await camD({ sid: o.body.sid });
+  assert.deepEqual([back.body.sid, back.body.ended, back.body.wait], [null, true, R.IDLE_MS], 'colgó: vuelve a reposo');
+  await W.revokeCamera('duena@x.com', D.camId);
+});
+
+test('COSTO: cámara prendida 24 h en reposo → menos de 3.000 comandos de KV (y rtcUsage lo cuenta)', async () => {
+  const E = await pair('duena@x.com');
+  R._clearCamCache(); R._resetUsage();
+  const real = Date.now;
+  const t0 = real();
+  let t = t0, polls = 0;
+  const start = kv.cmds;
+  try {
+    Date.now = () => t;
+    while (t < t0 + 86400e3) {
+      const r = await llamar('poll', { token: E.token });
+      assert.equal(r.code, 200);
+      polls++;
+      t += r.body.wait;               /* lo que el servidor le pide esperar (sin el ±10 % del navegador) */
+    }
+    const used = kv.cmds - start;
+    const day = d => new Date(d).toISOString().slice(0, 10);
+    const u1 = await R.rtcUsage(E.camId, day(t0)), u2 = await R.rtcUsage(E.camId, day(t));
+    const tracked = u1.stored + (day(t) !== day(t0) ? u2.stored : 0) + u2.pending;
+    console.log(`# costo en reposo: ${used} comandos de KV en 24 h (${polls} consultas, ${(used / polls).toFixed(2)} por consulta); rtcUsage cuenta ${tracked}`);
+    assert.ok(used < 3000, `gastó ${used}`);
+    assert.ok(Math.abs(tracked - used) <= 5, `rtcUsage ${tracked} vs real ${used}`);
+  } finally { Date.now = real; }
 });

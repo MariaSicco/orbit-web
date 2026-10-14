@@ -14,8 +14,10 @@
      v.stop()
    onStatus({ state, message }) con message listo para mostrar. Estados:
      cámara: 'preparando' 'esperando' 'conectando' 'en-vivo' 'sin-permiso' 'sin-camara' 'invalida' 'error' 'detenida'
-     viewer: 'conectando' 'en-vivo' 'reconectando' 'apagada' 'ocupada' 'otra-pantalla' 'fallo' 'sin-acceso' 'no-disponible' 'detenido'
+     viewer: 'conectando' 'despertando' 'en-vivo' 'reconectando' 'apagada' 'ocupada' 'otra-pantalla' 'fallo' 'sin-acceso' 'no-disponible' 'detenido'
 
+   Costo: en reposo la cámara pregunta cada ~40 s (lo dice el servidor en "wait"); el viewer deja un timbre y la
+   cámara recién ahí acelera. Por eso el primer "Ver en vivo" tarda hasta ~40 s ("Despertando la cámara…").
    Video: 640x480 a 15 fps, tope ~450 kbps (batería y datos). Si la red no deja conectar directo en 15 s
    (sin TURN), se avisa y se suma al contador de fallos del servidor. */
 (() => {
@@ -37,6 +39,7 @@ const MSG = {
   error: 'Algo falló con la cámara. Probá cerrar y volver a abrir esta pantalla.',
   detenida: 'Cámara apagada.',
   conectando: 'Conectando con la cámara de casa…',
+  despertando: 'Despertando la cámara… puede tardar hasta 40 segundos.',
   'en-vivo': 'En vivo',
   reconectando: 'Se cortó la conexión. Reconectando…',
   apagada: 'La cámara de casa no está prendida. Fijate que el celu tenga Mimitos abierto, wifi y batería.',
@@ -73,7 +76,7 @@ async function addIce(pc, list) {
 /* ======================= lado cámara ======================= */
 function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServers } = {}) {
   let stopped = false, stream = null, mic = null, pc = null, sid = null, since = 0, timer = null, wake = null, polls = 0, lastBeat = 0;
-  let ice = iceServers || DEFAULT_ICE, wantAudio = Boolean(audio), sender = null;
+  let ice = iceServers || DEFAULT_ICE, wantAudio = Boolean(audio), sender = null, warmUntil = Date.now() + 120000;
   const status = (state, key = state) => { if (!stopped || state === 'detenida') onStatus({ state, message: MSG[key] }); };
 
   async function getVideo() {
@@ -102,6 +105,7 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
   const onVis = () => { if (document.visibilityState === 'visible' && !stopped) keepAwake(); };
 
   function closePc() {
+    if (sid) warmUntil = Date.now() + 120000;
     if (sender) sender.clear();
     if (pc) { pc.onconnectionstatechange = null; pc.onicecandidate = null; try { pc.close(); } catch {} }
     pc = null; sid = null; since = 0; sender = null;
@@ -148,7 +152,8 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
 
   async function poll() {
     if (stopped) return;
-    const beat = Date.now() - lastBeat > 20000;
+    /* con sesión abierta, la marca de "prendida" se renueva cada 60 s (en reposo va en cada consulta) */
+    const beat = Date.now() - lastBeat > 60000;
     const r = await call('poll', { token: camToken, sid, since, beat });
     if (stopped) return;
     if (r.status === 401 || r.status === 404) { status('invalida'); stop(true); return; }
@@ -164,9 +169,12 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
       } catch (e) { console.warn('[mimitos-rtc] no se pudo responder la oferta', e); closePc(); status('esperando'); }
     }
     polls++;
-    /* rápido mientras se negocia; lento cuando nadie mira o ya está conectado */
-    const negotiating = pc && pc.connectionState !== 'connected';
-    timer = setTimeout(poll, negotiating ? 1000 : 5000);
+    /* en reposo, lo que diga el servidor (~40 s, con ±10 % para no sincronizar cámaras); rápido mientras se
+       negocia; cada 15 s mientras alguien mira (para ver si colgó o si entró otra pantalla) */
+    const idle = r.status === 200 && r.data.wait ? r.data.wait : (r.status === 200 ? 40000 : 15000);
+    /* "tibia" 2 min al prender y después de un corte: si el viewer reconecta, no espera 40 s */
+    const wait = !sid && Date.now() < warmUntil ? 5000 : !sid ? idle * (0.9 + Math.random() * 0.2) : pc && pc.connectionState === 'connected' ? 15000 : 1000;
+    timer = setTimeout(poll, wait);
   }
 
   function stop(silent) {
@@ -273,7 +281,7 @@ function startViewer({ camId, videoEl, onStatus = () => {}, iceServers, takeover
       if (r.status === 409 && r.data.error === 'cam_offline') {
         status('apagada');
         /* se reintenta solo un rato (la dueña puede estar prendiendo la cámara) */
-        if (++offline <= 15) timer = setTimeout(connect, 8000);
+        if (++offline <= 9) timer = setTimeout(connect, 20000);
         return;
       }
       if (r.status === 409) { status('ocupada'); return; }
@@ -286,7 +294,14 @@ function startViewer({ camId, videoEl, onStatus = () => {}, iceServers, takeover
     const mySid = sid;
     sender = iceSender(cands => { if (sid === mySid) call('ice', { camId, sid: mySid, cands }); });
     early.forEach(c => sender.add(c));
-    deadline = setTimeout(() => { if (pc === myPc && !live) fail(); }, CONNECT_TIMEOUT);
+    /* la cámara en reposo tarda hasta ~40 s en leer el timbre; los 15 s de conexión corren desde que responde */
+    status('despertando');
+    const wake = (Number(r.data.wake) || 40000) + 20000;
+    deadline = setTimeout(() => {
+      if (pc !== myPc || answered) return;
+      teardown('nowake');
+      status('apagada');
+    }, wake);
     poll();
   }
 
@@ -308,13 +323,20 @@ function startViewer({ camId, videoEl, onStatus = () => {}, iceServers, takeover
         if (d.reason === 'replaced') { teardown('viewer'); status('otra-pantalla'); return; }
         /* la cámara cortó o se perdió la sesión: si estaba en vivo, se reconecta */
         if (live || answered) { again('reconectando'); return; }
+        teardown('viewer'); status('apagada'); return;
       }
       try {
-        if (d.answer && !answered) { answered = true; await myPc.setRemoteDescription({ type: 'answer', sdp: d.answer }); }
+        if (d.answer && !answered) {
+          answered = true;
+          clearTimeout(deadline);
+          if (!live) status(attempts ? 'reconectando' : 'conectando');
+          deadline = setTimeout(() => { if (pc === myPc && !live) fail(); }, CONNECT_TIMEOUT);
+          await myPc.setRemoteDescription({ type: 'answer', sdp: d.answer });
+        }
         if (answered) { await addIce(myPc, d.ice); since = d.next || since; }
       } catch (e) { console.warn('[mimitos-rtc] respuesta inválida', e); }
     } else if (r.status === 401 || r.status === 403) { teardown('viewer'); status('sin-acceso'); return; }
-    timer = setTimeout(poll, live ? 10000 : 1000);
+    timer = setTimeout(poll, live ? 10000 : answered ? 1000 : 2000);
   }
 
   videoEl.muted = true; videoEl.autoplay = true; videoEl.playsInline = true;

@@ -2,33 +2,42 @@
    el video va directo de celu a celu y nunca pasa ni se guarda en el servidor. Nada se graba.
 
    Rutas (todas POST con JSON, por /api/mascotas?rtc=…; el token de la cámara va en el cuerpo, nunca en la URL):
-   - offer   viewer {camId, sdp, takeover?}  → {sid, iceServers}. Abre la sesión. Un solo viewer por cámara:
-                                               si ya hay otro, 409 busy; con takeover:true el último gana y el otro
-                                               se entera en su poll (ended, reason 'replaced').
+   - offer   viewer {camId, sdp, takeover?}  → {sid, iceServers, wake}. Abre la sesión y toca el TIMBRE de la
+                                               cámara. Un solo viewer por cámara: si ya hay otro, 409 busy; con
+                                               takeover:true el último gana y el otro se entera (ended, 'replaced').
    - answer  cámara {token, sid, sdp}         → {ok}
    - ice     viewer {camId, sid, cands} | cámara {token, sid, cands} → {ok}
-   - poll    cámara {token, sid?, since?, beat?} → {sid, offer?, ice, next, ended?}
+   - poll    cámara {token, sid?, since?, beat?} → {sid, offer?, ice, next, ended?, wait}
              viewer {camId, sid, since?, connected?} → {answer?, ice, next, ended?, reason?}
    - hangup  cualquiera de los dos {sid, reason?} → {ok}. Borra todo lo de la sesión.
+
+   Cámara en reposo (nadie mirando): pregunta cada IDLE_MS (40 s, con ±10 % de variación en el navegador) y cada
+   pregunta es UN solo comando de KV: SET orbit:rtc:up:<camId> … EX 150 GET. Ese SET la marca prendida y, con GET,
+   devuelve lo que había: si un viewer dejó el timbre (ring), la cámara recién ahí lee la sesión y pasa a preguntar
+   cada 1 s. Por eso el primer "Ver en vivo" tarda hasta ~40 s (el viewer muestra "Despertando la cámara…").
+   El token se valida contra KV como mucho cada 10 min por instancia (3 GET); revocar tarda eso como mucho, pero
+   una cámara revocada no puede abrir sesiones: el viewer necesita ownsCamera, que no se cachea.
+   Medido en test/mascotas-rtc.test.mjs (KV simulado que cuenta comandos): cámara en reposo 24 h ≈ 2.600 comandos.
 
    Acceso:
    - interruptor apagado (MIMITOS_MEFUI) → 404 en todo; cuenta fuera de la lista → 404.
    - cámara: verifyCameraToken (api/_lib/petaway.js). Token inválido o revocado → 401.
    - viewer: sesión de Orbit + compra de Mimitos (401 / 402) + ownsCamera (cámara ajena → 403).
    - cada sesión (sid) queda atada a un camId y a un email: SDP e ICE solo se leen con esa cámara o esa cuenta.
-   - tope por minuto en KV (por cámara, por cuenta y por IP para tokens malos) → 429.
+   - topes: ofertas por cuenta y tokens malos por IP en KV (→ 429); las consultas de cámara y viewer, por instancia
+     (en memoria, para no gastar un comando por consulta).
 
    KV (todo con TTL corto; si nadie limpia, se borra solo):
-   - orbit:rtc:up:<camId>           la cámara está prendida (la cámara lo renueva cada ~20 s)        TTL 30 s
+   - orbit:rtc:up:<camId>           {at, ring?} la cámara está prendida; ring = un viewer la espera   TTL 150 s
    - orbit:rtc:lock:<camId>         {sid, email} el viewer actual (lo renueva su poll)               TTL 45 s
    - orbit:rtc:offer:<sid>          {camId, email, sdp}                                              TTL 120 s
    - orbit:rtc:answer:<sid>         {sdp}                                                            TTL 120 s
    - orbit:rtc:icen:<sid>:<v|c>     contador; orbit:rtc:ice:<sid>:<v|c>:<n> = [candidatos]           TTL 120 s
    - orbit:rtc:end:<sid>            {reason} para que el otro lado se entere del corte                TTL 120 s
-   - orbit:rtc:stat:<AAAA-MM>:<ok|fail>  tasa de conexión sin TURN (la lee el panel o un kvGet)       TTL 400 d
-
-   Costo de KV (Upstash): la cámara pregunta cada 5 s cuando nadie mira (1 GET + 1 INCR del tope; el token se
-   valida contra KV como mucho cada 60 s por instancia). ≈ 35.000 comandos por día por cámara prendida todo el día.
+   - orbit:rtc:stat:<AAAA-MM>:<ok|fail>  tasa de conexión sin TURN                                    TTL 400 d
+   - orbit:rtc:cmds:<camId>:<AAAA-MM-DD>  comandos de KV que gastó esa cámara ese día (aproximado: se suma
+                                    por instancia y se vuelca cada 30 min o cada 300 comandos) → rtcUsage()  TTL 8 d
+     Cada volcado también sale en los logs: "[mimitos-rtc] kv cam=<camId> +N".
 
    ICE: solo STUN público de Google (gratis). Sin TURN, las redes con NAT simétrico o CGNAT estricto (datos
    móviles de algunas operadoras, wifi corporativo) no conectan: el viewer avisa a los 15 s y suma un "fail".
@@ -46,15 +55,20 @@
    proveedor y las claves en variables de entorno) y sumarlas a ICE_SERVERS en las respuestas de offer y poll;
    el navegador ya usa los iceServers que le devuelve el servidor. */
 import { randomBytes, createHash } from 'node:crypto';
-import { kvGet, kvSet, kvDel, kvIncrBy, kvSetNX } from './kv.js';
+import { kvGet, kvSet, kvDel, kvIncrBy, kvSetNX, kvMGet, hasKV } from './kv.js';
 import { readBody } from './auth.js';
 import { accesoHerramienta } from './herramienta-acceso.js';
 import { PRODUCT_ID } from './petpush.js';
 import { verifyCameraToken, ownsCamera, mefuiOn, mefuiAllowed } from './petaway.js';
 
 export const ICE_SERVERS = [{ urls: 'stun:stun.l.google.com:19302' }];
-export const TTL = { up: 30, lock: 45, sess: 120 };
-export const LIMITS = { cam: 120, viewer: 120, offer: 12, badToken: 20 };   /* por minuto */
+export const TTL = { up: 150, lock: 45, sess: 120 };
+/* cada cuánto pregunta la cámara: en reposo y mientras negocia o hay alguien mirando */
+export const IDLE_MS = 40000, FAST_MS = 1000;
+/* por minuto: cam y viewer por instancia (memoria); offer y badToken en KV */
+export const LIMITS = { cam: 120, viewer: 120, offer: 12, badToken: 20 };
+const CAM_CACHE_MS = 10 * 60e3;
+const FLUSH_MS = 30 * 60e3, FLUSH_CMDS = 300;
 const MAX_SDP = 16000, MAX_CANDS = 24, MAX_CAND = 600, MAX_ICE_BATCHES = 60;
 
 const P = 'orbit:rtc:';
@@ -62,12 +76,59 @@ const K = {
   up: c => `${P}up:${c}`, lock: c => `${P}lock:${c}`, offer: s => `${P}offer:${s}`, answer: s => `${P}answer:${s}`,
   icen: (s, side) => `${P}icen:${s}:${side}`, ice: (s, side, n) => `${P}ice:${s}:${side}:${n}`, end: s => `${P}end:${s}`,
   stat: (kind, d = new Date()) => `${P}stat:${d.toISOString().slice(0, 7)}:${kind}`,
+  cmds: (c, day) => `${P}cmds:${c}:${day}`,
 };
 const sidOk = v => typeof v === 'string' && /^[a-f0-9]{24}$/.test(v);
 const camIdOk = v => typeof v === 'string' && /^c[a-f0-9]{11}$/.test(v);
 const sdpOk = v => typeof v === 'string' && v.length <= MAX_SDP && v.startsWith('v=0');
-const minute = () => new Date().toISOString().slice(0, 16);
+const minute = () => new Date(Date.now()).toISOString().slice(0, 16);
+const today = () => new Date(Date.now()).toISOString().slice(0, 10);
 const ipHash = req => createHash('sha256').update('orbit-rtc:' + String(req.headers?.['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim()).digest('hex').slice(0, 16);
+
+/* SET … EX … GET: marca la cámara prendida y devuelve lo que había (el timbre), en UN comando */
+async function kvSetGet(key, val, ttl) {
+  if (!hasKV) { const old = await kvGet(key); await kvSet(key, val, ttl); return old; }
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
+  const r = await fetch(url, { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(['SET', key, JSON.stringify(val), 'EX', String(ttl), 'GET']) });
+  if (!r.ok) throw new Error(`KV ${r.status}`);
+  const { result } = await r.json();
+  try { return result ? JSON.parse(result) : null; } catch { return null; }
+}
+
+/* KV con cuenta de comandos (para medir el costo por cámara) */
+function counted() {
+  let n = 0;
+  return {
+    get n() { return n; }, add(x) { n += x; },
+    get: k => { n++; return kvGet(k); },
+    set: (k, v, t) => { n++; return kvSet(k, v, t); },
+    del: k => { n++; return kvDel(k); },
+    mget: ks => { n++; return kvMGet(ks); },
+    setnx: (k, v, t) => { n++; return kvSetNX(k, v, t); },
+    setGet: (k, v, t) => { n++; return kvSetGet(k, v, t); },
+    incr: async (k, by, t) => { const v = await kvIncrBy(k, by, t); n += t && v === by ? 2 : 1; return v; },
+  };
+}
+
+/* comandos por cámara y por día: se suman en la instancia y se vuelcan de a tandas (cada volcado gasta 1-2) */
+const usage = new Map();
+async function track(camId, n) {
+  if (!camId || !n) return;
+  const u = usage.get(camId) || { n: 0, since: Date.now() };
+  u.n += n; usage.set(camId, u);
+  if (u.n < FLUSH_CMDS && Date.now() - u.since < FLUSH_MS) return;
+  usage.delete(camId);
+  const day = today(), add = u.n + 1;
+  const total = await kvIncrBy(K.cmds(camId, day), add, 8 * 86400).catch(() => null);
+  console.log(`[mimitos-rtc] kv cam=${camId} +${add} (hoy ${total ?? '?'})`);
+}
+export async function rtcUsage(camId, day = today()) {
+  const stored = Number(await kvGet(K.cmds(camId, day))) || 0;
+  return { camId, day, stored, pending: usage.get(camId)?.n || 0, total: stored + (usage.get(camId)?.n || 0) };
+}
+export const _resetUsage = () => usage.clear();
 
 /* candidatos ICE: solo los tres campos del estándar, recortados */
 function cleanCands(list) {
@@ -80,51 +141,61 @@ function cleanCands(list) {
   }).filter(Boolean);
 }
 
-/* tope por minuto; true = pasó */
-async function under(key, max) { return (await kvIncrBy(`${P}rl:${key}:${minute()}`, 1, 70)) <= max; }
+/* topes: en KV (ofertas, tokens malos) o por instancia (consultas frecuentes) */
+async function under(C, key, max) { return (await C.incr(`${P}rl:${key}:${minute()}`, 1, 70)) <= max; }
+const memRl = new Map();
+function underMem(key, max) {
+  const k = key + ':' + minute();
+  const v = (memRl.get(k) || 0) + 1;
+  if (memRl.size > 5000) memRl.clear();
+  memRl.set(k, v);
+  return v <= max;
+}
 
-/* validar el token contra KV cuesta 3-4 comandos: se recuerda 60 s por instancia (revocar tarda como mucho eso) */
+/* validar el token contra KV cuesta 3 comandos: se recuerda 10 min por instancia */
 const camCache = new Map();
-const CAM_CACHE_MS = 60e3;
 export const _clearCamCache = () => camCache.clear();
-async function camOf(token) {
+async function camOf(C, token) {
   if (typeof token !== 'string') return null;
   const h = createHash('sha256').update(token).digest('hex');
   const hit = camCache.get(h);
   if (hit && hit.until > Date.now()) return hit.cam;
+  C.add(3);
   const cam = await verifyCameraToken(token);
   if (camCache.size > 500) camCache.clear();
   if (cam) camCache.set(h, { cam, until: Date.now() + CAM_CACHE_MS });
   return cam;
 }
 
-async function pushIce(sid, side, cands) {
+async function pushIce(C, sid, side, cands) {
   const list = cleanCands(cands);
   if (!list.length) return true;
-  const n = await kvIncrBy(K.icen(sid, side), 1, TTL.sess);
+  const n = await C.incr(K.icen(sid, side), 1, TTL.sess);
   if (n > MAX_ICE_BATCHES) return false;
-  await kvSet(K.ice(sid, side, n), list, TTL.sess);
+  await C.set(K.ice(sid, side, n), list, TTL.sess);
   return true;
 }
-async function readIce(sid, side, since) {
-  const n = Math.min(Number(await kvGet(K.icen(sid, side))) || 0, MAX_ICE_BATCHES);
+/* nKnown: el contador ya leído en el mismo MGET (ahorra un comando) */
+async function readIce(C, sid, side, since, nKnown) {
+  const n = Math.min(Number(nKnown === undefined ? await C.get(K.icen(sid, side)) : nKnown) || 0, MAX_ICE_BATCHES);
   const from = Math.max(0, Math.trunc(Number(since) || 0));
-  const out = [];
-  for (let i = from + 1; i <= n; i++) out.push(...((await kvGet(K.ice(sid, side, i))) || []));
-  return { ice: out, next: Math.max(n, from) };
+  if (n <= from) return { ice: [], next: Math.max(n, from) };
+  const keys = []; for (let i = from + 1; i <= n; i++) keys.push(K.ice(sid, side, i));
+  const lists = await C.mget(keys);
+  return { ice: lists.flatMap(l => Array.isArray(l) ? l : []), next: n };
 }
 
 /* borra todo lo de una sesión; el candado solo si sigue siendo de esta sesión */
-async function cleanup(sid, camId, reason) {
-  const lock = camId ? await kvGet(K.lock(camId)) : null;
-  if (lock?.sid === sid) await kvDel(K.lock(camId));
-  await Promise.all([K.offer(sid), K.answer(sid), K.icen(sid, 'v'), K.icen(sid, 'c')].map(k => kvDel(k)));
-  await kvSet(K.end(sid), { reason: String(reason || 'hangup').slice(0, 20) }, TTL.sess);
+async function cleanup(C, sid, camId, reason) {
+  const lock = camId ? await C.get(K.lock(camId)) : null;
+  if (lock?.sid === sid) await C.del(K.lock(camId));
+  await Promise.all([K.offer(sid), K.answer(sid), K.icen(sid, 'v'), K.icen(sid, 'c')].map(k => C.del(k)));
+  await C.set(K.end(sid), { reason: String(reason || 'hangup').slice(0, 20) }, TTL.sess);
 }
 
-async function stat(kind, sid) {
+async function stat(C, kind, sid) {
   /* una vez por sesión */
-  if (await kvSetNX(`${P}statmark:${sid}`, kind, TTL.sess * 2)) await kvIncrBy(K.stat(kind), 1, 400 * 86400);
+  if (await C.setnx(`${P}statmark:${sid}`, kind, TTL.sess * 2)) await C.incr(K.stat(kind), 1, 400 * 86400);
 }
 export async function rtcStats(month = new Date().toISOString().slice(0, 7)) {
   const d = new Date(month + '-01T00:00:00Z');
@@ -141,51 +212,54 @@ export async function handleRtc(req, res) {
   const b = await readBody(req);
   const sid = b.sid == null ? null : String(b.sid);
   if (sid != null && !sidOk(sid)) return res.status(400).json({ error: 'invalid' });
+  const C = counted();
+  let who = null;
+  const send = async (code, body) => { await track(who, C.n).catch(() => {}); return res.status(code).json(body); };
 
   /* ---------- lado cámara: viene con token ---------- */
   if (b.token != null) {
-    if (action === 'offer') return res.status(400).json({ error: 'invalid' });
-    const cam = await camOf(b.token);
+    if (action === 'offer') return send(400, { error: 'invalid' });
+    const cam = await camOf(C, b.token);
     if (!cam) {
-      if (!(await under(`bad:${ipHash(req)}`, LIMITS.badToken))) return res.status(429).json({ error: 'limite' });
-      return res.status(401).json({ error: 'camara_invalida' });
+      if (!(await under(C, `bad:${ipHash(req)}`, LIMITS.badToken))) return send(429, { error: 'limite' });
+      return send(401, { error: 'camara_invalida' });
     }
-    if (!(await under(`cam:${cam.camId}`, LIMITS.cam))) return res.status(429).json({ error: 'limite' });
-    const camId = cam.camId;
+    const camId = who = cam.camId;
+    if (!underMem(`cam:${camId}`, LIMITS.cam)) return send(429, { error: 'limite' });
     /* la sesión tiene que ser de ESTA cámara */
-    const own = async () => { const o = await kvGet(K.offer(sid)); return o && o.camId === camId ? o : null; };
+    const own = async () => { const o = await C.get(K.offer(sid)); return o && o.camId === camId ? o : null; };
 
     if (action === 'poll') {
-      if (b.beat) await kvSet(K.up(camId), { at: Date.now() }, TTL.up);
-      const lock = await kvGet(K.lock(camId));
-      if (!lock) {
-        const end = sid ? await kvGet(K.end(sid)) : null;
-        return res.status(200).json({ sid: null, ice: [], next: 0, ...(sid ? { ended: true, reason: end?.reason || 'expired' } : {}), iceServers: ICE_SERVERS });
-      }
+      /* reposo: UN comando (se marca prendida y se lee el timbre) */
+      let ring = false;
+      if (!sid || b.beat) ring = Boolean((await C.setGet(K.up(camId), { at: Date.now() }, TTL.up))?.ring);
+      if (!sid && !ring) return send(200, { sid: null, ice: [], next: 0, wait: IDLE_MS });
+      const [lock, n, end] = await C.mget([K.lock(camId), K.icen(sid || '-', 'v'), K.end(sid || '-')]);
+      if (!lock) return send(200, { sid: null, ice: [], next: 0, wait: IDLE_MS, ...(sid ? { ended: true, reason: end?.reason || 'expired' } : {}) });
       if (lock.sid !== sid) {
         /* sesión nueva: va la oferta y todo el ICE del viewer desde el principio */
-        const o = await kvGet(K.offer(lock.sid));
-        if (!o || o.camId !== camId) return res.status(200).json({ sid: null, ice: [], next: 0, iceServers: ICE_SERVERS });
-        const { ice, next } = await readIce(lock.sid, 'v', 0);
-        return res.status(200).json({ sid: lock.sid, offer: o.sdp, ice, next, iceServers: ICE_SERVERS });
+        const [o, n2] = await C.mget([K.offer(lock.sid), K.icen(lock.sid, 'v')]);
+        if (!o || o.camId !== camId) return send(200, { sid: null, ice: [], next: 0, wait: IDLE_MS });
+        const { ice, next } = await readIce(C, lock.sid, 'v', 0, n2);
+        return send(200, { sid: lock.sid, offer: o.sdp, ice, next, iceServers: ICE_SERVERS, wait: FAST_MS });
       }
-      const { ice, next } = await readIce(sid, 'v', b.since);
-      return res.status(200).json({ sid, ice, next });
+      const { ice, next } = await readIce(C, sid, 'v', b.since, n);
+      return send(200, { sid, ice, next, wait: FAST_MS });
     }
-    if (!sid) return res.status(400).json({ error: 'invalid' });
+    if (!sid) return send(400, { error: 'invalid' });
     if (action === 'answer') {
-      if (!sdpOk(b.sdp)) return res.status(400).json({ error: 'invalid' });
-      if (!(await own())) return res.status(403).json({ error: 'forbidden' });
-      await kvSet(K.answer(sid), { sdp: b.sdp }, TTL.sess);
-      return res.status(200).json({ ok: true });
+      if (!sdpOk(b.sdp)) return send(400, { error: 'invalid' });
+      if (!(await own())) return send(403, { error: 'forbidden' });
+      await C.set(K.answer(sid), { sdp: b.sdp }, TTL.sess);
+      return send(200, { ok: true });
     }
     if (action === 'ice') {
-      if (!(await own())) return res.status(403).json({ error: 'forbidden' });
-      return (await pushIce(sid, 'c', b.cands)) ? res.status(200).json({ ok: true }) : res.status(429).json({ error: 'limite' });
+      if (!(await own())) return send(403, { error: 'forbidden' });
+      return (await pushIce(C, sid, 'c', b.cands)) ? send(200, { ok: true }) : send(429, { error: 'limite' });
     }
     /* hangup */
-    if (await own()) await cleanup(sid, camId, 'camera');
-    return res.status(200).json({ ok: true });
+    if (await own()) await cleanup(C, sid, camId, 'camera');
+    return send(200, { ok: true });
   }
 
   /* ---------- lado viewer: sesión + compra + que la cámara sea suya ---------- */
@@ -198,47 +272,57 @@ export async function handleRtc(req, res) {
   const camId = String(b.camId || '');
   if (!camIdOk(camId)) return res.status(400).json({ error: 'invalid' });
   if (!(await ownsCamera(email, camId))) return res.status(403).json({ error: 'forbidden' });
-  if (!(await under(`v:${email}`, LIMITS.viewer))) return res.status(429).json({ error: 'limite' });
+  who = camId;
+  C.add(acc.admin ? 1 : 2);   /* compra + lista de cámaras */
+  if (!underMem(`v:${email}`, LIMITS.viewer)) return send(429, { error: 'limite' });
 
   if (action === 'offer') {
-    if (!sdpOk(b.sdp)) return res.status(400).json({ error: 'invalid' });
-    if (!(await under(`offer:${email}`, LIMITS.offer))) return res.status(429).json({ error: 'limite' });
-    if (!(await kvGet(K.up(camId)))) return res.status(409).json({ error: 'cam_offline' });
+    if (!sdpOk(b.sdp)) return send(400, { error: 'invalid' });
+    if (!(await under(C, `offer:${email}`, LIMITS.offer))) return send(429, { error: 'limite' });
+    const up = await C.get(K.up(camId));
+    if (!up) return send(409, { error: 'cam_offline' });
     const nsid = randomBytes(12).toString('hex');
-    await kvSet(K.offer(nsid), { camId, email, sdp: b.sdp }, TTL.sess);
+    await C.set(K.offer(nsid), { camId, email, sdp: b.sdp }, TTL.sess);
     const mine = { sid: nsid, email, at: Date.now() };
-    if (!(await kvSetNX(K.lock(camId), mine, TTL.lock))) {
-      const cur = await kvGet(K.lock(camId));
-      if (cur && !(b.takeover && cur.email === email)) { await kvDel(K.offer(nsid)); return res.status(409).json({ error: 'busy' }); }
-      if (cur) await cleanup(cur.sid, null, 'replaced');
-      await kvSet(K.lock(camId), mine, TTL.lock);
+    if (!(await C.setnx(K.lock(camId), mine, TTL.lock))) {
+      const cur = await C.get(K.lock(camId));
+      if (cur && !(b.takeover && cur.email === email)) { await C.del(K.offer(nsid)); return send(409, { error: 'busy' }); }
+      if (cur) await cleanup(C, cur.sid, null, 'replaced');
+      await C.set(K.lock(camId), mine, TTL.lock);
     }
-    return res.status(200).json({ sid: nsid, iceServers: ICE_SERVERS });
+    /* timbre: la cámara lo lee en su próxima consulta lenta (hasta IDLE_MS) */
+    await C.set(K.up(camId), { ...up, ring: true }, TTL.up);
+    return send(200, { sid: nsid, iceServers: ICE_SERVERS, wake: IDLE_MS });
   }
-  if (!sid) return res.status(400).json({ error: 'invalid' });
-  const lock = await kvGet(K.lock(camId));
-  const mine = lock && lock.sid === sid && lock.email === email;
+  if (!sid) return send(400, { error: 'invalid' });
 
+  if (action === 'poll') {
+    const [lock, ans, n] = await C.mget([K.lock(camId), K.answer(sid), K.icen(sid, 'c')]);
+    if (!(lock && lock.sid === sid && lock.email === email)) return notMine();
+    /* renueva el candado (un viewer por vez mientras siga mirando) */
+    await C.set(K.lock(camId), { ...lock, at: Date.now() }, TTL.lock);
+    if (b.connected) await stat(C, 'ok', sid);
+    const { ice, next } = await readIce(C, sid, 'c', b.since, n);
+    return send(200, { ...(ans ? { answer: ans.sdp } : {}), ice, next });
+  }
+  const lock = await C.get(K.lock(camId));
+  const mine = lock && lock.sid === sid && lock.email === email;
   if (action === 'hangup') {
-    if (mine || (await kvGet(K.offer(sid)))?.email === email) {
-      const reason = ['timeout', 'failed'].includes(b.reason) ? b.reason : 'viewer';
-      if (reason !== 'viewer') await stat('fail', sid);
-      await cleanup(sid, camId, reason);
+    if (mine || (await C.get(K.offer(sid)))?.email === email) {
+      const reason = ['timeout', 'failed', 'nowake'].includes(b.reason) ? b.reason : 'viewer';
+      if (reason === 'timeout' || reason === 'failed') await stat(C, 'fail', sid);
+      await cleanup(C, sid, camId, reason);
     }
-    return res.status(200).json({ ok: true });
+    return send(200, { ok: true });
   }
-  if (!mine) {
-    /* la sesión no es (o ya no es) de esta cuenta: no se muestra nada de ella */
-    const o = await kvGet(K.offer(sid));
-    if (o && o.email !== email) return res.status(403).json({ error: 'forbidden' });
-    const end = await kvGet(K.end(sid));
-    return res.status(200).json({ ended: true, reason: end?.reason || 'expired', ice: [], next: 0 });
+  if (!mine) return notMine();
+  return (await pushIce(C, sid, 'v', b.cands)) ? send(200, { ok: true }) : send(429, { error: 'limite' });
+
+  /* la sesión no es (o ya no es) de esta cuenta: no se muestra nada de ella */
+  async function notMine() {
+    const o = await C.get(K.offer(sid));
+    if (o && o.email !== email) return send(403, { error: 'forbidden' });
+    const end = await C.get(K.end(sid));
+    return send(200, { ended: true, reason: end?.reason || 'expired', ice: [], next: 0 });
   }
-  if (action === 'ice') return (await pushIce(sid, 'v', b.cands)) ? res.status(200).json({ ok: true }) : res.status(429).json({ error: 'limite' });
-  /* poll: renueva el candado (un viewer por vez mientras siga mirando) */
-  await kvSet(K.lock(camId), { ...lock, at: Date.now() }, TTL.lock);
-  if (b.connected) await stat('ok', sid);
-  const ans = await kvGet(K.answer(sid));
-  const { ice, next } = await readIce(sid, 'c', b.since);
-  return res.status(200).json({ ...(ans ? { answer: ans.sdp } : {}), ice, next });
 }
