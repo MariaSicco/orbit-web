@@ -644,9 +644,11 @@ async function leerFactura(file) {
   lectura = { p, modo: j.modo, match: desde || cuentaQueCoincide(d.cuentas, p) };
   revisarLectura();
 }
-function errorLectura(msg, login = false) {
+function errorLectura(msg, login = false, deResumen = false) {
   abrir('No se pudo leer', `<p class="nota">${esc(msg)}</p><div class="acciones">
-    ${login ? `<a class="bt prim ancho" href="/acceso?next=${encodeURIComponent('/herramientas/vencimientos')}">Entrar</a>` : `<button type="button" class="bt prim ancho" data-acc="leer-reintentar"><svg><use href="#i-camara"/></svg> Probar con otra foto</button>`}
+    ${login ? `<a class="bt prim ancho" href="/acceso?next=${encodeURIComponent('/herramientas/vencimientos')}">Entrar</a>`
+      : deResumen ? `<button type="button" class="bt prim ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Probar de nuevo</button>`
+      : `<button type="button" class="bt prim ancho" data-acc="leer-reintentar"><svg><use href="#i-camara"/></svg> Probar con otra foto</button>`}
     <button type="button" class="bt sec ancho" data-acc="leer-manual">Cargarla a mano</button></div>`);
 }
 function revisarLectura() {
@@ -818,9 +820,9 @@ async function leerResumen(file) {
   try {
     r = await fetch('/api/vencimientos-resumen', { method: 'POST', body: file, credentials: 'same-origin', headers: { 'Content-Type': 'application/pdf' } });
     j = await r.json().catch(() => ({}));
-  } catch { return errorLectura('Sin conexión. La lectura necesita internet; probá de nuevo.'); }
+  } catch { return errorLectura('Sin conexión. La lectura necesita internet; probá de nuevo.', false, true); }
   if (r.status === 401) return errorLectura('Tu sesión de Orbit se cerró. Entrá de nuevo para leer el resumen.', true);
-  if (!r.ok || !j.ok) return errorLectura(j.error || 'No pudimos leer el resumen. Probá de nuevo en un rato.');
+  if (!r.ok || !j.ok) return errorLectura(j.error || 'No pudimos leer el resumen. Probá de nuevo en un rato.', false, true);
   encontrados = cuentasDesdeResumen(j.lectura, hoy);
   const t = j.lectura?.tarjeta || {};
   const de = [t.red, t.banco].filter(Boolean).join(' ') || 'tu tarjeta';

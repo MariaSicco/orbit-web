@@ -36,6 +36,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') { res.setHeader('Allow', 'GET, POST'); return responder(res, 405, { ok: false, error: 'Usá POST con el PDF.' }); }
   const acc = await requireHerramienta(req, res, PRODUCTO);
   if (!acc) return;
+  if (req.method === 'GET' && req.query?.diag && acc.admin) return responder(res, 200, await diagnostico());
   if (req.method === 'GET') return responder(res, 200, { ok: true, modo: hayKey() ? 'real' : 'prueba' });
 
   if (Number(req.headers['content-length'] || 0) > MAX_BYTES) return responder(res, 413, { ok: false, motivo: 'grande', error: GRANDE });
@@ -69,4 +70,25 @@ export default async function handler(req, res) {
     return responder(res, ESTADO_ERROR[t] || 502, { ok: false, modo: 'real', motivo: t,
       error: e instanceof ErrorLectura ? e.message : 'No pudimos leer el resumen ahora. Probá de nuevo en un rato.' });
   }
+}
+
+/* Solo cuentas administradoras: ¿anda la key? Hace una llamada mínima (unos pocos tokens) con el
+   mismo modelo y devuelve el estado y el mensaje de error de Anthropic. Nunca muestra la key. */
+async function diagnostico() {
+  if (!hayKey()) return { ok: false, key: false, detalle: 'No hay ANTHROPIC_API_KEY en este entorno (¿está tildado Preview en Vercel?).' };
+  const k = process.env.ANTHROPIC_API_KEY;
+  const forma = { largo: k.length, empieza: k.slice(0, 7), espacios: k !== k.trim() };
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const c = new Anthropic({ maxRetries: 0 });
+  const prueba = async (nombre, pedido) => {
+    try { const r = await c.beta.messages.create(pedido, { timeout: 20000 }); return { nombre, ok: true, modelo: r.model }; }
+    catch (e) { return { nombre, ok: false, status: e?.status ?? null, tipo: e?.error?.error?.type || e?.name || null, mensaje: String(e?.error?.error?.message || e?.message || '').slice(0, 300) }; }
+  };
+  const base = { model: MODELO, max_tokens: 5, messages: [{ role: 'user', content: 'Respondé ok' }] };
+  const pruebas = [
+    await prueba('modelo', base),
+    await prueba('modelo + fallback', { ...base, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' }),
+    await prueba('modelo + json', { ...base, max_tokens: 20, output_config: { effort: 'low', format: { type: 'json_schema', schema: { type: 'object', additionalProperties: false, required: ['ok'], properties: { ok: { type: 'boolean' } } } } } }),
+  ];
+  return { ok: pruebas.every(p => p.ok), key: true, forma, modelo: MODELO, pruebas };
 }
