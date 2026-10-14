@@ -307,7 +307,7 @@ function contarHasta(el) {
 function textoParaCompartir() {
   const ocs = [...V.atrasados(d, hoy), ...V.ocurrenciasEntre(d, hoy, V.sumarDias(hoy, 30), hoy).filter(o => !o.resuelto)].filter(o => !o.cuenta.enTarjeta);
   const total = sumaARS(ocs);
-  const lineas = ocs.slice(0, 15).map(o => `• ${o.cuenta.nombre} · ${V.fechaCorta(o.vence)}${o.monto != null ? ` · ${plata(o.monto, o.moneda)}` : ''}`);
+  const lineas = ocs.slice(0, 15).map(o => `• ${o.cuenta.nombre} · ${V.fechaCorta(o.vence)}${V.mesDe(o.vence) !== V.mesDe(hoy) ? ` de ${V.nombreMes(V.mesDe(o.vence))}` : ''}${o.monto != null ? ` · ${plata(o.monto, o.moneda)}` : ''}`);
   return `Lo que vence en casa en los próximos 30 días${total ? `: ${plata(total)}` : ''}\n${lineas.join('\n')}${ocs.length > 15 ? `\n… y ${ocs.length - 15} más` : ''}\n\nHecho con Vencimientos de la Casa · Orbit`;
 }
 async function compartirMes() {
