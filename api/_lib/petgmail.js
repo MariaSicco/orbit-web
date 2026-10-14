@@ -112,7 +112,7 @@ export const gmail = {
   }),
   async exchange(cfg, code) {
     const { ok, d } = await tokenCall({ code, client_id: cfg.clientId, client_secret: cfg.secret, redirect_uri: cfg.redirect, grant_type: 'authorization_code' });
-    if (!ok || !d.access_token) return { error: 'error' };
+    if (!ok || !d.access_token) { console.warn('gmail exchange:', d.error || 'sin_token', String(d.error_description || '').slice(0, 200)); return { error: 'error' }; }
     /* con el consentimiento granular la persona puede destildar el permiso: sin él no hay nada que hacer */
     if (!String(d.scope || '').split(/\s+/).includes(SCOPE)) { await revokeToken(d.refresh_token || d.access_token).catch(() => {}); return { error: 'sinpermiso' }; }
     if (!d.refresh_token) return { error: 'error' };

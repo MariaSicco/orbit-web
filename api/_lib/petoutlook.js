@@ -80,7 +80,11 @@ export const outlook = {
   }),
   async exchange(cfg, code, verifier) {
     const { ok, d } = await tokenCall({ client_id: cfg.clientId, client_secret: cfg.secret, code, redirect_uri: cfg.redirect, grant_type: 'authorization_code', code_verifier: verifier, scope: SCOPES.join(' ') });
-    if (!ok || !d.access_token) return { error: d.error === 'consent_required' ? 'sinpermiso' : 'error' };
+    if (!ok || !d.access_token) {
+      /* solo el código y la descripción de Microsoft (AADSTS…), nunca el secreto ni el code */
+      console.warn('outlook exchange:', d.error || 'sin_token', String(d.error_description || '').split('\n')[0].slice(0, 200));
+      return { error: d.error === 'consent_required' ? 'sinpermiso' : 'error' };
+    }
     if (!/(^|\s|\/)mail\.read(\s|$)/i.test(String(d.scope || ''))) return { error: 'sinpermiso' };
     if (!d.refresh_token) return { error: 'error' };
     return { refresh: d.refresh_token, address: addressOf(d.id_token) };
