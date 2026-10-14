@@ -453,7 +453,7 @@ function abrir(titulo, cuerpo) {
   if (!hoja.open) hoja.showModal();
   $id('hoja-cuerpo').scrollTop = 0;
 }
-const cerrar = () => { if (hoja.open) hoja.close(); };
+const cerrar = () => { if (hoja.open) hoja.close(); hoja.classList.remove('hoja-intro'); };
 hoja.addEventListener('click', e => { if (e.target === hoja) cerrar(); });
 
 function buscarOc(id) {
@@ -945,6 +945,9 @@ function abrirAjustes() {
       <button type="button" class="bt sec" data-acc="importar"><svg><use href="#i-subir"/></svg> Restaurar</button>
     </div>
   </div>
+  <div class="ajustes-sec"><h3>Cómo se usa</h3>
+    <div class="acciones dos"><button type="button" class="bt sec" data-acc="ver-intro">Ver la bienvenida</button><button type="button" class="bt sec" data-acc="ver-guia">Recorrido guiado</button></div>
+  </div>
   <div class="ajustes-sec"><h3>Empezar de cero</h3>
     ${!d.cuentas.length ? `<button type="button" class="bt sec ancho" data-acc="ejemplo">Ver con datos de ejemplo</button>` : `<button type="button" class="bt peligro ancho" data-acc="borrar-todo">${ui.borrarArmado === '*' ? '¿Seguro? Se borra todo. Tocá de nuevo' : 'Borrar todos mis datos'}</button>`}
   </div>
@@ -1000,6 +1003,12 @@ document.addEventListener('click', e => {
     case 'tick': tick(b.dataset.id, b); break;
     case 'ver-resueltos': ui.resueltos = true; render(); break;
     case 'ir': irA(b.dataset.v); break;
+    case 'intro-sig': slide = Math.min(SLIDES.length - 1, slide + 1); pintarSlide(); break;
+    case 'intro-fin': marcarVisto(GUIA.intro); $id('hoja').classList.remove('hoja-intro'); cerrar(); render(); break;
+    case 'tour-sig': paso++; pintarPaso(); break;
+    case 'tour-fin': cerrarTour(); break;
+    case 'ver-guia': cerrar(); if (d.cuentas.length) { irA('inicio'); setTimeout(abrirTour, 400); } else abrirIntro(); break;
+    case 'ver-intro': cerrar(); setTimeout(abrirIntro, 200); break;
     case 'cuenta': verCuenta(b.dataset.c); break;
     case 'editar': { const c = d.cuentas.find(x => x.id === b.dataset.c); if (c) abrirForm(c, false); break; }
     case 'borrar': {
@@ -1164,11 +1173,117 @@ function irA(v) {
 }
 window.addEventListener('scroll', () => document.querySelector('.top').classList.toggle('con-borde', window.scrollY > 4), { passive: true });
 
+
+/* ── guía: bienvenida (4 pantallas) y recorrido con globitos ──
+   Se ven una sola vez (marca en localStorage) y se repiten desde Ajustes. */
+const GUIA = { intro: 'orbit:vencimientos:intro', tour: 'orbit:vencimientos:tour' };
+const visto = k => { try { return localStorage.getItem(k) === '1'; } catch { return true; } };
+const marcarVisto = k => { try { localStorage.setItem(k, '1'); } catch {} };
+
+const SLIDES = [
+  { t: 'Todo lo que <span class="it">vence,</span> en un lugar', p: 'Luz, gas, expensas, la tarjeta, Netflix, la VTV. Ves qué viene y cuánto vas a pagar en los próximos 30 días.', ilus: () => ILUS_CASA },
+  { t: 'Cargalo sin <span class="it">tipear</span>', p: 'Subí el resumen de tu tarjeta y conectá tu mail: encontramos lo que pagás todos los meses, con fecha y monto.', ilus: () => `<div class="slide-ics">${['tarjeta', 'sobre', 'camara'].map((x, i) => `<span style="--i:${i}"><svg><use href="#${x === 'tarjeta' ? 'c-' : 'i-'}${x}"/></svg></span>`).join('')}</div>` },
+  { t: 'Te avisa <span class="it">antes</span>', p: 'Sumá todo al calendario de tu celular: te avisa unos días antes y el mismo día. Si algo se debita solo, te recuerda revisar.', ilus: () => `<div class="slide-ics slide-aviso"><span><svg><use href="#i-campana"/></svg></span><b>Edenor vence en 3 días</b></div>` },
+  { t: 'Pagaste, <span class="it">tocás</span> y listo', p: 'Marcá cada cuenta como pagada en un toque. La app aprende el monto y te muestra cuánto subió cada servicio.', ilus: () => ILUS_LISTO },
+];
+let slide = 0;
+function abrirIntro() {
+  slide = 0;
+  pintarSlide();
+}
+function pintarSlide() {
+  const sl = SLIDES[slide];
+  const ultimo = slide === SLIDES.length - 1;
+  abrir('', `<div class="intro">
+    <div class="intro-ilus">${sl.ilus()}</div>
+    <h2 class="intro-t">${sl.t}</h2>
+    <p class="intro-p">${sl.p}</p>
+    <div class="puntos-intro" aria-hidden="true">${SLIDES.map((_, i) => `<i class="${i === slide ? 'on' : ''}"></i>`).join('')}</div>
+    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="${ultimo ? 'intro-fin' : 'intro-sig'}">${ultimo ? 'Empezar' : 'Siguiente'} <svg><use href="#i-flecha"/></svg></button>
+    ${ultimo ? '' : '<button type="button" class="btn-txt" data-acc="intro-fin">Saltar</button>'}</div>
+    <p class="solo-lector" aria-live="polite">Paso ${slide + 1} de ${SLIDES.length}</p>
+  </div>`);
+  $id('hoja').classList.add('hoja-intro');
+  $id('hoja').querySelector('[data-acc^=intro]')?.focus();
+}
+
+/* Recorrido: ilumina cada parte y la explica. Salta los pasos cuyo elemento no está. */
+const PASOS = [
+  ['.mes', 'Esto es lo que tenés que pagar', 'El total de los próximos 30 días. Abajo, cuánto llevás pagado este mes.'],
+  ['.spot', 'Lo próximo que vence', 'Cuando lo pagues, tocá "Ya lo pagué". Si es vencido, se pone en rojo.'],
+  ['.lista .tick', 'Marcá pagado en un toque', 'El círculo de cada cuenta la marca como pagada. Si te equivocaste, tocás "Deshacer".'],
+  ['.tags', 'Qué significa cada etiqueta', '"Se debita solo": débito automático. "Va en la tarjeta": ya está en el total de la tarjeta. "Monto estimado": se ajusta cuando pagás.'],
+  ['.completa', 'Completá tu casa', 'Seguí estos pasos para tener todo: resumen, mail, expensas y avisos.'],
+  ['#b-agregar', 'Sumá una cuenta', 'Con una foto de la factura, el resumen de la tarjeta, tu mail o a mano.'],
+  ['#b-cal-ics', 'Que te avise el celular', 'Bajá todos los vencimientos a tu calendario, con aviso antes.'],
+  ['.tabs [data-tab=numeros]', 'Mirá los números', 'Cuánto se va por año, por categoría y cuánto subió cada servicio.'],
+];
+let paso = -1, pasosVivos = [];
+function abrirTour() {
+  pasosVivos = PASOS.filter(([sel]) => document.querySelector(sel));
+  if (!pasosVivos.length) return;
+  paso = 0;
+  let capa = $id('guia');
+  if (!capa) {
+    capa = document.createElement('div');
+    capa.id = 'guia';
+    capa.innerHTML = '<div class="velo"></div><div class="hueco"></div><div class="globo" role="dialog" aria-modal="true" aria-labelledby="globo-t"></div>';
+    document.body.appendChild(capa);
+  }
+  capa.hidden = false;
+  pintarPaso();
+}
+function cerrarTour() {
+  const capa = $id('guia');
+  if (capa) capa.hidden = true;
+  paso = -1;
+  marcarVisto(GUIA.tour);
+}
+function pintarPaso() {
+  const [sel, t, p] = pasosVivos[paso];
+  const el = document.querySelector(sel);
+  if (!el) { paso < pasosVivos.length - 1 ? (paso++, pintarPaso()) : cerrarTour(); return; }
+  el.scrollIntoView({ block: 'center', behavior: 'auto' }); // instantáneo: así el agujero y el globo caen en el lugar justo
+  const capa = $id('guia'), hueco = capa.querySelector('.hueco'), globo = capa.querySelector('.globo');
+  const ultimo = paso === pasosVivos.length - 1;
+  globo.innerHTML = `<span class="mono">${paso + 1} de ${pasosVivos.length}</span><b id="globo-t">${t}</b><p>${p}</p>
+    <div class="globo-acc">${ultimo ? '<span></span>' : '<button type="button" class="btn-txt" data-acc="tour-fin">Saltar</button>'}
+    <button type="button" class="bt prim" data-acc="${ultimo ? 'tour-fin' : 'tour-sig'}">${ultimo ? '¡Listo!' : 'Siguiente'}</button></div>`;
+  const ubicar = () => {
+    const r = el.getBoundingClientRect(), m = 8;
+    Object.assign(hueco.style, { top: `${r.top - m}px`, left: `${r.left - m}px`, width: `${r.width + m * 2}px`, height: `${r.height + m * 2}px` });
+    /* velo oscuro con un agujero donde está lo que se explica */
+    const [x, y, w, h] = [r.left - m, r.top - m, r.width + m * 2, r.height + m * 2];
+    capa.querySelector('.velo').style.clipPath = `path(evenodd, "M0 0H${innerWidth}V${innerHeight}H0Z M${x} ${y}H${x + w}V${y + h}H${x}Z")`;
+    const g = globo.getBoundingClientRect();
+    const abajo = r.bottom + 14 + g.height < innerHeight - 90;
+    const top = abajo ? r.bottom + 14 : Math.max(12, r.top - g.height - 14);
+    const left = Math.min(Math.max(12, r.left + r.width / 2 - g.width / 2), innerWidth - g.width - 12);
+    Object.assign(globo.style, { top: `${top}px`, left: `${left}px` });
+    globo.dataset.lado = abajo ? 'abajo' : 'arriba';
+  };
+  ubicar();
+  requestAnimationFrame(ubicar);
+  setTimeout(ubicar, 300);
+  globo.querySelector('.bt')?.focus({ preventScroll: true });
+}
+addEventListener('resize', () => { if (paso >= 0) pintarPaso(); });
+addEventListener('scroll', () => { if (paso >= 0) { clearTimeout(window.__tourT); window.__tourT = setTimeout(pintarPaso, 120); } }, { passive: true });
+addEventListener('keydown', e => { if (paso >= 0 && e.key === 'Escape') cerrarTour(); });
+
+/* Al render: bienvenida si nunca la vio; recorrido la primera vez que hay datos en Inicio. */
+function guiaSiCorresponde() {
+  if (hoja.open || paso >= 0) return;
+  if (!visto(GUIA.intro) && !d.cuentas.length) { setTimeout(abrirIntro, 300); return; }
+  if (!visto(GUIA.tour) && d.cuentas.length && ui.vista === 'inicio') setTimeout(() => { if (!hoja.open && paso < 0) abrirTour(); }, 600);
+}
+
 function render() {
   hoy = V.hoyLocal();
   document.querySelectorAll('.vista').forEach(s => { s.hidden = s.dataset.vista !== ui.vista; });
   document.querySelectorAll('.tabs [data-tab]').forEach(b => { if (b.dataset.tab === ui.vista) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
   ({ inicio: vistaInicio, calendario: vistaCalendario, cuentas: vistaCuentas, numeros: vistaNumeros })[ui.vista]();
+  guiaSiCorresponde();
 }
 
 /* Al volver a la app (otro día, otra pestaña), refrescar. */
