@@ -9,7 +9,7 @@
 <link rel="icon" href="/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="/assets/css/mascotas.css?v=29">
+<link rel="stylesheet" href="/assets/css/mascotas.css?v=32">
 </head>
 <body>
 <header class="top">
@@ -32,16 +32,22 @@ const tel = s => String(s || '').replace(/[^\d+]/g, '');
 const wa = s => tel(s).replace(/^\+/, '');
 function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 2800); }
 const photo = p => p.photo ? `<img class="hero-photo" src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">` : '';
-const notFound = () => { app.innerHTML = '<div class="empty"><h2>Este link ya no está activo</h2><p>Puede que la persona lo haya apagado. Pedile uno nuevo.</p></div>'; };
+const state = (h, t) => { app.innerHTML = `<div class="empty" role="status"><h2>${h}</h2><p>${t}</p></div>`; };
+const notFound = () => state('Este link ya no está activo', kind === 'c' ? 'Puede que la familia lo haya apagado. Pedile uno nuevo.' : 'Puede que la persona lo haya apagado. Pedile uno nuevo.');
+/* el link del cuidador vence solo unos días después de la fecha de vuelta (el servidor responde 404 con error de vencido) */
+const expired = () => state('Este link venció', 'Pasaron los días para los que la familia te lo mandó. Si la seguís cuidando, pediles uno nuevo.');
+/* la ficha llegó pero tiene datos viejos o incompletos: no es un problema de la conexión de quien la abre */
+const broken = () => state('No pudimos mostrar esta ficha', kind === 'c' ? 'Faltan datos en la ficha del cuidador. Pedile a la familia que revise en Mimitos los datos para el cuidador y te mande el link de nuevo.' : 'Faltan datos en esta ficha. Si es tuya, abrila en Mimitos y guardala de nuevo.');
 
 async function load() {
   if (!token) return notFound();
-  try {
-    const r = await fetch(`/api/mascotas?${kind}=${token}`);
-    if (!r.ok) return notFound();
-    const d = await r.json();
-    kind === 's' ? ficha(d.pet, d.updatedAt, d.owner) : cuidador(d.pet);
-  } catch { app.innerHTML = '<div class="empty"><h2>No pudimos cargar la ficha</h2><p>Revisá tu conexión y recargá la página.</p></div>'; }
+  let r, d;
+  try { r = await fetch(`/api/mascotas?${kind}=${token}`); d = await r.json().catch(() => null); }
+  catch { return state('No pudimos cargar la ficha', 'Revisá tu conexión y recargá la página.'); }
+  if (r.status === 404 || r.status === 410) return d?.expired || /venc|expir/i.test(d?.error || '') ? expired() : notFound();
+  if (!r.ok || !d?.pet) return r.status >= 500 ? state('No pudimos cargar la ficha', 'Puede ser un problema nuestro. Probá de nuevo en un rato.') : notFound();
+  try { kind === 's' ? ficha(d.pet, d.updatedAt, d.owner) : cuidador(d.pet, d.until); }
+  catch (e) { console.warn('[mimitos] ficha incompleta', e?.message); broken(); }
 }
 
 /* ficha pública del QR del collar: solo lo necesario para que la devuelvan */
@@ -61,7 +67,7 @@ function ficha(p, updatedAt, owner) {
   app.innerHTML = `
     ${owner ? `<p class="banner ok-b" style="font-size:14px">${bubble('qr', 'viaje')}<span>Así ve tu ficha quien escanea el QR. Tu visita no cuenta como escaneo.</span></p>` : ''}
     ${p.lost ? `<section class="banner lost qr-lost"><span class="eyebrow">Se perdió</span><h1>Estoy ${perdid}</h1><p>${p.lost.since ? 'Desde ' + esc(Z.fmtWhen(new Date(p.lost.since))) : ''}${p.lost.place ? (p.lost.since ? ', ' : '') + esc(p.lost.place) : ''}${p.lost.since || p.lost.place ? '.' : ''}${p.lost.note ? ' ' + esc(p.lost.note) : ''}</p><p><b>Si me ves, no me persigas.</b> Avisale a mi familia.</p></section>` : ''}
-    <section class="qr-hero${p.photo && p.photoFull ? ' cut' : ''}" style="--hero:${HUES[p.hue] || HUES.azul}">
+    <section class="qr-hero${p.photo && (p.cut || p.photoFull) ? ' cut' : ''}" style="--hero:${HUES[p.hue] || HUES.azul}">
       <div class="qh-stage">${p.photo ? `<img src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">` : `<span class="qh-ic">${Z.petIcon(p)}</span>`}</div>
       <div class="qh-txt"><p class="hello">${p.lost ? 'Me están buscando' : '¡Hola! Me llamo'}</p><h1>${esc(p.name)}</h1>
       ${p.temper ? `<div class="pills"><span class="pill">${esc(p.temper)}</span></div>` : ''}
@@ -87,7 +93,7 @@ function ficha(p, updatedAt, owner) {
       <button class="btn big wide" type="button" id="fSend">Avisar a su familia</button>
     </section>
     ${facts.length ? `<section class="sec"><h2>Para reconocer${ella === 'lo' ? 'lo' : 'la'}</h2><div class="facts">${facts.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div></section>` : ''}
-    <p class="note">Esta ficha muestra solo lo necesario para que ${esc(p.name)} vuelva a casa. Cuando la abrís, su familia recibe un aviso con la hora y la ciudad aproximada de tu conexión. Mimitos by Orbit.</p>`;
+    <p class="note">Esta ficha muestra solo lo necesario para que ${esc(p.name)} vuelva a casa. Cuando la abrís, su familia recibe un aviso con la hora y la ciudad aproximada de tu conexión. Lo que mandes se guarda 90 días en el registro de su familia. <a href="/privacidad#mimitos">Privacidad</a>. Mimitos by Orbit.</p>`;
   wireFound();
 }
 function locView() {
@@ -131,15 +137,21 @@ let P = null;
 const KIND = { comida: ['Comió', 'bowl', 'comida'], paseo: ['Salió a pasear', 'walk', 'viaje'], med: ['Remedio', 'pill', 'med'], ok: ['Todo bien', 'check', 'salud'], nota: ['Nota', 'note', 'plata'] };
 function me() { try { return localStorage.getItem('mz_by') || ''; } catch { return ''; } }
 function setMe(v) { try { localStorage.setItem('mz_by', v); } catch {} }
-function cuidador(p) {
+let UNTIL = '';
+function cuidador(raw, until) {
+  UNTIL = until || UNTIL;
+  /* docs viejos o a medio cargar: sin sitter, sin remedios, sin contacto o sin veterinaria */
+  const p = { ...raw, name: raw?.name || 'la mascota', sitter: raw?.sitter || {}, meds: Array.isArray(raw?.meds) ? raw.meds : [], log: Array.isArray(raw?.log) ? raw.log.filter(l => l && l.at) : [], contact: raw?.contact || {}, vet: raw?.vet || {} };
   P = p; document.getElementById('kindTag').textContent = 'Cuidando a ' + p.name;
   document.title = `Cuidando a ${p.name}`;
+  /* "Gracias por cuidarla/cuidarlo"; si no sabemos el sexo, neutro */
+  const gracias = p.sex === 'm' ? 'Gracias por cuidarlo' : p.sex === 'h' ? 'Gracias por cuidarla' : 'Gracias por cuidar a';
   const s = p.sitter, meds = p.meds.map(m => ({ m, st: Z.medState(m, p.log) })).filter(x => !['ended', 'nostart'].includes(x.st.state));
   const info = [['Comida', s.food, 'bowl', 'comida'], ['Paseos', s.walks, 'walk', 'viaje'], ['Dónde está cada cosa', s.where, 'search', 'plata'], ['Mañas y miedos', s.habits || p.temper, 'paw', 'cuida'], ['Llave de respaldo', s.key, 'home', 'salud'], ['Si pasa algo', s.emergency, 'alert', 'perdida']].filter(x => x[1]);
   const medName = id => p.meds.find(m => m.id === id)?.name || 'Remedio';
   const range = s.from || s.to ? `Del ${s.from ? fmt(s.from, { day: 'numeric', month: 'short' }) : '…'} al ${s.to ? fmt(s.to, { day: 'numeric', month: 'short' }) : '…'}` : '';
   app.innerHTML = `
-    <section class="hero c-${Z.tone({ id: token })}"><div class="hero-top">${av(p)}<div><p class="hello">${range ? range + '. ' : ''}Gracias por cuidarla</p><h1>${esc(p.name)}</h1></div></div>
+    <section class="hero c-${Z.tone({ id: token })}"><div class="hero-top">${av(p)}<div><p class="hello">${range ? range + '. ' : ''}${gracias}</p><h1>${esc(p.name)}</h1></div></div>
       ${p.allergies ? `<div class="pills"><span class="pill warn">Alergia: ${esc(p.allergies)}</span></div>` : ''}</section>
     <div class="f"><label for="by">Tu nombre</label><input id="by" maxlength="40" value="${esc(me() || s.name || '')}" placeholder="Así la familia sabe quién anotó"></div>
     <section class="sec"><h2>¿Cómo va el día?</h2>
@@ -154,15 +166,17 @@ function cuidador(p) {
       ${p.vet.name ? `<div class="row">${bubble('heart', 'salud')}<span class="what"><b>${esc(p.vet.name)}</b><small>${esc(p.vet.address || 'Su veterinaria')}</small></span>${p.vet.phone ? `<a class="ibtn go" href="tel:${esc(tel(p.vet.phone))}" aria-label="Llamar">${I('phone')}</a>` : '<span></span>'}</div>` : ''}
       ${p.vet.er ? `<div class="row">${bubble('alert', 'perdida')}<span class="what"><b>${esc(p.vet.er)}</b><small>Guardia 24 horas</small></span>${p.vet.erPhone ? `<a class="ibtn go" href="tel:${esc(tel(p.vet.erPhone))}" aria-label="Llamar">${I('phone')}</a>` : '<span></span>'}</div>` : ''}
     </div></section>
-    <section class="sec"><h2>Lo anotado</h2>${p.log.length ? `<div class="list">${[...p.log].reverse().slice(0, 15).map(l => { const k = KIND[l.kind]; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by)}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div>` : '<p class="dim">Todavía no hay nada anotado.</p>'}</section>
-    <p class="note">La familia de ${esc(p.name)} ve lo que anotás. Mimitos.</p>`;
+    <section class="sec"><h2>Lo anotado</h2>${p.log.length ? `<div class="list">${[...p.log].reverse().slice(0, 15).map(l => { const k = KIND[l.kind] || KIND.nota; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by)}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div>` : '<p class="dim">Todavía no hay nada anotado.</p>'}</section>
+    <p class="note">La familia de ${esc(p.name)} ve lo que anotás.${UNTIL ? ` Este link anda hasta el ${esc(fmt(UNTIL, { day: 'numeric', month: 'long' }))}.` : ''} Mimitos.</p>`;
 }
 async function post(body) {
   const by = (document.getElementById('by')?.value || '').trim(); setMe(by);
   try {
     const r = await fetch(`/api/mascotas?c=${token}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, by }) });
-    const d = await r.json(); if (!r.ok) throw 0;
-    cuidador(d.pet); toast('Anotado. La familia ya lo ve.');
+    const d = await r.json().catch(() => null);
+    if (r.status === 404) return d?.expired || /venc|expir/i.test(d?.error || '') ? expired() : notFound();
+    if (!r.ok || !d?.pet) throw 0;
+    cuidador(d.pet, d.until || UNTIL); toast('Anotado. La familia ya lo ve.');
   } catch { toast('No se pudo anotar. Revisá la conexión y probá de nuevo.'); }
 }
 app.addEventListener('click', e => {

@@ -403,6 +403,8 @@ window.ORBIT_PRODUCTS = [
     family: 'systems', status: 'soon', price: 24, ars: 35990,
     accent: 'blue', checkout: '', photo: 'ob-018',
     acceso: '/mascotas',
+    /* sello propio en la ficha: reemplaza "12 meses de actualizaciones" de las herramientas (producto.html) */
+    sello: ['12 meses de funciones inteligentes', '12 months of smart features'],
     pantallasDir: 'ob-018',
     pantallas: [
       ['p1', {es: 'Inicio', en: 'Home'},

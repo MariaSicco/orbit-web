@@ -46,7 +46,7 @@ import { kvGet, kvSet, kvDel, kvIncrBy, kvSetNX } from './_lib/kv.js';
 import { readSession, readBody } from './_lib/auth.js';
 import { accesoHerramienta } from './_lib/herramienta-acceso.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath, putPrivate } from './_lib/blob.js';
-import { handleMail, disconnectAnyway } from './_lib/petmail.js';
+import { handleMail, disconnectAnyway, mailAllowed } from './_lib/petmail.js';
 import { handleAsk } from './_lib/petask.js';
 import { gmail } from './_lib/petgmail.js';
 import { outlook } from './_lib/petoutlook.js';
@@ -550,7 +550,8 @@ export default async function handler(req, res) {
     const ai = await aiStatus(s.email, aiCtx).catch(() => null);
     const renew = ai?.expired ? await renewInterest(s.email).catch(() => false) : false;
     const paused = await aiPaused().catch(() => false);
-    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans, ai: ai ? { ...ai, paused } : ai, renew, sitterLinks });
+    /* mail.allowed: la app no consulta ?gmail=status ni ?outlook=status si la cuenta no está habilitada (sin 403 en la consola) */
+    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans, ai: ai ? { ...ai, paused } : ai, renew, sitterLinks, mail: { allowed: mailAllowed(s.email) } });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   const body = await readBody(req);

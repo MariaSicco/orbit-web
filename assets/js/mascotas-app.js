@@ -21,6 +21,8 @@ let mode = 'loading', doc = { pets: [] }, rev = 0, me = { email: '', name: '' };
 let purchase = null, notify = null, scans = [], curId = '';
 /* funciones inteligentes: vencimiento y, solo si quedan pocas, cuántas importaciones quedan (api/_lib/petquota.js) */
 let aiq = null, renewAsked = false;
+/* link del cuidador: hasta cuándo anda ({ active, until } o { active:false, expired:true }), lo manda el servidor */
+let sitterLinks = {};
 /* Conectar tu mail: estado de cada proveedor (undefined mientras carga, null si la cuenta no está habilitada) y la búsqueda en curso */
 const mstat = { gmail: undefined, outlook: undefined };
 let gm = null, msenders = [];
@@ -60,7 +62,8 @@ function selectPet(id) { curId = id; store.set('pet', id); }
 /* ---------- guardado: en la cuenta, con aviso si no hay conexión ---------- */
 const saveEl = $('#save');
 let saveTimer = null, saving = false, pending = false, dirty = false;
-const setSave = (t, st) => { saveEl.textContent = t; saveEl.className = 'save' + (st ? ' ' + st : ''); saveEl.onclick = null; };
+/* el estado de guardado solo es un botón cuando hay que reintentar; si no, no entra en el orden de tab */
+const setSave = (t, st) => { saveEl.textContent = t; saveEl.className = 'save' + (st ? ' ' + st : ''); saveEl.onclick = null; saveEl.tabIndex = st === 'err' ? 0 : -1; if (t) { saveEl.removeAttribute('aria-hidden'); saveEl.title = t; } else { saveEl.setAttribute('aria-hidden', 'true'); saveEl.removeAttribute('title'); } };
 function changed() {
   render();
   if (mode !== 'full') return;
@@ -115,6 +118,9 @@ function undoable(msg, restore) { changed(); toast(msg, { label: 'Deshacer', fn:
 const avatar = (p, cls = '') => `<div class="av ${cls}${p.photoFull ? ' cut' : ''}" style="background:${hueOf(p)[0]};color:var(--ink)">${p.photo ? `<img src="${esc(p.photo)}" alt="">` : Z.petIcon(p)}</div>`;
 const bubble = (ic, c) => `<span class="ib c-${c}">${I(ic)}</span>`;
 const la = p => p.sex === 'm' ? 'lo' : 'la';
+/* "quien la cuida" / "quien lo cuida"; sin sexo cargado, neutro con el nombre */
+const quienCuida = p => p.sex === 'm' ? 'quien lo cuida' : p.sex === 'h' ? 'quien la cuida' : `quien cuida a ${p.name}`;
+const Cap = t => t.charAt(0).toUpperCase() + t.slice(1);
 function download(name, text, type = 'text/calendar') {
   const url = URL.createObjectURL(new Blob([text], { type }));
   const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
@@ -194,13 +200,15 @@ function cutFlow(file, pet) {
 const CUPO_MSG = 'Llegaste al espacio de fotos y estudios de tu cuenta (200 MB). Borrá estudios o fotos que no uses para subir más.';
 async function uploadPhoto(data) {
   const r = await fetch('/api/mascotas?photo=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data }) });
-  const d = await r.json().catch(() => ({})); if (!r.ok || !d.u) { if (d.error === 'cupo_lleno') toast(CUPO_MSG); throw new Error(d.error || 'upload'); } return d.u;
+  const d = await r.json().catch(() => ({})); if (!r.ok || !d.u) throw Object.assign(new Error(d.error || 'upload'), { msg: uploadErr(d, 'foto') }); return d.u;
 }
 
 const BUY_URL = '/p/ob-018';
+/* el mismo mail de soporte que usa la web (orbitando.com.ar, términos y privacidad) */
+const SUPPORT_MAIL = 'hola@orbitando.com.ar';
 /* Precio aprobado (14/10/2026): lanzamiento hasta el 12/11/2026 inclusive. El 13/11 se saca el bloque
    de lanzamiento y queda el de lista (ver api/_lib/catalog.js y assets/js/products.js). */
-const PRICE = { ars: 35990, usd: 24, listArs: 43990, listUsd: 29, until: '12/11' };
+const PRICE = { ars: 35990, usd: 24, listArs: 43990, listUsd: 29, until: '12/11/2026' };
 const ars = n => '$\u00a0' + n.toLocaleString('es-AR');
 const AI_ROUTES = ['lectura', 'preguntar', 'gmail', 'outlook'];
 const aiExpired = () => Boolean(aiq?.expired);
@@ -216,7 +224,30 @@ function aiLeftNote() {
   return `<p class="ai-left" role="status">${n === 0 ? 'No te quedan importaciones inteligentes por ahora.' : n === 1 ? 'Te queda 1 importación inteligente.' : `Te quedan ${n} importaciones inteligentes.`}</p>`;
 }
 /* por qué no se pudo leer con IA (topes internos o vencimiento) */
+/* estados del servidor que no son topes de la persona: pausa general de la IA y demasiados reintentos fallidos en el día */
+const AI_PAUSED_MSG = 'Las funciones inteligentes están en pausa un rato. Probá más tarde; todo lo demás funciona.';
+const AI_RETRIES_MSG = 'Hubo demasiados reintentos fallidos hoy. Probá de nuevo mañana; mientras tanto, podés cargarlo a mano.';
+const aiSoft = e => e === 'ai_paused' || e === 'limite_reintentos';
+/* por qué no se pudo leer un archivo con IA (fuera de los topes): lo que devuelve el servidor en scan, studyscan e import */
+function readErr(code, d = {}) {
+  if (code === 'pdf_ilegible') return (d.message || 'No pudimos leer el PDF.') + ' Puede estar protegido o dañado.';
+  if (code === 'ia_respuesta_truncada') return 'El documento tiene demasiado para leerlo de una vez.';
+  if (code === 'archivo_rechazado') return 'El archivo no coincide con lo que se subió y lo descartamos. Subilo de nuevo.';
+  if (code === 'pdf_muy_largo' || code === 'pdf_no_se_pudo_cortar') return 'No pudimos leer este PDF.';
+  if (code === 'tipo_no_legible') return 'Este formato no se puede leer.';
+  return '';
+}
+/* subidas de fotos y estudios: mensajes claros para lo que rechaza el servidor */
+function uploadErr(d = {}, kind) {
+  if (d.error === 'cupo_lleno') return d.photoQuota && kind === 'foto' ? `Llegaste al espacio para fotos de tu cuenta (${Math.round(d.photoQuota / 1048576)} MB). Borrá fotos que no uses para subir más.` : CUPO_MSG;
+  if (d.error === 'limite_diario') return kind === 'foto' ? 'Llegaste al tope de fotos que se pueden subir hoy. Mañana podés seguir.' : 'Llegaste al tope de archivos que se pueden subir hoy. Mañana podés seguir.';
+  if (d.error === 'tamano_invalido') return 'No pudimos subir el archivo: el tamaño no es válido. Elegí el archivo de nuevo.';
+  if (d.error === 'archivo_rechazado') return readErr('archivo_rechazado');
+  return '';
+}
 function limitMsg(d = {}) {
+  if (d.error === 'ai_paused') return d.message || AI_PAUSED_MSG;
+  if (d.error === 'limite_reintentos') return AI_RETRIES_MSG;
   if (d.error === 'ai_expired') { markExpired(d.expiredAt); return `Tus funciones inteligentes vencieron el ${longDate(aiq.expiresAt)}.`; }
   if (d.error === 'limite_diario') return 'Llegaste al tope de importaciones inteligentes de hoy. Mañana podés seguir.';
   if (d.error === 'limite_paginas') return 'Llegaste al máximo de páginas leídas que incluyen tus 12 meses.';
@@ -358,7 +389,7 @@ function petForm(p) {
       pet.contact = { ...pet.contact, name: v.ownerName, phone: v.ownerPhone };
       if (w !== pet.weight) { if (w) addWeight(pet, iso(Z.today()), w); else pet.weight = w; }
       pet.hue = v.hue || pet.hue || '';
-      if (v.photo) { try { pet.photo = await uploadPhoto(v.photo); pet.photoFull = full ? await uploadPhoto(full) : ''; } catch { toast('La foto no se pudo subir. El resto quedó guardado.'); } }
+      if (v.photo) { try { pet.photo = await uploadPhoto(v.photo); pet.photoFull = full ? await uploadPhoto(full) : ''; } catch (e) { toast((e?.msg || 'La foto no se pudo subir.') + ' El resto quedó guardado.'); } }
       if (!p) { doc.pets.push(pet); selectPet(pet.id); }
       toast(p ? 'Datos guardados.' : `${pet.name} ya está en Mimitos.`);
     },
@@ -392,7 +423,7 @@ function recForm(p, r, preset) {
       if (v.date && v.next && v.next < v.date) return 'La próxima dosis no puede ser anterior a la aplicación.';
       const rec = r || { id: uid(), sticker: '' };
       Object.assign(rec, { type: v.type || 'otro', name: v.name, date: v.date, next: v.next, vet: v.vet, lot: v.lot, notes: Z.isSug(rec) && v.date ? '' : v.notes, scope: v.type === 'desparasitacion' ? (v.scope || Z.scopeOf(v)) : '' });
-      if (v.sticker) { try { rec.sticker = await uploadPhoto(v.sticker); } catch { toast('La foto del sticker no se pudo subir. El resto quedó guardado.'); } }
+      if (v.sticker) { try { rec.sticker = await uploadPhoto(v.sticker); } catch (e) { toast((e?.msg || 'La foto del sticker no se pudo subir.') + ' El resto quedó guardado.'); } }
       if (!r) p.records.push(rec);
       toast(r ? 'Registro actualizado.' : v.next ? `Guardado. Te avisamos antes del ${fmt(v.next, { day: 'numeric', month: 'short' })}.` : 'Guardado en la libreta.');
     },
@@ -610,7 +641,7 @@ function drawFiles() {
 }
 async function uploadStudy(file) {
   const r = await fetch('/api/mascotas?upload=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: file.name, size: file.size, type: file.type || 'application/octet-stream' }) });
-  const d = await r.json(); if (!r.ok) { if (d.error === 'cupo_lleno') toast(CUPO_MSG); throw new Error(d.error); }
+  const d = await r.json().catch(() => ({})); if (!r.ok) { const m = uploadErr(d, 'estudio'); if (m && d.error === 'cupo_lleno') toast(m); throw Object.assign(new Error(d.error || 'upload'), { msg: m }); }
   const put = await fetch(d.url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
   if (!put.ok) throw new Error('put');
   return { ref: d.ref, name: file.name, type: file.type };
@@ -633,6 +664,26 @@ function drawNav() {
     <div class="nav-items">${PILL.map(k => k === '+' ? `<button type="button" class="nav-plus" data-act="add" aria-label="Cargar algo">${I('plus')}</button>` : (([kk, ic, l]) => `<a href="#/${kk}" class="nav-i" aria-label="${l}" ${tab === kk ? 'aria-current="page"' : ''}>${I(ic)}<span>${l}</span></a>`)(TABS.find(t => t[0] === k))).join('')}<a href="#/cuenta" class="nav-i side-only" ${tab === 'cuenta' ? 'aria-current="page"' : ''}>${I('user')}<span>Cuenta</span></a></div>
     <div class="side-only side-pets">${doc.pets.length ? `<span class="eyebrow">Tus mascotas</span>${doc.pets.map(p => `<button type="button" class="side-pet" data-act="pick" data-id="${p.id}" ${p.id === curPet()?.id ? 'aria-current="true"' : ''}>${avatar(p)}<span>${esc(p.name)}</span></button>`).join('')}<button type="button" class="side-pet add" data-act="newPet">${I('plus')}<span>Agregar mascota</span></button>` : ''}</div>`;
 }
+/* escritorio: en la barra entran pocas mascotas; con más, se muestran algunas (siempre la elegida) y "+N" abre la lista */
+const wideTop = matchMedia('(min-width:1280px)');
+function topPets(p) {
+  const max = wideTop.matches ? 3 : 2;
+  if (doc.pets.length <= max + 1) return doc.pets;
+  const show = doc.pets.slice(0, max);
+  if (p && !show.includes(p)) show[max - 1] = p;
+  return show;
+}
+wideTop.addEventListener?.('change', () => { if (mode === 'full' && doc.pets.length > 3) drawTop(BARE.includes(route.name)); });
+function petsPanel() {
+  const cur = curPet();
+  panel('Tus mascotas', `<div class="list">${doc.pets.map(x => `<button type="button" class="row link-row" data-pk="${x.id}" ${x.id === cur?.id ? 'aria-current="true"' : ''}>${avatar(x)}<span class="what"><b>${esc(x.name)}</b><small>${esc(petMeta(x))}</small></span>${x.id === cur?.id ? `<span class="badge ok">Elegida</span>` : '<span></span>'}</button>`).join('')}</div><button type="button" class="btn soft wide" data-pk="+">${I('plus')} Agregar mascota</button>`);
+  $('#pBody').onclick = e => {
+    const b = e.target.closest('[data-pk]'); if (!b) return;
+    dPanel.close();
+    if (b.dataset.pk === '+') return startOnboard();
+    selectPet(b.dataset.pk); if (TAB_OF[route.name] === 'inicio' || route.name === 'inicio') return go('inicio'); render();
+  };
+}
 function drawTop(bare) {
   const box = $('#topActs'), hi = $('#hi');
   if (bare) { box.innerHTML = ''; hi.hidden = true; $('#tnavBox').innerHTML = ''; return; }
@@ -643,7 +694,7 @@ function drawTop(bare) {
   const tab = TAB_OF[route.name] || route.name;
   /* escritorio: barra liviana con las secciones, las mascotas y el + */
   const desk = `<nav class="tnav desk-only" aria-label="Secciones">${TABS.filter(t => t[0] !== 'cuenta').map(([k, , l]) => `<a href="#/${k}" ${tab === k ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>
-    ${doc.pets.length ? `<div class="tpets desk-only" aria-label="Tus mascotas">${doc.pets.map(x => `<button type="button" class="tpet" data-act="pick" data-id="${x.id}" aria-current="${x.id === p?.id}" title="${esc(x.name)}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}<button type="button" class="tpet add" data-act="newPet" aria-label="Agregar mascota">${I('plus')}</button></div>` : ''}
+    ${doc.pets.length ? `<div class="tpets desk-only" aria-label="Tus mascotas">${topPets(p).map(x => `<button type="button" class="tpet" data-act="pick" data-id="${x.id}" aria-current="${x.id === p?.id}" title="${esc(x.name)}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}${topPets(p).length < doc.pets.length ? `<button type="button" class="tpet more" data-act="petsMore" aria-label="Ver todas tus mascotas (${doc.pets.length})">+${doc.pets.length - topPets(p).length}</button>` : ''}<button type="button" class="tpet add" data-act="newPet" aria-label="Agregar mascota">${I('plus')}</button></div>` : ''}
     ${doc.pets.length ? askBtn('desk-only') : ''}
     <button type="button" class="btn sm lime desk-only" data-act="add">${I('plus')} Cargar algo</button>`;
   $('#tnavBox').innerHTML = desk;
@@ -769,7 +820,7 @@ function renderNoPurchase() {
     <p class="lead">No encontramos la compra de Mimitos en ${me.email ? `<b>${esc(me.email)}</b>` : 'esta cuenta'}. Con ella tenés la libreta digital, los avisos y el QR para todas tus mascotas.</p>
     <div class="cta"><a class="btn big wide" href="${BUY_URL}">Conseguir Mimitos</a>
     <button class="btn ghost wide" data-act="relogin">Ya la compré con otro mail</button></div>
-    <p class="note">Si la compraste hace un momento y no aparece, recargá la página en unos minutos o escribinos desde la ficha del producto.</p>
+    <p class="note">Si la compraste hace un momento y no aparece, recargá la página en unos minutos. ¿Sigue sin aparecer? Escribinos a <a href="mailto:${SUPPORT_MAIL}?subject=${encodeURIComponent('Mimitos: no veo mi compra')}">${SUPPORT_MAIL}</a> y lo resolvemos.</p>
   </section>`;
 }
 async function relogin() { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {} location.href = '/acceso?next=mascotas'; }
@@ -819,7 +870,7 @@ function renderInicio(p) {
   const vacc = { ok: ['Al día', 'ok'], late: [`Vencida: ${sm.vaccLate.map(x => x.r.name).join(', ')}`, 'late'], none: ['Sin cargar', 'none'] }[sm.vacc];
   const anti = { ok: ['Al día', 'ok'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
   const recs = p.records.filter(r => r.date).length;
-  const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', `Quién ${la(p)} cuida`, 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
+  const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', esc(Cap(quienCuida(p)).replace(/^Quien/, 'Quién')), 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
   return `<div class="dash">
     <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
     <div class="dash-r">
@@ -926,7 +977,7 @@ function sitterLog(p) {
   const list = p.log.filter(l => l.by !== 'Vos' && Date.parse(l.at) > since).slice(-6).reverse();
   if (!list.length) return '';
   const medName = id => p.meds.find(m => m.id === id)?.name || 'Remedio';
-  return `<section class="sec"><h2>Lo que anotó quien ${la(p)} cuida</h2><div class="list">${list.map(l => { const k = KL[l.kind] || KL.nota; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? 'Le dio ' + esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by)}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div></section>`;
+  return `<section class="sec"><h2>Lo que anotó ${esc(quienCuida(p))}</h2><div class="list">${list.map(l => { const k = KL[l.kind] || KL.nota; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? 'Le dio ' + esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by)}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div></section>`;
 }
 function scanBanner(p) {
   const last = scans.filter(x => x.petId === p.id).pop();
@@ -1662,7 +1713,7 @@ async function obFinish(scanFiles) {
   if (p.weight) p.weights = [{ date: iso(Z.today()), kg: p.weight }];
   if (ob.vac.name && (ob.vac.date || ob.vac.next)) p.records.push(normRec({ id: uid(), type: 'vacuna', name: ob.vac.name, date: ob.vac.date, next: ob.vac.next, vet: '', notes: '', lot: '' }));
   p.onboarded = true;
-  if (ob.photo) { try { p.photo = await uploadPhoto(ob.photo); p.photoFull = ob.photoFull ? await uploadPhoto(ob.photoFull) : ''; } catch { toast('La foto no se pudo subir. Podés agregarla después.'); } }
+  if (ob.photo) { try { p.photo = await uploadPhoto(ob.photo); p.photoFull = ob.photoFull ? await uploadPhoto(ob.photoFull) : ''; } catch (e) { toast((e?.msg ? e.msg + ' ' : 'La foto no se pudo subir. ') + 'Podés agregarla después.'); } }
   applySug(p, ob.sug || []);
   doc.pets.push(p); selectPet(p.id); ob = null;
   if (scanFiles?.length) { changed(); return runScan(p, scanFiles); }
@@ -1705,7 +1756,7 @@ app.addEventListener('change', async e => {
 /* ---------- calendario sugerido ---------- */
 const everyTxt = n => n === 1 ? 'cada mes' : n === 12 ? 'cada año' : `cada ${n} meses`;
 const sugRows = list => `<div class="list sug-list">${list.map((x, i) => `<div class="row sug-row">
-  <input type="checkbox" id="sg_k${i}" data-sgk="${i}" ${x.keep !== false ? 'checked' : ''}>
+  <label class="sg-ck"><input type="checkbox" id="sg_k${i}" data-sgk="${i}" ${x.keep !== false ? 'checked' : ''}></label>
   <label for="sg_k${i}" class="what"><b>${esc(x.name)}</b><small>${TYPE[x.type]} · ${everyTxt(x.every)}${x.note ? ' · ' + esc(x.note) : ''}</small></label>
   <span class="sug-d"><label for="sg_d${i}">Próxima</label><input type="date" id="sg_d${i}" data-sgd="${i}" value="${esc(x.next)}"></span></div>`).join('')}</div>`;
 const readSug = (root, list) => list.map((x, i) => ({ ...x, keep: Boolean(root.querySelector(`[data-sgk="${i}"]`)?.checked), next: root.querySelector(`[data-sgd="${i}"]`)?.value || x.next }));
@@ -1779,7 +1830,7 @@ async function runBulk(p, files) {
   setRoute('estudios'); render(); window.scrollTo(0, 0);
   for (const it of bulk.items) {
     if (!bulk) return;
-    if (bulk.full) { it.status = 'error'; it.keep = false; it.msg = 'No se subió: no hay más espacio en tu cuenta.'; continue; }
+    if (bulk.full) { it.status = 'error'; it.keep = false; it.msg = typeof bulk.full === 'string' ? bulk.full : 'No se subió: no hay más espacio en tu cuenta.'; continue; }
     try {
       it.status = 'subiendo'; render();
       let f = it.file;
@@ -1791,14 +1842,16 @@ async function runBulk(p, files) {
       it.status = 'leyendo'; render();
       const r = await fetch('/api/mascotas?studyscan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: it.ref.ref }) });
       const d = await r.json().catch(() => ({}));
-      if (r.status === 429 || d.error === 'ai_expired') { bulk.noIA = limitMsg(d); it.status = 'manual'; it.msg = bulk.noIA + ' Quedó adjunto: completalo a mano.'; continue; }
-      if (!r.ok) { it.status = 'manual'; it.msg = d.error === 'pdf_muy_largo' || d.error === 'pdf_no_se_pudo_cortar' ? 'No pudimos leer este PDF. Quedó adjunto: completalo a mano.' : d.error === 'tipo_no_legible' ? 'Este formato no se puede leer. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; continue; }
+      if (r.status === 429 || d.error === 'ai_expired' || aiSoft(d.error)) { bulk.noIA = limitMsg(d); it.status = 'manual'; it.msg = bulk.noIA + ' Quedó adjunto: completalo a mano.'; continue; }
+      if (!r.ok && d.error === 'archivo_rechazado') { it.status = 'error'; it.keep = false; it.msg = 'No se subió: ' + readErr(d.error).charAt(0).toLowerCase() + readErr(d.error).slice(1); continue; }
+      if (!r.ok) { it.status = 'manual'; it.msg = (readErr(d.error, d) || 'No lo pudimos leer.') + ' Quedó adjunto: completalo a mano.'; continue; }
       setQuota(d.quota);
       if (d.truncated) it.msg = d.note || 'Leímos las primeras 20 páginas; el archivo completo quedó guardado.';
       it.data = { ...it.data, ...d, title: d.title || it.data.title }; it.status = d.confidence === 'baja' || d.warnings?.length || !d.date ? 'revisar' : 'listo';
     } catch (e) {
       if (String(e.message) === 'cupo_lleno') { bulk.full = true; it.msg = 'No se subió: no hay más espacio en tu cuenta (200 MB).'; }
-      else it.msg = 'No se pudo subir. Revisá la conexión.';
+      else if (String(e.message) === 'limite_diario') { it.msg = 'No se subió: ' + e.msg.charAt(0).toLowerCase() + e.msg.slice(1); bulk.full = it.msg; }
+      else it.msg = e.msg ? 'No se subió. ' + e.msg : 'No se pudo subir. Revisá la conexión.';
       it.status = 'error'; it.keep = false;
     }
   }
@@ -1889,7 +1942,12 @@ const mBack = (p, arg) => ({
 const mOn = () => MAILS.some(p => mstat[p]?.allowed);
 const mAny = () => MAILS.some(p => mstat[p]?.connected);
 const gmailBtn = () => mOn() ? `<button class="btn sm ghost" data-act="mailPick">${I('mail')} ${mAny() ? 'Buscar en tu mail' : 'Conectar tu mail'}</button>` : '';
+/* "Conectar tu mail" solo existe para cuentas habilitadas. El GET principal trae mail.allowed:
+   si dice que no, no se consulta el estado (así no quedan 403 en la consola). Si el servidor
+   todavía no manda el dato (null), se consulta como antes. */
+let mailAllowed = null;
 async function loadMail() {
+  if (mailAllowed === false) { MAILS.forEach(p => { mstat[p] = null; }); mailRoute(); return render(); }
   await Promise.all(MAILS.map(async p => {
     try { const r = await fetch(`/api/mascotas?${p}=status`); const d = await r.json().catch(() => null); mstat[p] = r.ok && d?.allowed ? d : null; if (mstat[p]?.senders) msenders = mstat[p].senders; }
     catch { mstat[p] = null; }
@@ -2070,7 +2128,7 @@ async function importItem(p, it, done) {
     }
     if (!r.ok) {
       it.status = 'error'; it.keep = false;
-      it.msg = mErr(p, d.error) || (r.status >= 500 || !d.error ? 'No se pudo traer: el servidor no respondió bien. Probá de nuevo.' : `No se pudo traer (${String(d.error).slice(0, 40)}).`);
+      it.msg = aiSoft(d.error) ? limitMsg(d) : mErr(p, d.error) || (r.status >= 500 || !d.error ? 'No se pudo traer: el servidor no respondió bien. Probá de nuevo.' : `No se pudo traer (${String(d.error).slice(0, 40)}).`);
       if (d.error === 'ya_importado') done?.add(key(it.gm));
       else it.retry = !/_vencido$/.test(d.error || '');
       if (/_vencido$/.test(d.error || '')) { mstat[p].connected = false; mstat[p].expired = true; }
@@ -2081,7 +2139,7 @@ async function importItem(p, it, done) {
     it.ref = d.ref; it.petId = d.petId || ''; it.sug = d.petId || ''; it.keep = true;
     if (it.gm.type === 'link' && d.ref?.name) it.name = d.ref.name;
     if (d.data) { it.data = { ...it.data, ...d.data, title: d.data.title || it.data.title }; it.status = d.data.confidence === 'baja' || d.data.warnings?.length || !d.data.date ? 'revisar' : 'listo'; }
-    else { it.status = 'manual'; it.msg = d.manual === 'tipo_no_legible' ? 'Este formato no se puede leer: quedó adjunto, completalo a mano.' : /^limite|^ai_expired$/.test(d.manual) ? limitMsg({ error: d.manual }) + ' Quedó adjunto: completalo a mano.' : d.manual === 'pdf_muy_largo' || d.manual === 'pdf_no_se_pudo_cortar' ? 'No pudimos leer este PDF. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; }
+    else { it.status = 'manual'; it.msg = (/^limite|^ai_expired$|^ai_paused$/.test(d.manual) ? limitMsg({ error: d.manual, message: d.message }) : readErr(d.manual, d) || 'No lo pudimos leer.') + ' Quedó adjunto: completalo a mano.'; }
     setQuota(d.quota);
     if (d.data && d.truncated) it.msg = d.note || 'Leímos las primeras 20 páginas; el archivo completo quedó guardado.';
   } catch { it.status = 'error'; it.keep = false; it.msg = 'No se pudo traer: revisá la conexión.'; it.retry = true; }
@@ -2091,7 +2149,8 @@ async function queueRest(p, rest, d) {
   rest.forEach(x => { x.status = 'cola'; x.keep = false; x.msg = ''; x.acts = null; x.retry = false; });
   const q = await fetch(`/api/mascotas?${p}=queue`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: rest.map(x => x.gm) }) }).then(x => x.json()).catch(() => null);
   if (q?.queue) mstat[p].queue = q.queue;
-  bulk.queued = `${limitMsg(d)} ${rest.length === 1 ? 'Quedó 1 en cola' : `Quedaron ${rest.length} en cola`}: cuando se renueve, entrá a tu mail desde el historial y tocá «Seguir con la cola».`;
+  const n = rest.length === 1 ? 'Quedó 1 en cola' : `Quedaron ${rest.length} en cola`;
+  bulk.queued = d?.error === 'ai_paused' ? `${limitMsg(d)} ${n}: más tarde, entrá a tu mail desde el historial y tocá «Seguir con la cola».` : `${limitMsg(d)} ${n}: cuando se renueve, entrá a tu mail desde el historial y tocá «Seguir con la cola».`;
 }
 /* importa los elegidos uno por uno y termina en la misma revisión que "Subir estudios" */
 async function mailImport(p, list) {
@@ -2175,7 +2234,7 @@ async function runScan(p, files) {
     const d = await r.json();
     if (r.status === 402) { scan = null; mode = 'nopurchase'; return render(); }
     if (d.error === 'ai_expired') { markExpired(d.expiredAt); scan = null; return render(); }
-    if (!r.ok) throw Object.assign(new Error(/^limite_/.test(d.error || '') ? limitMsg(d) + ' Mientras tanto, cargá las vacunas a mano.' : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
+    if (!r.ok) throw Object.assign(new Error(d.error === 'ai_paused' ? limitMsg(d) + ' Mientras tanto, cargá las vacunas a mano.' : d.error === 'ia_respuesta_truncada' ? 'Las fotos tienen demasiados registros para leerlas de una vez. Probá con menos fotos por tanda.' : d.error === 'limite_reintentos' ? 'Hubo demasiados reintentos fallidos hoy. Probá de nuevo mañana; mientras tanto, cargá las vacunas a mano.' : /^limite_/.test(d.error || '') ? limitMsg(d) + ' Mientras tanto, cargá las vacunas a mano.' : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
     setQuota(d.quota);
     scan = { ...scan, state: 'review', items: prev.concat(d.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) }))), warnings: d.warnings || [] };
   } catch (err) { scan = { ...scan, state: 'error', msg: err.message || 'No pudimos leer las fotos.', plain: Boolean(err.plain) }; }
@@ -2264,7 +2323,10 @@ function qrCanvas(text, size = 400) {
 async function makeLink(p, kind) {
   await flushNow();
   const r = await fetch(`/api/mascotas?${kind}=1`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ petId: p.id }) });
-  const d = await r.json(); if (!r.ok) throw new Error(d.error); adopt(d.doc); return petById(p.id);
+  const d = await r.json(); if (!r.ok) throw new Error(d.error); adopt(d.doc);
+  if (kind === 'sitter') sitterLinks[p.id] = d.until ? { active: true, until: d.until } : { active: Boolean(d.token) };
+  if (kind === 'unsitter') delete sitterLinks[p.id];
+  return petById(p.id);
 }
 function copyBtn(sel, url) { $(sel).onclick = async () => { try { await navigator.clipboard.writeText(url); toast('Link copiado.'); } catch { const i = $(sel).previousElementSibling; i.select(); } }; }
 function sharePanel(p) {
@@ -2314,7 +2376,7 @@ function tagImage(p, url) {
 function sitterPanel(p) {
   const s = p.sitter;
   const fields = [
-    [{ k: 'name', label: `Quién ${la(p)} cuida`, max: 60, ph: 'Caro' }, { k: 'contact', label: 'Tu contacto mientras no estás', max: 120 }],
+    [{ k: 'name', label: Cap(quienCuida(p)).replace(/^Quien/, 'Quién'), max: 60, ph: 'Caro' }, { k: 'contact', label: 'Tu contacto mientras no estás', max: 120 }],
     [{ k: 'from', label: 'Desde', type: 'date' }, { k: 'to', label: 'Hasta', type: 'date' }],
     { k: 'food', label: 'Comida', type: 'textarea', max: 400, ph: 'Cuánto, a qué hora y dónde está el alimento.' },
     { k: 'walks', label: 'Paseos y salidas', type: 'textarea', max: 300, ph: 'Horarios, si va con correa, si se puede soltar.' },
@@ -2324,10 +2386,14 @@ function sitterPanel(p) {
     { k: 'emergency', label: 'Si pasa algo', type: 'textarea', max: 400, ph: 'A quién llamar primero y qué hacer.' },
     { k: 'vetAuth', label: `Avisé a la veterinaria que puede atender${la(p)} en mi nombre`, type: 'check', hint: 'Es lo que más se olvida: sin ese aviso, en una emergencia pueden no atenderla si no te ubican.' },
   ];
-  const link = p.sitterToken ? `${location.origin}/cuida/${p.sitterToken}` : '';
-  panel(`Quién cuida a ${p.name}`, `<p class="lead-s">Completalo una vez. El cuidador abre un link con todo esto, los remedios con sus horarios y la veterinaria, y marca cada día si comió, paseó y le dio los remedios. Lo ves en Inicio, en "Lo que anotó quien ${la(p)} cuida". No te llega un aviso al celu.</p>
+  const sl = sitterLinks[p.id], gone = Boolean(p.sitterToken && sl?.expired);
+  const link = p.sitterToken && !gone ? `${location.origin}/cuida/${p.sitterToken}` : '';
+  const vig = gone ? `<p class="banner sl-state" role="status">${bubble('alert', 'perdida')}<span><b>Este link venció</b>El cuidador ya no ve la información. Si lo sigue necesitando, creá uno nuevo.</span></p>`
+    : link && sl?.until ? `<p class="sl-state dim" role="status">Vigente hasta el ${esc(longDate(sl.until))}. Después se apaga solo.</p>` : '';
+  panel(`Quién cuida a ${p.name}`, `<p class="lead-s">Completalo una vez. El cuidador abre un link con todo esto, los remedios con sus horarios y la veterinaria, y marca cada día si comió, paseó y le dio los remedios. Lo ves en Inicio, en "Lo que anotó ${esc(quienCuida(p))}". No te llega un aviso al celu.</p>
     <div class="fbody">${fields.map(f => Array.isArray(f) ? `<div class="two">${f.map(x => field(x, s[x.k])).join('')}</div>` : field(f, s[f.k])).join('')}</div>
-    <button class="btn wide" id="sSave">${link ? 'Guardar cambios' : 'Guardar y crear link'}</button>
+    ${vig}
+    <button class="btn wide" id="sSave">${link ? 'Guardar cambios' : gone ? 'Guardar y crear un link nuevo' : 'Guardar y crear link'}</button>
     ${link ? `<div class="linkbox"><input readonly value="${esc(link)}" aria-label="Link del cuidador"><button class="btn sm" id="sCp" type="button">Copiar</button></div>
       <a class="btn ghost wide" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`Todo lo de ${p.name} mientras no estoy: ${link}`)}">Mandar por WhatsApp</a>
       <button class="link danger" id="sOff" type="button">Apagar link</button>` : ''}`);
@@ -2335,8 +2401,8 @@ function sitterPanel(p) {
     const v = {}; for (const f of fields.flat()) { const el = $('#f_' + f.k); v[f.k] = f.type === 'check' ? el.checked : el.value.trim(); }
     if (v.from && v.to && v.to < v.from) return toast('La fecha "hasta" no puede ser anterior a "desde".');
     p.sitter = v; changed();
-    if (!p.sitterToken) { try { sitterPanel(await makeLink(p, 'sitter')); toast('Link creado. Mandáselo a quien la cuida.'); } catch { toast('No pudimos crear el link. Probá de nuevo.'); } }
-    else toast('Guardado. El cuidador ve los cambios al recargar.');
+    if (!p.sitterToken || gone) { try { sitterPanel(await makeLink(p, 'sitter')); toast(`Link creado. Mandáselo a ${quienCuida(p)}.`); } catch { toast('No pudimos crear el link. Probá de nuevo.'); } }
+    else { toast('Guardado. El cuidador ve los cambios al recargar.'); try { sitterPanel(await makeLink(p, 'sitter')); } catch {} }
   };
   if (link) {
     copyBtn('#sCp', link);
@@ -2479,6 +2545,7 @@ function renderAsk() {
   const left = ask.left, capped = left && (left.day <= 0 || left.month <= 0);
   after(() => { const el = $('#askIn'); if (el && !ask.pending && !capped && !matchMedia('(pointer:coarse)').matches) el.focus({ preventScroll: true }); askScroll(); });
   return `<section class="ask">${head}
+    ${aiq?.paused ? `<p class="ask-note" role="status">${I('alert')}<span>${esc(AI_PAUSED_MSG)}</span></p>` : ''}
     <p class="ask-note">${I('alert')}<span>Mimitos responde con lo que cargaste. No es un veterinario: ante cualquier duda de salud, consultá con tu vete.</span></p>
     <div class="ask-log" id="askLog">${askLog()}</div>
     <p class="sr" aria-live="polite" id="askLive"></p>
@@ -2501,7 +2568,7 @@ function askDraw() {
   const el = $('#askIn'), sb = $('.ask-send'); if (el) el.disabled = Boolean(ask.pending); if (sb) sb.disabled = Boolean(ask.pending);
   askScroll();
 }
-async function askLoadLeft() { try { const r = await fetch('/api/mascotas?ask=1'); if (r.ok) { ask.left = (await r.json()).left || null; askDraw(); } } catch {} }
+async function askLoadLeft() { if (aiExpired()) return; try { const r = await fetch('/api/mascotas?ask=1'); if (r.ok) { ask.left = (await r.json()).left || null; askDraw(); } } catch {} }
 function askOpen() { if (route.name !== 'preguntar') ask.from = route.name; go('preguntar'); }
 async function askSend(q) {
   q = String(q || '').trim();
@@ -2527,6 +2594,8 @@ async function askSend(q) {
   }
   const e = d?.error || '';
   if (e === 'ai_expired') { markExpired(d.expiredAt); ask.draft = q; return render(); }
+  if (e === 'ai_paused') { ask.error = { t: 'Mimitos no puede responder ahora.', d: d?.message || 'Probá más tarde; todo lo demás funciona.' }; ask.draft = q; askDraw(); if ($('#askLive')) $('#askLive').textContent = ask.error.t + ' ' + ask.error.d; return; }
+  if (e === 'limite_reintentos') { ask.error = { t: 'Hubo demasiados reintentos fallidos hoy.', d: 'Probá de nuevo mañana. Tus datos están bien.' }; ask.draft = q; askDraw(); if ($('#askLive')) $('#askLive').textContent = ask.error.t + ' ' + ask.error.d; return; }
   if (r?.status === 429 && /limite/.test(e)) { ask.left = d.left || { day: e === 'limite_diario' ? 0 : 1, month: e === 'limite_mensual' ? 0 : 1, perDay: d.limit, perMonth: d.limit }; ask.error = null; ask.draft = q; return render(); }
   if (r?.status === 401) ask.error = { t: 'Se cerró tu sesión.', d: 'Entrá de nuevo para seguir preguntando.' };
   else if (r?.status === 409 && e === 'sin_mascotas') ask.error = { t: 'Primero cargá a tu mascota.' };
@@ -2594,6 +2663,7 @@ document.addEventListener('click', e => {
     case 'mailRangeGo': return mailSearch(route.name, 'all', null, b.dataset.v);
     case 'srcAdd': { const v = ($('#srcIn')?.value || '').trim(); if (v.length < 3) { $('#srcIn')?.focus(); return toast('Escribí el nombre o el mail (3 letras o más).'); } return sendersPost({ add: v }); }
     case 'srcRm': return sendersPost({ remove: b.dataset.v });
+    case 'petsMore': return petsPanel();
     case 'pick': selectPet(b.dataset.id); if (TAB_OF[route.name] === 'inicio') return go('inicio'); return render();
     case 'go': return go(b.dataset.to);
     case 'askGo': return askOpen();
@@ -2664,7 +2734,7 @@ async function boot() {
   let d = null, st = 0;
   try { const r = await fetch('/api/mascotas', { credentials: 'same-origin' }); st = r.status; d = await r.json().catch(() => null); } catch { st = 0; }
   if (st === 200 && d && d.doc) {
-    mode = 'full'; purchase = d.purchase || null; me.email = d.email || ''; aiq = d.ai || null; renewAsked = Boolean(d.renew);
+    mode = 'full'; purchase = d.purchase || null; me.email = d.email || ''; aiq = d.ai || null; renewAsked = Boolean(d.renew); sitterLinks = d.sitterLinks && typeof d.sitterLinks === 'object' ? d.sitterLinks : {}; mailAllowed = d.mail && typeof d.mail === 'object' ? Boolean(d.mail.allowed) : null;
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
     fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => {
