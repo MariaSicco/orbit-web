@@ -24,8 +24,9 @@ const awayPets = () => D().pets.filter(p => R.covers(D().away, p.id));
 const hm = ms => new Date(ms).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 const dayKey = ms => { const d = new Date(ms); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const sola = p => p.sex === 'm' ? 'solo' : 'sola';
-const VERB = { ladrido: 'Ladró', aullido: 'Aulló', maullido: 'Maulló', gemido: 'Gimió', llanto: 'Lloró' };
-const evText = e => { const m = Math.round(e.dur / 60); return `${VERB[e.type] || 'Hizo ruido'} ${e.dur < 60 ? `${Math.max(1, e.dur)} segundos` : `${m} ${m === 1 ? 'minuto' : 'minutos'}`} a las ${hm(Date.parse(e.start))}`; };
+/* gemido y llanto son los menos confiables del detector: van como "posible" (igual que en los avisos) */
+const VERB = { ladrido: 'Ladró', aullido: 'Aulló', maullido: 'Maulló' };
+const evText = e => { const m = Math.round(e.dur / 60); const len = e.dur < 60 ? `${Math.max(1, e.dur)} segundos` : `${m} ${m === 1 ? 'minuto' : 'minutos'}`; const at = hm(Date.parse(e.start)); return VERB[e.type] ? `${VERB[e.type]} ${len} a las ${at}` : `Posible ${e.type} de ${len} a las ${at}`; };
 /* último paseo anotado (por la familia o el cuidador) */
 function lastWalk(p) {
   const t = (p.log || []).filter(l => l.kind === 'paseo').map(l => Date.parse(l.at)).filter(Number.isFinite).sort((a, b) => b - a)[0];
@@ -134,7 +135,7 @@ function weekHtml() {
   const now = Date.now(), w = R.week(D().awayLog, D().away, pid, now, dayKey);
   const days = [...Array(7)].map((_, i) => { const d = new Date(now); d.setHours(12, 0, 0, 0); d.setDate(d.getDate() - (6 - i)); return d; });
   const max = Math.max(4 * R.H, ...days.map(d => w.byDay[dayKey(d.getTime())] || 0));
-  const bars = days.map(d => { const ms = w.byDay[dayKey(d.getTime())] || 0; const lbl = d.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', ''); return `<li><span class="mf-bar" style="--h:${Math.round(ms / max * 100)}%" aria-hidden="true"></span><span class="mf-bl">${esc(lbl)}</span><span class="sr">${esc(d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric' }))}: ${ms ? esc(R.dur(ms)) : 'nada'}</span></li>`; }).join('');
+  const bars = days.map(d => { const ms = w.byDay[dayKey(d.getTime())] || 0; const lbl = d.toLocaleDateString('es-AR', { weekday: 'short' }).replace('.', ''); return `<li><span class="mf-bar${ms ? '' : ' zero'}" style="--h:${Math.round(ms / max * 100)}%" aria-hidden="true"></span><span class="mf-bl">${esc(lbl)}</span><span class="sr">${esc(d.toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric' }))}: ${ms ? esc(R.dur(ms)) : 'nada'}</span></li>`; }).join('');
   return `<section class="sec card2" aria-labelledby="h-mfw">
     <div class="sec-h"><h2 id="h-mfw">Esta semana</h2>${pets.length > 1 ? `<div class="chips" role="group" aria-label="Mascota">${pets.map(x => `<button type="button" class="chip" data-mf="week" data-id="${x.id}" aria-pressed="${x.id === pid}">${esc(x.name)}</button>`).join('')}</div>` : ''}</div>
     <p class="mf-big">${w.total ? `${esc(p.name)} estuvo ${sola(p)} ${esc(R.dur(w.total))}` : `${esc(p.name)} no estuvo ${sola(p)} esta semana`}</p>
@@ -145,7 +146,7 @@ function weekHtml() {
 function camsListHtml(withLive) {
   const cams = st.cams;
   if (!cams) return '<p class="dim">Cargando cámaras…</p>';
-  const rows = cams.map(c => `<div class="row x4"><span class="ib c-${c.online ? 'salud' : 'plata'}">${I('camera')}</span><span class="what"><b>${esc(c.name)}</b><small>${c.online ? '<span class="mf-on">Activa ahora</span>' : `Vista por última vez ${esc(Z.fmtWhen(new Date(c.seen)))}`}${D().pets.length > 1 ? ' · ' + esc(A().petById(c.petId)?.name || '') : ''}</small></span>${withLive && c.online ? `<button class="btn sm soft" data-mf="live" data-cam="${c.camId}">Ver en vivo</button>` : '<span></span>'}<button class="btn sm ghost" data-mf="revoke" data-cam="${c.camId}" aria-label="Desconectar ${esc(c.name)}">Desconectar</button></div>`).join('');
+  const rows = cams.map(c => `<div class="row x4"><span class="ib c-${c.online ? 'salud' : 'plata'}">${I('camera')}</span><span class="what"><b>${esc(c.name)}</b><small>${c.online ? '<span class="mf-on">Activa ahora</span>' : `Vista por última vez ${esc(Z.fmtWhen(new Date(c.seen)))}`}${D().pets.length > 1 ? ' · ' + esc(A().petById(c.petId)?.name || '') : ''}</small></span>${withLive && c.online ? `<button class="btn sm soft" data-mf="live" data-cam="${c.camId}">Ver en vivo</button>` : '<span></span>'}<button class="btn sm ghost" data-mf="revoke" data-cam="${c.camId}" aria-label="Desconectar ${esc(c.name)}">Desconectar</button>${withLive ? `<label class="mf-sens"><span>Sensibilidad</span><select data-mfsens="${c.camId}" aria-label="Sensibilidad de ${esc(c.name)}">${[['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']].map(([v, l]) => `<option value="${v}"${(c.sens || 'media') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` : ''}</div>`).join('');
   return `${cams.length ? `<div class="list">${rows}</div>` : ''}
     ${cams.length < (st.max || 4) ? `<button class="btn ${cams.length ? 'ghost' : ''} wide" data-mf="pair">${I('camera')} Usar un celu como cámara</button>` : `<p class="note">Llegaste al máximo de ${st.max || 4} cámaras. Desconectá una para sumar otra.</p>`}`;
 }
@@ -269,10 +270,11 @@ async function revoke(b) {
 /* ---------- ver en vivo (módulo aparte, se carga al tocar) ---------- */
 function loadRtc() {
   if (window.MZRTC) return Promise.resolve(window.MZRTC);
-  return new Promise(ok => { const s = document.createElement('script'); s.src = '/assets/js/mascotas-rtc.js?v=1'; s.onload = () => ok(window.MZRTC || null); s.onerror = () => ok(null); document.head.appendChild(s); });
+  return new Promise(ok => { const s = document.createElement('script'); s.src = '/assets/js/mascotas-rtc.js?v=2'; s.onload = () => ok(window.MZRTC || null); s.onerror = () => ok(null); document.head.appendChild(s); });
 }
+const WAKING = 'Despertando la cámara… puede tardar hasta 30 segundos.';
 async function live(camId) {
-  A().panel(`En vivo · ${camName(camId)}`, `<div class="mf-live"><video id="mfVideo" playsinline autoplay muted></video><p class="mf-live-st" id="mfLiveSt" role="status">Conectando…</p></div>
+  A().panel(`En vivo · ${camName(camId)}`, `<div class="mf-live"><video id="mfVideo" playsinline autoplay muted></video><p class="mf-live-st" id="mfLiveSt" role="status">${WAKING}</p></div>
     <p class="note">Va directo de un celu al otro y no se graba. El sonido arranca apagado.</p>
     <div class="d-acts"><button class="btn ghost wide" data-mfp="sound" aria-pressed="false">Activar sonido</button><button class="btn ghost wide" data-mfp="retry" hidden>Probar de nuevo</button><button class="btn wide" data-mfp="close">Cerrar</button></div>`);
   let viewer = null, muted = true;
@@ -289,7 +291,8 @@ async function live(camId) {
   try {
     viewer = rtc.startViewer({ camId, videoEl: v, onStatus: s => {
       if (!stEl.isConnected) return;
-      stEl.textContent = s.state === 'en-vivo' ? '' : s.message || 'Conectando…';
+      /* la cámara en reposo consulta cada 30–60 s: el primer conectar puede tardar */
+      stEl.textContent = s.state === 'en-vivo' ? '' : s.state === 'conectando' ? WAKING : s.message || WAKING;
       const rb = $('#pBody [data-mfp="retry"]'); if (rb) rb.hidden = !['fallo', 'apagada'].includes(s.state);
     } });
   } catch { stEl.textContent = 'No pudimos conectar en vivo desde esta red.'; }
@@ -315,6 +318,16 @@ document.addEventListener('click', e => {
     case 'revoke': return revoke(b);
     case 'live': return live(b.dataset.cam);
   }
+});
+/* sensibilidad de cada cámara (la cámara la toma en su próximo aviso de "sigo acá", como mucho en 5 minutos) */
+document.addEventListener('change', async e => {
+  const sel = e.target.closest?.('[data-mfsens]'); if (!sel) return;
+  try {
+    const r = await fetch('/api/mascotas?cam=sens', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ camId: sel.dataset.mfsens, sens: sel.value }) });
+    if (!r.ok) throw new Error();
+    const c = (st.cams || []).find(x => x.camId === sel.dataset.mfsens); if (c) c.sens = sel.value;
+    A().toast('Listo. La cámara la toma en unos minutos.');
+  } catch { A().toast('No pudimos cambiarla. Probá de nuevo.'); }
 });
 /* el contador se actualiza solo (cada 30 s; no hace falta más precisión que el minuto) */
 setInterval(() => {

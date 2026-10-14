@@ -56,3 +56,6 @@ p{margin:0}
 .dim-dot{width:10px;height:10px;border-radius:50%;background:#3E7A55}
 @media (prefers-reduced-motion:reduce){.live-dot{animation:none}.btn,.meter span{transition:none}}
 @media (min-width:900px){.cam{padding-top:56px}}
+.chip input{accent-color:var(--on);margin:0}
+.chip:has(input:checked){background:#24302A;color:var(--on)}
+.sens .chips .chip{min-height:44px;padding:0 16px;cursor:pointer}

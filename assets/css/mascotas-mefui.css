@@ -44,3 +44,6 @@
 .row.x4 .btn.sm{white-space:nowrap}
 @media (max-width:420px){.row.x4{grid-template-columns:auto minmax(0,1fr);}.row.x4>.btn,.row.x4>span:empty{grid-column:2}}
 @media (prefers-reduced-motion:reduce){.mf-dot,.mf-bar{animation:none}.mf-start{transition:none}}
+.mf-sens{grid-column:2/-1;display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink2)}
+.mf-sens select{min-height:44px;border-radius:12px;border:1px solid var(--line2);background:var(--card);padding:0 10px;font-size:14.5px}
+.mf-bar.zero{height:0;animation:none}

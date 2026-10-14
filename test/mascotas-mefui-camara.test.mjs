@@ -135,3 +135,22 @@ test('rutas: canje con tope por IP (fuerza bruta de códigos → 429)', async ()
   for (let i = 0; i < 11; i++) last = await call('POST', { cam: 'redeem' }, { code: 'AAAAAAAA' }, { ip: '9.9.9.9' });
   assert.equal(last.code, 429);
 });
+
+test('sensibilidad: media por defecto; la cambia la dueña o la cámara y viaja en el ping', async () => {
+  process.env.MIMITOS_MEFUI = '1'; process.env.MIMITOS_MEFUI_ALLOW = 'sens@x.com, ajena@x.com';
+  const cam = await paired('sens@x.com');
+  assert.equal((await call('GET', { cam: 'me' }, null, { token: cam.token })).body.sens, 'media');
+  assert.equal((await call('POST', { cam: 'sens' }, { camId: cam.camId, sens: 'alta' }, { email: 'sens@x.com' })).code, 200);
+  assert.equal((await call('POST', { cam: 'ping' }, {}, { token: cam.token })).body.sens, 'alta');
+  assert.equal((await call('POST', { cam: 'sens' }, { camId: cam.camId, sens: 'altísima' }, { email: 'sens@x.com' })).code, 400);
+  assert.equal((await call('POST', { cam: 'sens' }, { camId: cam.camId, sens: 'baja' }, { email: 'ajena@x.com' })).code, 404, 'otra cuenta no la toca');
+  assert.equal((await call('POST', { cam: 'csens' }, { sens: 'baja' }, { token: cam.token })).code, 200);
+  assert.equal((await call('GET', { cam: 'list' }, null, { email: 'sens@x.com' })).body.cams[0].sens, 'baja');
+});
+
+test('textos: gemido y llanto van como "posible"', () => {
+  const start = '2026-10-14T18:20:00Z';
+  assert.equal(W.eventText({ type: 'ladrido', dur: 240, start }, 'America/Argentina/Buenos_Aires', 'Feliza'), 'Feliza ladró 4 minutos a las 15:20');
+  assert.equal(W.eventText({ type: 'llanto', dur: 30, start }, 'America/Argentina/Buenos_Aires', 'Feliza'), 'Feliza: posible llanto de 30 segundos a las 15:20');
+  assert.equal(W.eventText({ type: 'gemido', dur: 120, start }, 'America/Argentina/Buenos_Aires', ''), 'Posible gemido de 2 minutos a las 15:20');
+});

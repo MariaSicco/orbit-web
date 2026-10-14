@@ -12,7 +12,10 @@ const $ = s => document.querySelector(s);
 const main = $('#cam');
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const hm = ms => new Date(ms).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
-const VERB = { ladrido: 'Ladrido', aullido: 'Aullido', maullido: 'Maullido', gemido: 'Gemido', llanto: 'Llanto' };
+/* gemido y llanto son los menos confiables del detector: "posible" */
+const VERB = { ladrido: 'Ladrido', aullido: 'Aullido', maullido: 'Maullido', gemido: 'Posible gemido', llanto: 'Posible llanto' };
+const SENS = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']];
+const sensHtml = cur => `<fieldset class="card sens" style="border:0;margin:0"><legend class="dim2" style="padding:0;float:left;margin-bottom:6px">Sensibilidad</legend><div class="chips" role="radiogroup" aria-label="Sensibilidad" style="clear:both">${SENS.map(([v, l]) => `<label class="chip"><input type="radio" name="sens" value="${v}"${v === cur ? ' checked' : ''}> ${l}</label>`).join('')}</div><small class="dim2">Alta detecta más, pero puede confundir otros ruidos. También la cambiás desde "Me fui" en tu celu.</small></fieldset>`;
 const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27.5c-6.3-4.2-11-8.3-11-13.4C5 10.6 7.7 8 10.9 8c2.2 0 4 1.1 5.1 2.9C17.1 9.1 18.9 8 21.1 8 24.3 8 27 10.6 27 14.1c0 5.1-4.7 9.2-11 13.4z" fill="#D9694A"/><circle cx="12" cy="16" r="1.5" fill="#1F1A17"/><circle cx="20" cy="16" r="1.5" fill="#1F1A17"/></svg>';
 const head = `<div class="brand">${LOGO}<span>Cámara Mimitos</span><small>by Orbit</small></div>`;
 
@@ -80,7 +83,6 @@ const privacy = () => `<details class="card"><summary><b>Qué hace esta cámara 
 /* ---------- 2. lista para prender (el permiso del micrófono necesita un toque) ---------- */
 function renderReady(note = '') {
   const me = S.me;
-  const sens = pref.get('sens', 'media');
   main.innerHTML = `${head}
     <h1>${esc(me.name || 'Cámara')} ${me.pet ? `· ${esc(me.pet)}` : ''}</h1>
     ${note ? `<p class="warn" role="status">${esc(note)}</p>` : ''}
@@ -94,14 +96,14 @@ function renderReady(note = '') {
     </div>
     <label class="toggle"><input type="checkbox" id="okP"><span><b>Entiendo qué escucha y qué se manda, y no la voy a apuntar a otras personas sin su consentimiento.</b></span></label>
     <label class="toggle"><input type="checkbox" id="okV"${pref.get('video', '1') === '1' ? ' checked' : ''}><span><b>Permitir ver en vivo desde mi celu</b><br><small class="dim2">Usa la cámara de este celu solo mientras mirás. No se graba. El sonido en vivo arranca apagado.</small></span></label>
-    <fieldset class="card" style="border:0;margin:0"><legend class="dim2" style="padding:0">Sensibilidad</legend><div class="chips" role="radiogroup" aria-label="Sensibilidad">${['baja', 'media', 'alta'].map(s => `<label class="chip"><input type="radio" name="sens" value="${s}"${s === sens ? ' checked' : ''}> ${s[0].toUpperCase() + s.slice(1)}</label>`).join('')}</div>
-    <small class="dim2">Alta detecta más, pero puede confundir otros ruidos.</small></fieldset>
+    ${sensHtml(S.sens)}
     <button class="btn" id="go" disabled>Prender cámara</button>
     <button class="btn ghost" id="unpair">Desvincular este celu</button>
     ${privacy()}`;
   const ok = $('#okP'), go = $('#go');
   ok.onchange = () => { go.disabled = !ok.checked; };
-  go.onclick = () => { pref.set('sens', document.querySelector('input[name=sens]:checked')?.value || 'media'); pref.set('video', $('#okV').checked ? '1' : '0'); start(); };
+  bindSens();
+  go.onclick = () => { pref.set('video', $('#okV').checked ? '1' : '0'); start(); };
   $('#unpair').onclick = unpair;
 }
 async function unpair() {
@@ -119,35 +121,60 @@ async function start() {
   renderActive();
   /* pantalla siempre prendida */
   await wakeOn();
-  /* escuchar */
-  try {
-    const A = await import('/assets/js/mascotas-audio.js?v=1');
-    const fn = A.startListening || window.MZAUDIO?.startListening;
-    if (!fn) throw Object.assign(new Error('sin módulo'), { code: 'modelo' });
-    S.listen = 'cargando'; paint();
-    S.audio = await fn({ sensitivity: pref.get('sens', 'media'), onEvent: onSound, onLevel: l => { S.level = l; meter(); },
-      onState: s => { S.listen = s.state || 'escuchando'; S.listenMsg = s.message || ''; paint(); } });
-    S.listen = 'escuchando'; paint();
-  } catch (e) {
-    S.listen = 'error';
-    S.listenMsg = { 'permiso-denegado': 'Necesitamos permiso para el micrófono. Activalo en los ajustes del navegador y volvé a prender.', 'sin-microfono': 'No encontramos un micrófono en este celu.', 'no-soportado': 'Este navegador no puede escuchar. Probá con Chrome actualizado.' }[e?.code] || 'No pudimos prender la escucha. Probá cerrar y volver a abrir esta pantalla.';
-    paint();
-  }
+  await listen();
   /* video en vivo (opcional) */
   if (pref.get('video', '1') === '1') {
-    const rtc = await loadScript('/assets/js/mascotas-rtc.js?v=1', 'MZRTC');
+    const rtc = await loadScript('/assets/js/mascotas-rtc.js?v=2', 'MZRTC');
     if (rtc?.startBroadcast) {
       try { S.rtc = rtc.startBroadcast({ camToken: tok, onStatus: s => { S.video = s.state; S.videoMsg = s.message || ''; if (s.state === 'invalida') revoked(); else paint(); } }); }
       catch { S.video = 'error'; paint(); }
     } else { S.video = 'no-disponible'; paint(); }
   }
-  /* "visto" cada minuto; si la desconectaron desde la app, se apaga */
+  /* "visto" cada 5 minutos (y al volver a la pantalla); si la desconectaron desde la app, se apaga */
   clearInterval(S.ping);
-  S.ping = setInterval(async () => {
-    try { const r = await api('ping', { method: 'POST', token: tok }); if (r.status === 401) return revoked(); S.away = Boolean(r.d.away); flushQueue(); paint(); } catch {}
-  }, 60e3);
+  S.ping = setInterval(ping, PING_MS);
   battery();
   armDim();
+}
+const PING_MS = 5 * 60e3;
+async function ping() {
+  const tok = store.get()?.token; if (!tok || !S.started) return;
+  {
+    try {
+      const r = await api('ping', { method: 'POST', token: tok }); if (r.status === 401) return revoked();
+      /* la cambiaron desde "Me fui": se aplica acá */
+      if (r.d.sens && r.d.sens !== S.sens) { S.sens = r.d.sens; document.querySelectorAll('input[name=sens]').forEach(x => { x.checked = x.value === S.sens; }); listen(); }
+      flushQueue(); paint();
+    } catch {}
+  }
+}
+/* escuchar con la sensibilidad vigente (se puede cambiar en caliente: se reinicia la escucha) */
+async function listen() {
+  try { S.audio?.stop?.(); } catch {} S.audio = null;
+  try {
+    const A = await import('/assets/js/mascotas-audio.js?v=1');
+    const fn = A.startListening || window.MZAUDIO?.startListening;
+    if (!fn) throw Object.assign(new Error('sin módulo'), { code: 'modelo' });
+    S.listen = 'cargando'; paint();
+    const sens = S.sens;
+    const h = await fn({ sensitivity: sens, onEvent: onSound, onLevel: l => { S.level = l; meter(); },
+      onState: s => { S.listen = s.state || 'escuchando'; S.listenMsg = s.message || ''; paint(); } });
+    if (!S.started) { try { h.stop?.(); } catch {} return; }
+    S.audio = h; S.audioSens = sens;
+    S.listen = 'escuchando'; paint();
+  } catch (e) {
+    S.listen = 'error';
+    S.listenMsg = { 'permiso-denegado': 'Necesitamos permiso para el micrófono. Activalo en los ajustes del navegador y volvé a prender.', 'sin-microfono': 'No encontramos un micrófono en este celu.', 'no-soportado': 'Este navegador no puede escuchar. Probá con Chrome actualizado.', modelo: 'No pudimos cargar el detector de sonidos. Revisá la conexión y probá de nuevo.' }[e?.code] || 'No pudimos prender la escucha. Probá cerrar y volver a abrir esta pantalla.';
+    paint();
+  }
+}
+/* la sensibilidad se guarda en la cuenta (la ve y la cambia también la dueña desde "Me fui") */
+function bindSens() {
+  document.querySelectorAll('input[name=sens]').forEach(r => r.addEventListener('change', async () => {
+    S.sens = r.value;
+    const t = store.get()?.token; if (t) api('csens', { method: 'POST', token: t, body: { sens: r.value } }).catch(() => {});
+    if (S.started && S.audioSens !== S.sens) listen();
+  }));
 }
 function loadScript(src, global) {
   if (window[global]) return Promise.resolve(window[global]);
@@ -164,6 +191,7 @@ async function flushQueue() {
     try {
       const r = await api('event', { method: 'POST', token: tok, body: S.queue[0] });
       if (r.status === 401) return revoked();
+      if (r.ok && 'away' in r.d) S.away = Boolean(r.d.away);
       /* 400 (inválido) o 429 (tope): se descarta; error de red: se reintenta en el próximo ping */
       const ev = S.queue.shift();
       const local = S.events.find(x => x.start === ev.start && x.type === ev.type); if (local) local.sent = r.ok;
@@ -178,7 +206,7 @@ async function wakeOn() {
   paint();
 }
 /* el sistema suelta el Wake Lock cuando la pestaña pasa a segundo plano: al volver, se pide de nuevo */
-document.addEventListener('visibilitychange', () => { if (!document.hidden && S.started) wakeOn(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && S.started) { wakeOn(); ping(); } });
 async function battery() {
   try { const b = await navigator.getBattery?.(); if (!b) return; const up = () => { S.battery = { charging: b.charging, level: b.level }; paint(); }; b.addEventListener('chargingchange', up); b.addEventListener('levelchange', up); up(); } catch {}
 }
@@ -197,10 +225,12 @@ function renderActive() {
     <div class="chips" id="chips" aria-label="Estado"></div>
     <p class="dim2" id="note"></p>
     <section class="card" aria-labelledby="evT"><b id="evT">Lo que detectó</b><ul class="evs" id="evs"></ul></section>
+    ${sensHtml(S.sens)}
     <div class="row2"><button class="btn ghost" id="dimB">Atenuar pantalla</button><button class="btn stop" id="stopB">Apagar cámara</button></div>
     ${privacy()}`;
   $('#stopB').onclick = () => { stopAll(); renderReady('Cámara apagada. No escucha ni transmite.'); };
   $('#dimB').onclick = dim;
+  bindSens();
   paint();
 }
 function chip(ok, text) { return `<span class="chip ${ok ? 'ok' : 'no'}">${ok ? '●' : '▲'} ${esc(text)}</span>`; }
@@ -208,8 +238,8 @@ function paint() {
   if (!$('#live')) return;
   const L = S.listen;
   const live = $('#live'); live.classList.toggle('paused', L === 'pausado' || L === 'cargando'); live.classList.toggle('off', L === 'error' || L === 'detenido');
-  $('#liveT').textContent = L === 'error' ? 'No está escuchando' : L === 'pausado' ? 'En pausa' : 'Cámara activa';
-  $('#liveSub').textContent = L === 'escuchando' ? `Escuchando desde las ${hm(S.started)}. El audio no sale de este celu.` : L === 'cargando' ? 'Preparando el reconocimiento de sonidos…' : S.listenMsg || 'Prendiendo…';
+  $('#liveT').textContent = L === 'error' ? 'No está escuchando' : L === 'pausado' ? 'En pausa: no escucha' : L === 'cargando' ? 'Preparando…' : 'Cámara activa · Escuchando';
+  $('#liveSub').textContent = L === 'escuchando' ? `Escuchando desde las ${hm(S.started)}. El audio no sale de este celu.` : L === 'cargando' ? 'Preparando el reconocimiento de sonidos…' : L === 'pausado' ? (S.listenMsg || 'Se pausó porque la pantalla se bloqueó o cambiaste de app. Volvé a esta pantalla y dejala prendida.') : S.listenMsg || 'Prendiendo…';
   const b = S.battery;
   $('#chips').innerHTML = [
     chip(S.wakeSt === 'si', S.wakeSt === 'si' ? 'Pantalla siempre prendida' : 'La pantalla se puede apagar'),
@@ -237,7 +267,7 @@ async function boot() {
     if (r.status === 401) { store.clear(); return renderPair(codeFromHash() ? '' : 'Esta cámara ya no está vinculada. Generá un código nuevo en la app.'); }
     if (r.status === 404) { main.innerHTML = `${head}<h1>Todavía no está disponible</h1><p class="dim2">La Cámara Mimitos está en prueba y no está habilitada para tu cuenta.</p>`; return; }
     if (!r.ok) throw new Error();
-    S.me = r.d; S.away = Boolean(r.d.away);
+    S.me = r.d; S.away = Boolean(r.d.away); S.sens = ['baja', 'media', 'alta'].includes(r.d.sens) ? r.d.sens : 'media';
     renderReady();
   } catch { main.innerHTML = `${head}<h1>Sin conexión</h1><p class="dim2">Revisá el wifi de este celu.</p><button class="btn" id="re">Probar de nuevo</button>`; $('#re').onclick = boot; }
 }

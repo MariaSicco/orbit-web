@@ -50,9 +50,23 @@ export async function listCameras(email) {
   return Array.isArray(l) ? l : [];
 }
 
+/* validación cacheada por instancia (10 min, como petrtc): una cámara prendida todo el día no relee KV en cada
+   consulta. Revocar limpia el caché de esta instancia; en otra instancia, el token deja de valer en ≤ 10 min
+   (y la dueña ya no la ve en su lista ni puede abrir el video: ownsCamera no se cachea). */
+export const CAM_CACHE_MS = 10 * 60e3;
+const camCache = new Map();
+export const _clearCamCache = () => camCache.clear();
 export async function verifyCameraToken(token) {
   if (!camTokenOk(token)) return null;
   const hash = sha(token);
+  const hit = camCache.get(hash);
+  if (hit && hit.until > Date.now() && mefuiAllowed(hit.cam.email)) return { ...hit.cam };
+  camCache.delete(hash);
+  const cam = await verifyUncached(hash);
+  if (cam) { camCache.set(hash, { cam, until: Date.now() + CAM_CACHE_MS }); if (camCache.size > 500) camCache.delete(camCache.keys().next().value); }
+  return cam ? { ...cam } : null;
+}
+async function verifyUncached(hash) {
   const dev = await kvGet(camDevKey(hash));
   if (!dev || !dev.email || !camIdOk(dev.camId)) return null;
   if (!mefuiAllowed(dev.email)) return null;
@@ -107,13 +121,24 @@ export async function revokeCamera(email, camId) {
   const cams = await listCameras(email);
   const c = cams.find(x => x.camId === camId);
   if (!c) return false;
+  camCache.delete(c.hash);
   await kvDel(camDevKey(c.hash));
   await kvSet(camListKey(email), cams.filter(x => x.camId !== camId));
   return true;
 }
 
 /* lo que ve la dueña en Cuenta → Cámaras (nunca el hash) */
-export const publicCam = c => ({ camId: c.camId, petId: c.petId, name: c.name, at: c.at, seen: c.seen || c.at });
+export const SENS = ['baja', 'media', 'alta'];
+const sensOf = c => SENS.includes(c?.sens) ? c.sens : 'media';
+export const publicCam = c => ({ camId: c.camId, petId: c.petId, name: c.name, at: c.at, seen: c.seen || c.at, sens: sensOf(c) });
+/* sensibilidad de la detección (la elige la persona en la cámara o en "Me fui"; "media" por defecto) */
+export async function setCamSens(email, camId, sens) {
+  if (!SENS.includes(sens)) return false;
+  const cams = await listCameras(email), c = cams.find(x => x.camId === camId);
+  if (!c) return false;
+  c.sens = sens; await kvSet(camListKey(email), cams);
+  return true;
+}
 
 /* ======================================================================
    Fase 1 · "Me fui"
@@ -244,12 +269,16 @@ const ipHash = req => {
 };
 const bearer = req => { const m = /^Bearer\s+([A-Za-z0-9_-]{43})$/.exec(String(req.headers?.authorization || '')); return m ? m[1] : ''; };
 
-/* "Ladró 4 minutos a las 15:20" */
+/* "Feliza ladró 4 minutos a las 15:20". Gemido y llanto son los menos confiables del detector:
+   van como "posible gemido" / "posible llanto" */
+export const UNSURE = ['gemido', 'llanto'];
 export function eventText(ev, tz, pet) {
   const mins = Math.round(ev.dur / 60);
   const len = ev.dur < 60 ? `${Math.max(1, Math.round(ev.dur))} segundos` : `${mins} ${mins === 1 ? 'minuto' : 'minutos'}`;
+  const at = hhmm(Date.parse(ev.start), tz);
+  if (UNSURE.includes(ev.type)) return `${pet ? pet + ': p' : 'P'}osible ${ev.type} de ${len} a las ${at}`;
   const v = VERB[ev.type] || 'hizo ruido';
-  return `${pet ? pet + ' ' : ''}${pet ? v : v.charAt(0).toUpperCase() + v.slice(1)} ${len} a las ${hhmm(Date.parse(ev.start), tz)}`;
+  return `${pet ? pet + ' ' : ''}${pet ? v : v.charAt(0).toUpperCase() + v.slice(1)} ${len} a las ${at}`;
 }
 
 export function cleanEvent(b, now = Date.now()) {
@@ -313,7 +342,8 @@ export async function flushPending({ now = Date.now(), send = {} } = {}) {
     const n = await getNotify(email);
     const total = pend.reduce((a, x) => a + x.dur, 0), first = Math.min(...pend.map(x => Date.parse(x.start)));
     const pet = pend[0].pet;
-    const title = `${pet || 'Tu mascota'} ${VERB[type]} ${pend.length} ${pend.length === 1 ? 'vez' : 'veces'} más desde las ${hhmm(first, n.tz)}`;
+    const veces = `${pend.length} ${pend.length === 1 ? 'vez' : 'veces'} más desde las ${hhmm(first, n.tz)}`;
+    const title = UNSURE.includes(type) ? `${pet || 'Tu mascota'}: posible ${type}, ${veces}` : `${pet || 'Tu mascota'} ${VERB[type]} ${veces}`;
     const body = `En total, ${AR.dur(total * 1000)}. Mirá la línea de tiempo en Mimitos.`;
     await (send.push || pushTo)(n, { title, body, url: '/mascotas#/mefui', tag: `cam-${type}` });
     if (n.mail) await (send.mail || awayMail)(email, { title, body, footer: 'Te llega porque activaste los avisos por mail en Mimitos y la Cámara Mimitos. Los apagás desde Avisos en la app.' }).catch(() => false);
@@ -334,16 +364,19 @@ export async function eventsOf(email, since = 0) {
    Sin sesión (celu cámara):
    POST ?cam=redeem {code, label}            → { token, camId, pet }   (tope por IP: 10 por hora)
    GET  ?cam=me      (Bearer token)          → { camId, name, pet, away }
-   POST ?cam=ping    (Bearer token)          → { ok, away }            (marca "visto"; como mucho, una escritura cada 2 min)
+   POST ?cam=ping    (Bearer token)          → { ok, sens }            (cada 5 min; 1 lectura + 1 escritura de "visto")
    POST ?cam=unpair  (Bearer token)          → { ok }            (el celu cámara se desvincula solo)
+   POST ?cam=csens   (Bearer token) {sens}   → { ok }            (sensibilidad elegida en la cámara)
    POST ?cam=event   (Bearer token) {type, start, dur, conf} → { ok, merged, notify }  (solo el evento: el audio nunca viaja)
    Dueña o dueño (sesión + compra, y la cuenta habilitada):
    POST ?cam=pair {petId, name}              → { code, exp }
    GET  ?cam=list                            → { cams: [...] }
    POST ?cam=revoke {camId}                  → { ok }
+   POST ?cam=sens {camId, sens}              → { ok }   (baja | media | alta; la cámara la toma en el próximo ping)
    GET  ?cam=events&since=ISO                → { events }
    Interruptor apagado o cuenta fuera de la lista → 404 en todas. */
-const CAM_ONLINE_MS = 3 * 60e3;
+/* la cámara avisa "sigo acá" cada 5 min (PING_MS en mascotas-camara.js): activa = vista en los últimos 11 min */
+const CAM_ONLINE_MS = 11 * 60e3;
 export async function handleCam(req, res, deps = {}) {
   res.setHeader('Cache-Control', 'no-store');
   const notFound = () => res.status(404).json({ error: 'not_found' });
@@ -362,17 +395,21 @@ export async function handleCam(req, res, deps = {}) {
     return res.status(200).json({ token: r.token, camId: r.camId, name: r.name, pet: (doc?.pets || []).find(p => p.id === r.petId)?.name || '' });
   }
 
-  if (['me', 'ping', 'event', 'unpair'].includes(act)) {
+  if (['me', 'ping', 'event', 'unpair', 'csens'].includes(act)) {
     const cam = await verifyCameraToken(bearer(req));
     if (!cam) return res.status(401).json({ error: 'camara_no_valida' });
-    const doc = await kvGet(`orbit:pets:${cam.email}`);
+    /* la lista se lee siempre: si la revocaron en otra instancia, corta acá aunque la validación esté en caché */
+    const cams = await listCameras(cam.email), me = cams.find(c => c.camId === cam.camId);
+    if (!me) { camCache.clear(); return res.status(401).json({ error: 'camara_no_valida' }); }
+    /* el ping (cada 5 min) no lee el doc: 1 lectura + 1 escritura */
+    const doc = act === 'ping' || act === 'csens' || act === 'unpair' ? null : await kvGet(`orbit:pets:${cam.email}`);
     const away = Boolean(doc?.away?.on);
     const pet = (doc?.pets || []).find(p => p.id === cam.petId)?.name || '';
-    const cams = await listCameras(cam.email), me = cams.find(c => c.camId === cam.camId);
-    const touch = async () => { if (me && now - Date.parse(me.seen || 0) > 2 * 60e3) { me.seen = new Date(now).toISOString(); await kvSet(camListKey(cam.email), cams); } };
-    if (act === 'me') { await touch(); return res.status(200).json({ camId: cam.camId, name: me?.name || '', pet, away }); }
+    const touch = async () => { if (me && now - Date.parse(me.seen || 0) > 4 * 60e3) { me.seen = new Date(now).toISOString(); await kvSet(camListKey(cam.email), cams); } };
+    if (act === 'me') { await touch(); return res.status(200).json({ camId: cam.camId, name: me?.name || '', pet, away, sens: sensOf(me) }); }
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
-    if (act === 'ping') { await touch(); return res.status(200).json({ ok: true, away }); }
+    if (act === 'ping') { await touch(); return res.status(200).json({ ok: true, sens: sensOf(me) }); }
+    if (act === 'csens') { const b = await readBody(req); return (await setCamSens(cam.email, cam.camId, b.sens)) ? res.status(200).json({ ok: true, sens: b.sens }) : res.status(400).json({ error: 'invalid' }); }
     /* "Desvincular este celu" desde la cámara misma */
     if (act === 'unpair') { await revokeCamera(cam.email, cam.camId); return res.status(200).json({ ok: true }); }
     /* evento: tope por cámara (hora y día) */
@@ -386,7 +423,7 @@ export async function handleCam(req, res, deps = {}) {
     const { ev: saved, merged } = await addEvent(cam, ev, now);
     /* un evento que se agrupó con el anterior no avisa de nuevo */
     const notify = away && !merged ? await notifyEvent(cam, ev, doc, deps, now) : merged ? 'agrupado' : 'en_casa';
-    return res.status(200).json({ ok: true, id: saved.id, merged, notify });
+    return res.status(200).json({ ok: true, id: saved.id, merged, notify, away });
   }
 
   /* dueña o dueño */
@@ -411,6 +448,9 @@ export async function handleCam(req, res, deps = {}) {
     /* tope: 20 códigos por hora por cuenta */
     if ((await kvIncrBy(`orbit:petcam:rl:pair:${email}:${new Date(now).toISOString().slice(0, 13)}`, 1, 3600)) > 20) return res.status(429).json({ error: 'limite' });
     return res.status(200).json(await createPairing(email, { petId, name: str(b.name, 40) }, now));
+  }
+  if (act === 'sens') {
+    return (await setCamSens(email, String(b.camId || ''), b.sens)) ? res.status(200).json({ ok: true }) : res.status(SENS.includes(b.sens) ? 404 : 400).json({ error: 'invalid' });
   }
   if (act === 'revoke') {
     const ok = await revokeCamera(email, String(b.camId || ''));
