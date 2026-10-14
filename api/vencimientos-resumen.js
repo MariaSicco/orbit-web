@@ -116,7 +116,7 @@ async function motivoPdf(buf) {
   };
   const simple = await correr({ model: MODELO, max_tokens: 20, messages: [{ role: 'user', content: [doc, { type: 'text', text: '¿Cuántas páginas tiene? Respondé solo el número.' }] }] });
   const base = { model: MODELO, max_tokens: 60, system: SISTEMA, messages: [{ role: 'user', content: [doc, { type: 'text', text: 'Extraé los datos de este resumen de tarjeta.' }] }] };
-  const lector = await correr({ ...base, output_config: { effort: ESFUERZO, format: { type: 'json_schema', schema: ESQUEMA } }, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' });
+  const lector = await correr({ ...base, system: `${SISTEMA}\n\nRespondé SOLO con un objeto JSON que cumpla este JSON Schema:\n${JSON.stringify(ESQUEMA)}`, output_config: { effort: ESFUERZO }, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' });
   const sinFallback = lector.ok ? null : await correr({ ...base, output_config: { effort: ESFUERZO, format: { type: 'json_schema', schema: ESQUEMA } } });
   const sinEsquema = lector.ok ? null : await correr({ ...base, output_config: { effort: ESFUERZO } });
   return { simple, lector, sinFallback, sinEsquema };

@@ -129,8 +129,11 @@ export async function leerResumenConClaude(pdf) {
     const pedido = {
       model: MODELO,
       max_tokens: 16000,
-      system: SISTEMA,
-      output_config: { effort: ESFUERZO, format: { type: 'json_schema', schema: ESQUEMA } },
+      /* Sin salida estricta (format json_schema): con este esquema la API responde 400
+         "compiled grammar is too large". El esquema va en las instrucciones y lo que vuelve
+         se controla igual por código (validarLectura + cuadreLectura) con un reintento. */
+      system: `${SISTEMA}\n\nRespondé SOLO con un objeto JSON (sin texto antes ni después, sin \`\`\`) que cumpla este JSON Schema:\n${JSON.stringify(ESQUEMA)}`,
+      output_config: { effort: ESFUERZO },
       messages: [{ role: 'user', content: intento === 1 ? contenido
         : [...contenido, { type: 'text', text: `Tu respuesta anterior no se pudo usar (${ultimoError}). Respondé de nuevo respetando el esquema.` }] }],
       ...(FALLBACK ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } : {}),
@@ -149,7 +152,7 @@ export async function leerResumenConClaude(pdf) {
     if (r.stop_reason === 'max_tokens') { ultimoError = 'la respuesta quedó cortada'; continue; }
     const texto = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
     let json;
-    try { json = JSON.parse(texto); } catch { ultimoError = 'JSON inválido'; continue; }
+    try { json = JSON.parse(soloJson(texto)); } catch { ultimoError = 'JSON inválido'; continue; }
     const v = validarLectura(json);
     if (!v.ok) { ultimoError = v.errores.join(' '); continue; }
     const cuadre = cuadreLectura(json);
@@ -168,5 +171,11 @@ export async function leerResumenConClaude(pdf) {
   const e = new ErrorLectura('No pudimos leer bien este resumen. No guardamos nada: cargalo a mano.', 'invalida');
   e.uso = sumarUsos(usos);
   throw e;
+}
+/* Por si el modelo envuelve el JSON en ``` o agrega una frase: del primer "{" al último "}". */
+export function soloJson(texto) {
+  const t = String(texto || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  return a >= 0 && b > a ? t.slice(a, b + 1) : t;
 }
 const sumarUsos = us => us.reduce((a, u) => ({ entrada: a.entrada + u.entrada, salida: a.salida + u.salida }), { entrada: 0, salida: 0 });

@@ -104,3 +104,17 @@ test('el esquema del lector respeta el límite de la API: como mucho 16 campos c
   })(ESQUEMA);
   assert.ok(n <= 16, `hay ${n} campos con unión`);
 });
+
+test('lector: sin salida estricta, el esquema va en las instrucciones y el JSON se limpia', async () => {
+  const L = await import('../api/_lib/mi-mes-lector.js');
+  const { resumenEjemplo } = await import('../api/_herramientas/mi-mes/ejemplo.js');
+  assert.equal(L.soloJson('```json\n{"a":1}\n```'), '{"a":1}');
+  assert.equal(L.soloJson('Acá va: {"a":{"b":2}} listo'), '{"a":{"b":2}}');
+  const pedidos = [];
+  L.__usarCliente({ beta: { messages: { create: async p => { pedidos.push(p);
+    return { stop_reason: 'end_turn', model: 'claude-opus-5-5', usage: { input_tokens: 1, output_tokens: 1 }, content: [{ type: 'text', text: '```json\n' + JSON.stringify(resumenEjemplo(new Date('2026-10-14T12:00:00'))) + '\n```' }] }; } } } });
+  const r = await L.leerResumenConClaude(Buffer.from('%PDF-1.4'));
+  assert.ok(r.lectura.consumos.length > 0);
+  assert.equal(pedidos[0].output_config.format, undefined);
+  assert.match(pedidos[0].system, /JSON Schema/);
+});
