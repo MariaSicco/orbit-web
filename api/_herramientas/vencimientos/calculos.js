@@ -362,11 +362,11 @@ export function triggerAlarma(diasAntes, hora = '09:00') {
   const p = Math.abs(minutos);
   return `${minutos > 0 ? '-' : ''}PT${Math.floor(p / 60)}H${p % 60 ? (p % 60) + 'M' : ''}`;
 }
-export function generarICS(d, { hoy, cuentaId = null, meses = 18, sello } = {}) {
+export function generarICS(d, { hoy, cuentaId = null, meses = 18, sello, casa = '' } = {}) {
   const hasta = sumarMeses(hoy, meses);
   const ahora = (sello || new Date().toISOString()).replace(/[-:]/g, '').replace(/\.\d+/, '').replace(/Z?$/, 'Z');
   const L = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Orbit//Vencimientos de la Casa//ES', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
-    'X-WR-CALNAME:Vencimientos de la Casa'];
+    `X-WR-CALNAME:${escICS(casa ? `Vencimientos · ${casa}` : 'Vencimientos de la Casa')}`];
   const avisos = (d.config?.avisos?.length ? d.config.avisos : [3, 0]).slice(0, 3);
   const hora = d.config?.hora || '09:00';
   let n = 0;
@@ -391,7 +391,7 @@ export function generarICS(d, { hoy, cuentaId = null, meses = 18, sello } = {}) 
         `DTSTAMP:${ahora}`,
         `DTSTART;VALUE=DATE:${o.vence.replace(/-/g, '')}`,
         `DTEND;VALUE=DATE:${fin}`,
-        plegar(`SUMMARY:${escICS(`${verbo}: ${c.nombre}${cuota}${monto}${ajuste}`)}`),
+        plegar(`SUMMARY:${escICS(`${verbo}: ${c.nombre}${casa ? ` (${casa})` : ''}${cuota}${monto}${ajuste}`)}`),
         plegar(`DESCRIPTION:${escICS(desc)}`),
         'TRANSP:TRANSPARENT');
       for (const a of avisos) {

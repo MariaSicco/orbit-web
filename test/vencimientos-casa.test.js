@@ -93,3 +93,26 @@ test('fusionar: lo borrado no vuelve y gana la edición más reciente', () => {
   y = JSON.parse(JSON.stringify(x)); y.cuentas[0] = { ...y.cuentas[0], nombre: 'Edenor viejo', editada: '2000-01-01T00:00:00Z' };
   assert.equal(V.fusionar(y, x).cuentas[0].nombre, 'Luz');
 });
+
+test('varias casas: una persona puede estar en más de una y salir de una sola', async () => {
+  const a = await post('majo@orbit.test', { accion: 'crear', doc: doc(), nombre: 'Majo' });
+  const b = await post('majo@orbit.test', { accion: 'crear', doc: doc(), nombre: 'Majo' });
+  assert.equal(a.code, 200); assert.equal(b.code, 200);
+  const g = await llamar(pedido('majo@orbit.test', { metodo: 'GET' }));
+  assert.equal(g.body.casas.length, 2);
+  // invitación a la quinta (b): la pareja entra solo a esa
+  const inv = await post('majo@orbit.test', { accion: 'invitar', casa: b.body.casa.id });
+  await llamar(pedido('lu@orbit.test', { metodo: 'GET', query: { unirse: new URL(inv.body.link).searchParams.get('unirse') } }));
+  const gl = await llamar(pedido('lu@orbit.test', { metodo: 'GET' }));
+  assert.deepEqual(gl.body.casas.map(c => c.id), [b.body.casa.id]);
+  // guardar en una casa no toca la otra
+  assert.equal((await post('majo@orbit.test', { accion: 'guardar', casa: a.body.casa.id, doc: doc(), rev: 1 })).code, 200);
+  assert.equal((await post('majo@orbit.test', { accion: 'guardar', casa: b.body.casa.id, doc: doc(), rev: 1 })).code, 200);
+  // Majo cierra la casa a: sigue en la b
+  assert.equal((await post('majo@orbit.test', { accion: 'salir', casa: a.body.casa.id })).code, 200);
+  assert.deepEqual((await llamar(pedido('majo@orbit.test', { metodo: 'GET' }))).body.casas.map(c => c.id), [b.body.casa.id]);
+  // Lu sale de la b: pierde el acceso sin compra
+  await post('lu@orbit.test', { accion: 'salir', casa: b.body.casa.id });
+  assert.equal((await accesoHerramienta(pedido('lu@orbit.test', { metodo: 'GET' }), 'ob-021')).ok, false);
+  await post('majo@orbit.test', { accion: 'salir', casa: b.body.casa.id });
+});

@@ -4,7 +4,10 @@
    personas que esa persona invite (pareja, convivientes, familia). Cada una entra con su
    cuenta de Orbit; no hace falta que compre: la licencia es de la casa.
 
-   GET                         → { ok, casa: null | { id, rev, doc, miembros, soyDueno, yo } }
+   Una persona puede estar en varias casas (casa principal, quinta, departamento).
+   Todas las acciones, salvo crear, llevan `casa` (id); si falta, se usa la primera.
+
+   GET                         → { ok, casas: [{ id, rev, doc, miembros, soyDueno, yo }], casa (la primera, por compatibilidad) }
    GET  ?unirse=<token>        → link de invitación: une a la casa y lleva a la app
    POST {accion:'crear', doc}  → crea la casa con los datos del teléfono (solo quien compró)
    POST {accion:'guardar', doc, rev} → guarda; 409 con la versión del servidor si cambió
@@ -20,6 +23,7 @@ import { migrar } from './_herramientas/vencimientos/calculos.js';
 export const PRODUCTO = 'ob-021';
 export const MAX_DOC = 400_000;          // bytes de JSON por casa
 export const MAX_MIEMBROS = 6;
+export const MAX_CASAS = 5;
 const DIAS_INVITACION = 7;
 
 const kCasa = id => `orbit:vencimientos:casa:${id}`;
@@ -33,12 +37,28 @@ const vista = (casa, email) => ({
   miembros: casa.miembros.map(m => ({ nombre: m.nombre, email: m.email, dueno: m.email === casa.dueno, desde: m.desde })),
 });
 
-async function casaDe(email) {
-  const id = await kvGet(kUsuario(email));
-  if (!id) return null;
-  const casa = await kvGet(kCasa(id));
-  if (!casa || !casa.miembros.some(m => m.email === email)) { await kvDel(kUsuario(email)); return null; }
-  return casa;
+/* Casas de una persona (ids). Antes era un solo id: se acepta igual. */
+async function idsDe(email) {
+  const v = await kvGet(kUsuario(email));
+  return Array.isArray(v) ? v : v ? [v] : [];
+}
+async function guardarIds(email, ids) {
+  if (ids.length) await kvSet(kUsuario(email), [...new Set(ids)]); else await kvDel(kUsuario(email));
+}
+async function casasDe(email) {
+  const ids = await idsDe(email);
+  const casas = [];
+  const vivas = [];
+  for (const id of ids) {
+    const c = await kvGet(kCasa(id));
+    if (c && c.miembros.some(m => m.email === email)) { casas.push(c); vivas.push(id); }
+  }
+  if (vivas.length !== ids.length) await guardarIds(email, vivas);
+  return casas;
+}
+async function casaDe(email, id) {
+  const casas = await casasDe(email);
+  return (id ? casas.find(c => c.id === id) : casas[0]) || null;
 }
 function docValido(doc) {
   if (!doc || typeof doc !== 'object' || !Array.isArray(doc.cuentas)) return null;
@@ -69,25 +89,26 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const casa = await casaDe(email);
-      return responder(res, 200, { ok: true, casa: casa ? vista(casa, email) : null });
+      const casas = (await casasDe(email)).map(c => vista(c, email));
+      return responder(res, 200, { ok: true, casas, casa: casas[0] || null });
     }
     const body = await readBody(req);
     const accion = String(body?.accion || '');
 
     if (accion === 'crear') {
       if (acc.invitado) return responder(res, 403, { ok: false, error: 'Solo quien compró la app puede crear una casa compartida.' });
-      if (await casaDe(email)) return responder(res, 409, { ok: false, motivo: 'ya', error: 'Ya tenés una casa compartida.' });
+      const ids = await idsDe(email);
+      if (ids.length >= MAX_CASAS) return responder(res, 409, { ok: false, motivo: 'tope', error: `Podés compartir hasta ${MAX_CASAS} casas.` });
       const doc = docValido(body.doc);
       if (!doc) return responder(res, 413, { ok: false, error: 'Los datos son demasiado grandes o no tienen el formato esperado.' });
       const casa = { id: newToken().slice(0, 16), rev: 1, doc, dueno: email, creada: new Date().toISOString(),
         miembros: [{ email, nombre: String(body.nombre || '').trim().slice(0, 24) || nombreDe(email), desde: new Date().toISOString() }] };
       await kvSet(kCasa(casa.id), casa);
-      await kvSet(kUsuario(email), casa.id);
+      await guardarIds(email, [...ids, casa.id]);
       return responder(res, 200, { ok: true, casa: vista(casa, email) });
     }
 
-    const casa = await casaDe(email);
+    const casa = await casaDe(email, String(body.casa || '') || null);
     if (!casa) return responder(res, 404, { ok: false, motivo: 'sin_casa', error: 'No estás en ninguna casa compartida.' });
 
     if (accion === 'guardar') {
@@ -117,20 +138,18 @@ export default async function handler(req, res) {
       if (quien === email) return responder(res, 400, { ok: false, error: 'Para cerrar la casa usá "Dejar de compartir".' });
       casa.miembros = casa.miembros.filter(m => m.email !== quien);
       await kvSet(kCasa(casa.id), casa);
-      await kvDel(kUsuario(quien));
-      await kvDel(accesoExtraKey(PRODUCTO, quien));
+      await sacarDeCasa(quien, casa.id);
       return responder(res, 200, { ok: true, casa: vista(casa, email) });
     }
     if (accion === 'salir') {
       if (casa.dueno === email) {
         /* quien la creó cierra la casa para todos: cada uno se queda con su copia en el teléfono */
-        for (const m of casa.miembros) { await kvDel(kUsuario(m.email)); if (m.email !== email) await kvDel(accesoExtraKey(PRODUCTO, m.email)); }
         await kvDel(kCasa(casa.id));
+        for (const m of casa.miembros) await sacarDeCasa(m.email, casa.id);
       } else {
         casa.miembros = casa.miembros.filter(m => m.email !== email);
         await kvSet(kCasa(casa.id), casa);
-        await kvDel(kUsuario(email));
-        await kvDel(accesoExtraKey(PRODUCTO, email));
+        await sacarDeCasa(email, casa.id);
       }
       return responder(res, 200, { ok: true });
     }
@@ -139,6 +158,15 @@ export default async function handler(req, res) {
     console.warn(JSON.stringify({ evento: 'vencimientos-casa', error: e?.message || 'desconocido' }));
     return responder(res, 503, { ok: false, error: 'No pudimos conectar con la casa compartida. Probá de nuevo en un rato.' });
   }
+}
+
+/* Saca una casa de la lista de alguien; si ya no está en ninguna casa ajena, pierde el acceso sin compra. */
+async function sacarDeCasa(email, casaId) {
+  const ids = (await idsDe(email)).filter(id => id !== casaId);
+  await guardarIds(email, ids);
+  let sigueInvitado = false;
+  for (const id of ids) { const c = await kvGet(kCasa(id)); if (c && c.dueno !== email) { sigueInvitado = true; break; } }
+  if (!sigueInvitado) await kvDel(accesoExtraKey(PRODUCTO, email));
 }
 
 async function unirseConLink(req, res, token) {
@@ -150,14 +178,14 @@ async function unirseConLink(req, res, token) {
   if (!inv) return volver('vencida');
   const casa = await kvGet(kCasa(inv.casa));
   if (!casa) return volver('vencida');
+  const ids = await idsDe(email);
   if (!casa.miembros.some(m => m.email === email)) {
-    const otra = await kvGet(kUsuario(email));
-    if (otra && otra !== casa.id) return volver('otra');
+    if (ids.length >= MAX_CASAS) return volver('otra');
     if (casa.miembros.length >= MAX_MIEMBROS) return volver('llena');
     casa.miembros.push({ email, nombre: nombreDe(email), desde: new Date().toISOString() });
     await kvSet(kCasa(casa.id), casa);
   }
-  await kvSet(kUsuario(email), casa.id);
+  await guardarIds(email, [...ids, casa.id]);
   await kvSet(accesoExtraKey(PRODUCTO, email), { casa: casa.id, desde: new Date().toISOString() });
   await kvDel(kInvitacion(token));
   return volver('unida');

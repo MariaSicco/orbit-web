@@ -527,3 +527,35 @@ details.mas[open] summary::after{transform:rotate(45deg)}
   .vc *,.vc *::before,.vc *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
 @media print{.tabs,.top,.vtoast{display:none}}
+
+/* ── varias casas ── */
+.ic-casa{position:relative}
+.ic-casa i{position:absolute;top:6px;right:5px;min-width:15px;height:15px;padding:0 4px;border-radius:8px;background:var(--azul);color:#F2EFE8;font:600 9.5px/15px var(--mono);font-style:normal;text-align:center}
+.ic-casa i:empty{display:none}
+.casa-chip{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:4px 10px 4px 8px;margin:0 8px 8px 0;border-radius:999px;border:1px solid var(--linea);background:var(--tarjeta,transparent);color:inherit;font:600 13px/1 var(--sans,inherit);cursor:pointer;transition:border-color .2s cubic-bezier(.7,0,.2,1),transform .2s cubic-bezier(.7,0,.2,1)}
+.casa-chip:hover{border-color:var(--azul)}.casa-chip:active{transform:scale(.97)}
+.casa-chip svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.casa-chip .baja{width:13px;height:13px;transform:rotate(90deg);opacity:.6}
+.casa-chip small{font:600 10px/16px var(--mono);min-width:16px;height:16px;border-radius:8px;background:var(--azul);color:#F2EFE8;text-align:center;padding:0 4px}
+.casas-total{background:#0D0D0E;color:#F2EFE8;border-radius:18px;padding:16px 18px;margin-bottom:14px;display:grid;gap:4px}
+.casas-total .mono{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+.casas-total b{font-size:30px;letter-spacing:-.03em;line-height:1.05}
+.casas-total small{font-size:13px;opacity:.8}.casas-total em{font-style:normal;color:#FF4F2E;opacity:1}
+.casas-lista{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}
+.casa-fila{width:100%;display:grid;grid-template-columns:44px 1fr auto;align-items:center;gap:12px;padding:12px;border-radius:16px;border:1px solid var(--linea);background:transparent;color:inherit;text-align:left;cursor:pointer;font:inherit;transition:border-color .2s cubic-bezier(.7,0,.2,1)}
+.casa-fila:hover{border-color:var(--azul)}
+.casa-fila.activa{border-color:var(--azul);box-shadow:inset 0 0 0 1px var(--azul)}
+.casa-ic{width:44px;height:44px;border-radius:14px;background:var(--azul);color:#F2EFE8;display:grid;place-items:center}
+.casa-fila:not(.activa) .casa-ic{background:#0D0D0E}
+.casa-ic svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.casa-txt{display:grid;gap:2px;min-width:0}.casa-txt b{font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.casa-txt small{font-size:12.5px;color:var(--suave)}
+.casa-monto{font-weight:600;font-size:14px;white-space:nowrap}.casa-monto i{font-style:normal;font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--azul)}
+.casa-iconos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.casa-iconos label{position:relative}
+.casa-iconos input{position:absolute;opacity:0;inset:0}
+.casa-iconos span{display:grid;justify-items:center;gap:6px;padding:12px 6px;border-radius:14px;border:1px solid var(--linea);font-size:12px;text-align:center;cursor:pointer;transition:border-color .2s cubic-bezier(.7,0,.2,1),background .2s}
+.casa-iconos svg{width:26px;height:26px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.casa-iconos input:checked+span{border-color:var(--azul);background:color-mix(in srgb,var(--azul) 10%,transparent);color:var(--azul)}
+.casa-iconos input:focus-visible+span{outline:2px solid var(--azul);outline-offset:2px}
+.casa-nueva{display:grid;gap:12px}
+.vacio-casa{display:flex;justify-content:center}
