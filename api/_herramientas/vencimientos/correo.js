@@ -53,6 +53,7 @@ function cuerpoGmail(payload) {
 }
 async function tokenGoogle(clientId) {
   await cargarScript('https://accounts.google.com/gsi/client');
+  if (typeof window.google?.accounts?.oauth2 === 'undefined') throw new Error('No pudimos cargar el acceso de Google. Probá de nuevo en un rato.');
   return new Promise((ok, mal) => {
     const cliente = google.accounts.oauth2.initTokenClient({
       client_id: clientId, scope: 'https://www.googleapis.com/auth/gmail.readonly',
@@ -90,8 +91,10 @@ export async function buscarEnGmail(clientId, avance) {
 
 /* ── Outlook / Hotmail ── */
 export async function buscarEnOutlook(clientId, avance) {
-  await cargarScript('https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js');
-  const app = new msal.PublicClientApplication({
+  /* MSAL 2.38.3 (MIT) alojado con la app: el CDN de Microsoft dejó de servir esa ruta */
+  await cargarScript('vendor/msal-browser-2.38.3.min.js');
+  if (typeof window.msal === 'undefined') throw new Error('No pudimos cargar el acceso de Microsoft. Probá de nuevo en un rato.');
+  const app = new window.msal.PublicClientApplication({
     auth: { clientId, authority: 'https://login.microsoftonline.com/common', redirectUri: `${location.origin}/herramientas/vencimientos` },
     cache: { cacheLocation: 'sessionStorage' },
   });
@@ -103,20 +106,29 @@ export async function buscarEnOutlook(clientId, avance) {
   } catch { throw new Error('Se cerró la ventana de Microsoft o no diste el permiso.'); }
   try {
     const dominios = [...new Set(REMITENTES.flatMap(([, ds]) => ds))].slice(0, 40);
-    const kql = [...PALABRAS.map(p => `"${p}"`), ...dominios.map(d => `from:${d}`)].join(' OR ');
-    let url = `https://graph.microsoft.com/v1.0/me/messages?$search=${encodeURIComponent(`"${kql.replace(/"/g, '\\"')}"`)}&$top=50&$select=id,subject,from,receivedDateTime,body`;
+    const comoKql = partes => `"${partes.join(' OR ').replace(/"/g, '\\"')}"`;
+    const completa = comoKql([...PALABRAS.map(p => `"${p}"`), ...dominios.map(d => `from:${d}`)]);
+    const simple = comoKql(PALABRAS.map(p => `"${p}"`));
+    const base = q => `https://graph.microsoft.com/v1.0/me/messages?$search=${encodeURIComponent(q)}&$top=50&$select=id,subject,from,receivedDateTime,body`;
+    const pedir = u => fetch(u, { headers: { Authorization: `Bearer ${token}`, Prefer: 'outlook.body-content-type="text"' } });
     const mails = [];
+    const vistos = new Set();
     const desde = Date.now() - 183 * 864e5;
+    let url = base(completa), primera = true;
     while (url && mails.length < MAX_MAILS) {
-      const r = await fetch(url, { headers: { Authorization: `Bearer ${token}`, Prefer: 'outlook.body-content-type="text"' } });
-      if (!r.ok) throw new Error(`Outlook respondió ${r.status}`);
+      let r = await pedir(url);
+      /* si Outlook no acepta la búsqueda larga (remitentes), va solo con las palabras */
+      if (!r.ok && primera && r.status === 400) { url = base(simple); r = await pedir(url); }
+      primera = false;
+      if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'Outlook no dio permiso para leer el mail.' : `Outlook respondió ${r.status}. Probá de nuevo en un rato.`);
       const j = await r.json();
       for (const m of j.value || []) {
-        if (Date.parse(m.receivedDateTime) < desde) continue;
+        if (vistos.has(m.id) || Date.parse(m.receivedDateTime) < desde) continue;
+        vistos.add(m.id);
         mails.push({ id: m.id, de: `${m.from?.emailAddress?.name || ''} <${m.from?.emailAddress?.address || ''}>`, asunto: m.subject || '',
           fecha: fecha(Date.parse(m.receivedDateTime)), texto: String(m.body?.content || '').slice(0, 20000) });
       }
-      avance?.(mails.length, mails.length);
+      avance?.(mails.length, 0);
       url = j['@odata.nextLink'] || null;
     }
     return mails;

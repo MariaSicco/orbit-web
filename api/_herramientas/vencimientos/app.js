@@ -730,7 +730,7 @@ async function abrirCorreo() {
 async function buscarCorreo(proveedor) {
   const cfg = DEMO_CORREO ? {} : await configCorreo();
   abrir('Buscando tus facturas', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p><b id="correo-avance">Esperando el permiso…</b><br>Se abre una ventana de ${proveedor === 'gmail' ? 'Google' : 'Microsoft'} para que des el permiso.</p></div>`);
-  const avance = (n, total) => { const el = $id('correo-avance'); if (el) el.textContent = total ? `Revisando ${n} de ${total} mails…` : 'Buscando…'; };
+  const avance = (n, total) => { const el = $id('correo-avance'); if (el) el.textContent = total ? `Revisando ${n} de ${total} mails…` : n ? `Leídos ${n} mails…` : 'Buscando…'; };
   let mails;
   try {
     if (DEMO_CORREO) { await new Promise(r => setTimeout(r, 900)); mails = mailsDemo(hoy); }
