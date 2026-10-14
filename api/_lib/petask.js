@@ -131,7 +131,11 @@ export function buildContext(doc, { question = '', petId = '', scans = [], tz = 
     const vet = p.vet || {};
     if (vet.name || vet.phone || vet.er || vet.erPhone) add(p, 'pet', 'vet', 'Veterinaria', '', 'datos', `Veterinaria y guardia: ${[vet.name ? 'veterinaria ' + dataText(vet.name, 80) : '', vet.phone ? 'tel ' + plain(vet.phone, 40) : '', vet.er ? 'guardia ' + dataText(vet.er, 120) : '', vet.erPhone ? 'tel guardia ' + plain(vet.erPhone, 40) : ''].filter(Boolean).join(' · ')}`, true, p.id);
     const f = p.food || {};
-    if (f.brand || f.bagKg || f.dailyG) add(p, 'pet', 'food', 'Alimento', okDay(f.opened), 'inicio', `Alimento: ${[f.brand ? dataText(f.brand, 80) : '', f.bagKg ? `bolsa de ${kgs(f.bagKg)}` : '', f.dailyG ? `${f.dailyG} g por día` : '', f.opened ? `bolsa abierta el ${f.opened}` : ''].filter(Boolean).join(' · ')}`, true, p.id);
+    /* cuánto le dura la bolsa: la misma cuenta que la app y los avisos (mascotas-rules.js) */
+    const FL = R.foodLearn(f), fleft = R.foodLeft(FL, today);
+    const learned = FL && FL.days ? (FL.src === 'aprendido' ? `le dura en promedio ${FL.days} días (según sus últimas ${FL.n} bolsas)` : `le dura unos ${FL.days} días (calculado por gramos por día)`) + ` · se termina aprox. el ${FL.end}${fleft < 0 ? ' (ya se terminó)' : ''}` + (FL.perDay ? ` · cuesta unos ${money(FL.perDay)} por día` : '') : '';
+    if (f.brand || f.bagKg || f.dailyG || FL) add(p, 'pet', 'food', 'Alimento', okDay(f.opened), 'inicio', `Alimento: ${[f.brand ? dataText(f.brand, 80) : '', f.bagKg ? `bolsa de ${kgs(f.bagKg)}` : '', f.dailyG ? `${f.dailyG} g por día` : '', f.opened ? `bolsa abierta el ${f.opened}` : '', learned].filter(Boolean).join(' · ')}`, true, p.id);
+    for (const b of (FL?.bags || []).slice(-12)) add(p, 'pet', 'bag:' + b.date, 'Bolsa de alimento', b.date, 'gastos', `Bolsa de alimento abierta el ${b.date}${b.kg ? ' · ' + kgs(b.kg) : ''}${b.brand ? ' · ' + dataText(b.brand, 80) : ''}${b.price ? ' · ' + money(b.price) : ''}`, false, b.date);
     for (const c of p.conditions || []) add(p, 'cond', c.id, c.name, '', 'antecedentes', `Problema de salud: ${dataText(c.name, 80)} · estado ${plain(c.status, 20)}${c.since ? ' · desde ' + plain(c.since, 10) : ''}${c.notes ? ' · notas ' + dataText(c.notes, 300) : ''}`, true, c.id);
     for (const c of p.surgeries || []) add(p, 'surg', c.id, c.name, okDay(c.date), 'surg', `Cirugía: ${dataText(c.name, 80)} · fecha ${plain(c.date, 10) || 'sin fecha'}${c.notes ? ' · notas ' + dataText(c.notes, 300) : ''}`, true, c.id);
     for (const m of p.meds || []) {

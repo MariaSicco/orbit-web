@@ -33,7 +33,7 @@ const store = { get(k) { try { return localStorage.getItem('mimitos:' + k); } ca
 const blankPet = () => ({ id: uid(), name: '', species: 'perro', speciesOther: '', breed: '', sex: '', birth: '', color: '', marks: '', temper: '', chip: '', weight: null, allergies: '', photo: '', photos: [], notes: '',
   contact: { show: false, name: '', phone: '', note: '' }, vet: { name: '', phone: '', address: '', er: '', erPhone: '' }, lost: { on: false, since: '', place: '', note: '' }, qrNote: { show: false, text: '' }, hue: '', photoFull: '',
   share: '', sitterToken: '', sitter: { name: '', from: '', to: '', food: '', walks: '', where: '', habits: '', emergency: '', key: '', vetAuth: false, contact: '' },
-  food: { brand: '', bagKg: null, dailyG: null, opened: '' }, fund: { goal: null, monthly: null, saved: null }, trip: { dest: '', date: '' },
+  food: { brand: '', bagKg: null, dailyG: null, opened: '', bags: [] }, fund: { goal: null, monthly: null, saved: null }, trip: { dest: '', date: '' },
   neutered: '', chronic: '', onboarded: false, conditions: [], surgeries: [], visits: [], studies: [], weights: [],
   records: [], meds: [], expenses: [], symptoms: [], log: [] });
 /* migración suave: completa lo que falte sin tocar lo cargado. Los registros viejos ganan
@@ -48,6 +48,7 @@ const norm = p => {
   const b = blankPet();
   for (const k in b) if (p[k] == null) p[k] = b[k]; else if (b[k] && typeof b[k] === 'object' && !Array.isArray(b[k])) p[k] = { ...b[k], ...p[k] };
   p.records.forEach(normRec);
+  if (!Array.isArray(p.food.bags)) p.food.bags = [];
   return p;
 };
 /* color de cada mascota: fondo del Inicio, tapa de la libreta y pasaporte. Texto encima siempre en tinta (AA ≥ 5,2:1) */
@@ -558,19 +559,64 @@ function expenseForm(p, x) {
       const e = x || { id: uid() }; Object.assign(e, { cat: v.cat || 'otros', amount: a, date: v.date, note: v.note });
       if (!x) target.expenses.push(e);
       ui.gastos.ym = v.date.slice(0, 7);
-      toast(x ? 'Gasto actualizado.' : `Gasto de ${money(a)} guardado.`);
+      /* un gasto de alimento nuevo: preguntamos si abrió una bolsa, así aprende cuánto le dura */
+      const ask = !x && Z.bagPrompt(target, e);
+      if (ask) form.afterSave = () => bagAsk(target, ask, a);
+      else toast(x ? 'Gasto actualizado.' : `Gasto de ${money(a)} guardado.`);
     },
   });
 }
+/* ---------- alimento: cada bolsa que abrís le enseña a Mimitos cuánto le dura ---------- */
+const kgTxt = n => String(n).replace('.', ',');
+function bagSheet(p, pre = {}) {
+  const today = iso(Z.today()), last = window.MZRULES.bagsOf(p.food).at(-1) || {};
+  const kg = pre.kg ?? last.kg ?? p.food.bagKg, brand = pre.brand ?? (last.brand || p.food.brand || '');
+  openForm({
+    title: 'Bolsa nueva',
+    intro: `Anotá cuándo abriste la bolsa de ${esc(p.name)}. Con cada bolsa aprendemos cuánto le dura y te avisamos antes de que se termine.`,
+    values: { date: pre.date || today, kg: kg ? kgTxt(kg) : '', brand, price: pre.price ? String(pre.price) : '' },
+    noFocus: true, stick: true,
+    fields: [
+      { k: 'date', label: 'La abriste el', type: 'date', quick: [['0', 'Hoy'], ['-1', 'Ayer']] },
+      [{ k: 'kg', label: 'Bolsa (kg)', type: 'number', ph: '15' }, { k: 'price', label: 'Precio ($)', type: 'number', ph: '38000', opt: true, hint: pre.fromExpense ? 'Ya está en tus gastos.' : 'Si lo ponés, se anota también como gasto de alimento.' }],
+      { k: 'brand', label: 'Marca', max: 80, ph: 'Marca y variedad', opt: true },
+    ],
+    after() { $('#f_date').max = today; },
+    onQuick(k, d) { setVal('date', iso(new Date(Z.today().getTime() + Number(d) * Z.DAY))); },
+    onSave(v) {
+      const k = numDec(v.kg); if (!(k > 0)) return 'Poné cuántos kilos trae la bolsa, por ejemplo 15.';
+      const price = numOrNull(v.price); if (Number.isNaN(price)) return 'El precio va solo con números, por ejemplo 38000.';
+      if (!v.date) return 'Poné cuándo la abriste.'; if (v.date > today) return 'La fecha no puede ser futura.';
+      const undoBag = Z.addBag(p, { date: v.date, kg: k, brand: v.brand, price: price || null });
+      let exp = null;
+      if (price && !pre.fromExpense) { exp = { id: uid(), cat: 'alimento', amount: price, date: v.date, note: `Bolsa de ${kgTxt(k)} kg${v.brand ? ' · ' + v.brand : ''}` }; p.expenses.push(exp); }
+      const f = Z.food(p.food);
+      const msg = f?.src === 'aprendido' ? `Anotada. Le dura en promedio ${f.days} días: se termina aprox. el ${fmt(f.end, { day: 'numeric', month: 'long' })}.` : f ? `Anotada. Se termina aprox. el ${fmt(f.end, { day: 'numeric', month: 'long' })}.` : 'Anotada. Con la próxima bolsa aprendemos cuánto le dura.';
+      form.afterSave = () => toast(msg, { label: 'Deshacer', fn: () => { undoBag(); if (exp) drop(p.expenses, exp); changed(); toast('Listo, la sacamos.'); } });
+    },
+  });
+}
+/* después de un gasto de alimento */
+function bagAsk(p, pre, amount) {
+  panel('¿Abriste una bolsa nueva?', `<p class="note">Guardamos el gasto de ${money(amount)}. Si ese día abriste una bolsa de ${esc(p.name)}, anotala: así aprendemos cuánto le dura.</p><div class="d-acts"><button class="btn big wide" data-bag="si">Sí, la abrí ${pre.date === iso(Z.today()) ? 'hoy' : 'ese día'}</button><button class="btn ghost wide" data-bag="no">No</button></div>`);
+  $('#pBody').onclick = e => {
+    const b = e.target.closest('[data-bag]'); if (!b) return;
+    dPanel.close();
+    if (b.dataset.bag === 'si') bagSheet(p, { ...pre, fromExpense: true });
+  };
+}
 function foodForm(p) {
   openForm({
-    title: 'Alimento', intro: 'Con esto calculamos cuándo se termina la bolsa y te avisamos para comprar a tiempo.',
+    title: 'Alimento', intro: 'Los gramos por día son opcionales: si no los sabés, desde la segunda bolsa calculamos solos cuánto le dura.',
     values: { ...p.food, bagKg: p.food.bagKg ? String(p.food.bagKg).replace('.', ',') : '', dailyG: p.food.dailyG ? String(p.food.dailyG) : '', opened: p.food.opened || iso(Z.today()) },
-    fields: [{ k: 'brand', label: 'Qué alimento', max: 80, ph: 'Marca y variedad' }, [{ k: 'bagKg', label: 'Bolsa (kg)', type: 'number', ph: '15' }, { k: 'dailyG', label: 'Come por día (g)', type: 'number', ph: '400' }], { k: 'opened', label: 'Abriste la bolsa el', type: 'date' }],
+    fields: [{ k: 'brand', label: 'Qué alimento', max: 80, ph: 'Marca y variedad' }, [{ k: 'bagKg', label: 'Bolsa (kg)', type: 'number', ph: '15' }, { k: 'dailyG', label: 'Come por día (g)', type: 'number', ph: '400', opt: true }], { k: 'opened', label: 'Abriste la bolsa el', type: 'date' }],
     onSave(v) {
       const k = numDec(v.bagKg), g = numDec(v.dailyG);
-      if (!(k > 0)) return 'Poné cuántos kilos trae la bolsa.'; if (!(g > 0)) return 'Poné cuántos gramos come por día.'; if (!v.opened) return 'Poné cuándo abriste la bolsa.';
-      p.food = { brand: v.brand, bagKg: k, dailyG: g, opened: v.opened }; toast('Alimento guardado.');
+      if (!(k > 0)) return 'Poné cuántos kilos trae la bolsa.'; if (Number.isNaN(g)) return 'Los gramos por día van con números, por ejemplo 400.'; if (!v.opened) return 'Poné cuándo abriste la bolsa.';
+      const bags = (p.food.bags || []).filter(b => b.date !== v.opened);
+      bags.push({ date: v.opened, kg: k, brand: v.brand, price: (p.food.bags || []).find(b => b.date === v.opened)?.price || null });
+      bags.sort((a, b) => a.date.localeCompare(b.date));
+      p.food = { brand: v.brand, bagKg: k, dailyG: g || null, opened: bags.at(-1).date, bags: bags.slice(-50) }; toast('Alimento guardado.');
     },
   });
 }
@@ -1509,6 +1555,25 @@ function renderAgenda() {
 }
 
 /* ---------- GASTOS ---------- */
+/* alimento: cuánto le dura (aprendido de las bolsas), cuándo se termina, cuánto sale por mes y por día */
+function foodCard(fp, ym) {
+  const f = Z.food(fp.food), sp = Z.foodSpend(fp, ym);
+  const hist = (fp.food.bags || []).slice(-4).reverse();
+  const head = `<div class="sec-h"><h2>Alimento de ${esc(fp.name)}</h2>${f || hist.length ? `<button class="link" data-act="food" data-pet="${fp.id}">Editar</button>` : ''}</div>`;
+  const spend = sp.avg || sp.perDay ? `<div class="stats food-stats"><div class="stat"><span>Alimento por mes</span><b>${sp.avg ? money(sp.avg) : '—'}</b><small>${sp.months ? `promedio de ${sp.months} ${sp.months === 1 ? 'mes' : 'meses'}` : 'cargá los gastos de alimento'}</small></div><div class="stat"><span>Por día</span><b>${sp.perDay ? money(sp.perDay) : '—'}</b><small>${sp.perDay ? 'según el precio de tus bolsas' : 'poné el precio de la bolsa'}</small></div></div>` : '';
+  const histHtml = hist.length ? `<details class="bags"><summary>Tus bolsas <span class="count">${(fp.food.bags || []).length}</span></summary><ul>${hist.map(b => `<li><span><span class="bd">${fmt(b.date, { day: 'numeric', month: 'short', year: 'numeric' })}</span><small>${[b.kg ? kgTxt(b.kg) + ' kg' : '', esc(b.brand || '')].filter(Boolean).join(' · ')}</small></span><b>${b.price ? money(b.price) : ''}</b></li>`).join('')}</ul></details>` : '';
+  if (!f) {
+    const one = hist.length || fp.food.opened;
+    return `<section class="sec">${head}<div class="${one ? 'card' : 'empty dash'}">${one ? `<div style="display:flex;gap:12px;align-items:center">${bubble('bowl', 'comida')}<span><b>${esc(fp.food.brand || 'Alimento')}</b><small class="dim" style="display:block">Abriste la bolsa el ${fmt(fp.food.opened, { day: 'numeric', month: 'long' })}</small></span></div><p>Con la próxima bolsa aprendemos cuánto le dura y te avisamos antes de que se termine.</p>` : `<p>Anotá la bolsa que abriste, con los kilos. Desde la segunda, Mimitos aprende cuánto le dura y te avisa antes de que se termine.</p>`}
+      <div class="btns"><button class="btn sm" data-act="newBag" data-pet="${fp.id}">${I('plus')} ${one ? 'Abrí una bolsa nueva' : 'Anotar la bolsa'}</button>${one ? '' : `<button class="btn ghost sm" data-act="food" data-pet="${fp.id}">Sé cuánto come por día</button>`}</div>${histHtml}</div>${spend}</section>`;
+  }
+  const how = f.src === 'aprendido' ? `Le dura en promedio <b>${f.days} días</b> (según tus últimas ${f.n} ${f.n === 1 ? 'bolsa' : 'bolsas'}).` : `Le dura unos <b>${f.days} días</b>, por los ${fp.food.dailyG} g por día. Con la próxima bolsa lo ajustamos con lo real.`;
+  return `<section class="sec">${head}<div class="card"><div style="display:flex;gap:12px;align-items:center">${bubble('bowl', 'comida')}<span><b>${esc(fp.food.brand || 'Alimento')}</b><small class="dim" style="display:block">Bolsa de ${kgTxt(f.bagKg)} kg, abierta el ${fmt(f.opened, { day: 'numeric', month: 'long' })}</small></span></div>
+    <div class="bar c-comida" role="img" aria-label="Queda ${Math.round(f.pct * 100)}% de la bolsa"><i style="width:${Math.round(f.pct * 100)}%"></i></div>
+    <p>${how}</p>
+    <p>${f.left < 0 ? '<b>Ya se terminó la bolsa.</b> Cuando abras otra, anotala.' : `Se termina aprox. el <b>${fmt(f.end, { day: 'numeric', month: 'long' })}</b> (${f.left === 0 ? 'hoy' : f.left === 1 ? 'mañana' : `en ${f.left} días`}).`}</p>
+    <div class="btns"><button class="btn sm" data-act="newBag" data-pet="${fp.id}">${I('plus')} Abrí una bolsa nueva</button><button class="btn ghost sm" data-act="icsFood" data-pet="${fp.id}">${I('cal')} Avisame antes</button></div>${histHtml}</div>${spend}</section>`;
+}
 function renderGastos(cur) {
   const ym = ui.gastos.ym, filt = ui.gastos.pet;
   const pets = filt === 'all' ? doc.pets : doc.pets.filter(p => p.id === filt);
@@ -1523,7 +1588,7 @@ function renderGastos(cur) {
   const maxC = Math.max(1, ...Object.values(byCat)), maxP = Math.max(1, ...Object.values(byPet));
   const diff = avg ? Math.round((total - avg) / avg * 100) : null;
   const fp = filt === 'all' ? cur : petById(filt) || cur;
-  const f = Z.food(fp.food), fund = fp.fund, pct = fund.goal ? Math.min(1, (fund.saved || 0) / fund.goal) : 0;
+  const fund = fp.fund, pct = fund.goal ? Math.min(1, (fund.saved || 0) / fund.goal) : 0;
   const monthsLeft = fund.goal && fund.monthly ? Math.ceil(Math.max(0, fund.goal - (fund.saved || 0)) / fund.monthly) : null;
   return `<div class="lib-top"><div><span class="eyebrow">Gastos</span><h1 class="h-xl">Cuánto gastás</h1></div><div class="lib-tools"><button class="btn sm" data-act="newExp">${I('plus')} Agregar gasto</button></div></div>
     ${doc.pets.length > 1 ? `<div class="chips scroll" role="group" aria-label="Mascota"><button class="chip" data-act="gpet" data-id="all" aria-pressed="${filt === 'all'}">Todas</button>${doc.pets.map(p => `<button class="chip" data-act="gpet" data-id="${p.id}" aria-pressed="${filt === p.id}">${esc(p.name)}</button>`).join('')}</div>` : ''}
@@ -1542,13 +1607,7 @@ function renderGastos(cur) {
         </section>
       </div>
       <div class="col">
-        <section class="sec"><div class="sec-h"><h2>Alimento de ${esc(fp.name)}</h2>${f ? `<button class="link" data-act="food" data-pet="${fp.id}">Editar</button>` : ''}</div>
-          ${f ? `<div class="card"><div style="display:flex;gap:12px;align-items:center">${bubble('bowl', 'comida')}<span><b>${esc(fp.food.brand || 'Alimento')}</b><small class="dim" style="display:block">${String(fp.food.bagKg).replace('.', ',')} kg, come ${fp.food.dailyG} g por día</small></span></div>
-            <div class="bar c-comida" role="img" aria-label="Queda ${Math.round(f.pct * 100)}% de la bolsa"><i style="width:${Math.round(f.pct * 100)}%"></i></div>
-            <p>${f.left < 0 ? '<b>Ya se terminó la bolsa.</b> Cuando abras otra, tocá "Abrí una bolsa nueva".' : `Le quedan <b>${f.left} días</b>. Se termina alrededor del ${fmt(f.end, { day: 'numeric', month: 'long' })}.`}</p>
-            <div class="btns"><button class="btn ghost sm" data-act="icsFood" data-pet="${fp.id}">${I('cal')} Avisame antes</button><button class="btn ghost sm" data-act="newBag" data-pet="${fp.id}">Abrí una bolsa nueva</button></div></div>`
-          : `<div class="empty dash"><p>Cargá cuánto trae la bolsa y cuánto come por día. Te avisamos antes de que se termine.</p><button class="btn sm soft" data-act="food" data-pet="${fp.id}">Cargar alimento</button></div>`}
-        </section>
+        ${foodCard(fp, ym)}
         <section class="sec"><div class="sec-h"><h2>Ahorro para imprevistos</h2>${fund.goal ? `<button class="link" data-act="fund" data-pet="${fp.id}">Editar</button>` : ''}</div>
           ${fund.goal ? `<div class="card"><div style="display:flex;gap:12px;align-items:center">${bubble('piggy', 'salud')}<span><b class="num">${money(fund.saved || 0)} de ${money(fund.goal)}</b><small class="dim" style="display:block">${pct >= 1 ? 'Meta cumplida.' : monthsLeft ? `Separando ${money(fund.monthly)} por mes, llegás en ${monthsLeft} ${monthsLeft === 1 ? 'mes' : 'meses'}.` : 'Poné cuánto separás por mes para ver cuándo llegás.'}</small></span></div>
             <div class="bar"><i style="width:${Math.round(pct * 100)}%"></i></div>${fund.monthly ? `<button class="btn ghost sm" data-act="fundAdd" data-pet="${fp.id}" style="align-self:flex-start">${I('plus')} Sumar ${money(fund.monthly)} de este mes</button>` : ''}</div>`
@@ -2813,7 +2872,7 @@ document.addEventListener('click', e => {
     case 'amonth': ui.agenda.ym = ymAdd(ui.agenda.ym, +b.dataset.n); return render();
     case 'aday': ui.agenda.sel = b.dataset.d; return render();
     case 'food': return foodForm(p);
-    case 'newBag': { const old = p.food.opened; p.food.opened = iso(Z.today()); changed(); return toast('Bolsa nueva: el contador arrancó de cero.', { label: 'Deshacer', fn: () => { p.food.opened = old; changed(); } }); }
+    case 'newBag': return bagSheet(p);
     case 'fund': return fundForm(p);
     case 'fundAdd': p.fund.saved = (p.fund.saved || 0) + (p.fund.monthly || 0); changed(); return toast('Sumado al ahorro.', { label: 'Deshacer', fn: () => { p.fund.saved -= p.fund.monthly || 0; changed(); } });
     case 'trip': return tripForm(cur);

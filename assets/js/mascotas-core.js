@@ -62,13 +62,39 @@
   }
 
   /* ---------- alimento ---------- */
+  /* la duración sale de mascotas-rules.js (la misma que usa el cron): aprendida de las bolsas o por gramos */
   function food(f) {
-    if (!f || !f.bagKg || !f.dailyG || !f.opened) return null;
-    const days = (f.bagKg * 1000) / f.dailyG;
-    const end = new Date(pd(f.opened).getTime() + days * DAY);
-    const left = Math.floor((end - today()) / DAY);
+    const L = R.foodLearn(f); if (!L || !L.days) return null;
+    const end = pd(L.end), left = Math.round((end - today()) / DAY);
     const buy = new Date(end.getTime() - 3 * DAY);
-    return { days: Math.round(days), end, left, buy, pct: Math.max(0, Math.min(1, left / days)) };
+    return { days: L.days, end, left, buy, pct: Math.max(0, Math.min(1, left / L.days)), src: L.src, n: L.n, opened: L.opened, bagKg: L.bagKg, perDay: L.perDay, bags: L.bags };
+  }
+  /* "Compré / abrí bolsa nueva": suma la bolsa y deja la ficha al día. Devuelve cómo deshacer */
+  function addBag(p, b) {
+    const f = p.food = p.food || {};
+    const before = JSON.stringify(f);
+    f.bags = (Array.isArray(f.bags) ? f.bags : []).filter(x => x.date !== b.date);
+    /* la primera vez, la bolsa que ya estaba abierta (docs viejos) entra al historial */
+    if (!f.bags.length && f.opened && f.opened < b.date) f.bags.push({ date: f.opened, kg: f.bagKg || null, brand: f.brand || '', price: null });
+    f.bags.push({ date: b.date, kg: b.kg || null, brand: b.brand || '', price: b.price || null });
+    f.bags.sort((x, y) => x.date.localeCompare(y.date)); f.bags = f.bags.slice(-50);
+    if (!f.opened || b.date >= f.opened) { f.opened = b.date; if (b.kg) f.bagKg = b.kg; if (b.brand) f.brand = b.brand; }
+    return () => { const o = JSON.parse(before); for (const k of Object.keys(f)) delete f[k]; Object.assign(f, o); };
+  }
+  /* al cargar un gasto de alimento: ¿abrió una bolsa nueva? Lo prellenado, o null si no corresponde preguntar */
+  function bagPrompt(p, e) {
+    if (!e || e.cat !== 'alimento' || !e.date) return null;
+    const f = p.food || {};
+    if ((f.bags || []).some(b => b.date === e.date) || f.opened === e.date) return null;
+    const last = R.bagsOf(f).at(-1) || {};
+    return { date: e.date, kg: last.kg || f.bagKg || null, brand: last.brand || f.brand || '', price: e.amount || null };
+  }
+  /* gastos de alimento: este mes, promedio de los meses con gasto (hasta 6) y costo por día */
+  function foodSpend(p, ym) {
+    const by = {}; for (const e of p.expenses || []) if (e.cat === 'alimento' && e.date) by[e.date.slice(0, 7)] = (by[e.date.slice(0, 7)] || 0) + (Number(e.amount) || 0);
+    const months = Object.keys(by).filter(k => k <= ym).sort().slice(-6);
+    const f = food(p.food);
+    return { month: by[ym] || 0, avg: months.length ? months.reduce((a, k) => a + by[k], 0) / months.length : 0, months: months.length, perDay: f?.perDay || 0, byMonth: by };
   }
 
   /* ---------- viajes (información general, se confirma en SENASA) ---------- */
@@ -370,5 +396,5 @@
     return out.sort((a, b) => a.date.localeCompare(b.date)).slice(0, n);
   }
 
-  g.MZ = { RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
+  g.MZ = { addBag, bagPrompt, foodSpend, RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
 })(typeof window !== 'undefined' ? window : globalThis);

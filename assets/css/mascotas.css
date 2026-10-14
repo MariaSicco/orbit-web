@@ -1348,3 +1348,16 @@ body[data-view="preguntar"] .disclaimer,body[data-view="preguntar"] .made{displa
 /* hojas cortas: Guardar queda a la vista sin scrollear */
 #fForm.stick #fSave{position:sticky;bottom:0;z-index:2;box-shadow:0 -12px 16px -4px var(--bg)}
 @media print{.ibtn.renew{display:none!important}}
+/* alimento: historial de bolsas y cuánto sale */
+.food-stats{margin-top:12px}
+.bags{margin-top:6px;border-top:1px solid var(--line);padding-top:4px}
+.bags summary{cursor:pointer;min-height:44px;display:flex;align-items:center;gap:8px;font-weight:600;font-size:14.5px;color:var(--ink);list-style:none}
+.bags summary::-webkit-details-marker{display:none}
+.bags summary::after{content:'';margin-left:auto;width:8px;height:8px;border-right:2px solid var(--ink3);border-bottom:2px solid var(--ink3);transform:rotate(45deg);transition:transform .2s var(--ease)}
+.bags[open] summary::after{transform:rotate(-135deg)}
+.bags ul{list-style:none;margin:0;padding:0}
+.bags li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:8px 0;border-top:1px solid var(--line);font-size:14px;color:var(--ink2)}
+.bags li .bd{display:block;color:var(--ink);font-weight:500}
+.bags li small{display:block;font-size:13px;overflow-wrap:anywhere}
+.bags li b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.bags summary::after{transition:none}}

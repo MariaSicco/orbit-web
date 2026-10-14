@@ -137,10 +137,11 @@ export function dueToday(doc, today = todayAR()) {
           : (d ? `¿Ya sacaste turno? Cuando se la pongan, tocá "${action}" en Mimitos.` : 'Cuando esté hecho, tocá este aviso y anotalo en dos toques. Te avisamos de la próxima.'),
       });
     }
-    const f = p.food || {};
-    if (f.opened && f.bagKg && f.dailyG) {
-      const left = Math.floor(f.bagKg * 1000 / f.dailyG) - diff(today, f.opened);
-      if (left === 5 || left === 0) out.push({ tag: `food:${p.id}:${f.opened}:${left}`, kind: 'food', petId: p.id, pet: p.name, title: left ? `A ${p.name} le quedan 5 días de alimento` : `Hoy se termina el alimento de ${p.name}`, body: left ? 'Buen momento para comprar la bolsa nueva.' : 'Si ya compraste, marcá "bolsa nueva" en Mimitos.' });
+    /* alimento: la misma duración que muestra la app (aprendida de las bolsas o, si no, por gramos) */
+    const L = R.foodLearn(p.food || {});
+    const left = R.foodLeft(L, today);
+    if (left != null) {
+      if (left === 5 || left === 0) out.push({ tag: `food:${p.id}:${L.opened}:${left}`, kind: 'food', petId: p.id, pet: p.name, title: left ? `A ${p.name} le quedan 5 días de alimento` : `Hoy se termina el alimento de ${p.name}`, body: left ? 'Buen momento para comprar la bolsa nueva.' : 'Si ya abriste otra, anotala en Mimitos: así aprendemos cuánto le dura.', url: '/mascotas#/gastos' });
     }
   }
   const t = pd(today);

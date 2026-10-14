@@ -144,7 +144,9 @@ export function cleanDoc(d, email) {
       files: (Array.isArray(x?.files) ? x.files : []).slice(0, 10).map(f => ({ ref: okRef(f?.ref) ? f.ref : '', name: str(f?.name, 120), type: str(f?.type, 60) })).filter(f => f.ref),
     })).filter(x => x.date && (x.title || x.files.length)),
     weights: (Array.isArray(p?.weights) ? p.weights : []).slice(-200).map(w => ({ date: day(w?.date), kg: num(w?.kg, 2000) })).filter(w => w.date && w.kg),
-    food: { brand: str(p?.food?.brand, 80), bagKg: num(p?.food?.bagKg, 100), dailyG: num(p?.food?.dailyG, 20000), opened: day(p?.food?.opened) },
+    food: { brand: str(p?.food?.brand, 80), bagKg: num(p?.food?.bagKg, 100), dailyG: num(p?.food?.dailyG, 20000), opened: day(p?.food?.opened),
+      /* historial de bolsas: de acá se aprende cuánto le dura (mascotas-rules.js). Docs viejos: [] */
+      bags: (Array.isArray(p?.food?.bags) ? p.food.bags : []).slice(-50).map(b => ({ date: day(b?.date), kg: num(b?.kg, 100), brand: str(b?.brand, 80), price: num(b?.price) })).filter(b => b.date) },
     fund: { goal: num(p?.fund?.goal), monthly: num(p?.fund?.monthly), saved: num(p?.fund?.saved) },
     trip: { dest: str(p?.trip?.dest, 30), date: day(p?.trip?.date) },
     records: (Array.isArray(p?.records) ? p.records : []).slice(0, MAX_RECS).map(r => ({
