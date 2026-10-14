@@ -48,6 +48,97 @@ function guardar(nuevo) {
   catch { almacenOK = false; toast('No pudimos guardar en este navegador. Descargá una copia desde Ajustes.'); }
   render();
   if (hoja.open && ui.catAbierta && $id('hoja-cuerpo').querySelector('.cat-hoja-cab, .lista')) abrirCategoria(ui.catAbierta);
+  if (casa) programarSync();
+}
+
+/* ── casa compartida: sincronización con Orbit (solo si se activó) ──
+   El teléfono guarda siempre su copia; si hay casa, cada cambio se manda al servidor.
+   Si otra persona cambió algo a la vez, se juntan las dos versiones (V.fusionar). */
+let casa = null, syncTimer = null, sincronizando = false, pendienteSync = false;
+const API_CASA = '/api/vencimientos-casa';
+function estadoSync(t, cl = '') {
+  const el = $id('sync');
+  if (!el) return;
+  el.hidden = !casa;
+  el.className = `sync ${cl}`;
+  el.querySelector('span').textContent = t;
+}
+async function pedirCasa(cuerpo) {
+  const r = await fetch(API_CASA, cuerpo ? { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) } : { credentials: 'same-origin' });
+  const j = await r.json().catch(() => ({}));
+  return { r, j };
+}
+function adoptarCasa(c, { fusionarLocal = false } = {}) {
+  casa = { id: c.id, rev: c.rev, miembros: c.miembros, soyDueno: c.soyDueno, yo: c.yo };
+  const remoto = V.migrar(c.doc);
+  /* qué marcaron los demás desde la última vez que abriste */
+  const nuevos = [];
+  for (const [cid, porClave] of Object.entries(remoto.pagos || {})) for (const [k, p] of Object.entries(porClave)) {
+    if (p.por && p.por !== c.yo?.nombre && !d.pagos?.[cid]?.[k]) nuevos.push(`${p.por} marcó pagado ${remoto.cuentas.find(x => x.id === cid)?.nombre || 'una cuenta'}`);
+  }
+  if (nuevos.length && d.cuentas.length) setTimeout(() => toast(nuevos.length === 1 ? `${nuevos[0]}.` : `${nuevos[0]} y ${nuevos.length - 1} más.`, [], 7000), 600);
+  const nuevo = fusionarLocal ? V.fusionar(d, remoto) : remoto;
+  d = conCategorias(nuevo);
+  try { localStorage.setItem(CLAVE, JSON.stringify(d)); } catch {}
+}
+async function cargarCasa() {
+  try {
+    const { r, j } = await pedirCasa();
+    if (!r.ok || !j.ok) return;
+    if (!j.casa) { casa = null; estadoSync(''); return; }
+    adoptarCasa(j.casa, { fusionarLocal: pendienteSync });
+    estadoSync('Compartida · al día', 'ok');
+    pintarMarca(); render();
+  } catch { if (casa) estadoSync('Sin conexión', 'off'); }
+}
+function programarSync() {
+  pendienteSync = true;
+  estadoSync('Guardando…', 'busy');
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(sincronizar, 700);
+}
+async function sincronizar(reintento = false) {
+  if (!casa) return;
+  if (sincronizando) { clearTimeout(syncTimer); syncTimer = setTimeout(sincronizar, 500); return; }
+  sincronizando = true;
+  try {
+    const { r, j } = await pedirCasa({ accion: 'guardar', doc: d, rev: casa.rev });
+    if (r.status === 409 && j.casa && !reintento) {
+      adoptarCasa(j.casa, { fusionarLocal: true });
+      render();
+      sincronizando = false;
+      return sincronizar(true);
+    }
+    if (r.status === 404) { casa = null; estadoSync(''); toast('Esta casa ya no se comparte. Tus datos quedaron en este teléfono.'); return; }
+    if (!r.ok) throw new Error(j.error || r.status);
+    casa.rev = j.rev; pendienteSync = false;
+    estadoSync('Compartida · al día', 'ok');
+  } catch { estadoSync('Sin conexión · se guarda al volver', 'off'); }
+  finally { sincronizando = false; }
+}
+addEventListener('online', () => { if (casa && pendienteSync) sincronizar(); });
+
+function seccionCasa() {
+  if (!casa) return `<div class="ajustes-sec" id="sec-casa"><h3>Casa compartida</h3>
+    <ul class="checks"><li>Tu pareja, convivientes o familia ven lo mismo que vos, cada uno en su teléfono.</li><li>Cualquiera marca pagado y queda <b>quién lo pagó</b>: se terminó el "¿lo pagaste vos?".</li><li>Cada persona entra con su cuenta de Orbit. No hace falta que compre.</li></ul>
+    <form data-form="casa-crear"><label class="campo"><span>Tu nombre (así te ven los demás)</span><input type="text" name="nombre" maxlength="24" placeholder="Ej: Majo" autocomplete="given-name"></label>
+    <button type="submit" class="bt prim ancho">Compartir mi casa</button></form>
+    <p class="leyenda">Al compartirla, los datos de la casa pasan a guardarse en tu cuenta de Orbit para que los vean las personas que invites.</p></div>`;
+  return `<div class="ajustes-sec" id="sec-casa"><h3>Casa compartida</h3>
+    <ul class="miembros">${casa.miembros.map(m => `<li>${avatar({ nombre: m.nombre, color: m.dueno ? '#3047FF' : '#0D0D0E' })}<span><b>${esc(m.nombre)}${casa.yo?.email === m.email ? ' (vos)' : ''}</b><small>${m.dueno ? 'Creó la casa' : `Se sumó el ${V.fechaLarga(String(m.desde).slice(0, 10))}`}</small></span>
+      ${casa.soyDueno && !m.dueno ? `<button type="button" class="btn-txt" data-acc="casa-quitar" data-e="${esc(m.email)}">${ui.borrarArmado === m.email ? '¿Seguro?' : 'Quitar'}</button>` : ''}</li>`).join('')}</ul>
+    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="casa-invitar"><svg><use href="#i-mas"/></svg> Invitar a alguien</button>
+    <button type="button" class="bt peligro ancho" data-acc="casa-salir">${ui.borrarArmado === 'casa' ? '¿Seguro? Tocá de nuevo' : casa.soyDueno ? 'Dejar de compartir' : 'Salir de esta casa'}</button></div>
+    <p class="leyenda">${casa.soyDueno ? 'Si dejás de compartir, cada persona se queda con su copia en el teléfono.' : 'Si salís, te quedás con una copia en este teléfono.'}</p></div>`;
+}
+async function invitarACasa() {
+  const { r, j } = await pedirCasa({ accion: 'invitar' }).catch(() => ({ r: { ok: false }, j: {} }));
+  if (!r.ok) { toast(j.error || 'No pudimos crear la invitación. Probá de nuevo.'); return; }
+  const texto = `Te sumo a nuestra casa en Vencimientos de la Casa, para ver juntos lo que vence y quién pagó qué: ${j.link}`;
+  if (navigator.share) { try { await navigator.share({ text: texto }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
+  abrir('Invitar a la casa', `<p class="leyenda" style="margin-top:0">Mandale este link. Vale ${j.dias} días y sirve para una persona.</p><pre class="compartir">${esc(j.link)}</pre>
+    <div class="acciones"><a class="bt prim ancho" href="https://wa.me/?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">Mandar por WhatsApp</a>
+    <button type="button" class="bt sec ancho" data-acc="copiar-link" data-t="${esc(j.link)}">Copiar el link</button></div>`);
 }
 
 let hoy = V.hoyLocal();
@@ -70,7 +161,7 @@ function textoEstado(o) {
     case 'vencido': t = `Venció ${V.cuandoEs(o.vence, hoy)}`; break;
     case 'segundo': t = `Venció · llegás hasta el ${V.fechaCorta(o.segundo)}`; break;
     case 'hoy': t = deb ? 'Se debita hoy' : (c.tipo === 'tramite' ? 'Vence hoy' : 'Vence hoy'); break;
-    case 'pagado': t = c.tipo === 'tramite' ? `Hecho ${o.pago?.fecha ? V.fechaCorta(o.pago.fecha) : ''}` : `Pagado ${o.pago?.fecha ? V.fechaCorta(o.pago.fecha) : ''}`; break;
+    case 'pagado': t = `${c.tipo === 'tramite' ? 'Hecho' : 'Pagado'} ${o.pago?.fecha ? V.fechaCorta(o.pago.fecha) : ''}${o.pago?.por ? ` · ${o.pago.por}` : ''}`; break;
     case 'debitado': t = V.difDias(o.vence, hoy) <= 2 ? `Se debitó ${V.cuandoEs(o.vence, hoy)} · revisá tu cuenta` : `Débito automático · ${V.fechaCorta(o.vence)}`; break;
     case 'salteado': t = 'Este período no vino'; break;
     default: {
@@ -260,31 +351,6 @@ function cierreDelMes(ym) {
   const recargos = res.filter(o => o.pago?.fecha && o.pago.fecha > o.vence).length;
   return { ym, cuentas: res.length, recargos, total: r.ars.pagado, casa: d.config?.nombreCasa || '' };
 }
-/* Imagen 1080×1920 del cierre, para guardar o compartir (tipo resumen del año). */
-function imagenCierre(c) {
-  const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1920;
-  const x = cv.getContext('2d');
-  x.fillStyle = '#0D0D0E'; x.fillRect(0, 0, 1080, 1920);
-  x.fillStyle = '#3047FF'; x.beginPath(); x.arc(1010, 150, 300, 0, Math.PI * 2); x.fill();
-  x.fillStyle = '#D9FF45'; x.beginPath(); x.arc(1000, 1720, 190, 0, Math.PI * 2); x.fill();
-  x.fillStyle = '#F2EFE8'; x.textBaseline = 'top';
-  x.font = '500 34px "IBM Plex Mono", monospace'; x.fillText((c.casa || 'VENCIMIENTOS DE LA CASA').toUpperCase(), 90, 120);
-  x.font = '900 150px "Inter Tight", sans-serif'; x.fillText(cap(V.nombreMes(c.ym)).toUpperCase() + ',', 90, 520); x.fillText('AL DÍA.', 90, 680);
-  const fila = (y, num, txt) => { x.font = '800 120px "Inter Tight", sans-serif'; x.fillStyle = '#D9FF45'; x.fillText(num, 90, y); x.font = '500 46px "Inter Tight", sans-serif'; x.fillStyle = '#F2EFE8'; x.fillText(txt, 90, y + 140); };
-  fila(960, String(c.cuentas), c.cuentas === 1 ? 'cuenta pagada' : 'cuentas pagadas');
-  fila(1240, String(c.recargos), c.recargos === 1 ? 'recargo' : 'recargos');
-  if (c.total) { x.font = '500 46px "IBM Plex Mono", monospace'; x.fillStyle = '#F2EFE8'; x.fillText(plata(c.total), 90, 1540); }
-  x.font = '500 30px "IBM Plex Mono", monospace'; x.fillStyle = 'rgba(242,239,232,.6)'; x.fillText('ORBIT · orbitando.com.ar', 90, 1800);
-  return new Promise(ok => cv.toBlob(ok, 'image/png'));
-}
-async function compartirCierre(c) {
-  const blob = await imagenCierre(c);
-  const file = new File([blob], `${c.ym}-al-dia.png`, { type: 'image/png' });
-  if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], text: `${cap(V.nombreMes(c.ym))}, al día.` }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
-  bajar(file.name, blob, 'image/png');
-  toast('Imagen guardada en tus descargas.');
-}
-
 function festejar(titulo, texto, cierre = null) {
   try { navigator.vibrate?.([18, 40, 18]); } catch {}
   const el = document.createElement('div');
@@ -292,8 +358,7 @@ function festejar(titulo, texto, cierre = null) {
   el.setAttribute('role', 'status');
   el.innerHTML = `<canvas aria-hidden="true"></canvas><div class="festejo-in">${ILUS_LISTO}<b>${titulo}</b><p>${texto}</p>
     ${cierre ? `<div class="cierre"><span><b>${cierre.cuentas}</b>${cierre.cuentas === 1 ? 'cuenta' : 'cuentas'}</span><span><b>${cierre.recargos}</b>${cierre.recargos === 1 ? 'recargo' : 'recargos'}</span></div>` : ''}
-    <div class="acciones"><button type="button" class="bt prim" data-acc="festejo-ok">¡Bien!</button>${cierre ? '<button type="button" class="bt sec" data-acc="festejo-compartir">Compartir mi mes</button>' : ''}</div></div>`;
-  if (cierre) el.dataset.cierre = JSON.stringify(cierre);
+    <div class="acciones"><button type="button" class="bt prim" data-acc="festejo-ok">¡Bien!</button></div></div>`;
   document.body.appendChild(el);
   el.querySelector('.bt').focus();
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -1148,6 +1213,7 @@ function abrirAjustes() {
   const ult = d.ultimoRespaldo ? `Última copia: ${V.fechaLarga(d.ultimoRespaldo.slice(0, 10))}.` : 'Todavía no descargaste ninguna copia.';
   const horas = ['07:00', '08:00', '09:00', '10:00', '12:00', '18:00', '20:00', '21:00'];
   abrir('Ajustes', `
+  ${seccionCasa()}
   <div class="ajustes-sec"><h3>Tu casa</h3>
     <form data-form="casa"><label class="campo"><span>¿Cómo le decís?</span><input type="text" name="nombreCasa" maxlength="30" value="${esc(d.config.nombreCasa || '')}" placeholder="Ej: Casa de Palermo, Lo de mamá" autocomplete="off"><small>Aparece arriba y en el saludo.</small></label>
     <button type="submit" class="bt sec ancho">Guardar el nombre</button></form>
@@ -1212,7 +1278,7 @@ function tick(id, boton) {
   if (o.cuenta.tipo !== 'tramite' && o.monto == null) { verOcurrencia(id); return; }
   boton?.querySelector('span')?.classList.add('pop');
   vibrar(12);
-  guardar(V.marcarPagado(d, o.cuentaId, o.clave, { monto: o.monto, fecha: hoy }));
+  guardar(V.marcarPagado(d, o.cuentaId, o.clave, { monto: o.monto, fecha: hoy, por: casa?.yo?.nombre || '' }));
   quizasFestejar();
   const txt = o.cuenta.tipo === 'tramite' ? `${o.cuenta.nombre}: hecho. ${frasePago()}` : `${frasePago()} ${o.cuenta.nombre} · ${plata(o.monto, o.moneda)}`;
   const acc = [{ t: 'Deshacer', fn: () => guardar(anterior) }];
@@ -1224,7 +1290,7 @@ document.addEventListener('click', e => {
   const b = e.target.closest('[data-acc]');
   if (!b) return;
   const acc = b.dataset.acc;
-  if (acc !== 'borrar' && acc !== 'borrar-todo') ui.borrarArmado = null;
+  if (!['borrar', 'borrar-todo', 'casa-quitar', 'casa-salir'].includes(acc)) ui.borrarArmado = null;
   switch (acc) {
     case 'cerrar': cerrar(); break;
     case 'mes': ui.mes = V.sumarMesesMes(ui.mes, Number(b.dataset.d)); ui.resueltos = false; render(); break;
@@ -1243,9 +1309,26 @@ document.addEventListener('click', e => {
     case 'ver-pasos': ui.verPasos = true; render(); break;
     case 'entrar': cerrarEntrada(); break;
     case 'compartir': compartirMes(); break;
+    case 'casa-invitar': invitarACasa(); break;
+    case 'copiar-link': navigator.clipboard?.writeText(b.dataset.t).then(() => toast('Link copiado.'), () => toast('No pudimos copiar: seleccioná el link.')); break;
+    case 'casa-quitar': {
+      if (ui.borrarArmado !== b.dataset.e) { ui.borrarArmado = b.dataset.e; abrirAjustes(); setTimeout(() => $id('sec-casa')?.scrollIntoView(), 50); return; }
+      ui.borrarArmado = null;
+      pedirCasa({ accion: 'quitar', email: b.dataset.e }).then(({ r, j }) => { if (r.ok) { casa.miembros = j.casa.miembros; toast('Listo, ya no ve la casa.'); abrirAjustes(); } else toast(j.error || 'No pudimos sacarla.'); });
+      break;
+    }
+    case 'casa-salir': {
+      if (ui.borrarArmado !== 'casa') { ui.borrarArmado = 'casa'; b.textContent = '¿Seguro? Tocá de nuevo'; return; }
+      ui.borrarArmado = null;
+      pedirCasa({ accion: 'salir' }).then(({ r, j }) => {
+        if (!r.ok) { toast(j.error || 'No pudimos salir. Probá de nuevo.'); return; }
+        casa = null; estadoSync(''); cerrar(); render();
+        toast('Listo. Tus datos quedaron en este teléfono.');
+      });
+      break;
+    }
     case 'copiar-mes': navigator.clipboard?.writeText(textoParaCompartir()).then(() => toast('Copiado. Pegalo donde quieras.'), () => toast('No pudimos copiar: seleccioná el texto.')); break;
     case 'festejo-ok': document.querySelector('.festejo')?.remove(); break;
-    case 'festejo-compartir': { const f = document.querySelector('.festejo'); if (f?.dataset.cierre) compartirCierre(JSON.parse(f.dataset.cierre)); break; }
     case 'intro-sig': slide = Math.min(SLIDES.length - 1, slide + 1); pintarSlide(); break;
     case 'intro-fin': marcarVisto(GUIA.intro); $id('hoja').classList.remove('hoja-intro'); cerrar(); render(); break;
     case 'tour-sig': paso++; pintarPaso(); break;
@@ -1342,7 +1425,7 @@ document.addEventListener('submit', e => {
     if (o.cuenta.tipo !== 'tramite' && monto == null) { form.monto.setAttribute('aria-invalid', 'true'); form.monto.focus(); return; }
     const fecha = V.esFecha(String(f.get('fecha'))) ? String(f.get('fecha')) : hoy;
     const anterior = d;
-    guardar(V.marcarPagado(d, o.cuentaId, o.clave, { monto, fecha, nota: String(f.get('nota') || '').trim().slice(0, 80) }));
+    guardar(V.marcarPagado(d, o.cuentaId, o.clave, { monto, fecha, nota: String(f.get('nota') || '').trim().slice(0, 80), por: casa?.yo?.nombre || '' }));
     cerrar();
     quizasFestejar();
     vibrar(12);
@@ -1377,6 +1460,15 @@ document.addEventListener('submit', e => {
     guardarDesdeMail(form);
   } else if (tipo === 'lectura') {
     guardarLectura(form);
+  } else if (tipo === 'casa-crear') {
+    const nombre = String(new FormData(form).get('nombre') || '').trim();
+    const bt = form.querySelector('button'); bt.disabled = true; bt.textContent = 'Creando…';
+    pedirCasa({ accion: 'crear', doc: d, nombre }).then(({ r, j }) => {
+      if (!r.ok) { bt.disabled = false; bt.textContent = 'Compartir mi casa'; toast(j.error || 'No pudimos crear la casa. Probá de nuevo.'); return; }
+      adoptarCasa(j.casa); estadoSync('Compartida · al día', 'ok');
+      abrirAjustes(); setTimeout(() => $id('sec-casa')?.scrollIntoView(), 50);
+      toast('¡Listo! Ahora invitá a quien quieras.', [{ t: 'Invitar', fn: invitarACasa }], 8000);
+    }).catch(() => { bt.disabled = false; bt.textContent = 'Compartir mi casa'; toast('Sin conexión. Probá de nuevo.'); });
   } else if (tipo === 'casa') {
     const nombreCasa = String(new FormData(form).get('nombreCasa') || '').trim().slice(0, 30);
     guardar({ ...d, config: { ...d.config, nombreCasa } });
@@ -1579,6 +1671,7 @@ function render() {
    cuando vas a mirar la factura y volvés. */
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) return;
+  if (casa) cargarCasa();
   let crudo = null;
   try { crudo = localStorage.getItem(CLAVE); } catch {}
   const cambioDatos = crudo != null && crudo !== JSON.stringify(d);
@@ -1589,6 +1682,16 @@ document.addEventListener('visibilitychange', () => {
   render();
 });
 
+{
+  const m = location.hash.match(/^#casa-(unida|vencida|otra|llena)$/);
+  if (m) {
+    history.replaceState(null, '', location.pathname);
+    const txt = { unida: '¡Listo! Ya estás en la casa. Lo que marques lo ven todos.', vencida: 'La invitación ya se usó o venció. Pedí una nueva.',
+      otra: 'Ya estás en otra casa compartida. Salí de esa primero (Ajustes → Casa compartida).', llena: 'La casa ya tiene el máximo de personas.' }[m[1]];
+    setTimeout(() => toast(txt, [], 9000), 400);
+  }
+}
+cargarCasa();
 mostrarEntradaSiCorresponde();
 pintarMarca();
 const inicial = location.hash.slice(1);

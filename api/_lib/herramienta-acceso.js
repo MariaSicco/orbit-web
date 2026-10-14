@@ -3,8 +3,11 @@
    Sirve para la página (api/herramienta.js) y para cualquier función
    /api/... de una herramienta: `const acc = await requireHerramienta(req, res, 'ob-0XX'); if (!acc) return;` */
 import { readSession } from './auth.js';
-import { getPurchases } from './kv.js';
+import { getPurchases, kvGet } from './kv.js';
 import { isAdmin } from './admin.js';
+
+/* Acceso sin compra que otorga quien compró (lo escribe la propia herramienta). */
+export const accesoExtraKey = (productId, email) => `orbit:acceso-extra:${productId}:${String(email).toLowerCase()}`;
 
 export async function accesoHerramienta(req, productId) {
   const s = readSession(req);
@@ -14,6 +17,10 @@ export async function accesoHerramienta(req, productId) {
   try { compras = await getPurchases(s.email); }
   catch { return { ok: false, status: 503, motivo: 'sin_base', error: 'No pudimos revisar tu compra. Probá de nuevo en un rato.' }; }
   if (!compras.some(p => p.productId === productId)) {
+    /* acceso dado por quien la compró (por ejemplo, una casa compartida de Vencimientos) */
+    let extra = null;
+    try { extra = await kvGet(accesoExtraKey(productId, s.email)); } catch { extra = null; }
+    if (extra) return { ok: true, email: s.email, admin: false, invitado: true };
     return { ok: false, status: 403, motivo: 'sin_compra', error: 'Esta herramienta es para quienes la compraron.' };
   }
   return { ok: true, email: s.email, admin: false };

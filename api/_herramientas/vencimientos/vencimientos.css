@@ -317,6 +317,17 @@ main{max-width:760px;margin:0 auto;padding:4px 16px 24px;outline:none}
 .cierre b{display:block;font-size:34px;font-weight:900;letter-spacing:-.04em;color:var(--ok);line-height:1}
 .festejo-in .acciones{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 
+.sync{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--suave);margin-left:auto;margin-right:4px}
+.sync i{width:8px;height:8px;border-radius:50%;background:var(--linea)}
+.sync.ok i{background:#3CC488}.sync.busy i{background:var(--azul);animation:titila 1s infinite}.sync.off i{background:var(--mal)}
+@keyframes titila{50%{opacity:.3}}
+@media (max-width:420px){.sync span{display:none}}
+.miembros{list-style:none;margin:0 0 14px;padding:0;display:grid;gap:8px}
+.miembros li{display:flex;align-items:center;gap:12px;background:var(--papel);border-radius:14px;padding:10px 12px;border:1px solid var(--linea)}
+.miembros li > span:not(.av){flex:1;min-width:0}
+.miembros b{display:block;font-size:14.5px}
+.miembros small{display:block;font-size:12.5px;color:var(--suave)}
+
 /* ── botones ── */
 .bt{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 20px;border-radius:14px;font-weight:600;font-size:16px;transition:transform .25s var(--ease),background .2s,opacity .2s;text-decoration:none}
 .bt:active{transform:scale(.98)}

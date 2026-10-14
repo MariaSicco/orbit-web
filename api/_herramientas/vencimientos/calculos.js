@@ -288,9 +288,9 @@ export function proximaDe(d, c, hoy) {
 
 /* ── acciones (devuelven estado nuevo; no mutan) ── */
 const clon = x => JSON.parse(JSON.stringify(x));
-export function marcarPagado(d, cuentaId, clave, { monto = null, fecha: f, nota = '' } = {}) {
+export function marcarPagado(d, cuentaId, clave, { monto = null, fecha: f, nota = '', por = '' } = {}) {
   const r = clon(d);
-  (r.pagos[cuentaId] ||= {})[clave] = { monto, fecha: f, ...(nota ? { nota } : {}) };
+  (r.pagos[cuentaId] ||= {})[clave] = { monto, fecha: f, ...(nota ? { nota } : {}), ...(por ? { por } : {}) };
   if (r.salteos[cuentaId]) delete r.salteos[cuentaId][clave];
   return r;
 }
@@ -316,14 +316,16 @@ export function saltear(d, cuentaId, clave, si = true) {
 }
 export function guardarCuenta(d, cuenta) {
   const r = clon(d);
-  const i = r.cuentas.findIndex(c => c.id === cuenta.id);
-  if (i > -1) r.cuentas[i] = cuenta; else r.cuentas.push(cuenta);
+  const c = { ...cuenta, editada: new Date().toISOString() };
+  const i = r.cuentas.findIndex(x => x.id === cuenta.id);
+  if (i > -1) r.cuentas[i] = c; else r.cuentas.push(c);
   return r;
 }
 export function borrarCuenta(d, id) {
   const r = clon(d);
   r.cuentas = r.cuentas.filter(c => c.id !== id);
   for (const k of ['pagos', 'facturas', 'salteos']) delete r[k][id];
+  r.borradas = { ...(r.borradas || {}), [id]: new Date().toISOString().slice(0, 10) };
   return r;
 }
 export const nuevoId = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3);
@@ -460,4 +462,29 @@ export function insights(d, hoy, { umbralSuba = 0.15, max = 4 } = {}) {
   const sinMonto = ocurrenciasEntre(d, hoy, sumarDias(hoy, 30), hoy).filter(o => !o.resuelto && o.monto == null && o.cuenta.tipo !== 'tramite');
   if (sinMonto.length) out.push({ tipo: 'sinmonto', cuentaId: sinMonto[0].cuentaId, clave: sinMonto[0].clave, peso: 50, nombre: sinMonto[0].cuenta.nombre, cantidad: sinMonto.length });
   return out.sort((a, b) => b.peso - a.peso).slice(0, max);
+}
+
+/* ── casa compartida: juntar dos versiones (la del teléfono y la del servidor) ──
+   Si dos personas cambiaron la casa a la vez: las cuentas se unen por id (gana la más
+   reciente por `editada`), y pagos, facturas y salteos se combinan clave por clave (un
+   pago marcado en cualquiera de los dos teléfonos queda). Las cuentas borradas se
+   recuerdan en `borradas` para que no vuelvan. */
+export function fusionar(local, remoto) {
+  const a = migrar(local), b = migrar(remoto);
+  const borradas = { ...(b.borradas || {}), ...(a.borradas || {}) };
+  const porId = new Map();
+  for (const c of [...b.cuentas, ...a.cuentas]) {
+    const prev = porId.get(c.id);
+    if (!prev || String(c.editada || '') >= String(prev.editada || '')) porId.set(c.id, c);
+  }
+  const cuentas = [...porId.values()].filter(c => !borradas[c.id]);
+  const mezclar = k => {
+    const out = {};
+    for (const src of [b[k], a[k]]) for (const [cid, porClave] of Object.entries(src || {})) {
+      if (borradas[cid]) continue;
+      out[cid] = { ...(out[cid] || {}), ...porClave };
+    }
+    return out;
+  };
+  return { ...b, ...a, cuentas, pagos: mezclar('pagos'), facturas: mezclar('facturas'), salteos: mezclar('salteos'), borradas, config: { ...b.config, ...a.config } };
 }
