@@ -5,7 +5,7 @@
    navegador a Vercel sin pasar por nuestras funciones (así no hay
    límite de tamaño). Para descargar, /api/download firma una URL que
    vive unos minutos y solo se la da a quien compró el producto. */
-import { issueSignedToken, presignUrl, del, head } from '@vercel/blob';
+import { issueSignedToken, presignUrl, del, head, put } from '@vercel/blob';
 import { randomBytes } from 'node:crypto';
 
 /* Hay dos formas de autenticarse: el token clásico, o —lo que arma Vercel
@@ -61,4 +61,10 @@ export async function datosDe(pathname) {
   } catch (e) {
     return { error: String(e).slice(0, 140) };
   }
+}
+
+/* Subida desde el servidor (por ejemplo, un adjunto traído de Gmail): privado y con la ruta exacta. */
+export async function putPrivate(pathname, buf, contentType) {
+  await put(pathname, buf, { access: 'private', addRandomSuffix: false, allowOverwrite: false, contentType });
+  return makeRef(pathname);
 }

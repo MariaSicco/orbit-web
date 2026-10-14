@@ -19,6 +19,8 @@ const SUGGEST = {
 /* ---------- estado ---------- */
 let mode = 'loading', doc = { pets: [] }, rev = 0, me = { email: '', name: '' };
 let purchase = null, notify = null, scans = [], curId = '';
+/* Conectar Gmail: estado que manda el servidor (solo si la cuenta está habilitada) y la búsqueda en curso */
+let gstat, gm = null;   // gstat: undefined mientras carga, null si la cuenta no está habilitada
 let route = { name: 'inicio' }, lastKey = '';
 const ui = { hist: { type: 'todo', year: '', q: '' }, lib: { year: '', q: '', page: 0 }, agenda: { ym: iso(Z.today()).slice(0, 7), sel: iso(Z.today()) }, gastos: { ym: iso(Z.today()).slice(0, 7), pet: 'all' } };
 const store = { get(k) { try { return localStorage.getItem('mimitos:' + k); } catch { return null; } }, set(k, v) { try { localStorage.setItem('mimitos:' + k, v); } catch {} } };
@@ -591,11 +593,11 @@ const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['ag
 /* en el celu: 4 secciones y el + en el medio; Cuenta queda en el avatar de arriba */
 const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
 const TAB_OF = { antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta' };
-const BARE = ['alta', 'lectura', 'estudios'];
+const BARE = ['alta', 'lectura', 'estudios', 'gmail'];
 const nav = $('#nav'), topBar = $('.top');
 function parseHash() { const [name = 'inicio', arg = ''] = location.hash.replace(/^#\/?/, '').split('/'); return { name: name || 'inicio', arg: decodeURIComponent(arg) }; }
 function go(name, arg) { const h = '#/' + name + (arg ? '/' + encodeURIComponent(arg) : ''); if (location.hash === h) render(); else location.hash = h; }
-window.addEventListener('hashchange', () => { route = parseHash(); if (dPanel.open) dPanel.close(); render(); window.scrollTo(0, 0); });
+window.addEventListener('hashchange', () => { route = parseHash(); if (dPanel.open) dPanel.close(); gmailRoute(); render(); window.scrollTo(0, 0); });
 function drawNav() {
   const tab = TAB_OF[route.name] || route.name;
   nav.innerHTML = `<a class="brand side-only" href="#/inicio" aria-label="Mimitos, inicio">${HEART}<b>mimitos</b><span class="by">by Orbit</span></a>
@@ -646,6 +648,7 @@ function view() {
   if (route.name === 'alta') return renderOnboard();
   if (route.name === 'lectura') return renderScan();
   if (route.name === 'estudios') return renderBulk();
+  if (route.name === 'gmail') return renderGmail();
   if (!doc.pets.length && route.name !== 'cuenta' && route.name !== 'avisos') return renderFirst();
   const p = curPet(); if (p && p.id !== curId) curId = p.id;
   switch (route.name) {
@@ -1098,8 +1101,9 @@ function libPages(p) {
   ].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   chunk('ctl', 'Controles y consultas', ctl, emptyPg('Cada control o consulta queda acá con fecha, veterinaria y lo que te dijeron.', 'newVisit', 'Anotar consulta'));
   const hist = histEvents(p).filter(e => libFilter(`${e.title} ${e.sub} ${e.ref?.notes || ''} ${e.ref?.lab || ''}`, e.date));
-  const intro = { html: `<li class="hist-intro"><p>${HIST_NOTE}</p><button class="btn sm" data-act="bulkStudies">${I('file')} Subir estudios</button></li>` };
-  chunk('hist', 'Historial clínico', hist.length ? [intro, ...hist.map(e => ({ html: histEntry(e) }))] : [], emptyPg(`Consultas, estudios, cirugías, problemas de salud y lo que notaste, en orden. ${HIST_NOTE}`, 'bulkStudies', 'Subir estudios'));
+  const intro = { html: `<li class="hist-intro"><p>${HIST_NOTE}</p><div class="hist-acts"><button class="btn sm" data-act="bulkStudies">${I('file')} Subir estudios</button>${gmailBtn()}</div></li>` };
+  const histEmpty = emptyPg(`Consultas, estudios, cirugías, problemas de salud y lo que notaste, en orden. ${HIST_NOTE}`, 'bulkStudies', 'Subir estudios');
+  chunk('hist', 'Historial clínico', hist.length ? [intro, ...hist.map(e => ({ html: histEntry(e) }))] : [], gmailBtn() && !filtering() ? histEmpty.replace('</button><div class="lines"', `</button>${gmailBtn()}<div class="lines"`) : histEmpty);
   pages.push({ sec: 'peso', title: 'Peso', html: weightPage(p) });
   return pages;
 }
@@ -1400,6 +1404,7 @@ function renderCuenta() {
           <a class="row link-row" href="/terminos" target="_blank" rel="noopener">${bubble('doc', 'med')}<span class="what"><b>Términos y condiciones</b><small>Licencia, arrepentimiento y soporte</small></span>${I('chevron')}</a>
         </div>
       </section>
+      ${gmailAccount()}
       <button class="btn ghost wide" data-act="logout">${I('logout')} Cerrar sesión</button>
     </div></div>`;
 }
@@ -1722,7 +1727,7 @@ async function runBulk(p, files) {
   }
   if (bulk) { bulk.state = 'review'; render(); }
 }
-const BULK_ST = { pendiente: ['En espera', 'none'], subiendo: ['Subiendo…', 'none'], leyendo: ['Leyendo…', 'none'], listo: ['Leído', 'ok'], revisar: ['Revisalo', 'soon'], manual: ['Completalo a mano', 'soon'], error: ['No se subió', 'late'] };
+const BULK_ST = { cola: ['En cola', 'none'], pendiente: ['En espera', 'none'], subiendo: ['Subiendo…', 'none'], leyendo: ['Leyendo…', 'none'], listo: ['Leído', 'ok'], revisar: ['Revisalo', 'soon'], manual: ['Completalo a mano', 'soon'], error: ['No se subió', 'late'] };
 function renderBulk() {
   const p = petById(bulk?.petId); if (!p || !bulk) { setTimeout(() => go('libreta')); return ''; }
   const working = bulk.state === 'working', done = bulk.items.filter(x => !['pendiente', 'subiendo', 'leyendo'].includes(x.status)).length;
@@ -1738,16 +1743,18 @@ function renderBulk() {
         <div class="two"><div class="f"><label for="${id}_title">Nombre</label><input id="${id}_title" maxlength="120" value="${esc(d.title)}"></div>
         <div class="f"><label for="${id}_lab">Laboratorio o veterinaria <span class="opt">(opcional)</span></label><input id="${id}_lab" maxlength="80" value="${esc(d.lab)}"></div></div>
         <div class="f"><label for="${id}_sum">Qué dice <span class="opt">(resumen, sin interpretar)</span></label><textarea id="${id}_sum" maxlength="600" rows="3">${esc(d.summary)}</textarea></div>
+        ${bulk.source === 'gmail' && doc.pets.length > 1 ? petPick(it, id) : ''}
         <label class="toggle"><input type="checkbox" id="${id}_keep" ${it.keep ? 'checked' : ''}><span><b>Guardar este estudio</b></span></label>` : ''}
     </article>`;
   };
   return `<section class="sec bulk">
-    <button class="link" data-act="bulkBack" style="align-self:flex-start">${I('back')} Libreta de ${esc(p.name)}</button>
+    <button class="link" data-act="bulkBack" style="align-self:flex-start">${I('back')} ${bulk.source === 'gmail' ? 'Gmail' : `Libreta de ${esc(p.name)}`}</button>
     <div><span class="eyebrow">Historial clínico</span><h1 class="h-xl">${working ? `Subiendo y leyendo ${done} de ${bulk.items.length}` : `Revisá ${bulk.items.length === 1 ? 'el estudio' : `los ${bulk.items.length} estudios`}`}</h1>
       <p class="lead-s" style="margin-top:6px">${working ? 'Cada archivo se sube y lo leemos para sacar la fecha, el tipo y un resumen. Podés esperar acá.' : 'Corregí lo que haga falta antes de guardar. Lo que no se pudo leer quedó adjunto para que lo completes.'}</p>
       ${bulk.note ? `<p class="note">${esc(bulk.note)}</p>` : ''}</div>
     ${working ? `<div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${bulk.items.length}" aria-valuenow="${done}"><i style="width:${Math.round(done / bulk.items.length * 100)}%"></i></div>` : ''}
     <div class="bk-list">${bulk.items.map(card).join('')}</div>
+    ${bulk.queued ? `<p class="bk-msg" role="status">${esc(bulk.queued)}</p>` : ''}
     <p class="note">${HIST_NOTE} Cada archivo leído cuenta como una lectura con IA (${10} por día, 60 por mes).</p>
     ${working ? '' : `<p class="err-msg" id="bkErr" role="alert" hidden></p><button class="btn big wide" data-act="bulkSave"${keep ? '' : ' disabled'}>Guardar ${keep} ${keep === 1 ? 'estudio' : 'estudios'} en su historial</button>`}
   </section>`;
@@ -1755,16 +1762,211 @@ function renderBulk() {
 function saveBulk() {
   const p = petById(bulk?.petId); if (!p) return;
   const out = [], v = id => ($('#' + id)?.value || '').trim();
+  const err = (t, el) => { const e = $('#bkErr'); e.hidden = false; e.textContent = t; el?.focus(); };
   for (const it of bulk.items) {
     const id = 'bk' + it.i; if (!it.ref || !$('#' + id + '_keep')?.checked) continue;
     const date = v(id + '_date');
-    if (!date) { const e = $('#bkErr'); e.hidden = false; e.textContent = `Falta la fecha de "${it.name}". Si no figura, poné una aproximada.`; $('#' + id + '_date').focus(); return; }
+    if (!date) return err(`Falta la fecha de "${it.name}". Si no figura, poné una aproximada.`, $('#' + id + '_date'));
+    /* desde Gmail cada estudio puede ir a una mascota distinta */
+    const to = $('#' + id + '_pet') ? petById(v(id + '_pet')) : p;
+    if (!to) return err(`Elegí de qué mascota es "${it.name}".`, $('#' + id + '_pet'));
     const kind = v(id + '_kind') || 'otro';
-    out.push({ id: uid(), date, kind, title: v(id + '_title') || Z.STUDY[kind], lab: v(id + '_lab'), notes: v(id + '_sum'), files: [it.ref] });
+    out.push({ to, st: { id: uid(), date, kind, title: v(id + '_title') || Z.STUDY[kind], lab: v(id + '_lab'), notes: v(id + '_sum'), files: [it.ref] } });
   }
   if (!out.length) return;
-  p.studies.push(...out); bulk = null; ui.lib.jumpSec = 'hist'; setRoute('libreta'); changed(); window.scrollTo(0, 0);
-  toast(`${out.length} ${out.length === 1 ? 'estudio guardado' : 'estudios guardados'} en su historial.`);
+  for (const x of out) x.to.studies.push(x.st);
+  const pets = [...new Set(out.map(x => x.to))];
+  if (pets.length === 1) selectPet(pets[0].id);
+  bulk = null; ui.lib.jumpSec = 'hist'; setRoute('libreta'); changed(); window.scrollTo(0, 0);
+  toast(`${out.length} ${out.length === 1 ? 'estudio guardado' : 'estudios guardados'} en ${pets.length === 1 ? `el historial de ${pets[0].name}` : 'sus historiales'}.`);
+}
+
+/* ---------- Conectar Gmail: busca estudios en el mail y los trae por el mismo motor (api/_lib/petgmail.js) ----------
+   Nada se descarga ni se lee con IA hasta que la persona elige. Solo se ve si la cuenta está habilitada. */
+const LIMITED_USE = 'https://developers.google.com/terms/api-services-user-data-policy';
+const GM_ERR = {
+  gmail_vencido: 'La conexión con Gmail venció. Mientras Mimitos esté en prueba, Google la corta a los 7 días: volvé a conectar y seguís.',
+  gmail_limite: 'Gmail nos pidió esperar un poco. Probá de nuevo en un rato.',
+  gmail_no_conectado: 'Gmail no está conectado.',
+  gmail_no_configurado: 'La conexión con Gmail todavía no está configurada.',
+  cupo_lleno: 'Llegaste al espacio de tu cuenta (200 MB).',
+  ya_importado: 'Ya lo habías traído.',
+  blob_no_configurado: 'El guardado de archivos no está disponible en este momento.',
+  adjunto_no_encontrado: 'Ese adjunto ya no está en el mail.',
+};
+const GM_BACK = {
+  cancelado: 'No se conectó: cancelaste en la pantalla de Google. Cuando quieras, probá de nuevo.',
+  sinpermiso: 'Para buscar tus estudios, Mimitos necesita el permiso de leer tus mails. En la pantalla de Google, dejalo tildado.',
+  error: 'No pudimos conectar Gmail. Probá de nuevo en un rato.',
+  sinconfig: 'La conexión con Gmail todavía no está configurada.',
+};
+const gmailOn = () => Boolean(gstat?.allowed);
+const gmailBtn = () => gmailOn() ? `<button class="btn sm ghost" data-act="gmOpen">${I('mail')} ${gstat.connected ? 'Buscar en Gmail' : 'Conectar Gmail'}</button>` : '';
+async function loadGmail() {
+  try {
+    const r = await fetch('/api/mascotas?gmail=status');
+    const d = await r.json().catch(() => null);
+    gstat = r.ok && d?.allowed ? d : null;
+  } catch { gstat = null; }
+  gmailRoute(); render();
+}
+/* al volver de Google (#/gmail/conectado) arranca la búsqueda; el resto de los regresos muestran un mensaje */
+function gmailRoute() {
+  if (route.name !== 'gmail' || mode !== 'full' || !gstat) return;
+  if (route.arg === 'conectado') { history.replaceState(null, '', '#/gmail'); route.arg = ''; gm = null; if (gstat.connected) gmailSearch('all'); return; }
+  if (GM_BACK[route.arg]) { gm = { ...(gm || {}), phase: 'intro', back: GM_BACK[route.arg] }; history.replaceState(null, '', '#/gmail'); route.arg = ''; }
+}
+function openGmail(mode) {
+  if (!gstat) return;
+  if (!gstat.connected) { gm = { phase: 'intro' }; return go('gmail'); }
+  go('gmail'); gmailSearch(mode);
+}
+async function gmailConnect() {
+  if (dirty) await flushNow();
+  const range = gm?.range || gstat?.range || '12m';
+  location.href = '/api/mascotas?gmail=start&range=' + encodeURIComponent(range);
+}
+const gmFiles = () => (gm?.cands || []).flatMap(c => c.files.map(f => c.m + ':' + f.part));
+const gmFile = k => { const [m, part] = k.split(':'); const c = gm.cands.find(x => x.m === m); const f = c?.files.find(x => x.part === part); return f ? { m, part, name: f.name, type: f.type } : null; };
+async function gmailSearch(mode, more) {
+  if (gm?.phase === 'searching') return;
+  const prev = more ? gm : null;
+  gm = { phase: 'searching', mode, cands: prev ? prev.cands : [], sel: prev ? prev.sel : new Set(), scanned: prev ? prev.scanned : 0, more: null, range: gm?.range };
+  render();
+  let cursor = more || null, base = gm.scanned;
+  try {
+    do {
+      const r = await fetch('/api/mascotas?gmail=search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode, cursor }) });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw Object.assign(new Error(d.error || 'gmail_error'), { code: d.error });
+      gm.cands.push(...d.candidates); gm.scanned = base + d.scanned; gm.more = d.more || null;
+      cursor = d.cursor;
+      if (route.name === 'gmail') render();
+    } while (cursor);
+    gm.phase = 'list';
+    if (!gm.more) gstat.lastSearch = new Date().toISOString();
+  } catch (e) {
+    if (e.code === 'gmail_vencido') { gstat.connected = false; gstat.expired = true; gm = { phase: 'intro', back: GM_ERR.gmail_vencido }; }
+    else { gm.phase = 'error'; gm.err = GM_ERR[e.code] || 'No pudimos buscar en tu Gmail. Revisá la conexión y probá de nuevo.'; }
+  }
+  if (route.name === 'gmail') render();
+}
+const kb = n => n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
+function renderGmail() {
+  if (gstat === undefined) return skeleton();
+  if (!gstat) { setTimeout(() => go('libreta')); return skeleton(); }
+  const p = curPet();
+  const back = `<button class="link" data-act="go" data-to="libreta" style="align-self:flex-start">${I('back')} ${p ? `Libreta de ${esc(p.name)}` : 'Volver'}</button>`;
+  if (!gstat.connected || gm?.phase === 'intro' || !gm) {
+    if (gstat.connected && !gm) { after(() => gmailSearch(gstat.lastSearch ? 'new' : 'all')); return `<section class="sec reading"><div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu Gmail</h1></section>`; }
+    return gmailIntro(back);
+  }
+  if (gm.phase === 'searching') return `<section class="sec reading" aria-busy="true">${back}<div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu Gmail</h1><p class="dim" role="status">Revisamos ${gm.scanned} ${gm.scanned === 1 ? 'mail' : 'mails'}${gm.cands.length ? ` y encontramos ${gmFiles().length} ${gmFiles().length === 1 ? 'documento' : 'documentos'}` : ''}. Solo miramos el asunto, quién lo mandó y los adjuntos.</p></section>`;
+  if (gm.phase === 'error') return `<section class="sec">${back}<h1 class="h-xl">No pudimos buscar</h1><p class="dim">${esc(gm.err)}</p><button class="btn big wide" data-act="gmOpen" data-mode="${gm.mode}">Probar de nuevo</button></section>`;
+  const files = gmFiles(), n = gm.sel.size, queue = gstat.queue || [];
+  const qBox = queue.length ? `<div class="gm-queue"><span class="what"><b>${queue.length} en cola</b><small>Los elegiste y no entraron en el tope de lecturas con IA. Seguí cuando se renueve.</small></span><button class="btn sm ghost" data-act="gmQueue">Seguir con la cola</button></div>` : '';
+  const moreBox = gm.more ? `<div class="gm-more"><p class="note">Revisamos los ${gm.scanned} mails más recientes. Puede haber más viejos.</p><button class="btn sm ghost" data-act="gmMore">Buscar 200 más</button></div>` : '';
+  const who = gstat.address ? `Gmail · ${esc(gstat.address)}` : 'Gmail';
+  if (!files.length) return `<section class="sec gmail">${back}<div><span class="eyebrow">${who}</span><h1 class="h-xl">${gm.mode === 'new' ? 'No hay documentos nuevos' : 'No encontramos documentos'}</h1>
+    <p class="lead-s" style="margin-top:6px">${gm.mode === 'new' ? 'Desde la última búsqueda no llegaron mails con estudios, recetas o informes.' : `Buscamos mails con adjuntos que hablen de veterinaria, análisis, ecografías o radiografías, o que nombren a ${doc.pets.length === 1 ? esc(doc.pets[0].name) : 'tus mascotas'} o a sus veterinarias.`} Lo que ya trajiste no aparece de nuevo.</p></div>
+    ${qBox}${moreBox}<button class="btn big wide" data-act="go" data-to="libreta">Volver a la libreta</button></section>`;
+  const date = c => c.date ? fmt(c.date.slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+  return `<section class="sec gmail">${back}
+    <div><span class="eyebrow">${who}</span><h1 class="h-xl">Encontramos ${files.length} ${files.length === 1 ? 'documento que podría ser' : 'documentos que podrían ser'} de tus mascotas</h1>
+      <p class="lead-s" style="margin-top:6px">Elegí cuáles traer. Nada se descarga ni se lee hasta que tocás Importar.</p></div>
+    ${qBox}
+    <div class="gm-bar"><span class="dim">${n ? `${n} ${n === 1 ? 'elegido' : 'elegidos'}` : 'Ninguno elegido'}</span><button class="link" data-act="gmAll">${files.every(k => gm.sel.has(k)) ? 'Desmarcar todos' : 'Marcar todos'}</button></div>
+    <div class="gm-list">${gm.cands.map(c => `<article class="gm-mail"><div class="gm-h"><b>${esc(c.subject || '(Sin asunto)')}</b><small>${esc(c.from)}${c.date ? ' · ' + date(c) : ''}</small></div>
+      ${c.files.map(f => { const k = c.m + ':' + f.part; return `<label class="gm-file"><input type="checkbox" data-gsel="${esc(k)}" ${gm.sel.has(k) ? 'checked' : ''}>${bubble(f.type === 'application/pdf' ? 'doc' : 'camera', 'viaje')}<span class="what"><b>${esc(f.name)}</b><small>${f.type === 'application/pdf' ? 'PDF' : 'Foto'} · ${kb(f.size)}${/heic|heif/.test(f.type) ? ' · se adjunta sin leer' : ''}</small></span></label>`; }).join('')}
+    </article>`).join('')}</div>
+    ${moreBox}
+    <p class="note">Cada archivo que importás se lee con IA (Claude, de Anthropic) y cuenta para tu tope (10 por día, 60 por mes). Lo revisás antes de guardar.</p>
+    <div class="gm-go"><button class="btn big wide" data-act="gmImport"${n ? '' : ' disabled'}>Importar seleccionados${n ? ` (${n})` : ''}</button></div>
+  </section>`;
+}
+function gmailIntro(back) {
+  const range = gm?.range || gstat.range || '12m';
+  const fact = (ic, c, t, d) => `<li>${bubble(ic, c)}<span><b>${t}</b><small>${d}</small></span></li>`;
+  const msg = gm?.back || (gstat.expired ? GM_ERR.gmail_vencido : '');
+  return `<section class="sec gmail-intro">${back}
+    <div><span class="eyebrow">Historial clínico</span><h1 class="h-xl">Traé los estudios desde tu Gmail</h1>
+      <p class="lead-s" style="margin-top:6px">Buscamos en tu mail los análisis, ecografías, radiografías, recetas e informes que te mandaron, y elegís cuáles sumar al historial.</p></div>
+    ${msg ? `<p class="bk-msg" role="status">${esc(msg)}</p>` : ''}
+    <ul class="gm-facts">
+      ${fact('mail', 'viaje', 'Qué lee', 'Busca mails con adjuntos que parezcan veterinarios o que nombren a tus mascotas o a sus veterinarias. Te muestra el asunto, quién lo mandó, la fecha y el nombre de cada adjunto. No guarda el texto de tus mails.')}
+      ${fact('shield', 'salud', 'Qué guarda', 'Solo los PDF y fotos que elijas importar, en tu cuenta. Además, el permiso de Google cifrado, la fecha de la última búsqueda y qué adjuntos ya trajiste. De lo que no importás no queda nada.')}
+      ${fact('sparkle', 'plata', 'Qué se manda a la IA', 'Cada archivo que importás se manda a la IA (Claude, de Anthropic) para leer la fecha, el tipo, un resumen y de qué mascota parece. Lo revisás antes de guardar. Tus datos de Gmail no se usan para publicidad ni para entrenar IA.')}
+      ${fact('x', 'med', 'Qué no hace', 'Mimitos no manda, no borra ni modifica mails: el permiso es solo de lectura. Desconectás cuando quieras desde Cuenta y lo revocamos en Google.')}
+    </ul>
+    <div class="f"><span class="lb" id="gmRangeL">Dónde buscar la primera vez</span>
+      <div class="tiles" role="group" aria-labelledby="gmRangeL">${[['12m', 'Últimos 12 meses'], ['3y', 'Últimos 3 años'], ['all', 'Todo']].map(([v, l]) => `<button type="button" class="tile" data-act="gmRange" data-v="${v}" aria-pressed="${v === range}"><span>${l}</span></button>`).join('')}</div></div>
+    ${gstat.ready ? `<button class="btn big wide" data-act="gmConnect">${I('mail')} ${gstat.expired ? 'Volver a conectar Gmail' : 'Conectar Gmail'}</button>` : `<p class="bk-msg">${GM_BACK.sinconfig}</p>`}
+    <p class="note">Google te va a pedir permiso para que Mimitos lea tus mails. Mientras Mimitos está en prueba, Google muestra un aviso de “app no verificada” y la conexión dura 7 días; después la volvés a conectar.</p>
+    <p class="note">El uso que hace Mimitos de la información recibida de las API de Google cumple la <a href="${LIMITED_USE}" target="_blank" rel="noopener">Política de Datos del Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado. Más detalle en <a href="/privacidad" target="_blank" rel="noopener">Privacidad</a>.</p>
+  </section>`;
+}
+app.addEventListener('change', e => { const k = e.target.closest('[data-gsel]'); if (k && gm?.sel) { if (k.checked) gm.sel.add(k.dataset.gsel); else gm.sel.delete(k.dataset.gsel); render(); } });
+/* importa los elegidos uno por uno y termina en la misma revisión que "Subir estudios" */
+async function gmailImport(list) {
+  const p = curPet(); if (!p || !list.length) return;
+  bulk = { petId: p.id, source: 'gmail', state: 'working', note: '', items: list.map((x, i) => ({ i, gm: x, name: x.name, status: 'pendiente', keep: true, petId: '', sug: '', data: { date: '', kind: 'otro', title: x.name.replace(/\.[^.]+$/, ''), lab: '', summary: '', confidence: '', warnings: [] } })) };
+  setRoute('estudios'); render(); window.scrollTo(0, 0);
+  const done = new Set();
+  for (const [n, it] of bulk.items.entries()) {
+    if (!bulk) return;
+    try {
+      it.status = 'subiendo'; render();
+      const r = await fetch('/api/mascotas?gmail=import', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ m: it.gm.m, part: it.gm.part }) });
+      const d = await r.json().catch(() => ({}));
+      if (r.status === 429 && d.queued) {
+        /* sin tope de IA: este y los que siguen quedan en cola para seguir otro día */
+        const rest = bulk.items.slice(n);
+        rest.forEach(x => { x.status = 'cola'; x.keep = false; x.msg = ''; });
+        const q = await fetch('/api/mascotas?gmail=queue', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: rest.map(x => x.gm) }) }).then(x => x.json()).catch(() => null);
+        if (q?.queue) gstat.queue = q.queue;
+        bulk.queued = `${d.error === 'limite_mensual' ? `Llegaste al tope de ${d.limit} lecturas con IA de este mes` : `Llegaste al tope de ${d.limit} lecturas con IA por hoy`}: ${rest.length === 1 ? 'quedó 1 en cola' : `quedaron ${rest.length} en cola`}. ${d.error === 'limite_mensual' ? 'El mes que viene' : 'Mañana'} entrá a Gmail desde el historial y tocá «Seguir con la cola».`;
+        break;
+      }
+      if (!r.ok) { it.status = 'error'; it.keep = false; it.msg = GM_ERR[d.error] || 'No se pudo traer. Probá de nuevo.'; if (d.error === 'ya_importado') done.add(it.gm.m + ':' + it.gm.part); if (d.error === 'gmail_vencido') { gstat.connected = false; gstat.expired = true; } continue; }
+      done.add(it.gm.m + ':' + it.gm.part);
+      it.ref = d.ref; it.petId = d.petId || ''; it.sug = d.petId || '';
+      if (d.data) { it.data = { ...it.data, ...d.data, title: d.data.title || it.data.title }; it.status = d.data.confidence === 'baja' || d.data.warnings?.length || !d.data.date ? 'revisar' : 'listo'; }
+      else { it.status = 'manual'; it.msg = d.manual === 'tipo_no_legible' ? 'Este formato no se puede leer: quedó adjunto, completalo a mano.' : /^limite/.test(d.manual) ? 'Se terminó el tope de lecturas con IA: quedó adjunto, completalo a mano.' : d.manual === 'pdf_muy_largo' ? 'El PDF es demasiado largo para leerlo entero. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; }
+    } catch { it.status = 'error'; it.keep = false; it.msg = 'No se pudo traer. Revisá la conexión.'; }
+  }
+  /* lo traído (o en cola) ya no se ofrece en la lista */
+  if (gstat) gstat.queue = (gstat.queue || []).filter(x => !done.has(x.m + ':' + x.part));
+  if (gm?.cands) { const gone = new Set([...done, ...(bulk?.items || []).filter(x => x.status === 'cola').map(x => x.gm.m + ':' + x.gm.part)]); gm.cands = gm.cands.map(c => ({ ...c, files: c.files.filter(f => !gone.has(c.m + ':' + f.part)) })).filter(c => c.files.length); gone.forEach(k => gm.sel.delete(k)); }
+  if (bulk) { bulk.state = 'review'; render(); }
+}
+function petPick(it, id) {
+  const s = petById(it.sug);
+  return `<div class="f pet-pick">${s ? `<p class="sug">${I('paw')}<span>Parece de <b>${esc(s.name)}</b> · ¿Agregar a ${esc(s.name)}?</span></p>` : `<p class="sug">${I('paw')}<span>No sabemos de quién es: elegí la mascota.</span></p>`}
+    <label for="${id}_pet">Mascota</label><select id="${id}_pet">${s ? '' : '<option value="">Elegí…</option>'}${doc.pets.map(q => `<option value="${q.id}"${q.id === (it.petId || '') ? ' selected' : ''}>${esc(q.name)}</option>`).join('')}</select></div>`;
+}
+function gmailAccount() {
+  if (!gmailOn()) return '';
+  const last = gstat.lastSearch ? `Última búsqueda: ${fmt(isoLocal(new Date(gstat.lastSearch)).slice(0, 10), { day: 'numeric', month: 'long' })}` : 'Todavía no buscaste';
+  if (gstat.connected) return `<section class="sec"><h2>Gmail</h2><div class="card gm-acc">
+      <div class="gm-acc-h">${bubble('mail', 'viaje')}<span class="what"><b>Conectado como ${esc(gstat.address || 'tu Gmail')}</b><small>${last}${gstat.queue?.length ? ` · ${gstat.queue.length} en cola` : ''}</small></span></div>
+      <div class="gm-acts"><button class="btn sm" data-act="gmOpen" data-mode="new">Buscar de nuevo</button><button class="btn sm ghost" data-act="gmOff">Desconectar</button></div>
+      <p class="note">Solo lectura. Mimitos no manda ni modifica mails.</p></div></section>`;
+  return `<section class="sec"><h2>Gmail</h2><div class="list"><button class="row link-row" data-act="gmOpen">${bubble('mail', 'viaje')}<span class="what"><b>${gstat.expired ? 'Volver a conectar Gmail' : 'Conectar Gmail'}</b><small>${gstat.expired ? 'La conexión venció a los 7 días (Mimitos está en prueba con Google).' : 'Traé los estudios veterinarios que te llegaron por mail'}</small></span>${I('chevron')}</button></div></section>`;
+}
+function gmailOffPanel() {
+  panel('¿Desconectar Gmail?', `<p class="dim">Revocamos el permiso en Google y borramos lo que guardamos de Gmail: el permiso cifrado, la fecha de la última búsqueda, la cola y la lista de lo que ya trajiste. Los estudios que importaste quedan en el historial.</p>
+    <button class="btn big wide" id="gmOffYes">Desconectar Gmail</button><button class="btn ghost wide" id="gmOffNo">Cancelar</button>`);
+  $('#gmOffNo').onclick = () => dPanel.close();
+  $('#gmOffYes').onclick = async () => {
+    $('#gmOffYes').disabled = true;
+    try {
+      const r = await fetch('/api/mascotas?gmail=disconnect', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error();
+      dPanel.close(); gm = null; await loadGmail();
+      toast(d.revoked ? 'Listo: Gmail desconectado y permiso revocado en Google.' : 'Listo: Gmail desconectado. Si querés, revisá también los permisos en tu cuenta de Google.');
+    } catch { $('#gmOffYes').disabled = false; toast('No se pudo desconectar. Probá de nuevo.'); }
+  };
 }
 
 /* ---------- leer la libreta con IA ---------- */
@@ -2031,7 +2233,15 @@ document.addEventListener('click', e => {
     case 'newPet': return startOnboard();
     case 'bulkStudies': return startBulk(cur);
     case 'bulkSave': return saveBulk();
-    case 'bulkBack': bulk = null; return go('libreta');
+    case 'bulkBack': { const g = bulk?.source === 'gmail'; bulk = null; return go(g ? 'gmail' : 'libreta'); }
+    case 'gmOpen': return openGmail(b.dataset.mode || 'new');
+    case 'gmConnect': return gmailConnect();
+    case 'gmRange': gm = { ...(gm || {}), range: b.dataset.v }; b.parentNode.querySelectorAll('.tile').forEach(t => t.setAttribute('aria-pressed', String(t === b))); return;
+    case 'gmAll': { const all = gmFiles(); const on = all.some(k => !gm.sel.has(k)); gm.sel = new Set(on ? all : []); return render(); }
+    case 'gmImport': return gmailImport([...gm.sel].map(k => gmFile(k)).filter(Boolean));
+    case 'gmQueue': return gmailImport(gstat.queue.map(x => ({ m: x.m, part: x.part, name: x.name, type: x.type })));
+    case 'gmMore': return gmailSearch(gm.mode, gm.more);
+    case 'gmOff': return gmailOffPanel();
     case 'pick': selectPet(b.dataset.id); if (TAB_OF[route.name] === 'inicio') return go('inicio'); return render();
     case 'go': return go(b.dataset.to);
     case 'goPet': selectPet(b.dataset.pet); return go(b.dataset.to);
@@ -2099,6 +2309,7 @@ async function boot() {
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
     fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => { if (x && 'devices' in x) { notify = x; render(); } }).catch(() => {});
+    loadGmail();
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(x => { if (x?.name) { me.name = x.name; if (route.name === 'cuenta' || !doc.pets.length) render(); else if (mode === 'full') drawTop(false); } }).catch(() => {});
   } else if (st === 402 && d?.error === 'no_purchase') { mode = 'nopurchase'; me.email = d.email || ''; }
   else if (st === 401 || st === 403) mode = 'guest';

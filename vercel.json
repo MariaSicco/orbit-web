@@ -23,6 +23,10 @@
       "destination": "/propuesta"
     },
     {
+      "source": "/mascotas/gmail/callback",
+      "destination": "/api/mascotas?gmail=callback"
+    },
+    {
       "source": "/mascota/:t",
       "destination": "/mascota"
     },

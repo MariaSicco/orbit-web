@@ -17,6 +17,8 @@
    POST ?studyscan=1 {ref}    → lee un estudio ya subido (foto o PDF) con IA: fecha, tipo, laboratorio y un resumen fiel (no guarda nada)
    POST ?upload=1 {name,size,type} → URL firmada para subir un estudio a Blob privado
    GET  ?file=ref             → abre un estudio propio (URL firmada que vence en minutos)
+   ?gmail=status|start|callback|search|import|queue|unqueue|disconnect → "Conectar Gmail" (api/_lib/petgmail.js):
+                                busca estudios en el Gmail de la dueña y los importa por el mismo motor de ?studyscan
 
    Sin sesión:
    POST ?scanclear=1          → borra el registro de escaneos del QR
@@ -30,7 +32,8 @@ import { randomBytes, createHash } from 'node:crypto';
 import { kvGet, kvSet, kvDel, getPurchases } from './_lib/kv.js';
 import { readSession, readBody } from './_lib/auth.js';
 import { isAdmin } from './_lib/admin.js';
-import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath } from './_lib/blob.js';
+import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath, putPrivate } from './_lib/blob.js';
+import { handleGmail } from './_lib/petgmail.js';
 import { QUOTA_BYTES, fits, addUsage, photoRef, sweep } from './_lib/petfiles.js';
 import { getVapid, getNotify, saveNotify, cleanSub, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
 
@@ -253,7 +256,11 @@ Reglas:
 - "lab": el laboratorio, la veterinaria o el profesional que lo firma, si figura.
 - "summary": un resumen corto y fiel (máximo 400 caracteres) de lo que dice el informe, en español rioplatense neutro. Si el informe tiene una conclusión escrita, copiala casi textual. Si hay valores fuera de rango marcados por el laboratorio, nombralos tal como figuran, con su valor. NO interpretes, NO diagnostiques, NO sugieras tratamientos ni des opinión médica. No agregues valores que no se lean con claridad.
 - Si algo es ilegible o dudoso, decilo en "warnings" (por ejemplo "La fecha está cortada", "No se lee el valor de urea") y poné "confidence":"baja".`;
-async function scanStudy(buf, type) {
+/* si hay mascotas cargadas (importación desde Gmail), además pide a quién parece corresponder */
+const PET_HINT = pets => `
+Además, agregá al JSON "pet":{"name":"","species":"","breed":""} con el nombre del paciente, la especie y la raza TAL COMO FIGURAN en el documento (vacío si no figuran; no adivines).
+Las mascotas de esta familia son: ${pets.map(p => `${str(p.name, 40)} (${p.species === 'otra' ? str(p.speciesOther, 30) || 'otra' : p.species}${p.breed ? ', ' + str(p.breed, 40) : ''})`).join('; ')}. Usalo solo para reconocer nombres mal escritos; si el documento no nombra a ninguna, dejá "name" vacío.`;
+async function scanStudy(buf, type, pets) {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) throw Object.assign(new Error('ia_no_configurada'), { status: 503 });
   const b64 = buf.toString('base64');
@@ -263,7 +270,7 @@ async function scanStudy(buf, type) {
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: process.env.ORBIT_VISION_MODEL || process.env.ORBIT_MODEL || 'claude-sonnet-5-5', max_tokens: 1500, messages: [{ role: 'user', content: [block, { type: 'text', text: STUDY_PROMPT }] }] }),
+    body: JSON.stringify({ model: process.env.ORBIT_VISION_MODEL || process.env.ORBIT_MODEL || 'claude-sonnet-5-5', max_tokens: 1500, messages: [{ role: 'user', content: [block, { type: 'text', text: STUDY_PROMPT + (pets?.length ? PET_HINT(pets) : '') }] }] }),
   });
   if (!r.ok) {
     const t = await r.text().catch(() => '');
@@ -279,9 +286,18 @@ async function scanStudy(buf, type) {
     date: day(j.date), kind: pick(j.kind, ['sangre', 'orina', 'materia', 'rx', 'eco', 'otro'], 'otro'), title: str(j.title, 120), lab: str(j.lab, 80),
     summary: str(j.summary, 600), confidence: pick(j.confidence, ['alta', 'media', 'baja'], 'media'),
     warnings: (Array.isArray(j.warnings) ? j.warnings : []).map(w => str(w, 200)).filter(Boolean).slice(0, 4),
+    ...(pets?.length ? { pet: { name: str(j.pet?.name, 60), species: str(j.pet?.species, 30), breed: str(j.pet?.breed, 60) } } : {}),
   };
 }
 /* el mismo tope de lecturas con IA que la libreta: cada archivo cuenta una */
+/* ¿queda tope? (sin gastarlo) */
+async function peekScan(email) {
+  const now = new Date().toISOString();
+  const n = (await kvGet(`orbit:petscan:${email.toLowerCase()}:${now.slice(0, 10)}`)) || 0, nm = (await kvGet(`orbit:petscanm:${email.toLowerCase()}:${now.slice(0, 7)}`)) || 0;
+  if (n >= SCANS_PER_DAY) return { error: 'limite_diario', limit: SCANS_PER_DAY };
+  if (nm >= SCANS_PER_MONTH) return { error: 'limite_mensual', limit: SCANS_PER_MONTH };
+  return null;
+}
 async function takeScan(email) {
   const now = new Date().toISOString();
   const k = `orbit:petscan:${email.toLowerCase()}:${now.slice(0, 10)}`, km = `orbit:petscanm:${email.toLowerCase()}:${now.slice(0, 7)}`;
@@ -397,10 +413,31 @@ export default async function handler(req, res) {
   }
 
   const s = readSession(req);
-  if (!s) return res.status(401).json({ error: 'unauthorized' });
+  /* ir y volver de Google son navegaciones: sin sesión o sin compra se vuelve a la app, no a un JSON */
+  const gNav = q.gmail === 'start' || q.gmail === 'callback';
+  if (!s) return gNav ? res.redirect(302, '/acceso?next=mascotas') : res.status(401).json({ error: 'unauthorized' });
   /* todo lo de la dueña o el dueño exige la compra de Mimitos */
   const purchase = await mimitosPurchase(s.email);
-  if (!purchase) return res.status(402).json({ error: 'no_purchase', email: s.email, product: PRODUCT_ID });
+  if (!purchase) return gNav ? res.redirect(302, '/mascotas') : res.status(402).json({ error: 'no_purchase', email: s.email, product: PRODUCT_ID });
+
+  /* Conectar Gmail: solo cuentas habilitadas (MIMITOS_GMAIL_ALLOW) o admin */
+  if (q.gmail) {
+    return handleGmail(req, res, {
+      email: s.email,
+      body: req.method === 'POST' ? await readBody(req) : {},
+      getDoc: async () => (await kvGet(docKey(s.email))) || { pets: [], rev: 0 },
+      deps: {
+        peekScan, takeScan, scanStudy,
+        fits: (email, bytes) => fits(email, bytes),
+        addUsage: (email, ref, bytes) => addUsage(email, ref, bytes),
+        putFile: async (email, name, buf, type) => {
+          if (!blobReady()) throw Object.assign(new Error('blob_no_configurado'), { status: 503, code: 'blob_no_configurado' });
+          const clean = String(name || 'estudio').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80) || 'estudio';
+          return putPrivate(`${folder(email)}/${randomBytes(6).toString('hex')}-${clean}`, buf, type);
+        },
+      },
+    });
+  }
 
   /* avisos: push en este celu, mail y qué avisar */
   if (q.notify) {
