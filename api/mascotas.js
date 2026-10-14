@@ -175,7 +175,15 @@ export function cleanDoc(d, email) {
     log: cleanLog(p?.log),
   }));
   /* turnos (Veterinarias cerca → Anotar turno); los docs viejos no los tienen */
-  return { pets, appointments: cleanAppointments(d?.appointments, pets) };
+  /* "mi zona" de Veterinarias cerca (opcional): solo texto corto y coordenadas redondeadas a 3 decimales */
+  const zone = cleanZone(d?.zone);
+  return { pets, appointments: cleanAppointments(d?.appointments, pets), ...(zone ? { zone } : {}) };
+}
+export function cleanZone(z) {
+  const lat = Number(z?.lat), lng = Number(z?.lng);
+  const label = String(z?.label ?? '').replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
+  if (!label || !Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 90 || Math.abs(lng) > 180 || (!lat && !lng)) return null;
+  return { label, lat: Math.round(lat * 1000) / 1000, lng: Math.round(lng * 1000) / 1000 };
 }
 
 /* lo que ve quien escanea el QR del collar: SOLO lo necesario para devolverla.

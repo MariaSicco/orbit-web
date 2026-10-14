@@ -335,25 +335,116 @@ test('Text Search: dirección con número va como "cerca de", sesgo opcional red
   assert.equal(Number(await kvGet(P.spendKey())), 2 * P.SKUS['text:enterprise'].micro);
 });
 
+/* ---------- autocompletar de direcciones (Places Autocomplete (New) + Place Details Essentials) ---------- */
+const SUG = (id, main, sub) => ({ placePrediction: { placeId: id, text: { text: `${main}, ${sub}` }, structuredFormat: { mainText: { text: main }, secondaryText: { text: sub } } } });
+const LOCS = { ChIJcorrientes0001: [-34.0, -58.0], ChIJcorrientes2786: [-27.473456, -58.834567], ChIJsanmartinmza1: [-32.889, -68.845], ChIJsanmartincaba: [-34.603, -58.381], ChIJpalermocaba01: [-34.588, -58.43] };
+function googleDirs() {
+  google = u => {
+    const b = gcalls.at(-1).body || {};
+    if (u.endsWith('places:autocomplete')) {
+      const q = b.input || '';
+      if (/Inventada/.test(q)) return { status: 200, body: {} };
+      if (/^Gobernador Mart/i.test(q)) return { status: 200, body: { suggestions: [SUG('ChIJcorrientes2786', 'Gobernador Martínez 2786', 'W3400 Corrientes, Argentina')] } };
+      if (/^San Mart/i.test(q)) return { status: 200, body: { suggestions: [SUG('ChIJsanmartincaba', 'San Martín 100', 'CABA, Argentina'), SUG('ChIJsanmartinmza1', 'San Martín 100', 'Mendoza, Argentina')] } };
+      return { status: 200, body: { suggestions: [SUG('ChIJpalermocaba01', 'Palermo', 'CABA, Argentina'), SUG('ChIJcorrientes0001', 'Palermo Chico', 'CABA, Argentina')] } };
+    }
+    const m = u.match(/\/places\/([^?]+)\?/);
+    if (m) { const [lat, lng] = LOCS[m[1]] || [-34.6, -58.4]; return { status: 200, body: { location: { latitude: lat, longitude: lng }, formattedAddress: 'Gobernador Martínez 2786, W3400 Corrientes, Argentina', shortFormattedAddress: 'Gobernador Martínez 2786, Corrientes' } }; }
+    const near = b.locationRestriction?.circle.center.latitude ?? b.locationBias?.circle.center.latitude;
+    const cte = near > -28;
+    return { status: 200, body: { places: [PLACE({ id: cte ? 'ChIJvetcorrientes01' : 'ChIJvet00000001', displayName: { text: cte ? (b.includedTypes?.[0] === 'pet_store' ? 'Pet Shop Corrientes' : 'Veterinaria del Litoral') : 'Veterinaria San Roque' }, location: cte ? { latitude: -27.4739, longitude: -58.8341 } : PLACE().location })] } };
+  };
+}
+const TOKEN = '0f8b6c2e-5d1a-4c3b-9e7f-1a2b3c4d5e6f';
+
+test('autocompletar: solo Argentina, session token, sesgo redondeado, mínimo 4 letras, techo (USD 2,83/1.000) y tope diario aparte', async () => {
+  googleDirs();
+  const email = await fresh();
+  const r = await call('POST', { places: 'autocomplete' }, { q: 'Gobernador Martínez 2786', token: TOKEN, lat: -27.4712345, lng: -58.8398765 }, email);
+  assert.equal(r.code, 200);
+  const g = gcalls[0];
+  assert.equal(g.url, 'https://places.googleapis.com/v1/places:autocomplete');
+  assert.deepEqual(g.body.includedRegionCodes, ['ar']);
+  assert.equal(g.body.sessionToken, TOKEN);
+  assert.equal(g.body.input, 'Gobernador Martínez 2786');
+  assert.deepEqual(g.body.locationBias.circle.center, { latitude: -27.471, longitude: -58.84 });
+  assert.equal(g.headers['X-Goog-Api-Key'], 'clave-servidor-secreta');
+  assert.deepEqual(r.body.suggestions, [{ id: 'ChIJcorrientes2786', text: 'Gobernador Martínez 2786, W3400 Corrientes, Argentina', main: 'Gobernador Martínez 2786', sub: 'W3400 Corrientes, Argentina' }]);
+  assert.equal(Number(await kvGet(P.spendKey())), P.SKUS.auto.micro);
+  assert.equal(P.SKUS.auto.micro, 2830);
+  /* sin sesgo si no hay ubicación; menos de 4 letras o token raro: 400 sin llamar a Google */
+  await call('POST', { places: 'autocomplete' }, { q: 'Palermo', token: TOKEN }, email);
+  assert.equal(gcalls[1].body.locationBias, undefined);
+  assert.equal((await call('POST', { places: 'autocomplete' }, { q: 'Pal', token: TOKEN }, email)).code, 400);
+  assert.equal((await call('POST', { places: 'autocomplete' }, { q: 'Palermo', token: 'x y' }, email)).code, 400);
+  assert.equal(gcalls.length, 2);
+  /* tope diario de sugerencias: 10 × MIMITOS_MAPS_PER_DAY */
+  process.env.MIMITOS_MAPS_PER_DAY = '1';
+  const e2 = await fresh();
+  for (let i = 0; i < 10; i++) assert.equal((await call('POST', { places: 'autocomplete' }, { q: 'Palermo ' + i, token: TOKEN }, e2)).code, 200);
+  const lim = await call('POST', { places: 'autocomplete' }, { q: 'Gobernador Martínez', token: TOKEN }, e2);
+  assert.equal(lim.code, 429); assert.equal(lim.body.limit, 10);
+  assert.match(lim.body.mapsUrl, /query=veterinaria%20Gobernador%20Mart%C3%ADnez$/, 'link gratis con la dirección escrita');
+  /* techo: en pausa no sale nada y vuelve el link con lo escrito */
+  delete process.env.MIMITOS_MAPS_PER_DAY;
+  await kvSet(P.spendKey(), 19_990_000);
+  const n = gcalls.length;
+  const pz = await call('POST', { places: 'autocomplete' }, { q: 'Gobernador Martínez 2786', token: TOKEN }, email);
+  assert.equal(pz.code, 503); assert.equal(pz.body.error, 'maps_paused');
+  assert.match(pz.body.mapsUrl, /Gobernador%20Mart%C3%ADnez%202786/);
+  assert.equal(gcalls.length, n);
+});
+
+test('elegir sugerencia: Place Details solo Essentials (location, formattedAddress, shortFormattedAddress) con el mismo token; coordenadas a 3 decimales; solo ids vistos', async () => {
+  googleDirs();
+  const email = await fresh();
+  assert.equal((await call('POST', { places: 'pick' }, { id: 'ChIJcorrientes2786', token: TOKEN }, email)).code, 403, 'sin haberla visto en sugerencias');
+  await call('POST', { places: 'autocomplete' }, { q: 'Gobernador Martínez 2786', token: TOKEN }, email);
+  const r = await call('POST', { places: 'pick' }, { id: 'ChIJcorrientes2786', token: TOKEN }, email);
+  assert.equal(r.code, 200);
+  const g = gcalls.at(-1);
+  assert.equal(g.method, 'GET');
+  assert.equal(g.url, `https://places.googleapis.com/v1/places/ChIJcorrientes2786?languageCode=es&regionCode=AR&sessionToken=${TOKEN}`);
+  assert.equal(g.headers['X-Goog-FieldMask'], 'location,formattedAddress,shortFormattedAddress');
+  assert.deepEqual(r.body.place, { lat: -27.473, lng: -58.835, address: 'Gobernador Martínez 2786, Corrientes' });
+  assert.equal(Number(await kvGet(P.spendKey())), P.SKUS.auto.micro + P.SKUS['pick:essentials'].micro, 'USD 0,00283 + USD 0,005');
+  /* después, Nearby alrededor de esas coordenadas */
+  const nb = await near(email, 'vet', r.body.place.lat, r.body.place.lng);
+  assert.equal(nb.body.places[0].name, 'Veterinaria del Litoral');
+  assert.deepEqual(gcalls.at(-1).body.locationRestriction.circle.center, { latitude: -27.473, longitude: -58.835 });
+});
+
+test('mi zona: cleanDoc guarda solo texto corto y coordenadas redondeadas; docs sin zona siguen andando; se puede borrar', () => {
+  const z = cleanDoc({ pets: [], zone: { label: '  Corrientes <b>', lat: -27.4734567, lng: -58.8345678, address: 'Gobernador Martínez 2786', evil: 1 } });
+  assert.deepEqual(z.zone, { label: 'Corrientes b', lat: -27.473, lng: -58.835 });
+  assert.equal('zone' in cleanDoc({ pets: [] }), false);
+  assert.equal('zone' in cleanDoc({ pets: [], zone: { label: 'X', lat: 'a', lng: 2 } }), false);
+  assert.equal('zone' in cleanDoc({ pets: [], zone: { label: '', lat: 1, lng: 2 } }), false);
+});
+
 /* front real (assets/js/mascotas-vets.js) en un DOM mínimo, contra el handler real; Google simulado */
 const { runInNewContext } = await import('node:vm');
-async function front({ geo = 'ok', storage = {} } = {}) {
+async function front({ geo = 'ok', storage = {}, doc = {} } = {}) {
   const email = await fresh();
-  const L = { click: [], submit: [], keydown: [] }, toasts = [], ss = storage === 'roto' ? {} : { ...storage };
-  let html = '', inputVal = null;
+  const L = { click: [], submit: [], keydown: [], input: [] }, toasts = [], ss = storage === 'roto' ? {} : { ...storage };
+  let html = '', sugBox = null, inputVal = null, saves = 0;
   const pet = { id: 'aika0001', name: 'Aika', species: 'perro', vet: {}, records: [] };
+  const appDoc = { pets: [pet], appointments: [], ...doc };
+  const attrs = {};
   const el = sel => {
     if (sel === '#app') return { contains: () => true };
-    if (sel === '#vxArea') { if (!html.includes('id="vxArea"')) return null; return { get value() { return inputVal ?? (html.match(/id="vxArea"[^>]*value="([^"]*)"/) || [])[1] ?? ''; }, set value(v) { inputVal = v; }, focus() {}, select() {} }; }
+    if (sel === '#vxArea') { if (!html.includes('id="vxArea"')) return null; return { id: 'vxArea', get value() { return inputVal ?? (html.match(/id="vxArea"[^>]*value="([^"]*)"/) || [])[1] ?? ''; }, set value(v) { inputVal = v; }, focus() {}, select() {}, setAttribute(k, v) { attrs[k] = v; }, removeAttribute(k) { delete attrs[k]; } }; }
+    if (sel === '#vxSugBox') { if (!html.includes('id="vxSugBox"')) return null; return { set innerHTML(v) { sugBox = v; } }; }
     return { focus() {} };
   };
   const win = {
     MZ: { esc: x => String(x ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])), fmt: x => x, iso: d => new Date(d).toISOString().slice(0, 10), icon: n => `<svg class="i" data-i="${n}"></svg>`, today: () => new Date(), status: () => null, TYPE: {} },
     MZTURNOS: { upcoming: () => [], toLog: () => [] },
-    MZAPP: { render() { html = win.MZVETS.render(pet, ''); inputVal = null; }, petById: () => pet, curPet: () => pet, toast: m => toasts.push(m), go() {}, doc: { pets: [pet], appointments: [] } },
+    MZAPP: { render() { html = win.MZVETS.render(pet, ''); sugBox = null; inputVal = null; }, petById: () => pet, curPet: () => pet, toast: m => toasts.push(m), go() {}, changed() { saves++; }, get doc() { return appDoc; } },
   };
   const ctx = {
-    window: win, console, JSON, Math, Date, Number, String, Object, Array, Map, Set, Boolean, Promise, RegExp, encodeURIComponent, setTimeout,
+    window: win, console, JSON, Math, Date, Number, String, Object, Array, Map, Set, Boolean, Promise, RegExp, encodeURIComponent, setTimeout, clearTimeout,
+    crypto: { randomUUID: () => TOKEN },
     requestAnimationFrame: f => f(),
     document: { querySelector: el, addEventListener: (t, f) => L[t]?.push(f) },
     navigator: { geolocation: { getCurrentPosition: (ok, no) => setTimeout(() => geo === 'ok' ? ok({ coords: { latitude: -34.588912, longitude: -58.430621 } }) : no({ code: 1 }), 0) } },
@@ -366,111 +457,128 @@ async function front({ geo = 'ok', storage = {} } = {}) {
     },
   };
   runInNewContext(readFileSync(new URL('../assets/js/mascotas-vets.js', import.meta.url), 'utf8'), ctx);
-  const until = async (fn, what) => { for (let i = 0; i < 200; i++) { if (fn()) return; await new Promise(r => setTimeout(r, 5)); } assert.fail('no pasó: ' + what); };
-  const btn = (vx, data = {}) => ({ dataset: { vx, ...data } });
+  const until = async (fn, what) => { for (let i = 0; i < 300; i++) { if (fn()) return; await new Promise(r => setTimeout(r, 5)); } assert.fail('no pasó: ' + what); };
+  const target = (id, extra = {}) => ({ id, value: inputVal ?? '', closest: s => s === '#vxLoc' ? {} : null, ...extra });
   const api = {
-    get html() { return html; }, ss, toasts, st: () => win.MZVETS.state,
+    get html() { return html; }, get sug() { return sugBox ?? ''; }, get view() { return html + (sugBox ?? ''); }, attrs, ss, toasts, doc: appDoc, saves: () => saves, st: () => win.MZVETS.state,
     render: () => win.MZAPP.render(),
-    click(vx, data) { const b = btn(vx, data); for (const f of L.click) f({ target: { closest: s => s === '[data-vx]' ? b : null } }); },
-    submit(v) { inputVal = v; for (const f of L.submit) f({ target: { id: 'vxAreaF' }, preventDefault() {} }); },
-    esc() { for (const f of L.keydown) f({ key: 'Escape', target: { closest: s => s === '#vxLoc' }, preventDefault() {} }); },
+    click(vx, data = {}) { const b = { dataset: { vx, ...data } }; for (const f of L.click) f({ target: { closest: s => s === '[data-vx]' ? b : null }, preventDefault() {} }); },
+    option(i) { const o = { dataset: { vxs: String(i) } }; for (const f of L.click) f({ target: { closest: s => s === '[data-vxs]' ? o : null }, preventDefault() {} }); },
+    type(v) { inputVal = v; for (const f of L.input) f({ target: target('vxArea', { value: v }) }); },
+    key(k) { for (const f of L.keydown) f({ key: k, target: target('vxArea'), preventDefault() {} }); },
+    submit(v) { if (v != null) inputVal = v; for (const f of L.submit) f({ target: { id: 'vxAreaF' }, preventDefault() {} }); },
     until, names: () => [...html.matchAll(/class="what"><b>([^<]+)<\/b>/g)].map(m => m[1]),
     map: () => ((html.match(/<iframe[^>]*src="([^"]+)"/) || [])[1] || '').replace(/&amp;/g, '&'),
   };
   api.render(); await until(() => api.st().cfg, 'config'); api.render();
   return api;
 }
-const ZONAS = u => {
-  if (!u.includes('searchText') && !u.includes('searchNearby')) return { status: 200, body: PLACE() };
-  return null;
-};
-function googleZonas() {
-  google = u => {
-    const b = gcalls.at(-1).body || {}, q = b.textQuery || '';
-    if (/Inventada/.test(q)) return { status: 200, body: {} };
-    if (/Belgrano/.test(q) || (b.locationBias && b.locationBias.circle.center.latitude > -34.57 && !/Palermo/.test(q))) return { status: 200, body: { places: [PLACE({ id: 'ChIJbelgrano0001', displayName: { text: /pet/.test(q) ? 'Pet Shop Cabildo' : 'Veterinaria Cabildo' }, location: { latitude: -34.5621, longitude: -58.4569 } })] } };
-    return ZONAS(u) || { status: 200, body: { places: [PLACE({ displayName: { text: b.includedTypes?.[0] === 'pet_store' || /pet/.test(q) ? 'Puppis Palermo' : 'Veterinaria San Roque' } })] } };
-  };
-}
+const wait = ms => new Promise(r => setTimeout(r, ms));
 
-test('flujo: buscar por barrio, "Cambiar" abre el campo con el texto, nueva dirección busca en la pestaña actual y limpia las otras', async () => {
+test('flujo (bug de Majo): "Gobernador Martínez 2786" → sugerencia de Corrientes → Nearby ahí; barra, pestañas, mapa y sessionStorage', async () => {
   process.env.GOOGLE_MAPS_BROWSER_KEY = 'clave-navegador';
-  googleZonas();
+  googleDirs();
   const f = await front();
-  assert.match(f.html, /¿Dónde buscamos\?/); assert.match(f.html, /Barrio, ciudad o dirección/);
-  f.submit('Palermo, CABA');
-  await f.until(() => f.names().length, 'resultados de Palermo');
-  /* barra siempre visible arriba de la lista y del mapa, con "Cambiar" */
+  assert.match(f.html, /role="combobox"/); assert.match(f.html, /aria-autocomplete="list"/); assert.match(f.html, /aria-controls="vxSug"/);
+  /* debounce de 300 ms y mínimo 4 letras: tipear rápido manda un solo pedido */
+  f.type('Gob'); f.type('Gobe'); f.type('Gobernador Mart'); f.type('Gobernador Martínez 2786');
+  await wait(120); assert.equal(gcalls.length, 0, 'todavía no (300 ms)');
+  await f.until(() => /Gobernador Martínez 2786/.test(f.sug), 'sugerencias');
+  assert.equal(gcalls.filter(g => g.url.endsWith(':autocomplete')).length, 1, 'un solo pedido');
+  assert.equal(gcalls[0].body.sessionToken, TOKEN);
+  assert.match(f.sug, /role="listbox"/); assert.match(f.sug, /role="option" id="vxSug-0"/);
+  assert.equal(f.attrs['aria-expanded'], 'true');
+  f.key('ArrowDown'); assert.equal(f.attrs['aria-activedescendant'], 'vxSug-0');
+  f.option(0);
+  await f.until(() => f.names()[0] === 'Veterinaria del Litoral', 'veterinarias de Corrientes');
+  const pick = gcalls.find(g => g.url.includes('/places/ChIJcorrientes2786'));
+  assert.ok(pick.url.includes('sessionToken=' + TOKEN), 'el detalle cierra la sesión con el mismo token');
+  assert.deepEqual(gcalls.at(-1).body.locationRestriction.circle.center, { latitude: -27.473, longitude: -58.835 });
+  assert.match(f.html, /Cerca de: <b>Gobernador Martínez 2786, Corrientes<\/b>/);
+  assert.ok(f.html.indexOf('class="vx-bar"') < f.html.indexOf('class="vx-res"'));
+  assert.match(f.map(), /center=-27\.473,-58\.835/, 'el mapa se centra en la dirección');
+  /* otra pestaña, mismas coordenadas */
+  f.click('kind', { k: 'pet' }); await f.until(() => f.names()[0] === 'Pet Shop Corrientes', 'pet shops de Corrientes');
+  assert.deepEqual(gcalls.at(-1).body.locationRestriction.circle.center, { latitude: -27.473, longitude: -58.835 });
+  assert.deepEqual(JSON.parse(f.ss['mimitos:vets:ubicacion']), { c: { lat: -27.473, lng: -58.835 }, l: 'Gobernador Martínez 2786, Corrientes', z: 'Corrientes' });
+  /* Cambiar: la sesión nueva arranca con otro token y la caché de las otras pestañas se limpia */
+  f.click('where'); assert.match(f.html, /Cambiar ubicación/); assert.match(f.html, /data-vx="locate"/);
+  f.type('Palermo'); await f.until(() => /Palermo Chico/.test(f.sug), 'sugerencias Palermo');
+  assert.deepEqual(gcalls.at(-1).body.locationBias.circle.center, { latitude: -27.473, longitude: -58.835 }, 'sesgo por la última ubicación');
+  f.submit(); /* Enter: la primera coincide con lo escrito y no hay otra igual → la usa */
+  await f.until(() => f.names()[0] === 'Veterinaria San Roque' || /Pet shops/.test(f.html) && /Cerca de: <b>Palermo, CABA/.test(f.html), 'Palermo');
   assert.match(f.html, /Cerca de: <b>Palermo, CABA<\/b>/);
-  assert.ok(f.html.indexOf('class="vx-bar"') < f.html.indexOf('class="vx-res"'), 'la barra va arriba de la lista y del mapa');
-  assert.match(f.html, /class="btn sm ghost" data-vx="where"[^>]*>Cambiar</, 'botón Cambiar (btn.sm = 44 px)');
-  /* la otra pestaña, con la misma ubicación */
-  f.click('kind', { k: 'pet' }); await f.until(() => f.names()[0] === 'Puppis Palermo', 'pet shops de Palermo');
-  assert.equal(gcalls.at(-1).body.textQuery, 'pet shop en Palermo, CABA');
-  assert.ok(gcalls.at(-1).body.locationBias, 'la pestaña nueva usa el centro de la zona como sesgo');
-  const antes = gcalls.length;
-  f.click('kind', { k: 'vet' }); await f.until(() => f.names()[0] === 'Veterinaria San Roque', 'vuelve a veterinarias');
-  assert.equal(gcalls.length, antes, 'volver a una pestaña ya buscada no paga de nuevo');
-  /* Cambiar: campo con el texto actual + Usar mi ubicación + Cancelar */
-  f.click('where');
-  assert.match(f.html, /Cambiar ubicación/);
-  assert.match(f.html, /id="vxArea"[^>]*value="Palermo, CABA"/);
-  assert.match(f.html, /data-vx="locate"/); assert.match(f.html, /data-vx="cancel"/);
-  assert.ok(f.names().length, 'mientras edita, los resultados siguen abajo');
-  f.esc(); assert.ok(!f.html.includes('id="vxArea"'), 'Escape cierra sin cambiar'); assert.match(f.html, /Cerca de: <b>Palermo, CABA/);
-  f.click('where');
-  f.submit('Av. Cabildo 2000, Belgrano');
-  await f.until(() => f.names()[0] === 'Veterinaria Cabildo', 'resultados nuevos en Belgrano');
-  assert.equal(gcalls.at(-1).body.textQuery, 'veterinaria cerca de Av. Cabildo 2000, Belgrano');
-  assert.equal(gcalls.at(-1).body.locationBias, undefined, 'la dirección nueva no arrastra el sesgo de la zona vieja');
-  assert.match(f.html, /Cerca de: <b>Av. Cabildo 2000, Belgrano<\/b>/);
-  assert.deepEqual(Object.keys(f.st().res), ['vet|q:av. cabildo 2000, belgrano'], 'la caché de las otras pestañas se limpió');
-  assert.match(f.map(), /q=veterinaria\+en\+Av\.\+Cabildo|q=veterinaria%20en%20Av\.%20Cabildo/); assert.match(f.map(), /center=-34\.562,-58\.457/, 'el mapa se recentra');
-  /* pet shops de nuevo: busca en Belgrano (no la caché de Palermo) */
-  const n0 = gcalls.length;
-  f.click('kind', { k: 'pet' }); await f.until(() => f.names()[0] === 'Pet Shop Cabildo', 'pet shops de Belgrano');
-  assert.equal(gcalls.length, n0 + 1);
-  assert.deepEqual(gcalls.at(-1).body.locationBias.circle.center, { latitude: -34.562, longitude: -58.457 });
-  /* recordada solo en sessionStorage */
-  assert.deepEqual(JSON.parse(f.ss['mimitos:vets:ubicacion']), { a: 'Av. Cabildo 2000, Belgrano', m: { lat: -34.562, lng: -58.457 } });
+  assert.deepEqual(Object.keys(f.st().res), ['pet|-34.588,-58.430'], 'caché de las otras pestañas limpia');
   delete process.env.GOOGLE_MAPS_BROWSER_KEY;
 });
 
-test('flujo: dirección que no existe → aviso claro, el campo queda y vuelve la ubicación anterior con sus resultados', async () => {
-  googleZonas();
+test('flujo: Enter sin elegir — ambiguo pide elegir, sin resultados avisa, y nunca manda texto libre a Text Search', async () => {
+  googleDirs();
   const f = await front();
-  f.submit('Palermo, CABA'); await f.until(() => f.names().length, 'Palermo');
+  f.submit('San Martín 100');
+  await f.until(() => /Elegí la tuya de la lista/.test(f.sug), 'pide elegir');
+  assert.match(f.sug, /Mendoza/); assert.match(f.sug, /aria-selected="true"/);
+  assert.equal(f.st().coords, null, 'no eligió nada por su cuenta');
+  f.submit(); /* Enter con la primera marcada → esa */
+  await f.until(() => /Cerca de: <b>San Martín 100, CABA/.test(f.html), 'elegida con Enter');
   f.click('where'); f.submit('Calle Inventada 99999');
-  await f.until(() => /No encontramos esa dirección, probá con barrio y ciudad\./.test(f.html), 'aviso de dirección');
-  assert.match(f.html, /role="alert">No encontramos esa dirección/);
-  assert.match(f.html, /id="vxArea"[^>]*value="Calle Inventada 99999"/, 'el campo queda con lo que escribió');
-  assert.equal(f.names()[0], 'Veterinaria San Roque', 'los resultados de antes siguen');
-  assert.equal(f.st().area, 'Palermo, CABA');
-  assert.equal(JSON.parse(f.ss['mimitos:vets:ubicacion']).a, 'Palermo, CABA', 'no recuerda la dirección mala');
-  f.click('cancel'); assert.match(f.html, /Cerca de: <b>Palermo, CABA/);
+  await f.until(() => /No encontramos esa dirección, probá con barrio y ciudad\./.test(f.sug), 'aviso');
+  assert.equal(f.attrs['aria-invalid'], 'true');
+  assert.match(f.html, /Cerca de|Cambiar ubicación/);
+  assert.ok(!gcalls.some(g => g.url.endsWith('places:searchText')), 'ningún Text Search con la dirección');
+  f.key('Escape'); f.key('Escape'); assert.match(f.html, /Cerca de: <b>San Martín 100, CABA/, 'Escape vuelve sin cambiar');
 });
 
-test('flujo: "Usar mi ubicación" desde Cambiar; si niega el permiso queda el campo de texto; recuerda la última en sessionStorage', async () => {
-  googleZonas();
+test('flujo: techo y tope en el autocompletar → "Buscar en Google Maps" con la dirección escrita', async () => {
+  googleDirs();
+  const f = await front();
+  await kvSet(P.spendKey(), 19_990_000);
+  f.type('Gobernador Martínez 2786');
+  await f.until(() => /en pausa/.test(f.sug), 'pausa');
+  assert.match(f.sug, /href="https:\/\/www\.google\.com\/maps\/search\/\?api=1&amp;query=veterinaria%20Gobernador%20Mart%C3%ADnez%202786"/);
+  f.render(); assert.match(f.html, /id="vxMapsA" href="[^"]*Gobernador%20Mart%C3%ADnez%202786/, 'en pausa queda el campo con el link a Google Maps');
+  await kvSet(P.spendKey(), 0);
+  /* tope diario de sugerencias (10 × MIMITOS_MAPS_PER_DAY) */
+  process.env.MIMITOS_MAPS_PER_DAY = '1';
+  const g = await front();
+  for (let i = 0; i < 10; i++) { g.type('Palermo ' + i); await g.until(() => g.st().sugFor === 'Palermo ' + i, 'sug ' + i); }
+  g.type('Gobernador Martínez 2786');
+  await g.until(() => /tope de sugerencias de hoy/.test(g.sug), 'tope');
+  assert.match(g.sug, /query=veterinaria%20Gobernador%20Mart%C3%ADnez%202786/);
+  delete process.env.MIMITOS_MAPS_PER_DAY;
+});
+
+test('flujo: "Guardar como mi zona" (cuenta), la próxima vez arranca ahí, y se puede borrar', async () => {
+  googleDirs();
+  const f = await front();
+  f.type('Gobernador Martínez 2786'); await f.until(() => /vxSug-0/.test(f.sug), 'sugerencia');
+  f.option(0); await f.until(() => f.names().length, 'resultados');
+  assert.match(f.html, /data-vx="zoneSave"[^>]*>.*Guardar Corrientes como mi zona/);
+  f.click('zoneSave');
+  assert.equal(JSON.stringify(f.doc.zone), JSON.stringify({ label: 'Corrientes', lat: -27.473, lng: -58.835 })); assert.equal(f.saves(), 1);
+  assert.match(f.html, /Tu zona/);
+  /* pestaña nueva del navegador (sin sessionStorage) con la cuenta: arranca en Corrientes y busca sola */
+  const g = await front({ doc: { zone: f.doc.zone } });
+  await g.until(() => g.names()[0] === 'Veterinaria del Litoral', 'arranca en su zona');
+  assert.match(g.html, /Cerca de: <b>Corrientes<\/b>/);
+  g.click('where'); assert.match(g.html, /Mi zona: <b>Corrientes<\/b>/); assert.match(g.html, /data-vx="zoneDel"/);
+  g.click('zoneDel');
+  assert.equal('zone' in g.doc, false); assert.equal(g.saves(), 1);
+  assert.ok(g.toasts.some(t => /Borramos tu zona/.test(t)));
+});
+
+test('flujo: "Usar mi ubicación"; si niega el permiso queda el campo; sessionStorage roto no rompe nada', async () => {
+  googleDirs();
   const f = await front();
   f.click('locate'); await f.until(() => f.names().length, 'cerca tuyo');
   assert.match(f.html, /<b>Cerca de tu ubicación<\/b>/);
-  assert.deepEqual(gcalls.at(-1).body.locationRestriction.circle.center, { latitude: -34.589, longitude: -58.431 });
-  assert.deepEqual(JSON.parse(f.ss['mimitos:vets:ubicacion']), { c: { lat: -34.589, lng: -58.431 } }, 'solo redondeada');
-  f.click('where'); assert.match(f.html, /id="vxArea"[^>]*value=""/);
-  f.submit('Belgrano, CABA'); await f.until(() => f.names()[0] === 'Veterinaria Cabildo', 'Belgrano');
-  assert.match(f.html, /Cerca de: <b>Belgrano, CABA/);
-  /* otra pantalla nueva en la misma pestaña: arranca con la última ubicación y busca sola */
+  assert.deepEqual(JSON.parse(f.ss['mimitos:vets:ubicacion']).c, { lat: -34.589, lng: -58.431 }, 'solo redondeada');
   const g = await front({ geo: 'no', storage: f.ss });
-  await g.until(() => g.names()[0] === 'Veterinaria Cabildo', 'restaurada');
-  assert.match(g.html, /Cerca de: <b>Belgrano, CABA/);
+  await g.until(() => g.names().length, 'restaurada');
   g.click('where'); g.click('locate');
   await g.until(() => /No pudimos usar tu ubicación/.test(g.html), 'permiso negado');
-  assert.match(g.html, /id="vxArea"/, 'queda el campo de texto');
-  assert.ok(!/data-vx="locate"/.test(g.html), 'sin volver a ofrecer el GPS negado');
-  assert.equal(g.st().area, 'Belgrano, CABA', 'no pierde la ubicación que tenía');
-  /* sessionStorage roto (modo privado): todo sigue andando */
+  assert.match(g.html, /id="vxArea"/); assert.ok(!/data-vx="locate"/.test(g.html));
   const h = await front({ storage: 'roto' });
-  h.submit('Palermo, CABA'); await h.until(() => h.names().length, 'sin storage');
-  assert.match(h.html, /Cerca de: <b>Palermo, CABA/);
+  h.type('Gobernador Martínez 2786'); await h.until(() => /vxSug-0/.test(h.sug), 'sug');
+  h.option(0); await h.until(() => /Cerca de: <b>Gobernador/.test(h.html), 'sin storage');
 });

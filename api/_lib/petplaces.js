@@ -19,6 +19,16 @@
        Nearby/Text Search Pro USD 32 (5.000 gratis por mes cada una).
    Place Details Enterprise: USD 20 (1.000 gratis por mes). Sin fotos (Place Photos se cobra aparte).
 
+   "Barrio, ciudad o dirección" (?places=autocomplete y ?places=pick), con session token
+   (https://developers.google.com/maps/documentation/places/web-service/session-pricing):
+   - Autocomplete (New), solo Argentina (includedRegionCodes ['ar']), sesgo por la última ubicación conocida.
+     SKU Autocomplete Requests USD 2,83 (10.000 gratis por mes). En una sesión que termina con un Place Details
+     Essentials, las primeras 12 se cobran a ese precio y de la 13 en adelante son gratis (Session Usage); una
+     sesión abandonada se cobra por pedido.
+   - Al elegir: Place Details con location, formattedAddress y shortFormattedAddress (todos Essentials) y el mismo
+     token: Place Details Essentials USD 5 (10.000 gratis por mes). Después, Nearby alrededor (3 decimales).
+   Para el techo cada sugerencia se cuenta a USD 2,83/1.000 aunque Google después no la cobre.
+
    Techo: orbit:petmaps:spend:<AAAA-MM> en micro-dólares con INCRBY, a precio de lista y SIN descontar el cupo
    gratis (así la cuenta de la app siempre queda por arriba de la factura real). Antes de cada llamada se reserva
    el costo; si se pasa de MIMITOS_MAPS_BUDGET_USD (20 por defecto) no sale y la app queda con el link gratis
@@ -44,7 +54,16 @@ export const SKUS = {
   'text:enterprise': { sku: 'Text Search Enterprise', micro: 35000 },
   'text:pro': { sku: 'Text Search Pro', micro: 32000 },
   'details:enterprise': { sku: 'Place Details Enterprise', micro: 20000 },
+  'auto': { sku: 'Autocomplete Requests', micro: 2830 },
+  'pick:essentials': { sku: 'Place Details Essentials', micro: 5000 },
 };
+/* Place Details para "elegir una sugerencia": solo campos Essentials (el SKU más barato con coordenadas) */
+export const PICK_MASK = 'location,formattedAddress,shortFormattedAddress';
+const AUTO_MASK = 'suggestions.placePrediction.placeId,suggestions.placePrediction.text.text,suggestions.placePrediction.structuredFormat';
+export const okToken = v => /^[A-Za-z0-9_-]{8,36}$/.test(v || '');
+export const MIN_AUTO = 4;
+/* sugerencias por cuenta y por día: 10 por cada búsqueda del tope (con 300 ms de pausa, ~4 a 6 por dirección) */
+export const autoPerDay = () => perDay() * 10;
 const PRO_FIELDS = ['id', 'displayName', 'shortFormattedAddress', 'formattedAddress', 'location', 'googleMapsUri', 'attributions'];
 const ENT_FIELDS = ['rating', 'userRatingCount', 'currentOpeningHours.openNow', 'nationalPhoneNumber', 'internationalPhoneNumber'];
 export const fieldMask = (tier, prefix = 'places.') => [...PRO_FIELDS, ...(tier === 'pro' ? [] : ENT_FIELDS)].map(f => prefix + f).join(',');
@@ -192,9 +211,9 @@ export async function handlePlaces(req, res, { email, action, body = {}, getDoc,
     });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
-  if (!['nearby', 'text', 'details'].includes(action)) return res.status(400).json({ error: 'invalid' });
+  if (!['nearby', 'text', 'details', 'autocomplete', 'pick'].includes(action)) return res.status(400).json({ error: 'invalid' });
   const area = str(body.q, 80);
-  const fallback = { mapsUrl: mapsSearchUrl(kind, action === 'text' ? area : '') };
+  const fallback = { mapsUrl: mapsSearchUrl(kind, action === 'text' || action === 'autocomplete' ? area : '') };
   if (!key) return res.status(503).json({ error: 'maps_no_configurado', ...fallback });
   if (await mapsPaused(now)) {
     /* el aviso del 100 % sale una sola vez por mes (candado), también si la pausa se detecta antes de reservar */
@@ -206,6 +225,33 @@ export async function handlePlaces(req, res, { email, action, body = {}, getDoc,
   const headers = mask => ({ 'Content-Type': 'application/json', 'X-Goog-Api-Key': key, 'X-Goog-FieldMask': mask });
   const t = tier();
   try {
+    if (action === 'autocomplete') {
+      if (area.length < MIN_AUTO || !okToken(body.token)) return res.status(400).json({ error: 'invalid' });
+      const blat = num(body.lat, 90), blng = num(body.lng, 180);
+      const rl = await rate(email, 'auto', autoPerDay(), now);
+      if (!rl.ok) { await rl.undo(); return res.status(429).json({ error: 'limite_diario', limit: autoPerDay(), ...fallback }); }
+      const req2 = { input: area, includedRegionCodes: ['ar'], languageCode: 'es', regionCode: 'ar', sessionToken: body.token,
+        ...(blat != null && blng != null && (blat || blng) ? { locationBias: { circle: { center: { latitude: round3(blat), longitude: round3(blng) }, radius: 30000 } } } : {}) };
+      const d = await google('auto', `${API}/places:autocomplete`, { method: 'POST', headers: headers(AUTO_MASK), body: JSON.stringify(req2) }, now, rl.undo);
+      const suggestions = (Array.isArray(d.suggestions) ? d.suggestions : []).map(x => x.placePrediction).filter(x => x && okPlaceId(x.placeId)).slice(0, 5).map(x => ({
+        id: x.placeId, text: str(x.text?.text, 160), main: str(x.structuredFormat?.mainText?.text || x.text?.text, 120), sub: str(x.structuredFormat?.secondaryText?.text, 120),
+      }));
+      await remember(email, suggestions.map(x => x.id)).catch(() => {});
+      return res.status(200).json({ suggestions, left: rl.left, attribution: 'Google Maps', ...fallback });
+    }
+    if (action === 'pick') {
+      const id = String(body.id || '');
+      if (!okPlaceId(id) || (body.token && !okToken(body.token))) return res.status(400).json({ error: 'invalid' });
+      /* solo sugerencias que esta cuenta vio */
+      if (!((await kvGet(seenKey(email))) || []).includes(id)) return res.status(403).json({ error: 'forbidden' });
+      const rl = await rate(email, 'details', perDay() * 2, now);
+      if (!rl.ok) { await rl.undo(); return res.status(429).json({ error: 'limite_diario', limit: perDay() * 2, ...fallback }); }
+      const tk = body.token ? `&sessionToken=${encodeURIComponent(body.token)}` : '';
+      const d = await google('pick:essentials', `${API}/places/${encodeURIComponent(id)}?languageCode=es&regionCode=AR${tk}`, { method: 'GET', headers: headers(PICK_MASK) }, now, rl.undo);
+      const lat = Number.isFinite(d.location?.latitude) ? round3(d.location.latitude) : null, lng = Number.isFinite(d.location?.longitude) ? round3(d.location.longitude) : null;
+      if (lat == null || lng == null) return res.status(404).json({ error: 'sin_ubicacion', ...fallback });
+      return res.status(200).json({ place: { lat, lng, address: str(d.shortFormattedAddress || d.formattedAddress, 160) }, attribution: 'Google Maps' });
+    }
     if (action === 'details') {
       const id = String(body.id || '');
       if (!okPlaceId(id)) return res.status(400).json({ error: 'invalid' });

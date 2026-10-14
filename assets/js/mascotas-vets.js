@@ -1,14 +1,16 @@
 /* Mimitos · "Veterinarias cerca" y turnos. Necesita mascotas-core.js (window.MZ), mascotas-turnos.js
    (window.MZTURNOS) y el puente de mascotas-app.js (window.MZAPP).
 
-   - La ubicación se pide solo al tocar "Usar mi ubicación". Nunca va al servidor de Orbit más que para la consulta
-     (redondeada a ~110 m). La última elegida queda en sessionStorage (solo esta pestaña, se borra al cerrarla):
-     coordenadas redondeadas a 3 decimales o el texto "Barrio, ciudad o dirección". Si no hay permiso: queda el campo.
-   - Barra "Cerca de: …" arriba de la lista y del mapa, con "Cambiar": abre el campo con el texto actual y "Usar mi
-     ubicación". Al confirmar se busca en la pestaña actual y se limpia la caché de las otras (si la dirección no
-     aparece, vuelve la ubicación anterior con sus resultados y el aviso "No encontramos esa dirección…").
-   - Las tres pestañas usan la misma ubicación. Por texto, el centro de los primeros resultados va como sesgo
-     (locationBias, mismo SKU de Text Search) a las otras pestañas y centra el mapa.
+   - Dónde buscar: "Usar mi ubicación" (GPS) o "Barrio, ciudad o dirección" con autocompletar de Google
+     (Places Autocomplete (New) por el proxy del servidor, solo Argentina, con session token). Al elegir una
+     sugerencia, el servidor pide sus coordenadas (Place Details Essentials, mismo session token) y se busca con
+     Nearby alrededor, redondeado a 3 decimales. Texto libre nunca va a Google como dirección: Enter usa la
+     sugerencia si es una sola o la primera es muy probable; si no, pide elegir de la lista.
+   - Barra "Cerca de: …" arriba de la lista y del mapa, con "Cambiar". Al confirmar se busca en la pestaña actual
+     y se limpia la caché de las otras. Las tres pestañas usan las mismas coordenadas y el mapa se centra ahí.
+   - La última ubicación queda en sessionStorage (solo esta pestaña, coordenadas redondeadas + el texto de la barra).
+     "Guardar como mi zona" es opcional y va a la cuenta (doc.zone: texto corto + coordenadas redondeadas); se borra
+     desde "Cambiar". Si no hay permiso de GPS: queda el campo.
    - Los resultados de Google se muestran y quedan en memoria solo para cambiar de pestaña sin volver a pagar.
    - Mapa: Maps Embed API (gratis). Atribución "Google Maps" siempre visible debajo de la lista.
    - "Pedir turno por WhatsApp" (si el teléfono parece celular argentino), "Llamar", "Cómo llegar",
@@ -27,37 +29,37 @@ const mapsSearch = (k, area = '') => `https://www.google.com/maps/search/?api=1&
 const directions = pl => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([pl.name, pl.address].filter(Boolean).join(', '))}${pl.placeId || pl.id ? `&destination_place_id=${encodeURIComponent(pl.placeId || pl.id)}` : ''}`;
 
 /* estado en memoria; la última ubicación elegida, además, en sessionStorage (ver saveLoc) */
-const st = { from: 'inicio', kind: 'vet', coords: null, area: '', center: null, phase: 'idle', err: '', cfg: null, res: {}, ctx: { petId: '', recId: '' }, sel: null,
-  editing: false, locating: false, locMsg: '', draft: '', fresh: false, prev: null };
-const resKey = () => st.kind + '|' + (st.coords ? `${st.coords.lat.toFixed(3)},${st.coords.lng.toFixed(3)}` : 'q:' + st.area.toLowerCase());
-const searched = () => Boolean(st.coords || st.area);
+const st = { from: 'inicio', kind: 'vet', coords: null, label: '', zoneLabel: '', phase: 'idle', err: '', cfg: null, res: {}, ctx: { petId: '', recId: '' }, sel: null,
+  editing: false, locating: false, locMsg: '', draft: '', zoneTried: false,
+  /* autocompletar */
+  token: '', sug: [], sugFor: '', active: -1, sugMsg: '', sugBusy: false, picking: false };
+const resKey = () => st.kind + '|' + (st.coords ? `${st.coords.lat.toFixed(3)},${st.coords.lng.toFixed(3)}` : '');
+const searched = () => Boolean(st.coords);
 
-/* última ubicación: solo en esta pestaña del navegador, nunca en el servidor */
 const SS_KEY = 'mimitos:vets:ubicacion';
 const r3 = n => Math.round(n * 1000) / 1000;
-const okLL = c => c && Number.isFinite(c.lat) && Number.isFinite(c.lng) && Math.abs(c.lat) <= 90 && Math.abs(c.lng) <= 180;
+const okLL = c => c && Number.isFinite(c.lat) && Number.isFinite(c.lng) && Math.abs(c.lat) <= 90 && Math.abs(c.lng) <= 180 && Boolean(c.lat || c.lng);
+const clip = (t, n) => String(t || '').replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, n);
+/* última ubicación: solo en esta pestaña del navegador, nunca en el servidor */
 function saveLoc() {
   try {
-    const v = st.coords ? { c: { lat: r3(st.coords.lat), lng: r3(st.coords.lng) } } : st.area ? { a: st.area, ...(st.center ? { m: st.center } : {}) } : null;
-    if (v) sessionStorage.setItem(SS_KEY, JSON.stringify(v)); else sessionStorage.removeItem(SS_KEY);
+    if (st.coords) sessionStorage.setItem(SS_KEY, JSON.stringify({ c: { lat: r3(st.coords.lat), lng: r3(st.coords.lng) }, l: st.label, z: st.zoneLabel }));
+    else sessionStorage.removeItem(SS_KEY);
   } catch {}
 }
 function loadLoc() {
   try {
     const v = JSON.parse(sessionStorage.getItem(SS_KEY) || 'null');
-    if (v && okLL(v.c)) return { coords: { lat: r3(v.c.lat), lng: r3(v.c.lng) }, area: '', center: null };
-    if (v && typeof v.a === 'string' && v.a.trim().length >= 3) return { coords: null, area: v.a.trim().slice(0, 80), center: okLL(v.m) ? { lat: r3(v.m.lat), lng: r3(v.m.lng) } : null };
+    if (v && okLL(v.c)) return { coords: { lat: r3(v.c.lat), lng: r3(v.c.lng) }, label: clip(v.l, 120), zoneLabel: clip(v.z, 60) };
   } catch {}
   return null;
 }
 Object.assign(st, loadLoc() || {});
 
-/* centro aproximado de una lista (mediana): sesgo para las otras pestañas y centro del mapa */
-function centerOf(list) {
-  const pts = list.filter(p => Number.isFinite(p.lat) && Number.isFinite(p.lng)); if (!pts.length) return null;
-  const med = a => { a.sort((x, y) => x - y); const h = a.length >> 1; return a.length % 2 ? a[h] : (a[h - 1] + a[h]) / 2; };
-  return { lat: r3(med(pts.map(p => p.lat))), lng: r3(med(pts.map(p => p.lng))) };
-}
+/* "mi zona" (en la cuenta): texto corto + coordenadas redondeadas */
+const zone = () => { const z = A()?.doc?.zone; return z && okLL(z) && z.label ? z : null; };
+const isZone = () => { const z = zone(); return Boolean(z && st.coords && r3(st.coords.lat) === z.lat && r3(st.coords.lng) === z.lng); };
+
 const focusArea = () => requestAnimationFrame(() => { const i = $('#vxArea'); if (i) { i.focus(); i.select?.(); } });
 
 /* distancia en el navegador (la ubicación exacta no sale de acá) */
@@ -89,26 +91,15 @@ async function search() {
   if (st.res[key]) { st.phase = 'ok'; return A().render(); }
   st.phase = 'loading'; st.err = ''; A().render();
   let out;
-  try { out = st.coords ? await api('nearby', { kind: st.kind, lat: st.coords.lat, lng: st.coords.lng }) : await api('text', { kind: st.kind, q: st.area, ...(st.center || {}) }); }
+  try { out = await api('nearby', { kind: st.kind, lat: st.coords.lat, lng: st.coords.lng }); }
   catch { st.phase = 'error'; st.err = 'Sin conexión. Probá de nuevo en un rato.'; return A().render(); }
   /* si mientras tanto cambió la ubicación o la pestaña, esta respuesta ya no va */
   if (key !== resKey()) return;
   const { ok, status, d } = out;
   if (ok) {
-    let list = d.places || [];
+    const list = (d.places || []).map(p => ({ ...p, m: dist(st.coords, p) })).sort((a, b) => (a.m ?? 1e9) - (b.m ?? 1e9));
     if (st.cfg && Number.isFinite(d.left)) st.cfg.left = d.left;
-    /* dirección nueva sin ningún resultado: vuelve la ubicación anterior (con sus resultados) y queda el campo con el aviso */
-    if (st.fresh && !st.coords && !list.length) {
-      const bad = st.area, prev = st.prev || {};
-      Object.assign(st, { coords: prev.coords || null, area: prev.area || '', center: prev.center || null, res: prev.res || {}, fresh: false, prev: null, sel: null });
-      st.editing = searched(); st.locMsg = 'notfound'; st.draft = bad;
-      st.phase = st.res[resKey()] ? 'ok' : 'idle';
-      A().render(); return focusArea();
-    }
-    if (st.coords) list = list.map(p => ({ ...p, m: dist(st.coords, p) })).sort((a, b) => (a.m ?? 1e9) - (b.m ?? 1e9));
-    else if (!st.center) st.center = centerOf(list);
     st.res[key] = list; st.phase = 'ok';
-    if (st.fresh) { st.fresh = false; st.prev = null; saveLoc(); }
   } else if (d.error === 'maps_paused') { st.phase = 'paused'; if (st.cfg) st.cfg.paused = true; }
   else if (d.error === 'maps_no_configurado') { st.phase = 'off'; }
   else if (status === 429) { st.phase = 'error'; st.err = `Llegaste a las ${d.limit || 20} búsquedas de hoy. Mañana se renuevan; mientras tanto, buscá directo en Google Maps.`; }
@@ -116,11 +107,10 @@ async function search() {
   else { st.phase = 'error'; st.err = 'Google no respondió. Probá de nuevo en un rato.'; }
   A().render();
 }
-/* nueva ubicación (GPS o texto): limpia la caché de todas las pestañas y busca en la actual.
-   La anterior queda a mano por si la dirección no aparece. */
+/* nueva ubicación (GPS, sugerencia o "mi zona"): limpia la caché de todas las pestañas y busca en la actual */
 function setLoc(next) {
-  st.prev = { coords: st.coords, area: st.area, center: st.center, res: st.res };
-  Object.assign(st, { coords: next.coords || null, area: next.area || '', center: null, res: {}, sel: null, editing: false, locMsg: '', draft: '', fresh: true });
+  Object.assign(st, { coords: next.coords, label: next.label || '', zoneLabel: next.zoneLabel || '', res: {}, sel: null, editing: false, locMsg: '', draft: '', sug: [], sugFor: '', active: -1, sugMsg: '' });
+  saveLoc();
   search();
 }
 function denied() {
@@ -137,6 +127,84 @@ function locate() {
   }, denied, { enableHighAccuracy: false, timeout: 12000, maximumAge: 300000 });
 }
 
+/* ---------- autocompletar (combobox) ---------- */
+const MIN_Q = 4, DEBOUNCE = 300;
+const newToken = () => { try { return crypto.randomUUID(); } catch { return Array.from({ length: 4 }, () => Math.random().toString(36).slice(2, 10)).join('').slice(0, 32); } };
+const norm = t => String(t || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+/* "muy probable": una sola sugerencia, o la primera coincide con lo escrito y ninguna otra tiene el mismo nombre */
+function likely(q, list) {
+  if (list.length === 1) return list[0];
+  const n = norm(q), a = list[0]; if (!a || !n) return null;
+  const m0 = norm(a.main);
+  if (!(m0 === n || norm(a.text).startsWith(n))) return null;
+  return list.slice(1).some(s => norm(s.main) === m0) ? null : a;
+}
+/* localidad de la sugerencia ("W3400 Corrientes, Argentina" → "Corrientes") */
+const locality = s => clip(String(s.sub || '').split(',')[0].replace(/^[A-Z]\d{4}[A-Z]{0,3}\s+/, '').replace(/^\d{4}\s+/, ''), 60);
+const labelOf = s => clip(s.main && locality(s) && !/argentina/i.test(locality(s)) ? `${s.main}, ${locality(s)}` : s.text || s.main, 120);
+
+function sugHtml() {
+  const q = st.sugFor;
+  if (st.sugMsg === 'paused') return `<div class="vx-sug-msg" role="status">La búsqueda está en pausa por este mes. <a class="btn sm ghost" href="${esc(mapsSearch(st.kind, st.draft))}" target="_blank" rel="noopener noreferrer">${I('search')} Buscar en Google Maps</a></div>`;
+  if (st.sugMsg === 'limit') return `<div class="vx-sug-msg" role="status">Llegaste al tope de sugerencias de hoy. <a class="btn sm ghost" href="${esc(mapsSearch(st.kind, st.draft))}" target="_blank" rel="noopener noreferrer">${I('search')} Buscar en Google Maps</a></div>`;
+  if (st.sugMsg === 'error') return '<div class="vx-sug-msg" role="status">No pudimos traer sugerencias. Probá de nuevo en un rato.</div>';
+  if (st.sugMsg === 'none') return '<p class="vx-err" role="alert">No encontramos esa dirección, probá con barrio y ciudad.</p>';
+  const pick = st.sugMsg === 'pick' ? '<p class="vx-err vx-pick" role="alert">Hay más de una con ese nombre. Elegí la tuya de la lista.</p>' : '';
+  if (!st.sug.length || !q) return pick;
+  return `${pick}<ul class="vx-sug" id="vxSug" role="listbox" aria-label="Sugerencias de Google">${st.sug.map((s, i) => `<li role="option" id="vxSug-${i}" class="vx-opt" data-vxs="${i}" aria-selected="${i === st.active}">${I('pin')}<span><b>${esc(s.main || s.text)}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ''}</span></li>`).join('')}</ul><p class="vx-attr vx-sug-attr" translate="no">Google Maps</p>`;
+}
+/* el campo no se vuelve a dibujar mientras se escribe: solo la lista */
+function patchSug() {
+  const box = $('#vxSugBox'), inp = $('#vxArea'); if (!box || !inp) return;
+  box.innerHTML = sugHtml();
+  const open = Boolean(st.sug.length && st.sugFor);
+  inp.setAttribute('aria-expanded', String(open));
+  if (open && st.active >= 0) inp.setAttribute('aria-activedescendant', 'vxSug-' + st.active); else inp.removeAttribute('aria-activedescendant');
+  inp.setAttribute('aria-invalid', String(st.sugMsg === 'none'));
+}
+let timer = 0, seq = 0;
+async function fetchSug(q) {
+  clearTimeout(timer);
+  q = clip(q, 80);
+  if (q.length < MIN_Q) { st.sug = []; st.sugFor = ''; st.sugMsg = ''; st.active = -1; patchSug(); return; }
+  if (q === st.sugFor && !st.sugMsg) return;
+  if (!st.token) st.token = newToken();
+  const my = ++seq; st.sugBusy = true;
+  const bias = st.coords || zone();
+  let out;
+  try { out = await api('autocomplete', { q, token: st.token, kind: st.kind, ...(bias ? { lat: bias.lat, lng: bias.lng } : {}) }); }
+  catch { out = { ok: false, status: 0, d: {} }; }
+  if (my !== seq) return;
+  st.sugBusy = false; st.active = -1;
+  const { ok, status, d } = out;
+  if (ok) { st.sug = (d.suggestions || []).slice(0, 5); st.sugFor = q; st.sugMsg = st.sug.length ? '' : 'none'; }
+  else { st.sug = []; st.sugFor = q; st.sugMsg = d.error === 'maps_paused' ? 'paused' : status === 429 ? 'limit' : 'error'; if (d.error === 'maps_paused' && st.cfg) st.cfg.paused = true; }
+  patchSug();
+}
+async function pickSug(s) {
+  if (!s || st.picking) return;
+  st.picking = true;
+  let out;
+  try { out = await api('pick', { id: s.id, token: st.token }); } catch { out = { ok: false, status: 0, d: {} }; }
+  st.picking = false;
+  /* la sesión de autocompletar termina con este detalle: la próxima búsqueda arranca un token nuevo */
+  st.token = '';
+  const { ok, status, d } = out;
+  if (ok && d.place && okLL(d.place)) return setLoc({ coords: { lat: d.place.lat, lng: d.place.lng }, label: labelOf(s) || clip(d.place.address, 120), zoneLabel: locality(s) || clip(s.main, 60) });
+  st.sugMsg = d.error === 'maps_paused' ? 'paused' : status === 429 ? 'limit' : 'error';
+  patchSug();
+}
+async function submitArea() {
+  const inp = $('#vxArea'); if (!inp) return;
+  const q = clip(inp.value, 80); st.draft = q;
+  if (st.active >= 0 && st.sug[st.active]) return pickSug(st.sug[st.active]);
+  if (q.length < MIN_Q) { inp.focus(); return A().toast('Escribí tu barrio, ciudad o dirección (4 letras o más).'); }
+  if (st.sugFor !== q || st.sugMsg === 'error') await fetchSug(q);
+  if (st.sugMsg) return patchSug();
+  const best = likely(q, st.sug);
+  if (best) return pickSug(best);
+  st.sugMsg = 'pick'; st.active = 0; patchSug(); inp.focus();
+}
 /* ---------- pantalla ---------- */
 function ctxOf(arg) {
   const [petId = '', recId = ''] = String(arg || '').split('|');
@@ -160,8 +228,7 @@ function mapFrame(list) {
   const key = st.cfg?.mapsKey; if (!key) return '';
   const base = 'https://www.google.com/maps/embed/v1/';
   const src = st.sel ? `${base}place?key=${encodeURIComponent(key)}&q=place_id:${encodeURIComponent(st.sel)}&language=es&region=AR`
-    : st.coords ? `${base}search?key=${encodeURIComponent(key)}&q=${encodeURIComponent(kindWords(st.kind))}&center=${st.coords.lat.toFixed(3)},${st.coords.lng.toFixed(3)}&zoom=14&language=es&region=AR`
-    : `${base}search?key=${encodeURIComponent(key)}&q=${encodeURIComponent(kindWords(st.kind) + ' en ' + st.area)}${st.center ? `&center=${st.center.lat.toFixed(3)},${st.center.lng.toFixed(3)}&zoom=14` : ''}&language=es&region=AR`;
+    : `${base}search?key=${encodeURIComponent(key)}&q=${encodeURIComponent(kindWords(st.kind))}&center=${st.coords.lat.toFixed(3)},${st.coords.lng.toFixed(3)}&zoom=14&language=es&region=AR`;
   /* referrerpolicy: la página va con no-referrer, pero la clave del mapa está restringida por referrer */
   return list.length ? `<div class="vx-map"><iframe title="Mapa de ${esc(KINDS.find(k => k[0] === st.kind)[1].toLowerCase())} en Google Maps" src="${esc(src)}" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div>` : '';
 }
@@ -175,34 +242,41 @@ function placeRow(pl, i) {
 
 /* barra siempre visible arriba de la lista y del mapa */
 function locBar() {
-  return `<div class="vx-bar" id="vxBar"><span class="vx-bar-t">${I('pin')}<span>${st.coords ? '<b>Cerca de tu ubicación</b>' : `Cerca de: <b>${esc(st.area)}</b>`}</span></span>
-    <button type="button" class="btn sm ghost" data-vx="where" aria-label="Cambiar la ubicación de la búsqueda">Cambiar</button></div>`;
+  const z = zone(), canSave = st.label && st.zoneLabel && !isZone();
+  return `<div class="vx-bar" id="vxBar"><div class="vx-bar-r"><span class="vx-bar-t">${I('pin')}<span>${st.label ? `Cerca de: <b>${esc(st.label)}</b>` : '<b>Cerca de tu ubicación</b>'}</span></span>
+    <button type="button" class="btn sm ghost" data-vx="where" aria-label="Cambiar la ubicación de la búsqueda">Cambiar</button></div>
+    ${canSave ? `<button type="button" class="link vx-zone" data-vx="zoneSave">${I('heart')} Guardar ${esc(st.zoneLabel)} como mi zona</button>` : isZone() && z ? `<span class="vx-zone-on">${I('heart')} Tu zona</span>` : ''}</div>`;
 }
-/* dónde buscar: la primera vez, o al tocar "Cambiar" (con el texto actual) */
-function locForm() {
-  const edit = searched(), denied = st.locMsg === 'denied';
-  const msg = denied ? 'No pudimos usar tu ubicación. Escribí tu barrio, ciudad o dirección y buscamos por ahí.'
-    : st.locMsg === 'notfound' ? 'No encontramos esa dirección, probá con barrio y ciudad.' : '';
-  const val = st.draft || (st.locMsg ? '' : st.area);
+/* dónde buscar: la primera vez, o al tocar "Cambiar". Combobox con sugerencias de Google (solo Argentina). */
+function locForm(paused) {
+  const edit = searched(), denied = st.locMsg === 'denied', z = zone();
+  const val = st.draft;
+  if (paused) return `<section class="card vx-loc" id="vxLoc" aria-labelledby="vxLocH"><h2 id="vxLocH">Buscalo en Google Maps</h2>
+    <div class="vx-area"><label for="vxMapsQ">Barrio, ciudad o dirección</label><div class="vx-area-r"><input id="vxMapsQ" maxlength="80" autocomplete="street-address" value="${esc(val || st.label)}"><a class="btn" id="vxMapsA" href="${esc(mapsSearch(st.kind, val || st.label))}" target="_blank" rel="noopener noreferrer">${I('search')} Buscar</a></div></div></section>`;
   const gps = denied ? '' : `<button type="button" class="btn ${edit ? 'ghost' : 'big'} wide" data-vx="locate"${st.locating ? ' disabled aria-busy="true"' : ''}>${I('pin')} ${st.locating ? 'Buscando tu ubicación…' : 'Usar mi ubicación'}</button>`;
+  const zoneRow = z ? `<div class="vx-zrow"><span>${I('heart')} Mi zona: <b>${esc(z.label)}</b></span><span class="vx-zbtns">${isZone() ? '' : '<button type="button" class="btn sm soft" data-vx="zoneUse">Usar</button>'}<button type="button" class="btn sm ghost" data-vx="zoneDel" aria-label="Borrar mi zona guardada">Borrar</button></span></div>` : '';
   return `<section class="card vx-loc" id="vxLoc" aria-labelledby="vxLocH">
     <h2 id="vxLocH">${edit ? 'Cambiar ubicación' : '¿Dónde buscamos?'}</h2>
-    ${msg ? `<p class="vx-err" role="alert">${msg}</p>` : ''}
+    ${denied ? '<p class="vx-err" role="alert">No pudimos usar tu ubicación. Escribí tu barrio, ciudad o dirección y elegila de la lista.</p>' : ''}
     ${edit ? '' : gps}
-    <form class="vx-area" id="vxAreaF" novalidate><label for="vxArea">Barrio, ciudad o dirección</label><div class="vx-area-r"><input id="vxArea" maxlength="80" autocomplete="street-address" enterkeyhint="search" placeholder="Palermo, CABA · Av. Colón 1200, Córdoba" value="${esc(val)}"${msg ? ' aria-invalid="' + (st.locMsg === 'notfound') + '"' : ''}><button class="btn ${edit || denied ? '' : 'ghost'}" type="submit">Buscar</button></div></form>
+    <form class="vx-area" id="vxAreaF" novalidate autocomplete="off"><label for="vxArea" id="vxAreaL">Barrio, ciudad o dirección</label>
+      <div class="vx-area-r"><input id="vxArea" maxlength="80" autocomplete="off" spellcheck="false" enterkeyhint="search" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="vxSug" aria-describedby="vxAreaH" placeholder="Gobernador Martínez 2786, Corrientes" value="${esc(val)}"><button class="btn ${edit || denied ? '' : 'ghost'}" type="submit">Buscar</button></div>
+      <small class="dim" id="vxAreaH">Escribí y elegí de la lista (calle y número, barrio o ciudad).</small>
+      <div class="vx-sug-box" id="vxSugBox" aria-live="polite">${sugHtml()}</div></form>
+    ${zoneRow}
     ${edit ? `<div class="vx-loc-acts">${gps}<button type="button" class="btn ghost wide" data-vx="cancel">Cancelar</button></div>` : ''}
-    <p class="note">Usamos tu ubicación aproximada solo para esta búsqueda, con Google. No la guardamos en Orbit: este navegador la recuerda hasta que cierres la pestaña.</p>
+    <p class="note">Usamos la ubicación aproximada solo para esta búsqueda, con Google. Este navegador recuerda la última hasta que cierres la pestaña; "mi zona" queda en tu cuenta solo si la guardás.</p>
   </section>`;
 }
 
 function results(force) {
   const list = st.res[resKey()] || [];
-  const k = st.kind, area = st.coords ? '' : st.area, phase = force || st.phase;
+  const k = st.kind, area = st.label, phase = force || st.phase;
   if (phase === 'loading') return `<div class="vx-busy" role="status" aria-live="polite">${'<span class="sk" style="height:64px;border-radius:14px"></span>'.repeat(4)}<span class="sr">Buscando…</span></div>`;
   if (phase === 'paused') return `<div class="empty">${'<span class="ib c-viaje">' + I('search') + '</span>'}<h2>La búsqueda está en pausa</h2><p>Por este mes llegamos al límite de búsquedas de Mimitos. Buscá directo en Google Maps: es gratis y abre en tu celu.</p><a class="btn" href="${esc(mapsSearch(k, area))}" target="_blank" rel="noopener noreferrer">${I('search')} Buscar en Google Maps</a></div>`;
   if (phase === 'off') return `<div class="empty"><h2>Todavía no está activo</h2><p>Mientras tanto, buscá directo en Google Maps.</p><a class="btn" href="${esc(mapsSearch(k, area))}" target="_blank" rel="noopener noreferrer">${I('search')} Buscar en Google Maps</a></div>`;
   if (phase === 'error') return `<div class="empty"><h2>No pudimos buscar</h2><p>${esc(st.err)}</p><div class="btns"><button type="button" class="btn" data-vx="retry">Probar de nuevo</button><a class="btn ghost" href="${esc(mapsSearch(k, area))}" target="_blank" rel="noopener noreferrer">Buscar en Google Maps</a></div></div>`;
-  if (!list.length) return `<div class="empty dash"><p>No encontramos ${k === 'pet' ? 'pet shops' : k === 'er' ? 'guardias' : 'veterinarias'} ${st.coords ? 'a menos de 5 km' : `en "${esc(st.area)}"`}.</p><a class="btn sm ghost" href="${esc(mapsSearch(k, area))}" target="_blank" rel="noopener noreferrer">Buscar en Google Maps</a></div>`;
+  if (!list.length) return `<div class="empty dash"><p>No encontramos ${k === 'pet' ? 'pet shops' : k === 'er' ? 'guardias' : 'veterinarias'} a menos de 5 km.</p><a class="btn sm ghost" href="${esc(mapsSearch(k, area))}" target="_blank" rel="noopener noreferrer">Buscar en Google Maps</a></div>`;
   const credits = [...new Map(list.flatMap(p => p.credits || []).map(c => [c.provider, c])).values()];
   return `<div class="vx-res">
     ${mapFrame(list)}
@@ -224,9 +298,12 @@ function render(p, arg) {
   const off = st.cfg && !st.cfg.ready, paused = st.cfg?.paused;
   const blocked = paused || off;
   /* ubicación recordada (o restaurada) sin resultados en memoria: se busca una vez, ya con la config cargada */
-  if (has && st.phase === 'idle' && !st.res[resKey()] && st.cfg?.ready && !blocked) { st.phase = 'loading'; setTimeout(search, 0); }
-  const loc = blocked ? '' : !has || st.editing ? locForm() : locBar();
-  const main = blocked ? results(off ? 'off' : 'paused') : has ? results() : '';
+  /* sin ubicación en esta pestaña: arranca en "mi zona" si la guardó (una vez) */
+  if (!has && !st.zoneTried && zone() && st.cfg?.ready) { st.zoneTried = true; const z = zone(); Object.assign(st, { coords: { lat: z.lat, lng: z.lng }, label: z.label, zoneLabel: z.label, phase: 'idle' }); }
+  const hasNow = searched();
+  if (hasNow && st.phase === 'idle' && !st.res[resKey()] && st.cfg?.ready && !blocked) { st.phase = 'loading'; setTimeout(search, 0); }
+  const loc = off ? '' : paused ? locForm(true) : !hasNow || st.editing ? locForm() : locBar();
+  const main = blocked ? results(off ? 'off' : 'paused') : hasNow ? results() : '';
   return `<button class="link" data-act="go" data-to="${esc(st.from)}" style="align-self:flex-start">${I('back')} ${st.from === 'agenda' ? 'Agenda' : st.from === 'libreta' ? 'Libreta' : 'Inicio'}</button>
   <div class="vx">
     <div class="lib-top"><div><span class="eyebrow">Pedir turno · ${esc(pet.name)}</span><h1 class="h-xl">Veterinarias cerca</h1></div>
@@ -416,8 +493,11 @@ document.addEventListener('click', e => {
     case 'open': st.from = b.dataset.from || 'inicio'; return A().go('vets', b.dataset.arg || '');
     case 'kind': st.kind = b.dataset.k; st.sel = null; if (searched()) return search(); return A().render();
     case 'retry': return search();
-    case 'where': st.editing = true; st.locMsg = ''; st.draft = st.area; A().render(); return focusArea();
-    case 'cancel': st.editing = false; st.locMsg = ''; st.draft = ''; A().render(); return requestAnimationFrame(() => $('[data-vx="where"]')?.focus());
+    case 'where': Object.assign(st, { editing: true, locMsg: '', draft: '', sug: [], sugFor: '', sugMsg: '', active: -1 }); A().render(); return focusArea();
+    case 'cancel': return closeEdit();
+    case 'zoneSave': return saveZone();
+    case 'zoneUse': { const z = zone(); return z && setLoc({ coords: { lat: z.lat, lng: z.lng }, label: z.label, zoneLabel: z.label }); }
+    case 'zoneDel': return delZone();
     case 'place': return openPlace(+b.dataset.i);
     case 'appt': { const p = A().petById(st.ctx.petId) || A().curPet(); const v = p.vet || {}; return apptForm(p, null, { place: { name: v.name, phone: v.phone, address: v.address, placeId: p.vetPlace?.name === v.name ? p.vetPlace.placeId : '' }, rec: contextRec(p) }); }
     case 'apptOpen': { const a = find(); return a && apptPanel(a); }
@@ -427,18 +507,53 @@ document.addEventListener('click', e => {
     case 'newAppt': { const p = A().curPet(); return p && apptForm(p, null, {}); }
   }
 });
+function closeEdit() {
+  clearTimeout(timer); seq++;
+  Object.assign(st, { editing: false, locMsg: '', draft: '', sug: [], sugFor: '', sugMsg: '', active: -1, token: '' });
+  A().render(); requestAnimationFrame(() => $('[data-vx="where"]')?.focus());
+}
+function saveZone() {
+  const d = A().doc; if (!st.coords || !st.zoneLabel) return;
+  const old = d.zone;
+  d.zone = { label: st.zoneLabel.slice(0, 60), lat: r3(st.coords.lat), lng: r3(st.coords.lng) };
+  A().changed(); A().render();
+  A().toast(`Listo: ${d.zone.label} quedó como tu zona. La próxima vez arrancamos ahí.`, { label: 'Deshacer', fn: () => { if (old) d.zone = old; else delete d.zone; A().changed(); A().render(); } });
+}
+function delZone() {
+  const d = A().doc, old = d.zone; if (!old) return;
+  delete d.zone; A().changed(); A().render(); focusArea();
+  A().toast('Borramos tu zona de la cuenta.', { label: 'Deshacer', fn: () => { d.zone = old; A().changed(); A().render(); } });
+}
 document.addEventListener('submit', e => {
   if (e.target.id !== 'vxAreaF') return;
-  e.preventDefault();
-  const v = ($('#vxArea')?.value || '').trim().replace(/\s+/g, ' ').slice(0, 80);
-  if (v.length < 3) { $('#vxArea')?.focus(); return A().toast('Escribí tu barrio, ciudad o dirección (3 letras o más).'); }
-  setLoc({ area: v });
+  e.preventDefault(); submitArea();
 });
-/* Escape cierra la edición de la ubicación sin cambiar nada */
+/* combobox: 300 ms de pausa y 4 letras antes de pedir sugerencias; la lista se dibuja sola, sin tocar el campo */
+document.addEventListener('input', e => {
+  if (e.target.id === 'vxMapsQ') { const a = $('#vxMapsA'); if (a) a.href = mapsSearch(st.kind, clip(e.target.value, 80)); st.draft = clip(e.target.value, 80); return; }
+  if (e.target.id !== 'vxArea') return;
+  st.draft = e.target.value; st.active = -1;
+  if (st.sugMsg === 'pick' || st.sugMsg === 'none') st.sugMsg = '';
+  clearTimeout(timer);
+  const q = clip(e.target.value, 80);
+  if (q.length < MIN_Q) { seq++; st.sug = []; st.sugFor = ''; st.sugMsg = ''; return patchSug(); }
+  timer = setTimeout(() => fetchSug(q), DEBOUNCE);
+});
+document.addEventListener('click', e => {
+  const o = e.target.closest?.('[data-vxs]'); if (!o) return;
+  e.preventDefault(); pickSug(st.sug[+o.dataset.vxs]);
+});
 document.addEventListener('keydown', e => {
-  if (e.key !== 'Escape' || !st.editing || !e.target.closest?.('#vxLoc')) return;
-  e.preventDefault(); st.editing = false; st.locMsg = ''; st.draft = ''; A().render();
-  requestAnimationFrame(() => $('[data-vx="where"]')?.focus());
+  if (e.target.id === 'vxArea' && st.sug.length && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+    e.preventDefault();
+    const n = st.sug.length; st.active = e.key === 'ArrowDown' ? (st.active + 1) % n : (st.active - 1 + n) % n;
+    return patchSug();
+  }
+  if (e.key !== 'Escape' || !st.editing && !st.sug.length || !e.target.closest?.('#vxLoc')) return;
+  e.preventDefault();
+  /* Escape: primero cierra la lista; después, la edición sin cambiar nada */
+  if (st.sug.length) { st.sug = []; st.sugFor = ''; st.active = -1; st.sugMsg = ''; return patchSug(); }
+  closeEdit();
 });
 
 window.MZVETS = { render, start, agendaItems, agendaRow, homeItems, events, apptForm, state: st };
