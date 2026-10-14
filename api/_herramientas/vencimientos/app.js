@@ -6,7 +6,7 @@ import { datosEjemplo } from './ejemplo.js';
 import { propuestaDesde, cuentaQueCoincide } from './factura.js';
 import { cuentasDesdeMails } from './correo-lector.js';
 import { configCorreo, buscarEnGmail, buscarEnOutlook, mailsDemo } from './correo.js';
-import { cuentasDesdeResumen } from './resumen-tarjeta.js';
+import { cuentasDesdeResumen, nombreDesdeComercio } from './resumen-tarjeta.js';
 
 const CLAVE = 'orbit:vencimientos:v1';
 const $id = id => document.getElementById(id);
@@ -27,6 +27,18 @@ function cargar() {
   }
 }
 let d = cargar();
+/* Cuentas del resumen cargadas antes de limpiar nombres ("Www.make.com usd ,", "Anthropic claud in1ud…"): se limpian una vez. */
+{
+  let cambio = false;
+  const cuentas = d.cuentas.map(c => {
+    if (!c.enTarjeta || !/www\.|\.com|\.io|\.ar\b|\busd\b|\b[a-z]*\d[a-z\d_]{4,}/i.test(c.nombre)) return c;
+    const limpio = nombreDesdeComercio(c.nombre);
+    if (limpio === c.nombre || limpio === 'Débito en la tarjeta') return c;
+    cambio = true;
+    return { ...c, nombre: limpio };
+  });
+  if (cambio) { d = { ...d, cuentas }; try { localStorage.setItem(CLAVE, JSON.stringify(d)); } catch {} }
+}
 function guardar(nuevo) {
   d = nuevo;
   if (!d.creado) d.creado = new Date().toISOString();
