@@ -790,7 +790,7 @@ function renderGate() {
         <small>O USD ${PRICE.usd} con PayPal <s><span class="sr">en lugar de </span>USD ${PRICE.listUsd}</s>. Una sola versión, para todas tus mascotas.</small>
         <ul class="terms">
           <li>${I('check')}<span><b>Pago único.</b> Mimitos es tuya para siempre.</span></li>
-          <li>${I('check')}<span><b>Incluye 12 meses de funciones inteligentes.</b> Preguntale a Mimitos, lectura automática de la libreta y los estudios e importación desde el mail. Uso personal razonable.</span></li>
+          <li>${I('check')}<span><b>Incluye 12 meses de funciones inteligentes.</b> Preguntale a Mimitos y lectura automática de la libreta y los estudios. Uso personal razonable. Próximamente: traer estudios desde tu mail.</span></li>
           <li>${I('check')}<span><b>No es una suscripción.</b> Pasados los 12 meses no perdés nada: solo se pausan esas funciones hasta que las renueves.</span></li>
         </ul>
       </div>
@@ -1502,7 +1502,8 @@ function renderCuenta() {
 /* Cuenta → Tu compra: hasta cuándo están incluidas las funciones inteligentes */
 function aiCard() {
   if (!aiq) return '';
-  const what = 'Preguntale a Mimitos, lectura automática de la libreta y los estudios e importación desde el mail.';
+  /* traer estudios desde el mail: solo para cuentas habilitadas (en prueba con Google); al resto se le muestra como próximamente */
+  const what = mailAllowed || mOn() ? 'Preguntale a Mimitos, lectura automática de la libreta y los estudios e importación desde el mail.' : 'Preguntale a Mimitos y lectura automática de la libreta y los estudios. Próximamente: traer estudios desde tu mail.';
   if (aiq.admin) return `<div class="ai-card"><span class="what"><b>Funciones inteligentes</b><small>Cuenta administradora: sin vencimiento.</small></span><span class="badge ok">Activas</span></div>`;
   if (aiq.expired) return `<div class="ai-card off"><span class="what"><b>Funciones inteligentes</b><small>${esc(AI_EXPIRED_MSG())}</small></span><span class="badge soon">Vencidas</span></div>
     ${renewBtn('btn sm ghost')}`;
@@ -1519,7 +1520,7 @@ function renderAiExpired() {
     <span class="eyebrow">Funciones inteligentes</span>
     <h1 class="h-xl">Tus funciones inteligentes vencieron el ${longDate(aiq?.expiresAt)}.</h1>
     <p class="lead">Mimitos sigue siendo tuya con todo lo que cargaste.</p>
-    <p class="dim">La libreta, los avisos, el QR, el modo cuidador, la agenda y los gastos siguen andando. Se pausaron Preguntale a Mimitos, la lectura automática de la libreta y los estudios y la importación desde el mail. Mientras tanto, podés cargar todo a mano.</p>
+    <p class="dim">La libreta, los avisos, el QR, el modo cuidador, la agenda y los gastos siguen andando. Se pausaron Preguntale a Mimitos${mailAllowed || mOn() ? ', la lectura automática de la libreta y los estudios y la importación desde el mail' : ' y la lectura automática de la libreta y los estudios'}. Mientras tanto, podés cargar todo a mano.</p>
     <div class="cta">${renewBtn()}<button class="btn ghost wide" data-act="go" data-to="${back}">Volver a Mimitos</button></div>
     <p class="note">Avisarte no te compromete a nada y no te cobramos nada.</p>
   </section>`;
