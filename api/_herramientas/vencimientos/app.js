@@ -1218,7 +1218,7 @@ const PASOS = [
   ['#b-cal-ics', 'Que te avise el celular', 'Bajá todos los vencimientos a tu calendario, con aviso antes.'],
   ['.tabs [data-tab=numeros]', 'Mirá los números', 'Cuánto se va por año, por categoría y cuánto subió cada servicio.'],
 ];
-let paso = -1, pasosVivos = [];
+let paso = -1, pasosVivos = [], ubicarPaso = null;
 function abrirTour() {
   pasosVivos = PASOS.filter(([sel]) => document.querySelector(sel));
   if (!pasosVivos.length) return;
@@ -1234,6 +1234,7 @@ function abrirTour() {
   pintarPaso();
 }
 function cerrarTour() {
+  ubicarPaso = null;
   const capa = $id('guia');
   if (capa) capa.hidden = true;
   paso = -1;
@@ -1250,6 +1251,7 @@ function pintarPaso() {
     <div class="globo-acc">${ultimo ? '<span></span>' : '<button type="button" class="btn-txt" data-acc="tour-fin">Saltar</button>'}
     <button type="button" class="bt prim" data-acc="${ultimo ? 'tour-fin' : 'tour-sig'}">${ultimo ? '¡Listo!' : 'Siguiente'}</button></div>`;
   const ubicar = () => {
+    if (!el.isConnected) return;
     const r = el.getBoundingClientRect(), m = 8;
     Object.assign(hueco.style, { top: `${r.top - m}px`, left: `${r.left - m}px`, width: `${r.width + m * 2}px`, height: `${r.height + m * 2}px` });
     /* velo oscuro con un agujero donde está lo que se explica */
@@ -1262,13 +1264,15 @@ function pintarPaso() {
     Object.assign(globo.style, { top: `${top}px`, left: `${left}px` });
     globo.dataset.lado = abajo ? 'abajo' : 'arriba';
   };
+  ubicarPaso = ubicar;
   ubicar();
   requestAnimationFrame(ubicar);
   setTimeout(ubicar, 300);
   globo.querySelector('.bt')?.focus({ preventScroll: true });
 }
-addEventListener('resize', () => { if (paso >= 0) pintarPaso(); });
-addEventListener('scroll', () => { if (paso >= 0) { clearTimeout(window.__tourT); window.__tourT = setTimeout(pintarPaso, 120); } }, { passive: true });
+/* al scrollear o cambiar el tamaño solo se reubica: redibujar el globo reemplazaba el botón en medio del clic */
+addEventListener('resize', () => { if (paso >= 0) ubicarPaso?.(); });
+addEventListener('scroll', () => { if (paso >= 0) requestAnimationFrame(() => ubicarPaso?.()); }, { passive: true });
 addEventListener('keydown', e => { if (paso >= 0 && e.key === 'Escape') cerrarTour(); });
 
 /* Al render: bienvenida si nunca la vio; recorrido la primera vez que hay datos en Inicio. */
