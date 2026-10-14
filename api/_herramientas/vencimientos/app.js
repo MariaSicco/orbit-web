@@ -822,7 +822,11 @@ async function leerResumen(file) {
     j = await r.json().catch(() => ({}));
   } catch { return errorLectura('Sin conexión. La lectura necesita internet; probá de nuevo.', false, true); }
   if (r.status === 401) return errorLectura('Tu sesión de Orbit se cerró. Entrá de nuevo para leer el resumen.', true);
-  if (!r.ok || !j.ok) return errorLectura(j.error || 'No pudimos leer el resumen. Probá de nuevo en un rato.', false, true);
+  if (!r.ok || !j.ok) {
+    errorLectura(j.error || 'No pudimos leer el resumen. Probá de nuevo en un rato.', false, true);
+    if (j.detalle) $id('hoja-cuerpo').insertAdjacentHTML('beforeend', `<details class="mas"><summary>Detalle técnico (solo administración)</summary><pre class="diag">${esc(JSON.stringify(j.detalle, null, 2))}</pre></details>`);
+    return;
+  }
   encontrados = cuentasDesdeResumen(j.lectura, hoy);
   const t = j.lectura?.tarjeta || {};
   const de = [t.red, t.banco].filter(Boolean).join(' ') || 'tu tarjeta';

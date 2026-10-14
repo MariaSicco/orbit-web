@@ -88,3 +88,8 @@ test('vencimientos-resumen: pide compra de ob-021, solo PDF, y sin key responde 
   assert.equal(ok.body.modo, 'prueba');
   assert.ok(R.cuentasDesdeResumen(ok.body.lectura, HOY).length > 0);
 });
+
+test('vencimientos-resumen: detecta PDF con contraseña', () => {
+  assert.equal(api.conClave(Buffer.from('%PDF-1.4\ntrailer << /Encrypt 12 0 R /Root 1 0 R >>', 'latin1')), true);
+  assert.equal(api.conClave(PDF), false);
+});

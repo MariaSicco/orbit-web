@@ -16,6 +16,9 @@ export const TOPE_DIA = 10;
 
 export const esPDF = buf => buf.length > 5 && buf.subarray(0, 5).toString('latin1') === '%PDF-';
 export const contarPaginas = buf => (buf.toString('latin1').match(/\/Type\s*\/Page(?![a-zA-Z])/g) || []).length;
+/* PDF cifrado (con contraseña de apertura o de permisos): muchos bancos los mandan así */
+export const conClave = buf => /\/Encrypt\s/.test(buf.toString('latin1'));
+export const CON_CLAVE = 'El resumen tiene contraseña (muchos bancos lo protegen con tu DNI). Abrilo con la contraseña y guardalo sin ella: en la compu, Imprimir → Guardar como PDF; en el celular, Compartir → Imprimir → Guardar. Después subí ese archivo.';
 
 async function leerCuerpo(req, max) {
   if (Buffer.isBuffer(req.body)) return req.body.length > max ? null : req.body;
@@ -44,6 +47,7 @@ export default async function handler(req, res) {
   if (!buf) return responder(res, 413, { ok: false, motivo: 'grande', error: GRANDE });
   if (!esPDF(buf)) return responder(res, 415, { ok: false, motivo: 'no_pdf', error: 'Ese archivo no es un PDF. Subí el resumen tal como lo descargás del banco.' });
   const paginas = contarPaginas(buf);
+  const cifrado = conClave(buf);
   if (paginas > MAX_PAGINAS) return responder(res, 413, { ok: false, motivo: 'paginas', error: `El resumen tiene más de ${MAX_PAGINAS} páginas. Subí solo el de una tarjeta.` });
 
   const dia = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
@@ -65,10 +69,12 @@ export default async function handler(req, res) {
     return responder(res, 200, { ok: true, modo: 'real', confiable: r.confiable, lectura: r.lectura });
   } catch (e) {
     const t = e instanceof ErrorLectura ? e.tipo : 'api';
-    console.warn(JSON.stringify({ evento: 'vencimientos-resumen', modo: 'real', modelo: MODELO, resultado: t,
+    console.warn(JSON.stringify({ evento: 'vencimientos-resumen', modo: 'real', modelo: MODELO, resultado: t, cifrado,
       entrada: e?.uso?.entrada ?? 0, salida: e?.uso?.salida ?? 0, bytes: buf.length, paginas, ms: Date.now() - t0 }));
-    return responder(res, ESTADO_ERROR[t] || 502, { ok: false, modo: 'real', motivo: t,
-      error: e instanceof ErrorLectura ? e.message : 'No pudimos leer el resumen ahora. Probá de nuevo en un rato.' });
+    /* a las cuentas administradoras se les muestra el motivo exacto (sin datos del resumen) */
+    const detalle = acc.admin ? { bytes: buf.length, paginas, cifrado, ms: Date.now() - t0, api: await motivoPdf(buf) } : undefined;
+    return responder(res, ESTADO_ERROR[t] || 502, { ok: false, modo: 'real', motivo: cifrado ? 'clave' : t,
+      error: cifrado ? CON_CLAVE : e instanceof ErrorLectura ? e.message : 'No pudimos leer el resumen ahora. Probá de nuevo en un rato.', detalle });
   }
 }
 
@@ -91,4 +97,18 @@ async function diagnostico() {
     await prueba('modelo + json', { ...base, max_tokens: 20, output_config: { effort: 'low', format: { type: 'json_schema', schema: { type: 'object', additionalProperties: false, required: ['ok'], properties: { ok: { type: 'boolean' } } } } } }),
   ];
   return { ok: pruebas.every(p => p.ok), key: true, forma, modelo: MODELO, pruebas };
+}
+
+/* Una llamada mínima con el mismo PDF para ver qué responde Anthropic (status, tipo, mensaje). */
+async function motivoPdf(buf) {
+  try {
+    const { default: Anthropic } = await import('@anthropic-ai/sdk');
+    const c = new Anthropic({ maxRetries: 0 });
+    const r = await c.messages.create({ model: MODELO, max_tokens: 20, messages: [{ role: 'user', content: [
+      { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: buf.toString('base64') } },
+      { type: 'text', text: '¿Cuántas páginas tiene? Respondé solo el número.' }] }] }, { timeout: 25000 });
+    return { ok: true, respuesta: (r.content || []).map(b => b.text || '').join('').slice(0, 40), entrada: r.usage?.input_tokens };
+  } catch (e) {
+    return { ok: false, status: e?.status ?? null, tipo: e?.error?.error?.type || e?.name || null, mensaje: String(e?.error?.error?.message || e?.message || '').slice(0, 300) };
+  }
 }
