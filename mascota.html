@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="/assets/css/mascotas.css?v=32">
-<link rel="stylesheet" href="/assets/css/mascotas-hoy.css?v=1">
+<link rel="stylesheet" href="/assets/css/mascotas-hoy.css?v=2">
 </head>
 <body>
 <header class="top">
@@ -23,7 +23,7 @@
 <div class="toast" id="toast" role="status"></div>
 <script src="/assets/js/mascotas-rules.js?v=32"></script>
 <script src="/assets/js/mascotas-core.js?v=32"></script>
-<script src="/assets/js/mascotas-hoy.js?v=1"></script>
+<script src="/assets/js/mascotas-hoy.js?v=2"></script>
 <script>
 (() => {
 'use strict';
@@ -169,6 +169,8 @@ function cuidador(raw, until, hoy) {
     </section>
     ${meds.length ? `<section class="sec"><h2>Remedios</h2><div class="list">${meds.map(({ m, st }) => {
       const tx = { soon: ['st-ok', `Empieza ${Z.fmtWhen(st.next)}`], ok: ['st-done', st.next ? `Dada. Próxima: ${Z.fmtWhen(st.next)}` : 'Dada'], due: ['st-soon', `Le toca ahora (${Z.fmtTime(st.due)})`], late: ['st-late', `Atrasada: tocaba ${Z.fmtWhen(st.due)}`] }[st.state];
+      /* con "Hoy" la lista del día manda: acá queda solo la indicación, sin estado (así no se contradicen) */
+      if (HOYD) return `<div class="row">${bubble('pill', 'med')}<span class="what"><b>${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}cada ${m.every} h${m.notes ? '. ' + esc(m.notes) : ''}</small></span><span></span></div>`;
       return `<div class="row ${tx[0]}">${bubble('pill', 'med')}<span class="what"><b>${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}<span class="stt">${tx[1]}</span>${m.notes ? '. ' + esc(m.notes) : ''}</small></span>${!HOYD && (st.state === 'due' || st.state === 'late') ? `<button class="ibtn go" data-med="${m.id}">Ya se la di</button>` : '<span></span>'}</div>`; }).join('')}</div>${HOYD ? '<p class="note">Marcá cada toma en "Hoy", arriba.</p>' : ''}</section>` : ''}
     ${info.length ? `<section class="sec"><h2>Lo que tenés que saber</h2><div class="list">${info.map(([k, v, ic, c]) => `<div class="row" style="grid-template-columns:auto minmax(0,1fr);align-items:start">${bubble(ic, c)}<span class="what"><b>${k}</b><small style="color:var(--ink);font-size:15px;white-space:pre-wrap">${esc(v)}</small></span></div>`).join('')}</div>${s.vetAuth ? '<p class="note">La veterinaria está avisada: podés llevarla en nombre de la familia.</p>' : ''}</section>` : ''}
     <section class="sec"><h2>Contactos</h2><div class="list">

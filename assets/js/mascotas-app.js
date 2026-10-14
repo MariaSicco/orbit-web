@@ -37,7 +37,7 @@ const blankPet = () => ({ id: uid(), name: '', species: 'perro', speciesOther: '
   share: '', sitterToken: '', sitter: { name: '', from: '', to: '', food: '', walks: '', where: '', habits: '', emergency: '', key: '', vetAuth: false, contact: '' },
   food: { brand: '', bagKg: null, dailyG: null, opened: '', bags: [] }, fund: { goal: null, monthly: null, saved: null }, trip: { dest: '', date: '' },
   neutered: '', chronic: '', onboarded: false, conditions: [], surgeries: [], visits: [], studies: [], weights: [],
-  records: [], meds: [], expenses: [], symptoms: [], log: [] });
+  records: [], meds: [], expenses: [], symptoms: [], log: [], routine: null });
 /* migración suave: completa lo que falte sin tocar lo cargado. Los registros viejos ganan
    lote (si la lectura de la libreta lo había dejado en las notas), sticker y alcance vacíos. */
 const normRec = r => {
@@ -2853,6 +2853,7 @@ function sitterPanel(p) {
   panel(`Quién cuida a ${p.name}`, `<p class="lead-s">Completalo una vez. El cuidador abre un link con todo esto, los remedios con sus horarios y la veterinaria, y marca cada día si comió, paseó y le dio los remedios. Lo ves en Inicio, en "Lo que anotó ${esc(quienCuida(p))}". No te llega un aviso al celu.</p>
     <div class="fbody">${fields.map(f => Array.isArray(f) ? `<div class="two">${f.map(x => field(x, s[x.k])).join('')}</div>` : field(f, s[f.k])).join('')}</div>
     ${vig}
+    <button class="row link-row" id="sRut" type="button">${bubble('cal', 'cuida')}<span class="what"><b>Rutina</b><small>${esc(rutinaResumen(p))}</small></span>${I('chevron')}</button>
     <button class="btn wide" id="sSave">${link ? 'Guardar cambios' : gone ? 'Guardar y crear un link nuevo' : 'Guardar y crear link'}</button>
     ${link ? `<div class="linkbox"><input readonly value="${esc(link)}" aria-label="Link del cuidador"><button class="btn sm" id="sCp" type="button">Copiar</button></div>
       <a class="btn ghost wide" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`Todo lo de ${p.name} mientras no estoy: ${link}`)}">Mandar por WhatsApp</a>
@@ -2864,10 +2865,53 @@ function sitterPanel(p) {
     if (!p.sitterToken || gone) { try { sitterPanel(await makeLink(p, 'sitter')); toast(`Link creado. Mandáselo a ${quienCuida(p)}.`); } catch { toast('No pudimos crear el link. Probá de nuevo.'); } }
     else { toast('Guardado. El cuidador ve los cambios al recargar.'); try { sitterPanel(await makeLink(p, 'sitter')); } catch {} }
   };
+  $('#sRut').onclick = () => rutinaPanel(p);
   if (link) {
     copyBtn('#sCp', link);
     $('#sOff').onclick = async () => { const b = $('#sOff'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tocá de nuevo: el cuidador deja de ver la información'; return; } try { sitterPanel(await makeLink(p, 'unsitter')); toast('Link apagado.'); } catch { toast('No pudimos apagar el link.'); } };
   }
+}
+
+/* ---------- rutina de "Hoy con…": comidas, paseos y otros; los remedios salen solos de Remedios ---------- */
+const RUT_K = [['comida', 'Comida'], ['paseo', 'Paseo'], ['otro', 'Otro']];
+function rutinaResumen(p) {
+  const r = window.MZHOY ? window.MZHOY.routineOf(p) : [];
+  const n = k => r.filter(x => x.kind === k).length;
+  const meds = p.meds.filter(m => m.start).length;
+  return [n('comida') && `${n('comida')} ${n('comida') === 1 ? 'comida' : 'comidas'}`, n('paseo') && `${n('paseo')} ${n('paseo') === 1 ? 'paseo' : 'paseos'}`, meds && `${meds} ${meds === 1 ? 'remedio' : 'remedios'}`, n('otro') && `${n('otro')} más`].filter(Boolean).join(' · ') + (Array.isArray(p.routine) ? '' : ' · armada sola');
+}
+function rutinaPanel(p) {
+  let list = (window.MZHOY ? window.MZHOY.routineOf(p) : []).map(x => ({ ...x }));
+  const row = (x, i) => `<div class="rut-row" data-i="${i}">
+    <div class="f"><label for="rk${i}">Qué</label><select id="rk${i}" data-k="kind">${RUT_K.map(([v, l]) => `<option value="${v}"${x.kind === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>
+    <div class="f"><label for="rt${i}">Hora</label><input id="rt${i}" type="time" data-k="time" value="${esc(x.time)}" required></div>
+    <div class="f"><label for="rl${i}">Nombre</label><input id="rl${i}" data-k="label" maxlength="60" value="${esc(x.label)}" placeholder="Desayuno"></div>
+    <div class="f"><label for="rq${i}">Cantidad <span class="opt">(opcional)</span></label><input id="rq${i}" data-k="qty" maxlength="40" value="${esc(x.qty || '')}" placeholder="${x.kind === 'comida' ? '150 g' : x.kind === 'paseo' ? '20 minutos' : ''}"></div>
+    <button type="button" class="ibtn" data-rm="${i}" aria-label="Sacar ${esc(x.label || 'este ítem')}">${I('trash')}</button></div>`;
+  const draw = () => {
+    const meds = p.meds.filter(m => m.start);
+    panel(`Rutina de ${p.name}`, `<p class="lead-s">Es la lista de "Hoy con ${esc(p.name)}" que ven vos y ${esc(quienCuida(p))}. Cada cosa se marca con un toque.</p>
+      <div class="rut-list">${list.map(row).join('') || '<p class="dim">No hay nada. Agregá una comida o un paseo.</p>'}</div>
+      <div class="btns"><button class="btn ghost sm" data-add="comida" type="button">${I('plus')} Comida</button><button class="btn ghost sm" data-add="paseo" type="button">${I('plus')} Paseo</button><button class="btn ghost sm" data-add="otro" type="button">${I('plus')} Otro (agua, pipeta…)</button></div>
+      <p class="note">${meds.length ? `Los remedios se suman solos con sus horarios: ${meds.map(m => esc(m.name) + ' cada ' + m.every + ' h').join(', ')}.` : 'Los remedios que cargues con su primera toma se suman solos.'}</p>
+      <button class="btn wide" id="rSave" type="button">Guardar rutina</button>
+      ${Array.isArray(p.routine) ? '<button class="link" id="rAuto" type="button">Volver a la rutina armada sola</button>' : ''}`);
+    const body = $('#pBody');
+    body.oninput = e => { const r = e.target.closest('.rut-row'); if (r && e.target.dataset.k) list[+r.dataset.i][e.target.dataset.k] = e.target.value; };
+    body.onchange = body.oninput;
+    body.onclick = e => {
+      const rm = e.target.closest('[data-rm]'), add = e.target.closest('[data-add]');
+      if (rm) { list.splice(+rm.dataset.rm, 1); draw(); return; }
+      if (add) { const k = add.dataset.add; list.push({ id: uid().slice(0, 8), kind: k, time: k === 'paseo' ? '13:00' : '12:00', label: k === 'comida' ? 'Comida' : k === 'paseo' ? 'Paseo' : '', qty: '' }); draw(); $(`#rl${list.length - 1}`)?.focus(); return; }
+      if (e.target.id === 'rSave') {
+        if (list.some(x => !/^\d{2}:\d{2}$/.test(x.time))) return toast('Poné la hora de cada cosa.');
+        p.routine = list.map(x => ({ id: String(x.id).replace(/[^a-z0-9]/gi, '').slice(0, 12) || uid().slice(0, 8), kind: x.kind, time: x.time, label: x.label.trim() || RUT_K.find(k => k[0] === x.kind)[1], qty: (x.qty || '').trim() }));
+        changed(); sitterPanel(p); toast('Rutina guardada. Ya la ven los dos.'); flushNow().then(() => { delete hoyCache[p.id]; render(); });
+      }
+      if (e.target.id === 'rAuto') { p.routine = null; changed(); sitterPanel(p); flushNow().then(() => { delete hoyCache[p.id]; render(); }); toast('Listo, se arma sola con lo que tenés cargado.'); }
+    };
+  };
+  draw();
 }
 
 /* ---------- modo perdida ---------- */

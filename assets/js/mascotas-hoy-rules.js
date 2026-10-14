@@ -68,11 +68,15 @@
   }
   const find = (p, ymd, key) => plan(p, ymd).find(i => i.key === key) || null;
 
-  /* ¿ya se dio esta toma? (cualquier anotación del remedio dentro de su ventana: app, cuidador o "Ya se la di") */
-  function medGiven(item, log) {
+  /* ¿ya se dio esta toma? Cualquier anotación del remedio dentro de su ventana (app, cuidador o "Ya se la di").
+     strict (para mostrar y avisar): un tilde de "Hoy" cuenta solo para su propia toma, así una toma atrasada
+     marcada tarde no tilda también la siguiente. Sin strict (para la alerta de dosis repetida) cuenta todo:
+     dos tomas muy seguidas del mismo remedio tienen que avisar. */
+  function medGiven(item, log, strict) {
     let hit = null;
     for (const l of log || []) {
       if (!l || l.kind !== 'med' || l.medId !== item.medId) continue;
+      if (strict && l.item && l.item !== item.key) continue;
       const t = Date.parse(l.at); if (t >= item.from && t < item.to && (!hit || t < Date.parse(hit.at))) hit = l;
     }
     return hit;

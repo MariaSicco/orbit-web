@@ -39,7 +39,7 @@ export async function dayView(pet, email, ymd, log, viewer = 'owner') {
     ymd, today: H.todayAR(),
     items: items.map((i, n) => {
       let d = vals[n] ? { at: vals[n].at, by: vals[n].by, who: vals[n].who } : null;
-      if (!d && i.kind === 'med') { const l = H.medGiven(i, log); if (l) d = { at: l.at, by: l.by || 'Vos', who: l.by === 'Vos' ? 'owner' : 'sitter' }; }
+      if (!d && i.kind === 'med') { const l = H.medGiven(i, log, true); if (l) d = { at: l.at, by: l.by || 'Vos', who: l.by === 'Vos' ? 'owner' : 'sitter' }; }
       return { key: i.key, kind: i.kind, time: i.time, label: i.label, qty: i.qty, done: d ? { at: d.at, by: name(d) } : null };
     }),
   };
@@ -109,7 +109,7 @@ export async function runMedMiss({ now = Date.now(), deps }) {
       const log = [...(p.log || []), ...sitter, ...(await careLog(email, p.id))];
       for (const i of due) {
         if (await kvGet(markKey(pk, i.ymd, i.key))) continue;
-        if (H.medGiven(i, log)) continue;
+        if (H.medGiven(i, log, true)) continue;
         if (!(await kvSetNX(`orbit:hoymiss:${pk}:${i.ymd}:${i.key}`, 1, 2 * 86400))) continue;
         const title = `El remedio de las ${i.time} no está marcado`;
         const body = `${i.label}${i.qty ? ' (' + i.qty + ')' : ''} de ${p.name}. Si ya se lo dieron, marcalo en "Hoy con ${p.name}".`;

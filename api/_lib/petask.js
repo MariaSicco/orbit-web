@@ -296,7 +296,7 @@ export function buildContext(doc, { question = '', petId = '', scans = [], tz = 
     const HY = globalThis.MZHOY;
     if (HY) {
       const ymd = HY.todayAR(now.getTime()), tomas = HY.plan(p, ymd).filter(i => i.kind === 'med');
-      if (tomas.length) add(p, 'sitter', 'hoy:' + ymd, 'Hoy', ymd, 'sitter', `Remedios de hoy (${ymd}, hora de Argentina): ${tomas.map(i => { const l = HY.medGiven(i, p.log); return `${dataText(i.label, 80)} de las ${i.time}: ${l ? `dado, lo marcó ${l.by === 'Vos' ? 'vos' : dataText(l.by, 40)} a las ${HY.hhmm(Date.parse(l.at))}` : now.getTime() < i.at ? 'todavía no toca' : 'nadie lo marcó'}`; }).join(' · ')}`, true, p.id, { area: 'Hoy', detail: 'Remedios de hoy', when: 'hoy' });
+      if (tomas.length) add(p, 'sitter', 'hoy:' + ymd, 'Hoy', ymd, 'sitter', `Remedios de hoy (${ymd}, hora de Argentina): ${tomas.map(i => { const l = HY.medGiven(i, p.log, true); return `${dataText(i.label, 80)} de las ${i.time}: ${l ? `dado, lo marcó ${l.by === 'Vos' ? 'vos' : dataText(l.by, 40)} a las ${HY.hhmm(Date.parse(l.at))}` : now.getTime() < i.at ? 'todavía no toca' : 'nadie lo marcó'}`; }).join(' · ')}`, true, p.id, { area: 'Hoy', detail: 'Remedios de hoy', when: 'hoy' });
     }
     /* "Me fui": cuánto estuvo sola en los últimos 7 días (la misma cuenta que la app, mascotas-away-rules.js) */
     const awl = awayContextLines(doc || {}, p.id, tz, now.getTime());

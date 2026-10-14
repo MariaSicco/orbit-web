@@ -217,3 +217,31 @@ test('Preguntale: el contexto dice quién dio cada toma de hoy (cuidador o vos) 
   pet.log = [{ id: 'k2', at: new Date(it.at + 60000).toISOString(), kind: 'med', medId: 'med1', by: 'Vos' }];
   assert.match(buildContext({ pets: [pet] }, { now: new Date(it.at + 2 * 36e5) }).text, /lo marcó vos a las 09:01/);
 });
+
+test('rutina: se guarda limpia en el doc (y null en docs viejos), y manda en la lista del cuidador', async () => {
+  const { cleanDoc } = await import('../api/mascotas.js');
+  const d = cleanDoc({ pets: [{ id: 'feli0001', name: 'Feliza', routine: [{ id: 'a1', kind: 'comida', time: '07:30', label: 'Balanceado', qty: '200 g' }, { id: 'x', kind: 'hack', time: '25:00' }, { kind: 'paseo', time: '18:15', label: '<b>Plaza</b>' }] }, { id: 'old00002', name: 'Tito' }] });
+  assert.equal(d.pets[0].routine.length, 2);
+  assert.deepEqual(d.pets[0].routine[0], { id: 'a1', kind: 'comida', time: '07:30', label: 'Balanceado', qty: '200 g' });
+  assert.equal(d.pets[1].routine, null);
+  const email = 'hoy-rutina@ejemplo.com', t = 'TOKhoyRutina001';
+  await setup(email, t, PET({ meds: [], routine: d.pets[0].routine }));
+  const g = await call('GET', { c: t });
+  assert.deepEqual(g.body.hoy.items.map(i => i.time), ['07:30', '18:15']);
+  assert.equal((await sit(t, { item: 'c:a1', ymd: today, by: 'Luca' })).code, 200);
+});
+
+test('una toma atrasada marcada tarde no tilda la siguiente, pero marcar la siguiente enseguida avisa', async () => {
+  const email = 'hoy-tarde@ejemplo.com', t = 'TOKhoyTarde0001';
+  const pet = PET({ meds: [{ id: 'med1', name: 'Pastilla', every: 12, start: `${today}T09:00`, days: 0 }] });
+  await setup(email, t, pet);
+  const a = H.plan(pet, today).find(i => i.key === 'm:med1:0900'), b = H.plan(pet, today).find(i => i.key === 'm:med1:2100');
+  const late = await HOY.mark({ pet, email, ymd: today, item: a.key, by: 'Luca', who: 'sitter', actor: 't:' + t, log: [], now: b.at - 10 * 60000 });
+  assert.equal(late.status, 200);
+  const log = [late.entry];
+  const v = await HOY.dayView(pet, email, today, log, 'owner');
+  assert.ok(v.items.find(i => i.key === a.key).done);
+  assert.equal(v.items.find(i => i.key === b.key).done, null, 'la de las 21:00 sigue sin marcar');
+  const again = await HOY.mark({ pet, email, ymd: today, item: b.key, by: '', who: 'owner', actor: 'owner', log, now: b.at });
+  assert.equal(again.status, 409, 'dos tomas a 10 minutos: avisa');
+});

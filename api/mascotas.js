@@ -177,6 +177,11 @@ export function cleanDoc(d, email) {
        tipo, hora, intensidad, fotos o videos (Blob privado de la cuenta) y el "¿Sigue igual?" (todo opcional) */
     symptoms: (Array.isArray(p?.symptoms) ? p.symptoms : []).slice(-MAX_EPISODES).map(cleanEpisode(okRef)).filter(x => x.date && (x.text || x.kind)),
     log: cleanLog(p?.log),
+    /* rutina de "Hoy con…" (mascotas-hoy-rules.js). null = se arma sola desde lo cargado (docs viejos) */
+    routine: Array.isArray(p?.routine) ? p.routine.slice(0, 20).map(r => ({
+      id: /^[a-z0-9]{1,12}$/i.test(r?.id || '') ? r.id : randomBytes(4).toString('hex'), kind: pick(r?.kind, ['comida', 'paseo', 'otro'], 'otro'),
+      time: /^([01]\d|2[0-3]):[0-5]\d$/.test(r?.time || '') ? r.time : '', label: str(r?.label, 60), qty: str(r?.qty, 40),
+    })).filter(r => r.time) : null,
   }));
   /* turnos (Veterinarias cerca → Anotar turno); los docs viejos no los tienen */
   /* "mi zona" de Veterinarias cerca (opcional): solo texto corto y coordenadas redondeadas a 3 decimales */

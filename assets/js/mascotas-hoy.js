@@ -21,7 +21,7 @@
         return `<li><button type="button" class="hoy-it${d ? ' on' : ''}" data-hoy="${esc(i.key)}" data-kind="${i.kind}" aria-pressed="${Boolean(d)}" aria-label="${esc(aria)}">
           <span class="ib c-${u[1]}" aria-hidden="true">${I(u[0])}</span>
           <span class="hoy-t" aria-hidden="true">${esc(i.time)}</span>
-          <span class="what" aria-hidden="true"><b>${esc(i.label)}</b><small>${esc(u[2])}${i.qty ? ' · ' + esc(i.qty) : ''}</small></span>
+          <span class="what" aria-hidden="true"><b>${esc(i.label)}</b><small>${i.qty ? esc(i.qty).replace(/ /g, '&nbsp;') : esc(u[2])}</small></span>
           <span class="hoy-st" aria-hidden="true">${st}</span></button></li>`;
       }).join('')}</ul></section>`;
   }
