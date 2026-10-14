@@ -19,6 +19,7 @@ import { kvGet, kvSet, kvIncrBy } from './kv.js';
 import { askModel as askModelFromEnv, DEFAULT_ASK_MODEL as DEFAULT_ASK, callClaude as claude, estimateTokens, aiPaused, pausedBody } from './petai.js';
 import { allowRefund } from './petquota.js';
 import '../../assets/js/mascotas-rules.js';
+import { awayContextLines } from './petaway.js';
 
 /* ---------- constantes fáciles de cambiar ---------- */
 export const ASK_PER_DAY = 30;         /* anti-abuso */
@@ -86,7 +87,7 @@ const EXP = { alimento: 'alimento', veterinaria: 'veterinaria', salud: 'salud', 
 const LOGK = { comida: 'comió', paseo: 'salió a pasear', med: 'le dio el remedio', ok: 'todo bien', nota: 'nota' };
 
 /* id corto y estable entre preguntas (sirve para el historial): letra del tipo + 4 caracteres */
-const LETTER = { pet: 'f', rec: 'v', visit: 'c', study: 'e', sym: 's', surg: 'q', med: 'm', weight: 'p', expense: 'g', cond: 'a', qr: 'x', sitter: 'l', gastos: 't', appt: 'n' };
+const LETTER = { pet: 'f', rec: 'v', visit: 'c', study: 'e', sym: 's', surg: 'q', med: 'm', weight: 'p', expense: 'g', cond: 'a', qr: 'x', sitter: 'l', gastos: 't', appt: 'n', away: 'h' };
 function makeIdFactory() {
   const used = new Set();
   return (kind, key) => {
@@ -178,6 +179,9 @@ export function buildContext(doc, { question = '', petId = '', scans = [], tz = 
       const med = l.kind === 'med' ? (p.meds || []).find(m => m.id === l.medId) : null;
       add(p, 'sitter', l.id, 'Cuidador', s(l.at).slice(0, 10), 'sitter', `Anotación del cuidador ${s(l.at).slice(0, 16).replace('T', ' ')} (${dataText(l.by, 40)}): ${LOGK[l.kind] || 'nota'}${med ? ' ' + dataText(med.name, 80) : ''}${l.note ? ' · ' + dataText(l.note, 300) : ''}`, false, l.id);
     }
+    /* "Me fui": cuánto estuvo sola en los últimos 7 días (la misma cuenta que la app, mascotas-away-rules.js) */
+    const awl = awayContextLines(doc || {}, p.id, tz, now.getTime());
+    if (awl) add(p, 'away', 'semana', 'Me fui', today, 'mefui', awl, true, p.id);
     for (const x of scans || []) {
       if (x.petId !== p.id) continue;
       add(p, 'qr', x.id || x.at, x.kind === 'msg' ? 'Aviso del QR' : 'Escaneo del QR', s(x.at).slice(0, 10), 'qr', x.kind === 'msg'

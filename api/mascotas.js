@@ -57,6 +57,7 @@ import { aiStatus, checkImport, takeImport, refundImport, prepareForAI, TRUNCATE
 import { callClaude, visionModel, estimateTokens, jsonOf, aiPaused, pausedBody } from './_lib/petai.js';
 import { handlePlaces } from './_lib/petplaces.js';
 import { cleanAppointments, cleanPlace, syncApptIndex } from './_lib/petturnos.js';
+import { cleanAway, syncAwayIndex, handleCam, mefuiAllowed } from './_lib/petaway.js';
 import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos, todayAR } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
@@ -177,7 +178,8 @@ export function cleanDoc(d, email) {
   /* turnos (Veterinarias cerca → Anotar turno); los docs viejos no los tienen */
   /* "mi zona" de Veterinarias cerca (opcional): solo texto corto y coordenadas redondeadas a 3 decimales */
   const zone = cleanZone(d?.zone);
-  return { pets, appointments: cleanAppointments(d?.appointments, pets), ...(zone ? { zone } : {}) };
+  /* "Me fui" (api/_lib/petaway.js): salida en curso, ajustes e historial; los docs viejos no lo tienen */
+  return { pets, appointments: cleanAppointments(d?.appointments, pets), ...(zone ? { zone } : {}), ...cleanAway(d, pets.map(p => p.id)) };
 }
 export function cleanZone(z) {
   const lat = Number(z?.lat), lng = Number(z?.lng);
@@ -465,6 +467,9 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, pet: sitterView({ ...pet, log: mergeLog(pet.log, keep) }) });
   }
 
+  /* "Me fui" y Cámara Mimitos (api/_lib/petaway.js): detrás de MIMITOS_MEFUI; apagado → 404 */
+  if (q.cam) return handleCam(req, res);
+
   /* desconectar el mail: con sesión alcanza (sin compra, sin la casilla habilitada y aunque falte configuración):
      se borra lo guardado y se revoca si se puede */
   if ((q.gmail || q.outlook) && String(q.gmail || q.outlook) === 'disconnect') {
@@ -580,7 +585,7 @@ export default async function handler(req, res) {
     const renew = ai?.expired ? await renewInterest(s.email).catch(() => false) : false;
     const paused = await aiPaused().catch(() => false);
     /* mail.allowed: la app no consulta ?gmail=status ni ?outlook=status si la cuenta no está habilitada (sin 403 en la consola) */
-    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans, ai: ai ? { ...ai, paused } : ai, renew, sitterLinks, mail: { allowed: mailAllowed(s.email) } });
+    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans, ai: ai ? { ...ai, paused } : ai, renew, sitterLinks, mail: { allowed: mailAllowed(s.email) }, mefui: mefuiAllowed(s.email) });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   const body = await readBody(req);
@@ -732,6 +737,8 @@ export default async function handler(req, res) {
   await kvSet(docKey(s.email), next);
   /* turnos por venir: la cuenta entra al índice del cron de avisos */
   await syncApptIndex(s.email, next).catch(e => console.error('[mimitos] índice de turnos', e?.message));
+  /* salida de "Me fui" en curso: la cuenta entra al índice del cron de avisos (solo con el interruptor) */
+  await syncAwayIndex(s.email, next).catch(e => console.error('[mimitos] índice de me fui', e?.message));
   /* fotos y estudios que ya no usa ningún registro ni mascota: a la papelera y, pasado el rato de gracia, se borran */
   await sweep(s.email, next).catch(e => console.error('[mimitos] limpieza de archivos', e?.message));
   return res.status(200).json({ ok: true, doc: next });
