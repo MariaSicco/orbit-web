@@ -19,6 +19,8 @@
    GET  ?file=ref             → abre un estudio propio (URL firmada que vence en minutos)
    GET  ?ask=1                → cuántas preguntas quedan hoy y este mes
    POST ?renew=1              → "Avisame cuando pueda renovar": guarda el interés en KV (no cobra nada)
+   GET  ?places=config        → "Veterinarias cerca": si está configurado, en pausa, clave del mapa (Embed) y búsquedas que quedan hoy
+   POST ?places=nearby|text|details → proxy de Google Places con techo de gasto mensual (api/_lib/petplaces.js)
    Funciones inteligentes (lectura de libreta y estudios, importación desde el mail y Preguntale a Mimitos):
    topes internos y vencimiento a 12 meses en api/_lib/petquota.js. Vencidas → 403 { error: 'ai_expired' }
    POST ?ask=1 {question, petId?, history?, tz?} → "Preguntale a Mimitos": responde SOLO con los datos de la cuenta,
@@ -53,6 +55,8 @@ import { outlook } from './_lib/petoutlook.js';
 import { QUOTA_BYTES, PHOTO_QUOTA_BYTES, PHOTOS_PER_DAY, UPLOADS_PER_DAY, fits, photoFits, dailyCount, addUsage, addPending, verifyUploads, photoRef, sweep } from './_lib/petfiles.js';
 import { aiStatus, checkImport, takeImport, refundImport, prepareForAI, TRUNCATED_NOTE, PDF_UNREADABLE, saveRenewInterest, renewInterest } from './_lib/petquota.js';
 import { callClaude, visionModel, estimateTokens, jsonOf, aiPaused, pausedBody } from './_lib/petai.js';
+import { handlePlaces } from './_lib/petplaces.js';
+import { cleanAppointments, cleanPlace, syncApptIndex } from './_lib/petturnos.js';
 import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos, todayAR } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
@@ -118,6 +122,8 @@ export function cleanDoc(d, email) {
     notes: str(p?.notes, 600),
     contact: { show: Boolean(p?.contact?.show), name: str(p?.contact?.name, 60), phone: str(p?.contact?.phone, 40), note: str(p?.contact?.note, 200) },
     vet: { name: str(p?.vet?.name, 80), phone: str(p?.vet?.phone, 40), address: str(p?.vet?.address, 120), er: str(p?.vet?.er, 120), erPhone: str(p?.vet?.erPhone, 40) },
+    /* "Guardar como mi veterinaria" desde Veterinarias cerca: el place ID de Google (se puede guardar sin límite) */
+    vetPlace: cleanPlace(p?.vetPlace),
     lost: { on: Boolean(p?.lost?.on), since: stamp(p?.lost?.since), place: str(p?.lost?.place, 160), note: str(p?.lost?.note, 300) },
     /* lo único de salud que puede verse en el QR, y solo si la familia lo marca */
     qrNote: { show: Boolean(p?.qrNote?.show), text: str(p?.qrNote?.text, 200) },
@@ -164,7 +170,8 @@ export function cleanDoc(d, email) {
     symptoms: (Array.isArray(p?.symptoms) ? p.symptoms : []).slice(-200).map(x => ({ id: id(x?.id), date: day(x?.date), text: str(x?.text, 300) })).filter(x => x.date && x.text),
     log: cleanLog(p?.log),
   }));
-  return { pets };
+  /* turnos (Veterinarias cerca → Anotar turno); los docs viejos no los tienen */
+  return { pets, appointments: cleanAppointments(d?.appointments, pets) };
 }
 
 /* lo que ve quien escanea el QR del collar: SOLO lo necesario para devolverla.
@@ -520,6 +527,14 @@ export default async function handler(req, res) {
     return res.status(200).json(await view());
   }
 
+  /* Veterinarias cerca: proxy de Google Places con techo de gasto (no es función inteligente: no vence) */
+  if (q.places) {
+    return handlePlaces(req, res, {
+      email: s.email, action: String(q.places), body: req.method === 'POST' ? await readBody(req) : {},
+      getDoc: async () => (await kvGet(docKey(s.email))) || { pets: [] },
+    });
+  }
+
   /* Preguntale a Mimitos: tope propio, contexto armado acá desde el doc de la cuenta */
   if (q.ask) {
     return handleAsk(req, res, {
@@ -703,6 +718,8 @@ export default async function handler(req, res) {
   const next = bump({ ...clean, rev: current.rev || 0 });
   if (JSON.stringify(next).length > MAX_DOC) return res.status(413).json({ error: 'too_big' });
   await kvSet(docKey(s.email), next);
+  /* turnos por venir: la cuenta entra al índice del cron de avisos */
+  await syncApptIndex(s.email, next).catch(e => console.error('[mimitos] índice de turnos', e?.message));
   /* fotos y estudios que ya no usa ningún registro ni mascota: a la papelera y, pasado el rato de gracia, se borran */
   await sweep(s.email, next).catch(e => console.error('[mimitos] limpieza de archivos', e?.message));
   return res.status(200).json({ ok: true, doc: next });

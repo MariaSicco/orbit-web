@@ -85,7 +85,7 @@ const EXP = { alimento: 'alimento', veterinaria: 'veterinaria', salud: 'salud', 
 const LOGK = { comida: 'comió', paseo: 'salió a pasear', med: 'le dio el remedio', ok: 'todo bien', nota: 'nota' };
 
 /* id corto y estable entre preguntas (sirve para el historial): letra del tipo + 4 caracteres */
-const LETTER = { pet: 'f', rec: 'v', visit: 'c', study: 'e', sym: 's', surg: 'q', med: 'm', weight: 'p', expense: 'g', cond: 'a', qr: 'x', sitter: 'l', gastos: 't' };
+const LETTER = { pet: 'f', rec: 'v', visit: 'c', study: 'e', sym: 's', surg: 'q', med: 'm', weight: 'p', expense: 'g', cond: 'a', qr: 'x', sitter: 'l', gastos: 't', appt: 'n' };
 function makeIdFactory() {
   const used = new Set();
   return (kind, key) => {
@@ -153,6 +153,11 @@ export function buildContext(doc, { question = '', petId = '', scans = [], tz = 
         if (!latest.has(r.id)) nx += ' · reemplazada por una dosis posterior del mismo nombre';
       }
       add(p, 'rec', r.id, r.name || TYPE[r.type], r.date || r.next, 'rec', `${TYPE[r.type] || 'Registro'}${r.type === 'desparasitacion' && r.scope ? ' ' + r.scope : ''}: ${dataText(r.name, 80)} · ${sug ? 'fecha SUGERIDA por la app, todavía no aplicada' : r.date ? 'aplicada ' + r.date : 'sin fecha de aplicación'}${nx}${r.lot ? ' · lote o marca ' + dataText(r.lot, 80) : ''}${r.vet ? ' · vet ' + dataText(r.vet, 80) : ''}${r.notes && !sug ? ' · notas ' + dataText(r.notes, 300) : ''}`, false, r.id);
+    }
+    /* turnos anotados (Veterinarias cerca → Anotar turno): los que vienen son centrales */
+    for (const a of (doc?.appointments || []).filter(x => x.petId === p.id)) {
+      const d = daysBetween(today, a.date);
+      add(p, 'appt', a.id, 'Turno', a.date, 'appt', `Turno ${a.date}${a.time ? ' a las ' + plain(a.time, 5) : ''} (${d < 0 ? `fue hace ${-d} días` : d === 0 ? 'es hoy' : `faltan ${d} días`})${a.place?.name ? ' · lugar ' + dataText(a.place.name, 120) : ''}${a.place?.address ? ' · dirección ' + dataText(a.place.address, 160) : ''}${a.place?.phone ? ' · tel ' + plain(a.place.phone, 40) : ''}${a.reason ? ' · motivo ' + dataText(a.reason, 200) : ''}`, d >= 0, a.id);
     }
     for (const w of p.weights || []) add(p, 'weight', w.date + ':' + w.kg, 'Peso', w.date, 'weight', `Peso: ${kgs(w.kg)} el ${w.date}`, false, w.date);
     for (const v of p.visits || []) add(p, 'visit', v.id, v.reason || 'Consulta', v.date, 'visit', `Consulta ${v.date}: motivo ${dataText(v.reason, 160)}${v.vet ? ' · vet ' + dataText(v.vet, 80) : ''}${v.weight ? ' · peso ' + kgs(v.weight) : ''}${v.findings ? ' · qué dijo ' + dataText(v.findings, 500) : ''}${v.plan ? ' · indicaciones ' + dataText(v.plan, 500) : ''}`, false, v.id);

@@ -12,6 +12,7 @@
 import { timingSafeEqual } from 'node:crypto';
 import { kvKeys, kvMGet, kvGet, kvSet, kvSetNX, kvSAdd, kvSRem, kvSMembers } from '../_lib/kv.js';
 import { sweepAll } from '../_lib/petfiles.js';
+import { runTurnos } from '../_lib/petturnos.js';
 import { dueToday, pushTo, mailDigest, hasMimitos, notifyKey, shapeNotify, notifyActive, localClock, INDEX_KEY } from '../_lib/petpush.js';
 
 export const SEND_HOUR = 9;
@@ -86,6 +87,9 @@ export default async function handler(req, res) {
   let out;
   try { out = await runAvisos({ hoy }); }
   catch (e) { console.error('[mimitos] cron falló', e?.message || e); return res.status(500).json({ error: 'cron_fallo' }); }
+  /* turnos: el día anterior y 2 horas antes, en la hora local de cada persona (corre cada hora) */
+  try { out.turnos = await runTurnos({ deps: { hasMimitos, getNotify: async e => shapeNotify(e, (await kvGet(notifyKey(e))) || {}), push: pushTo, mail: mailDigest } }); }
+  catch (e) { console.error('[mimitos] avisos de turnos', e?.message || e); out.errores++; }
   /* fotos y estudios borrados que quedaron en la papelera: una vez por día alcanza */
   if (await kvSetNX(`orbit:petsweep:${localClock(null).date}`, 1, DAY_TTL).catch(() => false)) {
     try { out.archivosBorrados = await sweepAll(email => kvGet(`orbit:pets:${email}`)); } catch { out.errores++; }

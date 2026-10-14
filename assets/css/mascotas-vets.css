@@ -1,0 +1,59 @@
+/* Mimitos · Veterinarias cerca y turnos (assets/js/mascotas-vets.js). Usa los tokens de mascotas.css. */
+.vx{display:flex;flex-direction:column;gap:20px;min-width:0}
+.vx-tabs{gap:8px}
+.vx-tabs .chip{flex:1 1 auto;min-width:0}
+@media(max-width:400px){.vx-tabs .chip{padding:0 12px;font-size:14px}}
+
+/* dónde buscar */
+.vx-loc{gap:14px}
+.vx-loc h2{font-size:18px}
+.vx-area{display:flex;flex-direction:column;gap:6px}
+.vx-area label{font-weight:600;font-size:14px}
+.vx-area-r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
+.vx-area input{min-height:48px;border-radius:14px;border:0;box-shadow:inset 0 0 0 1px var(--line2);background:var(--card);padding:0 14px;min-width:0}
+.vx-area input:focus-visible{outline:2.5px solid var(--act);outline-offset:1px}
+
+/* mi veterinaria y motivo */
+.vx-mine{gap:14px}
+.vx-mine-h{display:flex;gap:12px;align-items:center}
+.vx-mine-h h2{font-size:18px}
+.vx-mine-h small{display:block;font-size:13.5px}
+.vx-mine .btns .btn{flex:1 1 auto}
+.vx-why small{display:block;font-size:13.5px}
+
+/* resultados: lista y mapa (escritorio: lado a lado) */
+.vx-res{display:flex;flex-direction:column;gap:14px;min-width:0}
+.vx-list{display:flex;flex-direction:column;gap:8px;min-width:0}
+.vx-map{border-radius:var(--r);overflow:hidden;box-shadow:var(--sh1);background:var(--sunk);aspect-ratio:4/3;max-height:340px}
+.vx-map iframe{display:block;width:100%;height:100%;border:0}
+@media(min-width:1024px){
+  .vx-res{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:24px;align-items:start}
+  .vx-map{order:2;position:sticky;top:96px;aspect-ratio:auto;height:min(560px,calc(100vh - 140px));max-height:none}
+}
+.vx-row{grid-template-columns:auto minmax(0,1fr) auto;align-items:start}
+.vx-row[aria-current="true"]{background:var(--act-soft)}
+.vx-n{width:28px;height:28px;border-radius:50%;background:var(--sunk);color:var(--ink2);display:grid;place-items:center;font:600 13px/1 var(--f);font-variant-numeric:tabular-nums;margin-top:2px}
+.vx-meta{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:6px}
+.vx-stars{display:inline-flex;align-items:center;gap:4px;font-size:13px;color:var(--ink2)}
+.vx-stars svg.i{width:15px;height:15px;fill:#B7791F;stroke:#B7791F}
+.vx-stars b{color:var(--ink);font-weight:600}
+.vx-row>svg.i{margin-top:6px}
+
+/* atribución de Google: texto "Google Maps", Roboto 400, 12–16 px, #5E5E5E (contraste 6,5:1 sobre el papel) */
+.vx-attr{font:400 12px/1.4 Roboto,Arial,sans-serif;color:#5E5E5E;padding:10px 0 0 2px;margin:0}
+.vx-credits{font-size:12.5px}
+
+.vx-busy{display:flex;flex-direction:column;gap:8px}
+.vx-msg textarea{min-height:104px}
+dialog .vx-attr{padding-top:12px}
+
+@media(prefers-reduced-motion:no-preference){
+  .vx-row{transition:background .2s var(--ease)}
+  .vx-res{animation:vxIn .3s var(--ease) both}
+  @keyframes vxIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+}
+
+/* los links con forma de botón dentro de las hojas (WhatsApp, Llamar, Cómo llegar) no heredan el color de .fbody a */
+.fbody a.btn{color:#fff;font-weight:600}
+.fbody a.btn.ghost{color:var(--ink)}
+.fbody a.btn.soft{color:var(--act)}

@@ -95,7 +95,7 @@ async function flush() {
 }
 window.addEventListener('online', () => { if (mode === 'full' && dirty) flush(); });
 async function flushNow() { if (saveTimer) { clearTimeout(saveTimer); await flush(); } while (saving) await new Promise(r => setTimeout(r, 100)); }
-function adopt(d) { doc = d; doc.pets = (doc.pets || []).map(norm); rev = d.rev || 0; }
+function adopt(d) { doc = d; doc.pets = (doc.pets || []).map(norm); doc.appointments = Array.isArray(doc.appointments) ? doc.appointments : []; rev = d.rev || 0; }
 window.addEventListener('beforeunload', e => { if (mode === 'full' && dirty) { e.preventDefault(); e.returnValue = ''; } });
 /* lo que anota el cuidador aparece al volver a la app */
 document.addEventListener('visibilitychange', async () => {
@@ -656,10 +656,10 @@ function tripForm(p) {
     onSave(v) { if (!v.dest) return 'Elegí el destino.'; if (!v.date) return 'Poné la fecha de salida.'; p.trip = v; },
   });
 }
-function visitForm(p, v) {
+function visitForm(p, v, preset) {
   openForm({
     title: v ? 'Consulta' : `Consulta de ${p.name}`, intro: v ? '' : 'Anotá lo que te dijo el veterinario para tenerlo la próxima vez.',
-    values: v ? { ...v, weight: v.weight ? String(v.weight).replace('.', ',') : '' } : { date: iso(Z.today()), vet: p.vet.name || '' },
+    values: v ? { ...v, weight: v.weight ? String(v.weight).replace('.', ',') : '' } : { date: iso(Z.today()), vet: p.vet.name || '', ...(preset ? { date: preset.date, reason: preset.reason, vet: preset.vet || p.vet.name || '' } : {}) },
     fields: [
       [{ k: 'date', label: 'Fecha', type: 'date' }, { k: 'weight', label: 'Peso ese día (kg)', type: 'number', ph: '14,2', opt: true }],
       { k: 'reason', label: '¿Por qué fueron?', max: 160, ph: 'Control anual, se rasca, no come…' },
@@ -675,6 +675,7 @@ function visitForm(p, v) {
       const w = numDec(x.weight); if (Number.isNaN(w)) return 'El peso tiene que ser un número, por ejemplo 14,2.';
       const it = v || { id: uid() }; Object.assign(it, { date: x.date, reason: x.reason, vet: x.vet, findings: x.findings, plan: x.plan, weight: w });
       if (!v) p.visits.push(it);
+      preset?.onSaved?.(it);
       if (w) addWeight(p, x.date, w);
       toast('Consulta guardada en la libreta.');
     },
@@ -776,7 +777,7 @@ async function uploadStudy(file) {
 const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['agenda', 'grid', 'Agenda'], ['gastos', 'wallet', 'Gastos'], ['cuenta', 'user', 'Cuenta']];
 /* en el celu: 4 secciones y el + en el medio; Cuenta queda en el avatar de arriba */
 const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
-const TAB_OF = { antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta' };
+const TAB_OF = { vets: 'inicio', antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta' };
 const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
 const nav = $('#nav'), topBar = $('.top');
 function parseHash() { const [name = 'inicio', arg = ''] = location.hash.replace(/^#\/?/, '').split('/'); return { name: name || 'inicio', arg: decodeURIComponent(arg) }; }
@@ -870,6 +871,7 @@ function view() {
     case 'antecedentes': return renderAntecedentes(p);
     case 'viajes': return renderViajes(p);
     case 'datos': return renderDatos(p);
+    case 'vets': return window.MZVETS ? window.MZVETS.render(p, route.arg) : renderInicio(p);
     default: return renderInicio(p);
   }
 }
@@ -980,6 +982,7 @@ function nextItems(p) {
   for (const m of p.meds) { const s = Z.medState(m, p.log); if (s.state === 'due' || s.state === 'late') out.push({ order: s.state === 'late' ? -2 : -1, html: medRow(p, m) }); }
   for (const x of Z.upcoming(p)) if (x.s.days <= 60) out.push({ kind: 'rec', order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(recIcon(x.r), 'salud')}<button class="what plain" data-act="detail" data-kind="rec" data-id="${x.r.id}"><b>${esc(x.r.name)}</b><small><span class="stt">${x.s.t}</span>${Z.isSug(x.r) ? ' · sugerida, confirmala con tu veterinario' : ''}</small></button><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.r.name)} al calendario">${I('cal')}</button></div>` });
   const f = Z.food(p.food); if (f && f.left <= 5) out.push({ order: f.left, html: `<div class="row ${f.left < 0 ? 'st-late' : 'st-soon'}">${bubble('bowl', 'comida')}<span class="what"><b>Comprar alimento</b><small class="stt">${f.left < 0 ? 'Ya se terminó' : f.left === 0 ? 'Se termina hoy' : `Quedan ${f.left} días`}</small></span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button></div>` });
+  out.push(...(window.MZVETS?.homeItems(p) || []));
   return out.sort((a, b) => a.order - b.order);
 }
 const recIcon = r => r.type === 'vacuna' ? 'syringe' : r.type === 'desparasitacion' ? 'drop' : r.type === 'control' ? 'steth' : 'note';
@@ -997,6 +1000,7 @@ function renderInicio(p) {
   const anti = { ok: ['Al día', 'ok'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
   const recs = p.records.filter(r => r.date).length;
   const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', esc(Cap(quienCuida(p)).replace(/^Quien/, 'Quién')), 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
+  quick.unshift(['vets', 'pin', 'cuida', 'Veterinarias cerca', 'Pedir turno, guardias 24 h y pet shops']);
   return `<div class="dash">
     <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
     <div class="dash-r">
@@ -1180,6 +1184,7 @@ function detail(p, kind, id) {
     acts = rn ? btn('renew', 'check', Z.renewLabel(x), 'big') + btn('postpone', 'cal', `${Z.notYetLabel(x)} · Posponer`) + btn('edit', 'edit', 'Editar', 'ghost')
       : btn('edit', 'edit', Z.isSug(x) ? 'Marcar como aplicada' : 'Editar', 'soft') + (x.type !== 'otro' ? btn('dup', 'copy', 'Duplicar como próxima dosis') : '');
     acts += x.next ? btn('ics', 'cal', 'Agregar al calendario') : '';
+    if (x.next && s && s.days <= 14 && x.type !== 'otro') acts += btn('turno', 'pin', 'Pedir turno');
   } else if (kind === 'visit') {
     title = x.reason || 'Consulta';
     head = `<div class="d-head">${bubble('steth', 'cuida')}<div><span class="eyebrow">Consulta</span></div></div>`;
@@ -1222,6 +1227,7 @@ function detail(p, kind, id) {
     if (a === 'dup') return nextDose(p, x);
     if (a === 'renew') return renewSheet(p, x);
     if (a === 'postpone') return postponeSheet(p, x);
+    if (a === 'turno') return window.MZVETS?.start(p, x, route.name === 'agenda' ? 'agenda' : route.name === 'libreta' ? 'libreta' : 'inicio');
     ({ rec: () => recForm(p, x), visit: () => visitForm(p, x), study: () => studyForm(p, x), sym: () => symptomForm(p, x), surg: () => surgeryForm(p, x), med: () => medForm(p, x) })[kind]();
   };
 }
@@ -1512,13 +1518,14 @@ const ymLabel = ym => { const [y, m] = ym.split('-').map(Number); return `${MONT
 const ymAdd = (ym, n) => { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 1 + n, 1); return iso(d).slice(0, 7); };
 const stCls = s => !s ? 'none' : s.days < 0 ? 'late' : s.days <= 14 ? 'soon' : 'ok';
 function agendaRow(x) {
+  if (x.kind === 'appt') return window.MZVETS.agendaRow(x);
   const ic = x.kind === 'food' ? ['bowl', 'comida'] : x.kind === 'trip' ? ['plane', 'viaje'] : [recIcon(x.r), 'salud'];
   const act = x.kind === 'rec' ? `data-act="detailOf" data-pet="${x.pet.id}" data-kind="rec" data-id="${x.r.id}"` : x.kind === 'food' ? `data-act="goPet" data-pet="${x.pet.id}" data-to="gastos"` : `data-act="goPet" data-pet="${x.pet.id}" data-to="viajes"`;
   const ics = x.kind === 'rec' && Z.renewable(x.r) ? doneBtn(x.pet, x.r) : x.kind === 'rec' ? `<button class="ibtn" data-act="icsRec" data-pet="${x.pet.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.title)} al calendario">${I('cal')}</button>` : x.kind === 'food' ? `<button class="ibtn" data-act="icsFood" data-pet="${x.pet.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button>` : '<span></span>';
   return `<div class="row ${x.s?.c || ''}"><span class="ag-date"><b>${fmt(x.date, { day: 'numeric' })}</b><small>${fmt(x.date, { month: 'short' }).replace('.', '')}</small></span><button class="what plain" ${act}><b>${esc(x.title)}</b><small>${esc(x.pet.name)} · ${x.s && x.s.days <= 14 ? `<span class="stt">${x.s.t}</span>` : esc(x.sub)}${x.kind === 'rec' && Z.isSug(x.r) ? ' · sugerida, confirmala con tu veterinario' : ''}</small></button>${ics}</div>`;
 }
 function renderAgenda() {
-  const all = Z.agenda(doc.pets), today = iso(Z.today());
+  const all = [...Z.agenda(doc.pets), ...(window.MZVETS?.agendaItems(doc) || [])].sort((a, b) => a.date.localeCompare(b.date)), today = iso(Z.today());
   const ym = ui.agenda.ym, [y, m] = ym.split('-').map(Number);
   const first = new Date(y, m - 1, 1), startDow = (first.getDay() + 6) % 7, days = new Date(y, m, 0).getDate();
   const byDay = {}; for (const x of all) (byDay[x.date] = byDay[x.date] || []).push(x);
@@ -1530,9 +1537,9 @@ function renderAgenda() {
   }
   const sel = byDay[ui.agenda.sel] || [];
   const late = all.filter(x => x.date < today), soon = all.filter(x => x.date >= today).slice(0, 12);
-  const events = doc.pets.flatMap(p => [...Z.upcoming(p).filter(x => x.s.days >= 0).map(x => Z.recordEvent(p, x.r)), Z.foodEvent(p, p.food)]).filter(Boolean);
+  const events = [...doc.pets.flatMap(p => [...Z.upcoming(p).filter(x => x.s.days >= 0).map(x => Z.recordEvent(p, x.r)), Z.foodEvent(p, p.food)]), ...(window.MZVETS?.events(doc) || [])].filter(Boolean);
   return `<div class="lib-top"><div><span class="eyebrow">${doc.pets.length > 1 ? 'Todas tus mascotas' : esc(doc.pets[0].name)}</span><h1 class="h-xl">Agenda</h1></div>
-      <div class="lib-tools"><button class="btn sm ghost" data-act="go" data-to="avisos">${I('bell')} Avisos</button><button class="btn sm" data-act="icsAll" ${events.length ? '' : 'disabled'}>${I('download')} Todo al calendario</button></div></div>
+      <div class="lib-tools"><button class="btn sm ghost" data-vx="open" data-from="agenda">${I('pin')} Veterinarias cerca</button><button class="btn sm ghost" data-vx="newAppt">${I('cal')} Anotar turno</button><button class="btn sm ghost" data-act="go" data-to="avisos">${I('bell')} Avisos</button><button class="btn sm" data-act="icsAll" ${events.length ? '' : 'disabled'}>${I('download')} Todo al calendario</button></div></div>
     <div class="cols">
       <div class="col">
         <section class="cal card" aria-label="Calendario de ${ymLabel(ym)}">
@@ -2829,6 +2836,7 @@ document.addEventListener('click', e => {
     case 'petsMore': return petsPanel();
     case 'pick': selectPet(b.dataset.id); if (TAB_OF[route.name] === 'inicio') return go('inicio'); return render();
     case 'go': return go(b.dataset.to);
+    case 'vets': if (window.MZVETS) window.MZVETS.state.from = 'inicio'; return go('vets', cur?.id || '');
     case 'askGo': return askOpen();
     case 'askBack': return go(ask.from && ask.from !== 'preguntar' ? ask.from : 'inicio');
     case 'askNew': ask.turns = []; ask.error = null; ask.pending = ''; askStore.clear(); render(); return $('#askIn')?.focus();
@@ -2889,7 +2897,7 @@ document.addEventListener('click', e => {
     case 'renew': { const r = p?.records.find(x => x.id === b.dataset.rec); return r ? renewSheet(p, r) : null; }
     case 'icsRec': { const r = p.records.find(x => x.id === b.dataset.rec); return calendar([Z.recordEvent(p, r)], `${p.name} ${r.name}`); }
     case 'icsFood': return calendar([Z.foodEvent(p, p.food)], `${p.name} alimento`);
-    case 'icsAll': return calendar(doc.pets.flatMap(q => [...Z.upcoming(q).filter(x => x.s.days >= 0).map(x => Z.recordEvent(q, x.r)), Z.foodEvent(q, q.food), ...q.meds.filter(m => m.start && Z.medState(m, q.log).state !== 'ended').map(m => Z.medEvent(q, m))]), 'Mimitos fechas');
+    case 'icsAll': return calendar(doc.pets.flatMap(q => [...Z.upcoming(q).filter(x => x.s.days >= 0).map(x => Z.recordEvent(q, x.r)), Z.foodEvent(q, q.food), ...q.meds.filter(m => m.start && Z.medState(m, q.log).state !== 'ended').map(m => Z.medEvent(q, m))]).concat(window.MZVETS?.events(doc) || []), 'Mimitos fechas');
   }
 });
 
@@ -2924,6 +2932,8 @@ try {
   });
   navigator.serviceWorker?.startMessages?.();
 } catch {}
+/* puente para los módulos aparte (mascotas-vets.js: Veterinarias cerca y turnos) */
+window.MZAPP = { get doc() { return doc; }, get notify() { return notify; }, get route() { return route; }, dPanel, curPet, petById, changed, render, go, panel, toast, openForm, calendar, visitForm };
 route = parseHash();
 render();
 boot();
