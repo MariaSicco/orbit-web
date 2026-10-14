@@ -296,3 +296,25 @@ test('lo que se cobra en una tarjeta se ve pero no se suma dos veces', () => {
   assert.equal(r.ars.total, $(560000));
   assert.ok(r.ocurrencias.some(o => o.cuentaId === 'net'));
 });
+
+test('insights: suba, apartar para un pago grande, débito, racha y montos que faltan', () => {
+  let d = base();
+  d = V.marcarPagado(d, 'luz', '2026-08-20', { monto: $(30000), fecha: '2026-08-20' });
+  d = V.marcarPagado(d, 'luz', '2026-09-20', { monto: $(41100), fecha: '2026-09-20' });
+  // meses anteriores al día (agosto y septiembre): pagar lo demás
+  for (const c of d.cuentas) for (const k of V.claves(c, '2026-08-01', '2026-09-30')) if (!d.pagos[c.id]?.[k]) d = V.marcarPagado(d, c.id, k, { monto: c.monto ?? null, fecha: k });
+  d.cuentas.push({ id: 'vis', nombre: 'Tarjeta Visa', categoria: 'Tarjetas', frecuencia: 1, primerVto: '2026-11-11', monto: $(2326292) });
+  d.cuentas.push({ id: 'cel', nombre: 'Celular', categoria: 'Internet y celular', frecuencia: 1, primerVto: '2026-10-25' });
+  const hoy = '2026-10-14';
+  const ins = V.insights(d, hoy, { max: 10 });
+  const tipo = t => ins.find(i => i.tipo === t);
+  assert.equal(Math.round(tipo('suba').pct * 100), 37);
+  assert.equal(tipo('apartar').nombre, 'Tarjeta Visa');
+  assert.equal(tipo('apartar').semanas, 4);
+  assert.equal(tipo('apartar').porSemana, $(581573));
+  assert.equal(tipo('debito'), undefined);                       // ABL se debitó el 5/10: hace más de 2 días
+  assert.equal(V.insights(d, '2026-10-06', { max: 10 }).find(i => i.tipo === 'debito').nombre, 'ABL');
+  assert.ok(tipo('racha').meses >= 2);
+  assert.equal(tipo('sinmonto').nombre, 'Celular');
+  assert.equal(ins[0].tipo, 'suba');
+});

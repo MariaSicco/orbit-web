@@ -234,6 +234,90 @@ function abrirCategoria(cat) {
     <ul class="lista">${ocs.map(fila).join('')}</ul>`);
 }
 
+/* ── para tener en cuenta (tarjetas que se deslizan) ── */
+function tarjetasInsight() {
+  const ins = V.insights(d, hoy);
+  if (!ins.length) return '';
+  const c = id => d.cuentas.find(x => x.id === id);
+  const card = i => {
+    switch (i.tipo) {
+      case 'suba': return { ic: 'c-chispa', tono: 'mal', t: `${esc(i.nombre)} subió ${Math.round(i.pct * 100)} %`, p: `De ${plata(i.desde, i.moneda)} a ${plata(i.hasta, i.moneda)} contra la factura anterior.`, acc: `data-acc="cuenta" data-c="${esc(i.cuentaId)}"`, cta: 'Ver la historia' };
+      case 'apartar': return { ic: 'i-reloj', tono: 'azul', t: `Apartá ${plata(i.porSemana)} por semana`, p: `Así llegás a ${esc(i.nombre)} (${plata(i.monto)}) el ${V.fechaCorta(i.vence)} sin sustos.`, acc: `data-acc="ver" data-id="${esc(i.cuentaId)}|${esc(i.clave)}"`, cta: 'Ver el pago' };
+      case 'debito': return { ic: 'i-rayo-auto', tono: 'neutro', t: `¿Se debitó ${esc(i.nombre)}?`, p: 'Revisá tu cuenta: los débitos a veces fallan sin avisar.', acc: `data-acc="cuenta" data-c="${esc(i.cuentaId)}"`, cta: 'Ver' };
+      case 'racha': return { ic: 'i-check', tono: 'ok', t: `Llevás ${i.meses} meses al día`, p: 'Todo pagado a tiempo. Seguí así.', acc: '', cta: '' };
+      case 'sinmonto': return { ic: 'c-doc', tono: 'neutro', t: i.cantidad > 1 ? `Faltan ${i.cantidad} montos` : `Falta el monto de ${esc(i.nombre)}`, p: 'Cargalo y el total te queda exacto. Podés sacarle una foto a la factura.', acc: `data-acc="ver" data-id="${esc(i.cuentaId)}|${esc(i.clave)}"`, cta: 'Cargar' };
+    }
+  };
+  return `<div class="grupo"><h2><span class="mono">Para tener en cuenta</span></h2><div class="insights">${ins.map(card).filter(Boolean).map(x => `
+    <div class="ins ins-${x.tono}"><span class="ins-ic"><svg><use href="#${x.ic}"/></svg></span><b>${x.t}</b><p>${x.p}</p>${x.cta ? `<button type="button" class="btn-txt" ${x.acc}>${x.cta}</button>` : ''}</div>`).join('')}</div></div>`;
+}
+
+/* ── festejo: mes al día ── */
+function festejar(titulo, texto) {
+  try { navigator.vibrate?.([18, 40, 18]); } catch {}
+  const el = document.createElement('div');
+  el.className = 'festejo';
+  el.setAttribute('role', 'status');
+  el.innerHTML = `<canvas aria-hidden="true"></canvas><div class="festejo-in">${ILUS_LISTO}<b>${titulo}</b><p>${texto}</p><button type="button" class="bt prim" data-acc="festejo-ok">¡Bien!</button></div>`;
+  document.body.appendChild(el);
+  el.querySelector('.bt').focus();
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const cv = el.querySelector('canvas'), cx = cv.getContext('2d');
+  const W = cv.width = innerWidth * devicePixelRatio, H = cv.height = innerHeight * devicePixelRatio;
+  const colores = ['#3047FF', '#FF4F2E', '#D9FF45', '#0D0D0E', '#9B7BFF', '#E9B949'];
+  const ps = Array.from({ length: 140 }, () => ({ x: W / 2, y: H * 0.45, vx: (Math.random() - 0.5) * 22 * devicePixelRatio, vy: (-Math.random() * 18 - 6) * devicePixelRatio,
+    r: (4 + Math.random() * 5) * devicePixelRatio, a: Math.random() * 6, va: (Math.random() - 0.5) * 0.4, c: colores[Math.floor(Math.random() * colores.length)] }));
+  const t0 = performance.now();
+  (function cuadro(t) {
+    if (!el.isConnected) return;
+    cx.clearRect(0, 0, W, H);
+    for (const p of ps) {
+      p.vy += 0.55 * devicePixelRatio; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.a += p.va;
+      cx.save(); cx.translate(p.x, p.y); cx.rotate(p.a); cx.fillStyle = p.c; cx.fillRect(-p.r, -p.r / 2, p.r * 2, p.r); cx.restore();
+    }
+    if (t - t0 < 3200) requestAnimationFrame(cuadro); else cx.clearRect(0, 0, W, H);
+  })(t0);
+}
+/* Después de marcar pagado: si el mes quedó sin pendientes, se festeja (una vez por mes). */
+function quizasFestejar() {
+  const ym = V.mesDe(hoy);
+  const r = V.resumenMes(d, ym, hoy);
+  if (!r.ocurrencias.length || r.cantPendientes || d.festejado === ym) return;
+  d = { ...d, festejado: ym };
+  try { localStorage.setItem(CLAVE, JSON.stringify(d)); } catch {}
+  setTimeout(() => festejar(`${cap(V.nombreMes(ym))}, al día`, `Pagaste todo lo de este mes${r.ars.pagado ? `: ${plata(r.ars.pagado)}` : ''}. Tu casa está en orden.`), 450);
+}
+
+/* ── número que cuenta hasta el total (una vez por sesión) ── */
+let contado = false;
+function contarHasta(el) {
+  if (!el || contado || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const fin = Number(el.dataset.valor);
+  if (!fin) return;
+  contado = true;
+  const t0 = performance.now(), dur = 700;
+  (function paso(t) {
+    const k = Math.min(1, (t - t0) / dur), e = 1 - (1 - k) ** 3;
+    el.textContent = plata(Math.round(fin * e / 100) * 100);
+    if (k < 1) requestAnimationFrame(paso); else el.textContent = plata(fin);
+  })(t0);
+}
+
+/* ── compartir el mes (WhatsApp o copiar) ── */
+function textoParaCompartir() {
+  const ocs = [...V.atrasados(d, hoy), ...V.ocurrenciasEntre(d, hoy, V.sumarDias(hoy, 30), hoy).filter(o => !o.resuelto)].filter(o => !o.cuenta.enTarjeta);
+  const total = sumaARS(ocs);
+  const lineas = ocs.slice(0, 15).map(o => `• ${o.cuenta.nombre} · ${V.fechaCorta(o.vence)}${o.monto != null ? ` · ${plata(o.monto, o.moneda)}` : ''}`);
+  return `Lo que vence en casa en los próximos 30 días${total ? `: ${plata(total)}` : ''}\n${lineas.join('\n')}${ocs.length > 15 ? `\n… y ${ocs.length - 15} más` : ''}\n\nHecho con Vencimientos de la Casa · Orbit`;
+}
+async function compartirMes() {
+  const texto = textoParaCompartir();
+  if (navigator.share) { try { await navigator.share({ text: texto }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
+  abrir('Compartir el mes', `<pre class="compartir">${esc(texto)}</pre><div class="acciones">
+    <a class="bt prim ancho" href="https://wa.me/?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">Mandar por WhatsApp</a>
+    <button type="button" class="bt sec ancho" data-acc="copiar-mes">Copiar el texto</button></div>`);
+}
+
 function vistaInicio() {
   const el = $id('v-inicio');
   if (!d.cuentas.length) { el.classList.remove('lleno'); el.innerHTML = primerUso(); return; }
@@ -260,7 +344,8 @@ function vistaInicio() {
   </div>
   <div class="mes">
     <span class="mono etq">Próximos 30 días</span>
-    <p class="grande${!en30.length ? ' cero' : ''}">${!en30.length ? 'Nada' : total30 ? plata(total30) : `${en30.length} por pagar`}</p>
+    <button type="button" class="ic compartir-bt" data-acc="compartir" aria-label="Compartir lo que vence" title="Compartir"><svg><use href="#i-compartir"/></svg></button>
+    <p class="grande${!en30.length ? ' cero' : ''}" ${total30 ? `data-valor="${total30}"` : ''}>${!en30.length ? 'Nada' : total30 ? plata(total30) : `${en30.length} por pagar`}</p>
     <p class="sub">${en30.length ? `${en30.length} pago${en30.length > 1 ? 's' : ''}${sinMonto ? ` · ${sinMonto} todavía sin monto` : ''}` : 'No vence nada en los próximos 30 días.'}${des.usd ? ` · además ${plata(des.usd, 'USD')} en dólares` : ''}</p>
     ${barraCategorias(des.cats, des.total)}
     <div class="mes-pie">
@@ -280,6 +365,7 @@ function vistaInicio() {
       <div class="acciones dos"><button type="button" class="bt prim" data-acc="tick" data-id="${esc(prox.id)}"><svg><use href="#i-check"/></svg> ${c.tipo === 'tramite' ? 'Ya lo hice' : 'Ya lo pagué'}</button><button type="button" class="bt sec" data-acc="ver" data-id="${esc(prox.id)}">Ver detalle</button></div>
     </div>`;
   }
+  html += tarjetasInsight();
   if (d.ejemplo) html += `<div class="aviso info"><p><b>Estás viendo un ejemplo.</b> Probá marcar pagado, mirá el calendario y los números.</p><button class="btn-txt" type="button" data-acc="salir-ejemplo">Empezar con lo mío</button></div>`;
   else if (necesitaRespaldo()) html += `<div class="aviso info"><svg><use href="#i-candado"/></svg><p>Tus datos viven solo en este dispositivo. Guardá una copia por si cambiás de celular.</p><button class="btn-txt" type="button" data-acc="respaldo">Descargar</button></div>`;
   if (!almacenOK) html += `<div class="aviso mal"><svg><use href="#i-alerta"/></svg><p>Este navegador no deja guardar datos (¿modo incógnito?). Lo que cargues se pierde al cerrar.</p></div>`;
@@ -310,6 +396,7 @@ function vistaInicio() {
   html += `<div class="grupo"><button type="button" class="mas-res" data-acc="ir" data-v="calendario"><svg><use href="#i-cal"/></svg> Ver mes por mes en el calendario</button></div>`;
   html += '</div>';
   el.innerHTML = html;
+  contarHasta(el.querySelector('.grande[data-valor]'));
 }
 
 function necesitaRespaldo() {
@@ -1080,6 +1167,7 @@ function tick(id, boton) {
   if (o.cuenta.tipo !== 'tramite' && o.monto == null) { verOcurrencia(id); return; }
   boton?.querySelector('span')?.classList.add('pop');
   guardar(V.marcarPagado(d, o.cuentaId, o.clave, { monto: o.monto, fecha: hoy }));
+  quizasFestejar();
   const txt = o.cuenta.tipo === 'tramite' ? `${o.cuenta.nombre}: hecho.` : `${o.cuenta.nombre} pagado · ${plata(o.monto, o.moneda)}`;
   const acc = [{ t: 'Deshacer', fn: () => guardar(anterior) }];
   if (o.cuenta.tipo !== 'tramite') acc.unshift({ t: 'Otro monto', fn: () => verOcurrencia(id) });
@@ -1108,6 +1196,9 @@ document.addEventListener('click', e => {
     case 'cat': ui.catAbierta = b.dataset.c; abrirCategoria(b.dataset.c); break;
     case 'ver-pasos': ui.verPasos = true; render(); break;
     case 'entrar': cerrarEntrada(); break;
+    case 'compartir': compartirMes(); break;
+    case 'copiar-mes': navigator.clipboard?.writeText(textoParaCompartir()).then(() => toast('Copiado. Pegalo donde quieras.'), () => toast('No pudimos copiar: seleccioná el texto.')); break;
+    case 'festejo-ok': document.querySelector('.festejo')?.remove(); break;
     case 'intro-sig': slide = Math.min(SLIDES.length - 1, slide + 1); pintarSlide(); break;
     case 'intro-fin': marcarVisto(GUIA.intro); $id('hoja').classList.remove('hoja-intro'); cerrar(); render(); break;
     case 'tour-sig': paso++; pintarPaso(); break;
@@ -1206,6 +1297,7 @@ document.addEventListener('submit', e => {
     const anterior = d;
     guardar(V.marcarPagado(d, o.cuentaId, o.clave, { monto, fecha, nota: String(f.get('nota') || '').trim().slice(0, 80) }));
     cerrar();
+    quizasFestejar();
     toast(o.cuenta.tipo === 'tramite' ? `${o.cuenta.nombre}: hecho.` : `${o.cuenta.nombre} pagado · ${plata(monto, o.moneda)}`, [{ t: 'Deshacer', fn: () => guardar(anterior) }]);
   } else if (tipo === 'factura') {
     const o = buscarOc(form.dataset.id); if (!o) return;
@@ -1407,7 +1499,7 @@ function cerrarEntrada() {
   el.classList.add('sale');
   setTimeout(() => { el.remove(); guiaSiCorresponde(); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 320);
 }
-addEventListener('keydown', e => { if (e.key === 'Escape' && $id('entrada')) cerrarEntrada(); });
+addEventListener('keydown', e => { if (e.key === 'Escape' && $id('entrada')) cerrarEntrada(); if (e.key === 'Escape') document.querySelector('.festejo')?.remove(); });
 
 /* Al render: bienvenida si nunca la vio; recorrido la primera vez que hay datos en Inicio. */
 function guiaSiCorresponde() {

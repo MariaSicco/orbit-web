@@ -419,3 +419,45 @@ export function leerRespaldo(texto) {
   if (!datos) throw new Error('Ese archivo no es un respaldo de Vencimientos de la Casa.');
   return migrar(datos);
 }
+
+/* ── para tener en cuenta ──
+   Avisos cortos que ninguna app de cada empresa te da, ordenados por importancia:
+   suba de un servicio, apartar para un pago grande, revisar un débito, racha de meses
+   al día y montos que faltan. Devuelve [{ tipo, cuentaId?, texto, dato? }]. */
+export function insights(d, hoy, { umbralSuba = 0.15, max = 4 } = {}) {
+  const out = [];
+  const activas = d.cuentas.filter(c => !c.archivada);
+  /* subas: el último monto real contra el anterior, si es reciente */
+  for (const c of activas) {
+    const h = historial(d, c);
+    if (h.length < 2) continue;
+    const ult = h[h.length - 1], ant = h[h.length - 2];
+    if (!ant.monto || difDias(ult.clave, hoy) > 75) continue;
+    const pct = (ult.monto - ant.monto) / ant.monto;
+    if (pct >= umbralSuba) out.push({ tipo: 'suba', cuentaId: c.id, peso: 90 + Math.min(pct * 10, 9), pct, desde: ant.monto, hasta: ult.monto, moneda: c.moneda === 'USD' ? 'USD' : 'ARS', nombre: c.nombre });
+  }
+  /* apartar: un pago grande en 8 a 35 días */
+  const prox = ocurrenciasEntre(d, sumarDias(hoy, 8), sumarDias(hoy, 35), hoy).filter(o => !o.resuelto && o.monto != null && o.moneda === 'ARS' && !o.cuenta.enTarjeta);
+  const grande = prox.sort((a, b) => b.monto - a.monto)[0];
+  if (grande && grande.monto >= 20000000) { // ≥ $ 200.000
+    const semanas = Math.max(1, Math.ceil(difDias(hoy, grande.vence) / 7));
+    out.push({ tipo: 'apartar', cuentaId: grande.cuentaId, clave: grande.clave, peso: 80, nombre: grande.cuenta.nombre, vence: grande.vence, monto: grande.monto, semanas, porSemana: Math.ceil(grande.monto / semanas / 100) * 100 });
+  }
+  /* débitos de los últimos 2 días: revisar que se hayan debitado */
+  for (const o of ocurrenciasEntre(d, sumarDias(hoy, -2), hoy, hoy)) {
+    if (o.estado === 'debitado' && !o.cuenta.enTarjeta) out.push({ tipo: 'debito', cuentaId: o.cuentaId, peso: 70, nombre: o.cuenta.nombre, vence: o.vence });
+  }
+  /* racha: meses anteriores seguidos sin nada sin pagar */
+  let racha = 0;
+  for (let i = 1; i <= 24; i++) {
+    const r = resumenMes(d, sumarMesesMes(mesDe(hoy), -i), hoy);
+    const hubo = r.ocurrencias.some(o => o.estado !== 'salteado' && !o.cuenta.enTarjeta);
+    if (!hubo || r.cantPendientes) break;
+    racha++;
+  }
+  if (racha >= 2) out.push({ tipo: 'racha', peso: 40, meses: racha });
+  /* montos que faltan en los próximos 30 días */
+  const sinMonto = ocurrenciasEntre(d, hoy, sumarDias(hoy, 30), hoy).filter(o => !o.resuelto && o.monto == null && o.cuenta.tipo !== 'tramite');
+  if (sinMonto.length) out.push({ tipo: 'sinmonto', cuentaId: sinMonto[0].cuentaId, clave: sinMonto[0].clave, peso: 50, nombre: sinMonto[0].cuenta.nombre, cantidad: sinMonto.length });
+  return out.sort((a, b) => b.peso - a.peso).slice(0, max);
+}

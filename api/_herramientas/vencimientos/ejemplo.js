@@ -43,7 +43,7 @@ export function datosEjemplo(hoy) {
   }
   /* La luz de este mes ya tiene la factura cargada. */
   const luzMes = V.claves(d.cuentas[2], `${ym}-01`, V.sumarMeses(`${ym}-01`, 1));
-  if (luzMes[0] && !d.pagos['ej-luz']?.[luzMes[0]]) (d.facturas['ej-luz'] ||= {})[luzMes[0]] = { monto: $(44800) };
+  if (luzMes[0] && !d.pagos['ej-luz']?.[luzMes[0]]) (d.facturas["ej-luz"] ||= {})[luzMes[0]] = { monto: $(55900) }; // +33 %: se ve el aviso de suba
   d.creado = new Date().toISOString();
   return d;
 }
