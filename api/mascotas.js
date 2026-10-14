@@ -26,39 +26,48 @@
    ?gmail=… y ?outlook=… (status|start|callback|search|import|queue|unqueue|disconnect) → "Conectar tu mail"
                                 (api/_lib/petmail.js + adaptadores): busca estudios en el mail y los importa por el mismo motor de ?studyscan
 
-   Sin sesión:
-   POST ?scanclear=1          → borra el registro de escaneos del QR
+   POST ?scanclear=1 {petId?} → borra el registro de escaneos del QR (de una mascota o todo)
+   POST ?gmail=disconnect / ?outlook=disconnect → anda con sesión aunque no haya compra ni configuración:
+                                borra lo guardado y revoca si se puede
 
+   Funciones inteligentes en pausa (tope global de gasto del mes, api/_lib/petai.js) → 503 { error: 'ai_paused', message }
+
+   Sin sesión:
    GET  ?s=token              → ficha pública del QR del collar: solo lo necesario para devolverla
    POST ?s=token&found=1 {loc?,name?,phone?,msg?} → quien la encontró le avisa a la familia (opcional, con topes)
    GET  ?c=token              → vista del cuidador (instrucciones, medicación y registro del día)
    POST ?c=token {kind,…}     → el cuidador anota "comió", "paseó", "le di la medicación" o una nota
+                                (va a orbit:petlog:<token>, aparte del doc; se une al leer). Tope por token e IP.
+                                El link vence: con "hasta" (sitter.to), al día siguiente; sin "hasta", a los 30 días
+                                de creado. Vencido → 404 { error: 'not_found', expired: true } y se apaga solo.
    GET  ?img=id               → una foto */
 import { randomBytes, createHash } from 'node:crypto';
-import { kvGet, kvSet, kvDel, getPurchases } from './_lib/kv.js';
+import { kvGet, kvSet, kvDel, kvIncrBy, kvSetNX } from './_lib/kv.js';
 import { readSession, readBody } from './_lib/auth.js';
 import { accesoHerramienta } from './_lib/herramienta-acceso.js';
-import { isAdmin } from './_lib/admin.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath, putPrivate } from './_lib/blob.js';
-import { handleMail } from './_lib/petmail.js';
+import { handleMail, disconnectAnyway } from './_lib/petmail.js';
 import { handleAsk } from './_lib/petask.js';
 import { gmail } from './_lib/petgmail.js';
 import { outlook } from './_lib/petoutlook.js';
-import { QUOTA_BYTES, fits, addUsage, photoRef, sweep } from './_lib/petfiles.js';
-import { aiStatus, checkImport, takeImport, refundImport, prepareForAI, TRUNCATED_NOTE, saveRenewInterest, renewInterest } from './_lib/petquota.js';
-import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
+import { QUOTA_BYTES, PHOTO_QUOTA_BYTES, PHOTOS_PER_DAY, UPLOADS_PER_DAY, fits, photoFits, dailyCount, addUsage, addPending, verifyUploads, photoRef, sweep } from './_lib/petfiles.js';
+import { aiStatus, checkImport, takeImport, refundImport, prepareForAI, TRUNCATED_NOTE, PDF_UNREADABLE, saveRenewInterest, renewInterest } from './_lib/petquota.js';
+import { callClaude, visionModel, estimateTokens, jsonOf, aiPaused, pausedBody } from './_lib/petai.js';
+import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos, todayAR } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
 const docKey = email => `orbit:pets:${email.toLowerCase()}`;
 const shareKey = t => `orbit:petshare:${t}`;
 const sitterKey = t => `orbit:petsitter:${t}`;
+const sitterLogKey = t => `orbit:petlog:${t}`;
 const imgKey = id => `orbit:petimg:${id}`;
 const scansKey = email => `orbit:petscans:${email.toLowerCase()}`;
-const folder = email => 'mascotas/' + createHash('sha256').update('orbit-pets:' + email.toLowerCase()).digest('hex').slice(0, 16);
+export const folder = email => 'mascotas/' + createHash('sha256').update('orbit-pets:' + email.toLowerCase()).digest('hex').slice(0, 16);
 const MAX_DOC = 700 * 1024;
 /* foto recortada con transparencia (PNG o WebP, ~800 px) o foto entera en JPEG */
 const MAX_IMG = 450 * 1024;
 const MAX_PETS = 12, MAX_RECS = 300, MAX_LOG = 300;
+const MAX_UPLOAD = 15 * 1024 * 1024;
 
 const str = (v, n = 120) => String(v == null ? '' : v).replace(/[\u0000-\u0009\u000b-\u001f]/g, ' ').trim().slice(0, n);
 const day = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '';
@@ -83,7 +92,10 @@ function cleanLog(list) {
 }
 
 /* limpia lo que viene del navegador: solo los campos que la app usa */
-export function cleanDoc(d) {
+export function cleanDoc(d, email) {
+  /* las refs de estudios solo pueden apuntar a la carpeta de esta cuenta */
+  const own = email ? `blob:${folder(email)}/` : null;
+  const okRef = r => isBlobRef(r) && /^blob:mascotas\/[a-f0-9]{16}\//.test(r) && !/\.\.|\/\//.test(refPath(r)) && (!own || r.startsWith(own));
   const pets = (Array.isArray(d?.pets) ? d.pets : []).slice(0, MAX_PETS).map(p => ({
     id: id(p?.id),
     name: str(p?.name, 60) || 'Sin nombre',
@@ -129,7 +141,7 @@ export function cleanDoc(d) {
     })).filter(v => v.date && (v.reason || v.findings)),
     studies: (Array.isArray(p?.studies) ? p.studies : []).slice(-150).map(x => ({
       id: id(x?.id), date: day(x?.date), kind: pick(x?.kind, ['sangre', 'orina', 'materia', 'rx', 'eco', 'otro'], 'otro'), title: str(x?.title, 120), notes: str(x?.notes, 600), lab: str(x?.lab, 80),
-      files: (Array.isArray(x?.files) ? x.files : []).slice(0, 10).map(f => ({ ref: isBlobRef(f?.ref) && /^blob:mascotas\/[a-f0-9]{16}\//.test(f.ref) ? f.ref : '', name: str(f?.name, 120), type: str(f?.type, 60) })).filter(f => f.ref),
+      files: (Array.isArray(x?.files) ? x.files : []).slice(0, 10).map(f => ({ ref: okRef(f?.ref) ? f.ref : '', name: str(f?.name, 120), type: str(f?.type, 60) })).filter(f => f.ref),
     })).filter(x => x.date && (x.title || x.files.length)),
     weights: (Array.isArray(p?.weights) ? p.weights : []).slice(-200).map(w => ({ date: day(w?.date), kg: num(w?.kg, 2000) })).filter(w => w.date && w.kg),
     food: { brand: str(p?.food?.brand, 80), bagKg: num(p?.food?.bagKg, 100), dailyG: num(p?.food?.dailyG, 20000), opened: day(p?.food?.opened) },
@@ -161,11 +173,48 @@ export function publicPet(p) {
   return {
     name: p.name, species: p.species, speciesOther: p.speciesOther, breed: p.breed, sex: p.sex,
     color: p.color, marks: p.marks, temper: p.temper,
-    photo: p.photo, photoFull: p.photoFull, hue: p.hue || '', photos: p.photos,
+    /* nunca photoFull (la foto original sin recortar puede mostrar el interior de la casa): solo si hay
+       recorte, para el estilo. hue (color del fondo) y speciesOther (Z.species) los usa mascota.html */
+    photo: p.photo, cut: Boolean(p.photo && p.photoFull), hue: p.hue || '', photos: p.photos,
     contact: (p.contact?.show || lost) && (p.contact?.phone || p.contact?.name) ? { name: p.contact.name, phone: p.contact.phone, note: p.contact.note } : null,
     lost: lost ? { since: p.lost.since, place: p.lost.place, note: p.lost.note } : null,
     urgent: p.qrNote?.show && p.qrNote?.text ? p.qrNote.text : '',
   };
+}
+
+/* ---------- link del cuidador: vencimiento y registro aparte ----------
+   Con "hasta" (sitter.to) anda hasta el día siguiente inclusive (hora de Argentina); sin "hasta", 30 días
+   desde que se creó. Vencido, el GET y el POST dan 404 y el token se borra solo. Mientras anda, viajan
+   también "dónde está la llave" y "dónde duerme" (sitter.key, sitter.where), que la familia cargó para eso. */
+export const SITTER_DAYS_NO_END = 30, SITTER_GRACE_DAYS = 1;
+const SITTER_POSTS_PER_HOUR = 30;
+const addDays = (ymd, n) => new Date(Date.parse(ymd + 'T12:00:00Z') + n * 864e5).toISOString().slice(0, 10);
+export function sitterExpired(pet, link, now = Date.now()) {
+  const to = day(pet?.sitter?.to);
+  if (to) return todayAR(new Date(now)) > addDays(to, SITTER_GRACE_DAYS);
+  const at = Date.parse(link?.at || '');
+  return !Number.isFinite(at) || now > at + SITTER_DAYS_NO_END * 864e5;
+}
+/* hasta cuándo anda (para mostrarlo en la app) */
+export function sitterUntil(pet, link) {
+  const to = day(pet?.sitter?.to);
+  if (to) return addDays(to, SITTER_GRACE_DAYS);
+  const at = Date.parse(link?.at || '');
+  return Number.isFinite(at) ? new Date(at + SITTER_DAYS_NO_END * 864e5).toISOString().slice(0, 10) : null;
+}
+const mergeLog = (a = [], b = []) => {
+  const seen = new Set(), out = [];
+  for (const l of [...a, ...b]) if (l && !seen.has(l.id)) { seen.add(l.id); out.push(l); }
+  return out.sort((x, y) => String(x.at).localeCompare(String(y.at))).slice(-MAX_LOG);
+};
+/* une al doc lo que anotaron los cuidadores (solo para mostrar; el doc guardado no se toca) */
+async function withSitterLogs(doc) {
+  for (const p of doc?.pets || []) {
+    if (!p.sitterToken) continue;
+    const extra = (await kvGet(sitterLogKey(p.sitterToken))) || [];
+    if (extra.length) p.log = mergeLog(p.log, extra);
+  }
+  return doc;
 }
 
 /* lo que ve el cuidador: instrucciones, medicación activa, veterinaria y lo anotado en los últimos días */
@@ -196,21 +245,14 @@ Reglas:
 - En "warnings" anotá en español corto lo que no se pudo leer (por ejemplo "Hay un sticker borroso en la segunda página").
 - No des consejos médicos ni opines sobre el esquema de vacunación.`;
 
+/* La lectura usa ORBIT_VISION_MODEL o Sonnet (nunca ORBIT_MODEL), esfuerzo bajo y max_tokens holgado:
+   si igual se corta (stop_reason max_tokens) es un error cobrado y no se devuelve el crédito. */
+export const BOOKLET_MAX_TOKENS = 8000, STUDY_MAX_TOKENS = 4000;
 async function scanBooklet(images, species) {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw Object.assign(new Error('ia_no_configurada'), { status: 503 });
   const content = images.map(d => { const m = /^data:(image\/[a-z]+);base64,(.+)$/.exec(d); return { type: 'image', source: { type: 'base64', media_type: m[1], data: m[2] } }; });
   content.push({ type: 'text', text: SCAN_PROMPT + (species ? `\nLa mascota es: ${species}.` : '') });
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: process.env.ORBIT_VISION_MODEL || process.env.ORBIT_MODEL || 'claude-sonnet-5-5', max_tokens: 3000, messages: [{ role: 'user', content }] }),
-  });
-  if (!r.ok) throw Object.assign(new Error('ia_error_' + r.status), { status: 502 });
-  const d = await r.json();
-  const t = (d.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
-  const a = t.indexOf('{'), b = t.lastIndexOf('}');
-  let j; try { j = JSON.parse(t.slice(a, b + 1)); } catch { throw Object.assign(new Error('ia_respuesta_invalida'), { status: 502 }); }
+  const out = await callClaude({ model: visionModel(), body: { max_tokens: BOOKLET_MAX_TOKENS, output_config: { effort: 'low' }, messages: [{ role: 'user', content }] }, estimate: estimateTokens({ chars: SCAN_PROMPT.length, images: images.length }) });
+  const j = jsonOf(out);
   const items = (Array.isArray(j.items) ? j.items : []).slice(0, 80).map(x => ({
     type: pick(x?.type, TYPES, 'otro'), name: str(x?.name, 80), product: str(x?.product, 80), date: day(x?.date), next: day(x?.next),
     vet: str(x?.vet, 80), confidence: pick(x?.confidence, ['alta', 'media', 'baja'], 'media'), note: str(x?.note, 160),
@@ -233,7 +275,10 @@ const MSGS_PER_DAY_QR = 20;        /* mensajes por día por QR, aunque vengan de
 const hdr = (req, k) => { try { return decodeURIComponent(String(req.headers[k] || '')).slice(0, 60); } catch { return ''; } };
 const where = req => ({ city: hdr(req, 'x-vercel-ip-city'), region: hdr(req, 'x-vercel-ip-country-region'), country: hdr(req, 'x-vercel-ip-country') });
 const ipHash = req => {
-  const ip = String(req.headers['x-forwarded-for'] || req.headers['x-real-ip'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+  /* en Vercel, x-vercel-forwarded-for y x-real-ip los pone la plataforma (no se pueden falsear desde afuera);
+     x-forwarded-for queda solo para correr local */
+  const h = req.headers || {};
+  const ip = String(h['x-vercel-forwarded-for'] || h['x-real-ip'] || h['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
   return createHash('sha256').update('orbit-qr:' + (process.env.SESSION_SECRET || 'mimitos') + ':' + ip).digest('hex').slice(0, 20);
 };
 async function addScan(email, entry) {
@@ -244,10 +289,7 @@ async function addScan(email, entry) {
 }
 /* true si se puede avisar (y deja anotado el aviso); false si ya se avisó en los últimos 10 minutos */
 async function canNotify(kind, token) {
-  const k = `orbit:petqrping:${kind}:${token}`;
-  if (await kvGet(k)) return false;
-  await kvSet(k, 1, NOTIFY_EVERY);
-  return true;
+  return kvSetNX(`orbit:petqrping:${kind}:${token}`, 1, NOTIFY_EVERY);
 }
 const placeOf = w => [w.city, w.region].filter(Boolean).join(', ');
 const hm = d => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(d);
@@ -268,28 +310,22 @@ Reglas:
 const PET_HINT = pets => `
 Además, agregá al JSON "pet":{"name":"","species":"","breed":""} con el nombre del paciente, la especie y la raza TAL COMO FIGURAN en el documento (vacío si no figuran; no adivines).
 Las mascotas de esta familia son: ${pets.map(p => `${str(p.name, 40)} (${p.species === 'otra' ? str(p.speciesOther, 30) || 'otra' : p.species}${p.breed ? ', ' + str(p.breed, 40) : ''})`).join('; ')}. Usalo solo para reconocer nombres mal escritos; si el documento no nombra a ninguna, dejá "name" vacío.`;
-async function scanStudy(buf, type, pets) {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw Object.assign(new Error('ia_no_configurada'), { status: 503 });
+async function scanStudy(buf, type, pets, pages = 1) {
   const b64 = buf.toString('base64');
   const block = type === 'application/pdf'
     ? { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: b64 } }
     : { type: 'image', source: { type: 'base64', media_type: type, data: b64 } };
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: process.env.ORBIT_VISION_MODEL || process.env.ORBIT_MODEL || 'claude-sonnet-5-5', max_tokens: 1500, messages: [{ role: 'user', content: [block, { type: 'text', text: STUDY_PROMPT + (pets?.length ? PET_HINT(pets) : '') }] }] }),
-  });
-  if (!r.ok) {
-    const t = await r.text().catch(() => '');
-    /* PDF de más de 100 páginas o demasiado pesado para leerlo entero */
-    if (r.status === 400 && /page|pdf|too large|exceed/i.test(t)) throw Object.assign(new Error('pdf_muy_largo'), { status: 422 });
-    throw Object.assign(new Error('ia_error_' + r.status), { status: 502 });
+  const text = STUDY_PROMPT + (pets?.length ? PET_HINT(pets) : '');
+  let out;
+  try {
+    out = await callClaude({ model: visionModel(), body: { max_tokens: STUDY_MAX_TOKENS, output_config: { effort: 'low' }, messages: [{ role: 'user', content: [block, { type: 'text', text }] }] },
+      estimate: estimateTokens({ chars: text.length, ...(type === 'application/pdf' ? { pages } : { images: 1 }) }) });
+  } catch (e) {
+    /* PDF demasiado pesado para leerlo entero (400 de la API: no se cobró) */
+    if (e.apiStatus === 400 && /page|pdf|too large|exceed/i.test(e.apiText || '')) throw Object.assign(new Error('pdf_muy_largo'), { status: 422, billed: false });
+    throw e;
   }
-  const d = await r.json();
-  const t = (d.content || []).filter(c => c.type === 'text').map(c => c.text).join('');
-  const a = t.indexOf('{'), b = t.lastIndexOf('}');
-  let j; try { j = JSON.parse(t.slice(a, b + 1)); } catch { throw Object.assign(new Error('ia_respuesta_invalida'), { status: 502 }); }
+  const j = jsonOf(out);
   return {
     date: day(j.date), kind: pick(j.kind, ['sangre', 'orina', 'materia', 'rx', 'eco', 'otro'], 'otro'), title: str(j.title, 120), lab: str(j.lab, 80),
     summary: str(j.summary, 600), confidence: pick(j.confidence, ['alta', 'media', 'baja'], 'media'),
@@ -300,9 +336,7 @@ async function scanStudy(buf, type, pets) {
 async function scanAlert(email, pet, token, req) {
   const w = where(req);
   /* el mismo celu escaneando varias veces seguidas cuenta una sola vez en el registro */
-  const seen = `orbit:petqrseen:${token}:${ipHash(req)}`;
-  if (await kvGet(seen)) return;
-  await kvSet(seen, 1, NOTIFY_EVERY);
+  if (!(await kvSetNX(`orbit:petqrseen:${token}:${ipHash(req)}`, 1, NOTIFY_EVERY))) return;
   await addScan(email, { petId: pet.id, kind: 'scan', ...w });
   if (!(await canNotify('scan', token))) return;
   const n = await getNotify(email);
@@ -324,10 +358,8 @@ async function foundReport(email, pet, token, req, b) {
   if (!loc && !phone && !msg && !name) return { error: 'vacio', status: 400 };
   const hour = new Date().toISOString().slice(0, 13), dayk = hour.slice(0, 10);
   const kIp = `orbit:petqrmsg:ip:${ipHash(req)}:${hour}`, kQr = `orbit:petqrmsg:qr:${token}:${dayk}`;
-  const nIp = (await kvGet(kIp)) || 0, nQr = (await kvGet(kQr)) || 0;
-  if (nIp >= MSGS_PER_HOUR_IP || nQr >= MSGS_PER_DAY_QR) return { error: 'limite', status: 429 };
-  await kvSet(kIp, nIp + 1, 3600);
-  await kvSet(kQr, nQr + 1, 86400);
+  const nIp = await kvIncrBy(kIp, 1, 3600), nQr = await kvIncrBy(kQr, 1, 86400);
+  if (nIp > MSGS_PER_HOUR_IP || nQr > MSGS_PER_DAY_QR) return { error: 'limite', status: 429 };
   const w = where(req);
   await addScan(email, { petId: pet.id, kind: 'msg', ...w, loc, name, phone, msg });
   if (!(await canNotify('msg', token))) return { ok: true };
@@ -353,7 +385,9 @@ export default async function handler(req, res) {
     const m = im && /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(im);
     if (!m) return res.status(404).end();
     res.setHeader('Content-Type', m[1]);
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    /* privada y por un día: una foto borrada (o de una compra reintegrada) no queda un año en una caché compartida */
+    res.setHeader('Cache-Control', 'private, max-age=86400');
     return res.status(200).end(Buffer.from(m[2], 'base64'));
   }
 
@@ -374,7 +408,7 @@ export default async function handler(req, res) {
     if (req.method !== 'GET') return res.status(405).json({ error: 'method_not_allowed' });
     /* aviso a la familia: alguien abrió la ficha (no cuenta si la abre la misma dueña) */
     if (!owner) await scanAlert(link.email, pet, t, req).catch(() => {});
-    return res.status(200).json({ kind: 'ficha', pet: publicPet(pet), owner: Boolean(owner), updatedAt: doc.updatedAt || null });
+    return res.status(200).json({ kind: 'ficha', pet: publicPet(pet), owner: Boolean(owner) });
   }
 
   /* cuidador */
@@ -384,8 +418,18 @@ export default async function handler(req, res) {
     const doc = link && await kvGet(docKey(link.email));
     const pet = doc?.pets?.find(p => p.id === link.petId && p.sitterToken === t);
     if (!pet || !(await hasMimitos(link.email))) return res.status(404).json({ error: 'not_found' });
-    if (req.method === 'GET') return res.status(200).json({ kind: 'cuidador', pet: sitterView(pet) });
+    /* vencido: 404 y el token se apaga solo (el doc de la dueña no se toca; la app lo ve vencido) */
+    if (sitterExpired(pet, link)) {
+      await kvDel(sitterKey(t)).catch(() => {});
+      return res.status(404).json({ error: 'not_found', expired: true });
+    }
+    const extra = (await kvGet(sitterLogKey(t))) || [];
+    const view = () => sitterView({ ...pet, log: mergeLog(pet.log, extra) });
+    if (req.method === 'GET') return res.status(200).json({ kind: 'cuidador', pet: view(), until: sitterUntil(pet, link) });
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+    /* tope por token e IP: 30 anotaciones por hora */
+    const n = await kvIncrBy(`orbit:petsitrl:${t}:${ipHash(req)}:${new Date().toISOString().slice(0, 13)}`, 1, 3600);
+    if (n > SITTER_POSTS_PER_HOUR) return res.status(429).json({ error: 'limite' });
     const b = await readBody(req);
     const kind = pick(b.kind, LOG, '');
     if (!kind) return res.status(400).json({ error: 'invalid' });
@@ -393,11 +437,20 @@ export default async function handler(req, res) {
     if (kind === 'med' && !pet.meds.some(m => m.id === medId)) return res.status(400).json({ error: 'invalid' });
     const note = str(b.note, 300);
     if (kind === 'nota' && !note) return res.status(400).json({ error: 'invalid' });
-    pet.log = [...(pet.log || []), { id: randomBytes(6).toString('hex'), at: new Date().toISOString(), kind, medId, by: str(b.by, 40) || pet.sitter?.name || 'Cuidador', note }].slice(-MAX_LOG);
-    /* sin subir la versión: así no choca con lo que la dueña esté editando (al guardar, el servidor suma estas anotaciones) */
-    doc.updatedAt = new Date().toISOString();
-    await kvSet(docKey(link.email), doc);
-    return res.status(200).json({ ok: true, pet: sitterView(pet) });
+    /* va a una clave aparte: nunca pisa el doc de la dueña (que puede estar guardando a la vez) */
+    extra.push({ id: randomBytes(6).toString('hex'), at: new Date().toISOString(), kind, medId, by: str(b.by, 40) || pet.sitter?.name || 'Cuidador', note });
+    const keep = extra.slice(-MAX_LOG);
+    await kvSet(sitterLogKey(t), keep, 90 * 86400);
+    return res.status(200).json({ ok: true, pet: sitterView({ ...pet, log: mergeLog(pet.log, keep) }) });
+  }
+
+  /* desconectar el mail: con sesión alcanza (sin compra, sin la casilla habilitada y aunque falte configuración):
+     se borra lo guardado y se revoca si se puede */
+  if ((q.gmail || q.outlook) && String(q.gmail || q.outlook) === 'disconnect') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+    const se = readSession(req);
+    if (!se) return res.status(401).json({ error: 'unauthorized' });
+    return res.status(200).json(await disconnectAnyway(q.gmail ? gmail : outlook, req, se.email));
   }
 
   /* ir y volver de Google son navegaciones: sin sesión o sin compra se vuelve a la app, no a un JSON */
@@ -429,11 +482,11 @@ export default async function handler(req, res) {
       body: req.method === 'POST' ? await readBody(req) : {},
       getDoc: async () => (await kvGet(docKey(s.email))) || { pets: [], rev: 0 },
       deps: {
-        peekScan: email => checkImport(email, aiCtx, 1),
+        peekScan: async email => (await aiPaused()) ? { ...pausedBody(), status: 503 } : checkImport(email, aiCtx, 1),
         takeScan: async (email, pages) => { const t = await takeImport(email, aiCtx, pages); return t.ok ? { ticket: t.ticket, left: t.left, show: t.show } : t; },
         refundScan: ticket => refundImport(ticket),
         prepare: prepareForAI, truncatedNote: TRUNCATED_NOTE,
-        scanStudy,
+        scanStudy: (buf, type, pets, pages) => scanStudy(buf, type, pets, pages),
         fits: (email, bytes) => fits(email, bytes),
         addUsage: (email, ref, bytes) => addUsage(email, ref, bytes),
         putFile: async (email, name, buf, type) => {
@@ -470,7 +523,7 @@ export default async function handler(req, res) {
     return handleAsk(req, res, {
       email: s.email,
       body: req.method === 'POST' ? await readBody(req) : {},
-      getDoc: async () => (await kvGet(docKey(s.email))) || { pets: [] },
+      getDoc: async () => withSitterLogs((await kvGet(docKey(s.email))) || { pets: [] }),
       getScans: async () => ((await kvGet(scansKey(s.email))) || []).filter(x => Date.parse(x.at) > Date.now() - SCAN_DAYS * 864e5).slice(-MAX_SCANS),
       getTz: async () => (await getNotify(s.email)).tz,
       gate: async () => (await isExpired()) ? await expiredBody() : null,
@@ -485,11 +538,19 @@ export default async function handler(req, res) {
     catch { return res.status(500).json({ error: 'no_pudimos_abrir' }); }
   }
   if (req.method === 'GET') {
-    const doc = (await kvGet(docKey(s.email))) || { pets: [], rev: 0 };
+    const doc = await withSitterLogs((await kvGet(docKey(s.email))) || { pets: [], rev: 0 });
+    /* estado de los links del cuidador: activo y hasta cuándo, o vencido (la app lo muestra) */
+    const sitterLinks = {};
+    for (const p of doc.pets || []) {
+      if (!p.sitterToken) continue;
+      const link = await kvGet(sitterKey(p.sitterToken));
+      sitterLinks[p.id] = link && !sitterExpired(p, link) ? { active: true, until: sitterUntil(p, link) } : { active: false, expired: true };
+    }
     const scans = ((await kvGet(scansKey(s.email))) || []).filter(x => Date.parse(x.at) > Date.now() - SCAN_DAYS * 864e5).slice(-MAX_SCANS);
     const ai = await aiStatus(s.email, aiCtx).catch(() => null);
     const renew = ai?.expired ? await renewInterest(s.email).catch(() => false) : false;
-    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans, ai, renew });
+    const paused = await aiPaused().catch(() => false);
+    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans, ai: ai ? { ...ai, paused } : ai, renew, sitterLinks });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   const body = await readBody(req);
@@ -504,7 +565,9 @@ export default async function handler(req, res) {
     const data = String(body.data || '');
     if (!/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(data)) return res.status(400).json({ error: 'invalid' });
     if (data.length > MAX_IMG) return res.status(413).json({ error: 'too_big' });
-    if (!(await fits(s.email, data.length))) return res.status(413).json({ error: 'cupo_lleno', quota: QUOTA_BYTES });
+    /* cupo propio de fotos (20 MB dentro de los 200) y 30 por día */
+    if (!(await photoFits(s.email, data.length))) return res.status(413).json({ error: 'cupo_lleno', quota: QUOTA_BYTES, photoQuota: PHOTO_QUOTA_BYTES });
+    if (!(await dailyCount('photo', s.email, PHOTOS_PER_DAY))) return res.status(429).json({ error: 'limite_diario', limit: PHOTOS_PER_DAY });
     const iid = randomBytes(10).toString('hex');
     await kvSet(imgKey(iid), data);
     await addUsage(s.email, photoRef(iid), data.length);
@@ -514,15 +577,22 @@ export default async function handler(req, res) {
   /* estudios: el archivo viaja del navegador a Blob privado, en la carpeta de esta cuenta */
   if (q.upload) {
     if (!blobReady()) return res.status(503).json({ error: 'blob_no_configurado' });
-    const size = Number(body.size) || 0;
-    if (size > 15 * 1024 * 1024) return res.status(413).json({ error: 'too_big' });
+    const size = Number(body.size);
+    if (!Number.isFinite(size) || size <= 0) return res.status(400).json({ error: 'tamano_invalido' });
+    if (size > MAX_UPLOAD) return res.status(413).json({ error: 'too_big' });
     if (!/^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/.test(String(body.type || ''))) return res.status(400).json({ error: 'tipo_no_permitido' });
     const clean = String(body.name || 'estudio').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80) || 'estudio';
     if (!(await fits(s.email, size))) return res.status(413).json({ error: 'cupo_lleno', quota: QUOTA_BYTES });
+    if (!(await dailyCount('upload', s.email, UPLOADS_PER_DAY))) return res.status(429).json({ error: 'limite_diario', limit: UPLOADS_PER_DAY });
     const pathname = `${folder(s.email)}/${randomBytes(6).toString('hex')}-${clean}`;
-    /* se anota el tamaño declarado; si no se llega a usar en el doc, la limpieza lo borra */
-    try { const url = await signedPut(pathname, { maxBytes: 15 * 1024 * 1024, minutes: 15 }); await addUsage(s.email, makeRef(pathname), size); return res.status(200).json({ url, ref: makeRef(pathname) }); }
-    catch { return res.status(500).json({ error: 'no_pudimos_firmar' }); }
+    /* la URL firmada no acepta más que lo declarado; igual, al usar el archivo se mira el tamaño real en Blob */
+    try {
+      const url = await signedPut(pathname, { maxBytes: Math.ceil(size), minutes: 15 });
+      const ref = makeRef(pathname);
+      await addUsage(s.email, ref, size);
+      await addPending(s.email, ref, size);
+      return res.status(200).json({ url, ref });
+    } catch { return res.status(500).json({ error: 'no_pudimos_firmar' }); }
   }
 
   /* leer un estudio ya subido a Blob (foto o PDF): devuelve los datos para revisar; no guarda nada */
@@ -530,6 +600,10 @@ export default async function handler(req, res) {
     const ref = String(body.ref || '');
     if (!isBlobRef(ref) || /\.\.|\/\//.test(ref) || !refPath(ref).startsWith(folder(s.email) + '/')) return res.status(403).json({ error: 'forbidden' });
     const stop = await checkImport(s.email, aiCtx, 1); if (stop) return res.status(stop.status).json(stop);
+    if (await aiPaused()) return res.status(503).json(pausedBody());
+    /* primera vez que se usa: tamaño real en Blob al cupo (si es mayor que el declarado, se borra y se rechaza) */
+    const ver = await verifyUploads(s.email, [ref]);
+    if (!ver.ok) return res.status(422).json({ error: ver.error });
     let took = null;
     try {
       const f = await fetch(await signedGet(refPath(ref), { minutes: 5 }));
@@ -544,12 +618,13 @@ export default async function handler(req, res) {
       const prep = await prepareForAI(buf, type);
       took = await takeImport(s.email, aiCtx, prep.pages);
       if (!took.ok) { const t = took; took = null; return res.status(t.status).json(t); }
-      const out = await scanStudy(prep.buf, type);
+      const out = await scanStudy(prep.buf, type, null, prep.pages);
       return res.status(200).json({ ...out, ...(prep.truncated ? { truncated: true, pages: prep.total, note: TRUNCATED_NOTE } : {}), quota: { left: took.left, show: took.show } });
     } catch (e) {
-      /* la IA falló: se devuelve la importación */
-      if (took?.ok) await refundImport(took.ticket).catch(() => {});
-      return res.status(e.status || 502).json({ error: e.message || 'ia_error' });
+      /* se devuelve solo si la IA no cobró (sin respuesta 200) */
+      if (took?.ok && e?.billed === false) await refundImport(took.ticket).catch(() => {});
+      if (e?.code === 'ai_paused') return res.status(503).json(pausedBody());
+      return res.status(e.status || 502).json({ error: e.message || 'ia_error', ...(e.message === 'pdf_ilegible' ? { message: PDF_UNREADABLE } : {}) });
     }
   }
 
@@ -557,6 +632,7 @@ export default async function handler(req, res) {
   if (q.scan) {
     const images = (Array.isArray(body.images) ? body.images : []).filter(x => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(x || '') && x.length < 1.6e6).slice(0, 4);
     if (!images.length) return res.status(400).json({ error: 'sin_fotos' });
+    if (await aiPaused()) return res.status(503).json(pausedBody());
     /* las fotos de la libreta (hasta 4) son un documento: una importación, una página por foto */
     const took = await takeImport(s.email, aiCtx, images.length);
     if (!took.ok) return res.status(took.status).json(took);
@@ -564,7 +640,8 @@ export default async function handler(req, res) {
       const out = await scanBooklet(images, str(body.species, 10));
       return res.status(200).json({ ...out, quota: { left: took.left, show: took.show } });
     } catch (e) {
-      await refundImport(took.ticket).catch(() => {});
+      if (e?.billed === false) await refundImport(took.ticket).catch(() => {});
+      if (e?.code === 'ai_paused') return res.status(503).json(pausedBody());
       return res.status(e.status || 502).json({ error: e.message || 'ia_error' });
     }
   }
@@ -583,20 +660,29 @@ export default async function handler(req, res) {
     if (!pet) return res.status(404).json({ error: 'not_found' });
     const field = q.share || q.unshare ? 'share' : 'sitterToken';
     const keyOf = field === 'share' ? shareKey : sitterKey;
+    /* un link del cuidador vencido (o ya apagado solo) no se devuelve: se crea uno nuevo */
+    if (field === 'sitterToken' && pet[field] && !(q.unsitter)) {
+      const link = await kvGet(sitterKey(pet[field]));
+      if (!link || sitterExpired(pet, link)) { await kvDel(sitterKey(pet[field])); await kvDel(sitterLogKey(pet[field])); pet[field] = ''; }
+    }
     if (q.unshare || q.unsitter) {
-      if (pet[field]) await kvDel(keyOf(pet[field]));
+      if (pet[field]) { await kvDel(keyOf(pet[field])); if (field === 'sitterToken') await kvDel(sitterLogKey(pet[field])); }
       pet[field] = '';
     } else if (!pet[field]) {
       pet[field] = randomBytes(9).toString('base64url');
-      await kvSet(keyOf(pet[field]), { email: s.email, petId: pet.id });
+      await kvSet(keyOf(pet[field]), { email: s.email, petId: pet.id, at: new Date().toISOString() });
     }
     await kvSet(docKey(s.email), bump(current));
-    return res.status(200).json({ token: pet[field], doc: current });
+    const link = field === 'sitterToken' && pet[field] ? await kvGet(sitterKey(pet[field])) : null;
+    return res.status(200).json({ token: pet[field], doc: current, ...(link ? { until: sitterUntil(pet, link) } : {}) });
   }
 
   /* guardar la libreta */
   if ((body.rev ?? 0) !== (current.rev || 0)) return res.status(409).json({ error: 'conflict', doc: current });
-  const clean = cleanDoc(body.doc);
+  const clean = cleanDoc(body.doc, s.email);
+  /* archivos subidos que se usan por primera vez: tamaño real al cupo (o se borran y se rechaza el guardado) */
+  const ver = await verifyUploads(s.email, clean.pets.flatMap(p => p.studies.flatMap(x => x.files.map(f => f.ref))));
+  if (!ver.ok) return res.status(422).json({ error: ver.error, ref: ver.ref });
   for (const p of clean.pets) {
     const old = current.pets.find(c => c.id === p.id);
     /* los links los maneja el servidor: no se pueden inventar desde el navegador */
@@ -609,7 +695,7 @@ export default async function handler(req, res) {
   }
   for (const old of current.pets) if (!clean.pets.some(p => p.id === old.id)) {
     if (old.share) await kvDel(shareKey(old.share));
-    if (old.sitterToken) await kvDel(sitterKey(old.sitterToken));
+    if (old.sitterToken) { await kvDel(sitterKey(old.sitterToken)); await kvDel(sitterLogKey(old.sitterToken)); }
   }
   const next = bump({ ...clean, rev: current.rev || 0 });
   if (JSON.stringify(next).length > MAX_DOC) return res.status(413).json({ error: 'too_big' });

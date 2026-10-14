@@ -57,8 +57,18 @@ export async function saveNotify(n) {
   await (notifyActive(n) ? kvSAdd(INDEX_KEY, n.email) : kvSRem(INDEX_KEY, n.email));
 }
 
+/* Solo endpoints de servicios de push reales (https, puerto 443): así el servidor (y el cron) nunca le
+   hace un POST a una URL cualquiera. Chrome/Edge/Android: FCM; Firefox: Mozilla; Safari/iOS: Apple;
+   Edge viejo/Windows: WNS. */
+const PUSH_HOSTS = [/^fcm\.googleapis\.com$/, /^updates\.push\.services\.mozilla\.com$/, /^web\.push\.apple\.com$/, /^([a-z0-9-]+\.)+push\.apple\.com$/, /^([a-z0-9-]+\.)+notify\.windows\.com$/];
+export function pushEndpointOk(endpoint) {
+  if (typeof endpoint !== 'string' || endpoint.length >= 1000) return false;
+  let u; try { u = new URL(endpoint); } catch { return false; }
+  if (u.protocol !== 'https:' || (u.port && u.port !== '443') || u.username || u.password) return false;
+  return PUSH_HOSTS.some(re => re.test(u.hostname.toLowerCase()));
+}
 export function cleanSub(s) {
-  const ok = s && typeof s.endpoint === 'string' && /^https:\/\//.test(s.endpoint) && s.endpoint.length < 1000 && s.keys && typeof s.keys.p256dh === 'string' && typeof s.keys.auth === 'string';
+  const ok = s && pushEndpointOk(s.endpoint) && s.keys && typeof s.keys.p256dh === 'string' && typeof s.keys.auth === 'string';
   return ok ? { endpoint: s.endpoint, keys: { p256dh: s.keys.p256dh.slice(0, 200), auth: s.keys.auth.slice(0, 100) }, at: new Date().toISOString() } : null;
 }
 
@@ -68,8 +78,11 @@ export async function pushTo(n, payload) {
   try { await getVapid(); } catch { return 0; }
   let sent = 0; const alive = [];
   for (const s of n.subs) {
+    /* una suscripción vieja guardada antes del filtro de hosts se descarta sin mandarle nada */
+    if (!pushEndpointOk(s?.endpoint)) continue;
     try { await webpush.sendNotification(s, JSON.stringify(payload), { TTL: 60 * 60 * 24 }); sent++; alive.push(s); }
-    catch (e) { if (e.statusCode !== 404 && e.statusCode !== 410) alive.push(s); }
+    /* 404/410: ya no existe; 401/403: las llaves no corresponden (VAPID cambió o la suscripción es ajena) */
+    catch (e) { if (![401, 403, 404, 410].includes(e.statusCode)) alive.push(s); }
   }
   if (alive.length !== n.subs.length) { n.subs = alive; await saveNotify(n); }
   return sent;

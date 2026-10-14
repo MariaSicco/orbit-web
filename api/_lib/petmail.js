@@ -13,8 +13,10 @@
 
    Qué se guarda por proveedor (orbit:pet<proveedor>:<email de Orbit>), y nada más: el token cifrado,
    la dirección conectada, el rango, la fecha de la última búsqueda, los ids importados y la cola.
-   Asunto, remitente y nombres de adjuntos viajan al navegador para elegir y se descartan; el cuerpo
-   de los mails nunca se pide. */
+   Asunto, remitente y nombres de adjuntos viajan al navegador para elegir y se descartan.
+   El cuerpo del mail SÍ se lee, pero solo de los mails que ya parecen veterinarios y no traen adjunto,
+   para buscar el link al estudio (P.body: Gmail format=full / Graph body). No se guarda, no se loguea y no
+   sale de la función de búsqueda o importación; del link se loguea solo el host. */
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { kvGet, kvSet, kvDel } from './kv.js';
 import { isAdmin } from './admin.js';
@@ -367,6 +369,7 @@ export async function importOne(P, email, st, cfg, body, deps) {
     if (stop) {
       if (!st.queue.some(x => dedupeKey(x.m, x.part) === key)) st.queue.push({ m, part, name: meta.name, type: meta.type });
       await saveState(P, email, st);
+      /* con la IA en pausa (tope global del mes) también queda en cola: body.error = 'ai_paused' */
       return { status: 429, body: { ...stop, queued: true } };
     }
   }
@@ -400,6 +403,7 @@ export async function importOne(P, email, st, cfg, body, deps) {
   let prep = { buf, pages: 1, truncated: false };
   if (deps.prepare) {
     try { prep = await deps.prepare(buf, meta.type); }
+    /* pdf-lib no lo pudo abrir (pdf_ilegible) o cortar: queda guardado, sin leer, y no se manda entero */
     catch (e) { return { status: 200, body: { ref: file, data: null, manual: e.message || 'pdf_no_se_pudo_cortar', petId: suggestPet(deps.pets, {}, meta.name) } }; }
   }
   /* el crédito se descuenta recién acá, al mandar el documento a la IA; si la IA falla, se devuelve */
@@ -407,10 +411,11 @@ export async function importOne(P, email, st, cfg, body, deps) {
   if (took?.error) return { status: 200, body: { ref: file, data: null, manual: took.error, limit: took.limit, petId: only } };
   const extra = { ...(prep.truncated ? { truncated: true, pages: prep.total, note: deps.truncatedNote || '' } : {}), ...(took && Number.isFinite(took.left) ? { quota: { left: took.left, show: Boolean(took.show) } } : {}) };
   try {
-    const data = await deps.scanStudy(prep.buf, meta.type, deps.pets);
+    const data = await deps.scanStudy(prep.buf, meta.type, deps.pets, prep.pages);
     return { status: 200, body: { ref: file, data, ...extra, petId: suggestPet(deps.pets, { petName: data.pet?.name, species: data.pet?.species, breed: data.pet?.breed, lab: data.lab }, meta.name) } };
   } catch (e) {
-    if (took?.ticket && deps.refundScan) await deps.refundScan(took.ticket).catch(() => {});
+    /* el crédito vuelve solo si la IA no cobró (sin respuesta 200); un JSON inválido o cortado ya se cobró */
+    if (took?.ticket && deps.refundScan && e?.billed === false) await deps.refundScan(took.ticket).catch(() => {});
     return { status: 200, body: { ref: file, data: null, manual: e.message || 'ia_error', petId: suggestPet(deps.pets, {}, meta.name) } };
   }
 }
@@ -423,6 +428,15 @@ export async function disconnect(P, email, st, cfg) {
   }
   await kvDel(P.key(email));
   return { ok: true, revoked, revokes: Boolean(P.revokes), consentUrl: P.consentUrl || '' };
+}
+
+/* Desconectar desde el endpoint sin pedir compra, casilla habilitada ni configuración completa:
+   se borra lo guardado siempre y se revoca si hay con qué (la clave para abrir el token y un proveedor que revoque). */
+export async function disconnectAnyway(P, req, email) {
+  const st = await getState(P, email);
+  let cfg = { key: null };
+  try { cfg = P.config(req); } catch { /* sin configuración: igual se borra */ }
+  return disconnect(P, email, st, cfg);
 }
 
 /* ---------- handler común ---------- */

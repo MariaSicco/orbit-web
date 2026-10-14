@@ -13,7 +13,10 @@
    POST ?gmail=import {m, part}  → baja el adjunto, lo sube a Blob y lo lee con IA → { ref, data, petId, manual? }
                                    si no queda tope de IA: 429 { error, limit, queued:true }
    POST ?gmail=queue {items}     → deja en cola lo elegido que no entró hoy
-   POST ?gmail=disconnect        → revoca el token en Google y borra todo lo guardado de Gmail */
+   POST ?gmail=disconnect        → revoca el token en Google y borra todo lo guardado de Gmail
+                                   (anda con sesión aunque no haya compra ni configuración: api/mascotas.js)
+   El cuerpo del mail se lee (format=full) SOLO en los mails veterinarios sin adjunto, para buscar el link
+   al estudio; no se guarda ni se loguea (ver petmail.js). OAuth con state firmado + PKCE S256. */
 import * as M from './petmail.js';
 
 export const SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
@@ -52,7 +55,7 @@ export function buildQuery(doc, { range = '12m', after = 0, senders } = {}) {
   return q;
 }
 
-/* ---------- adjuntos de un mail (solo la estructura: nunca el cuerpo) ---------- */
+/* ---------- adjuntos de un mail (acá solo la estructura; el cuerpo lo pide body(), más abajo) ---------- */
 const PF = 'partId,mimeType,filename,body(attachmentId,size)';
 export const MSG_FIELDS = `id,threadId,internalDate,payload(headers,${PF},parts(${PF},parts(${PF},parts(${PF},parts(${PF})))))`;
 export function partsOf(payload) {
@@ -122,12 +125,14 @@ export const gmail = {
   validId: m => /^[A-Za-z0-9]{6,40}$/.test(m),
   validPart: p => /^[0-9.]{1,20}$/.test(p),
   query: (doc, opts) => buildQuery(doc, opts),
-  authUrl: (cfg, state) => AUTH_URL + '?' + form({
+  /* PKCE S256: el verifier se guarda con el state (petmail.makeState) y vuelve en el canje */
+  authUrl: (cfg, state, challenge) => AUTH_URL + '?' + form({
     client_id: cfg.clientId, redirect_uri: cfg.redirect, response_type: 'code', scope: SCOPE,
     access_type: 'offline', prompt: 'consent', include_granted_scopes: 'false', state,
+    ...(challenge ? { code_challenge: challenge, code_challenge_method: 'S256' } : {}),
   }),
-  async exchange(cfg, code) {
-    const { ok, d } = await tokenCall({ code, client_id: cfg.clientId, client_secret: cfg.secret, redirect_uri: cfg.redirect, grant_type: 'authorization_code' });
+  async exchange(cfg, code, verifier) {
+    const { ok, d } = await tokenCall({ code, client_id: cfg.clientId, client_secret: cfg.secret, redirect_uri: cfg.redirect, grant_type: 'authorization_code', ...(verifier ? { code_verifier: verifier } : {}) });
     if (!ok || !d.access_token) { console.warn('gmail exchange:', d.error || 'sin_token', String(d.error_description || '').slice(0, 200)); return { error: 'error' }; }
     /* con el consentimiento granular la persona puede destildar el permiso: sin él no hay nada que hacer */
     if (!String(d.scope || '').split(/\s+/).includes(SCOPE)) { await revokeToken(d.refresh_token || d.access_token).catch(() => {}); return { error: 'sinpermiso' }; }

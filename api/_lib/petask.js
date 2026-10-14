@@ -8,11 +8,16 @@
    - Red de seguridad sin IA: si la pregunta es médica y la respuesta no deriva al veterinario, se agrega;
      si menciona síntomas de urgencia, se agrega lo de la guardia.
    - La conversación NO se guarda en el servidor: el navegador manda las últimas vueltas en cada pregunta.
-   - Tope propio (separado de las importaciones inteligentes) con contadores en KV: 150 por mes y 30 por día.
+   - Tope propio (separado de las importaciones inteligentes) con contadores atómicos en KV: 150 por mes y 30
+     por día. La pregunta se reserva ANTES de llamar a la IA; si la llamada no se cobró (sin respuesta 200),
+     vuelve la del mes (el diario nunca), con el mismo tope de 10 devoluciones por día que las importaciones.
+   - Corte global de gasto de Mimitos (api/_lib/petai.js): pasado el tope del mes, 503 ai_paused.
    - Vence con las demás funciones inteligentes a los 12 meses de la compra (api/_lib/petquota.js).
    - Logs: solo errores y uso de tokens agregado. Nunca la pregunta ni los datos. */
 import { createHash } from 'node:crypto';
-import { kvGet, kvSet } from './kv.js';
+import { kvGet, kvSet, kvIncrBy } from './kv.js';
+import { askModel as askModelFromEnv, DEFAULT_ASK_MODEL as DEFAULT_ASK, callClaude as claude, estimateTokens, aiPaused, pausedBody } from './petai.js';
+import { allowRefund } from './petquota.js';
 import '../../assets/js/mascotas-rules.js';
 
 /* ---------- constantes fáciles de cambiar ---------- */
@@ -24,8 +29,9 @@ export const MAX_ANSWER_CHARS = 2000;     /* largo de cada respuesta previa que 
 export const CONTEXT_MAX_CHARS = 28000;   /* ~8k tokens de datos: si hay más, se prioriza y se avisa */
 export const ASK_MAX_TOKENS = 1200;       /* incluye el razonamiento adaptativo; con esfuerzo bajo alcanza */
 export const LOW_LEFT = 10;               /* desde cuántas preguntas restantes se muestra el aviso */
-export const DEFAULT_ASK_MODEL = 'claude-haiku-5-5';
-export const askModel = () => process.env.ORBIT_ASK_MODEL || process.env.ORBIT_MODEL || DEFAULT_ASK_MODEL;
+/* el chat usa SOLO ORBIT_ASK_MODEL o Haiku: nunca hereda ORBIT_MODEL (que es de otras herramientas) */
+export const DEFAULT_ASK_MODEL = DEFAULT_ASK;
+export const askModel = askModelFromEnv;
 const TZ_DEFAULT = 'America/Argentina/Buenos_Aires';
 
 export const MEDICAL_NOTE = 'Mimitos no es un veterinario: consultalo con tu vete antes de darle algo o decidir qué hacer.';
@@ -245,12 +251,23 @@ export async function askLeft(email, d = new Date()) {
   const n = (await kvGet(dayKey(email, d))) || 0, nm = (await kvGet(monKey(email, d))) || 0;
   return { day: Math.max(0, ASK_PER_DAY - n), month: Math.max(0, ASK_PER_MONTH - nm), perDay: ASK_PER_DAY, perMonth: ASK_PER_MONTH };
 }
-export async function takeAsk(email, d = new Date()) {
-  const n = (await kvGet(dayKey(email, d))) || 0, nm = (await kvGet(monKey(email, d))) || 0;
-  await kvSet(dayKey(email, d), n + 1, 60 * 60 * 26);
-  await kvSet(monKey(email, d), nm + 1, 60 * 60 * 24 * 32);
-  return { day: Math.max(0, ASK_PER_DAY - n - 1), month: Math.max(0, ASK_PER_MONTH - nm - 1), perDay: ASK_PER_DAY, perMonth: ASK_PER_MONTH };
+/* reserva una pregunta antes de llamar a la IA: suma y compara (atómico); si se pasó, deshace y frena */
+export async function reserveAsk(email, d = new Date()) {
+  const dk = dayKey(email, d), mk = monKey(email, d);
+  const n = await kvIncrBy(dk, 1, 60 * 60 * 26);
+  if (n > ASK_PER_DAY) { await kvIncrBy(dk, -1); return { ok: false, error: 'limite_diario', limit: ASK_PER_DAY, left: await askLeft(email, d) }; }
+  const nm = await kvIncrBy(mk, 1, 60 * 60 * 24 * 32);
+  if (nm > ASK_PER_MONTH) { await kvIncrBy(mk, -1); await kvIncrBy(dk, -1); return { ok: false, error: 'limite_mensual', limit: ASK_PER_MONTH, left: await askLeft(email, d) }; }
+  return { ok: true, ticket: { email, mk }, left: { day: Math.max(0, ASK_PER_DAY - n), month: Math.max(0, ASK_PER_MONTH - nm), perDay: ASK_PER_DAY, perMonth: ASK_PER_MONTH } };
 }
+/* la IA no cobró: vuelve la pregunta del mes (no la del día), con el tope de devoluciones */
+export async function refundAsk(ticket, d = new Date()) {
+  if (!ticket?.mk || !(await allowRefund(ticket.email, d.getTime()))) return false;
+  await kvIncrBy(ticket.mk, -1);
+  return true;
+}
+/* compatibilidad: suma una pregunta sin control (lo usaban pruebas viejas) */
+export async function takeAsk(email, d = new Date()) { const r = await reserveAsk(email, d); return r.left; }
 /* uso de tokens agregado por mes (para controlar costo), sin datos de nadie */
 async function addUsage(usage, d = new Date()) {
   const k = `orbit:petask:tokens:${d.toISOString().slice(0, 7)}`;
@@ -260,22 +277,12 @@ async function addUsage(usage, d = new Date()) {
   return u;
 }
 
-/* ---------- llamada a Claude (mismo cliente HTTP que la lectura de libretas y estudios) ---------- */
+/* ---------- llamada a Claude (el mismo cliente y el mismo corte de gasto que la lectura: api/_lib/petai.js) ----------
+   output_config.effort 'low': Haiku 5.5 lo acepta (niveles low a max; por defecto medium). Si la API lo
+   rechazara, la llamada da 400, no se cobra y la pregunta vuelve; hay un test que fija que se manda. */
 export async function callClaude({ system, messages, model = askModel(), maxTokens = ASK_MAX_TOKENS }) {
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) throw Object.assign(new Error('ia_no_configurada'), { status: 503 });
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model, max_tokens: maxTokens, system, messages, output_config: { effort: 'low' } }),
-  });
-  if (!r.ok) throw Object.assign(new Error('ia_error_' + r.status), { status: r.status === 429 ? 503 : 502 });
-  const d = await r.json();
-  return {
-    text: (d.content || []).filter(c => c.type === 'text').map(c => c.text).join('').trim(),
-    stop: d.stop_reason || '',
-    usage: { input: d.usage?.input_tokens || 0, output: d.usage?.output_tokens || 0 },
-  };
+  const chars = String(system || '').length + JSON.stringify(messages || []).length;
+  return claude({ model, body: { max_tokens: maxTokens, system, messages, output_config: { effort: 'low' } }, estimate: estimateTokens({ chars }) });
 }
 
 /* ---------- el endpoint ----------
@@ -292,19 +299,23 @@ export async function handleAsk(req, res, { email, body = {}, getDoc, getScans =
   if (question.length > MAX_QUESTION) return res.status(400).json({ error: 'pregunta_larga', max: MAX_QUESTION });
   const doc = (await getDoc()) || { pets: [] };
   if (!doc.pets?.length) return res.status(409).json({ error: 'sin_mascotas' });
-  const left = await askLeft(email, now);
-  if (left.day <= 0) return res.status(429).json({ error: 'limite_diario', limit: ASK_PER_DAY, left });
-  if (left.month <= 0) return res.status(429).json({ error: 'limite_mensual', limit: ASK_PER_MONTH, left });
+  if (await aiPaused(now.getTime())) return res.status(503).json(pausedBody());
   const tz = cleanTzName(body.tz) || cleanTzName(await getTz()) || TZ_DEFAULT;
   const ctx = buildContext(doc, { question, petId: s(body.petId).slice(0, 24), scans: await getScans(), tz, now });
+  /* se reserva antes de llamar (atómico): una ráfaga en paralelo no pasa del tope */
+  const took = await reserveAsk(email, now);
+  if (!took.ok) return res.status(429).json({ error: took.error, limit: took.limit, left: took.left });
   let out;
   try {
     out = await call({ system: ASK_SYSTEM, messages: buildMessages(body.history, ctx.text, question) });
   } catch (e) {
+    /* solo vuelve si la IA no cobró (sin respuesta 200) */
+    if (e?.billed === false) await refundAsk(took.ticket, now).catch(() => {});
     console.warn('[mimitos] preguntar: error de IA', e?.message || 'desconocido');
+    if (e?.code === 'ai_paused') return res.status(503).json(pausedBody());
     return res.status(e.status || 502).json({ error: e.status === 503 && e.message === 'ia_no_configurada' ? 'ia_no_configurada' : 'ia_error' });
   }
-  const after = await takeAsk(email, now);
+  const after = took.left;
   const tot = await addUsage(out.usage, now).catch(() => null);
   console.warn(`[mimitos] preguntar: uso in=${out.usage.input} out=${out.usage.output}${tot ? ` · mes n=${tot.n} in=${tot.in} out=${tot.out}` : ''}`);
   let raw = out.text;

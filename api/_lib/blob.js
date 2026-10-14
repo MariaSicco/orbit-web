@@ -68,3 +68,9 @@ export async function putPrivate(pathname, buf, contentType) {
   await put(pathname, buf, { access: 'private', addRandomSuffix: false, allowOverwrite: false, contentType });
   return makeRef(pathname);
 }
+
+/* Tamaño real de un archivo en Blob (bytes), o null si no existe. Otros errores se tiran. */
+export async function blobSize(pathname) {
+  try { return (await head(pathname)).size; }
+  catch (e) { if (/not.?found/i.test(String(e?.name || '') + ' ' + String(e?.message || ''))) return null; throw e; }
+}

@@ -40,6 +40,22 @@ export async function kvSetNX(key, val, ttlSeconds) {
   if (ttlSeconds) args.push('EX', String(ttlSeconds));
   return (await cmd(...args)) === 'OK';
 }
+/* Contador atómico: INCRBY (n puede ser negativo) y devuelve el valor nuevo.
+   El TTL se pone solo cuando la clave nace (el valor nuevo es igual a n), así no se estira con cada uso.
+   Sirve para topes con pedidos en paralelo: se suma primero y se compara después. */
+export async function kvIncrBy(key, n = 1, ttlSeconds) {
+  n = Math.trunc(Number(n) || 0);
+  if (!hasKV) {
+    const v = mem.get(key);
+    const alive = v && (!v.exp || v.exp > Date.now());
+    const val = (alive ? Number(v.val) || 0 : 0) + n;
+    mem.set(key, { val, exp: alive ? v.exp : (ttlSeconds ? Date.now() + ttlSeconds * 1000 : 0) });
+    return val;
+  }
+  const val = Number(await cmd('INCRBY', key, String(n)));
+  if (ttlSeconds && val === n) await cmd('EXPIRE', key, String(ttlSeconds));
+  return val;
+}
 /* conjuntos (índices chicos): agregar, sacar y listar */
 const memSet = key => { let v = mem.get(key); if (!v || !(v.val instanceof Set)) { v = { val: new Set(), exp: 0 }; mem.set(key, v); } return v.val; };
 export async function kvSAdd(key, member) { if (!hasKV) { memSet(key).add(member); return; } await cmd('SADD', key, member); }

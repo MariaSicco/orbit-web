@@ -23,6 +23,9 @@ const call = (method, query, body, email) => new Promise(ok => {
 const buy = (email, date) => kvSet(`orbit:purchases:${email}`, [{ productId: 'ob-018', orderId: 'o-' + email, date }]);
 const PET = { pets: [{ id: 'aika0001', name: 'Aika', species: 'perro', records: [] }], rev: 1 };
 const IMG = 'data:image/jpeg;base64,' + Buffer.from('foto').toString('base64');
+/* los contadores del período son claves atómicas aparte: <base>:p1, <base>:p2, <base>:pages */
+const setUse = (ticket, o) => Promise.all(Object.entries(o).map(([f, v]) => kvSet(ticket.k + ':' + f, v)));
+const getUse = async ticket => ({ p1: (await kvGet(ticket.k + ':p1')) || 0, p2: (await kvGet(ticket.k + ':p2')) || 0, pages: (await kvGet(ticket.k + ':pages')) || 0 });
 async function pdf(n, useObjectStreams = true) { const d = await PDFDocument.create(); for (let i = 0; i < n; i++) d.addPage([200, 200]); return Buffer.from(await d.save({ useObjectStreams })); }
 
 /* ---------- topes del período ---------- */
@@ -43,7 +46,7 @@ test('topes: 40 en los primeros 30 días y 180 en el resto de los 12 meses (no s
   const t = await Q.takeImport(email, ctx, 1, d40);
   assert.ok(t.ok); assert.equal(t.left, 179);
   /* lleno el tramo de 180 → limite_periodo */
-  const u = await kvGet(t.ticket.k); u.p2 = 180; await kvSet(t.ticket.k, u);
+  await setUse(t.ticket, { p2: 180 });
   const full = await Q.takeImport(email, ctx, 1, T('2027-01-10T12:00:00Z'));
   assert.equal(full.error, 'limite_periodo'); assert.equal(full.limit, 180);
   assert.equal(Q.IMPORTS_FIRST, 40); assert.equal(Q.IMPORTS_REST, 180); assert.equal(Q.FIRST_DAYS, 30);
@@ -63,11 +66,11 @@ test('páginas: hasta 20 por documento cuentan como 1; presupuesto de 600 por pe
   const email = 'paginas@ejemplo.com', ctx = { purchaseDate: '2026-03-01T12:00:00Z' }, now = T('2026-08-01T12:00:00Z');
   const a = await Q.takeImport(email, ctx, 20, now);
   assert.ok(a.ok); assert.equal(a.ticket.pages, 20);
-  const u = await kvGet(a.ticket.k);
+  const u = await getUse(a.ticket);
   assert.deepEqual([u.p2, u.pages], [1, 20], 'un documento de 20 páginas es una importación');
   /* nunca cuenta más de 20 por documento (lo demás no se manda) */
   assert.equal((await Q.takeImport(email, ctx, 90, now)).ticket.pages, 20);
-  u.pages = 595; u.p2 = 2; await kvSet(a.ticket.k, u);
+  await setUse(a.ticket, { pages: 595, p2: 2 });
   const over = await Q.takeImport(email, ctx, 20, now);
   assert.equal(over.error, 'limite_paginas'); assert.equal(over.limit, 600);
   assert.ok((await Q.takeImport(email, ctx, 5, now)).ok, 'entra justo hasta 600');
@@ -126,17 +129,24 @@ test('si la IA falla, la importación se devuelve (libreta por foto, por el endp
 
 test('si la IA falla en una importación del mail, se llama a refundScan con el ticket', async () => {
   const email = 'devuelve-mail@ejemplo.com', ctx = { purchaseDate: new Date(Date.now() - 2 * DAY).toISOString() };
-  const P = { id: 'gmail', key: e => 'orbit:petgmail:' + e, validId: () => true, validPart: () => true, find: async () => ({ name: 'eco.pdf', type: 'application/pdf', size: 10 }), download: async () => Buffer.from('%PDF-1.4 /Type /Page x') };
+  const one = await pdf(1);
+  const P = { id: 'gmail', key: e => 'orbit:petgmail:' + e, validId: () => true, validPart: () => true, find: async () => ({ name: 'eco.pdf', type: 'application/pdf', size: one.length }), download: async () => one };
   const deps = {
     pets: PET.pets, fits: async () => true, addUsage: async () => {}, putFile: async () => 'blob:mascotas/0123456789abcdef/a-eco.pdf',
     peekScan: e => Q.checkImport(e, ctx, 1),
     takeScan: async (e, pages) => { const t = await Q.takeImport(e, ctx, pages); return t.ok ? { ticket: t.ticket, left: t.left, show: t.show } : t; },
     refundScan: Q.refundImport, prepare: Q.prepareForAI,
-    scanStudy: async () => { throw Object.assign(new Error('ia_error_500'), { status: 502 }); },
+    /* la API no respondió 200: no se cobró */
+    scanStudy: async () => { throw Object.assign(new Error('ia_error_500'), { status: 502, billed: false }); },
   };
   const out = await withToken(P, email, { m: 'm1', part: '1' }, deps);
   assert.equal(out.body.manual, 'ia_error_500');
   assert.equal((await Q.aiStatus(email, ctx)).imports.left, 40, 'la importación volvió');
+  /* Anthropic respondió 200 pero el JSON no sirve: ya se cobró, NO se devuelve */
+  deps.scanStudy = async () => { throw Object.assign(new Error('ia_respuesta_invalida'), { status: 502, billed: true }); };
+  const bad = await withToken(P, email, { m: 'm2', part: '1' }, deps);
+  assert.equal(bad.body.manual, 'ia_respuesta_invalida');
+  assert.equal((await Q.aiStatus(email, ctx)).imports.left, 39, 'la importación cobrada no vuelve');
 });
 
 /* importOne con un token simulado: el adaptador falso devuelve el access token sin ir a Google */
@@ -196,13 +206,12 @@ test('admin: sin vencimiento (el período se renueva cada 12 meses)', async () =
 test('"te quedan": solo con 10 o menos (importaciones y preguntas)', async () => {
   const email = 'quedan@ejemplo.com', ctx = { purchaseDate: '2026-02-01T12:00:00Z' }, now = T('2026-07-01T12:00:00Z');
   const t = await Q.takeImport(email, ctx, 1, now);
-  const u = await kvGet(t.ticket.k);
-  u.p2 = 169; await kvSet(t.ticket.k, u);
+  await setUse(t.ticket, { p2: 169 });
   let st = await Q.aiStatus(email, ctx, now);
   assert.deepEqual([st.imports.left, st.imports.show], [11, false]);
   const n = await Q.takeImport(email, ctx, 1, now);
   assert.deepEqual([n.left, n.show], [10, true]);
-  u.p2 = 172; await kvSet(t.ticket.k, u);
+  await setUse(t.ticket, { p2: 172 });
   st = await Q.aiStatus(email, ctx, now);
   assert.deepEqual([st.imports.left, st.imports.show], [8, true]);
   assert.equal(Q.SHOW_LEFT_AT, 10);

@@ -9,6 +9,7 @@
    - orbit:petday:<email> = fecha local ya resuelta (vence sola), así no relee el doc cada hora;
    - cada aviso toma antes un candado orbit:petsent:<email>:<mascota>:<aviso>:<fecha local> con SET NX,
      así una corrida repetida o un reintento no lo manda dos veces. */
+import { timingSafeEqual } from 'node:crypto';
 import { kvKeys, kvMGet, kvGet, kvSet, kvSetNX, kvSAdd, kvSRem, kvSMembers } from '../_lib/kv.js';
 import { sweepAll } from '../_lib/petfiles.js';
 import { dueToday, pushTo, mailDigest, hasMimitos, notifyKey, shapeNotify, notifyActive, localClock, INDEX_KEY } from '../_lib/petpush.js';
@@ -76,7 +77,8 @@ export default async function handler(req, res) {
      Sin la variable, falla cerrado: no alcanza con el User-Agent, que se falsifica. */
   const secret = process.env.CRON_SECRET;
   if (!secret) { console.error('[mimitos] cron bloqueado: falta CRON_SECRET'); return res.status(503).json({ error: 'cron_secret_no_configurado' }); }
-  if (req.headers.authorization !== `Bearer ${secret}`) return res.status(401).json({ error: 'unauthorized' });
+  const got = Buffer.from(String(req.headers.authorization || '')), want = Buffer.from(`Bearer ${secret}`);
+  if (got.length !== want.length || !timingSafeEqual(got, want)) return res.status(401).json({ error: 'unauthorized' });
 
   /* ?hoy=AAAA-MM-DD solo para probar fuera de producción (y siempre con el secreto, chequeado arriba) */
   const q = String(req.query?.hoy || '');

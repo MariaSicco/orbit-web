@@ -2,7 +2,9 @@
 
    Qué cuenta como "importación inteligente": cualquier documento que se manda a la IA para leerlo
    (foto de la libreta, estudio subido, estudio desde el mail o por link). Una importación = un documento.
-   - El crédito se descuenta al mandar el documento a la IA y se devuelve si la llamada falla.
+   - El crédito se reserva (contadores atómicos) antes de mandar el documento a la IA. Se devuelve solo si la
+     llamada no se cobró (red, 5xx, 429: Anthropic no respondió 200), con un tope de 10 devoluciones por día.
+     Si Anthropic respondió y la respuesta no sirve (JSON inválido, cortada), no se devuelve. El diario nunca.
    - Buscar en el mail, filtrar, clasificar, validar links y descartar NO consumen.
    - Topes por período de 12 meses desde la compra: 40 en los primeros 30 días y 180 para el resto
      (lo que no se usa en los primeros 30 días no se pasa). Más un tope diario anti-abuso de 40.
@@ -13,7 +15,7 @@
    - Nada de esto se muestra salvo cuando quedan ≤ SHOW_LEFT_AT importaciones.
 
    Preguntale a Mimitos tiene sus propios topes (api/_lib/petask.js): 150 por mes y 30 por día. */
-import { kvGet, kvSet } from './kv.js';
+import { kvGet, kvSet, kvMGet, kvIncrBy } from './kv.js';
 
 export const IMPORTS_FIRST = 40;        /* primeros 30 días desde la compra */
 export const FIRST_DAYS = 30;
@@ -57,12 +59,20 @@ export async function period(email, ctx = {}, now = Date.now()) {
 
 const capOf = phase => phase === 1 ? IMPORTS_FIRST : IMPORTS_REST;
 
+/* Contadores atómicos (INCRBY) por período: <base>:p1, <base>:p2 y <base>:pages. El diario va aparte. */
+export const useKeys = (email, start) => { const b = useKey(email, start); return { base: b, p1: b + ':p1', p2: b + ':p2', pages: b + ':pages' }; };
+async function readUse(email, start) {
+  const k = useKeys(email, start);
+  const [p1, p2, pages] = await kvMGet([k.p1, k.p2, k.pages]);
+  return { p1: Number(p1) || 0, p2: Number(p2) || 0, pages: Number(pages) || 0 };
+}
+
 /* Lo que ve la app: vencimiento y, solo si quedan pocas, cuántas importaciones quedan. */
 export async function aiStatus(email, ctx = {}, now = Date.now()) {
   const p = await period(email, ctx, now);
-  const u = (await kvGet(useKey(email, p.start))) || {};
-  const used = p.phase === 1 ? (u.p1 || 0) : (u.p2 || 0), cap = capOf(p.phase);
-  const pagesLeft = Math.max(0, PAGES_PER_PERIOD - (u.pages || 0));
+  const u = await readUse(email, p.start);
+  const used = p.phase === 1 ? u.p1 : u.p2, cap = capOf(p.phase);
+  const pagesLeft = Math.max(0, PAGES_PER_PERIOD - u.pages);
   /* si el presupuesto de páginas se agota antes, manda ese: cada documento usa al menos una página */
   const left = p.expired ? 0 : Math.max(0, Math.min(cap - used, pagesLeft));
   return {
@@ -71,50 +81,63 @@ export async function aiStatus(email, ctx = {}, now = Date.now()) {
   };
 }
 
-/* ¿Se puede mandar un documento a la IA? (sin gastar) → null o { error, ... } */
+const clampPages = pages => Math.max(1, Math.min(PAGES_PER_DOC, pages | 0 || 1));
+
+/* ¿Se puede mandar un documento a la IA? (sin gastar; para decidir antes de bajar nada) → null o { error, ... } */
 export async function checkImport(email, ctx = {}, pages = 1, now = Date.now()) {
   const p = await period(email, ctx, now);
   if (p.expired) return { error: 'ai_expired', expiredAt: p.expiresAt, status: 403 };
-  const d = (await kvGet(dayKey(email, now))) || 0;
+  const d = Number(await kvGet(dayKey(email, now))) || 0;
   if (d >= IMPORTS_PER_DAY) return { error: 'limite_diario', limit: IMPORTS_PER_DAY, status: 429 };
-  const u = (await kvGet(useKey(email, p.start))) || {};
-  const used = p.phase === 1 ? (u.p1 || 0) : (u.p2 || 0), cap = capOf(p.phase);
+  const u = await readUse(email, p.start);
+  const used = p.phase === 1 ? u.p1 : u.p2, cap = capOf(p.phase);
   if (used >= cap) return { error: 'limite_periodo', limit: cap, phase: p.phase, renews: p.phase === 1 ? p.firstEnds : null, status: 429 };
-  const pg = Math.max(1, Math.min(PAGES_PER_DOC, pages | 0 || 1));
-  if ((u.pages || 0) + pg > PAGES_PER_PERIOD) return { error: 'limite_paginas', limit: PAGES_PER_PERIOD, status: 429 };
+  if (u.pages + clampPages(pages) > PAGES_PER_PERIOD) return { error: 'limite_paginas', limit: PAGES_PER_PERIOD, status: 429 };
   return null;
 }
 
-/* Descuenta una importación (y sus páginas) justo antes de llamar a la IA.
+/* Reserva una importación (y sus páginas) ANTES de llamar a la IA, con contadores atómicos:
+   suma primero y compara después; si se pasó, deshace lo que sumó y frena.
    → { ok: true, ticket, left } o { ok: false, error, status, ... } */
 export async function takeImport(email, ctx = {}, pages = 1, now = Date.now()) {
-  const stop = await checkImport(email, ctx, pages, now);
-  if (stop) return { ok: false, ...stop };
   const p = await period(email, ctx, now);
-  const k = useKey(email, p.start), dk = dayKey(email, now);
-  const pg = Math.max(1, Math.min(PAGES_PER_DOC, pages | 0 || 1));
-  const u = (await kvGet(k)) || {};
-  const f = p.phase === 1 ? 'p1' : 'p2';
-  u[f] = (u[f] || 0) + 1; u.pages = (u.pages || 0) + pg;
+  if (p.expired) return { ok: false, error: 'ai_expired', expiredAt: p.expiresAt, status: 403 };
+  const k = useKeys(email, p.start), dk = dayKey(email, now);
+  const pg = clampPages(pages);
+  const f = p.phase === 1 ? 'p1' : 'p2', cap = capOf(p.phase);
   /* vive un poco más que el período, por si hay que revisar el uso */
-  await kvSet(k, u, Math.ceil((p.end - now) / 1000) + 30 * 86400);
-  await kvSet(dk, ((await kvGet(dk)) || 0) + 1, 60 * 60 * 26);
-  const left = Math.max(0, Math.min(capOf(p.phase) - u[f], PAGES_PER_PERIOD - u.pages));
-  return { ok: true, ticket: { k, dk, f, pages: pg }, left, show: left <= SHOW_LEFT_AT };
+  const ttl = Math.ceil((p.end - now) / 1000) + 30 * 86400;
+  const undo = async list => { for (const [key, n] of list) await kvIncrBy(key, -n).catch(() => {}); };
+  const d = await kvIncrBy(dk, 1, 60 * 60 * 26);
+  if (d > IMPORTS_PER_DAY) { await undo([[dk, 1]]); return { ok: false, error: 'limite_diario', limit: IMPORTS_PER_DAY, status: 429 }; }
+  const n = await kvIncrBy(k[f], 1, ttl);
+  if (n > cap) { await undo([[k[f], 1], [dk, 1]]); return { ok: false, error: 'limite_periodo', limit: cap, phase: p.phase, renews: p.phase === 1 ? p.firstEnds : null, status: 429 }; }
+  const used = await kvIncrBy(k.pages, pg, ttl);
+  if (used > PAGES_PER_PERIOD) { await undo([[k.pages, pg], [k[f], 1], [dk, 1]]); return { ok: false, error: 'limite_paginas', limit: PAGES_PER_PERIOD, status: 429 }; }
+  const left = Math.max(0, Math.min(cap - n, PAGES_PER_PERIOD - used));
+  return { ok: true, ticket: { email: lc(email), k: k.base, fk: k[f], pk: k.pages, dk, f, pages: pg }, left, show: left <= SHOW_LEFT_AT };
 }
 
-/* La IA falló: se devuelve la importación y sus páginas. */
-export async function refundImport(ticket) {
-  if (!ticket) return;
-  const u = await kvGet(ticket.k);
-  if (u) { u[ticket.f] = Math.max(0, (u[ticket.f] || 0) - 1); u.pages = Math.max(0, (u.pages || 0) - ticket.pages); await kvSet(ticket.k, u, 400 * 86400); }
-  const d = await kvGet(ticket.dk);
-  if (d) await kvSet(ticket.dk, Math.max(0, d - 1), 60 * 60 * 26);
+/* Devoluciones: solo cuando la IA NO cobró (sin respuesta 200), y como mucho REFUNDS_PER_DAY por cuenta y día.
+   El contador diario nunca se devuelve. → true si se devolvió. */
+export const REFUNDS_PER_DAY = 10;
+const refundDayKey = (email, now) => `orbit:petai:refunds:${lc(email)}:${new Date(now).toISOString().slice(0, 10)}`;
+export async function allowRefund(email, now = Date.now()) {
+  const n = await kvIncrBy(refundDayKey(email, now), 1, 60 * 60 * 26);
+  if (n > REFUNDS_PER_DAY) { console.warn('[mimitos] devolución de crédito rechazada: más de ' + REFUNDS_PER_DAY + ' reintentos fallidos hoy'); return false; }
+  return true;
+}
+export async function refundImport(ticket, now = Date.now()) {
+  if (!ticket?.fk) return false;
+  if (!(await allowRefund(ticket.email, now))) return false;
+  await kvIncrBy(ticket.fk, -1);
+  await kvIncrBy(ticket.pk, -ticket.pages);
+  return true;
 }
 
-/* ---------- páginas de un PDF, sin librerías: cuenta los objetos /Type /Page ----------
-   Es una aproximación: si el PDF guarda sus objetos comprimidos (object streams) no se ven, y ahí se
-   le pregunta a pdf-lib, que solo se carga en ese caso o cuando hay que cortar. */
+/* ---------- páginas de un PDF ----------
+   countPdfPagesFast es solo una pista (cuenta los /Type /Page a la vista; no ve los object streams y se
+   puede falsear): el número que vale es SIEMPRE el de pdf-lib. */
 export function countPdfPagesFast(buf) {
   const s = Buffer.from(buf).toString('latin1');
   const m = s.match(/\/Type\s*\/Page(?![a-zA-Z])/g);
@@ -122,17 +145,19 @@ export function countPdfPagesFast(buf) {
 }
 async function pdfLib() { return (await import('pdf-lib')).PDFDocument; }
 
-/* Prepara un archivo para la IA: cuenta páginas y, si es un PDF de más de 20, arma uno nuevo con las
-   primeras 20 (el original queda guardado tal cual). → { buf, pages, total, truncated } */
+/* Prepara un archivo para la IA: cuenta las páginas con pdf-lib y, si es un PDF de más de 20, arma uno
+   nuevo con las primeras 20 (el original queda guardado tal cual). Si pdf-lib no lo puede abrir, no se
+   manda: 422 pdf_ilegible ("no pudimos leer el PDF"). → { buf, pages, total, truncated }
+   (Pendiente: pdf-lib es sincrónico y no se le puede poner timeout; un PDF hostil solo frena la propia
+   función hasta el maxDuration de Vercel.) */
+export const PDF_UNREADABLE = 'No pudimos leer el PDF.';
 export async function prepareForAI(buf, type) {
   if (type !== 'application/pdf') return { buf, pages: 1, total: 1, truncated: false };
-  let total = countPdfPagesFast(buf), doc = null;
-  if (!total || total > PAGES_PER_DOC) {
-    try { const PDFDocument = await pdfLib(); doc = await PDFDocument.load(buf, { ignoreEncryption: true, updateMetadata: false }); total = doc.getPageCount(); }
-    catch { if (!total) total = 1; }
-  }
-  if (total <= PAGES_PER_DOC) return { buf, pages: Math.max(1, total), total: Math.max(1, total), truncated: false };
-  if (!doc) throw Object.assign(new Error('pdf_no_se_pudo_cortar'), { status: 422 });
+  let doc, total;
+  try { const PDFDocument = await pdfLib(); doc = await PDFDocument.load(buf, { ignoreEncryption: true, updateMetadata: false }); total = doc.getPageCount(); }
+  catch { throw Object.assign(new Error('pdf_ilegible'), { status: 422, message_es: PDF_UNREADABLE }); }
+  if (!total) throw Object.assign(new Error('pdf_ilegible'), { status: 422, message_es: PDF_UNREADABLE });
+  if (total <= PAGES_PER_DOC) return { buf, pages: total, total, truncated: false };
   try {
     const PDFDocument = await pdfLib();
     const out = await PDFDocument.create();

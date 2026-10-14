@@ -89,8 +89,15 @@ export function isPrivateIp(ip) {
     const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(x) || /^::(\d+\.\d+\.\d+\.\d+)$/.exec(x);
     if (mapped) return isPrivateIp(mapped[1]);
     if (/^::ffff:[0-9a-f]{1,4}:[0-9a-f]{1,4}$/.test(x)) return true;   // IPv4 mapeada en hexa: no arriesgamos
-    const first = parseInt(x.split(':')[0] || '0', 16);
-    return (first & 0xfe00) === 0xfc00 || (first & 0xffc0) === 0xfe80 || (first & 0xff00) === 0xff00 || x.startsWith('64:ff9b:') || x.startsWith('2001:db8:') || x.startsWith('100::');
+    /* IPv6: solo unicast global (2000::/3), y dentro de eso fuera Teredo (2001::/32), documentación
+       (2001:db8::/32), ORCHID (2001:10::/28, 2001:20::/28) y 6to4 (2002::/16), que encapsulan o esconden IPv4 */
+    if (x.startsWith('::')) return true;
+    const parts = x.split(':');
+    const first = parseInt(parts[0] || '0', 16), second = parseInt(parts[1] || '0', 16);
+    if ((first & 0xe000) !== 0x2000) return true;
+    if (first === 0x2001 && (second === 0 || second === 0xdb8 || (second & 0xfff0) === 0x10 || (second & 0xfff0) === 0x20)) return true;
+    if (first === 0x2002) return true;
+    return false;
   }
   return true;   // lo que no es una IP válida, no pasa
 }
