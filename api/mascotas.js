@@ -401,6 +401,7 @@ const bump = doc => { doc.rev = (doc.rev || 0) + 1; doc.updatedAt = new Date().t
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
   const q = req.query || {};
+  if (q.rtc) return (await import('./_lib/petrtc.js')).handleRtc(req, res);   /* Me fui: señalización del video en vivo */
 
   /* foto: id aleatorio, se puede ver sin sesión (la usan la ficha y el cartel) */
   if (req.method === 'GET' && q.img) {
