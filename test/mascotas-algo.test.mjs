@@ -163,3 +163,23 @@ test('compatibilidad: "¿Sigue igual?" y la respuesta se guardan; valores raros 
   assert.equal(x.check, true); assert.equal(x.res, 'mejor');
   assert.ok(!('check' in y) && !('res' in y));
 });
+
+/* ---------- PDF para el veterinario ---------- */
+test('PDF: "Episodios recientes" trae los últimos 60 días agrupados, con notas, intensidades y hasta 4 adjuntos', () => {
+  const img = n => ({ ref: mine(n), type: 'image/jpeg' });
+  const p = { symptoms: [
+    ep('old', '2026-08-01T10:00', 'tos'),
+    ep('a', '2026-10-13T22:10', 'vomito', { sev: 'leve', text: 'Con pasto', media: [img(1), img(2)] }),
+    ep('b', '2026-10-14T08:00', 'vomito', { sev: 'fuerte', media: [img(3), { ref: mine(4), type: 'video/mp4', dur: 9, thumb: mine(5) }, img(6)] }),
+    ep('c', '2026-10-12T10:00', 'otro', { text: 'Comió una media', res: 'paso' }),
+    { id: 'n', date: '2026-10-13', text: 'Nota vieja' } ] };
+  const r = Z.recentEpisodes(p, 60, NOW);
+  assert.deepEqual(r.map(g => [g.last.id, g.n]), [['b', 2], ['c', 1]], 'sin lo de agosto ni las notas viejas');
+  assert.deepEqual(r[0].notes, ['Con pasto']);
+  assert.deepEqual(r[0].sevs, ['Leve', 'Fuerte']);
+  assert.equal(r[0].media.length, 4);
+  assert.equal(r[0].media[3].type, 'video/mp4');
+  assert.equal(r[0].hours, 10);
+  assert.deepEqual(r[1].notes, [], '"Otro" usa la nota como título, no la repite');
+  assert.equal(r[1].last.res, 'paso');
+});

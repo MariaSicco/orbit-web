@@ -414,6 +414,16 @@
     return epGroups(p).filter(g => dayDiff(epAt(g.last), now) <= 6 && epAt(g.last) <= now).sort((a, b) => epAt(b.last) - epAt(a.last));
   }
 
+  /* PDF para el veterinario: los grupos de los últimos `days` días, de lo más nuevo a lo más viejo, con sus
+     notas, intensidades y hasta 4 fotos o videos por fila */
+  function recentEpisodes(p, days = 60, now = new Date(), max = 20) {
+    const since = new Date(now); since.setHours(0, 0, 0, 0); since.setTime(since.getTime() - days * DAY);
+    return epGroups(p).filter(g => epAt(g.last) >= since && epAt(g.last) <= now).sort((a, b) => epAt(b.last) - epAt(a.last)).slice(0, max).map(g => ({
+      ...g, notes: g.items.map(x => x.kind === 'otro' ? '' : x.text).filter(Boolean), sevs: [...new Set(g.items.map(x => SEV[x.sev]).filter(Boolean))],
+      media: g.items.flatMap(x => x.media || []).slice(0, 4), hours: g.n > 1 ? Math.max(1, Math.round((epAt(g.last) - epAt(g.first)) / HOUR)) : 0,
+    }));
+  }
+
   /* todo lo que le pasó, en una sola línea de tiempo */
   function timeline(p) {
     const ev = [];
@@ -483,5 +493,5 @@
     return out.sort((a, b) => a.date.localeCompare(b.date)).slice(0, n);
   }
 
-  g.MZ = { REPEAT_MS, sinceWord, episodes, epRepeat, repeatText, epGroups, RES, followUps, lastWeek, VIDEO_MAX_S, VIDEO_MAX_BYTES, videoCheck, ALGO, ALGO_L, ALGO_I, SEV, ALGO_NOTE, epAt, epTitle, epWhen, isEp, quickAt, addBag, bagPrompt, foodSpend, RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
+  g.MZ = { recentEpisodes, REPEAT_MS, sinceWord, episodes, epRepeat, repeatText, epGroups, RES, followUps, lastWeek, VIDEO_MAX_S, VIDEO_MAX_BYTES, videoCheck, ALGO, ALGO_L, ALGO_I, SEV, ALGO_NOTE, epAt, epTitle, epWhen, isEp, quickAt, addBag, bagPrompt, foodSpend, RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
 })(typeof window !== 'undefined' ? window : globalThis);

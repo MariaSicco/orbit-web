@@ -1817,7 +1817,8 @@ function libretaDoc(p) {
   const nx = r => !r.next ? '' : cur.has(r.id) ? nextRib(r, Z.status(r.next), false, true) : r.date ? `${dd(r.next)} <span class="m">(renovada)</span>` : dd(r.next);
   const vac = recs('vacuna'), des = recs('desparasitacion'), ctl = [...p.records.filter(r => r.type === 'control' || r.type === 'otro').map(r => ({ date: r.date, what: r.name, vet: r.vet, w: '', notes: r.notes, next: r.next })), ...p.visits.map(v => ({ date: v.date, what: v.reason || 'Consulta', vet: v.vet, w: v.weight ? kg(v.weight) : '', notes: [v.findings, v.plan].filter(Boolean).join(' · ') }))].sort((a, b) => (a.date || '').localeCompare(b.date || ''));
   const kv = rows => `<div class="kv">${rows.map(([k, v]) => `<div><span>${k}</span><b>${v || '—'}</b></div>`).join('')}</div>`;
-  const syms = [...p.symptoms].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
+  /* notas viejas ("Algo que notaste") y episodios de "+ Algo pasó" por separado */
+  const syms = p.symptoms.filter(s => !s.kind).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
   return `<article class="sheetdoc">
     <div class="pd-pass">${passport(p, true)}<div class="pd-brand">Libreta sanitaria<br>Mimitos by Orbit<br>Generada el ${dd(iso(Z.today()))}</div></div>
     <p class="pd-warn"><b>Mimitos es un organizador, no reemplaza al veterinario.</b> Datos cargados por el tutor o la tutora.</p>
@@ -1834,11 +1835,38 @@ function libretaDoc(p) {
     ${p.weights.length ? t(`<tr><th>Fecha</th><th>Peso</th></tr>${[...p.weights].reverse().slice(0, 10).map(w => `<tr><td>${dd(w.date)}</td><td>${kg(w.kg)}</td></tr>`).join('')}`) : '<p class="m">Sin pesos cargados.</p>'}
     <h2>Antecedentes</h2>
     ${kv([['Problemas de salud', p.conditions.length ? p.conditions.map(c => `${esc(c.name)} (${{ activa: 'activo', controlada: 'controlado', resuelta: 'resuelto' }[c.status]})`).join(', ') : 'Ninguno cargado'], ['Cirugías', p.surgeries.length ? p.surgeries.map(c => esc(c.name) + (c.date ? ' ' + dd(c.date) : '')).join(', ') : 'Ninguna cargada'], ['Remedios de siempre', esc(p.chronic) || 'Ninguno']])}
-    ${(() => { const h = histEvents(p); return h.length ? `<h2>Historial clínico</h2><p class="m">${HIST_NOTE}</p>${t(`<tr><th>Fecha</th><th>Qué</th><th>Detalle</th></tr>${h.map(e => `<tr><td>${e.date ? dd(e.date) : '—'}</td><td><b>${esc(e.title)}</b><br><span class="m">${HK[e.k][2]}</span></td><td>${esc(e.kind === 'study' ? [e.ref.lab, e.ref.notes].filter(Boolean).join(' · ') : e.sub)}${e.kind === 'study' && e.ref.files?.length ? ` <span class="m">(${e.ref.files.length} archivo${e.ref.files.length > 1 ? 's' : ''} en Mimitos)</span>` : ''}</td></tr>`).join('')}`)}` : ''; })()}
+    ${(() => { const h = histEvents(p).filter(e => !e.ref?.kind); return h.length ? `<h2>Historial clínico</h2><p class="m">${HIST_NOTE}</p>${t(`<tr><th>Fecha</th><th>Qué</th><th>Detalle</th></tr>${h.map(e => `<tr><td>${e.date ? dd(e.date) : '—'}</td><td><b>${esc(e.title)}</b><br><span class="m">${HK[e.k][2]}</span></td><td>${esc(e.kind === 'study' ? [e.ref.lab, e.ref.notes].filter(Boolean).join(' · ') : e.sub)}${e.kind === 'study' && e.ref.files?.length ? ` <span class="m">(${e.ref.files.length} archivo${e.ref.files.length > 1 ? 's' : ''} en Mimitos)</span>` : ''}</td></tr>`).join('')}`)}` : ''; })()}
     ${p.meds.length ? `<h2>Medicación</h2>${t(`<tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Desde</th><th>Estado</th></tr>${p.meds.map(m => `<tr><td>${esc(m.name)}</td><td>${esc(m.dose)}</td><td>cada ${m.every} h</td><td>${m.start ? dd(m.start.slice(0, 10)) : ''}</td><td>${Z.medState(m, p.log).state === 'ended' ? 'Terminado' : 'En curso'}</td></tr>`).join('')}`)}` : ''}
+    ${pdfEpisodes(p)}
     ${syms.length ? `<h2>Lo que notamos</h2>${t(syms.map(s => `<tr><td style="width:90px">${dd(s.date)}</td><td>${s.kind ? `<b>${esc(Z.epTitle(s))}</b>${s.sev ? ' · ' + Z.SEV[s.sev] : ''}${s.text && s.kind !== 'otro' ? ' · ' + esc(s.text) : ''}` : esc(s.text)}</td></tr>`).join(''))}` : ''}
     <p class="foot">Generado con Mimitos by Orbit (orbitando.com.ar/mascotas). Mimitos es un organizador: no reemplaza al veterinario ni su criterio.</p>
   </article>`;
+}
+/* PDF para el veterinario: "Episodios recientes" (últimos 60 días, agrupados por 72 h), con fotos en miniatura */
+const PDF_EP_DAYS = 60;
+function pdfEpisodes(p) {
+  const gs = Z.recentEpisodes(p, PDF_EP_DAYS);
+  if (!gs.length) return '';
+  const vid = m => `<small>Video${m.dur ? ' ' + Math.round(m.dur) + ' s' : ''}</small>`;
+  const thumbs = list => list.map(m => isVid(m)
+    ? `<span class="pd-th v">${m.thumb ? `<img src="${esc(fileUrl({ ref: m.thumb }))}" alt="">` : ''}${vid(m)}</span>`
+    : `<span class="pd-th"><img src="${esc(fileUrl(m))}" alt=""></span>`).join('');
+  const when = x => `${dd(x.date)}${x.at ? ' ' + Z.fmtTime(Z.epAt(x)) : ''}`;
+  return `<h2>Episodios recientes</h2><p class="m">Lo que anotó la familia en los últimos ${PDF_EP_DAYS} días con "+ Algo pasó". Mimitos solo lo anota: no es un diagnóstico. Las fotos y videos completos están en Mimitos.</p>
+    <table class="pd-eps"><tr><th>Cuándo</th><th>Qué</th><th class="hide-s">Intensidad</th><th>Detalle</th><th>Fotos</th></tr>${gs.map(g => {
+      const s = g.last;
+      return `<tr><td>${g.n > 1 ? `${when(g.first)} a<br>${when(s)}` : when(s)}</td><td><b>${esc(Z.epTitle(s))}</b>${g.n > 1 ? `<br><span class="m">${g.n} veces en ${g.hours} h</span>` : ''}</td>
+        <td class="hide-s">${esc(g.sevs.join(', '))}</td>
+        <td>${esc(g.notes.join(' · '))}${s.res ? `${g.notes.length ? '<br>' : ''}<span class="m">Al día siguiente: ${esc(Z.RES[s.res].toLowerCase())}</span>` : ''}</td>
+        <td><span class="pd-ths">${thumbs(g.media)}</span></td></tr>`;
+    }).join('')}</table>`;
+}
+/* imprimir cuando las fotos (privadas, por URL firmada) ya cargaron; como mucho 5 s */
+async function printDoc(p) {
+  $('#print').innerHTML = libretaDoc(p);
+  const imgs = [...$('#print').querySelectorAll('img')].filter(i => !i.complete);
+  if (imgs.length) { toast('Preparando las fotos…'); await Promise.race([Promise.all(imgs.map(i => new Promise(r => { i.onload = i.onerror = r; }))), new Promise(r => setTimeout(r, 5000))]); }
+  window.print();
 }
 function renderPdf(p) {
   after(() => { $('#print').innerHTML = libretaDoc(p); });
@@ -3293,7 +3321,7 @@ document.addEventListener('click', e => {
     case 'newVac': return recForm(cur);
     case 'newAnti': return recForm(cur, null, { type: 'desparasitacion', name: '', scope: 'interna' });
     case 'newVisit': return visitForm(cur);
-    case 'print': $('#print').innerHTML = libretaDoc(cur); return window.print();
+    case 'print': return printDoc(cur);
     case 'editPet': return petForm(cur);
     case 'editPetId': return petForm(petById(b.dataset.id));
     case 'newCond': return conditionForm(cur);
