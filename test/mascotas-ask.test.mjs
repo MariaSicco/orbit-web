@@ -38,7 +38,7 @@ test('contexto: cada ítem lleva un id corto citable, la fecha de hoy y la zona 
   for (const id of ids) assert.ok(c.refs[id], 'cada id del texto se puede resolver: ' + id);
   const pip = Object.entries(c.refs).find(([, r]) => r.itemId === 'pip2');
   assert.deepEqual([pip[1].kind, pip[1].section, pip[1].date, pip[1].label, pip[1].petId], ['rec', 'rec', '2026-09-10', 'Pipeta antipulgas', 'aika0001']);
-  assert.match(c.text, new RegExp(`\\[r:${pip[0]}\\] Antiparasitario externa: "Pipeta antipulgas" · aplicada 2026-09-10 · próxima 2026-10-10 \\(vencida hace 4 días\\)`));
+  assert.match(c.text, new RegExp(`\\[r:${pip[0]}\\] \\(Libreta\\) Antiparasitario externa: "Pipeta antipulgas" · aplicada 2026-09-10 · próxima 2026-10-10 \\(vencida hace 4 días\\)`));
   assert.match(c.text, /Pipeta antipulgas" · aplicada 2026-08-10 · próxima 2026-09-10 \(vencida hace 34 días\) · reemplazada por una dosis posterior/);
   assert.match(c.text, /Total de gastos de 2026-10 .*\$65\.000 · veterinaria \$25\.000 · alimento \$40\.000/);
   /* los ids son estables entre preguntas (sirven para el historial) */

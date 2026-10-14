@@ -2780,9 +2780,17 @@ function askExamples() {
   return out;
 }
 const ddmm = d => d && /^\d{4}-\d{2}-\d{2}/.test(d) ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '';
+/* chip de "Fuentes": la ruta legible que arma el servidor ("Libreta → Desparasitación externa · 14/09").
+   Las respuestas viejas (guardadas en la pestaña antes de este cambio) no traen source: van con nombre y fecha. */
 function citeChip(c, i) {
+  const many = doc.pets.length > 1 && c.petName ? `${c.petName} · ` : '';
+  if (c.source) {
+    const [path, ...rest] = String(c.source).split(' · ');
+    const parts = path.split(' → ');
+    const route = parts.map((x, k) => k ? `<span class="arr" aria-hidden="true">→</span>${esc(x)}` : `<b>${esc(x)}</b>`).join('');
+    return `<button type="button" class="cite" data-act="askCite" data-t="${i}" data-c="${esc(c.id)}" aria-label="Fuente ${i + 1}: ${esc(many + parts.join(', ') + (rest.length ? ', ' + rest.join(', ') : ''))}. Abrir"><span class="n" aria-hidden="true">${i + 1}</span><span class="src">${many ? `<span class="who">${esc(many)}</span>` : ''}${route}${rest.length ? `<span class="when"> · ${esc(rest.join(' · '))}</span>` : ''}</span></button>`;
+  }
   const lab = String(c.label || ''), short = lab.length > 24 ? lab.slice(0, 23).trim() + '…' : lab;
-  const many = doc.pets.length > 1 ? `${c.petName} · ` : '';
   const when = c.kind === 'gastos' ? (c.date || '').slice(5, 7) + '/' + (c.date || '').slice(0, 4) : ddmm(c.date);
   return `<button type="button" class="cite" data-act="askCite" data-t="${i}" data-c="${esc(c.id)}" aria-label="Ver ${esc(c.label)}${c.petName ? ' de ' + esc(c.petName) : ''}${c.date ? ', ' + esc(c.date) : ''}"><span class="n" aria-hidden="true">${i + 1}</span>${esc(many + short)}${when ? ` · ${esc(when)}` : ''}</button>`;
 }
@@ -2799,7 +2807,7 @@ function askLog() {
       <p class="ask-q"><span class="sr">Vos: </span>${esc(t.q)}</p>
       <div class="ask-a${t.medical ? ' med' : ''}"><span class="sr">Mimitos: </span>${askText(t, i)}
         ${t.trimmed ? '<p class="ask-trim">Tenías muchos datos: miré lo más reciente.</p>' : ''}
-        ${t.cites?.length ? `<div class="cites" role="group" aria-label="De dónde sale">${t.cites.map(citeChip).join('')}</div>` : ''}</div></div>`).join('');
+        ${t.cites?.length ? `<div class="cites" role="group" aria-labelledby="ch${i}"><p class="cites-h" id="ch${i}">Fuentes</p>${t.cites.map(citeChip).join('')}</div>` : ''}</div></div>`).join('');
   const pending = ask.pending ? `<div class="ask-turn"><p class="ask-q"><span class="sr">Vos: </span>${esc(ask.pending)}</p>
       <div class="ask-a thinking" aria-busy="true"><span class="think-t">${ASK_IC.stars} Pensando…</span><span class="sk" style="width:92%;height:12px;border-radius:6px"></span><span class="sk" style="width:76%;height:12px;border-radius:6px"></span><span class="sk" style="width:54%;height:12px;border-radius:6px"></span></div></div>` : '';
   const err = ask.error ? `<div class="ask-err" role="alert">${I('alert')}<span><b>${esc(ask.error.t)}</b>${ask.error.d ? `<small>${esc(ask.error.d)}</small>` : ''}</span>${ask.error.retry ? '<button type="button" class="btn sm" data-act="askRetry">Reintentar</button>' : ''}</div>` : '';
@@ -2899,7 +2907,10 @@ function askCite(ti, id) {
     case 'datos': return go('datos');
     case 'qr': return sharePanel(p);
     case 'mefui': return go('mefui');
-    default: return go('inicio');
+    case 'appt': return go('agenda');
+    case 'inicio': return go('inicio');
+    /* tipos nuevos (Algo pasó, rutina del cuidador…): la pantalla que manda el servidor */
+    default: return go(c.go && TABS.concat([['datos'], ['antecedentes'], ['mefui']]).some(t => t[0] === c.go) ? c.go : 'inicio');
   }
 }
 /* el panel del peso citado vive fuera de #app: su botón se resuelve acá */

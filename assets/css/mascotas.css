@@ -1233,6 +1233,13 @@ body[data-view="preguntar"] .disclaimer,body[data-view="preguntar"] .made{displa
 .cite{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px 0 6px;border:0;border-radius:999px;background:var(--sunk);color:var(--ink);font:600 13.5px/1.2 var(--f);cursor:pointer;max-width:100%;text-align:left;transition:background .15s var(--ease)}
 .cite .n{flex:none;width:26px;height:26px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:12px;font-weight:800}
 .cite:hover{background:#E4DED6}
+.cites-h{flex-basis:100%;margin:0 0 -2px;font:500 11.5px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
+.cite .src{display:inline;padding:6px 0;font-weight:500;color:var(--ink2)}
+.cite .src b{font-weight:700;color:var(--ink)}
+.cite .src .who{font-weight:700;color:var(--ink)}
+.cite .src .arr{margin:0 5px;color:var(--ink3)}
+.cite .src .when{white-space:nowrap}
+.cite:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .ask-a.thinking{gap:9px}
 .think-t{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--ink2)}
 .think-t svg.i{width:18px;height:18px}
