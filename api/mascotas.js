@@ -15,7 +15,8 @@
    POST ?unsitter=1 {petId}   → apaga el link del cuidador
    POST ?scan=1 {images}      → lee fotos de la libreta con IA y devuelve los registros para revisar (no guarda nada)
    POST ?studyscan=1 {ref}    → lee un estudio ya subido (foto o PDF) con IA: fecha, tipo, laboratorio y un resumen fiel (no guarda nada)
-   POST ?upload=1 {name,size,type} → URL firmada para subir un estudio a Blob privado
+   POST ?upload=1 {name,size,type,purpose?} → URL firmada para subir un estudio a Blob privado
+                              (purpose 'episodio': "+ Algo pasó" acepta además video mp4, mov o webm de hasta 20 MB)
    GET  ?file=ref             → abre un estudio propio (URL firmada que vence en minutos)
    GET  ?ask=1                → cuántas preguntas quedan hoy y este mes
    POST ?renew=1              → "Avisame cuando pueda renovar": guarda el interés en KV (no cobra nada)
@@ -74,6 +75,7 @@ const MAX_DOC = 700 * 1024;
 const MAX_IMG = 450 * 1024;
 const MAX_PETS = 12, MAX_RECS = 300, MAX_LOG = 300;
 const MAX_UPLOAD = 15 * 1024 * 1024;
+export const MAX_VIDEO = 20 * 1024 * 1024;
 
 const str = (v, n = 120) => String(v == null ? '' : v).replace(/[\u0000-\u0009\u000b-\u001f]/g, ' ').trim().slice(0, n);
 const day = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '';
@@ -670,8 +672,10 @@ export default async function handler(req, res) {
     if (!blobReady()) return res.status(503).json({ error: 'blob_no_configurado' });
     const size = Number(body.size);
     if (!Number.isFinite(size) || size <= 0) return res.status(400).json({ error: 'tamano_invalido' });
-    if (size > MAX_UPLOAD) return res.status(413).json({ error: 'too_big' });
-    if (!/^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/.test(String(body.type || ''))) return res.status(400).json({ error: 'tipo_no_permitido' });
+    /* "+ Algo pasó" sube también un video corto (hasta 15 s, lo mide el navegador) de hasta 20 MB */
+    const video = body.purpose === 'episodio' && /^video\/(mp4|quicktime|webm)$/.test(String(body.type || ''));
+    if (size > (video ? MAX_VIDEO : MAX_UPLOAD)) return res.status(413).json({ error: 'too_big', max: video ? MAX_VIDEO : MAX_UPLOAD });
+    if (!video && !/^(image\/(jpeg|png|webp|heic|heif)|application\/pdf)$/.test(String(body.type || ''))) return res.status(400).json({ error: 'tipo_no_permitido' });
     const clean = String(body.name || 'estudio').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9._-]+/g, '-').slice(-80) || 'estudio';
     if (!(await fits(s.email, size))) return res.status(413).json({ error: 'cupo_lleno', quota: QUOTA_BYTES });
     if (!(await dailyCount('upload', s.email, UPLOADS_PER_DAY))) return res.status(429).json({ error: 'limite_diario', limit: UPLOADS_PER_DAY });

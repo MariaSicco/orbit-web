@@ -757,14 +757,15 @@ function algoHtml() {
     </div>
     <div class="al-grid" role="group" aria-label="Qué pasó">${Z.ALGO.map(([k, l, ic]) => `<button type="button" class="al-k" data-alk="${k}" aria-pressed="${a.more && a.kind === k}">${I(ic)}<span>${l}</span></button>`).join('')}</div>
     <p class="al-hint" id="alHint" role="status">${a.more ? 'Elegí qué pasó y tocá Guardar.' : 'Tocá lo que pasó y queda anotado.'}</p>
-    <button type="button" class="al-more-b" id="alMoreB" aria-expanded="${a.more}" aria-controls="alMore">${I(a.more ? 'back' : 'plus')} ${a.more ? 'Menos detalles' : 'Sumar intensidad, nota o foto'}</button>
+    <button type="button" class="al-more-b" id="alMoreB" aria-expanded="${a.more}" aria-controls="alMore">${I(a.more ? 'back' : 'plus')} ${a.more ? 'Menos detalles' : 'Sumar intensidad, nota, foto o video'}</button>
     <div class="al-more" id="alMore"${a.more ? '' : ' hidden'}>
       <div class="f"><span class="lb" id="alSevL">Intensidad <span class="opt">(opcional)</span></span>
         <div class="chips" role="group" aria-labelledby="alSevL">${Object.entries(Z.SEV).map(([k, l]) => `<button type="button" class="chip" data-als="${k}" aria-pressed="${a.sev === k}">${l}</button>`).join('')}</div></div>
       <div class="f"><label for="alText">Nota <span class="opt">(opcional)</span></label><textarea id="alText" maxlength="300" placeholder="Dos veces después de comer, tenía pasto…">${esc(a.text)}</textarea></div>
-      <div class="f"><span class="lb">Foto <span class="opt">(opcional)</span></span>
+      <div class="f"><span class="lb">Foto o video <span class="opt">(opcional)</span></span>
         <div class="al-media" id="alMedia"></div>
-        <label class="btn ghost sm" for="alFile" id="alFileL">${I('camera')} Sacar o subir foto</label><input id="alFile" type="file" accept="image/*" class="sr" multiple>
+        <label class="btn ghost sm" for="alFile" id="alFileL">${I('camera')} Foto o video</label><input id="alFile" type="file" accept="image/*,video/mp4,video/quicktime,video/webm" class="sr" multiple>
+        <small class="dim">Video de hasta ${Z.VIDEO_MAX_S} segundos.</small>
         <small id="alMsg" role="status"></small></div>
       <button type="button" class="btn big wide" id="alSave">Guardar</button>
       ${edit ? `<button type="button" class="btn ghost wide danger" id="alDel">${I('trash')} Borrar</button>` : ''}
@@ -774,7 +775,7 @@ function algoHtml() {
 }
 function algoMediaDraw() {
   const box = $('#alMedia'); if (!box || !algo) return;
-  box.innerHTML = algo.media.map((m, i) => `<span class="al-th">${m.type.startsWith('video/') ? `<span class="al-vid">${I('video')}${m.dur ? `<small>${Math.round(m.dur)} s</small>` : ''}</span>` : `<img src="${esc(fileUrl(m))}" alt="Foto ${i + 1}">`}<button type="button" class="ibtn" data-alrm="${i}" aria-label="Quitar ${esc(m.name || 'archivo')}">${I('x')}</button></span>`).join('');
+  box.innerHTML = algo.media.map((m, i) => `<span class="al-th">${mediaThumb(m, i)}<button type="button" class="ibtn" data-alrm="${i}" aria-label="Quitar ${esc(m.name || 'archivo')}">${I('x')}</button></span>`).join('');
   box.hidden = !algo.media.length;
   const lb = $('#alFileL'); if (lb) lb.hidden = algo.media.length >= ALGO_MAX_MEDIA;
   algoSync();
@@ -837,23 +838,57 @@ function algoWire() {
 function algoMore(on) {
   algo.more = on;
   $('#alMore').hidden = !on;
-  const b = $('#alMoreB'); b.setAttribute('aria-expanded', String(on)); b.innerHTML = `${I(on ? 'back' : 'plus')} ${on ? 'Menos detalles' : 'Sumar intensidad, nota o foto'}`;
+  const b = $('#alMoreB'); b.setAttribute('aria-expanded', String(on)); b.innerHTML = `${I(on ? 'back' : 'plus')} ${on ? 'Menos detalles' : 'Sumar intensidad, nota, foto o video'}`;
   $('#alHint').textContent = on ? (algo.kind ? 'Tocá Guardar.' : 'Elegí qué pasó y tocá Guardar.') : 'Tocá lo que pasó y queda anotado.';
   if (!on) { algo.kind = algo.ep?.kind || ''; $('#pBody').querySelectorAll('[data-alk]').forEach(c => c.setAttribute('aria-pressed', 'false')); }
   algoSync();
 }
-/* foto: se comprime en el navegador y va al Blob privado de la cuenta, como los estudios (?upload, cupo y tope diario) */
+/* miniatura de una foto o un video de "Algo pasó" (el video muestra su primer cuadro y cuánto dura) */
+const isVid = m => String(m?.type || '').startsWith('video/');
+const mediaThumb = (m, i) => isVid(m)
+  ? `<span class="al-vid">${m.thumb ? `<img src="${esc(fileUrl({ ref: m.thumb }))}" alt="">` : ''}<span class="al-play">${I('video')}${m.dur ? `<small>${Math.round(m.dur)} s</small>` : ''}</span><span class="sr">Video ${i + 1}</span></span>`
+  : `<img src="${esc(fileUrl(m))}" alt="Foto ${i + 1}">`;
+/* duración y primer cuadro del video, en el navegador (nada sale del celu hasta subirlo) */
+function videoInfo(file) {
+  return new Promise(ok => {
+    const v = document.createElement('video'), url = URL.createObjectURL(file);
+    let done = false; const fin = r => { if (done) return; done = true; clearTimeout(t); v.removeAttribute('src'); v.load(); URL.revokeObjectURL(url); ok(r); };
+    const t = setTimeout(() => fin({ dur: Number.isFinite(v.duration) ? v.duration : NaN, poster: '' }), 8000);
+    v.muted = true; v.playsInline = true; v.preload = 'auto';
+    v.onerror = () => fin({ dur: NaN, poster: '' });
+    v.onloadedmetadata = () => { try { v.currentTime = Math.min(0.2, (v.duration || 1) / 2); } catch { fin({ dur: v.duration, poster: '' }); } };
+    v.onseeked = () => {
+      let poster = '';
+      try { const s = Math.min(1, 480 / Math.max(v.videoWidth, v.videoHeight)); const c = document.createElement('canvas'); c.width = Math.round(v.videoWidth * s); c.height = Math.round(v.videoHeight * s); c.getContext('2d').drawImage(v, 0, 0, c.width, c.height); poster = c.toDataURL('image/jpeg', .75); } catch {}
+      fin({ dur: v.duration, poster });
+    };
+    v.src = url;
+  });
+}
+/* foto: se comprime en el navegador. Video: hasta 15 s y 20 MB, con su primer cuadro como miniatura.
+   Todo va al Blob privado de la cuenta, como los estudios (?upload: cupo, tope diario y tamaño real con head()) */
 async function algoAdd(st, f) {
   const msg = t => { if (algo === st && $('#alMsg')) $('#alMsg').textContent = t; };
-  if (!/^image\//.test(f.type)) return msg('Elegí una foto.');
-  st.busy++; algoSync(); msg('Subiendo la foto…');
+  const video = /^video\//.test(f.type);
+  if (!video && !/^image\//.test(f.type)) return msg('Elegí una foto o un video.');
+  st.busy++; algoSync(); msg(video ? 'Revisando el video…' : 'Subiendo la foto…');
   try {
-    const data = await shrink(f, 1600, .82);
-    const file = dataToFile(data, (f.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg');
-    const up = await uploadStudy(file);
-    st.media.push({ ref: up.ref, type: 'image/jpeg', name: up.name });
+    if (video) {
+      const info = await videoInfo(f);
+      const err = Z.videoCheck({ type: f.type, size: f.size, dur: info.dur });
+      if (err) return msg(err);
+      msg('Subiendo el video…');
+      const up = await uploadStudy(f, { purpose: 'episodio' });
+      let thumb = '';
+      if (info.poster) { try { thumb = (await uploadStudy(dataToFile(info.poster, 'cuadro.jpg'))).ref; } catch {} }
+      st.media.push({ ref: up.ref, type: f.type, name: up.name, dur: Math.round(info.dur * 10) / 10, ...(thumb ? { thumb } : {}) });
+    } else {
+      const data = await shrink(f, 1600, .82);
+      const up = await uploadStudy(dataToFile(data, (f.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg'));
+      st.media.push({ ref: up.ref, type: 'image/jpeg', name: up.name });
+    }
     msg('');
-  } catch (e) { msg(e?.msg || 'No se pudo subir la foto. Probá de nuevo.'); }
+  } catch (e) { msg(e?.msg || (video ? 'No se pudo subir el video. Probá de nuevo.' : 'No se pudo subir la foto. Probá de nuevo.')); }
   finally { st.busy--; if (algo === st) algoMediaDraw(); }
 }
 function algoSave() {
@@ -988,8 +1023,8 @@ function drawFiles() {
   box.innerHTML = studyFiles.map((f, i) => `<div class="row">${bubble(f.type === 'application/pdf' ? 'file' : 'camera', 'viaje')}<span class="what"><b>${esc(f.name)}</b></span><button type="button" class="ibtn" data-rm="${i}" aria-label="Quitar ${esc(f.name)}">${I('x')}</button></div>`).join('');
   box.querySelectorAll('[data-rm]').forEach(b => b.onclick = () => { studyFiles.splice(+b.dataset.rm, 1); drawFiles(); });
 }
-async function uploadStudy(file) {
-  const r = await fetch('/api/mascotas?upload=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: file.name, size: file.size, type: file.type || 'application/octet-stream' }) });
+async function uploadStudy(file, extra = {}) {
+  const r = await fetch('/api/mascotas?upload=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: file.name, size: file.size, type: file.type || 'application/octet-stream', ...extra }) });
   const d = await r.json().catch(() => ({})); if (!r.ok) { const m = uploadErr(d, 'estudio'); if (m && d.error === 'cupo_lleno') toast(m); throw Object.assign(new Error(d.error || 'upload'), { msg: m }); }
   const put = await fetch(d.url, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } });
   if (!put.ok) throw new Error('put');
@@ -1463,7 +1498,9 @@ function detail(p, kind, id) {
     title = Z.epTitle(x);
     head = `<div class="d-head">${bubble(Z.ALGO_I[x.kind] || 'note', 'perdida')}<div><span class="eyebrow">Algo pasó · ${esc(Z.epWhen(x))}</span>${x.sev ? `<span class="badge ${x.sev === 'fuerte' ? 'late' : x.sev === 'moderada' ? 'soon' : 'ok'}">${Z.SEV[x.sev]}</span>` : ''}</div></div>`;
     body = (x.text && x.kind !== 'otro' ? `<p style="white-space:pre-wrap">${esc(x.text)}</p>` : '')
-      + (x.media?.length ? `<div class="al-media big">${x.media.map((m, i) => `<a class="al-th" href="${esc(fileUrl(m))}" target="_blank" rel="noopener" aria-label="Abrir ${m.type.startsWith('video/') ? 'video' : 'foto'} ${i + 1}">${m.type.startsWith('video/') ? `<span class="al-vid">${I('video')}${m.dur ? `<small>${Math.round(m.dur)} s</small>` : ''}</span>` : `<img src="${esc(fileUrl(m))}" alt="">`}</a>`).join('')}</div>` : '')
+      + (x.media?.length ? `<div class="al-media big">${x.media.map((m, i) => isVid(m)
+        ? `<video class="al-v" controls playsinline preload="none" src="${esc(fileUrl(m))}"${m.thumb ? ` poster="${esc(fileUrl({ ref: m.thumb }))}"` : ''} aria-label="Video ${i + 1}${m.dur ? `, ${Math.round(m.dur)} segundos` : ''}"></video>`
+        : `<a class="al-th" href="${esc(fileUrl(m))}" target="_blank" rel="noopener" aria-label="Abrir foto ${i + 1}"><img src="${esc(fileUrl(m))}" alt=""></a>`).join('')}</div>` : '')
       + `<p class="note">${esc(Z.ALGO_NOTE)}</p>`;
     acts = btn('edit', 'edit', 'Editar', 'soft');
   } else if (kind === 'sym') {

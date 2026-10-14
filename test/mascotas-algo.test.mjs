@@ -7,8 +7,14 @@ process.env.SESSION_SECRET = 'prueba-secreta-de-mimitos-algo-1234567890';
 await import('../assets/js/mascotas-rules.js');
 await import('../assets/js/mascotas-core.js');
 const Z = globalThis.MZ;
-const { cleanDoc, folder, EPISODE_KINDS } = await import('../api/mascotas.js');
+const { default: mascotas, cleanDoc, folder, EPISODE_KINDS, MAX_VIDEO } = await import('../api/mascotas.js');
 const F = await import('../api/_lib/petfiles.js');
+const { kvSet } = await import('../api/_lib/kv.js');
+const { makeSession } = await import('../api/_lib/auth.js');
+const call = (method, query, body, email) => new Promise(ok => {
+  const res = { code: 200, headers: {}, setHeader(k, v) { this.headers[k.toLowerCase()] = v; }, status(c) { this.code = c; return this; }, json(o) { ok({ code: this.code, body: o }); }, end(b) { ok({ code: this.code, raw: b }); }, redirect(c, u) { ok({ code: c, location: u }); } };
+  mascotas({ method, query, body, headers: { cookie: `orbit_session=${makeSession(email)}`, host: 'preview.orbitando.test' } }, res);
+});
 
 const EMAIL = 'duena@ejemplo.com';
 const mine = n => `blob:${folder(EMAIL)}/abc${n}-foto.jpg`;
@@ -75,4 +81,36 @@ test('horas rápidas: ahora, hace 1 h y hoy a la mañana (9:00, o ahora si es m�
 
 test('sin diagnóstico: el texto fijo de la hoja no cambia', () => {
   assert.equal(Z.ALGO_NOTE, 'Mimitos solo lo anota. Si te preocupa, consultá con tu vete; si es urgente, buscá una guardia.');
+});
+
+const MB = 1024 * 1024;
+test('video: hasta 15 s y 20 MB, solo mp4, mov o webm (lo mide el navegador antes de subir)', () => {
+  assert.equal(Z.videoCheck({ type: 'video/mp4', size: 12 * MB, dur: 14.9 }), '');
+  assert.equal(Z.videoCheck({ type: 'video/quicktime', size: 20 * MB, dur: 15.4 }), '', 'medio segundo de tolerancia');
+  assert.match(Z.videoCheck({ type: 'video/mp4', size: 5 * MB, dur: 16 }), /dura 16 segundos: puede durar hasta 15/);
+  assert.match(Z.videoCheck({ type: 'video/mp4', size: 20 * MB + 1, dur: 10 }), /más de 20 MB/);
+  assert.match(Z.videoCheck({ type: 'video/x-msvideo', size: MB, dur: 5 }), /formato/);
+  assert.match(Z.videoCheck({ type: 'video/mp4', size: MB, dur: NaN }), /No pudimos leer/);
+  assert.equal(Z.VIDEO_MAX_BYTES, MAX_VIDEO, 'la app y el servidor usan el mismo tope');
+});
+
+test('video: el servidor acepta video solo para "Algo pasó", hasta 20 MB, y con cupo y tope diario', async () => {
+  const email = 'videos@ejemplo.com';
+  await kvSet(`orbit:purchases:${email}`, [{ productId: 'ob-018', orderId: 'o-v', date: new Date(Date.now() - 864e5).toISOString() }]);
+  process.env.BLOB_READ_WRITE_TOKEN = 'vercel_blob_rw_prueba_no_se_usa';
+  try {
+    const up = b => call('POST', { upload: '1' }, b, email);
+    assert.equal((await up({ name: 'v.mp4', size: MB, type: 'video/mp4' })).body.error, 'tipo_no_permitido', 'sin purpose no es un estudio válido');
+    assert.equal((await up({ name: 'v.avi', size: MB, type: 'video/x-msvideo', purpose: 'episodio' })).body.error, 'tipo_no_permitido');
+    const big = await up({ name: 'v.mp4', size: 20 * MB + 1, type: 'video/mp4', purpose: 'episodio' });
+    assert.equal(big.code, 413); assert.equal(big.body.max, 20 * MB);
+    assert.equal((await up({ name: 'a.pdf', size: 16 * MB, type: 'application/pdf', purpose: 'episodio' })).code, 413, 'los estudios siguen en 15 MB');
+    const ok = await up({ name: 'v.mp4', size: 19 * MB, type: 'video/mp4', purpose: 'episodio' });
+    assert.ok(![400, 413].includes(ok.code), 'un video de 19 MB pasa los controles: ' + ok.code);
+    await F.addUsage(email, `blob:${folder(email)}/lleno.pdf`, F.QUOTA_BYTES - MB);
+    assert.equal((await up({ name: 'v.mp4', size: 2 * MB, type: 'video/mp4', purpose: 'episodio' })).body.error, 'cupo_lleno');
+    await F.addUsage(email, `blob:${folder(email)}/lleno.pdf`, 0);
+    await kvSet(`orbit:petuploadday:${email}:${new Date().toISOString().slice(0, 10)}`, F.UPLOADS_PER_DAY);
+    assert.equal((await up({ name: 'v.mp4', size: MB, type: 'video/mp4', purpose: 'episodio' })).body.error, 'limite_diario');
+  } finally { delete process.env.BLOB_READ_WRITE_TOKEN; }
 });

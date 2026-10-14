@@ -354,6 +354,16 @@
   const ALGO_I = Object.fromEntries(ALGO.map(([k, , i]) => [k, i]));
   const SEV = { leve: 'Leve', moderada: 'Moderada', fuerte: 'Fuerte' };
   const ALGO_NOTE = 'Mimitos solo lo anota. Si te preocupa, consultá con tu vete; si es urgente, buscá una guardia.';
+  /* video corto: hasta 15 s y 20 MB (el servidor vuelve a mirar el tamaño y el tipo) */
+  const VIDEO_MAX_S = 15, VIDEO_MAX_BYTES = 20 * 1024 * 1024;
+  const VIDEO_TYPES = /^video\/(mp4|quicktime|webm)$/;
+  function videoCheck(v) {
+    if (!VIDEO_TYPES.test(v?.type || '')) return 'Ese formato de video no se puede subir. Probá con uno grabado con la cámara del celu.';
+    if (!(v.size > 0) || v.size > VIDEO_MAX_BYTES) return `El video pesa más de 20 MB. Grabá uno más corto, de hasta ${VIDEO_MAX_S} segundos.`;
+    if (!Number.isFinite(v.dur) || v.dur <= 0) return 'No pudimos leer el video. Probá con otro.';
+    if (v.dur > VIDEO_MAX_S + 0.5) return `El video dura ${Math.round(v.dur)} segundos: puede durar hasta ${VIDEO_MAX_S}. Recortalo o grabá uno más corto.`;
+    return '';
+  }
   /* cuándo pasó: la hora si la hay (hora local AAAA-MM-DDTHH:MM); si no, el mediodía del día */
   const epAt = s => { if (s?.at && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s.at)) { const [d, t] = s.at.split('T'); const [y, m, dd] = d.split('-').map(Number); const [h, mi] = t.split(':').map(Number); return new Date(y, m - 1, dd, h, mi); } const d = pd(s?.date); if (d) d.setHours(12); return d; };
   const epTitle = s => s.kind ? (s.kind === 'otro' && s.text ? s.text : ALGO_L[s.kind] || 'Algo pasó') : s.text;
@@ -432,5 +442,5 @@
     return out.sort((a, b) => a.date.localeCompare(b.date)).slice(0, n);
   }
 
-  g.MZ = { ALGO, ALGO_L, ALGO_I, SEV, ALGO_NOTE, epAt, epTitle, epWhen, isEp, quickAt, addBag, bagPrompt, foodSpend, RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
+  g.MZ = { VIDEO_MAX_S, VIDEO_MAX_BYTES, videoCheck, ALGO, ALGO_L, ALGO_I, SEV, ALGO_NOTE, epAt, epTitle, epWhen, isEp, quickAt, addBag, bagPrompt, foodSpend, RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
 })(typeof window !== 'undefined' ? window : globalThis);
