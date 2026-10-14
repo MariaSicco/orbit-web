@@ -4,12 +4,18 @@
    window.MZRTC = { startBroadcast, startViewer, MSG }
 
    Lado cámara (celu viejo en casa, con el token del emparejado):
-     const cam = MZRTC.startBroadcast({ camToken, onStatus, audio: false })
-     cam.setAudio(true|false)   prende o apaga el micrófono (apagado por defecto; recién ahí pide permiso)
+     const cam = MZRTC.startBroadcast({ camToken, onStatus, audio: false, micTrack, onAudio })
+     cam.setAudio(true|false)   prende o apaga el micrófono de la transmisión → { on, error? }
      cam.stop()
+     micTrack(): la pista del detector de sonidos (mascotas-audio.js). Si está viva se manda un clon: el detector y la
+       transmisión comparten el micrófono (en iPhone, un segundo getUserMedia corta el primero). Si no, se pide uno nuevo.
+     onAudio({ on, error? }): avisa cuando el sonido en vivo se prende o se apaga (lo pide la dueña desde su celu).
    Lado dueña (con sesión):
      const v = MZRTC.startViewer({ camId, videoEl, onStatus })
      v.setMuted(false)          el sonido arranca silenciado (autoplay)
+     v.setAudio(true|false)     le pide a la cámara que prenda o apague el micrófono (canal de datos P2P, sin servidor)
+                                → Promise<{ on, error? }>; error: 'sin-permiso' | 'sin-microfono' | 'sin-respuesta'
+     Llamar setAudio(true) y setMuted(false) DENTRO del click (los navegadores piden un gesto para el sonido).
      v.retry()                  volver a intentar después de un fallo
      v.stop()
    onStatus({ state, message }) con message listo para mostrar. Estados:
@@ -18,14 +24,17 @@
 
    Costo: en reposo la cámara pregunta cada ~40 s (lo dice el servidor en "wait"); el viewer deja un timbre y la
    cámara recién ahí acelera. Por eso el primer "Ver en vivo" tarda hasta ~40 s ("Despertando la cámara…").
-   Video: 640x480 a 15 fps, tope ~450 kbps (batería y datos). Si la red no deja conectar directo en 15 s
+   Video: hasta 1280x720 a 15 fps, tope 1,2 Mbps; WebRTC baja la resolución sola si la red no da ('balanced').
+   La cámara solo captura video mientras alguien mira: en reposo no hay cámara prendida (batería). Si la red no deja conectar directo en 15 s
    (sin TURN), se avisa y se suma al contador de fallos del servidor. */
 (() => {
 'use strict';
 const API = '/api/mascotas?rtc=';
 const DEFAULT_ICE = [{ urls: 'stun:stun.l.google.com:19302' }];
-const VIDEO = { facingMode: { ideal: 'environment' }, width: { ideal: 640 }, height: { ideal: 480 }, frameRate: { ideal: 15, max: 15 } };
-const MAX_BITRATE = 450000;
+const VIDEO = { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 15, max: 15 } };
+const MAX_BITRATE = 1200000;
+/* cuánto queda prendida la cámara después de que la dueña cuelga (si vuelve enseguida, no hay que pedirla de nuevo) */
+const VIDEO_LINGER_MS = 20000;
 const CONNECT_TIMEOUT = 15000;
 
 const MSG = {
@@ -74,8 +83,8 @@ async function addIce(pc, list) {
 }
 
 /* ======================= lado cámara ======================= */
-function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServers } = {}) {
-  let stopped = false, stream = null, mic = null, pc = null, sid = null, since = 0, timer = null, wake = null, polls = 0, lastBeat = 0;
+function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServers, micTrack = null, onAudio = () => {} } = {}) {
+  let stopped = false, stream = null, mic = null, pc = null, sid = null, since = 0, timer = null, wake = null, polls = 0, lastBeat = 0, linger = null;
   let ice = iceServers || DEFAULT_ICE, wantAudio = Boolean(audio), sender = null, warmUntil = Date.now() + 120000;
   const status = (state, key = state) => { if (!stopped || state === 'detenida') onStatus({ state, message: MSG[key] }); };
 
@@ -84,7 +93,7 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
     const tr = s.getVideoTracks()[0];
     try { tr.contentHint = 'motion'; } catch {}
     /* si el sistema corta la cámara (otra app, bloqueo), se vuelve a pedir */
-    tr.onended = () => { if (!stopped) setTimeout(reacquire, 2000); };
+    tr.onended = () => { if (!stopped && pc) setTimeout(reacquire, 2000); };
     return s;
   }
   async function reacquire() {
@@ -96,8 +105,31 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
     } catch { status('error'); }
   }
   async function getMic() {
+    /* si el detector de sonidos ya tiene el micrófono, se comparte (clon): no se pide otro */
+    const shared = typeof micTrack === 'function' ? micTrack() : null;
+    if (shared && shared.readyState === 'live') return shared.clone();
     const s = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
     return s.getAudioTracks()[0];
+  }
+  /* video solo mientras alguien mira */
+  async function ensureVideo() {
+    clearTimeout(linger); linger = null;
+    if (stream && stream.getVideoTracks().some(t => t.readyState === 'live')) return stream;
+    stream = await getVideo();
+    return stream;
+  }
+  function releaseVideoSoon() {
+    clearTimeout(linger);
+    linger = setTimeout(() => { if (!pc && stream) { stream.getTracks().forEach(t => { t.onended = null; t.stop(); }); stream = null; } }, VIDEO_LINGER_MS);
+  }
+  /* canal de control con la dueña (P2P): pide prender o apagar el sonido en vivo */
+  function bindControl(ch) {
+    ch.onmessage = async e => {
+      let m = {}; try { m = JSON.parse(e.data); } catch {}
+      if (m.t !== 'audio') return;
+      const r = await setAudio(Boolean(m.on));
+      try { ch.readyState === 'open' && ch.send(JSON.stringify({ t: 'audio', ...r })); } catch {}
+    };
   }
   async function keepAwake() {
     try { if ('wakeLock' in navigator && document.visibilityState === 'visible') wake = await navigator.wakeLock.request('screen'); } catch {}
@@ -107,8 +139,11 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
   function closePc() {
     if (sid) warmUntil = Date.now() + 120000;
     if (sender) sender.clear();
-    if (pc) { pc.onconnectionstatechange = null; pc.onicecandidate = null; try { pc.close(); } catch {} }
+    if (pc) { pc.onconnectionstatechange = null; pc.onicecandidate = null; pc.ondatachannel = null; try { pc.close(); } catch {} }
     pc = null; sid = null; since = 0; sender = null;
+    /* nadie mira: el sonido en vivo se apaga (privacidad) y la cámara se suelta en un rato */
+    if (wantAudio && !stopped) setAudio(false);
+    releaseVideoSoon();
   }
 
   async function answer(newSid, offer, viewerIce) {
@@ -119,6 +154,7 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
     pc = new RTCPeerConnection({ iceServers: ice });
     sender = iceSender(cands => { if (sid === mySid) call('ice', { token: camToken, sid: mySid, cands }); });
     pc.onicecandidate = e => { if (e.candidate) sender.add(e.candidate); };
+    pc.ondatachannel = e => { if (e.channel.label === 'ctl') bindControl(e.channel); };
     pc.onconnectionstatechange = () => {
       if (!pc || sid !== mySid) return;
       const s = pc.connectionState;
@@ -130,6 +166,7 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
       const kind = t.receiver.track.kind;
       t.direction = 'sendonly';
       if (kind === 'video') {
+        await ensureVideo();
         await t.sender.replaceTrack(stream.getVideoTracks()[0]);
         try {
           const p = t.sender.getParameters();
@@ -183,7 +220,8 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
     clearTimeout(timer);
     if (sid) call('hangup', { token: camToken, sid }, true);
     closePc();
-    if (stream) stream.getTracks().forEach(t => t.stop());
+    clearTimeout(linger);
+    if (stream) stream.getTracks().forEach(t => { t.onended = null; t.stop(); });
     if (mic) mic.stop();
     try { wake && wake.release(); } catch {}
     document.removeEventListener('visibilitychange', onVis);
@@ -192,18 +230,23 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
 
   async function setAudio(on) {
     wantAudio = Boolean(on);
+    let error;
     if (wantAudio && !mic) {
-      try { mic = await getMic(); } catch { wantAudio = false; return false; }
+      try { mic = await getMic(); }
+      catch (e) { wantAudio = false; error = e && (e.name === 'NotAllowedError' || e.name === 'SecurityError') ? 'sin-permiso' : 'sin-microfono'; }
     }
     if (!wantAudio && mic) { mic.stop(); mic = null; }
     const at = pc && pc.getTransceivers().find(t => t.receiver.track.kind === 'audio');
     if (at) await at.sender.replaceTrack(wantAudio ? mic : null).catch(() => {});
-    return wantAudio;
+    const r = error ? { on: false, error } : { on: wantAudio };
+    try { onAudio(r); } catch {}
+    return r;
   }
 
   (async () => {
     status('preparando');
-    try { stream = await getVideo(); }
+    /* se pide la cámara una vez para tener el permiso y se suelta: se vuelve a prender cuando alguien mira */
+    try { stream = await getVideo(); releaseVideoSoon(); }
     catch (e) {
       status(e && (e.name === 'NotAllowedError' || e.name === 'SecurityError') ? 'sin-permiso' : e && e.name === 'NotFoundError' ? 'sin-camara' : 'error');
       stopped = true; return;
@@ -218,8 +261,8 @@ function startBroadcast({ camToken, onStatus = () => {}, audio = false, iceServe
 }
 
 /* ======================= lado dueña ======================= */
-function startViewer({ camId, videoEl, onStatus = () => {}, iceServers, takeover = true } = {}) {
-  let stopped = false, pc = null, sid = null, since = 0, timer = null, deadline = null, dropTimer = null;
+function startViewer({ camId, videoEl, onStatus = () => {}, onAudio = () => {}, iceServers, takeover = true } = {}) {
+  let stopped = false, pc = null, sid = null, since = 0, timer = null, deadline = null, dropTimer = null, ctl = null, wantAudio = false, waiting = [];
   let ice = iceServers || DEFAULT_ICE, answered = false, live = false, reported = false, attempts = 0, offline = 0, sender = null;
   const status = state => { if (!stopped || state === 'detenido') onStatus({ state, message: MSG[state] }); };
 
@@ -228,7 +271,8 @@ function startViewer({ camId, videoEl, onStatus = () => {}, iceServers, takeover
     if (sender) sender.clear();
     if (sid) call('hangup', { camId, sid, reason }, true);
     if (pc) { pc.ontrack = null; pc.onconnectionstatechange = null; pc.onicecandidate = null; try { pc.close(); } catch {} }
-    pc = null; sid = null; since = 0; answered = false; live = false; reported = false; sender = null;
+    if (ctl) { ctl.onopen = null; ctl.onmessage = null; }
+    pc = null; sid = null; since = 0; answered = false; live = false; reported = false; sender = null; ctl = null;
   }
 
   function again(state) {
@@ -250,6 +294,18 @@ function startViewer({ camId, videoEl, onStatus = () => {}, iceServers, takeover
     pc.onicecandidate = e => { if (e.candidate) (sender ? sender.add(e.candidate) : early.push(e.candidate)); };
     pc.addTransceiver('video', { direction: 'recvonly' });
     pc.addTransceiver('audio', { direction: 'recvonly' });
+    /* canal de control P2P (pedir el sonido); si se reconecta, se vuelve a pedir lo que estaba */
+    ctl = pc.createDataChannel('ctl');
+    const myCtl = ctl;
+    ctl.onopen = () => { if (wantAudio) myCtl.send(JSON.stringify({ t: 'audio', on: true })); };
+    ctl.onmessage = e => {
+      let m = {}; try { m = JSON.parse(e.data); } catch {}
+      if (m.t !== 'audio') return;
+      const r = m.error ? { on: false, error: m.error } : { on: Boolean(m.on) };
+      if (m.error) wantAudio = false;
+      waiting.splice(0).forEach(fn => fn(r));
+      try { onAudio(r); } catch {}
+    };
     /* un MediaStream por conexión: si se reusara, el video seguiría mostrando la pista vieja (terminada) */
     const ms = new MediaStream();
     pc.ontrack = e => {
@@ -349,6 +405,20 @@ function startViewer({ camId, videoEl, onStatus = () => {}, iceServers, takeover
     stop() { if (stopped) return; stopped = true; window.removeEventListener('pagehide', onHide); teardown('viewer'); try { videoEl.srcObject = null; } catch {} status('detenido'); },
     retry() { if (stopped) return; teardown('viewer'); attempts = 0; offline = 0; connect().catch(fail); },
     setMuted(m) { videoEl.muted = Boolean(m); if (!m) videoEl.play().catch(() => {}); },
+    /* pedirle a la cámara el micrófono (o apagarlo). Responde la cámara por el canal; si no contesta en 8 s, 'sin-respuesta' */
+    setAudio(on) {
+      wantAudio = Boolean(on);
+      return new Promise(res => {
+        if (!ctl || ctl.readyState !== 'open') { res({ on: false, error: 'sin-respuesta', pending: wantAudio }); return; }
+        const t = setTimeout(() => { waiting = waiting.filter(f => f !== done); res({ on: false, error: 'sin-respuesta' }); }, 8000);
+        const done = r => { clearTimeout(t); res(r); };
+        waiting.push(done);
+        try { ctl.send(JSON.stringify({ t: 'audio', on: wantAudio })); } catch { clearTimeout(t); res({ on: false, error: 'sin-respuesta' }); }
+      });
+    },
+    get audioWanted() { return wantAudio; },
+    /* para medir (pruebas y soporte): las estadísticas de la conexión en curso */
+    getStats: () => (pc ? pc.getStats() : Promise.resolve(null)),
   };
 }
 

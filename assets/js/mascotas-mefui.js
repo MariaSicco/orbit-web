@@ -270,29 +270,103 @@ async function revoke(b) {
 /* ---------- ver en vivo (módulo aparte, se carga al tocar) ---------- */
 function loadRtc() {
   if (window.MZRTC) return Promise.resolve(window.MZRTC);
-  return new Promise(ok => { const s = document.createElement('script'); s.src = '/assets/js/mascotas-rtc.js?v=2'; s.onload = () => ok(window.MZRTC || null); s.onerror = () => ok(null); document.head.appendChild(s); });
+  return new Promise(ok => { const s = document.createElement('script'); s.src = '/assets/js/mascotas-rtc.js?v=3'; s.onload = () => ok(window.MZRTC || null); s.onerror = () => ok(null); document.head.appendChild(s); });
 }
 const WAKING = 'Despertando la cámara… puede tardar hasta 30 segundos.';
+/* íconos de los controles del video (trazo, como el resto de la app) */
+const SV = d => `<svg class="i" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`;
+const IC = {
+  on: SV('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'),
+  off: SV('<path d="M11 5 6 9H3v6h3l5 4z"/><path d="m16 9 5 6"/><path d="m21 9-5 6"/>'),
+  full: SV('<path d="M4 9V4h5"/><path d="M20 9V4h-5"/><path d="M4 15v5h5"/><path d="M20 15v5h-5"/>'),
+  exit: SV('<path d="M9 4v5H4"/><path d="M15 4v5h5"/><path d="M9 20v-5H4"/><path d="M15 20v-5h5"/>'),
+  hang: SV('<path d="M3 15.5c5-4.7 13-4.7 18 0l-2.4 2.4-3.3-1.6v-2.7a10 10 0 0 0-6.6 0v2.7l-3.3 1.6z"/>'),
+};
+const AUDIO_ERR = {
+  'sin-permiso': 'El celu cámara no tiene permiso para el micrófono. En ese celu, abrí la Cámara Mimitos y aceptá el permiso del micrófono.',
+  'sin-microfono': 'El celu cámara no tiene un micrófono disponible.',
+  'sin-respuesta': 'La cámara no respondió. Probá de nuevo en unos segundos.',
+};
 async function live(camId) {
-  A().panel(`En vivo · ${camName(camId)}`, `<div class="mf-live"><video id="mfVideo" playsinline autoplay muted></video><p class="mf-live-st" id="mfLiveSt" role="status">${WAKING}</p></div>
-    <p class="note">Va directo de un celu al otro y no se graba. El sonido arranca apagado.</p>
-    <div class="d-acts"><button class="btn ghost wide" data-mfp="sound" aria-pressed="false">Activar sonido</button><button class="btn ghost wide" data-mfp="retry" hidden>Probar de nuevo</button><button class="btn wide" data-mfp="close">Cerrar</button></div>`);
-  let viewer = null, muted = true;
-  const v = $('#mfVideo'), stEl = $('#mfLiveSt');
+  const dlg = A().dPanel;
+  dlg.classList.add('mf-live-open');
+  A().panel(`En vivo · ${camName(camId)}`, `<div class="mf-live" id="mfLive">
+      <video id="mfVideo" playsinline autoplay muted></video>
+      <p class="mf-live-st" id="mfLiveSt" role="status">${WAKING}</p>
+      <div class="mf-ctl" role="group" aria-label="Controles del video">
+        <button type="button" class="mf-cb" data-mfp="sound" aria-pressed="false">${IC.off}<span>Escuchar</span></button>
+        <button type="button" class="mf-cb" data-mfp="full" aria-pressed="false">${IC.full}<span>Pantalla completa</span></button>
+        <button type="button" class="mf-cb hang" data-mfp="close">${IC.hang}<span>Colgar</span></button>
+      </div>
+    </div>
+    <p class="note" id="mfAudioNote" role="status">Va directo de un celu al otro y no se graba. El sonido arranca apagado: tocá "Escuchar". Doble toque para pantalla completa.</p>
+    <button class="btn ghost wide" data-mfp="retry" hidden>Probar de nuevo</button>`);
+  let viewer = null;
+  const v = $('#mfVideo'), stEl = $('#mfLiveSt'), wrap = $('#mfLive'), note = $('#mfAudioNote');
+  /* la caja toma la proporción que manda la cámara (4:3, 16:9 o vertical) y el video entra entero */
+  const fit = () => { if (v.videoWidth && v.videoHeight) wrap.style.setProperty('--ar', `${v.videoWidth} / ${v.videoHeight}`); };
+  v.addEventListener('loadedmetadata', fit); v.addEventListener('resize', fit);
+  const soundBtn = () => $('#pBody [data-mfp="sound"]');
+  const setSound = (on, msg) => {
+    const b = soundBtn(); if (!b) return;
+    b.setAttribute('aria-pressed', String(on));
+    b.innerHTML = `${on ? IC.on : IC.off}<span>${on ? 'Silenciar' : 'Escuchar'}</span>`;
+    if (msg != null) note.textContent = msg;
+  };
+  const onAudio = r => {
+    if (r.on) { setSound(true, 'Escuchando la casa en vivo. No se graba.'); return; }
+    v.muted = true;
+    setSound(false, r.error ? AUDIO_ERR[r.error] || AUDIO_ERR['sin-respuesta'] : 'Sonido apagado. La cámara dejó de mandar el micrófono.');
+  };
+  /* pantalla completa: la caja entera (con los controles); en iPhone, la del video del sistema */
+  const isFull = () => Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+  async function toggleFull() {
+    try {
+      if (isFull()) { await (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+      if (wrap.requestFullscreen) { await wrap.requestFullscreen({ navigationUI: 'hide' }); try { await screen.orientation?.lock?.('landscape'); } catch {} }
+      else if (wrap.webkitRequestFullscreen) wrap.webkitRequestFullscreen();
+      else if (v.webkitEnterFullscreen) v.webkitEnterFullscreen();
+    } catch { if (v.webkitEnterFullscreen) try { v.webkitEnterFullscreen(); } catch {} }
+  }
+  const onFs = () => { const b = $('#pBody [data-mfp="full"]'); if (!b) return; const f = isFull(); b.setAttribute('aria-pressed', String(f)); b.innerHTML = `${f ? IC.exit : IC.full}<span>${f ? 'Salir' : 'Pantalla completa'}</span>`; if (!f) try { screen.orientation?.unlock?.(); } catch {} };
+  document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs);
+  /* doble toque (dedo) o doble clic (mouse) sobre el video = pantalla completa */
+  let lastTap = 0;
+  wrap.addEventListener('pointerup', e => { if (e.pointerType === 'mouse' || e.target.closest('.mf-ctl')) return; const t = Date.now(); if (t - lastTap < 320) { lastTap = 0; toggleFull(); } else lastTap = t; });
+  wrap.addEventListener('dblclick', e => { if (e.target.closest('.mf-ctl')) return; toggleFull(); });
   $('#pBody').onclick = e => {
     const b = e.target.closest('[data-mfp]'); if (!b) return;
-    if (b.dataset.mfp === 'sound') { muted = !muted; if (viewer?.setMuted) viewer.setMuted(muted); else v.muted = muted; b.setAttribute('aria-pressed', String(!muted)); b.textContent = muted ? 'Activar sonido' : 'Silenciar'; }
+    if (b.dataset.mfp === 'sound') {
+      const on = b.getAttribute('aria-pressed') !== 'true';
+      if (on) {
+        /* dentro del gesto: desmutear y play(); después se le pide el micrófono a la cámara */
+        v.muted = false; v.play().catch(() => {});
+        setSound(true, 'Pidiéndole el sonido a la cámara…');
+        viewer?.setAudio?.(true).then(r => { if (r.error === 'sin-respuesta' && r.pending) note.textContent = 'Cuando conecte, prendemos el sonido.'; else if (r.error) onAudio(r); });
+      } else {
+        v.muted = true; setSound(false, 'Sonido apagado.');
+        viewer?.setAudio?.(false);
+      }
+    }
+    if (b.dataset.mfp === 'full') toggleFull();
     if (b.dataset.mfp === 'retry') { b.hidden = true; viewer?.retry?.(); }
-    if (b.dataset.mfp === 'close') A().dPanel.close();
+    if (b.dataset.mfp === 'close') dlg.close();
   };
-  A().dPanel.addEventListener('close', () => { try { viewer?.stop?.(); } catch {} }, { once: true });
+  dlg.addEventListener('close', () => {
+    dlg.classList.remove('mf-live-open');
+    document.removeEventListener('fullscreenchange', onFs); document.removeEventListener('webkitfullscreenchange', onFs);
+    if (isFull()) try { (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch {}
+    try { viewer?.stop?.(); } catch {}
+    st.viewer = null;
+  }, { once: true });
   const rtc = await loadRtc();
   if (!rtc?.startViewer) { stEl.textContent = 'El video en vivo todavía no está disponible.'; return; }
   try {
-    viewer = rtc.startViewer({ camId, videoEl: v, onStatus: s => {
+    viewer = st.viewer = rtc.startViewer({ camId, videoEl: v, onAudio, onStatus: s => {
       if (!stEl.isConnected) return;
       /* la cámara en reposo consulta cada 30–60 s: el primer conectar puede tardar */
       stEl.textContent = s.state === 'en-vivo' ? '' : s.state === 'conectando' ? WAKING : s.message || WAKING;
+      wrap.classList.toggle('is-live', s.state === 'en-vivo');
       const rb = $('#pBody [data-mfp="retry"]'); if (rb) rb.hidden = !['fallo', 'apagada'].includes(s.state);
     } });
   } catch { stEl.textContent = 'No pudimos conectar en vivo desde esta red.'; }

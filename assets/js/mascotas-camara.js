@@ -124,9 +124,14 @@ async function start() {
   await listen();
   /* video en vivo (opcional) */
   if (pref.get('video', '1') === '1') {
-    const rtc = await loadScript('/assets/js/mascotas-rtc.js?v=2', 'MZRTC');
+    const rtc = await loadScript('/assets/js/mascotas-rtc.js?v=3', 'MZRTC');
     if (rtc?.startBroadcast) {
-      try { S.rtc = rtc.startBroadcast({ camToken: tok, onStatus: s => { S.video = s.state; S.videoMsg = s.message || ''; if (s.state === 'invalida') revoked(); else paint(); } }); }
+      try {
+        S.rtc = rtc.startBroadcast({ camToken: tok, onStatus: s => { S.video = s.state; S.videoMsg = s.message || ''; if (s.state === 'invalida') revoked(); else paint(); },
+          /* el detector y el sonido en vivo comparten el micrófono */
+          micTrack: () => S.audio?.track || null,
+          onAudio: a => { S.liveAudio = a.on; S.liveAudioErr = a.error || ''; paint(); } });
+      }
       catch { S.video = 'error'; paint(); }
     } else { S.video = 'no-disponible'; paint(); }
   }
@@ -152,7 +157,7 @@ async function ping() {
 async function listen() {
   try { S.audio?.stop?.(); } catch {} S.audio = null;
   try {
-    const A = await import('/assets/js/mascotas-audio.js?v=1');
+    const A = await import('/assets/js/mascotas-audio.js?v=2');
     const fn = A.startListening || window.MZAUDIO?.startListening;
     if (!fn) throw Object.assign(new Error('sin módulo'), { code: 'modelo' });
     S.listen = 'cargando'; paint();
@@ -244,6 +249,7 @@ function paint() {
   $('#chips').innerHTML = [
     chip(S.wakeSt === 'si', S.wakeSt === 'si' ? 'Pantalla siempre prendida' : 'La pantalla se puede apagar'),
     b ? chip(b.charging, b.charging ? 'Enchufado' : `Sin enchufar (${Math.round(b.level * 100)}%)`) : '',
+    S.liveAudio ? chip(true, 'Mandando sonido en vivo') : S.liveAudioErr ? chip(false, 'Sin permiso de micrófono para el sonido en vivo') : '',
     S.video !== 'off' ? chip(['esperando', 'cam-en-vivo', 'en-vivo', 'cam-conectando', 'conectando'].includes(S.video), S.video === 'en-vivo' || S.video === 'cam-en-vivo' ? 'Transmitiendo en vivo' : S.video === 'no-disponible' ? 'Video en vivo no disponible' : 'Video en vivo listo') : '',
     S.away === true ? chip(true, 'Me fui activo: avisamos') : S.away === false ? chip(false, 'Estás en casa: solo registra') : '',
   ].join('');

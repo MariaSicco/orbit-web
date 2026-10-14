@@ -17,7 +17,7 @@
    API (ES module):
      isSupported() -> boolean
      loadModel() -> Promise  (precarga wasm + modelo; se puede llamar antes de pedir el micrófono)
-     startListening({ onEvent, onLevel, onState, sensitivity: 'baja'|'media'|'alta' }) -> Promise<{ stop, pause, resume, state }>
+     startListening({ onEvent, onLevel, onState, sensitivity: 'baja'|'media'|'alta' }) -> Promise<{ stop, pause, resume, state, track }>
        onEvent({ type, start, end, durationSec, confidence, hits })   start/end en ms epoch
        onLevel(rms)   0..1, ~10 veces por segundo, para el vúmetro
        onState({ state: 'escuchando'|'pausado'|'detenido', reason, message })
@@ -288,6 +288,8 @@ export async function startListening({ onEvent = () => {}, onLevel = () => {}, o
     resume,
     get state() { return state; },
     get sampleRate() { return sr; },
+    /* la pista del micrófono, para compartirla con el video en vivo (mascotas-rtc.js la clona) */
+    get track() { return stopped ? null : (stream.getAudioTracks()[0] || null); },
   };
 }
 

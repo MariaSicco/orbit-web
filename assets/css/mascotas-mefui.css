@@ -37,13 +37,39 @@
 .mf-code{margin:6px 0;font:700 40px/1.1 var(--mono);letter-spacing:.12em;text-align:center;font-variant-numeric:tabular-nums}
 .mf-code span{color:var(--ink3);margin:0 .1em}
 .mf-qr{display:grid;place-items:center;padding:12px;background:#fff;border-radius:18px;box-shadow:var(--sh1);align-self:center;width:fit-content;margin:0 auto}
-.mf-live{position:relative;background:#111;border-radius:18px;overflow:hidden;aspect-ratio:4/3}
-.mf-live video{width:100%;height:100%;object-fit:cover;display:block}
-.mf-live-st{position:absolute;inset:auto 12px 12px;margin:0;color:#fff;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
-.mf-live-st:empty{display:none}
 .row.x4 .btn.sm{white-space:nowrap}
 @media (max-width:420px){.row.x4{grid-template-columns:auto minmax(0,1fr);}.row.x4>.btn,.row.x4>span:empty{grid-column:2}}
 @media (prefers-reduced-motion:reduce){.mf-dot,.mf-bar{animation:none}.mf-start{transition:none}}
 .mf-sens{grid-column:2/-1;display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink2)}
 .mf-sens select{min-height:44px;border-radius:12px;border:1px solid var(--line2);background:var(--card);padding:0 10px;font-size:14.5px}
 .mf-bar.zero{height:0;animation:none}
+/* ---------- video en vivo: ancho completo, proporción de la cámara, controles encima ---------- */
+dialog.mf-live-open{width:min(1040px,100%)}
+dialog.mf-live-open .sheet{gap:12px}
+.mf-live{--ar:16 / 9;position:relative;background:#0D0D0E;overflow:hidden;aspect-ratio:var(--ar);max-height:calc(94vh - 170px);margin:0 -16px;touch-action:manipulation;-webkit-user-select:none;user-select:none}
+@media(min-width:640px){.mf-live{margin:0;border-radius:18px}}
+.mf-live video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block;background:#0D0D0E}
+.mf-live-st{position:absolute;inset:auto 14px 84px;margin:0;color:#fff;font-size:15px;line-height:1.4;text-align:center;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.mf-live-st:empty{display:none}
+.mf-ctl{position:absolute;left:0;right:0;bottom:0;display:flex;gap:8px;justify-content:center;padding:28px 12px calc(12px + env(safe-area-inset-bottom,0px));background:linear-gradient(to top,rgba(13,13,14,.82),rgba(13,13,14,0))}
+.mf-cb{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;min-width:48px;padding:0 16px;border:0;border-radius:99px;background:rgba(242,239,232,.16);color:#F2EFE8;font-weight:600;font-size:15px;cursor:pointer;-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);transition:background-color .15s var(--ease),transform .15s var(--ease)}
+.mf-cb:hover{background:rgba(242,239,232,.26)}
+.mf-cb:active{transform:scale(.96)}
+.mf-cb:focus-visible{outline:2.5px solid #F2EFE8;outline-offset:2px}
+.mf-cb[aria-pressed="true"]{background:#F2EFE8;color:#0D0D0E}
+.mf-cb.hang{background:#C2361F;color:#fff}
+.mf-cb.hang:hover{background:#A82C17}
+.mf-cb svg.i{width:20px;height:20px;flex:none}
+@media(max-width:420px){.mf-cb span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.mf-cb{padding:0;width:56px;min-height:56px}.mf-ctl{gap:18px}}
+/* pantalla completa: la caja ocupa todo y el video entra entero */
+.mf-live:fullscreen{width:100vw;height:100vh;max-height:none;aspect-ratio:auto;margin:0;border-radius:0}
+.mf-live:-webkit-full-screen{width:100vw;height:100vh;max-height:none;aspect-ratio:auto;margin:0;border-radius:0}
+/* celu en horizontal: la hoja del video ocupa toda la pantalla aunque no se pida pantalla completa */
+@media (orientation:landscape) and (max-height:520px){
+  dialog.mf-live-open{width:100vw;max-width:100vw;height:100vh;max-height:100vh;border-radius:0;margin:0}
+  dialog.mf-live-open .sheet{padding:0;max-height:100vh;height:100vh;gap:0}
+  dialog.mf-live-open .sheet-h,dialog.mf-live-open .sheet::before,dialog.mf-live-open #mfAudioNote,dialog.mf-live-open [data-mfp="retry"]{display:none}
+  dialog.mf-live-open #pBody{height:100%}
+  dialog.mf-live-open .mf-live{height:100vh;max-height:none;aspect-ratio:auto;margin:0;border-radius:0}
+}
+@media (prefers-reduced-motion:reduce){.mf-cb{transition:none}}
