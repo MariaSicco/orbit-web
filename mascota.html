@@ -10,6 +10,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="/assets/css/mascotas.css?v=32">
+<link rel="stylesheet" href="/assets/css/mascotas-hoy.css?v=1">
 </head>
 <body>
 <header class="top">
@@ -22,6 +23,7 @@
 <div class="toast" id="toast" role="status"></div>
 <script src="/assets/js/mascotas-rules.js?v=32"></script>
 <script src="/assets/js/mascotas-core.js?v=32"></script>
+<script src="/assets/js/mascotas-hoy.js?v=1"></script>
 <script>
 (() => {
 'use strict';
@@ -30,7 +32,13 @@ const parts = location.pathname.split('/').filter(Boolean);
 const kind = parts[0] === 'cuida' ? 'c' : 's', token = (parts[1] || new URLSearchParams(location.search).get(kind) || '').replace(/[^A-Za-z0-9_-]/g, '');
 const tel = s => String(s || '').replace(/[^\d+]/g, '');
 const wa = s => tel(s).replace(/^\+/, '');
-function toast(t) { const el = document.getElementById('toast'); el.textContent = t; el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 2800); }
+function toast(t, action) {
+  const el = document.getElementById('toast');
+  el.innerHTML = `<span>${esc(t)}</span>${action ? `<button type="button">${esc(action.label || 'Deshacer')}</button>` : ''}`;
+  el.classList.toggle('act', Boolean(action));
+  if (action) el.querySelector('button').onclick = () => { el.classList.remove('on'); action.fn(); };
+  el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), action ? 8000 : 2800);
+}
 const photo = p => p.photo ? `<img class="hero-photo" src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">` : '';
 const state = (h, t) => { app.innerHTML = `<div class="empty" role="status"><h2>${h}</h2><p>${t}</p></div>`; };
 const notFound = () => state('Este link ya no está activo', kind === 'c' ? 'Puede que la familia lo haya apagado. Pedile uno nuevo.' : 'Puede que la persona lo haya apagado. Pedile uno nuevo.');
@@ -46,7 +54,7 @@ async function load() {
   catch { return state('No pudimos cargar la ficha', 'Revisá tu conexión y recargá la página.'); }
   if (r.status === 404 || r.status === 410) return d?.expired || /venc|expir/i.test(d?.error || '') ? expired() : notFound();
   if (!r.ok || !d?.pet) return r.status >= 500 ? state('No pudimos cargar la ficha', 'Puede ser un problema nuestro. Probá de nuevo en un rato.') : notFound();
-  try { kind === 's' ? ficha(d.pet, d.updatedAt, d.owner) : cuidador(d.pet, d.until); }
+  try { kind === 's' ? ficha(d.pet, d.updatedAt, d.owner) : cuidador(d.pet, d.until, d.hoy); }
   catch (e) { console.warn('[mimitos] ficha incompleta', e?.message); broken(); }
 }
 
@@ -134,12 +142,12 @@ async function sendFound() {
 
 /* quien la cuida */
 let P = null;
-const KIND = { comida: ['Comió', 'bowl', 'comida'], paseo: ['Salió a pasear', 'walk', 'viaje'], med: ['Remedio', 'pill', 'med'], ok: ['Todo bien', 'check', 'salud'], nota: ['Nota', 'note', 'plata'] };
+const KIND = { comida: ['Comió', 'bowl', 'comida'], paseo: ['Salió a pasear', 'walk', 'viaje'], med: ['Remedio', 'pill', 'med'], ok: ['Todo bien', 'check', 'salud'], nota: ['Nota', 'note', 'plata'], otro: ['Listo', 'drop', 'plata'] };
 function me() { try { return localStorage.getItem('mz_by') || ''; } catch { return ''; } }
 function setMe(v) { try { localStorage.setItem('mz_by', v); } catch {} }
-let UNTIL = '';
-function cuidador(raw, until) {
-  UNTIL = until || UNTIL;
+let UNTIL = '', HOYD = null;
+function cuidador(raw, until, hoy) {
+  UNTIL = until || UNTIL; HOYD = hoy || HOYD;
   /* docs viejos o a medio cargar: sin sitter, sin remedios, sin contacto o sin veterinaria */
   const p = { ...raw, name: raw?.name || 'la mascota', sitter: raw?.sitter || {}, meds: Array.isArray(raw?.meds) ? raw.meds : [], log: Array.isArray(raw?.log) ? raw.log.filter(l => l && l.at) : [], contact: raw?.contact || {}, vet: raw?.vet || {} };
   P = p; document.getElementById('kindTag').textContent = 'Cuidando a ' + p.name;
@@ -154,12 +162,14 @@ function cuidador(raw, until) {
     <section class="hero c-${Z.tone({ id: token })}"><div class="hero-top">${av(p)}<div><p class="hello">${range ? range + '. ' : ''}${gracias}</p><h1>${esc(p.name)}</h1></div></div>
       ${p.allergies ? `<div class="pills"><span class="pill warn">Alergia: ${esc(p.allergies)}</span></div>` : ''}</section>
     <div class="f"><label for="by">Tu nombre</label><input id="by" maxlength="40" value="${esc(me() || s.name || '')}" placeholder="Así la familia sabe quién anotó"></div>
-    <section class="sec"><h2>¿Cómo va el día?</h2>
-      <div class="two"><button class="btn blue" data-k="comida">${I('bowl')} Comió</button><button class="btn blue" data-k="paseo">${I('walk')} Paseó</button><button class="btn ghost" data-k="ok">${I('check')} Todo bien</button><button class="btn ghost" data-k="nota">${I('note')} Una nota</button></div>
+    ${HOYD ? window.MZHOYUI.html(HOYD, p.name) : `<section class="sec"><h2>¿Cómo va el día?</h2>
+      <div class="two"><button class="btn blue" data-k="comida">${I('bowl')} Comió</button><button class="btn blue" data-k="paseo">${I('walk')} Paseó</button></div></section>`}
+    <section class="sec"><h2>¿Algo más?</h2>
+      <div class="two"><button class="btn ghost" data-k="ok">${I('check')} Todo bien</button><button class="btn ghost" data-k="nota">${I('note')} Una nota</button></div>
     </section>
     ${meds.length ? `<section class="sec"><h2>Remedios</h2><div class="list">${meds.map(({ m, st }) => {
       const tx = { soon: ['st-ok', `Empieza ${Z.fmtWhen(st.next)}`], ok: ['st-done', st.next ? `Dada. Próxima: ${Z.fmtWhen(st.next)}` : 'Dada'], due: ['st-soon', `Le toca ahora (${Z.fmtTime(st.due)})`], late: ['st-late', `Atrasada: tocaba ${Z.fmtWhen(st.due)}`] }[st.state];
-      return `<div class="row ${tx[0]}">${bubble('pill', 'med')}<span class="what"><b>${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}<span class="stt">${tx[1]}</span>${m.notes ? '. ' + esc(m.notes) : ''}</small></span>${st.state === 'due' || st.state === 'late' ? `<button class="ibtn go" data-med="${m.id}">Ya se la di</button>` : '<span></span>'}</div>`; }).join('')}</div></section>` : ''}
+      return `<div class="row ${tx[0]}">${bubble('pill', 'med')}<span class="what"><b>${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}<span class="stt">${tx[1]}</span>${m.notes ? '. ' + esc(m.notes) : ''}</small></span>${!HOYD && (st.state === 'due' || st.state === 'late') ? `<button class="ibtn go" data-med="${m.id}">Ya se la di</button>` : '<span></span>'}</div>`; }).join('')}</div>${HOYD ? '<p class="note">Marcá cada toma en "Hoy", arriba.</p>' : ''}</section>` : ''}
     ${info.length ? `<section class="sec"><h2>Lo que tenés que saber</h2><div class="list">${info.map(([k, v, ic, c]) => `<div class="row" style="grid-template-columns:auto minmax(0,1fr);align-items:start">${bubble(ic, c)}<span class="what"><b>${k}</b><small style="color:var(--ink);font-size:15px;white-space:pre-wrap">${esc(v)}</small></span></div>`).join('')}</div>${s.vetAuth ? '<p class="note">La veterinaria está avisada: podés llevarla en nombre de la familia.</p>' : ''}</section>` : ''}
     <section class="sec"><h2>Contactos</h2><div class="list">
       ${p.contact.phone ? `<div class="row">${bubble('hand', 'cuida')}<span class="what"><b>${esc(p.contact.name || 'Familia')}</b><small>${esc(s.contact || p.contact.phone)}</small></span><a class="ibtn go" href="https://wa.me/${esc(wa(p.contact.phone))}" target="_blank" rel="noopener">WhatsApp</a></div>` : s.contact ? `<div class="row">${bubble('hand', 'cuida')}<span class="what"><b>${esc(s.contact)}</b></span><span></span></div>` : ''}
@@ -176,7 +186,7 @@ async function post(body) {
     const d = await r.json().catch(() => null);
     if (r.status === 404) return d?.expired || /venc|expir/i.test(d?.error || '') ? expired() : notFound();
     if (!r.ok || !d?.pet) throw 0;
-    cuidador(d.pet, d.until || UNTIL); toast('Anotado. La familia ya lo ve.');
+    cuidador(d.pet, d.until || UNTIL, d.hoy); toast('Anotado. La familia ya lo ve.');
   } catch { toast('No se pudo anotar. Revisá la conexión y probá de nuevo.'); }
 }
 app.addEventListener('click', e => {
@@ -192,6 +202,24 @@ app.addEventListener('click', e => {
     return post({ kind: k.dataset.k });
   }
   if (m) post({ kind: 'med', medId: m.dataset.med });
+});
+/* "Hoy con…": un toque marca con la hora y tu nombre; si ya estaba hecho, el servidor avisa y se confirma */
+window.MZHOYUI.attach(app, {
+  ymd: () => HOYD?.ymd || '',
+  getBy() {
+    const el = document.getElementById('by'), v = (el?.value || '').trim();
+    if (!v) { toast('Poné tu nombre arriba: así la familia sabe quién lo hizo.'); el?.focus(); return null; }
+    setMe(v); return v;
+  },
+  async send(body) {
+    const r = await fetch(`/api/mascotas?c=${token}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ hoy: 1, ...body }) });
+    return { status: r.status, data: await r.json().catch(() => null) };
+  },
+  onUpdate(d) {
+    if (d?.expired) return expired();
+    if (d?.pet) cuidador(d.pet, d.until || UNTIL, d.hoy);
+  },
+  toast,
 });
 load();
 })();

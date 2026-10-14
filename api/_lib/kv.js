@@ -56,6 +56,22 @@ export async function kvIncrBy(key, n = 1, ttlSeconds) {
   if (ttlSeconds && val === n) await cmd('EXPIRE', key, String(ttlSeconds));
   return val;
 }
+/* listas (registro de "Hoy con…"): RPUSH atómico, se recorta a las últimas `max` y vence a los ttl segundos */
+const memList = key => { let v = mem.get(key); if (!v || !Array.isArray(v.val)) { v = { val: [], exp: 0 }; mem.set(key, v); } return v; };
+export async function kvRPush(key, member, max = 300, ttlSeconds) {
+  if (!hasKV) { const v = memList(key); v.val.push(member); if (v.val.length > max) v.val.splice(0, v.val.length - max); if (ttlSeconds) v.exp = Date.now() + ttlSeconds * 1000; return; }
+  await cmd('RPUSH', key, member);
+  await cmd('LTRIM', key, String(-max), '-1');
+  if (ttlSeconds) await cmd('EXPIRE', key, String(ttlSeconds));
+}
+export async function kvLRange(key) {
+  if (!hasKV) { const v = mem.get(key); return v && Array.isArray(v.val) && (!v.exp || v.exp > Date.now()) ? [...v.val] : []; }
+  return (await cmd('LRANGE', key, '0', '-1')) || [];
+}
+export async function kvLRem(key, member) {
+  if (!hasKV) { const v = mem.get(key); if (v && Array.isArray(v.val)) v.val = v.val.filter(x => x !== member); return; }
+  await cmd('LREM', key, '0', member);
+}
 /* conjuntos (índices chicos): agregar, sacar y listar */
 const memSet = key => { let v = mem.get(key); if (!v || !(v.val instanceof Set)) { v = { val: new Set(), exp: 0 }; mem.set(key, v); } return v.val; };
 export async function kvSAdd(key, member) { if (!hasKV) { memSet(key).add(member); return; } await cmd('SADD', key, member); }

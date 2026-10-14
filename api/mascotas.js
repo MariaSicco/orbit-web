@@ -58,6 +58,7 @@ import { callClaude, visionModel, estimateTokens, jsonOf, aiPaused, pausedBody }
 import { handlePlaces } from './_lib/petplaces.js';
 import { cleanAppointments, cleanPlace, syncApptIndex } from './_lib/petturnos.js';
 import { cleanAway, syncAwayIndex, handleCam, mefuiAllowed } from './_lib/petaway.js';
+import * as HOY from './_lib/pethoy.js';
 import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos, todayAR } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
@@ -89,7 +90,7 @@ const SPECIES = ['perro', 'gato', 'otra'];
 /* color de fondo de cada mascota (Inicio, tapa de la libreta y pasaporte); vacío = azul */
 export const HUES = ['azul', 'verde', 'rosa', 'lila', 'naranja', 'amarillo', 'turquesa'];
 const EXP = ['alimento', 'veterinaria', 'salud', 'peluqueria', 'accesorios', 'otros'];
-const LOG = ['comida', 'paseo', 'med', 'ok', 'nota'];
+const LOG = ['comida', 'paseo', 'med', 'ok', 'nota', 'otro'];
 
 function cleanLog(list) {
   return (Array.isArray(list) ? list : []).slice(-MAX_LOG).map(l => ({
@@ -231,8 +232,11 @@ const mergeLog = (a = [], b = []) => {
   return out.sort((x, y) => String(x.at).localeCompare(String(y.at))).slice(-MAX_LOG);
 };
 /* une al doc lo que anotaron los cuidadores (solo para mostrar; el doc guardado no se toca) */
-async function withSitterLogs(doc) {
+async function withSitterLogs(doc, email) {
   for (const p of doc?.pets || []) {
+    /* tildes de "Hoy con…" (de la dueña y del cuidador): orbit:petcare:<mascota> */
+    const care = email ? await HOY.careLog(email, p.id) : [];
+    if (care.length) p.log = mergeLog(p.log, care);
     if (!p.sitterToken) continue;
     const extra = (await kvGet(sitterLogKey(p.sitterToken))) || [];
     if (extra.length) p.log = mergeLog(p.log, extra);
@@ -448,13 +452,23 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'not_found', expired: true });
     }
     const extra = (await kvGet(sitterLogKey(t))) || [];
-    const view = () => sitterView({ ...pet, log: mergeLog(pet.log, extra) });
-    if (req.method === 'GET') return res.status(200).json({ kind: 'cuidador', pet: view(), until: sitterUntil(pet, link) });
+    const fullLog = async () => mergeLog(mergeLog(pet.log, extra), await HOY.careLog(link.email, pet.id));
+    const view = async () => sitterView({ ...pet, log: await fullLog() });
+    /* "Hoy con…": solo el día de hoy (hora de Argentina) y solo lo de esta mascota */
+    const hoyView = async () => HOY.dayView(pet, link.email, HOY.H.todayAR(), await fullLog(), 'sitter');
+    if (req.method === 'GET') return res.status(200).json({ kind: 'cuidador', pet: await view(), hoy: await hoyView(), until: sitterUntil(pet, link) });
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
-    /* tope por token e IP: 30 anotaciones por hora */
+    /* tope por token e IP: 30 anotaciones por hora (los tildes de "Hoy" y sus "Deshacer" cuentan) */
     const n = await kvIncrBy(`orbit:petsitrl:${t}:${ipHash(req)}:${new Date().toISOString().slice(0, 13)}`, 1, 3600);
     if (n > SITTER_POSTS_PER_HOUR) return res.status(429).json({ error: 'limite' });
     const b = await readBody(req);
+    if (b.hoy || b.undo) {
+      const out = b.undo
+        ? await HOY.undo({ pet, email: link.email, id: b.undo, actor: 't:' + t })
+        : await HOY.mark({ pet, email: link.email, ymd: String(b.ymd || ''), item: b.item, by: str(b.by, 40) || pet.sitter?.name || 'Cuidador', who: 'sitter', actor: 't:' + t, force: b.force === true, log: await fullLog() });
+      if (out.status !== 200) return res.status(out.status).json(out);
+      return res.status(200).json({ ok: true, ...(out.undo ? { undo: out.undo, entry: out.entry } : {}), pet: await view(), hoy: await hoyView() });
+    }
     const kind = pick(b.kind, LOG, '');
     if (!kind) return res.status(400).json({ error: 'invalid' });
     const medId = kind === 'med' ? str(b.medId, 24) : '';
@@ -463,9 +477,9 @@ export default async function handler(req, res) {
     if (kind === 'nota' && !note) return res.status(400).json({ error: 'invalid' });
     /* va a una clave aparte: nunca pisa el doc de la dueña (que puede estar guardando a la vez) */
     extra.push({ id: randomBytes(6).toString('hex'), at: new Date().toISOString(), kind, medId, by: str(b.by, 40) || pet.sitter?.name || 'Cuidador', note });
-    const keep = extra.slice(-MAX_LOG);
-    await kvSet(sitterLogKey(t), keep, 90 * 86400);
-    return res.status(200).json({ ok: true, pet: sitterView({ ...pet, log: mergeLog(pet.log, keep) }) });
+    extra.splice(0, Math.max(0, extra.length - MAX_LOG));
+    await kvSet(sitterLogKey(t), extra, 90 * 86400);
+    return res.status(200).json({ ok: true, pet: await view(), hoy: await hoyView() });
   }
 
   /* "Me fui" y Cámara Mimitos (api/_lib/petaway.js): detrás de MIMITOS_MEFUI; apagado → 404 */
@@ -558,11 +572,28 @@ export default async function handler(req, res) {
     return handleAsk(req, res, {
       email: s.email,
       body: req.method === 'POST' ? await readBody(req) : {},
-      getDoc: async () => withSitterLogs((await kvGet(docKey(s.email))) || { pets: [] }),
+      getDoc: async () => withSitterLogs((await kvGet(docKey(s.email))) || { pets: [] }, s.email),
       getScans: async () => ((await kvGet(scansKey(s.email))) || []).filter(x => Date.parse(x.at) > Date.now() - SCAN_DAYS * 864e5).slice(-MAX_SCANS),
       getTz: async () => (await getNotify(s.email)).tz,
       gate: async () => (await isExpired()) ? await expiredBody() : null,
     });
+  }
+
+  /* "Hoy con…" de la dueña: GET ?hoy=1&pet=<id> → el día; POST ?hoy=1 {petId, ymd, item, force?} o {petId, undo} */
+  if (q.hoy) {
+    const doc = await withSitterLogs((await kvGet(docKey(s.email))) || { pets: [] }, s.email);
+    const b = req.method === 'POST' ? await readBody(req) : {};
+    const pt = doc.pets.find(p => p.id === String(req.method === 'POST' ? b.petId || '' : q.pet || ''));
+    if (!pt) return res.status(404).json({ error: 'not_found' });
+    const day = req.method === 'GET' && /^\d{4}-\d{2}-\d{2}$/.test(String(q.d || '')) ? String(q.d) : HOY.H.todayAR();
+    if (req.method === 'GET') return res.status(200).json(await HOY.dayView(pt, s.email, day, pt.log, 'owner'));
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+    const out = b.undo
+      ? await HOY.undo({ pet: pt, email: s.email, id: b.undo, actor: 'owner' })
+      : await HOY.mark({ pet: pt, email: s.email, ymd: String(b.ymd || ''), item: b.item, by: 'Vos', who: 'owner', actor: 'owner', force: b.force === true, log: pt.log });
+    if (out.status !== 200) return res.status(out.status).json(out);
+    const log = b.undo ? pt.log.filter(l => l.id !== b.undo) : [...pt.log, out.entry];
+    return res.status(200).json({ ok: true, ...out, hoy: await HOY.dayView(pt, s.email, /^\d{4}-\d{2}-\d{2}$/.test(String(b.ymd || '')) ? String(b.ymd) : HOY.H.todayAR(), log, 'owner') });
   }
 
   if (req.method === 'GET' && q.file) {
@@ -573,7 +604,7 @@ export default async function handler(req, res) {
     catch { return res.status(500).json({ error: 'no_pudimos_abrir' }); }
   }
   if (req.method === 'GET') {
-    const doc = await withSitterLogs((await kvGet(docKey(s.email))) || { pets: [], rev: 0 });
+    const doc = await withSitterLogs((await kvGet(docKey(s.email))) || { pets: [], rev: 0 }, s.email);
     /* estado de los links del cuidador: activo y hasta cuándo, o vencido (la app lo muestra) */
     const sitterLinks = {};
     for (const p of doc.pets || []) {

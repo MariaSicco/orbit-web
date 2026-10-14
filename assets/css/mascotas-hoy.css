@@ -1,0 +1,24 @@
+/* Mimitos · "Hoy con {mascota}" (app de la dueña y link del cuidador) */
+.hoy .sec-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.hoy-n{font:500 13px var(--mono);color:var(--ink2);font-variant-numeric:tabular-nums}
+.hoy-list{list-style:none;margin:0;padding:0}
+.hoy-list>li+li{border-top:1px solid var(--line)}
+.hoy-it{all:unset;box-sizing:border-box;width:100%;display:grid;grid-template-columns:auto 3.2em minmax(0,1fr) auto;gap:12px;align-items:center;padding:10px 14px;min-height:64px;cursor:pointer;background:var(--card);color:var(--ink);transition:background .2s var(--ease)}
+.hoy-it:hover{background:var(--paper)}
+.hoy-it:focus-visible{outline:2.5px solid var(--act);outline-offset:-3px;border-radius:var(--r-s)}
+.hoy-it[aria-busy="true"]{opacity:.6;cursor:progress}
+.hoy-t{font:600 15px var(--f);font-variant-numeric:tabular-nums;color:var(--ink2)}
+.hoy-it .what{min-width:0;display:flex;flex-direction:column;gap:1px}
+.hoy-it .what b{font-weight:600;font-size:15.5px;line-height:1.3}
+.hoy-it .what small{color:var(--ink2);font-size:13.5px}
+.hoy-st{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:0 12px;border-radius:12px;background:var(--sunk);font-size:14px;font-weight:600;white-space:nowrap;transition:background .2s var(--ease),color .2s var(--ease)}
+.hoy-st svg.i{width:17px;height:17px}
+.hoy-it.on .hoy-st{background:var(--ok-bg);color:var(--ok)}
+.hoy-it.on .what b{color:var(--ink2)}
+@media (max-width:420px){.hoy-it{gap:10px;padding:10px 12px}.hoy-st{padding:0 10px;font-size:13.5px}}
+@media (max-width:340px){.hoy-it{grid-template-columns:auto 2.9em minmax(0,1fr);row-gap:6px}.hoy-st{grid-column:2/-1;justify-self:start}}
+.hoy-dlg .sheet{gap:12px}
+.hoy-dlg h2{font-size:21px;margin:4px 0 0}
+.hoy-dlg p{margin:0 0 6px;font-size:16px;line-height:1.5}
+@media (min-width:720px){.hoy-dlg{border-radius:24px;margin:auto}}
+@media (prefers-reduced-motion:reduce){.hoy-it,.hoy-st{transition:none}}

@@ -109,7 +109,7 @@ window.addEventListener('beforeunload', e => { if (mode === 'full' && dirty) { e
 /* lo que anota el cuidador aparece al volver a la app */
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || mode !== 'full' || dirty || saving) return;
-  try { const r = await fetch('/api/mascotas'); const d = await r.json(); if (r.ok && d.doc && !dirty) { adopt(d.doc); render(); } } catch {}
+  try { const r = await fetch('/api/mascotas'); const d = await r.json(); if (r.ok && d.doc && !dirty) { adopt(d.doc); for (const k in hoyCache) delete hoyCache[k]; render(); } } catch {}
 });
 
 /* ---------- toasts (uno a la vez, con "Deshacer" opcional) ---------- */
@@ -1095,6 +1095,7 @@ function renderInicio(p) {
       ${mefui && window.MZAWAY ? window.MZAWAY.homeCard(p) : ''}
       ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
       ${scanBanner(p)}
+      ${hoyBox(p)}
       ${notify && !notify.devices && !notify.mail ? `<button class="banner nudge span2" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span style="flex:1"><b>Que no se te pase ninguna fecha</b><small class="dim">Activá los avisos en el celu o por mail.</small></span>${I('chevron')}</button>` : ''}
       ${next.length ? `<section class="sec card2 span2" aria-labelledby="h-next">
         <div class="sec-h"><h2 id="h-next">Hoy y estos días</h2><button class="link" data-act="go" data-to="agenda">Agenda ${I('next')}</button></div>
@@ -1191,9 +1192,45 @@ function spendCard(p) {
     ${has ? `<p class="big-num">${Z.money(tot(now))}</p><small class="dim">Este mes. Promedio: ${Z.money(vals.reduce((a, b) => a + b, 0) / 6)}</small>${bars(vals, 'naranja')}`
       : `<p class="dim">Anotá lo que gastás en ${esc(p.name)} y ves cuánto es por mes.</p><button class="btn ghost sm" data-act="newExp" style="align-self:flex-start">${I('plus')} Anotar un gasto</button>`}</section>`;
 }
+/* ---------- "Hoy con {mascota}" (mascotas-hoy.js; el servidor marca y avisa si ya estaba hecho) ---------- */
+const hoyCache = {};
+function hoyBox(p) {
+  if (!window.MZHOYUI || mode !== 'full') return '';
+  const c = hoyCache[p.id];
+  if (!c || Date.now() - c.t > 30000) after(() => loadHoy(p.id));
+  return `<div class="span2" id="hoyBox">${window.MZHOYUI.html(c?.data || null, p.name)}</div>`;
+}
+async function loadHoy(id) {
+  if (hoyCache[id]?.loading) return;
+  hoyCache[id] = { ...(hoyCache[id] || { data: null }), t: Date.now(), loading: true };
+  try {
+    const r = await fetch(`/api/mascotas?hoy=1&pet=${encodeURIComponent(id)}`);
+    if (r.ok) hoyCache[id] = { data: await r.json(), t: Date.now() };
+    else hoyCache[id].loading = false;
+  } catch { hoyCache[id].loading = false; }
+  if (route.name === 'inicio' && curPet()?.id === id && hoyCache[id].data) { const box = $('#hoyBox'); if (box) box.innerHTML = window.MZHOYUI.html(hoyCache[id].data, curPet().name); }
+}
+if (window.MZHOYUI) window.MZHOYUI.attach(app, {
+  ymd: () => hoyCache[curPet()?.id]?.data?.ymd || '',
+  getBy: () => 'Vos',
+  async send(body) {
+    const r = await fetch('/api/mascotas?hoy=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ petId: curPet()?.id, ...body }) });
+    return { status: r.status, data: await r.json().catch(() => null) };
+  },
+  onUpdate(d) {
+    const p = curPet(); if (!p || !d) return;
+    if (d.hoy) hoyCache[p.id] = { data: d.hoy, t: Date.now() };
+    /* lo marcado cuenta ya mismo como dado (remedios) en esta pantalla; el servidor lo une al registro al leer */
+    if (d.entry && !p.log.some(l => l.id === d.entry.id)) p.log.push(d.entry);
+    if (d.undone) p.log = p.log.filter(l => l.id !== d.undone);
+    render();
+  },
+  toast,
+});
+
 /* lo que anotó el cuidador desde su link (últimos 10 días) */
 function sitterLog(p) {
-  const since = Date.now() - 10 * 864e5, KL = { comida: ['Comió', 'bowl', 'comida'], paseo: ['Salió a pasear', 'walk', 'viaje'], med: ['Remedio', 'pill', 'med'], ok: ['Todo bien', 'check', 'salud'], nota: ['Nota', 'note', 'plata'] };
+  const since = Date.now() - 10 * 864e5, KL = { comida: ['Comió', 'bowl', 'comida'], paseo: ['Salió a pasear', 'walk', 'viaje'], med: ['Remedio', 'pill', 'med'], ok: ['Todo bien', 'check', 'salud'], nota: ['Nota', 'note', 'plata'], otro: ['Listo', 'drop', 'plata'] };
   const list = p.log.filter(l => l.by !== 'Vos' && Date.parse(l.at) > since).slice(-6).reverse();
   if (!list.length) return '';
   const medName = id => p.meds.find(m => m.id === id)?.name || 'Remedio';
