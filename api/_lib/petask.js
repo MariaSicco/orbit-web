@@ -19,6 +19,7 @@ import { kvGet, kvSet, kvIncrBy } from './kv.js';
 import { askModel as askModelFromEnv, DEFAULT_ASK_MODEL as DEFAULT_ASK, callClaude as claude, estimateTokens, aiPaused, pausedBody } from './petai.js';
 import { allowRefund } from './petquota.js';
 import '../../assets/js/mascotas-rules.js';
+import '../../assets/js/mascotas-hoy-rules.js';
 import { awayContextLines } from './petaway.js';
 
 /* ---------- constantes fáciles de cambiar ---------- */
@@ -53,6 +54,7 @@ export const AREA = {
   'Alimento': { say: 'Según lo que cargaste del alimento', go: 'inicio' },
   'Agenda': { say: 'Según tu agenda', go: 'agenda' },
   'Cuidador': { say: 'Según lo que anotó el cuidador', go: 'inicio' },
+  'Hoy': { say: 'Según lo que marcaron en "Hoy"', go: 'inicio' },
   'Me fui': { say: 'Según Me fui', go: 'mefui' },
   'Algo pasó': { say: 'Según lo que anotaste en Algo pasó', go: 'inicio' },
   'QR': { say: 'Según los avisos del QR', go: 'inicio' },
@@ -125,7 +127,7 @@ const SPECIES = { perro: 'perro', gato: 'gato' };
 const TYPE = { vacuna: 'Vacuna', desparasitacion: 'Antiparasitario', control: 'Control', otro: 'Otro registro' };
 const STUDY = { sangre: 'Análisis de sangre', orina: 'Análisis de orina', materia: 'Materia fecal', rx: 'Radiografía', eco: 'Ecografía', otro: 'Estudio' };
 const EXP = { alimento: 'alimento', veterinaria: 'veterinaria', salud: 'salud', peluqueria: 'peluquería', accesorios: 'accesorios', otros: 'otros' };
-const LOGK = { comida: 'comió', paseo: 'salió a pasear', med: 'le dio el remedio', ok: 'todo bien', nota: 'nota' };
+const LOGK = { comida: 'comió', paseo: 'salió a pasear', med: 'le dio el remedio', ok: 'todo bien', nota: 'nota', otro: 'lo hizo' };
 
 /* id corto y estable entre preguntas (sirve para el historial): letra del tipo + 4 caracteres */
 const LETTER = { pet: 'f', rec: 'v', visit: 'c', study: 'e', sym: 's', surg: 'q', med: 'm', weight: 'p', expense: 'g', cond: 'a', qr: 'x', sitter: 'l', gastos: 't', appt: 'n', away: 'h' };
@@ -220,10 +222,19 @@ export function buildContext(doc, { question = '', petId = '', scans = [], tz = 
       const by = {}; for (const x of list) by[x.cat] = (by[x.cat] || 0) + x.amount;
       add(p, 'gastos', ym, 'Gastos ' + ym, ym + '-01', 'gastos', `Total de gastos de ${ym} (calculado por la app con ${list.length} gasto(s)): ${money(list.reduce((a, x) => a + x.amount, 0))} · ${Object.entries(by).map(([k, v]) => `${EXP[k] || k} ${money(v)}`).join(' · ')}`, false, ym, { area: 'Gastos', detail: 'Total', when: shortMonth(ym, today) });
     }
+    /* registro: lo del cuidador, los tildes de "Hoy con…" (de cualquiera) y los remedios que dio la dueña o el dueño */
     for (const l of p.log || []) {
-      if (l.by === 'Vos') continue;
+      const mine = l.by === 'Vos';
+      if (mine && l.kind !== 'med' && !l.item) continue;
       const med = l.kind === 'med' ? (p.meds || []).find(m => m.id === l.medId) : null;
-      add(p, 'sitter', l.id, 'Cuidador', s(l.at).slice(0, 10), 'sitter', `Anotación del cuidador ${s(l.at).slice(0, 16).replace('T', ' ')} (${dataText(l.by, 40)}): ${LOGK[l.kind] || 'nota'}${med ? ' ' + dataText(med.name, 80) : ''}${l.note ? ' · ' + dataText(l.note, 300) : ''}`, false, l.id, { area: 'Cuidador', detail: plain(l.by, 30), when: AT(l.at) });
+      const who = mine ? 'vos (la dueña o el dueño)' : dataText(l.by, 40);
+      add(p, 'sitter', l.id, l.item ? 'Hoy' : 'Cuidador', s(l.at).slice(0, 10), 'sitter', `${l.item ? 'Tilde en "Hoy"' : mine ? 'Anotación tuya' : 'Anotación del cuidador'} ${AT(l.at)} (${who}): ${LOGK[l.kind] || 'nota'}${med ? ' ' + dataText(med.name, 80) : ''}${l.repeat ? ' · marcada como repetida (ya estaba marcada)' : ''}${l.note ? ' · ' + dataText(l.note, 300) : ''}`, false, l.id, { area: l.item ? 'Hoy' : 'Cuidador', detail: mine ? 'Vos' : plain(l.by, 30), when: AT(l.at) });
+    }
+    /* "Hoy con…": quién dio cada toma de hoy (la misma regla que la lista del día, mascotas-hoy-rules.js) */
+    const HY = globalThis.MZHOY;
+    if (HY) {
+      const ymd = HY.todayAR(now.getTime()), tomas = HY.plan(p, ymd).filter(i => i.kind === 'med');
+      if (tomas.length) add(p, 'sitter', 'hoy:' + ymd, 'Hoy', ymd, 'sitter', `Remedios de hoy (${ymd}, hora de Argentina): ${tomas.map(i => { const l = HY.medGiven(i, p.log); return `${dataText(i.label, 80)} de las ${i.time}: ${l ? `dado, lo marcó ${l.by === 'Vos' ? 'vos' : dataText(l.by, 40)} a las ${HY.hhmm(Date.parse(l.at))}` : now.getTime() < i.at ? 'todavía no toca' : 'nadie lo marcó'}`; }).join(' · ')}`, true, p.id, { area: 'Hoy', detail: 'Remedios de hoy', when: 'hoy' });
     }
     /* "Me fui": cuánto estuvo sola en los últimos 7 días (la misma cuenta que la app, mascotas-away-rules.js) */
     const awl = awayContextLines(doc || {}, p.id, tz, now.getTime());

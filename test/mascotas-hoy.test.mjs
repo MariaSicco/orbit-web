@@ -202,3 +202,18 @@ test('remedio sin marcar: aviso una hora después, una sola vez por toma (dedupe
   await setup(email2, 'TOKhoyMiss00002', PET({ meds: pet.meds, log: [{ id: 'a', at: new Date(it.at + 5 * 60000).toISOString(), kind: 'med', medId: 'med1', by: 'Vos' }] }));
   assert.equal((await HOY.runMedMiss({ now: it.at + 70 * 60000, deps: { ...deps, emails: [email2] } })).avisos, 0);
 });
+
+test('Preguntale: el contexto dice quién dio cada toma de hoy (cuidador o vos) y cita "Hoy"', async () => {
+  const { buildContext, AREA } = await import('../api/_lib/petask.js');
+  const pet = PET({ meds: [{ id: 'med1', name: 'Meloxicam', dose: '1/2', every: 12, start: `${today}T09:00`, days: 0 }] });
+  const it = H.plan(pet, today).find(i => i.key === 'm:med1:0900');
+  pet.log = [{ id: 'k1', at: new Date(it.at + 4 * 60000).toISOString(), kind: 'med', medId: 'med1', by: 'Luca', item: it.key, ymd: today }];
+  const c = buildContext({ pets: [pet] }, { question: '¿Quién le dio el remedio hoy?', now: new Date(it.at + 2 * 36e5) });
+  assert.match(c.text, /Remedios de hoy .*"Meloxicam" de las 09:00: dado, lo marcó "Luca" a las 09:04/);
+  assert.match(c.text, /Tilde en "Hoy" .*09:04.*\("Luca"\): le dio el remedio "Meloxicam"/);
+  assert.ok(Object.values(c.refs).some(r => r.area === 'Hoy'));
+  assert.ok(AREA.Hoy);
+  /* la dueña también aparece (antes se salteaban sus anotaciones) */
+  pet.log = [{ id: 'k2', at: new Date(it.at + 60000).toISOString(), kind: 'med', medId: 'med1', by: 'Vos' }];
+  assert.match(buildContext({ pets: [pet] }, { now: new Date(it.at + 2 * 36e5) }).text, /lo marcó vos a las 09:01/);
+});
