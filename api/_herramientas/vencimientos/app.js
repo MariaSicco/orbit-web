@@ -47,11 +47,12 @@ function guardar(nuevo) {
   try { localStorage.setItem(CLAVE, JSON.stringify(d)); almacenOK = true; }
   catch { almacenOK = false; toast('No pudimos guardar en este navegador. Descargá una copia desde Ajustes.'); }
   render();
+  if (hoja.open && ui.catAbierta && $id('hoja-cuerpo').querySelector('.cat-hoja-cab, .lista')) abrirCategoria(ui.catAbierta);
 }
 
 let hoy = V.hoyLocal();
 const ui = { vista: 'inicio', mes: V.mesDe(hoy), mesCal: V.mesDe(hoy), dia: hoy, resueltos: false,
-  onb: { paso: 1, sel: new Set() }, borrarArmado: null, verTodo: false, verPasos: false, cats: new Set() };
+  onb: { paso: 1, sel: new Set() }, borrarArmado: null, verTodo: false, verPasos: false, catAbierta: null };
 
 /* ── piezas ── */
 /* Ícono del servicio sobre su color; si no hay ícono propio, las iniciales. */
@@ -207,12 +208,30 @@ const colorDe = cat => cat === 'Resto de la tarjeta' ? '#F2EFE8' : cat === 'Otra
 
 function barraCategorias(cats, total) {
   if (!total) return '';
-  const top = cats.slice(0, 5), resto = cats.slice(5).reduce((a, [, m]) => a + m, 0);
-  const lista = resto ? [...top, ['Otras categorías', resto]] : top;
-  return `<div class="desglose" aria-label="De qué es la plata">
-    <div class="barra-cat">${lista.map(([c, m]) => `<i style="flex:${m};background:${colorDe(c)}" title="${esc(c)}: ${plata(m)}"></i>`).join('')}</div>
-    <ul class="leyenda-cat">${lista.map(([c, m]) => `<li><i style="background:${colorDe(c)}"></i><span>${esc(c)}</span><b>${plata(m)}</b></li>`).join('')}</ul>
-  </div>`;
+  return `<div class="barra-cat" aria-hidden="true">${cats.map(([c, m]) => `<i style="flex:${m};background:${colorDe(c)}"></i>`).join('')}</div>`;
+}
+
+/* Hoja con el detalle de una categoría (o de los vencidos). */
+function abrirCategoria(cat) {
+  const fin = V.sumarDias(hoy, 44);
+  const abiertos = [...V.atrasados(d, hoy), ...V.ocurrenciasEntre(d, hoy, fin, hoy).filter(o => !o.resuelto)];
+  const ocs = (cat === '__vencidos' ? abiertos.filter(o => o.vence < hoy) : abiertos.filter(o => (o.cuenta.categoria || 'Otros') === cat))
+    .sort((a, b) => a.vence.localeCompare(b.vence));
+  if (!ocs.length) { cerrar(); return; }
+  const des = desglose(abiertos.filter(o => V.difDias(hoy, o.vence) <= 30));
+  const enCat = cat === '__vencidos' ? sumaARS(ocs) : (des.cats.find(([c]) => c === (cat === 'Tarjetas' ? 'Resto de la tarjeta' : cat)) || [, 0])[1];
+  const usd = ocs.reduce((a, o) => a + (o.moneda === 'USD' && o.monto ? o.monto : 0), 0);
+  let nota = '';
+  if (cat === 'Tarjetas') {
+    const t = ocs.find(o => o.cuenta.categoria === 'Tarjetas' && o.monto != null);
+    if (t) nota = `<p class="nota">El resumen es de <b>${plata(t.monto)}</b>. De eso, <b>${plata(Math.max(0, t.monto - enCat))}</b> son cobros fijos que ves en su categoría (Netflix, apps, educación…). Acá queda el resto: <b>${plata(enCat)}</b> en compras.</p>`;
+  } else if (ocs.some(o => o.cuenta.enTarjeta)) nota = `<p class="nota">Los que dicen "Va en la tarjeta" ya están dentro del resumen de la tarjeta: no se pagan aparte.</p>`;
+  const nombre = cat === '__vencidos' ? 'Vencidos' : cat;
+  abrir(nombre, `
+    <div class="cat-hoja-cab">${cat === '__vencidos' ? '' : avatar({ nombre: cat, categoria: cat, color: colorCategoria(cat) }, 'av-xl')}
+      <div><span class="mono">${cat === '__vencidos' ? 'Ya pasó la fecha' : 'Próximos 30 días'}</span><p class="det-monto">${enCat ? plata(enCat) : '—'}</p>${usd ? `<small class="dim">y ${plata(usd, 'USD')} en dólares</small>` : ''}</div></div>
+    ${nota}
+    <ul class="lista">${ocs.map(fila).join('')}</ul>`);
 }
 
 function vistaInicio() {
@@ -267,48 +286,27 @@ function vistaInicio() {
   if (!d.ejemplo) html += completaTuCasa();
   html += `</div><div class="col-b">`;
 
-  /* línea de tiempo */
-  const resto = abiertos.filter(o => o !== prox);
-  const dias = o => V.difDias(hoy, o.vence);
-  const grupos = [
-    ['Vencido', resto.filter(o => o.vence < hoy), 'vencido'],
-    ['Hoy', resto.filter(o => dias(o) === 0), ''],
-    ['Esta semana', resto.filter(o => dias(o) >= 1 && dias(o) <= 7), ''],
-    ['La semana que viene', resto.filter(o => dias(o) >= 8 && dias(o) <= 14), ''],
-    ['Más adelante', resto.filter(o => dias(o) >= 15), ''],
-  ];
-  /* primero lo urgente; después todo agrupado por categoría (se abre al tocar) */
-  const suma = ocs => sumaARS(ocs.filter(o => !o.cuenta.enTarjeta)) ? plata(sumaARS(ocs.filter(o => !o.cuenta.enTarjeta))) : '';
-  for (const [t, ocs, cl] of grupos.slice(0, 3)) html += grupo(t, ocs, cl, suma(ocs));
-  if (!grupos.slice(0, 3).some(([, ocs]) => ocs.length) && abiertos.length) html += `<div class="calma"><svg><use href="#i-check"/></svg><p><b>Esta semana, sin apuros.</b> No vence nada en los próximos 7 días.</p></div>`;
-  const porCat = {};
-  for (const o of abiertos) (porCat[o.cuenta.categoria || 'Otros'] ||= []).push(o);
-  const orden = CATEGORIAS.map(c => c.id).filter(c => porCat[c]);
-  if (orden.length) {
-    html += `<div class="grupo"><h2><span class="mono">Por categoría · próximos 45 días</span></h2><div class="cats-acc">`;
-    for (const cat of orden) {
-      const ocs = porCat[cat].sort((a, b) => a.vence.localeCompare(b.vence));
-      const abierta = ui.cats.has(cat);
-      const montoCat = cat === 'Tarjetas' ? sumaARS(ocs) : sumaARS(ocs.filter(o => o.cuenta.enTarjeta)) + sumaARS(ocs.filter(o => !o.cuenta.enTarjeta));
-      const usdCat = ocs.reduce((a, o) => a + (o.moneda === 'USD' && o.monto ? o.monto : 0), 0);
-      const montoTxt = [montoCat ? plata(montoCat) : '', usdCat ? plata(usdCat, 'USD') : ''].filter(Boolean).join(' + ') || '—';
-      html += `<div class="cat-acc${abierta ? ' abierta' : ''}">
-        <button type="button" class="cat-cab" data-acc="cat" data-c="${esc(cat)}" aria-expanded="${abierta}">
-          ${avatar({ nombre: cat, categoria: cat, color: colorCategoria(cat) })}
-          <span class="cat-tx"><b>${esc(cat)}</b><small>${ocs.length} ${ocs.length === 1 ? 'pago' : 'pagos'} · lo próximo ${V.fechaCorta(ocs[0].vence)}${V.mesDe(ocs[0].vence) !== V.mesDe(hoy) ? ` de ${V.nombreMes(V.mesDe(ocs[0].vence))}` : ''}${cat === 'Tarjetas' ? ' · incluye los cobros marcados "Va en la tarjeta"' : ''}</small></span>
-          <span class="cat-monto">${montoTxt}</span>
-          <svg class="chev"><use href="#i-der"/></svg>
-        </button>
-        ${abierta ? `<ul class="lista">${ocs.map(fila).join('')}</ul>` : ''}
-      </div>`;
-    }
-    html += `</div></div>`;
+  /* lo vencido, en un solo aviso que se toca */
+  const vencidos = abiertos.filter(o => o.vence < hoy && o !== prox);
+  if (vencidos.length) html += `<button type="button" class="aviso mal aviso-bt" data-acc="cat" data-c="__vencidos"><svg><use href="#i-alerta"/></svg><p><b>${vencidos.length === 1 ? 'Tenés 1 pago vencido' : `Tenés ${vencidos.length} pagos vencidos`}</b>${sumaARS(vencidos) ? ` · ${plata(sumaARS(vencidos))}` : ''}</p><svg class="flecha"><use href="#i-der"/></svg></button>`;
+
+  /* tus gastos: un cuadradito por categoría; al tocarlo se abre el detalle */
+  const montos = Object.fromEntries(des.cats.map(([c, m]) => [c === 'Resto de la tarjeta' ? 'Tarjetas' : c, m]));
+  const presentes = new Set(abiertos.map(o => o.cuenta.categoria || 'Otros'));
+  const cats = CATEGORIAS.map(c => c.id).filter(c => presentes.has(c)).sort((a, b) => (montos[b] || 0) - (montos[a] || 0));
+  if (cats.length) {
+    html += `<div class="grupo"><h2><span class="mono">Tus gastos · próximos 30 días</span><span class="mono dim">Tocá para ver</span></h2><div class="tiles">${cats.map(c => {
+      const deCat = abiertos.filter(o => (o.cuenta.categoria || 'Otros') === c && V.difDias(hoy, o.vence) <= 30);
+      const n = abiertos.filter(o => (o.cuenta.categoria || 'Otros') === c).length;
+      const usdCat = deCat.reduce((a, o) => a + (o.moneda === 'USD' && o.monto ? o.monto : 0), 0);
+      return `<button type="button" class="tile" data-acc="cat" data-c="${esc(c)}" style="--cc:${colorCategoria(c)}">
+        ${avatar({ nombre: c, categoria: c, color: colorCategoria(c) }, 'av-tile')}
+        <span class="tile-n">${esc(c === 'Tarjetas' ? 'Tarjeta' : c)}</span>
+        <b class="tile-m">${montos[c] ? plata(montos[c]) : usdCat ? plata(usdCat, 'USD') : `${n} ${n === 1 ? 'pago' : 'pagos'}`}</b>
+      </button>`;
+    }).join('')}</div></div>`;
   }
-  const resueltos = ventana.filter(o => o.resuelto).concat(V.ocurrenciasEntre(d, V.sumarDias(hoy, -14), V.sumarDias(hoy, -1), hoy).filter(o => o.resuelto));
-  if (resueltos.length) {
-    if (ui.resueltos) html += grupo('Ya resuelto', resueltos, '', '');
-    else html += `<div class="grupo"><button type="button" class="mas-res" data-acc="ver-resueltos"><svg><use href="#i-check"/></svg> Ya resolviste ${resueltos.length} en estos días <svg><use href="#i-der"/></svg></button></div>`;
-  }
+  if (!abiertos.length) html += `<div class="vacio vacio-ilus">${ILUS_LISTO}<p class="display">Todo <span class="it">al día.</span></p><p class="lead">No tenés nada pendiente en los próximos 45 días.</p></div>`;
   html += `<div class="grupo"><button type="button" class="mas-res" data-acc="ir" data-v="calendario"><svg><use href="#i-cal"/></svg> Ver mes por mes en el calendario</button></div>`;
   html += '</div>';
   el.innerHTML = html;
@@ -555,7 +553,7 @@ function abrir(titulo, cuerpo) {
   if (!hoja.open) hoja.showModal();
   $id('hoja-cuerpo').scrollTop = 0;
 }
-const cerrar = () => { if (hoja.open) hoja.close(); hoja.classList.remove('hoja-intro'); };
+const cerrar = () => { if (hoja.open) hoja.close(); hoja.classList.remove('hoja-intro'); ui.catAbierta = null; };
 hoja.addEventListener('click', e => { if (e.target === hoja) cerrar(); });
 
 function buscarOc(id) {
@@ -568,6 +566,7 @@ const BADGE = { vencido: ['Vencido', 'mal'], segundo: ['En 2º vencimiento', 'ma
   pendiente: ['Pendiente', ''], pagado: ['Pagado', 'ok'], debitado: ['Débito automático', 'ok'], salteado: ['No vino', ''] };
 
 function verOcurrencia(id) {
+  ui.catAbierta = null;
   const o = buscarOc(id);
   if (!o) return;
   const c = o.cuenta;
@@ -1106,7 +1105,7 @@ document.addEventListener('click', e => {
     case 'ver-resueltos': ui.resueltos = true; render(); break;
     case 'ir': irA(b.dataset.v); break;
     case 'ver-todo': ui.verTodo = true; render(); break;
-    case 'cat': { const c = b.dataset.c; ui.cats.has(c) ? ui.cats.delete(c) : ui.cats.add(c); render(); document.querySelector(`.cat-cab[data-c="${CSS.escape(c)}"]`)?.focus({ preventScroll: true }); break; }
+    case 'cat': ui.catAbierta = b.dataset.c; abrirCategoria(b.dataset.c); break;
     case 'ver-pasos': ui.verPasos = true; render(); break;
     case 'entrar': cerrarEntrada(); break;
     case 'intro-sig': slide = Math.min(SLIDES.length - 1, slide + 1); pintarSlide(); break;
@@ -1317,8 +1316,7 @@ function pintarSlide() {
 const PASOS = [
   ['.mes', 'Esto es lo que tenés que pagar', 'El total de los próximos 30 días. Abajo, cuánto llevás pagado este mes.'],
   ['.spot', 'Lo próximo que vence', 'Cuando lo pagues, tocá "Ya lo pagué". Si es vencido, se pone en rojo.'],
-  ['.lista .tick', 'Marcá pagado en un toque', 'El círculo de cada cuenta la marca como pagada. Si te equivocaste, tocás "Deshacer".'],
-  ['.tags', 'Qué significa cada etiqueta', '"Se debita solo": débito automático. "Va en la tarjeta": ya está en el total de la tarjeta. "Monto estimado": se ajusta cuando pagás.'],
+  ['.tiles', 'Tus gastos, por categoría', 'Cada cuadradito suma lo de los próximos 30 días. Tocalo y ves el detalle: qué vence, cuándo y cuánto.'],
   ['.completa', 'Completá tu casa', 'Seguí estos pasos para tener todo: resumen, mail, expensas y avisos.'],
   ['#b-agregar', 'Sumá una cuenta', 'Con una foto de la factura, el resumen de la tarjeta, tu mail o a mano.'],
   ['#b-cal-ics', 'Que te avise el celular', 'Bajá todos los vencimientos a tu calendario, con aviso antes.'],
