@@ -311,6 +311,12 @@ main{max-width:760px;margin:0 auto;padding:4px 16px 24px;outline:none}
 .festejo-in p{color:var(--suave);font-size:16px;line-height:1.45;margin:0 0 20px}
 .compartir{white-space:pre-wrap;font-family:var(--mono);font-size:12.5px;background:#fff;border:1px solid var(--linea);border-radius:12px;padding:12px;margin:0 0 14px;max-height:40vh;overflow:auto}
 
+.grande.baja{color:var(--ok)}
+.cierre{display:flex;justify-content:center;gap:14px;margin:-6px 0 20px}
+.cierre span{background:var(--tinta);color:#F2EFE8;border-radius:16px;padding:12px 18px;font-size:13px;min-width:110px}
+.cierre b{display:block;font-size:34px;font-weight:900;letter-spacing:-.04em;color:var(--ok);line-height:1}
+.festejo-in .acciones{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
 /* ── botones ── */
 .bt{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 20px;border-radius:14px;font-weight:600;font-size:16px;transition:transform .25s var(--ease),background .2s,opacity .2s;text-decoration:none}
 .bt:active{transform:scale(.98)}

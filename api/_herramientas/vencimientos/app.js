@@ -253,12 +253,47 @@ function tarjetasInsight() {
 }
 
 /* ── festejo: mes al día ── */
-function festejar(titulo, texto) {
+/* Datos del cierre: cuentas pagadas, recargos evitados (pagadas antes del 1.er vencimiento) y total. */
+function cierreDelMes(ym) {
+  const r = V.resumenMes(d, ym, hoy);
+  const res = r.ocurrencias.filter(o => o.resuelto && o.estado !== 'salteado' && !o.cuenta.enTarjeta);
+  const recargos = res.filter(o => o.pago?.fecha && o.pago.fecha > o.vence).length;
+  return { ym, cuentas: res.length, recargos, total: r.ars.pagado, casa: d.config?.nombreCasa || '' };
+}
+/* Imagen 1080×1920 del cierre, para guardar o compartir (tipo resumen del año). */
+function imagenCierre(c) {
+  const cv = document.createElement('canvas'); cv.width = 1080; cv.height = 1920;
+  const x = cv.getContext('2d');
+  x.fillStyle = '#0D0D0E'; x.fillRect(0, 0, 1080, 1920);
+  x.fillStyle = '#3047FF'; x.beginPath(); x.arc(1010, 150, 300, 0, Math.PI * 2); x.fill();
+  x.fillStyle = '#D9FF45'; x.beginPath(); x.arc(1000, 1720, 190, 0, Math.PI * 2); x.fill();
+  x.fillStyle = '#F2EFE8'; x.textBaseline = 'top';
+  x.font = '500 34px "IBM Plex Mono", monospace'; x.fillText((c.casa || 'VENCIMIENTOS DE LA CASA').toUpperCase(), 90, 120);
+  x.font = '900 150px "Inter Tight", sans-serif'; x.fillText(cap(V.nombreMes(c.ym)).toUpperCase() + ',', 90, 520); x.fillText('AL DÍA.', 90, 680);
+  const fila = (y, num, txt) => { x.font = '800 120px "Inter Tight", sans-serif'; x.fillStyle = '#D9FF45'; x.fillText(num, 90, y); x.font = '500 46px "Inter Tight", sans-serif'; x.fillStyle = '#F2EFE8'; x.fillText(txt, 90, y + 140); };
+  fila(960, String(c.cuentas), c.cuentas === 1 ? 'cuenta pagada' : 'cuentas pagadas');
+  fila(1240, String(c.recargos), c.recargos === 1 ? 'recargo' : 'recargos');
+  if (c.total) { x.font = '500 46px "IBM Plex Mono", monospace'; x.fillStyle = '#F2EFE8'; x.fillText(plata(c.total), 90, 1540); }
+  x.font = '500 30px "IBM Plex Mono", monospace'; x.fillStyle = 'rgba(242,239,232,.6)'; x.fillText('ORBIT · orbitando.com.ar', 90, 1800);
+  return new Promise(ok => cv.toBlob(ok, 'image/png'));
+}
+async function compartirCierre(c) {
+  const blob = await imagenCierre(c);
+  const file = new File([blob], `${c.ym}-al-dia.png`, { type: 'image/png' });
+  if (navigator.canShare?.({ files: [file] })) { try { await navigator.share({ files: [file], text: `${cap(V.nombreMes(c.ym))}, al día.` }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
+  bajar(file.name, blob, 'image/png');
+  toast('Imagen guardada en tus descargas.');
+}
+
+function festejar(titulo, texto, cierre = null) {
   try { navigator.vibrate?.([18, 40, 18]); } catch {}
   const el = document.createElement('div');
   el.className = 'festejo';
   el.setAttribute('role', 'status');
-  el.innerHTML = `<canvas aria-hidden="true"></canvas><div class="festejo-in">${ILUS_LISTO}<b>${titulo}</b><p>${texto}</p><button type="button" class="bt prim" data-acc="festejo-ok">¡Bien!</button></div>`;
+  el.innerHTML = `<canvas aria-hidden="true"></canvas><div class="festejo-in">${ILUS_LISTO}<b>${titulo}</b><p>${texto}</p>
+    ${cierre ? `<div class="cierre"><span><b>${cierre.cuentas}</b>${cierre.cuentas === 1 ? 'cuenta' : 'cuentas'}</span><span><b>${cierre.recargos}</b>${cierre.recargos === 1 ? 'recargo' : 'recargos'}</span></div>` : ''}
+    <div class="acciones"><button type="button" class="bt prim" data-acc="festejo-ok">¡Bien!</button>${cierre ? '<button type="button" class="bt sec" data-acc="festejo-compartir">Compartir mi mes</button>' : ''}</div></div>`;
+  if (cierre) el.dataset.cierre = JSON.stringify(cierre);
   document.body.appendChild(el);
   el.querySelector('.bt').focus();
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -285,21 +320,23 @@ function quizasFestejar() {
   if (!r.ocurrencias.length || r.cantPendientes || d.festejado === ym) return;
   d = { ...d, festejado: ym };
   try { localStorage.setItem(CLAVE, JSON.stringify(d)); } catch {}
-  setTimeout(() => festejar(`${cap(V.nombreMes(ym))}, al día`, `Pagaste todo lo de este mes${r.ars.pagado ? `: ${plata(r.ars.pagado)}` : ''}. Tu casa está en orden.`), 450);
+  setTimeout(() => festejar(`${cap(V.nombreMes(ym))}, al día`, `Pagaste todo lo de este mes${r.ars.pagado ? `: ${plata(r.ars.pagado)}` : ''}. Tu casa está en orden.`, cierreDelMes(ym)), 450);
 }
 
 /* ── número que cuenta hasta el total (una vez por sesión) ── */
-let contado = false;
+/* El total cuenta desde 0 al entrar y, después, de su valor anterior al nuevo (baja al pagar). */
+let totalMostrado = null;
 function contarHasta(el) {
-  if (!el || contado || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const fin = Number(el.dataset.valor);
-  if (!fin) return;
-  contado = true;
-  const t0 = performance.now(), dur = 700;
+  const fin = Number(el?.dataset.valor || 0);
+  const desde = totalMostrado ?? 0;
+  totalMostrado = fin;
+  if (!el || !fin || desde === fin || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const t0 = performance.now(), dur = desde ? 600 : 700;
+  el.classList.toggle('baja', desde > fin);
   (function paso(t) {
     const k = Math.min(1, (t - t0) / dur), e = 1 - (1 - k) ** 3;
-    el.textContent = plata(Math.round(fin * e / 100) * 100);
-    if (k < 1) requestAnimationFrame(paso); else el.textContent = plata(fin);
+    el.textContent = plata(Math.round((desde + (fin - desde) * e) / 100) * 100);
+    if (k < 1) requestAnimationFrame(paso); else { el.textContent = plata(fin); el.classList.remove('baja'); }
   })(t0);
 }
 
@@ -338,14 +375,14 @@ function vistaInicio() {
 
   let html = `<div class="col-a">
   <div class="hola">
-    <span class="mono">${hoyTxt}</span>
+    <span class="mono">${hoyTxt}${d.config?.nombreCasa ? ` · ${esc(d.config.nombreCasa)}` : ''}</span>
     <h1 id="t-inicio">${saludo()}<span class="it">.</span></h1>
     <p>${fraseDelMes()}</p>
   </div>
   <div class="mes">
     <span class="mono etq">Próximos 30 días</span>
     <button type="button" class="ic compartir-bt" data-acc="compartir" aria-label="Compartir lo que vence" title="Compartir"><svg><use href="#i-compartir"/></svg></button>
-    <p class="grande${!en30.length ? ' cero' : ''}" ${total30 ? `data-valor="${total30}"` : ''}>${!en30.length ? 'Nada' : total30 ? plata(total30) : `${en30.length} por pagar`}</p>
+    <p class="grande${!en30.length ? ' cero' : ''}" ${total30 ? `data-valor="${total30}"` : ''}>${!en30.length ? 'Nada' : total30 ? plata(totalMostrado && totalMostrado !== total30 ? totalMostrado : total30) : `${en30.length} por pagar`}</p>
     <p class="sub">${en30.length ? `${en30.length} pago${en30.length > 1 ? 's' : ''}${sinMonto ? ` · ${sinMonto} todavía sin monto` : ''}` : 'No vence nada en los próximos 30 días.'}${des.usd ? ` · además ${plata(des.usd, 'USD')} en dólares` : ''}</p>
     ${barraCategorias(des.cats, des.total)}
     <div class="mes-pie">
@@ -1082,7 +1119,7 @@ async function leerResumen(file) {
 
 /* ── archivos ── */
 function bajar(nombre, texto, tipo) {
-  const blob = new Blob([texto], { type: tipo });
+  const blob = texto instanceof Blob ? texto : new Blob([texto], { type: tipo });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
@@ -1111,6 +1148,10 @@ function abrirAjustes() {
   const ult = d.ultimoRespaldo ? `Última copia: ${V.fechaLarga(d.ultimoRespaldo.slice(0, 10))}.` : 'Todavía no descargaste ninguna copia.';
   const horas = ['07:00', '08:00', '09:00', '10:00', '12:00', '18:00', '20:00', '21:00'];
   abrir('Ajustes', `
+  <div class="ajustes-sec"><h3>Tu casa</h3>
+    <form data-form="casa"><label class="campo"><span>¿Cómo le decís?</span><input type="text" name="nombreCasa" maxlength="30" value="${esc(d.config.nombreCasa || '')}" placeholder="Ej: Casa de Palermo, Lo de mamá" autocomplete="off"><small>Aparece arriba y en el saludo.</small></label>
+    <button type="submit" class="bt sec ancho">Guardar el nombre</button></form>
+  </div>
   <div class="ajustes-sec"><h3>Avisos en el calendario del celular</h3>
     <form data-form="avisos">
       <fieldset class="campo"><legend>Avisarme</legend><div class="seg">
@@ -1154,6 +1195,10 @@ function toast(msg, acciones = [], ms = 4500) {
 }
 
 /* ── acciones ── */
+const FRASES_PAGO = ['¡Uno menos!', 'Listo, a otra cosa.', 'Tu yo del futuro te lo agradece.', 'Pagado y anotado.', 'Uno menos en la lista.', 'Bien ahí.', 'Así da gusto.'];
+const frasePago = () => FRASES_PAGO[Math.floor(Math.random() * FRASES_PAGO.length)];
+const vibrar = p => { try { navigator.vibrate?.(p); } catch {} };
+
 function tick(id, boton) {
   const o = buscarOc(id);
   if (!o) return;
@@ -1166,9 +1211,10 @@ function tick(id, boton) {
   if (o.estado === 'salteado') { guardar(V.saltear(d, o.cuentaId, o.clave, false)); return; }
   if (o.cuenta.tipo !== 'tramite' && o.monto == null) { verOcurrencia(id); return; }
   boton?.querySelector('span')?.classList.add('pop');
+  vibrar(12);
   guardar(V.marcarPagado(d, o.cuentaId, o.clave, { monto: o.monto, fecha: hoy }));
   quizasFestejar();
-  const txt = o.cuenta.tipo === 'tramite' ? `${o.cuenta.nombre}: hecho.` : `${o.cuenta.nombre} pagado · ${plata(o.monto, o.moneda)}`;
+  const txt = o.cuenta.tipo === 'tramite' ? `${o.cuenta.nombre}: hecho. ${frasePago()}` : `${frasePago()} ${o.cuenta.nombre} · ${plata(o.monto, o.moneda)}`;
   const acc = [{ t: 'Deshacer', fn: () => guardar(anterior) }];
   if (o.cuenta.tipo !== 'tramite') acc.unshift({ t: 'Otro monto', fn: () => verOcurrencia(id) });
   toast(txt, acc, 6000);
@@ -1199,6 +1245,7 @@ document.addEventListener('click', e => {
     case 'compartir': compartirMes(); break;
     case 'copiar-mes': navigator.clipboard?.writeText(textoParaCompartir()).then(() => toast('Copiado. Pegalo donde quieras.'), () => toast('No pudimos copiar: seleccioná el texto.')); break;
     case 'festejo-ok': document.querySelector('.festejo')?.remove(); break;
+    case 'festejo-compartir': { const f = document.querySelector('.festejo'); if (f?.dataset.cierre) compartirCierre(JSON.parse(f.dataset.cierre)); break; }
     case 'intro-sig': slide = Math.min(SLIDES.length - 1, slide + 1); pintarSlide(); break;
     case 'intro-fin': marcarVisto(GUIA.intro); $id('hoja').classList.remove('hoja-intro'); cerrar(); render(); break;
     case 'tour-sig': paso++; pintarPaso(); break;
@@ -1298,7 +1345,8 @@ document.addEventListener('submit', e => {
     guardar(V.marcarPagado(d, o.cuentaId, o.clave, { monto, fecha, nota: String(f.get('nota') || '').trim().slice(0, 80) }));
     cerrar();
     quizasFestejar();
-    toast(o.cuenta.tipo === 'tramite' ? `${o.cuenta.nombre}: hecho.` : `${o.cuenta.nombre} pagado · ${plata(monto, o.moneda)}`, [{ t: 'Deshacer', fn: () => guardar(anterior) }]);
+    vibrar(12);
+    toast(o.cuenta.tipo === 'tramite' ? `${o.cuenta.nombre}: hecho. ${frasePago()}` : `${frasePago()} ${o.cuenta.nombre} · ${plata(monto, o.moneda)}`, [{ t: 'Deshacer', fn: () => guardar(anterior) }]);
   } else if (tipo === 'factura') {
     const o = buscarOc(form.dataset.id); if (!o) return;
     const f = new FormData(form);
@@ -1329,6 +1377,11 @@ document.addEventListener('submit', e => {
     guardarDesdeMail(form);
   } else if (tipo === 'lectura') {
     guardarLectura(form);
+  } else if (tipo === 'casa') {
+    const nombreCasa = String(new FormData(form).get('nombreCasa') || '').trim().slice(0, 30);
+    guardar({ ...d, config: { ...d.config, nombreCasa } });
+    pintarMarca();
+    toast(nombreCasa ? `Listo: ${nombreCasa}.` : 'Volvimos al nombre de siempre.');
   } else if (tipo === 'avisos') {
     const av = [...form.querySelectorAll('[name=av]:checked')].map(x => Number(x.value)).sort((a, b) => b - a).slice(0, 3);
     guardar({ ...d, config: { ...d.config, avisos: av.length ? av : [0], hora: form.hora.value } });
@@ -1484,7 +1537,7 @@ function mostrarEntradaSiCorresponde() {
   el.innerHTML = `<div class="entrada-in">
     ${ILUS_CASA}
     <span class="mono">${saludo()}</span>
-    <h1 id="entrada-t">Te damos la bienvenida a <span class="it">la administración de tu casa</span></h1>
+    <h1 id="entrada-t">Te damos la bienvenida a <span class="it">${d.config?.nombreCasa ? esc(d.config.nombreCasa) : 'la administración de tu casa'}</span></h1>
     <p>${fraseDelMes()}</p>
     <button type="button" class="bt prim" data-acc="entrar">Ver mi casa <svg><use href="#i-flecha"/></svg></button>
   </div>`;
@@ -1506,6 +1559,11 @@ function guiaSiCorresponde() {
   if (hoja.open || paso >= 0 || $id('entrada')) return;
   if (!visto(GUIA.intro) && !d.cuentas.length) { setTimeout(abrirIntro, 300); return; }
   if (!visto(GUIA.tour) && d.cuentas.length && ui.vista === 'inicio') setTimeout(() => { if (!hoja.open && paso < 0) abrirTour(); }, 600);
+}
+
+function pintarMarca() {
+  const m = document.querySelector('.marca .mono');
+  if (m) m.innerHTML = d.config?.nombreCasa ? esc(d.config.nombreCasa) : 'Vencimientos <span class="it">de la</span> Casa';
 }
 
 function render() {
@@ -1532,6 +1590,7 @@ document.addEventListener('visibilitychange', () => {
 });
 
 mostrarEntradaSiCorresponde();
+pintarMarca();
 const inicial = location.hash.slice(1);
 if (['inicio', 'calendario', 'cuentas', 'numeros'].includes(inicial)) ui.vista = inicial;
 render();
