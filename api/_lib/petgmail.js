@@ -96,6 +96,22 @@ async function gget(path, at) {
   if (!r.ok) throw fail('mail_error', 502);
   return r.json();
 }
+/* el texto del mail, SOLO para buscar el link a un estudio en mails que ya parecen veterinarios; no se guarda */
+const BF = 'mimeType,body/data';
+export const BODY_FIELDS = `payload(headers,${BF},parts(${BF},parts(${BF},parts(${BF},parts(${BF})))))`;
+export function bodyOf(msg) {
+  let html = '', text = '';
+  const dec = d => Buffer.from(String(d || '').replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8');
+  const walk = (p, depth) => {
+    if (!p || depth > 6) return;
+    const t = String(p.mimeType || '').toLowerCase();
+    if (p.body?.data && t === 'text/html' && html.length < 400000) html += dec(p.body.data);
+    else if (p.body?.data && t === 'text/plain' && text.length < 200000) text += dec(p.body.data);
+    for (const c of p.parts || []) walk(c, depth + 1);
+  };
+  walk(msg?.payload, 0);
+  return { html, text, from: header(msg?.payload?.headers, 'from') };
+}
 const getMsg = (id, at) => gget(`/messages/${encodeURIComponent(id)}?format=full&fields=${encodeURIComponent(MSG_FIELDS)}`, at);
 const revokeToken = token => fetch(REVOKE_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form({ token }) });
 
@@ -131,6 +147,7 @@ export const gmail = {
     return { items: (list.messages || []).map(x => x.id).filter(x => /^[A-Za-z0-9]{6,40}$/.test(x)), next: list.nextPageToken || '' };
   },
   async candidate(at, id) { return messageOf(await getMsg(id, at)); },
+  async body(at, id) { return bodyOf(await gget(`/messages/${encodeURIComponent(id)}?format=full&fields=${encodeURIComponent(BODY_FIELDS)}`, at)); },
   /* el attachmentId de Gmail cambia entre lecturas: se busca por partId, que es estable dentro del mail */
   async find(at, m, part) {
     const msg = await getMsg(m, at);

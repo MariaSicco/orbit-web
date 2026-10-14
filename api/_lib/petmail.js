@@ -18,6 +18,7 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { kvGet, kvSet, kvDel } from './kv.js';
 import { isAdmin } from './admin.js';
+import { extractLinks, safeFetch, isLinkPart } from './petlinks.js';
 
 export const MAX_MESSAGES = 200;       // mails revisados por búsqueda
 export const PAGE = 50;                // mails por página del listado
@@ -145,6 +146,7 @@ export async function getSenders(email) {
   return { manual: Array.isArray(s.manual) ? s.manual.slice(0, 20) : [], learned: Array.isArray(s.learned) ? s.learned.slice(-50) : [] };
 }
 export async function saveSenders(email, s) { await kvSet(sendersKey(email), { manual: s.manual.slice(0, 20), learned: s.learned.slice(-50) }); }
+const domainOf = from => { const d = addrOf(from).split('@')[1] || ''; return PUBLIC_MAIL.test(d) ? '' : d; };
 const addrOf = from => { const m = /<([^>]+)>/.exec(String(from || '')); return (m ? m[1] : String(from || '')).trim().toLowerCase(); };
 export async function learnSender(email, from) {
   const a = addrOf(from); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a)) return;
@@ -303,15 +305,27 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
       /* tope de 200 por búsqueda: se puede seguir con "Buscar más" */
       if (cur.scanned >= MAX_MESSAGES) return out({ cursor: null, more: signCursor({ ...cur, skip: i, scanned: 0 }, email), scanned: cur.scanned, done: true });
       const n = Math.min(PARALLEL, items.length - i, MAX_MESSAGES - cur.scanned);
-      const got = await Promise.all(items.slice(i, i + n).map(it => P.candidate(at, it, doc, cur).catch(e => { if (e.code === 'mail_vencido' || e.code === 'mail_limite') throw e; return null; })));
-      for (const c of got) {
-        if (!c) continue;
+      const got = await Promise.all(items.slice(i, i + n).map(async it => {
+        const c = await P.candidate(at, it, doc, cur);
+        if (!c) return null;
         const r = relevance(c, rel);
-        if (!r.pass) continue;
-        const files = c.files.filter(f => !imported.has(dedupeKey(c.m, f.part)));
-        /* veterinario pero sin adjunto (muchos laboratorios mandan un link): se lista aparte para abrirlo en el mail */
-        if (!c.files.length) { if (c.link) noFile.push({ m: c.m, date: c.date, from: c.from, subject: c.subject, link: c.link, score: r.score }); continue; }
-        if (files.length) candidates.push({ m: c.m, date: c.date, from: c.from, subject: c.subject, files, score: r.score, why: r.why });
+        if (!r.pass) return null;
+        /* solo los mails que ya parecen veterinarios y no traen el estudio adjunto: se lee el cuerpo para buscar
+           el link al estudio (muchos laboratorios mandan un link). El cuerpo no se guarda ni sale de esta función */
+        if (!c.files.length && P.body) {
+          const b = await P.body(at, c.m).catch(e => { if (e.code === 'mail_vencido' || e.code === 'mail_limite') throw e; return null; });
+          if (b) c.links = extractLinks(b, { senderDomain: domainOf(c.from) });
+        }
+        return { c, r };
+      }).map(pr => pr.catch(e => { if (e.code === 'mail_vencido' || e.code === 'mail_limite') throw e; return null; })));
+      for (const g of got) {
+        if (!g) continue;
+        const { c, r } = g;
+        const links = (c.links || []).filter(l => !imported.has(dedupeKey(c.m, l.part))).map(l => ({ part: l.part, name: `Estudio por link · ${l.host}`, type: 'link', size: 0, url: l.url, host: l.host }));
+        const files = [...c.files.filter(f => !imported.has(dedupeKey(c.m, f.part))), ...links];
+        /* veterinario pero sin adjunto ni link de estudio: se lista aparte para abrirlo en el mail */
+        if (!c.files.length && !(c.links || []).length) { if (c.link) noFile.push({ m: c.m, date: c.date, from: c.from, subject: c.subject, link: c.link, score: r.score }); continue; }
+        if (files.length) candidates.push({ m: c.m, date: c.date, from: c.from, subject: c.subject, files, link: c.link || '', score: r.score, why: r.why });
       }
       i += n; cur.scanned += n;
     }
@@ -328,12 +342,22 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
 /* ---------- importar un adjunto elegido ---------- */
 export async function importOne(P, email, st, cfg, body, deps) {
   const m = String(body?.m || ''), part = String(body?.part || '');
-  if (!P.validId(m) || !P.validPart(part)) throw fail('invalid', 400);
+  const byLink = isLinkPart(part);
+  if (!P.validId(m) || !(byLink || P.validPart(part))) throw fail('invalid', 400);
   const key = dedupeKey(m, part);
   if (st.imported.includes(key)) throw fail('ya_importado', 409);
   const at = await accessToken(P, email, st, cfg);
-  const meta = await P.find(at, m, part);
-  if (!meta || !fileOk(meta)) throw fail('adjunto_no_encontrado', 404);
+  let meta, link = null;
+  if (byLink) {
+    /* la URL nunca viene del navegador: se vuelve a sacar del mail y se busca por su hash */
+    const b = P.body ? await P.body(at, m) : null;
+    link = b && extractLinks(b, { senderDomain: domainOf(b.from) }).find(l => l.part === part);
+    if (!link) throw fail('adjunto_no_encontrado', 404);
+    meta = { name: `Estudio por link · ${link.host}`, type: 'application/pdf', size: 1, from: b.from || '' };
+  } else {
+    meta = await P.find(at, m, part);
+    if (!meta || !fileOk(meta)) throw fail('adjunto_no_encontrado', 404);
+  }
   const canRead = readable(meta.type);
   /* el tope de IA se mira antes de bajar nada: si no hay lugar, queda en cola */
   if (canRead) {
@@ -345,7 +369,18 @@ export async function importOne(P, email, st, cfg, body, deps) {
     }
   }
   if (!(await deps.fits(email, meta.size))) throw fail('cupo_lleno', 413);
-  const buf = await P.download(at, m, part, meta);
+  let buf;
+  if (byLink) {
+    try {
+      const got = await (deps.fetchLink || safeFetch)(link.url);
+      buf = got.buf; meta = { ...meta, name: got.name, type: got.type, size: got.buf.length };
+    } catch (e) {
+      /* HTML = el sitio pide iniciar sesión, un captcha o una página intermedia: no se importa */
+      const code = e.code === 'html' || /^http_40[13]$/.test(e.code || '') ? 'pide_login' : e.code === 'muy_grande' ? 'too_big' : 'link_no_descarga';
+      throw Object.assign(fail(code, 422), { extra: { url: link.url, motivo: e.code || 'red' } });
+    }
+    if (!(await deps.fits(email, buf.length))) throw fail('cupo_lleno', 413);
+  } else buf = await P.download(at, m, part, meta);
   if (!buf?.length) throw fail('adjunto_vacio', 422);
   if (buf.length > MAX_FILE) throw fail('too_big', 413);
   const ref = await deps.putFile(email, meta.name, buf, meta.type);
@@ -435,7 +470,7 @@ export async function handleMail(P, req, res, ctx) {
     if (action === 'queue') {
       for (const x of (Array.isArray(body.items) ? body.items : []).slice(0, MAX_QUEUE)) {
         const m = String(x?.m || ''), part = String(x?.part || '');
-        if (!P.validId(m) || !P.validPart(part)) continue;
+        if (!P.validId(m) || !(isLinkPart(part) || P.validPart(part))) continue;
         const key = dedupeKey(m, part);
         if (st.imported.includes(key) || st.queue.some(y => dedupeKey(y.m, y.part) === key)) continue;
         st.queue.push({ m, part, name: String(x.name || 'adjunto').slice(0, 120), type: typeOf(x.type, x.name) });
@@ -453,6 +488,6 @@ export async function handleMail(P, req, res, ctx) {
     return res.status(400).json({ error: 'invalid' });
   } catch (e) {
     /* los códigos llevan el nombre del proveedor (gmail_vencido, outlook_vencido…) */
-    return res.status(e.status || 502).json({ error: String(e.code || 'mail_error').replace(/^mail_/, P.id + '_') });
+    return res.status(e.status || 502).json({ error: String(e.code || 'mail_error').replace(/^mail_/, P.id + '_'), ...(e.extra || {}) });
   }
 }

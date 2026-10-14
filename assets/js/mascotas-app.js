@@ -1740,6 +1740,7 @@ function renderBulk() {
     return `<article class="bk-card ${it.status}">
       <div class="bk-h">${bubble(/pdf$/i.test(it.name) ? 'doc' : 'file', 'viaje')}<span class="what"><b>${esc(it.name)}</b></span><span class="badge ${cls}">${st}</span></div>
       ${it.msg ? `<p class="bk-msg">${esc(it.msg)}</p>` : ''}
+      ${it.acts?.length ? `<div class="gm-acts">${it.acts.map(a => `<a class="btn sm ghost" href="${esc(a.href)}" target="_blank" rel="noopener noreferrer">${esc(a.label)}</a>`).join('')}</div>` : ''}
       ${d.warnings?.length ? `<ul class="warn-list">${d.warnings.map(w => `<li>${I('alert')}<span>${esc(w)}</span></li>`).join('')}</ul>` : ''}
       ${edit ? `<div class="two"><div class="f"><label for="${id}_date">Fecha</label><input id="${id}_date" type="date" value="${esc(d.date)}" max="${iso(Z.today())}"></div>
         <div class="f"><label for="${id}_kind">Tipo</label><select id="${id}_kind">${Object.entries(Z.STUDY).map(([k, l]) => `<option value="${k}"${k === d.kind ? ' selected' : ''}>${l}</option>`).join('')}</select></div></div>
@@ -1799,6 +1800,7 @@ const mErr = (p, code) => ({
   no_configurado: `La conexión con ${PROV[p].label} todavía no está configurada.`,
 }[String(code || '').replace(/^(gmail|outlook)_/, '')] || ({
   cupo_lleno: 'Llegaste al espacio de tu cuenta (200 MB).',
+  too_big: 'El archivo pesa más de 15 MB: no se pudo traer.',
   ya_importado: 'Ya lo habías traído.',
   blob_no_configurado: 'El guardado de archivos no está disponible en este momento.',
   adjunto_no_encontrado: 'Ese adjunto ya no está en el mail.',
@@ -1847,7 +1849,7 @@ async function mailConnect(p) {
   location.href = `/api/mascotas?${p}=start&range=${encodeURIComponent(range)}`;
 }
 const gmFiles = () => (gm?.cands || []).flatMap(c => c.files.map(f => c.m + '|' + f.part));
-const gmFile = k => { const [m, part] = k.split('|'); const c = gm.cands.find(x => x.m === m); const f = c?.files.find(x => x.part === part); return f ? { m, part, name: f.name, type: f.type } : null; };
+const gmFile = k => { const [m, part] = k.split('|'); const c = gm.cands.find(x => x.m === m); const f = c?.files.find(x => x.part === part); return f ? { m, part, name: f.name, type: f.type, url: f.url || '', mail: c.link || '' } : null; };
 async function mailSearch(p, mode, more, range) {
   if (gm?.phase === 'searching' && gm.p === p) return;
   const prev = more && gm?.p === p ? gm : null;
@@ -1908,7 +1910,7 @@ function renderMail(p) {
     ${qBox}
     <div class="gm-bar"><span class="dim">${n ? `${n} ${n === 1 ? 'elegido' : 'elegidos'}` : 'Ninguno elegido'}</span><button class="link" data-act="mailAll">${files.every(k => gm.sel.has(k)) ? 'Desmarcar todos' : 'Marcar todos'}</button></div>
     <div class="gm-list">${gm.cands.map(c => `<article class="gm-mail"><div class="gm-h"><b>${esc(c.subject || '(Sin asunto)')}</b><small>${esc(c.from)}${c.date ? ' · ' + date(c) : ''}</small></div>
-      ${c.files.map(f => { const k = c.m + '|' + f.part; return `<label class="gm-file"><input type="checkbox" data-gsel="${esc(k)}" ${gm.sel.has(k) ? 'checked' : ''}>${bubble(f.type === 'application/pdf' ? 'doc' : 'camera', 'viaje')}<span class="what"><b>${esc(f.name)}</b><small>${f.type === 'application/pdf' ? 'PDF' : 'Foto'} · ${kb(f.size)}${/heic|heif/.test(f.type) ? ' · se adjunta sin leer' : ''}</small></span></label>`; }).join('')}
+      ${c.files.map(f => { const k = c.m + '|' + f.part; return `<label class="gm-file"><input type="checkbox" data-gsel="${esc(k)}" ${gm.sel.has(k) ? 'checked' : ''}>${bubble(f.type === 'link' ? 'download' : f.type === 'application/pdf' ? 'doc' : 'camera', f.type === 'link' ? 'cuida' : 'viaje')}<span class="what"><b>${esc(f.name)}</b><small>${f.type === 'link' ? 'Link en el mail · lo bajamos del sitio del laboratorio' : `${f.type === 'application/pdf' ? 'PDF' : 'Foto'} · ${kb(f.size)}`}${/heic|heif/.test(f.type) ? ' · se adjunta sin leer' : ''}</small></span></label>`; }).join('')}
     </article>`).join('')}</div>
     ${moreBox}${noFile}${tips}${srcBox}
     <p class="note">Cada archivo que importás se lee con IA (Claude, de Anthropic) y cuenta para tu tope (10 por día, 60 por mes). Lo revisás antes de guardar.</p>
@@ -1941,7 +1943,7 @@ function mailIntro(p, back) {
       <p class="lead-s" style="margin-top:6px">Buscamos en tu mail${P.who ? ` (${P.who})` : ''} los análisis, ecografías, radiografías, recetas e informes que te mandaron, y elegís cuáles sumar al historial.</p></div>
     ${msg ? `<p class="bk-msg" role="status">${esc(msg)}</p>` : ''}
     <ul class="gm-facts">
-      ${fact('mail', 'viaje', 'Qué lee', 'Busca mails con adjuntos que parezcan veterinarios o que nombren a tus mascotas o a sus veterinarias. Te muestra el asunto, quién lo mandó, la fecha y el nombre de cada adjunto. No guarda el texto de tus mails.')}
+      ${fact('mail', 'viaje', 'Qué lee', 'Busca mails que parezcan veterinarios o que nombren a tus mascotas o a sus veterinarias, y te muestra el asunto, quién lo mandó, la fecha y los adjuntos. De esos mails veterinarios lee el texto solo para encontrar el link al estudio, cuando el laboratorio lo manda así; el texto no se guarda.')}
       ${fact('shield', 'salud', 'Qué guarda', `Solo los PDF y fotos que elijas importar, en tu cuenta. Además, el permiso de ${P.company} cifrado, la fecha de la última búsqueda y qué adjuntos ya trajiste. De lo que no importás no queda nada.`)}
       ${fact('sparkle', 'plata', 'Qué se manda a la IA', `Cada archivo que importás se manda a la IA (Claude, de Anthropic) para leer la fecha, el tipo, un resumen y de qué mascota parece. Lo revisás antes de guardar. Tus datos de ${L} no se usan para publicidad ni para entrenar IA.`)}
       ${fact('x', 'med', 'Qué no hace', `Mimitos no manda, no borra ni modifica mails: el permiso es solo de lectura. ${removeTxt}`)}
@@ -1977,9 +1979,17 @@ async function mailImport(p, list) {
         bulk.queued = `${d.error === 'limite_mensual' ? `Llegaste al tope de ${d.limit} lecturas con IA de este mes` : `Llegaste al tope de ${d.limit} lecturas con IA por hoy`}: ${rest.length === 1 ? 'quedó 1 en cola' : `quedaron ${rest.length} en cola`}. ${d.error === 'limite_mensual' ? 'El mes que viene' : 'Mañana'} entrá a tu mail desde el historial y tocá «Seguir con la cola».`;
         break;
       }
+      if (!r.ok && (d.error === 'pide_login' || d.error === 'link_no_descarga')) {
+        /* el sitio pidió iniciar sesión (o no dejó bajar el archivo): no se importa; se ofrece abrirlo */
+        it.status = 'error'; it.keep = false;
+        it.msg = d.error === 'pide_login' ? 'Este laboratorio pide iniciar sesión: abrilo, bajá el PDF y usá «Subir estudios».' : 'No pudimos bajar el estudio desde el link. Abrilo, bajá el PDF y usá «Subir estudios».';
+        it.acts = [d.url && /^https:\/\//.test(d.url) ? { href: d.url, label: 'Abrir el link' } : null, it.gm.mail ? { href: it.gm.mail, label: `Abrir el mail en ${PROV[p].label}` } : null].filter(Boolean);
+        continue;
+      }
       if (!r.ok) { it.status = 'error'; it.keep = false; it.msg = mErr(p, d.error) || 'No se pudo traer. Probá de nuevo.'; if (d.error === 'ya_importado') done.add(key(it.gm)); if (/_vencido$/.test(d.error || '')) { mstat[p].connected = false; mstat[p].expired = true; } continue; }
       done.add(key(it.gm));
       it.ref = d.ref; it.petId = d.petId || ''; it.sug = d.petId || '';
+      if (it.gm.type === 'link' && d.ref?.name) it.name = d.ref.name;
       if (d.data) { it.data = { ...it.data, ...d.data, title: d.data.title || it.data.title }; it.status = d.data.confidence === 'baja' || d.data.warnings?.length || !d.data.date ? 'revisar' : 'listo'; }
       else { it.status = 'manual'; it.msg = d.manual === 'tipo_no_legible' ? 'Este formato no se puede leer: quedó adjunto, completalo a mano.' : /^limite/.test(d.manual) ? 'Se terminó el tope de lecturas con IA: quedó adjunto, completalo a mano.' : d.manual === 'pdf_muy_largo' ? 'El PDF es demasiado largo para leerlo entero. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; }
     } catch { it.status = 'error'; it.keep = false; it.msg = 'No se pudo traer. Revisá la conexión.'; }

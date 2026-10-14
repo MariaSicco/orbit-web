@@ -121,6 +121,12 @@ export const outlook = {
     /* tenía adjuntos pero ninguno es PDF o foto: no hay nada para traer ni un "sin adjunto" que mostrar */
     return files.length ? { ...base, files } : null;
   },
+  /* el texto del mail, SOLO para buscar el link a un estudio en mails que ya parecen veterinarios; no se guarda */
+  async body(at, id) {
+    const d = await graph(`/me/messages/${encodeURIComponent(id)}?$select=body,from`, at);
+    const c = String(d.body?.content || '').slice(0, 400000), html = String(d.body?.contentType || '').toLowerCase() === 'html';
+    return { html: html ? c : '', text: html ? '' : c, from: fromOf(d.from) };
+  },
   async find(at, m, part) {
     const a = await graph(`/me/messages/${encodeURIComponent(m)}/attachments/${encodeURIComponent(part)}?$select=${ATT_SELECT}`, at);
     if (!isFile(a)) return null;

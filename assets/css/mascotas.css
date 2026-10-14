@@ -1157,3 +1157,4 @@ dialog{background:var(--bg)}
 .gm-tips .link{min-height:32px;padding:0;font-size:inherit;display:inline}
 .gm-nofile{display:flex;flex-direction:column;gap:8px}
 .gm-nofile h2{font-size:18px;line-height:1.25}
+.bk-card.error:has(.gm-acts){opacity:1}
