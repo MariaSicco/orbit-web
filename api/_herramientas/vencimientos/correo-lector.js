@@ -59,8 +59,17 @@ export function fechasEn(texto) {
 }
 
 /* Montos en pesos con su posición: "$ 12.345,67", "$12345.67", "ARS 12.345". */
-export function montosEn(texto) {
+export function montosEn(texto, { sinSigno = false } = {}) {
   const out = [];
+  if (sinSigno) {
+    // "47.830,55" o "47830,55": formato argentino con centavos, sin "$"
+    const re0 = /(?<![\d.,$])(\d{1,3}(?:\.\d{3})+,\d{2}|\d{3,7},\d{2})(?![\d])/g;
+    for (let m; (m = re0.exec(texto));) {
+      const n = Number(m[1].replace(/\./g, '').replace(',', '.'));
+      if (Number.isFinite(n) && n > 0 && n < 1e9) out.push({ monto: Math.round(n * 100), i: m.index, sinSigno: true });
+    }
+    return out;
+  }
   const re = /(?:\$|ars)\s*(\d{1,3}(?:\.\d{3})+(?:,\d{1,2})?|\d+\.\d{1,2}|\d+(?:,\d{1,2})?)(?![\d])/gi;
   for (let m; (m = re.exec(texto));) {
     let s = m[1];
@@ -79,18 +88,27 @@ function cercanos(lista, texto, re) {
   const t = sinTildes(texto.toLowerCase());
   const marcas = [...t.matchAll(re)].map(m => m.index);
   return lista.filter(x => marcas.some(p => x.i >= p - 20 && x.i - p <= CERCA))
-    .map(x => ({ ...x, d: Math.min(...marcas.map(p => Math.abs(x.i - p))) }));
+    .map(x => ({ ...x, d: Math.min(...marcas.map(p => (x.i >= p ? x.i - p : (p - x.i) * 5))) })); // lo que va después de la palabra pesa más
 }
 
 /* Un mail → { vence, segundo, monto } o null si no parece una factura. */
 export function leerMail(msg) {
-  const texto = `${msg.asunto || ''}\n${msg.texto || ''}`.slice(0, 20000);
+  // Outlook y los HTML pasados a texto meten muchos espacios y saltos: se compactan antes de medir distancias
+  const texto = `${msg.asunto || ''}\n${msg.texto || ''}`.replace(/[ \t\u00a0]+/g, ' ').replace(/\s*\n\s*/g, '\n').slice(0, 20000);
   const fechas = fechasEn(texto);
   const venc = cercanos(fechas, texto, CLAVE_VTO).map(x => x.fecha);
   const unicas = [...new Set(venc)].sort();
   // vencimientos razonables: desde 60 días antes del mail hasta 90 después
   const ok = unicas.filter(f => !msg.fecha || (difDias(msg.fecha, f) >= -60 && difDias(msg.fecha, f) <= 90));
-  const montos = cercanos(montosEn(texto), texto, CLAVE_TOTAL).sort((a, b) => a.d - b.d || a.i - b.i);
+  /* primero los montos con "$" cerca de "total/importe"; si no hay, los de formato 12.345,67 sin signo.
+     "total a pagar" / "importe a pagar" pesan más que un "importe" suelto. */
+  const fuerte = /(total a pagar|importe a pagar|monto a pagar|saldo a pagar|total)/g;
+  const elegir = lista => {
+    const f = cercanos(lista, texto, fuerte);
+    return (f.length ? f : cercanos(lista, texto, CLAVE_TOTAL)).sort((a, b) => a.d - b.d || a.i - b.i);
+  };
+  let montos = elegir(montosEn(texto));
+  if (!montos.length) montos = elegir(montosEn(texto, { sinSigno: true }));
   if (!ok.length && !montos.length) return null;
   return { vence: ok[0] || null, segundo: ok[1] || null, monto: montos[0]?.monto ?? null };
 }

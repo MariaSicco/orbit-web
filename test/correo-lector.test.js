@@ -75,3 +75,13 @@ test('textoDeHtml limpia el HTML del mail', () => {
   assert.match(t, /Total a pagar: \$ 1\.234,50/);
   assert.match(t, /Vence 22\/10\/2026/);
 });
+
+test('leerMail: monto lejos por los saltos de Outlook y monto sin "$"', () => {
+  const lejos = C.leerMail({ asunto: 'Tu factura', fecha: '2026-10-05', texto: `Total a pagar${'\n   \n'.repeat(60)}$ 47.830,55\nVencimiento${' '.repeat(300)}22/10/2026` });
+  assert.equal(lejos.monto, 4783055);
+  assert.equal(lejos.vence, '2026-10-22');
+  const sinSigno = C.leerMail({ asunto: 'Factura', fecha: '2026-10-05', texto: 'Importe: 47.830,55\nVence el 22/10/2026\nN° de cliente 1234567' });
+  assert.equal(sinSigno.monto, 4783055);
+  const prefiereTotal = C.leerMail({ asunto: 'Factura', fecha: '2026-10-05', texto: 'Importe consumo $ 30.000,00 · Impuestos $ 9.000,00 · Total a pagar $ 39.000,00 · Vence 22/10/2026' });
+  assert.equal(prefiereTotal.monto, 3900000);
+});
