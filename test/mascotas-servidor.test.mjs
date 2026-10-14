@@ -118,7 +118,7 @@ test('corte global: pasado el tope del mes, ai_paused en preguntas y lectura, co
     assert.equal(await kvGet(k), 999_900, 'la reserva volvió');
     assert.equal((await A.askLeft(email)).month, A.ASK_PER_MONTH, 'la pregunta del mes volvió');
   } finally { delete process.env.MIMITOS_AI_BUDGET_USD; await kvSet(k, before); }
-  assert.equal(AI.DEFAULT_BUDGET_USD, 150);
+  assert.equal(AI.DEFAULT_BUDGET_USD, 50);
 });
 
 test('corte global: la reserva se ajusta al costo real que informa la API', async () => {
