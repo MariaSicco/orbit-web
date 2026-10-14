@@ -63,11 +63,43 @@ test('cuentasDesdeMails: agrupa, deduce la frecuencia y proyecta el próximo ven
   assert.equal(cs[0].conocido, true);                // conocidos primero
 });
 
-test('consultaGmail arma la búsqueda con remitentes y asuntos', () => {
-  const q = C.consultaGmail(6);
-  assert.match(q, /^newer_than:6m/);
-  assert.match(q, /edenor\.com/);
-  assert.match(q, /"liquidación de expensas"/);
+test('consultasGmail: varias búsquedas cortas (remitentes en tandas + asuntos)', () => {
+  const qs = C.consultasGmail(6);
+  assert.ok(qs.length >= 3);
+  assert.ok(qs.every(q => q.startsWith('newer_than:6m') && q.length < 1500));
+  assert.ok(qs.some(q => q.includes('edenor.com')));
+  assert.ok(qs.some(q => q.includes('netflix.com')));
+  assert.match(qs.at(-1), /"liquidación de expensas"/);
+});
+
+test('recibos de suscripciones: sin "vencimiento", con fecha de cobro o próxima facturación', () => {
+  const mails = [
+    { id: 'n1', de: 'Netflix <info@account.netflix.com>', asunto: 'Tu pago fue procesado', fecha: '2026-08-14', texto: 'Recibimos tu pago.\nPlan: Estándar\nTotal: $ 18.149,00' },
+    { id: 'n2', de: 'Netflix <info@account.netflix.com>', asunto: 'Tu pago fue procesado', fecha: '2026-09-14', texto: 'Recibimos tu pago.\nPlan: Estándar\nTotal: $ 18.149,00' },
+    { id: 'd1', de: 'Disney+ <disneyplus@mail.disneyplus.com>', asunto: 'Recibo de tu suscripción', fecha: '2026-10-02', texto: 'Importe cobrado $ 12.999\nPróxima fecha de facturación: 2 de noviembre de 2026' },
+    { id: 's1', de: 'Spotify <no-reply@spotify.com>', asunto: 'Tu recibo de Spotify', fecha: '2026-10-05', texto: 'Premium Individual  $ 5.443,79' },
+    { id: 'x', de: 'Netflix <info@account.netflix.com>', asunto: 'Novedades', fecha: '2026-10-01', texto: 'Mirá los estrenos de la semana' },
+    { id: 'a', de: 'Amazon <pedidos@amazon.com.ar>', asunto: 'Tu pedido fue enviado', fecha: '2026-10-01', texto: 'Total $ 9.999' },
+  ];
+  const cs = C.cuentasDesdeMails(mails, '2026-10-14');
+  const net = cs.find(c => c.preset === 'netflix');
+  assert.equal(net.monto, 1814900);
+  assert.equal(net.frecuencia, 1);
+  assert.equal(net.proximo, '2026-10-14');
+  const dis = cs.find(c => c.preset === 'disney');
+  assert.equal(dis.proximo, '2026-11-02');
+  assert.equal(dis.proximoEstimado, false);
+  assert.equal(dis.monto, 1299900);
+  assert.equal(cs.find(c => c.preset === 'spotify').monto, 544379);
+  assert.ok(!cs.some(c => c.preset === 'prime'));   // un pedido de Amazon no es Prime
+});
+
+test('servicioDelRemitente: dominios exactos y casos de remitentes que mandan de todo', () => {
+  assert.equal(C.servicioDelRemitente('info@account.netflix.com'), 'netflix');
+  assert.equal(C.servicioDelRemitente('payments-noreply@google.com', 'Tu recibo de YouTube Premium'), 'youtube');
+  assert.equal(C.servicioDelRemitente('payments-noreply@google.com', 'Tu recibo de Google One'), 'google-one');
+  assert.equal(C.servicioDelRemitente('no-reply@accounts.google.com', 'Alerta de seguridad'), null);
+  assert.equal(C.servicioDelRemitente('x@notnetflix.com'), null);
 });
 
 test('textoDeHtml limpia el HTML del mail', () => {

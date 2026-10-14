@@ -20,25 +20,61 @@ export const REMITENTES = [
   ['cable', ['directvla.com', 'directv.com.ar', 'supercanal.com.ar']],
   ['prepaga', ['osde.com.ar', 'swissmedical.com.ar', 'galeno.com.ar', 'medife.com.ar', 'omint.com.ar', 'sancorsalud.com.ar', 'accordsalud.com.ar']],
   ['seguro-auto', ['lacaja.com.ar', 'sancorseguros.com.ar', 'federacionpatronal.com.ar', 'rus.com.ar', 'mercantilandina.com.ar', 'zurich.com.ar', 'allianz.com.ar']],
-  ['netflix', ['netflix.com']], ['spotify', ['spotify.com']], ['disney', ['disneyplus.com', 'disney.com']],
+  ['netflix', ['netflix.com']], ['spotify', ['spotify.com']], ['disney', ['disneyplus.com', 'disney.com', 'starplus.com']],
+  ['max', ['max.com', 'hbomax.com', 'hbo.com']], ['prime', ['primevideo.com', 'amazon.com', 'amazon.com.ar']],
+  ['paramount', ['paramountplus.com']], ['crunchyroll', ['crunchyroll.com']],
+  ['youtube', ['youtube.com']], ['google-one', ['google.com']], ['icloud', ['apple.com', 'itunes.com']],
+  ['chatgpt', ['openai.com']], ['m365', ['microsoft.com']], ['meli', ['mercadolibre.com', 'mercadolibre.com.ar']],
+  ['peaje', ['ausa.com.ar', 'aubasa.com.ar', 'telepeaje.com.ar']],
 ];
+/* Suscripciones: mandan recibos de cobro, no facturas con vencimiento. */
+const SUSCRIPCION = new Set(['netflix', 'spotify', 'disney', 'max', 'prime', 'paramount', 'crunchyroll', 'youtube', 'google-one', 'icloud', 'chatgpt', 'm365', 'meli']);
+export const esSuscripcion = id => SUSCRIPCION.has(id);
 
 /* Lo que se le pide al proveedor de mail: remitentes conocidos o asuntos de factura, últimos 6 meses. */
-export const PALABRAS = ['factura', 'vencimiento', 'vence', 'expensas', 'liquidación de expensas', 'aviso de pago', 'boleta', 'resumen de cuenta'];
-export function consultaGmail(meses = 6) {
-  const dominios = [...new Set(REMITENTES.flatMap(([, ds]) => ds))];
-  return `newer_than:${meses}m -in:chats (from:(${dominios.join(' OR ')}) OR subject:(${PALABRAS.map(p => p.includes(' ') ? `"${p}"` : p).join(' OR ')}))`;
+export const PALABRAS = ['factura', 'vencimiento', 'vence', 'expensas', 'liquidación de expensas', 'aviso de pago', 'boleta', 'resumen de cuenta', 'recibo', 'tu pago', 'suscripción', 'membresía', 'próximo pago', 'débito automático'];
+export const DOMINIOS = [...new Set(REMITENTES.flatMap(([, ds]) => ds))];
+/* Gmail corta las consultas muy largas: se arman varias (remitentes en tandas + palabras). */
+export function consultasGmail(meses = 6) {
+  const tandas = [];
+  for (let i = 0; i < DOMINIOS.length; i += 20) tandas.push(`newer_than:${meses}m -in:chats from:(${DOMINIOS.slice(i, i + 20).join(' OR ')})`);
+  tandas.push(`newer_than:${meses}m -in:chats subject:(${PALABRAS.map(p => p.includes(' ') ? `"${p}"` : p).join(' OR ')})`);
+  return tandas;
 }
+export const consultaGmail = (meses = 6) => consultasGmail(meses).join(' | ');
 
 const MESES = { ene: 1, enero: 1, feb: 2, febrero: 2, mar: 3, marzo: 3, abr: 4, abril: 4, may: 5, mayo: 5, jun: 6, junio: 6, jul: 7, julio: 7,
   ago: 8, agosto: 8, sep: 9, sept: 9, set: 9, septiembre: 9, setiembre: 9, oct: 10, octubre: 10, nov: 11, noviembre: 11, dic: 12, diciembre: 12 };
 const pad = n => String(n).padStart(2, '0');
 const sinTildes = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-export function servicioDelRemitente(de) {
+export function servicioDelRemitente(de, asunto = '') {
   const d = String(de || '').toLowerCase();
-  for (const [id, dominios] of REMITENTES) if (dominios.some(x => d.includes(x))) return id;
+  const dominio = (d.match(/@([a-z0-9.\-]+)/) || [, d])[1];
+  for (const [id, dominios] of REMITENTES) {
+    if (!dominios.some(x => dominio === x || dominio.endsWith('.' + x) || (!d.includes('@') && d.includes(x)))) continue;
+    if (id === 'google-one' && /youtube/i.test(asunto)) return 'youtube';
+    if (id === 'google-one' && !/google one|almacenamiento|storage/i.test(asunto)) return null; // google.com manda de todo
+    if (id === 'm365' && !/microsoft 365|office|suscripci|subscription/i.test(asunto)) return null;
+    if (id === 'prime' && !/prime/i.test(asunto)) return null;     // amazon manda pedidos y promos
+    if (id === 'meli' && !/meli\+|suscripci/i.test(asunto)) return null;
+    if (id === 'icloud' && !/icloud|apple music|apple one|suscripci|subscription|factura|recibo|receipt/i.test(asunto)) return null;
+    return id;
+  }
   return null;
+}
+
+/* Recibo de suscripción → { vence: fecha del próximo cobro o del cobro, monto }. */
+const CLAVE_PROX = /(proxima fecha de (facturacion|cobro|pago)|proximo (cobro|pago)|se renovara|renovacion|next billing|next payment|renews on)/g;
+export function leerRecibo(msg) {
+  const texto = `${msg.asunto || ''}\n${msg.texto || ''}`.replace(/[ \t\u00a0]+/g, ' ').replace(/\s*\n\s*/g, '\n').slice(0, 20000);
+  if (/(cancelaste|cancelada|se cancel|fallo el pago|no pudimos procesar|actualiza tu (forma|metodo) de pago)/.test(sinTildes(texto.toLowerCase()))) return null;
+  const prox = cercanos(fechasEn(texto), texto, CLAVE_PROX).sort((a, b) => a.d - b.d)[0]?.fecha || null;
+  const re = /(total|importe|monto|precio|cobro|cargo|pagaste|abonaste|plan)/g;
+  const montos = cercanos(montosEn(texto), texto, re).sort((a, b) => a.d - b.d || a.i - b.i);
+  const monto = montos[0]?.monto ?? montosEn(texto)[0]?.monto ?? null;
+  if (!prox && monto == null) return null;
+  return { vence: prox || msg.fecha, segundo: null, monto, cobro: !prox };
 }
 
 /* Fechas en el texto, con su posición: 15/10/2026, 15-10-26, 15.10.2026, "15 de octubre de 2026", "15 oct 2026". */
@@ -117,9 +153,9 @@ export function leerMail(msg) {
 export function cuentasDesdeMails(mensajes, hoy) {
   const grupos = new Map();
   for (const msg of mensajes) {
-    const servicio = servicioDelRemitente(msg.de);
+    const servicio = servicioDelRemitente(msg.de, msg.asunto);
     const clave = servicio || `otro:${String(msg.de || '').toLowerCase().replace(/.*@/, '').replace(/>.*/, '')}`;
-    const lectura = leerMail(msg);
+    const lectura = esSuscripcion(servicio) ? (leerRecibo(msg) || leerMail(msg)) : leerMail(msg);
     if (!lectura || !lectura.vence) continue;               // sin fecha no sirve para avisar
     /* remitente desconocido: tiene que decir que es una factura y traer un monto (afuera promos y newsletters) */
     if (!servicio && (lectura.monto == null || !/factura|expensas|boleta|liquidacion|aviso de (pago|deuda)|resumen de cuenta/.test(sinTildes(`${msg.asunto} ${msg.texto}`.toLowerCase())))) continue;

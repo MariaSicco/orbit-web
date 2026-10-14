@@ -2,7 +2,7 @@
    Gmail: Google Identity Services, permiso gmail.readonly, token solo en memoria y
    revocado al terminar. Outlook/Hotmail: MSAL, permiso Mail.Read, caché en la sesión
    que se borra al terminar. Los mails se leen acá, en el teléfono: nada pasa por Orbit. */
-import { consultaGmail, textoDeHtml, PALABRAS, REMITENTES } from './correo-lector.js';
+import { consultasGmail, textoDeHtml, PALABRAS, DOMINIOS } from './correo-lector.js';
 
 const MAX_MAILS = 250;
 const PARALELO = 6;
@@ -71,15 +71,17 @@ export async function buscarEnGmail(clientId, avance) {
     return r.json();
   };
   try {
-    const ids = [];
-    let pagina = '';
-    do {
-      const j = await api(`messages?maxResults=100&q=${encodeURIComponent(consultaGmail(6))}${pagina ? `&pageToken=${pagina}` : ''}`);
-      ids.push(...(j.messages || []).map(m => m.id));
-      pagina = j.nextPageToken || '';
-    } while (pagina && ids.length < MAX_MAILS);
-    avance?.(0, ids.length);
-    return await enTandas(ids.slice(0, MAX_MAILS), async id => {
+    const ids = new Set();
+    for (const q of consultasGmail(6)) {
+      let pagina = '', vueltas = 0;
+      do {
+        const j = await api(`messages?maxResults=100&q=${encodeURIComponent(q)}${pagina ? `&pageToken=${pagina}` : ''}`);
+        (j.messages || []).forEach(m => ids.add(m.id));
+        pagina = j.nextPageToken || '';
+      } while (pagina && ++vueltas < 3 && ids.size < MAX_MAILS);
+    }
+    avance?.(0, Math.min(ids.size, MAX_MAILS));
+    return await enTandas([...ids].slice(0, MAX_MAILS), async id => {
       const m = await api(`messages/${id}?format=full`);
       const h = n => m.payload?.headers?.find(x => x.name.toLowerCase() === n)?.value || '';
       return { id, de: h('from'), asunto: h('subject'), fecha: fecha(Number(m.internalDate)), texto: cuerpoGmail(m.payload).slice(0, 20000) };
@@ -105,32 +107,35 @@ export async function buscarEnOutlook(clientId, avance) {
     token = r.accessToken || (await app.acquireTokenSilent({ scopes: ['Mail.Read'], account: r.account })).accessToken;
   } catch { throw new Error('Se cerró la ventana de Microsoft o no diste el permiso.'); }
   try {
-    const dominios = [...new Set(REMITENTES.flatMap(([, ds]) => ds))].slice(0, 40);
+    /* varias búsquedas chicas (Outlook rechaza o recorta las muy largas) y se juntan */
     const comoKql = partes => `"${partes.join(' OR ').replace(/"/g, '\\"')}"`;
-    const completa = comoKql([...PALABRAS.map(p => `"${p}"`), ...dominios.map(d => `from:${d}`)]);
-    const simple = comoKql(PALABRAS.map(p => `"${p}"`));
-    const base = q => `https://graph.microsoft.com/v1.0/me/messages?$search=${encodeURIComponent(q)}&$top=50&$select=id,subject,from,receivedDateTime,body`;
+    const consultas = [];
+    for (let i = 0; i < DOMINIOS.length; i += 8) consultas.push(comoKql(DOMINIOS.slice(i, i + 8).map(d => `from:${d}`)));
+    consultas.push(comoKql(PALABRAS.map(p => `"${p}"`)));
     const pedir = u => fetch(u, { headers: { Authorization: `Bearer ${token}`, Prefer: 'outlook.body-content-type="text"' } });
     const mails = [];
     const vistos = new Set();
     const desde = Date.now() - 183 * 864e5;
-    let url = base(completa), primera = true;
-    while (url && mails.length < MAX_MAILS) {
-      let r = await pedir(url);
-      /* si Outlook no acepta la búsqueda larga (remitentes), va solo con las palabras */
-      if (!r.ok && primera && r.status === 400) { url = base(simple); r = await pedir(url); }
-      primera = false;
-      if (!r.ok) throw new Error(r.status === 401 || r.status === 403 ? 'Outlook no dio permiso para leer el mail.' : `Outlook respondió ${r.status}. Probá de nuevo en un rato.`);
-      const j = await r.json();
-      for (const m of j.value || []) {
-        if (vistos.has(m.id) || Date.parse(m.receivedDateTime) < desde) continue;
-        vistos.add(m.id);
-        mails.push({ id: m.id, de: `${m.from?.emailAddress?.name || ''} <${m.from?.emailAddress?.address || ''}>`, asunto: m.subject || '',
-          fecha: fecha(Date.parse(m.receivedDateTime)), texto: String(m.body?.content || '').slice(0, 20000) });
+    let fallidas = 0;
+    for (const q of consultas) {
+      let url = `https://graph.microsoft.com/v1.0/me/messages?$search=${encodeURIComponent(q)}&$top=50&$select=id,subject,from,receivedDateTime,body`;
+      let vueltas = 0;
+      while (url && vueltas++ < 4 && mails.length < MAX_MAILS) {
+        const r = await pedir(url);
+        if (r.status === 401 || r.status === 403) throw new Error('Outlook no dio permiso para leer el mail.');
+        if (!r.ok) { fallidas++; break; }
+        const j = await r.json();
+        for (const m of j.value || []) {
+          if (vistos.has(m.id) || Date.parse(m.receivedDateTime) < desde) continue;
+          vistos.add(m.id);
+          mails.push({ id: m.id, de: `${m.from?.emailAddress?.name || ''} <${m.from?.emailAddress?.address || ''}>`, asunto: m.subject || '',
+            fecha: fecha(Date.parse(m.receivedDateTime)), texto: String(m.body?.content || '').slice(0, 20000) });
+        }
+        avance?.(mails.length, 0);
+        url = j['@odata.nextLink'] || null;
       }
-      avance?.(mails.length, 0);
-      url = j['@odata.nextLink'] || null;
     }
+    if (fallidas === consultas.length) throw new Error('Outlook no respondió a la búsqueda. Probá de nuevo en un rato.');
     return mails;
   } finally {
     try { sessionStorage.clear(); } catch {}
