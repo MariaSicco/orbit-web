@@ -1740,7 +1740,7 @@ function renderBulk() {
     return `<article class="bk-card ${it.status}">
       <div class="bk-h">${bubble(/pdf$/i.test(it.name) ? 'doc' : 'file', 'viaje')}<span class="what"><b>${esc(it.name)}</b></span><span class="badge ${cls}">${st}</span></div>
       ${it.msg ? `<p class="bk-msg">${esc(it.msg)}</p>` : ''}
-      ${it.acts?.length ? `<div class="gm-acts">${it.acts.map(a => `<a class="btn sm ghost" href="${esc(a.href)}" target="_blank" rel="noopener noreferrer">${esc(a.label)}</a>`).join('')}</div>` : ''}
+      ${it.acts?.length || it.retry ? `<div class="gm-acts">${it.retry ? `<button type="button" class="btn sm" data-act="bulkRetry" data-i="${it.i}">Reintentar</button>` : ''}${(it.acts || []).map(a => `<a class="btn sm ghost" href="${esc(a.href)}" target="_blank" rel="noopener noreferrer">${esc(a.label)}</a>`).join('')}</div>` : ''}
       ${d.warnings?.length ? `<ul class="warn-list">${d.warnings.map(w => `<li>${I('alert')}<span>${esc(w)}</span></li>`).join('')}</ul>` : ''}
       ${edit ? `<div class="two"><div class="f"><label for="${id}_date">Fecha</label><input id="${id}_date" type="date" value="${esc(d.date)}" max="${iso(Z.today())}"></div>
         <div class="f"><label for="${id}_kind">Tipo</label><select id="${id}_kind">${Object.entries(Z.STUDY).map(([k, l]) => `<option value="${k}"${k === d.kind ? ' selected' : ''}>${l}</option>`).join('')}</select></div></div>
@@ -1959,6 +1959,63 @@ function mailIntro(p, back) {
 app.addEventListener('keydown', e => { if (e.target.id === 'srcIn' && e.key === 'Enter') { e.preventDefault(); app.querySelector('[data-act="srcAdd"]')?.click(); } });
 app.addEventListener('change', e => { const k = e.target.closest('[data-gsel]'); if (k && gm?.sel) { if (k.checked) gm.sel.add(k.dataset.gsel); else gm.sel.delete(k.dataset.gsel); render(); } });
 /* importa los elegidos uno por uno y termina en la misma revisión que "Subir estudios" */
+/* por qué no se pudo bajar un estudio por link: el motivo real y qué hacer */
+const LINK_WHY = {
+  http: 'El link no es seguro (http, sin cifrar) y por seguridad no lo bajamos solos.',
+  tls: 'El sitio del laboratorio tiene un problema de seguridad (su conexión cifrada no funciona bien), así que no lo bajamos solos.',
+  login: 'Este laboratorio pide iniciar sesión o muestra una página en vez del archivo.',
+  grande: 'El archivo pesa más de 15 MB.',
+  no_existe: 'El link venció o ya no existe. Si lo necesitás, pedile a la veterinaria que te lo mande de nuevo.',
+  tiempo: 'El sitio del laboratorio no respondió a tiempo. Probá de nuevo en un rato.',
+  tipo: 'El link no lleva a un estudio: es otro tipo de archivo.',
+  bloqueado: 'El link apunta a una dirección que Mimitos no abre por seguridad.',
+  red: 'No pudimos conectarnos con el sitio del laboratorio. Probá de nuevo en un rato.',
+};
+const LINK_FIX = { http: 1, tls: 1, login: 1, grande: 1, tipo: 1, bloqueado: 1 };
+const outLink = u => /^https?:\/\//i.test(u || '') ? u : '';
+/* trae un solo archivo elegido (adjunto o link). Devuelve la respuesta del tope si quedó sin lugar */
+async function importItem(p, it, done) {
+  const key = x => x.m + '|' + x.part;
+  it.msg = ''; it.acts = null; it.retry = false;
+  try {
+    it.status = 'subiendo'; render();
+    const r = await fetch(`/api/mascotas?${p}=import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ m: it.gm.m, part: it.gm.part }) });
+    const d = await r.json().catch(() => ({}));
+    if (r.status === 429 && d.queued) return d;
+    const mailBtn = it.gm.mail ? { href: it.gm.mail, label: `Abrir el mail en ${PROV[p].label}` } : null;
+    if (!r.ok && d.error === 'link_error') {
+      /* no se importa: el motivo real, y los botones para resolverlo a mano */
+      const why = LINK_WHY[d.motivo] || LINK_WHY.red;
+      it.status = 'error'; it.keep = false;
+      it.msg = why + (LINK_FIX[d.motivo] ? ' Abrilo, bajá el PDF y usá «Subir estudios».' : '');
+      it.acts = [outLink(d.url || it.gm.url) ? { href: outLink(d.url || it.gm.url), label: 'Abrir el link' } : null, mailBtn].filter(Boolean);
+      it.retry = true;
+      return null;
+    }
+    if (!r.ok) {
+      it.status = 'error'; it.keep = false;
+      it.msg = mErr(p, d.error) || (r.status >= 500 || !d.error ? 'No se pudo traer: el servidor no respondió bien. Probá de nuevo.' : `No se pudo traer (${String(d.error).slice(0, 40)}).`);
+      if (d.error === 'ya_importado') done?.add(key(it.gm));
+      else it.retry = !/_vencido$/.test(d.error || '');
+      if (/_vencido$/.test(d.error || '')) { mstat[p].connected = false; mstat[p].expired = true; }
+      if (it.gm.type === 'link') it.acts = [outLink(it.gm.url) ? { href: outLink(it.gm.url), label: 'Abrir el link' } : null, mailBtn].filter(Boolean);
+      return null;
+    }
+    done?.add(key(it.gm));
+    it.ref = d.ref; it.petId = d.petId || ''; it.sug = d.petId || ''; it.keep = true;
+    if (it.gm.type === 'link' && d.ref?.name) it.name = d.ref.name;
+    if (d.data) { it.data = { ...it.data, ...d.data, title: d.data.title || it.data.title }; it.status = d.data.confidence === 'baja' || d.data.warnings?.length || !d.data.date ? 'revisar' : 'listo'; }
+    else { it.status = 'manual'; it.msg = d.manual === 'tipo_no_legible' ? 'Este formato no se puede leer: quedó adjunto, completalo a mano.' : /^limite/.test(d.manual) ? 'Se terminó el tope de lecturas con IA: quedó adjunto, completalo a mano.' : d.manual === 'pdf_muy_largo' ? 'El PDF es demasiado largo para leerlo entero. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; }
+  } catch { it.status = 'error'; it.keep = false; it.msg = 'No se pudo traer: revisá la conexión.'; it.retry = true; }
+  return null;
+}
+async function queueRest(p, rest, d) {
+  rest.forEach(x => { x.status = 'cola'; x.keep = false; x.msg = ''; x.acts = null; x.retry = false; });
+  const q = await fetch(`/api/mascotas?${p}=queue`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: rest.map(x => x.gm) }) }).then(x => x.json()).catch(() => null);
+  if (q?.queue) mstat[p].queue = q.queue;
+  bulk.queued = `${d.error === 'limite_mensual' ? `Llegaste al tope de ${d.limit} lecturas con IA de este mes` : `Llegaste al tope de ${d.limit} lecturas con IA por hoy`}: ${rest.length === 1 ? 'quedó 1 en cola' : `quedaron ${rest.length} en cola`}. ${d.error === 'limite_mensual' ? 'El mes que viene' : 'Mañana'} entrá a tu mail desde el historial y tocá «Seguir con la cola».`;
+}
+/* importa los elegidos uno por uno y termina en la misma revisión que "Subir estudios" */
 async function mailImport(p, list) {
   const pet = curPet(); if (!pet || !list.length) return;
   bulk = { petId: pet.id, source: 'mail', prov: p, state: 'working', note: '', items: list.map((x, i) => ({ i, gm: x, name: x.name, status: 'pendiente', keep: true, petId: '', sug: '', data: { date: '', kind: 'otro', title: x.name.replace(/\.[^.]+$/, ''), lab: '', summary: '', confidence: '', warnings: [] } })) };
@@ -1966,38 +2023,25 @@ async function mailImport(p, list) {
   const done = new Set(), key = x => x.m + '|' + x.part;
   for (const [n, it] of bulk.items.entries()) {
     if (!bulk) return;
-    try {
-      it.status = 'subiendo'; render();
-      const r = await fetch(`/api/mascotas?${p}=import`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ m: it.gm.m, part: it.gm.part }) });
-      const d = await r.json().catch(() => ({}));
-      if (r.status === 429 && d.queued) {
-        /* sin tope de IA: este y los que siguen quedan en cola para seguir otro día */
-        const rest = bulk.items.slice(n);
-        rest.forEach(x => { x.status = 'cola'; x.keep = false; x.msg = ''; });
-        const q = await fetch(`/api/mascotas?${p}=queue`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: rest.map(x => x.gm) }) }).then(x => x.json()).catch(() => null);
-        if (q?.queue) mstat[p].queue = q.queue;
-        bulk.queued = `${d.error === 'limite_mensual' ? `Llegaste al tope de ${d.limit} lecturas con IA de este mes` : `Llegaste al tope de ${d.limit} lecturas con IA por hoy`}: ${rest.length === 1 ? 'quedó 1 en cola' : `quedaron ${rest.length} en cola`}. ${d.error === 'limite_mensual' ? 'El mes que viene' : 'Mañana'} entrá a tu mail desde el historial y tocá «Seguir con la cola».`;
-        break;
-      }
-      if (!r.ok && (d.error === 'pide_login' || d.error === 'link_no_descarga')) {
-        /* el sitio pidió iniciar sesión (o no dejó bajar el archivo): no se importa; se ofrece abrirlo */
-        it.status = 'error'; it.keep = false;
-        it.msg = d.error === 'pide_login' ? 'Este laboratorio pide iniciar sesión: abrilo, bajá el PDF y usá «Subir estudios».' : 'No pudimos bajar el estudio desde el link. Abrilo, bajá el PDF y usá «Subir estudios».';
-        it.acts = [d.url && /^https:\/\//.test(d.url) ? { href: d.url, label: 'Abrir el link' } : null, it.gm.mail ? { href: it.gm.mail, label: `Abrir el mail en ${PROV[p].label}` } : null].filter(Boolean);
-        continue;
-      }
-      if (!r.ok) { it.status = 'error'; it.keep = false; it.msg = mErr(p, d.error) || 'No se pudo traer. Probá de nuevo.'; if (d.error === 'ya_importado') done.add(key(it.gm)); if (/_vencido$/.test(d.error || '')) { mstat[p].connected = false; mstat[p].expired = true; } continue; }
-      done.add(key(it.gm));
-      it.ref = d.ref; it.petId = d.petId || ''; it.sug = d.petId || '';
-      if (it.gm.type === 'link' && d.ref?.name) it.name = d.ref.name;
-      if (d.data) { it.data = { ...it.data, ...d.data, title: d.data.title || it.data.title }; it.status = d.data.confidence === 'baja' || d.data.warnings?.length || !d.data.date ? 'revisar' : 'listo'; }
-      else { it.status = 'manual'; it.msg = d.manual === 'tipo_no_legible' ? 'Este formato no se puede leer: quedó adjunto, completalo a mano.' : /^limite/.test(d.manual) ? 'Se terminó el tope de lecturas con IA: quedó adjunto, completalo a mano.' : d.manual === 'pdf_muy_largo' ? 'El PDF es demasiado largo para leerlo entero. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; }
-    } catch { it.status = 'error'; it.keep = false; it.msg = 'No se pudo traer. Revisá la conexión.'; }
+    const stop = await importItem(p, it, done);
+    /* sin tope de IA: este y los que siguen quedan en cola para seguir otro día */
+    if (stop) { await queueRest(p, bulk.items.slice(n), stop); break; }
   }
   /* lo traído (o en cola) ya no se ofrece en la lista */
   if (mstat[p]) mstat[p].queue = (mstat[p].queue || []).filter(x => !done.has(key(x)));
   if (gm?.p === p && gm.cands) { const gone = new Set([...done, ...(bulk?.items || []).filter(x => x.status === 'cola').map(x => key(x.gm))]); gm.cands = gm.cands.map(c => ({ ...c, files: c.files.filter(f => !gone.has(c.m + '|' + f.part)) })).filter(c => c.files.length); gone.forEach(k => gm.sel.delete(k)); }
   if (bulk) { bulk.state = 'review'; render(); }
+}
+/* "Reintentar" en una fila que falló, sin volver a importar todo */
+async function retryItem(i) {
+  const it = bulk?.items?.[i]; if (!it || it.status !== 'error' || !bulk.prov || it.busy) return;
+  const p = bulk.prov; it.busy = true;
+  const done = new Set();
+  const stop = await importItem(p, it, done);
+  it.busy = false;
+  if (stop) await queueRest(p, [it], stop);
+  if (gm?.p === p && gm.cands && done.size) { gm.cands = gm.cands.map(c => ({ ...c, files: c.files.filter(f => !done.has(c.m + '|' + f.part)) })).filter(c => c.files.length); done.forEach(k => gm.sel.delete(k)); }
+  render();
 }
 function petPick(it, id) {
   const s = petById(it.sug);
@@ -2301,6 +2345,7 @@ document.addEventListener('click', e => {
     case 'bulkSave': return saveBulk();
     case 'bulkBack': { const g = bulk?.source === 'mail' ? bulk.prov : ''; bulk = null; return go(g || 'libreta'); }
     case 'mailPick': return mailPickPanel();
+    case 'bulkRetry': return retryItem(+b.dataset.i);
     case 'mailOpen': return openMail(b.dataset.p, b.dataset.mode || 'new');
     case 'mailConnect': return mailConnect(b.dataset.p);
     case 'mailRange': gm = { ...(gm?.p === b.dataset.p ? gm : {}), p: b.dataset.p, phase: gm?.phase || 'intro', range: b.dataset.v }; b.parentNode.querySelectorAll('.tile').forEach(t => t.setAttribute('aria-pressed', String(t === b))); return;

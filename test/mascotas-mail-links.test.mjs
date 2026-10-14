@@ -168,7 +168,7 @@ test('un mail veterinario con el estudio como link aparece como candidato y el P
   /* Drive pidiendo login: no se importa y vuelve el link para abrirlo */
   const drive = c.files.find(f => f.host === 'drive.google.com');
   await assert.rejects(M.importOne(P, EMAIL, st, cfg, { m: 'link0001', part: drive.part }, { ...deps, fetchLink: url => L.safeFetch(url, { lookup: pub, get: reply(200, { 'content-type': 'text/html' }, HTML) }) }),
-    e => e.code === 'pide_login' && e.extra.url.startsWith('https://drive.google.com/file/d/'));
+    e => e.code === 'link_error' && e.extra.motivo === 'login' && e.extra.url.startsWith('https://drive.google.com/file/d/'));
 
   /* y lo que se busca de nuevo ya no ofrece el link importado */
   const s2 = await call('POST', { gmail: 'search' }, { mode: 'all' });

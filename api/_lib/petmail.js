@@ -18,7 +18,7 @@
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 import { kvGet, kvSet, kvDel } from './kv.js';
 import { isAdmin } from './admin.js';
-import { extractLinks, safeFetch, isLinkPart } from './petlinks.js';
+import { extractLinks, safeFetch, isLinkPart, reasonOf, hostOf } from './petlinks.js';
 
 export const MAX_MESSAGES = 200;       // mails revisados por búsqueda
 export const PAGE = 50;                // mails por página del listado
@@ -375,9 +375,10 @@ export async function importOne(P, email, st, cfg, body, deps) {
       const got = await (deps.fetchLink || safeFetch)(link.url);
       buf = got.buf; meta = { ...meta, name: got.name, type: got.type, size: got.buf.length };
     } catch (e) {
-      /* HTML = el sitio pide iniciar sesión, un captcha o una página intermedia: no se importa */
-      const code = e.code === 'html' || /^http_40[13]$/.test(e.code || '') ? 'pide_login' : e.code === 'muy_grande' ? 'too_big' : 'link_no_descarga';
-      throw Object.assign(fail(code, 422), { extra: { url: link.url, motivo: e.code || 'red' } });
+      /* no se importa: se devuelve el motivo real para que la persona sepa qué pasó y lo resuelva a mano */
+      const motivo = reasonOf(e.code);
+      console.warn('mimitos link:', motivo, e.code || '-', hostOf(link.url));
+      throw Object.assign(fail('link_error', 422), { extra: { motivo, host: hostOf(link.url), url: link.url } });
     }
     if (!(await deps.fits(email, buf.length))) throw fail('cupo_lleno', 413);
   } else buf = await P.download(at, m, part, meta);
@@ -487,6 +488,8 @@ export async function handleMail(P, req, res, ctx) {
     if (action === 'disconnect') return res.status(200).json(await disconnect(P, email, st, cfg));
     return res.status(400).json({ error: 'invalid' });
   } catch (e) {
+    /* lo inesperado se registra sin URLs (pueden traer tokens) */
+    if (!e.code) console.warn('mimitos mail:', P.id, action, String(e.name || 'Error'), String(e.message || '').replace(/https?:\/\/\S+/g, '<url>').slice(0, 120));
     /* los códigos llevan el nombre del proveedor (gmail_vencido, outlook_vencido…) */
     return res.status(e.status || 502).json({ error: String(e.code || 'mail_error').replace(/^mail_/, P.id + '_'), ...(e.extra || {}) });
   }

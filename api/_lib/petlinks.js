@@ -46,7 +46,8 @@ export function extractLinks({ html = '', text = '' } = {}, { senderDomain = '' 
     u.hash = '';
     const host = u.hostname.toLowerCase(), href = u.href;
     if (JUNK_HOST.test(host) || JUNK_PATH.test(u.pathname + u.search) || JUNK_PATH.test(fold(anchor))) return;
-    const hay = fold(`${decodeURIComponent(u.pathname + u.search).replace(/[-_]/g, ' ')} ${anchor}`);
+    let path; try { path = decodeURIComponent(u.pathname + u.search); } catch { path = u.pathname + u.search; }
+    const hay = fold(`${path.replace(/[-_]/g, ' ')} ${anchor}`);
     const service = FILE_SERVICE.test(host), file = /\.(pdf|jpe?g|png|webp)$/i.test(u.pathname), words = STUDY_WORDS.test(hay);
     if (!service && !file && !words) return;
     const fromSender = senderDomain && (host === senderDomain || host.endsWith('.' + senderDomain));
@@ -115,6 +116,26 @@ export function sniff(buf) {
 }
 const looksHtml = buf => /^\s*(<!doctype|<html|<head|<body|<script|<\?xml)/i.test(buf.subarray(0, 512).toString('latin1'));
 
+/* errores de red: TLS roto (protocolo, versión o certificado) aparte del resto */
+export const TLS_CODES = /^(EPROTO|ERR_SSL_|ERR_TLS_|CERT_|UNABLE_TO_|DEPTH_ZERO_SELF_SIGNED_CERT|SELF_SIGNED_CERT|HOSTNAME_MISMATCH|ERR_TLS_CERT_ALTNAME_INVALID)/;
+export const netErr = e => err(TLS_CODES.test(String(e?.code || '')) || /ssl|tls|certificate/i.test(String(e?.message || '')) ? 'tls' : /ETIMEDOUT|ESOCKETTIMEDOUT/.test(String(e?.code || '')) ? 'tiempo' : 'red');
+
+/* por qué no se pudo bajar, en las categorías que ve la persona */
+export function reasonOf(code) {
+  const c = String(code || '');
+  if (c === 'http') return 'http';
+  if (c === 'tls') return 'tls';
+  if (c === 'html' || c === 'http_401' || c === 'http_403' || c === 'http_407') return 'login';
+  if (c === 'muy_grande') return 'grande';
+  if (c === 'http_404' || c === 'http_410') return 'no_existe';
+  if (c === 'tiempo') return 'tiempo';
+  if (c === 'tipo') return 'tipo';
+  if (c === 'ip_privada' || c === 'url' || c === 'redirects') return 'bloqueado';
+  return 'red';   // dns, red, 5xx y lo inesperado
+}
+/* para los logs: solo el host, nunca la URL completa ni sus parámetros (pueden traer tokens) */
+export const hostOf = url => { try { return new URL(url).hostname; } catch { return '?'; } };
+
 /* un GET por https conectando a la IP ya validada (el certificado se verifica contra el nombre real) */
 export function httpsGet(url, ip, { signal, maxBytes }) {
   return new Promise((ok, no) => {
@@ -130,9 +151,9 @@ export function httpsGet(url, ip, { signal, maxBytes }) {
       if (Number(headers['content-length']) > maxBytes) { res.destroy(); return no(err('muy_grande')); }
       res.on('data', c => { n += c.length; if (n > maxBytes) { res.destroy(); no(err('muy_grande')); } else chunks.push(c); });
       res.on('end', () => ok({ status, headers, body: Buffer.concat(chunks) }));
-      res.on('error', e => no(e.code === 'muy_grande' ? e : err('red')));
+      res.on('error', e => no(e.code === 'muy_grande' ? e : netErr(e)));
     });
-    req.on('error', e => no(e.code === 'muy_grande' ? e : e.name === 'AbortError' ? err('tiempo') : err('red')));
+    req.on('error', e => no(e.code === 'muy_grande' ? e : e.name === 'AbortError' ? err('tiempo') : netErr(e)));
     req.end();
   });
 }
