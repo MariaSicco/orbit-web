@@ -1234,11 +1234,12 @@ body[data-view="preguntar"] .disclaimer,body[data-view="preguntar"] .made{displa
 .cite .n{flex:none;width:26px;height:26px;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:12px;font-weight:800}
 .cite:hover{background:#E4DED6}
 .cites-h{flex-basis:100%;margin:0 0 -2px;font:500 11.5px/1.2 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink3)}
-.cite .src{display:inline;padding:6px 0;font-weight:500;color:var(--ink2)}
+.cite .src{display:block;min-width:0;padding:7px 0;font-weight:500;color:var(--ink2)}
+.cites .cite{border-radius:22px}
 .cite .src b{font-weight:700;color:var(--ink)}
 .cite .src .who{font-weight:700;color:var(--ink)}
 .cite .src .arr{margin:0 5px;color:var(--ink3)}
-.cite .src .when{white-space:nowrap}
+.cite .src .when{white-space:nowrap;font-weight:600;color:var(--ink)}
 .cite:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
 .ask-a.thinking{gap:9px}
 .think-t{display:inline-flex;align-items:center;gap:8px;font-weight:700;color:var(--ink2)}

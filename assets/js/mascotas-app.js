@@ -2800,32 +2800,45 @@ const askStore = { get() { try { return JSON.parse(sessionStorage.getItem('mimit
 const ask = { turns: (askStore.get()?.turns || []).filter(t => t && t.q && t.a).slice(-30), pending: '', error: null, left: null, draft: '', from: 'inicio' };
 const askSave = () => askStore.set({ turns: ask.turns.slice(-30) });
 const askBtn = (cls = '') => `<button type="button" class="ask-cta ${cls}" data-act="askGo">${ASK_IC.stars}<span>Preguntale a Mimitos</span></button>`;
-/* ejemplos con los nombres reales de la cuenta */
+/* ejemplos armados con los datos reales de la cuenta: primero los cruces que se pueden responder
+   (bajó de peso, último síntoma, cambio de alimento), después datos sueltos que existen. Hasta 6. */
 function askExamples() {
   const a = curPet(); if (!a) return [];
   const b = doc.pets.find(x => x.id !== a.id) || a;
+  const n = a.name, ws = (a.weights || []).filter(w => w.date && w.kg > 0).slice().sort((x, y) => x.date.localeCompare(y.date));
+  const dropped = ws.some((w, i) => i && w.kg < ws[i - 1].kg);
+  const bags = (window.MZRULES.bagsOf(a.food) || []).filter(x => x.brand), changedFood = bags.some((x, i) => i && x.brand.trim().toLowerCase() !== bags[i - 1].brand.trim().toLowerCase());
   const surg = doc.pets.find(x => x.surgeries.some(s => s.name));
-  const out = [
-    a.records.some(r => r.type === 'desparasitacion') ? `¿Cuándo fue la última pipeta de ${a.name}?` : `¿Cuándo le toca la próxima vacuna a ${a.name}?`,
+  const yr = iso(Z.today()).slice(0, 4);
+  const cross = [
+    dropped && `¿Qué pasó alrededor de la última vez que ${n} bajó de peso?`,
+    a.symptoms.length && `¿Qué más registré cerca del último síntoma de ${n}?`,
+    changedFood && `¿Qué pasó cerca del último cambio de alimento de ${n}?`,
+    surg && `¿Qué estudios le hicieron a ${surg.name} antes de la cirugía?`,
+  ].filter(Boolean).slice(0, 3);
+  const out = [...cross,
+    a.records.some(r => r.type === 'desparasitacion') ? `¿Cuándo fue la última pipeta de ${n}?` : `¿Cuándo le toca la próxima vacuna a ${n}?`,
+    a.visits.length && `¿Qué le indicó el vete en la última consulta de ${n}?`,
     `¿${b.name} tiene todas las vacunas al día?`,
-    `¿Cuánto aumentó de peso ${a.name} este año?`,
-    `¿Cuándo fue la última vez que ${a.name} tuvo diarrea?`,
-    ...(surg ? [`¿Qué estudios le hicieron a ${surg.name} antes de la cirugía?`, `¿Qué medicación tomó ${surg.name} después de la cirugía?`] : []),
-    '¿Cuánto gasté en veterinario este mes?',
-    ...(mefui && (doc.awayLog?.length || doc.away?.on) ? [`¿Cuánto estuvo ${a.sex === 'm' ? 'solo' : 'sola'} ${a.name} esta semana?`] : []),
-  ];
-  return out;
+    a.meds.some(m => (m.start || '').startsWith(yr)) && `¿Qué remedios tomó ${n} este año?`,
+    a.studies.length && `¿Qué estudios tiene cargados ${n}?`,
+    ws.length > 1 && `¿Cuánto cambió de peso ${n} este año?`,
+    doc.pets.some(p => p.expenses.length) && '¿Cuánto gasté en veterinario este mes?',
+    mefui && (doc.awayLog?.length || doc.away?.on) && `¿Cuánto estuvo ${a.sex === 'm' ? 'solo' : 'sola'} ${n} esta semana?`,
+  ].filter(Boolean);
+  return [...new Set(out)].slice(0, 6);
 }
 const ddmm = d => d && /^\d{4}-\d{2}-\d{2}/.test(d) ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '';
 /* chip de "Fuentes": la ruta legible que arma el servidor ("Libreta → Desparasitación externa · 14/09").
    Las respuestas viejas (guardadas en la pestaña antes de este cambio) no traen source: van con nombre y fecha. */
-function citeChip(c, i) {
-  const many = doc.pets.length > 1 && c.petName ? `${c.petName} · ` : '';
+function citeChip(c, i, all = []) {
+  /* el nombre de la mascota solo si en esta respuesta hay datos de más de una */
+  const many = doc.pets.length > 1 && c.petName && new Set(all.map(x => x.petId)).size > 1 ? `${c.petName} · ` : '';
   if (c.source) {
     const [path, ...rest] = String(c.source).split(' · ');
     const parts = path.split(' → ');
     const route = parts.map((x, k) => k ? `<span class="arr" aria-hidden="true">→</span>${esc(x)}` : `<b>${esc(x)}</b>`).join('');
-    return `<button type="button" class="cite" data-act="askCite" data-t="${i}" data-c="${esc(c.id)}" aria-label="Fuente ${i + 1}: ${esc(many + parts.join(', ') + (rest.length ? ', ' + rest.join(', ') : ''))}. Abrir"><span class="n" aria-hidden="true">${i + 1}</span><span class="src">${many ? `<span class="who">${esc(many)}</span>` : ''}${route}${rest.length ? `<span class="when"> · ${esc(rest.join(' · '))}</span>` : ''}</span></button>`;
+    return `<button type="button" class="cite" data-act="askCite" data-t="${i}" data-c="${esc(c.id)}" aria-label="Fuente ${i + 1}: ${esc(many + parts.join(', ') + (rest.length ? ', ' + rest.join(', ') : ''))}. Abrir"><span class="n" aria-hidden="true">${i + 1}</span><span class="src">${many ? `<span class="who">${esc(many)}</span>` : ''}${route}${rest.length ? ` · ${rest.map((x, k) => k === rest.length - 1 ? `<span class="when">${esc(x)}</span>` : esc(x)).join(' · ')}` : ''}</span></button>`;
   }
   const lab = String(c.label || ''), short = lab.length > 24 ? lab.slice(0, 23).trim() + '…' : lab;
   const when = c.kind === 'gastos' ? (c.date || '').slice(5, 7) + '/' + (c.date || '').slice(0, 4) : ddmm(c.date);
@@ -2844,7 +2857,7 @@ function askLog() {
       <p class="ask-q"><span class="sr">Vos: </span>${esc(t.q)}</p>
       <div class="ask-a${t.medical ? ' med' : ''}"><span class="sr">Mimitos: </span>${askText(t, i)}
         ${t.trimmed ? '<p class="ask-trim">Tenías muchos datos: miré lo más reciente.</p>' : ''}
-        ${t.cites?.length ? `<div class="cites" role="group" aria-labelledby="ch${i}"><p class="cites-h" id="ch${i}">Fuentes</p>${t.cites.map(citeChip).join('')}</div>` : ''}</div></div>`).join('');
+        ${t.cites?.length ? `<div class="cites" role="group" aria-labelledby="ch${i}"><p class="cites-h" id="ch${i}">Fuentes</p>${t.cites.map((c, k, all) => citeChip(c, k, all)).join('')}</div>` : ''}</div></div>`).join('');
   const pending = ask.pending ? `<div class="ask-turn"><p class="ask-q"><span class="sr">Vos: </span>${esc(ask.pending)}</p>
       <div class="ask-a thinking" aria-busy="true"><span class="think-t">${ASK_IC.stars} Pensando…</span><span class="sk" style="width:92%;height:12px;border-radius:6px"></span><span class="sk" style="width:76%;height:12px;border-radius:6px"></span><span class="sk" style="width:54%;height:12px;border-radius:6px"></span></div></div>` : '';
   const err = ask.error ? `<div class="ask-err" role="alert">${I('alert')}<span><b>${esc(ask.error.t)}</b>${ask.error.d ? `<small>${esc(ask.error.d)}</small>` : ''}</span>${ask.error.retry ? '<button type="button" class="btn sm" data-act="askRetry">Reintentar</button>' : ''}</div>` : '';
