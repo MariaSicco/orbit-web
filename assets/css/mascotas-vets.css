@@ -12,6 +12,19 @@
 .vx-area-r{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
 .vx-area input{min-height:48px;border-radius:14px;border:0;box-shadow:inset 0 0 0 1px var(--line2);background:var(--card);padding:0 14px;min-width:0}
 .vx-area input:focus-visible{outline:2.5px solid var(--act);outline-offset:1px}
+/* error del campo (dirección no encontrada, sin permiso de ubicación): --late sobre --late-bg, AA */
+.vx-err{margin:0;padding:10px 14px;border-radius:var(--r-s);background:var(--late-bg);color:var(--late);font-size:14.5px;font-weight:500}
+.vx-area input[aria-invalid="true"]{box-shadow:inset 0 0 0 1.5px var(--late)}
+.vx-loc-acts{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:560px){.vx-loc-acts{grid-template-columns:1fr 1fr}}
+
+/* barra de ubicación: siempre arriba de la lista y del mapa */
+.vx-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0;padding:8px 8px 8px 16px;border-radius:var(--r);background:var(--card);box-shadow:var(--sh1)}
+.vx-bar-t{display:flex;align-items:center;gap:10px;min-width:0;font-size:15px;color:var(--ink2)}
+.vx-bar-t>svg.i{flex:none;width:18px;height:18px;color:var(--act)}
+.vx-bar-t>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vx-bar-t b{color:var(--ink);font-weight:600}
+.vx-bar .btn{flex:none;min-width:96px}
 
 /* mi veterinaria y motivo */
 .vx-mine{gap:14px}

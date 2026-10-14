@@ -6,7 +6,9 @@
    Qué se pide y cuánto cuesta (precios de lista de Google al 14/10/2026, primer tramo, USD cada 1.000 llamadas):
    https://developers.google.com/maps/billing-and-pricing/pricing
    - Veterinarias y Pet shops: Nearby Search (New), rankPreference DISTANCE, radio 5 km, 20 resultados.
-   - Guardias 24 h y "Barrio o ciudad": Text Search (New) (con la ubicación como sesgo, si la dio).
+   - Guardias 24 h y "Barrio, ciudad o dirección": Text Search (New). Sesgo (locationBias, no cambia el SKU): la
+     ubicación si la dio, o el centro de los resultados de esa zona que manda la app al cambiar de pestaña. Si el
+     texto trae un número (una dirección) la consulta va como "veterinaria cerca de <dirección>".
    - Al tocar un lugar sin teléfono, o "Mi veterinaria": Place Details (New).
    El SKU lo define el campo más caro del field mask (https://developers.google.com/maps/documentation/places/web-service/nearby-search):
    rating, userRatingCount, currentOpeningHours y los teléfonos son Enterprise; id, nombre, dirección, ubicación y
@@ -218,12 +220,12 @@ export async function handlePlaces(req, res, { email, action, body = {}, getDoc,
       return res.status(200).json({ place: shapePlace(d), attribution: 'Google Maps' });
     }
 
-    let lat = null, lng = null;
-    if (action === 'nearby') {
-      lat = num(body.lat, 90); lng = num(body.lng, 180);
-      if (lat == null || lng == null || (!lat && !lng)) return res.status(400).json({ error: 'sin_ubicacion' });
-      lat = round3(lat); lng = round3(lng);
-    } else if (area.length < 3) return res.status(400).json({ error: 'sin_zona' });
+    let lat = num(body.lat, 90), lng = num(body.lng, 180);
+    const hasLL = lat != null && lng != null && Boolean(lat || lng);
+    if (action === 'nearby' && !hasLL) return res.status(400).json({ error: 'sin_ubicacion' });
+    if (action === 'text' && area.length < 3) return res.status(400).json({ error: 'sin_zona' });
+    /* siempre redondeada a 3 decimales antes de mandarla a Google; por texto, el sesgo es opcional */
+    if (hasLL) { lat = round3(lat); lng = round3(lng); } else { lat = lng = null; }
 
     const rl = await rate(email, 'search', perDay(), now);
     if (!rl.ok) { await rl.undo(); return res.status(429).json({ error: 'limite_diario', limit: perDay(), ...fallback }); }
@@ -235,8 +237,9 @@ export async function handlePlaces(req, res, { email, action, body = {}, getDoc,
     } else {
       /* guardias (con o sin ubicación) y búsqueda por barrio o ciudad: Text Search */
       sku = `text:${t}`;
-      const q = action === 'text' ? `${KINDS[kind].words} en ${area}` : KINDS[kind].words;
-      const req2 = { textQuery: q, pageSize: 20, ...lang, ...(action === 'nearby' ? { locationBias: circle(15000) } : {}), ...(KINDS[kind].type ? { includedType: KINDS[kind].type } : {}) };
+      const q = action === 'text' ? `${KINDS[kind].words} ${/\d/.test(area) ? 'cerca de' : 'en'} ${area}` : KINDS[kind].words;
+      const bias = action === 'nearby' ? circle(15000) : lat != null ? circle(5000) : null;
+      const req2 = { textQuery: q, pageSize: 20, ...lang, ...(bias ? { locationBias: bias } : {}), ...(KINDS[kind].type ? { includedType: KINDS[kind].type } : {}) };
       d = await google(sku, `${API}/places:searchText`, { method: 'POST', headers: headers(fieldMask(t)), body: JSON.stringify(req2) }, now, rl.undo);
     }
     const places = (Array.isArray(d.places) ? d.places : []).map(shapePlace).filter(p => p.id && p.name);
