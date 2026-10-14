@@ -1361,3 +1361,27 @@ body[data-view="preguntar"] .disclaimer,body[data-view="preguntar"] .made{displa
 .bags li small{display:block;font-size:13px;overflow-wrap:anywhere}
 .bags li b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
 @media (prefers-reduced-motion:reduce){.bags summary::after{transition:none}}
+/* alimento: buscador del catálogo (combobox) y precio de referencia */
+.cb{position:relative}
+.cb-list{list-style:none;margin:6px 0 0;padding:4px;background:var(--card);border-radius:14px;box-shadow:var(--sh2);max-height:min(320px,44vh);overflow:auto;overscroll-behavior:contain}
+.cb-o{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;min-height:52px;padding:8px 12px;border-radius:10px;cursor:pointer;font-size:14.5px;line-height:1.35;transition:background-color .15s var(--ease)}
+.cb-o b{display:block;font-weight:600;color:var(--ink);overflow-wrap:anywhere}
+.cb-o small{display:block;font-size:13px;color:var(--ink3)}
+.cb-o em{font-style:normal;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink2);font-size:14px}
+.cb-o:hover,.cb-o[aria-selected="true"]{background:var(--act-soft)}
+.cb-o.other{border-top:1px solid var(--line);border-radius:0 0 10px 10px;color:var(--ink2)}
+.cb-o.other b{font-weight:500;color:var(--ink2)}
+.cb-o.other q{color:var(--ink);font-weight:600}
+.cb-empty{padding:10px 12px;font-size:13.5px;color:var(--ink3)}
+.ref{font-size:13.5px;line-height:1.45;color:var(--ink2)}
+.ref:empty{display:none}
+.ref b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+.ref a{color:var(--act);font-weight:600;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;justify-content:center;min-height:44px;min-width:44px;margin:-12px 0}
+.ref small{display:block;color:var(--ink3);font-size:12.5px;margin-top:2px}
+input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)}
+.f small.sug-h{color:var(--act);font-weight:500}
+.ref-now{margin-top:10px;padding:10px 12px;background:var(--sunk);border-radius:12px;font-size:14px;color:var(--ink2)}
+.ref-now b{color:var(--ink);font-variant-numeric:tabular-nums}
+.ref-now a{color:var(--act);font-weight:600;text-decoration:underline;text-underline-offset:3px;display:inline-flex;align-items:center;min-height:44px}
+.ref-now small{display:block;color:var(--ink3);font-size:12.5px;margin-top:2px}
+@media (prefers-reduced-motion:reduce){.cb-o{transition:none}}

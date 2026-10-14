@@ -78,6 +78,8 @@ const day = v => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '';
 const stamp = v => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d+)?)?(Z|[+-]\d{2}:\d{2})?$/.test(v || '') ? v : '';
 const num = (v, max = 1e9) => { const n = parseFloat(String(v ?? '').replace(',', '.')); return Number.isFinite(n) && n >= 0 && n <= max ? Math.round(n * 100) / 100 : null; };
 const id = v => /^[a-z0-9]{4,24}$/i.test(v || '') ? v : randomBytes(6).toString('hex');
+/* id del catálogo de alimentos: minúsculas, números y guiones */
+const catId = v => /^[a-z0-9][a-z0-9-]{1,63}$/.test(v || '') ? v : '';
 const tok = v => /^[A-Za-z0-9_-]{10,40}$/.test(v || '') ? v : '';
 const photo = v => /^\/api\/mascotas\?img=[a-f0-9]{8,32}$/.test(v || '') ? v : '';
 const pick = (v, list, def) => list.includes(v) ? v : def;
@@ -152,7 +154,9 @@ export function cleanDoc(d, email) {
     weights: (Array.isArray(p?.weights) ? p.weights : []).slice(-200).map(w => ({ date: day(w?.date), kg: num(w?.kg, 2000) })).filter(w => w.date && w.kg),
     food: { brand: str(p?.food?.brand, 80), bagKg: num(p?.food?.bagKg, 100), dailyG: num(p?.food?.dailyG, 20000), opened: day(p?.food?.opened),
       /* historial de bolsas: de acá se aprende cuánto le dura (mascotas-rules.js). Docs viejos: [] */
-      bags: (Array.isArray(p?.food?.bags) ? p.food.bags : []).slice(-50).map(b => ({ date: day(b?.date), kg: num(b?.kg, 100), brand: str(b?.brand, 80), price: num(b?.price) })).filter(b => b.date) },
+      bags: (Array.isArray(p?.food?.bags) ? p.food.bags : []).slice(-50).map(b => ({ date: day(b?.date), kg: num(b?.kg, 100), brand: str(b?.brand, 80), price: num(b?.price),
+        /* del catálogo de alimentos (opcional): id y el precio de referencia que vio al elegirla */
+        ...(catId(b?.cat) ? { cat: catId(b.cat), refPrice: num(b?.refPrice), refStore: str(b?.refStore, 40), refDate: day(b?.refDate) } : {}) })).filter(b => b.date) },
     fund: { goal: num(p?.fund?.goal), monthly: num(p?.fund?.monthly), saved: num(p?.fund?.saved) },
     trip: { dest: str(p?.trip?.dest, 30), date: day(p?.trip?.date) },
     records: (Array.isArray(p?.records) ? p.records : []).slice(0, MAX_RECS).map(r => ({

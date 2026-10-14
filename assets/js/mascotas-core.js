@@ -76,7 +76,9 @@
     f.bags = (Array.isArray(f.bags) ? f.bags : []).filter(x => x.date !== b.date);
     /* la primera vez, la bolsa que ya estaba abierta (docs viejos) entra al historial */
     if (!f.bags.length && f.opened && f.opened < b.date) f.bags.push({ date: f.opened, kg: f.bagKg || null, brand: f.brand || '', price: null });
-    f.bags.push({ date: b.date, kg: b.kg || null, brand: b.brand || '', price: b.price || null });
+    /* cat: id del catálogo de alimentos (opcional); refPrice/refStore/refDate: el precio de referencia que vio al elegirla */
+    const ref = b.cat ? { cat: String(b.cat), ...(b.refPrice ? { refPrice: b.refPrice, refStore: b.refStore || '', refDate: b.refDate || '' } : {}) } : {};
+    f.bags.push({ date: b.date, kg: b.kg || null, brand: b.brand || '', price: b.price || null, ...ref });
     f.bags.sort((x, y) => x.date.localeCompare(y.date)); f.bags = f.bags.slice(-50);
     if (!f.opened || b.date >= f.opened) { f.opened = b.date; if (b.kg) f.bagKg = b.kg; if (b.brand) f.brand = b.brand; }
     return () => { const o = JSON.parse(before); for (const k of Object.keys(f)) delete f[k]; Object.assign(f, o); };

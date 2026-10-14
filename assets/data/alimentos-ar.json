@@ -1,0 +1,12 @@
+{
+ "updated": "2026-10-14",
+ "note": "Precios de referencia de tiendas online argentinas. Metodología: research/2026-10-14-alimentos-ar.md (repo orbit-workspace).",
+ "parts": {
+  "perro": "alimentos-ar-perro.json",
+  "gato": "alimentos-ar-gato.json"
+ },
+ "counts": {
+  "gato": 266,
+  "perro": 429
+ }
+}

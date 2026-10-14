@@ -23,7 +23,8 @@
   const dueRecords = records => latest(records).filter(r => r.next).sort((a, b) => a.next.localeCompare(b.next));
 
   /* ---------- alimento: cuánto le dura la bolsa ----------
-     food = { brand, bagKg, dailyG, opened, bags: [{ date, kg?, brand?, price? }] }.
+     food = { brand, bagKg, dailyG, opened, bags: [{ date, kg?, brand?, price?, cat?, refPrice?, refStore?, refDate? }] }.
+     cat es el id del catálogo de alimentos (assets/data/alimentos-ar.json); las bolsas viejas no lo tienen.
      Con 2 bolsas o más aprende: promedio de días entre aperturas (sin atípicos: menos de la mitad
      o más del doble de la mediana), normalizado por kg si cambia el tamaño. Lo aprendido manda sobre
      el cálculo por gramos; sin bolsas suficientes, se usa bagKg y dailyG como antes.
@@ -34,7 +35,7 @@
   const LEARN_MAX = 8;   // cuántas bolsas terminadas mira, las últimas
   function bagsOf(f) {
     const seen = new Map();
-    for (const b of (f && Array.isArray(f.bags) ? f.bags : [])) if (Number.isFinite(dnum(b && b.date))) seen.set(b.date.slice(0, 10), { date: b.date.slice(0, 10), kg: pos(b.kg), brand: b.brand || '', price: pos(b.price) });
+    for (const b of (f && Array.isArray(f.bags) ? f.bags : [])) if (Number.isFinite(dnum(b && b.date))) seen.set(b.date.slice(0, 10), { date: b.date.slice(0, 10), kg: pos(b.kg), brand: b.brand || '', price: pos(b.price), ...(b.cat ? { cat: String(b.cat), refPrice: pos(b.refPrice), refStore: b.refStore || '', refDate: b.refDate || '' } : {}) });
     /* docs viejos: la bolsa abierta sin historial cuenta como la primera */
     if (f && Number.isFinite(dnum(f.opened)) && !seen.has(f.opened.slice(0, 10)) && ![...seen.keys()].some(d => d > f.opened)) seen.set(f.opened.slice(0, 10), { date: f.opened.slice(0, 10), kg: pos(f.bagKg), brand: f.brand || '', price: 0 });
     return [...seen.values()].sort((a, b) => a.date.localeCompare(b.date));

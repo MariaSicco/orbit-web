@@ -278,6 +278,8 @@ function field(f, v) {
       return `<div class="photo-pick" data-f="${f.k}">${prev}<div class="f">${f.label ? `<span class="lb">${esc(f.label)}${opt}</span>` : ''}<label class="btn ghost sm" for="${id}">${I('camera')} ${val ? 'Cambiar foto' : 'Elegir foto'}</label><input id="${id}" type="file" accept="image/*" class="sr" data-square="${f.square ? 1 : ''}">${hint}</div></div>`;
     }
     case 'hue': return `<div class="f" data-f="${f.k}" id="${id}"><span class="lb">${esc(f.label)}${opt}</span>${swatches(f.k, val)}${hint}</div>`;
+    /* alimento: buscador del catálogo con lista propia (role=combobox), el texto libre sigue valiendo */
+    case 'food': return `<div class="f" data-f="${f.k}">${lab}<div class="cb"><input id="${id}" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="${id}_lb" maxlength="${f.max || 80}" value="${esc(val)}" placeholder="${esc(f.ph || '')}" autocomplete="off" autocapitalize="words"${desc}><ul id="${id}_lb" class="cb-list" role="listbox" aria-label="Alimentos" hidden></ul></div><div class="ref" id="${id}_ref" aria-live="polite"></div>${hint}</div>`;
     case 'datalist': return `<div class="f" data-f="${f.k}">${lab}<input id="${id}" list="${id}_dl" maxlength="${f.max || 80}" value="${esc(val)}" placeholder="${esc(f.ph || '')}" autocomplete="off"${desc}><datalist id="${id}_dl">${(f.options || []).map(o => `<option value="${esc(o)}">`).join('')}</datalist>${hint}</div>`;
     default: {
       const t = f.type === 'datetime' ? 'datetime-local' : f.type || 'text';
@@ -568,9 +570,77 @@ function expenseForm(p, x) {
 }
 /* ---------- alimento: cada bolsa que abrís le enseña a Mimitos cuánto le dura ---------- */
 const kgTxt = n => String(n).replace('.', ',');
+/* catálogo de alimentos (mascotas-food.js): se carga la primera vez que hace falta; sin él, todo sigue con texto libre */
+const foodCat = {};   /* por especie: { perro, gato } */
+const loadFoodCat = sp => window.MZFOOD ? MZFOOD.load(sp).then(c => { if (c) foodCat[sp] = c; return c; }) : Promise.resolve(null);
+const refHtml = it => it.priceArs
+  ? `Precio de referencia: <b>${money(it.priceArs)}</b> en ${esc(it.priceSource.store)} · al ${MZFOOD.fmtDay(it.priceSource.date)} · <a href="${esc(it.priceSource.url)}" target="_blank" rel="noopener noreferrer" aria-label="Ver el precio en ${esc(it.priceSource.store)} (se abre en otra pestaña)">ver</a><small>${esc(MZFOOD.NOTE(it.priceSource.date))}</small>`
+  : 'Todavía no tenemos un precio de referencia para esta bolsa.';
+const STAGE_TXT = { perro: { cachorro: 'Cachorro', adulto: 'Adulto', senior: 'Senior' }, gato: { cachorro: 'Gatito', adulto: 'Adulto', senior: 'Senior' } };
+/* buscador del catálogo en un campo type:'food'. o = { k, kgKey?, priceKey?, keepPrice?, catId? } */
+function foodPicker(p, o) {
+  const id = 'f_' + o.k, inp = $('#' + id), lb = $('#' + id + '_lb'), ref = $('#' + id + '_ref'); if (!inp) return;
+  const priceEl = o.priceKey ? $('#f_' + o.priceKey) : null, priceHint = o.priceKey ? $('#f_' + o.priceKey + '_h') : null, hint0 = priceHint?.textContent || '';
+  const sp = ['perro', 'gato'].includes(p.species) ? p.species : '', stage = window.MZFOOD ? MZFOOD.stageOf(p, Z.today()) : '';
+  const mine = form; let list = [], act = -1;
+  form.cat = null; form.priceSug = '';
+  const markSug = v => {
+    if (!priceEl) return; form.priceSug = v ? String(v) : ''; priceEl.classList.toggle('sug', Boolean(v));
+    if (priceHint) { priceHint.textContent = v ? 'Sugerido: es el precio de referencia. Cambialo por lo que pagaste.' : hint0; priceHint.classList.toggle('sug-h', Boolean(v)); }
+  };
+  const showRef = it => { ref.innerHTML = it ? refHtml(it) : ''; };
+  const close = () => { lb.hidden = true; lb.innerHTML = ''; inp.setAttribute('aria-expanded', 'false'); inp.removeAttribute('aria-activedescendant'); act = -1; };
+  const hi = i => { act = i; [...lb.children].forEach((li, j) => li.setAttribute('aria-selected', String(j === i))); const li = lb.children[i]; if (li) { inp.setAttribute('aria-activedescendant', li.id); li.scrollIntoView({ block: 'nearest' }); } };
+  const open = () => {
+    const q = inp.value.trim();
+    if (!foodCat[sp] || !sp || !q) return close();
+    list = MZFOOD.search(foodCat[sp], q, { species: sp, stage, limit: 8 });
+    const st = STAGE_TXT[sp];
+    lb.innerHTML = list.map((it, i) => `<li id="${id}_o${i}" class="cb-o" role="option" aria-selected="false" data-i="${i}"><span><b>${esc(MZFOOD.label(it))}</b><small>${kgTxt(it.sizeKg)} kg${st[it.stage] ? ' · ' + st[it.stage] : ''}</small></span><em>${it.priceArs ? money(it.priceArs) : ''}</em></li>`).join('')
+      + `<li id="${id}_o${list.length}" class="cb-o other" role="option" aria-selected="false" data-i="${list.length}"><span><b>${list.length ? 'Otro: ' : 'No está en la lista. Usar '}<q>${esc(q)}</q></b><small>Queda como lo escribiste</small></span><em></em></li>`;
+    lb.hidden = false; inp.setAttribute('aria-expanded', 'true'); act = -1; inp.removeAttribute('aria-activedescendant');
+  };
+  const choose = it => {
+    const pf = MZFOOD.prefill(it); inp.value = pf.brand; form.cat = it;
+    if (o.kgKey) setVal(o.kgKey, kgTxt(pf.kg));
+    if (priceEl && !o.keepPrice && pf.price && (!priceEl.value.trim() || priceEl.value.trim() === form.priceSug)) { priceEl.value = String(pf.price); markSug(pf.price); }
+    showRef(it);
+  };
+  const pick = i => { if (i < list.length) choose(list[i]); close(); };
+  inp.addEventListener('input', () => {
+    if (form.cat && inp.value !== MZFOOD.prefill(form.cat).brand) {
+      form.cat = null; showRef(null);
+      if (priceEl && form.priceSug && priceEl.value.trim() === form.priceSug) priceEl.value = '';
+      markSug('');
+    }
+    open();
+  });
+  inp.addEventListener('keydown', e => {
+    if (lb.hidden) { if (e.key === 'ArrowDown' && inp.value.trim()) { e.preventDefault(); open(); if (!lb.hidden) hi(0); } return; }
+    const n = lb.children.length;
+    if (e.key === 'ArrowDown') { e.preventDefault(); hi((act + 1) % n); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); hi((act - 1 + n) % n); }
+    else if (e.key === 'Enter') { e.preventDefault(); if (act >= 0) pick(act); else close(); }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); }
+    else if (e.key === 'Tab') close();
+  });
+  lb.addEventListener('mousedown', e => e.preventDefault());
+  lb.addEventListener('click', e => { const li = e.target.closest('[data-i]'); if (li) pick(Number(li.dataset.i)); });
+  inp.addEventListener('blur', () => setTimeout(() => { if (document.activeElement !== inp) close(); }, 150));
+  priceEl?.addEventListener('input', () => { if (form.priceSug && priceEl.value.trim() !== form.priceSug) markSug(''); });
+  /* la bolsa anterior venía del catálogo: la dejamos elegida (kg y precio sugerido incluidos) */
+  loadFoodCat(sp).then(c => {
+    if (!c || form !== mine || !dForm.open) return;
+    const it = MZFOOD.byId(c, o.catId);
+    if (it && it.species === sp && inp.value === MZFOOD.prefill(it).brand) choose(it);
+  });
+}
+const bagRef = it => it && it.priceArs ? { refPrice: it.priceArs, refStore: it.priceSource.store, refDate: it.priceSource.date } : {};
 function bagSheet(p, pre = {}) {
   const today = iso(Z.today()), last = window.MZRULES.bagsOf(p.food).at(-1) || {};
   const kg = pre.kg ?? last.kg ?? p.food.bagKg, brand = pre.brand ?? (last.brand || p.food.brand || '');
+  const catId = pre.cat ?? (brand === last.brand ? last.cat : '');
+  const sp = ['perro', 'gato'].includes(p.species);
   openForm({
     title: 'Bolsa nueva',
     intro: `Anotá cuándo abriste la bolsa de ${esc(p.name)}. Con cada bolsa aprendemos cuánto le dura y te avisamos antes de que se termine.`,
@@ -578,16 +648,17 @@ function bagSheet(p, pre = {}) {
     noFocus: true, stick: true,
     fields: [
       { k: 'date', label: 'La abriste el', type: 'date', quick: [['0', 'Hoy'], ['-1', 'Ayer']] },
-      [{ k: 'kg', label: 'Bolsa (kg)', type: 'number', ph: '15' }, { k: 'price', label: 'Precio ($)', type: 'number', ph: '38000', opt: true, hint: pre.fromExpense ? 'Ya está en tus gastos.' : 'Si lo ponés, se anota también como gasto de alimento.' }],
-      { k: 'brand', label: 'Marca', max: 80, ph: 'Marca y variedad', opt: true },
+      { k: 'brand', label: 'Marca', type: sp ? 'food' : '', max: 80, ph: sp ? 'Buscá la marca o la variedad' : 'Marca y variedad', opt: true, hint: sp ? 'Si no está en la lista, escribila como quieras.' : '' },
+      [{ k: 'kg', label: 'Bolsa (kg)', type: 'number', ph: '15' }, { k: 'price', label: 'Precio que pagaste ($)', type: 'number', ph: '38000', opt: true, hint: pre.fromExpense ? 'Ya está en tus gastos.' : 'Si lo ponés, se anota también como gasto de alimento.' }],
     ],
-    after() { $('#f_date').max = today; },
+    after() { $('#f_date').max = today; if (sp) foodPicker(p, { k: 'brand', kgKey: 'kg', priceKey: 'price', keepPrice: Boolean(pre.fromExpense), catId }); },
     onQuick(k, d) { setVal('date', iso(new Date(Z.today().getTime() + Number(d) * Z.DAY))); },
     onSave(v) {
       const k = numDec(v.kg); if (!(k > 0)) return 'Poné cuántos kilos trae la bolsa, por ejemplo 15.';
       const price = numOrNull(v.price); if (Number.isNaN(price)) return 'El precio va solo con números, por ejemplo 38000.';
       if (!v.date) return 'Poné cuándo la abriste.'; if (v.date > today) return 'La fecha no puede ser futura.';
-      const undoBag = Z.addBag(p, { date: v.date, kg: k, brand: v.brand, price: price || null });
+      const it = form.cat && Number(form.cat.sizeKg) === k ? form.cat : null;
+      const undoBag = Z.addBag(p, { date: v.date, kg: k, brand: v.brand, price: price || null, ...(it ? { cat: it.id, ...bagRef(it) } : {}) });
       let exp = null;
       if (price && !pre.fromExpense) { exp = { id: uid(), cat: 'alimento', amount: price, date: v.date, note: `Bolsa de ${kgTxt(k)} kg${v.brand ? ' · ' + v.brand : ''}` }; p.expenses.push(exp); }
       const f = Z.food(p.food);
@@ -606,15 +677,21 @@ function bagAsk(p, pre, amount) {
   };
 }
 function foodForm(p) {
+  const sp = ['perro', 'gato'].includes(p.species), cur = (p.food.bags || []).find(b => b.date === p.food.opened) || {};
   openForm({
     title: 'Alimento', intro: 'Los gramos por día son opcionales: si no los sabés, desde la segunda bolsa calculamos solos cuánto le dura.',
     values: { ...p.food, bagKg: p.food.bagKg ? String(p.food.bagKg).replace('.', ',') : '', dailyG: p.food.dailyG ? String(p.food.dailyG) : '', opened: p.food.opened || iso(Z.today()) },
-    fields: [{ k: 'brand', label: 'Qué alimento', max: 80, ph: 'Marca y variedad' }, [{ k: 'bagKg', label: 'Bolsa (kg)', type: 'number', ph: '15' }, { k: 'dailyG', label: 'Come por día (g)', type: 'number', ph: '400', opt: true }], { k: 'opened', label: 'Abriste la bolsa el', type: 'date' }],
+    fields: [{ k: 'brand', label: 'Qué alimento', type: sp ? 'food' : '', max: 80, ph: sp ? 'Buscá la marca o la variedad' : 'Marca y variedad', hint: sp ? 'Si no está en la lista, escribilo como quieras.' : '' }, [{ k: 'bagKg', label: 'Bolsa (kg)', type: 'number', ph: '15' }, { k: 'dailyG', label: 'Come por día (g)', type: 'number', ph: '400', opt: true }], { k: 'opened', label: 'Abriste la bolsa el', type: 'date' }],
+    after() { if (sp) foodPicker(p, { k: 'brand', kgKey: 'bagKg', catId: cur.brand === p.food.brand ? cur.cat : '' }); },
     onSave(v) {
       const k = numDec(v.bagKg), g = numDec(v.dailyG);
       if (!(k > 0)) return 'Poné cuántos kilos trae la bolsa.'; if (Number.isNaN(g)) return 'Los gramos por día van con números, por ejemplo 400.'; if (!v.opened) return 'Poné cuándo abriste la bolsa.';
+      const it = form.cat && Number(form.cat.sizeKg) === k ? form.cat : null;
+      const old = (p.food.bags || []).find(b => b.date === v.opened) || {};
       const bags = (p.food.bags || []).filter(b => b.date !== v.opened);
-      bags.push({ date: v.opened, kg: k, brand: v.brand, price: (p.food.bags || []).find(b => b.date === v.opened)?.price || null });
+      /* bolsas viejas sin catálogo siguen igual; si eligió del catálogo, queda el id y el precio de referencia */
+      const keep = !it && old.cat && old.brand === v.brand && Number(old.kg) === k ? { cat: old.cat, refPrice: old.refPrice, refStore: old.refStore, refDate: old.refDate } : {};
+      bags.push({ date: v.opened, kg: k, brand: v.brand, price: old.price || null, ...keep, ...(it ? { cat: it.id, ...bagRef(it) } : {}) });
       bags.sort((a, b) => a.date.localeCompare(b.date));
       p.food = { brand: v.brand, bagKg: k, dailyG: g || null, opened: bags.at(-1).date, bags: bags.slice(-50) }; toast('Alimento guardado.');
     },
@@ -1562,24 +1639,38 @@ function renderAgenda() {
 }
 
 /* ---------- GASTOS ---------- */
+/* si la última bolsa vino del catálogo: el precio de referencia de hoy frente a lo que pagó la última vez */
+const foodCatAsked = {};
+function foodRefNow(fp) {
+  const bags = window.MZRULES.bagsOf(fp.food), last = bags.at(-1);
+  if (!last || !last.cat || !window.MZFOOD) return '';
+  const sp = fp.species;
+  if (!foodCat[sp]) { if (!foodCatAsked[sp]) { foodCatAsked[sp] = true; loadFoodCat(sp).then(c => { if (c && route.name === 'gastos') render(); }); } return ''; }
+  const it = MZFOOD.byId(foodCat[sp], last.cat); if (!it || !it.priceArs) return '';
+  const paid = [...bags].reverse().find(b => b.cat === last.cat && b.price) || [...bags].reverse().find(b => b.price);
+  const diff = paid ? it.priceArs - paid.price : 0;
+  const cmp = paid ? ` La última vez pagaste <b>${money(paid.price)}</b>${paid.cat === it.id ? '' : ' por otra bolsa'} (${fmt(paid.date, { day: 'numeric', month: 'short' })})${paid.cat === it.id && Math.abs(diff) >= 1 ? `: el de referencia es ${money(Math.abs(diff))} ${diff > 0 ? 'más' : 'menos'}` : ''}.` : '';
+  return `<p class="ref-now">Precio de referencia actual de ${esc(MZFOOD.label(it))} ${kgTxt(it.sizeKg)} kg: <b>${money(it.priceArs)}</b> en ${esc(it.priceSource.store)}.${cmp}<small>${esc(MZFOOD.NOTE(it.priceSource.date))} <a href="${esc(it.priceSource.url)}" target="_blank" rel="noopener noreferrer" aria-label="Ver el precio en ${esc(it.priceSource.store)} (se abre en otra pestaña)">Ver en ${esc(it.priceSource.store)}</a></small></p>`;
+}
 /* alimento: cuánto le dura (aprendido de las bolsas), cuándo se termina, cuánto sale por mes y por día */
 function foodCard(fp, ym) {
   const f = Z.food(fp.food), sp = Z.foodSpend(fp, ym);
   const hist = (fp.food.bags || []).slice(-4).reverse();
   const head = `<div class="sec-h"><h2>Alimento de ${esc(fp.name)}</h2>${f || hist.length ? `<button class="link" data-act="food" data-pet="${fp.id}">Editar</button>` : ''}</div>`;
   const spend = sp.avg || sp.perDay ? `<div class="stats food-stats"><div class="stat"><span>Alimento por mes</span><b>${sp.avg ? money(sp.avg) : '—'}</b><small>${sp.months ? `promedio de ${sp.months} ${sp.months === 1 ? 'mes' : 'meses'}` : 'cargá los gastos de alimento'}</small></div><div class="stat"><span>Por día</span><b>${sp.perDay ? money(sp.perDay) : '—'}</b><small>${sp.perDay ? 'según el precio de tus bolsas' : 'poné el precio de la bolsa'}</small></div></div>` : '';
+  const refNow = foodRefNow(fp);
   const histHtml = hist.length ? `<details class="bags"><summary>Tus bolsas <span class="count">${(fp.food.bags || []).length}</span></summary><ul>${hist.map(b => `<li><span><span class="bd">${fmt(b.date, { day: 'numeric', month: 'short', year: 'numeric' })}</span><small>${[b.kg ? kgTxt(b.kg) + ' kg' : '', esc(b.brand || '')].filter(Boolean).join(' · ')}</small></span><b>${b.price ? money(b.price) : ''}</b></li>`).join('')}</ul></details>` : '';
   if (!f) {
     const one = hist.length || fp.food.opened;
     return `<section class="sec">${head}<div class="${one ? 'card' : 'empty dash'}">${one ? `<div style="display:flex;gap:12px;align-items:center">${bubble('bowl', 'comida')}<span><b>${esc(fp.food.brand || 'Alimento')}</b><small class="dim" style="display:block">Abriste la bolsa el ${fmt(fp.food.opened, { day: 'numeric', month: 'long' })}</small></span></div><p>Con la próxima bolsa aprendemos cuánto le dura y te avisamos antes de que se termine.</p>` : `<p>Anotá la bolsa que abriste, con los kilos. Desde la segunda, Mimitos aprende cuánto le dura y te avisa antes de que se termine.</p>`}
-      <div class="btns"><button class="btn sm" data-act="newBag" data-pet="${fp.id}">${I('plus')} ${one ? 'Abrí una bolsa nueva' : 'Anotar la bolsa'}</button>${one ? '' : `<button class="btn ghost sm" data-act="food" data-pet="${fp.id}">Sé cuánto come por día</button>`}</div>${histHtml}</div>${spend}</section>`;
+      <div class="btns"><button class="btn sm" data-act="newBag" data-pet="${fp.id}">${I('plus')} ${one ? 'Abrí una bolsa nueva' : 'Anotar la bolsa'}</button>${one ? '' : `<button class="btn ghost sm" data-act="food" data-pet="${fp.id}">Sé cuánto come por día</button>`}</div>${refNow}${histHtml}</div>${spend}</section>`;
   }
   const how = f.src === 'aprendido' ? `Le dura en promedio <b>${f.days} días</b> (según tus últimas ${f.n} ${f.n === 1 ? 'bolsa' : 'bolsas'}).` : `Le dura unos <b>${f.days} días</b>, por los ${fp.food.dailyG} g por día. Con la próxima bolsa lo ajustamos con lo real.`;
   return `<section class="sec">${head}<div class="card"><div style="display:flex;gap:12px;align-items:center">${bubble('bowl', 'comida')}<span><b>${esc(fp.food.brand || 'Alimento')}</b><small class="dim" style="display:block">Bolsa de ${kgTxt(f.bagKg)} kg, abierta el ${fmt(f.opened, { day: 'numeric', month: 'long' })}</small></span></div>
     <div class="bar c-comida" role="img" aria-label="Queda ${Math.round(f.pct * 100)}% de la bolsa"><i style="width:${Math.round(f.pct * 100)}%"></i></div>
     <p>${how}</p>
     <p>${f.left < 0 ? '<b>Ya se terminó la bolsa.</b> Cuando abras otra, anotala.' : `Se termina aprox. el <b>${fmt(f.end, { day: 'numeric', month: 'long' })}</b> (${f.left === 0 ? 'hoy' : f.left === 1 ? 'mañana' : `en ${f.left} días`}).`}</p>
-    <div class="btns"><button class="btn sm" data-act="newBag" data-pet="${fp.id}">${I('plus')} Abrí una bolsa nueva</button><button class="btn ghost sm" data-act="icsFood" data-pet="${fp.id}">${I('cal')} Avisame antes</button></div>${histHtml}</div>${spend}</section>`;
+    <div class="btns"><button class="btn sm" data-act="newBag" data-pet="${fp.id}">${I('plus')} Abrí una bolsa nueva</button><button class="btn ghost sm" data-act="icsFood" data-pet="${fp.id}">${I('cal')} Avisame antes</button></div>${refNow}${histHtml}</div>${spend}</section>`;
 }
 function renderGastos(cur) {
   const ym = ui.gastos.ym, filt = ui.gastos.pet;
