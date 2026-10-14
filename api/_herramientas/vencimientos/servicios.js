@@ -3,18 +3,55 @@
    tipo 'tramite' = vence pero no tiene monto fijo (VTV, licencia, matafuegos).
    `color` es solo para el monograma (no son logos de las empresas). */
 
+/* Categorías pensadas para la casa (como agrupan Rocket Money, Copilot o Monarch):
+   por en qué se va la plata, no por cómo se paga. Color para la barra del inicio. */
 export const CATEGORIAS = [
-  { id: 'Servicios', icono: 'rayo' },
-  { id: 'Impuestos', icono: 'edificio' },
-  { id: 'Vivienda', icono: 'casa' },
-  { id: 'Auto', icono: 'auto' },
-  { id: 'Salud y seguros', icono: 'escudo' },
-  { id: 'Tarjetas', icono: 'tarjeta' },
-  { id: 'Conectividad', icono: 'wifi' },
-  { id: 'Suscripciones', icono: 'play' },
-  { id: 'Trámites', icono: 'doc' },
-  { id: 'Otros', icono: 'punto' },
+  { id: 'Casa', icono: 'casa', color: '#E9B949' },
+  { id: 'Luz, gas y agua', icono: 'rayo', color: '#3047FF' },
+  { id: 'Internet y celular', icono: 'wifi', color: '#5FC4E8' },
+  { id: 'Entretenimiento', icono: 'play', color: '#FF4F2E' },
+  { id: 'Apps y trabajo', icono: 'chispa', color: '#D9FF45' },
+  { id: 'Educación', icono: 'gorro', color: '#9B7BFF' },
+  { id: 'Salud y bienestar', icono: 'escudo', color: '#3CC488' },
+  { id: 'Auto', icono: 'auto', color: '#A8A49B' },
+  { id: 'Impuestos', icono: 'edificio', color: '#C77D5B' },
+  { id: 'Tarjetas', icono: 'tarjeta', color: '#F2EFE8' },
+  { id: 'Trámites', icono: 'doc', color: '#D4C27A' },
+  { id: 'Otros', icono: 'punto', color: '#8C8A84' },
 ];
+export const colorCategoria = id => (CATEGORIAS.find(c => c.id === id) || CATEGORIAS.at(-1)).color;
+
+const PRESET_CAT = {
+  'Luz, gas y agua': ['edenor', 'edesur', 'epec', 'edelap', 'luz', 'metrogas', 'naturgy', 'camuzzi', 'ecogas', 'gas', 'garrafa', 'aysa', 'absa', 'agua'],
+  'Internet y celular': ['internet', 'celular'],
+  Entretenimiento: ['cable', 'netflix', 'spotify', 'disney', 'max', 'prime', 'paramount', 'crunchyroll', 'youtube', 'meli'],
+  'Apps y trabajo': ['chatgpt', 'm365', 'icloud', 'google-one'],
+  Casa: ['alquiler', 'expensas', 'hipoteca', 'seguro-hogar', 'limpieza'],
+  'Salud y bienestar': ['prepaga', 'seguro-vida', 'gimnasio'],
+  Auto: ['seguro-auto', 'cochera', 'peaje', 'patente'],
+  Impuestos: ['abl', 'inmobiliario', 'tasa-municipal', 'monotributo', 'autonomos', 'ganancias'],
+  Educación: ['colegio'],
+  Trámites: ['vtv', 'licencia', 'cedula', 'matafuegos', 'tanque', 'caldera', 'aire', 'dni', 'pasaporte', 'vacunas'],
+};
+const CAT_DE_PRESET = Object.fromEntries(Object.entries(PRESET_CAT).flatMap(([c, ids]) => ids.map(id => [id, c])));
+const VIEJAS = { Vivienda: 'Casa', Servicios: 'Luz, gas y agua', Conectividad: 'Internet y celular', 'Salud y seguros': 'Salud y bienestar', Suscripciones: 'Entretenimiento' };
+const RE_EDU = /universidad|facultad|colegio|escuela|instituto|\.edu|palermo|\buba\b|\butn\b|curso|udemy|coursera|platzi|domestika|crehana/i;
+const RE_APPS = /anthropic|claude|openai|chatgpt|\bmake\b|runway|magnific|artlist|canva|adobe|figma|notion|github|vercel|google|apple|icloud|microsoft|dropbox|zoom|slack|capcut|envato|freepik|midjourney|elevenlabs|higgsfield|cursor|framer|webflow|shopify|hostinger|godaddy|wix|semrush|ahrefs|linkedin|grammarly|perplexity|lovable|replit/i;
+const RE_ENT = /netflix|spotify|disney|hbo|\bmax\b|prime|paramount|crunchy|youtube|deezer|tidal|twitch|playstation|xbox|steam|nintendo|club/i;
+
+/* Categoría (nueva) de una cuenta: respeta la que eligió la persona, salvo las genéricas viejas. */
+export function categoriaDe(c) {
+  const n = String(c.nombre || '');
+  if (c.categoria === 'Tarjetas' || /^tarjeta\b/i.test(n)) return 'Tarjetas';
+  if (c.preset && CAT_DE_PRESET[c.preset]) return CAT_DE_PRESET[c.preset];
+  const generica = !c.categoria || ['Suscripciones', 'Otros', 'Servicios'].includes(c.categoria);
+  if (generica && RE_EDU.test(n)) return 'Educación';
+  if (generica && RE_APPS.test(n)) return 'Apps y trabajo';
+  if (generica && RE_ENT.test(n)) return 'Entretenimiento';
+  if (VIEJAS[c.categoria]) return VIEJAS[c.categoria];
+  return CATEGORIAS.some(x => x.id === c.categoria) ? c.categoria : 'Otros';
+}
+
 
 const S = (id, nombre, categoria, frecuencia, extra = {}) => ({ id, nombre, categoria, frecuencia, ...extra });
 
@@ -110,8 +147,7 @@ const ICONO_SERVICIO = {
   gimnasio: 'pesa', colegio: 'gorro', patente: 'auto', 'seguro-auto': 'auto', cochera: 'auto', peaje: 'auto', vtv: 'auto', licencia: 'auto', cedula: 'auto',
   prepaga: 'escudo', 'seguro-vida': 'escudo', 'seguro-hogar': 'casa', alquiler: 'casa', expensas: 'casa', hipoteca: 'casa', limpieza: 'casa',
 };
-const ICONO_CATEGORIA = { Servicios: 'rayo', Impuestos: 'edificio', Vivienda: 'casa', Auto: 'auto', 'Salud y seguros': 'escudo', Tarjetas: 'tarjeta',
-  Conectividad: 'wifi', Suscripciones: 'play', 'Trámites': 'doc', Otros: 'punto' };
+const ICONO_CATEGORIA = Object.fromEntries(CATEGORIAS.map(c => [c.id, c.icono]));
 export function iconoDe(c) {
   if (c.preset && ICONO_SERVICIO[c.preset]) return ICONO_SERVICIO[c.preset];
   const n = String(c.nombre || '').toLowerCase();
@@ -120,9 +156,11 @@ export function iconoDe(c) {
   if (/universidad|facultad|colegio|escuela|palermo|uba|curso/.test(n)) return 'gorro';
   if (/luz|electric/.test(n)) return 'rayo';
   if (/agua/.test(n)) return 'gota';
-  if (/gas/.test(n)) return 'llama';
+  if (/\bgas\b/.test(n)) return 'llama';
   return ICONO_CATEGORIA[c.categoria] || 'punto';
 }
+
+for (const sv of SERVICIOS) sv.categoria = categoriaDe({ preset: sv.id, nombre: sv.nombre, categoria: sv.categoria });
 
 /* Los que aparecen primero en el primer uso: lo que casi toda casa paga. */
 export const PRIMER_USO = ['edenor', 'edesur', 'metrogas', 'naturgy', 'aysa', 'abl', 'expensas', 'alquiler', 'internet', 'celular', 'prepaga', 'seguro-auto', 'patente', 'vtv', 'netflix', 'spotify', 'disney', 'monotributo'];
@@ -137,4 +175,10 @@ export function monograma(nombre) {
 }
 
 /* Color de texto que contrasta con el fondo del monograma. */
-export const tintaSobre = color => (/^#(D9FF45|F2EFE8)$/i.test(color) ? '#0D0D0E' : '#F2EFE8');
+/* Tinta clara u oscura según lo claro que sea el fondo (luminancia relativa). */
+export function tintaSobre(color) {
+  const m = /^#([0-9a-f]{6})$/i.exec(color || '');
+  if (!m) return '#F2EFE8';
+  const [r, g, b] = [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16) / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.32 ? '#0D0D0E' : '#F2EFE8';
+}
