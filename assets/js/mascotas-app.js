@@ -1890,7 +1890,7 @@ async function disablePush() {
   if (sub) { try { await notifyPost({ remove: sub.endpoint }); } catch {} await sub.unsubscribe().catch(() => {}); }
   pushHere = false; render(); toast('Avisos apagados en este celu.');
 }
-const KINDS_UI = [['vac', 'syringe', 'Vacunas y controles', '3 días antes y el mismo día'], ['pip', 'drop', 'Pipeta o antiparasitario', '3 días antes y el mismo día'], ['food', 'bowl', 'Alimento', '5 días antes de que se termine'], ['check', 'heart', 'Chequeo del mes', 'El primer domingo de cada mes'], ['qr', 'qr', 'Escanearon su QR o te dejaron un aviso', 'Al instante, en el celu y por mail si lo activaste']];
+const KINDS_UI = [['vac', 'syringe', 'Vacunas y controles', '3 días antes y el mismo día'], ['pip', 'drop', 'Pipeta o antiparasitario', '3 días antes y el mismo día'], ['food', 'bowl', 'Alimento', '5 días antes de que se termine'], ['check', 'heart', 'Chequeo del mes', 'El primer domingo de cada mes'], ['qr', 'qr', 'Escanearon su QR o te dejaron un aviso', 'Al instante, en el celu y por mail si lo activaste'], ['med', 'pill', 'Remedio sin marcar', 'Si una toma no está marcada en "Hoy" una hora después. Apagado salvo que lo prendas']];
 function renderAvisos() {
   const n = notify || { devices: 0, mail: false, off: {} };
   after(refreshHere);
@@ -1918,7 +1918,7 @@ function renderAvisos() {
         <label class="toggle"><input type="checkbox" id="aMail" ${n.mail ? 'checked' : ''}><span><b>Mandarme también un mail</b><br><small class="dim">Un solo mail con todo lo del día, a la mañana, a ${esc(me.email || 'tu casilla')}. Si escanean el QR, al momento.</small></span></label></section>
     </div><div class="col">
       <section class="sec"><h2>Qué te avisamos</h2>
-        <div class="list">${KINDS_UI.map(([k, ic, t, d]) => `<label class="row toggle-row">${bubble(ic, 'salud')}<span class="what"><b>${t}</b><small>${d}</small></span><input type="checkbox" class="sw-in" data-kind="${k}" ${n.off?.[k] ? '' : 'checked'} aria-label="${t}"></label>`).join('')}</div></section>
+        <div class="list">${KINDS_UI.map(([k, ic, t, d]) => `<label class="row toggle-row">${bubble(ic, 'salud')}<span class="what"><b>${t}</b><small>${d}</small></span><input type="checkbox" class="sw-in" data-kind="${k}" ${(n.off?.[k] ?? k === 'med') ? '' : 'checked'} aria-label="${t}"></label>`).join('')}</div></section>
       <section class="sec"><h2>En tu calendario</h2>
         <div class="card"><p class="dim">Si preferís tu calendario, bajá todas las fechas en un archivo .ics. iPhone y Outlook avisan solos a las 9; en Google Calendar, activá el aviso en el evento.</p><button class="btn ghost sm" data-act="icsAll" style="align-self:flex-start">${I('download')} Bajar todas las fechas</button></div></section>
     </div></div>`;

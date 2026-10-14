@@ -26,7 +26,8 @@ export async function mimitosPurchase(email) {
 export const hasMimitos = async email => Boolean(await mimitosPurchase(email));
 
 export const notifyKey = email => `orbit:petnotify:${String(email).toLowerCase()}`;
-export const KINDS = ['vac', 'pip', 'food', 'check', 'qr'];
+/* med: "remedio sin marcar" (api/_lib/pethoy.js). Es opcional: anda solo si la persona lo prendió (off.med === false) */
+export const KINDS = ['vac', 'pip', 'food', 'check', 'qr', 'med'];
 const SITE = () => process.env.SITE_URL || 'https://www.orbitando.com.ar';
 
 let vapid = null;
@@ -171,7 +172,7 @@ ${items.map(i => `<tr><td bgcolor="#FFFDF9" style="background:#FFFDF9;border-rad
 }
 
 /* aviso suelto por mail (escaneo del QR o mensaje de quien la encontró), con la estética de Mimitos */
-export async function mailNotice(email, { title, body, map = '', phone = '' }) {
+export async function mailNotice(email, { title, body, map = '', phone = '', why = 'el aviso del QR' }) {
   if (!emailReady()) return false;
   const url = `${SITE()}/mascotas#/inicio`, tel = String(phone || '').replace(/[^\d+]/g, '');
   const btn = (href, label, bg, fg) => `<a href="${esc(href)}" style="display:inline-block;background:${bg};color:${fg};text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:13px 22px;margin:0 8px 8px 0">${label}</a>`;
@@ -181,7 +182,7 @@ export async function mailNotice(email, { title, body, map = '', phone = '' }) {
 <tr><td style="padding:0 0 16px;font:700 22px Helvetica,Arial,sans-serif;color:#1F1A17">mimitos</td></tr>
 <tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border-radius:18px;padding:18px 20px"><b style="font-size:17px">${esc(title)}</b><br><span style="font-size:14px;line-height:1.55;color:#5E554E">${esc(body)}</span></td></tr>
 <tr><td style="padding:16px 0 0">${map ? btn(map, 'Ver la ubicación', '#1F4D40', '#FFFFFF') : ''}${tel ? btn('tel:' + tel, 'Llamar', '#1F4D40', '#FFFFFF') : ''}${btn(url, 'Abrir Mimitos', map || tel ? '#E3EDE6' : '#1F4D40', map || tel ? '#1F4D40' : '#FFFFFF')}</td></tr>
-<tr><td style="padding:18px 0 0;font-size:12px;color:#5E554E;line-height:1.5">Te llega porque activaste los avisos por mail en Mimitos y el aviso del QR. Los apagás desde Avisos en la app. Hecho con Orbit.</td></tr>
+<tr><td style="padding:18px 0 0;font-size:12px;color:#5E554E;line-height:1.5">Te llega porque activaste los avisos por mail en Mimitos y ${esc(why)}. Los apagás desde Avisos en la app. Hecho con Orbit.</td></tr>
 </table></td></tr></table></body></html>`;
   const text = `${title}\n${body}${map ? `\nUbicación: ${map}` : ''}\n\nAbrir Mimitos: ${url}`;
   await sendEmail({ to: email, subject: title, html, text });

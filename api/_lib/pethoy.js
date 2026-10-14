@@ -83,3 +83,41 @@ export async function undo({ pet, email, id, actor, now = Date.now() }) {
   await kvDel(undoKey(id));
   return { status: 200, id };
 }
+
+/* ---------- aviso "remedio sin marcar" ----------
+   Lo corre el cron horario (api/cron/mascotas.js). Para cada cuenta con avisos y el aviso prendido
+   (off.med === false: es opcional), mira las tomas de hoy y de ayer (hora de Argentina) que pasaron hace
+   entre 1 y 3 horas: si nadie la marcó (tilde de "Hoy", "Ya se la di" o el link del cuidador), avisa una
+   sola vez por toma (candado SET NX orbit:hoymiss:<mascota>:<día>:<toma>). */
+export const MISS_AFTER = 36e5, MISS_UNTIL = 3 * 36e5;
+export async function runMedMiss({ now = Date.now(), deps }) {
+  const { emails, getNotify, getDoc, hasMimitos, push, mail } = deps;
+  const out = { revisadas: 0, avisos: 0 };
+  const today = H.todayAR(now), days = [H.addDays(today, -1), today];
+  for (const email of emails) {
+    const n = await getNotify(email);
+    if (n.off?.med !== false) continue;
+    const doc = await getDoc(email);
+    const pets = (doc?.pets || []).filter(p => Array.isArray(p.meds) && p.meds.length);
+    if (!pets.length || !(await hasMimitos(email))) continue;
+    out.revisadas++;
+    for (const p of pets) {
+      const due = days.flatMap(d => H.plan(p, d).filter(i => i.kind === 'med' && now - i.at >= MISS_AFTER && now - i.at < MISS_UNTIL).map(i => ({ ...i, ymd: d })));
+      if (!due.length) continue;
+      const pk = petKey(email, p.id);
+      const sitter = p.sitterToken ? (await kvGet(`orbit:petlog:${p.sitterToken}`)) || [] : [];
+      const log = [...(p.log || []), ...sitter, ...(await careLog(email, p.id))];
+      for (const i of due) {
+        if (await kvGet(markKey(pk, i.ymd, i.key))) continue;
+        if (H.medGiven(i, log)) continue;
+        if (!(await kvSetNX(`orbit:hoymiss:${pk}:${i.ymd}:${i.key}`, 1, 2 * 86400))) continue;
+        const title = `El remedio de las ${i.time} no está marcado`;
+        const body = `${i.label}${i.qty ? ' (' + i.qty + ')' : ''} de ${p.name}. Si ya se lo dieron, marcalo en "Hoy con ${p.name}".`;
+        await push(n, { title, body, url: '/mascotas#/inicio', tag: `miss-${p.id}-${i.key}` });
+        if (n.mail) await mail(email, { title, body, why: 'el aviso de remedio sin marcar' }).catch(() => {});
+        out.avisos++;
+      }
+    }
+  }
+  return out;
+}

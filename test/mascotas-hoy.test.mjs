@@ -170,3 +170,35 @@ test('compatibilidad con docs viejos: sin rutina, sin primera toma, sin contacto
   const o = await call('GET', { hoy: '1', pet: 'old00001' }, null, email);
   assert.equal(o.code, 200); assert.equal(o.body.items.length, 3);
 });
+
+test('remedio sin marcar: aviso una hora después, una sola vez por toma (dedupe), solo si está prendido y no si se marcó', async () => {
+  const email = 'hoy-miss@ejemplo.com', t = 'TOKhoyMiss00001';
+  const pet = PET({ meds: [{ id: 'med1', name: 'Pastilla', dose: '1/2', every: 12, start: `${today}T09:00`, days: 0 }] });
+  await setup(email, t, pet);
+  const it = H.plan(pet, today).find(i => i.key === 'm:med1:0900');
+  const sent = [], mails = [];
+  let notify = { off: {}, mail: true };
+  const deps = { emails: [email], getNotify: async () => ({ email, subs: [{}], ...notify }), getDoc: e => kvGet(`orbit:pets:${e}`), hasMimitos: async () => true,
+    push: async (n, p) => { sent.push(p); return 1; }, mail: async (e, m) => { mails.push(m); return true; } };
+  /* apagado por defecto (es opcional) */
+  assert.equal((await HOY.runMedMiss({ now: it.at + 90 * 60000, deps })).avisos, 0);
+  notify = { off: { med: false }, mail: true };
+  /* antes de la hora + 1 h, nada */
+  assert.equal((await HOY.runMedMiss({ now: it.at + 30 * 60000, deps })).avisos, 0);
+  const r = await HOY.runMedMiss({ now: it.at + 70 * 60000, deps });
+  assert.equal(r.avisos, 1);
+  assert.equal(sent[0].title, 'El remedio de las 09:00 no está marcado');
+  assert.match(sent[0].body, /Pastilla \(1\/2\) de Feliza/);
+  assert.equal(mails.length, 1);
+  /* la corrida siguiente no lo repite */
+  assert.equal((await HOY.runMedMiss({ now: it.at + 130 * 60000, deps })).avisos, 0);
+  /* marcada por el cuidador → no avisa (otra toma, otro día de prueba: la de las 21:00) */
+  const it2 = H.plan(pet, today).find(i => i.key === 'm:med1:2100');
+  const key = HOY.markKey(HOY.petKey(email, pet.id), today, it2.key);
+  await kvSet(key, { id: 'x', at: new Date(it2.at).toISOString(), by: 'Luca', who: 'sitter' });
+  assert.equal((await HOY.runMedMiss({ now: it2.at + 70 * 60000, deps })).avisos, 0);
+  /* dada con "Ya se la di" (registro del doc) → tampoco */
+  const email2 = 'hoy-miss2@ejemplo.com';
+  await setup(email2, 'TOKhoyMiss00002', PET({ meds: pet.meds, log: [{ id: 'a', at: new Date(it.at + 5 * 60000).toISOString(), kind: 'med', medId: 'med1', by: 'Vos' }] }));
+  assert.equal((await HOY.runMedMiss({ now: it.at + 70 * 60000, deps: { ...deps, emails: [email2] } })).avisos, 0);
+});
