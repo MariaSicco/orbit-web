@@ -27,16 +27,19 @@ export function outlookConfig(req) {
 
 /* ---------- consulta (KQL de $search) ---------- */
 const ymd = ms => new Date(ms).toISOString().slice(0, 10);
-export function buildKql(doc, since) {
-  const extra = M.namesOf(doc).map(n => `"${n}"`);
-  const make = () => `hasAttachments:true AND (${[...M.BASE_TERMS, ...extra].join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
+/* señal veterinaria, nombres de mascotas, veterinarias y remitentes conocidos (con y sin acento); el resto lo decide el puntaje.
+   Sin exigir adjunto: los mails veterinarios sin archivo se listan aparte para abrirlos en Outlook. */
+export function buildKql(doc, since, senders) {
+  const P = M.queryParts(doc, senders);
+  const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`), froms = P.froms.map(f => `from:${f}`);
+  const make = () => `(${[...P.vet.map(t => /\s/.test(t) ? `"${t}"` : t), ...names, ...known, ...froms].join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
   let k = make();
-  while (k.length > 1400 && extra.length) { extra.pop(); k = make(); }
+  while (k.length > 1400 && (known.length || froms.length)) { if (known.length) known.pop(); else froms.pop(); k = make(); }
   return k;
 }
 /* $search="…": las comillas y barras de adentro van escapadas */
 export const searchParam = kql => '"' + kql.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
-const SELECT = 'id,subject,from,receivedDateTime,hasAttachments';
+const SELECT = 'id,subject,from,receivedDateTime,hasAttachments,webLink';
 const ATT_SELECT = 'id,name,contentType,size,isInline';
 
 /* ---------- Microsoft ---------- */
@@ -70,7 +73,7 @@ export const outlook = {
   config: outlookConfig,
   validId: okId,
   validPart: okId,
-  query: (doc, opts, now) => { const since = M.sinceOf(opts, now); return { kql: buildKql(doc, since), since }; },
+  query: (doc, opts, now) => { const since = M.sinceOf(opts, now); return { kql: buildKql(doc, since, opts.senders), since }; },
   authUrl: (cfg, state, challenge) => LOGIN + '/authorize?' + form({
     client_id: cfg.clientId, response_type: 'code', redirect_uri: cfg.redirect, response_mode: 'query',
     scope: SCOPES.join(' '), state, prompt: 'select_account', code_challenge: challenge, code_challenge_method: 'S256',
@@ -98,24 +101,27 @@ export const outlook = {
         try { const d = await graph(url, at); return { items: d.value || [], next: d['@odata.nextLink'] || '' }; }
         catch (e) { if (e.code !== 'mail_consulta') throw e; cur.f = 1; }   // si la búsqueda no está disponible en esa casilla, va el filtro
       }
-      /* modo filtro: adjuntos y fecha en el servidor; los términos se miran acá en asunto, remitente y nombres de archivo */
+      /* modo filtro: adjuntos y fecha en el servidor; la relevancia (asunto, remitente y nombres de archivo) la decide el puntaje */
       const since = new Date(cur.q.since || Date.parse('2000-01-01')).toISOString();
       url = `/me/messages?$filter=${encodeURIComponent(`receivedDateTime ge ${since} and hasAttachments eq true`)}&$orderby=${encodeURIComponent('receivedDateTime desc')}&$select=${SELECT}&$top=${M.PAGE}`;
     }
     const d = await graph(url, at);
     return { items: d.value || [], next: d['@odata.nextLink'] || '' };
   },
-  async candidate(at, msg, doc, cur) {
-    if (!msg?.hasAttachments || !okId(msg.id)) return null;
+  async candidate(at, msg) {
+    if (!okId(msg?.id)) return null;
+    const base = { m: msg.id, date: msg.receivedDateTime || '', from: fromOf(msg.from), subject: String(msg.subject || '').slice(0, 160), link: /^https:\/\/outlook\.(live|office|office365)\.com\//.test(msg.webLink || '') ? msg.webLink : '' };
+    if (!msg.hasAttachments) return { ...base, files: [] };
     const d = await graph(`/me/messages/${encodeURIComponent(msg.id)}/attachments?$select=${ATT_SELECT}`, at);
     const files = (d.value || []).filter(isFile).map(metaOf).filter(f => okId(f.part) && M.fileOk(f));
-    if (!files.length) return null;
-    if (cur?.f && !M.matchesTerms([msg.subject, fromOf(msg.from), ...files.map(f => f.name)].join(' '), doc)) return null;
-    return { m: msg.id, date: msg.receivedDateTime || '', from: fromOf(msg.from), subject: String(msg.subject || '').slice(0, 160), files };
+    /* tenía adjuntos pero ninguno es PDF o foto: no hay nada para traer ni un "sin adjunto" que mostrar */
+    return files.length ? { ...base, files } : null;
   },
   async find(at, m, part) {
     const a = await graph(`/me/messages/${encodeURIComponent(m)}/attachments/${encodeURIComponent(part)}?$select=${ATT_SELECT}`, at);
-    return isFile(a) ? metaOf(a) : null;
+    if (!isFile(a)) return null;
+    const msg = await graph(`/me/messages/${encodeURIComponent(m)}?$select=from`, at).catch(() => ({}));
+    return { ...metaOf(a), from: fromOf(msg.from) };
   },
   /* el contenido se baja recién al importar, crudo con /$value */
   download: (at, m, part) => graph(`/me/messages/${encodeURIComponent(m)}/attachments/${encodeURIComponent(part)}/$value`, at, { raw: true }),

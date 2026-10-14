@@ -1144,3 +1144,16 @@ dialog{background:var(--bg)}
 .gm-accs{display:flex;flex-direction:column;gap:12px}
 .row.link-row:disabled{opacity:.55;cursor:default}
 .fbody a{color:var(--act);font-weight:600}
+/* Conectar tu mail: remitentes, sugerencias y mails sin adjunto */
+.gm-src{background:#fff;border-radius:20px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.gm-src-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center}
+.gm-src-chips .chip{display:inline-flex;align-items:center;gap:4px;padding:0 6px 0 14px;cursor:default;background:var(--act-soft)}
+.chip-x{border:0;background:none;width:36px;height:36px;border-radius:50%;display:grid;place-items:center;cursor:pointer;color:var(--ink2)}
+.chip-x:hover{background:rgba(31,26,23,.06)}.chip-x svg.i{width:16px;height:16px}
+.gm-src .hint{color:var(--ink2);font-size:13px;line-height:1.4}
+.gm-src .btn{align-self:flex-start}
+.gm-tips{background:var(--soon-bg);border-radius:20px;padding:14px 16px;font-size:14.5px;line-height:1.5}
+.gm-tips ul{margin:6px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+.gm-tips .link{min-height:32px;padding:0;font-size:inherit;display:inline}
+.gm-nofile{display:flex;flex-direction:column;gap:8px}
+.gm-nofile h2{font-size:18px;line-height:1.25}

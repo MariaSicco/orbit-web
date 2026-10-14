@@ -36,18 +36,25 @@ export function gmailConfig(req) {
 }
 
 /* ---------- consulta de Gmail ---------- */
-export function buildQuery(doc, { range = '12m', after = 0 } = {}) {
-  const extra = M.namesOf(doc).map(n => `"${n}"`);
+/* (señal veterinaria | nombre de mascota | veterinaria o remitente conocido) y además
+   (adjunto | asunto veterinario | remitente conocido): así también aparecen los mails sin adjunto
+   (laboratorios que mandan un link) para listarlos aparte. El resto lo decide el puntaje. */
+const qt = t => /\s/.test(t) ? `"${t}"` : t;
+const SUBJECT_VET = ['veterinaria', 'veterinario', 'vet', 'mascota', 'canino', 'canina', 'felino', 'felina', 'antirrábica', 'antirrabica', 'vacuna', 'desparasitación', 'desparasitacion'];
+export function buildQuery(doc, { range = '12m', after = 0, senders } = {}) {
+  const P = M.queryParts(doc, senders);
+  const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`), froms = P.froms.map(f => `from:${f}`);
   const when = after ? `after:${Math.floor(after / 1000)}` : (RANGES[range] ?? RANGES['12m']);
-  let q = `has:attachment (${[...M.BASE_TERMS, ...extra].join(' OR ')})${when ? ' ' + when : ''}`;
-  /* Gmail corta consultas muy largas: si se pasa, saca nombres del final */
-  while (q.length > 1500 && extra.length) { extra.pop(); q = `has:attachment (${[...M.BASE_TERMS, ...extra].join(' OR ')})${when ? ' ' + when : ''}`; }
+  const make = () => `(${[...P.vet.map(qt), ...names, ...known, ...froms].join(' OR ')}) (has:attachment OR subject:(${[...SUBJECT_VET, ...names].join(' OR ')})${froms.length ? ' OR ' + froms.join(' OR ') : ''})${when ? ' ' + when : ''}`;
+  let q = make();
+  /* Gmail corta consultas muy largas: si se pasa, saca nombres de veterinarias, después razas y remitentes */
+  while (q.length > 1500 && (known.length || names.length > (doc?.pets?.length || 0) || froms.length)) { if (known.length) known.pop(); else if (names.length > (doc?.pets?.length || 0)) names.pop(); else froms.pop(); q = make(); }
   return q;
 }
 
 /* ---------- adjuntos de un mail (solo la estructura: nunca el cuerpo) ---------- */
 const PF = 'partId,mimeType,filename,body(attachmentId,size)';
-export const MSG_FIELDS = `id,internalDate,payload(headers,${PF},parts(${PF},parts(${PF},parts(${PF},parts(${PF})))))`;
+export const MSG_FIELDS = `id,threadId,internalDate,payload(headers,${PF},parts(${PF},parts(${PF},parts(${PF},parts(${PF})))))`;
 export function partsOf(payload) {
   const out = [];
   const walk = (p, depth) => {
@@ -66,6 +73,13 @@ export function candidateOf(msg, imported = new Set()) {
   if (!files.length) return null;
   const ms = Number(msg.internalDate) || Date.parse(header(msg.payload?.headers, 'date')) || 0;
   return { m: msg.id, date: ms ? new Date(ms).toISOString() : '', from: header(msg.payload?.headers, 'from').slice(0, 120), subject: header(msg.payload?.headers, 'subject').slice(0, 160), files };
+}
+
+/* el mail como lo usa el motor (también sin adjuntos, con el link para abrirlo en Gmail) */
+export function messageOf(msg) {
+  const ms = Number(msg.internalDate) || Date.parse(header(msg.payload?.headers, 'date')) || 0;
+  return { m: msg.id, date: ms ? new Date(ms).toISOString() : '', from: header(msg.payload?.headers, 'from').slice(0, 120), subject: header(msg.payload?.headers, 'subject').slice(0, 160), files: partsOf(msg.payload),
+    link: /^[A-Za-z0-9]{6,40}$/.test(msg.threadId || '') ? `https://mail.google.com/mail/u/0/#all/${msg.threadId}` : '' };
 }
 
 /* ---------- Google ---------- */
@@ -116,14 +130,14 @@ export const gmail = {
     const list = await gget(`/messages?maxResults=${M.PAGE}&q=${encodeURIComponent(cur.q)}${cur.page ? '&pageToken=' + encodeURIComponent(cur.page) : ''}`, at);
     return { items: (list.messages || []).map(x => x.id).filter(x => /^[A-Za-z0-9]{6,40}$/.test(x)), next: list.nextPageToken || '' };
   },
-  async candidate(at, id) { return candidateOf(await getMsg(id, at)); },
+  async candidate(at, id) { return messageOf(await getMsg(id, at)); },
   /* el attachmentId de Gmail cambia entre lecturas: se busca por partId, que es estable dentro del mail */
   async find(at, m, part) {
     const msg = await getMsg(m, at);
     const find = p => { if (!p) return null; if (String(p.partId) === part) return p; for (const c of p.parts || []) { const x = find(c); if (x) return x; } return null; };
     const p = find(msg.payload);
     const meta = p && p.body?.attachmentId && partsOf({ ...p, parts: [] })[0];
-    return meta ? { ...meta, attachmentId: p.body.attachmentId } : null;
+    return meta ? { ...meta, attachmentId: p.body.attachmentId, from: header(msg.payload?.headers, 'from') } : null;
   },
   async download(at, m, part, meta) {
     const raw = await gget(`/messages/${encodeURIComponent(m)}/attachments/${encodeURIComponent(meta.attachmentId)}`, at);

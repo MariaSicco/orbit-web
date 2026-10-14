@@ -21,7 +21,7 @@ let mode = 'loading', doc = { pets: [] }, rev = 0, me = { email: '', name: '' };
 let purchase = null, notify = null, scans = [], curId = '';
 /* Conectar tu mail: estado de cada proveedor (undefined mientras carga, null si la cuenta no está habilitada) y la búsqueda en curso */
 const mstat = { gmail: undefined, outlook: undefined };
-let gm = null;
+let gm = null, msenders = [];
 let route = { name: 'inicio' }, lastKey = '';
 const ui = { hist: { type: 'todo', year: '', q: '' }, lib: { year: '', q: '', page: 0 }, agenda: { ym: iso(Z.today()).slice(0, 7), sel: iso(Z.today()) }, gastos: { ym: iso(Z.today()).slice(0, 7), pet: 'all' } };
 const store = { get(k) { try { return localStorage.getItem('mimitos:' + k); } catch { return null; } }, set(k, v) { try { localStorage.setItem('mimitos:' + k, v); } catch {} } };
@@ -1402,7 +1402,7 @@ function renderCuenta() {
           <button class="row link-row" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span class="what"><b>Centro de avisos</b><small>${nOn ? 'Activados' + (notify.devices ? ` en ${notify.devices} ${notify.devices === 1 ? 'dispositivo' : 'dispositivos'}` : '') + (notify.mail ? (notify.devices ? ' y por mail' : ' por mail') : '') : 'Apagados: activalos para no perderte fechas'}</small></span>${I('chevron')}</button>
           <button class="row link-row" data-act="export">${bubble('download', 'viaje')}<span class="what"><b>Exportar copia de tus datos</b><small>Un archivo con todo lo que cargaste (JSON)</small></span>${I('chevron')}</button>
           <a class="row link-row" href="/privacidad" target="_blank" rel="noopener">${bubble('shield', 'salud')}<span class="what"><b>Privacidad</b><small>Tus datos viven en tu cuenta. El QR solo muestra lo necesario para que te la devuelvan.</small></span>${I('chevron')}</a>
-          <a class="row link-row" href="/terminos" target="_blank" rel="noopener">${bubble('doc', 'med')}<span class="what"><b>Términos y condiciones</b><small>Licencia, arrepentimiento y soporte</small></span>${I('chevron')}</a>
+          <a class="row link-row" href="/terminos" target="_blank" rel="noopener">${bubble('doc', 'med')}<span class="what"><b>Términos y condiciones</b><small>Licencia y soporte</small></span>${I('chevron')}</a>
         </div>
       </section>
       ${gmailAccount()}
@@ -1812,7 +1812,7 @@ const mAny = () => MAILS.some(p => mstat[p]?.connected);
 const gmailBtn = () => mOn() ? `<button class="btn sm ghost" data-act="mailPick">${I('mail')} ${mAny() ? 'Buscar en tu mail' : 'Conectar tu mail'}</button>` : '';
 async function loadMail() {
   await Promise.all(MAILS.map(async p => {
-    try { const r = await fetch(`/api/mascotas?${p}=status`); const d = await r.json().catch(() => null); mstat[p] = r.ok && d?.allowed ? d : null; }
+    try { const r = await fetch(`/api/mascotas?${p}=status`); const d = await r.json().catch(() => null); mstat[p] = r.ok && d?.allowed ? d : null; if (mstat[p]?.senders) msenders = mstat[p].senders; }
     catch { mstat[p] = null; }
   }));
   mailRoute(); render();
@@ -1846,18 +1846,19 @@ async function mailConnect(p) {
 }
 const gmFiles = () => (gm?.cands || []).flatMap(c => c.files.map(f => c.m + '|' + f.part));
 const gmFile = k => { const [m, part] = k.split('|'); const c = gm.cands.find(x => x.m === m); const f = c?.files.find(x => x.part === part); return f ? { m, part, name: f.name, type: f.type } : null; };
-async function mailSearch(p, mode, more) {
+async function mailSearch(p, mode, more, range) {
   if (gm?.phase === 'searching' && gm.p === p) return;
   const prev = more && gm?.p === p ? gm : null;
-  gm = { p, phase: 'searching', mode, cands: prev ? prev.cands : [], sel: prev ? prev.sel : new Set(), scanned: prev ? prev.scanned : 0, more: null, range: gm?.range };
+  gm = { p, phase: 'searching', mode, cands: prev ? prev.cands : [], noFile: prev ? prev.noFile : [], sel: prev ? prev.sel : new Set(), scanned: prev ? prev.scanned : 0, more: null, range: range || gm?.range };
+  if (range) mstat[p].range = range;
   render();
   let cursor = more || null; const base = gm.scanned;
   try {
     do {
-      const r = await fetch(`/api/mascotas?${p}=search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode, cursor }) });
+      const r = await fetch(`/api/mascotas?${p}=search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode, cursor, ...(range && !cursor ? { range } : {}) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw Object.assign(new Error(d.error || 'error'), { code: d.error });
-      gm.cands.push(...d.candidates); gm.scanned = base + d.scanned; gm.more = d.more || null;
+      gm.cands.push(...d.candidates); gm.noFile.push(...(d.noFile || [])); gm.cands.sort((a, b) => (b.score || 0) - (a.score || 0)); gm.scanned = base + d.scanned; gm.more = d.more || null;
       cursor = d.cursor;
       if (route.name === p) render();
     } while (cursor);
@@ -1887,9 +1888,17 @@ function renderMail(p) {
   const qBox = queue.length ? `<div class="gm-queue"><span class="what"><b>${queue.length} en cola</b><small>Los elegiste y no entraron en el tope de lecturas con IA. Seguí cuando se renueve.</small></span><button class="btn sm ghost" data-act="mailQueue">Seguir con la cola</button></div>` : '';
   const moreBox = gm.more ? `<div class="gm-more"><p class="note">Revisamos los ${gm.scanned} mails más recientes. Puede haber más viejos.</p><button class="btn sm ghost" data-act="mailMore">Buscar 200 más</button></div>` : '';
   const who = s.address ? `${L} · ${esc(s.address)}` : L;
+  const noFile = gm.noFile?.length ? `<section class="gm-nofile"><h2>Sin archivo adjunto: abrilo en ${L}</h2><p class="note">Parecen de tu veterinaria o laboratorio, pero no traen el PDF (muchos mandan un link). Abrilo, bajá el estudio y sumalo con “Subir estudios”.</p>
+    <div class="list">${gm.noFile.map(x => `<a class="row link-row" href="${esc(x.link)}" target="_blank" rel="noopener">${bubble('mail', 'plata')}<span class="what"><b>${esc(x.subject || '(Sin asunto)')}</b><small>${esc(x.from)}${x.date ? ' · ' + fmt(x.date.slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</small></span>${I('chevron')}</a>`).join('')}</div></section>` : '';
+  /* pocos o ningún resultado: qué probar */
+  const tips = files.length < 3 ? `<div class="gm-tips"><b>${files.length ? '¿Falta alguno?' : '¿Qué probar?'}</b><ul>
+      ${s.range !== 'all' ? `<li>Buscar en más tiempo: ${s.range === '12m' ? `<button class="link" data-act="mailRangeGo" data-v="3y">últimos 3 años</button> o ` : ''}<button class="link" data-act="mailRangeGo" data-v="all">todo</button>.</li>` : ''}
+      <li>Agregá tu veterinaria o laboratorio acá abajo: los mails de ese remitente entran aunque no digan “veterinaria”.</li>
+      <li>Muchos laboratorios mandan un <b>link</b> y no el PDF adjunto. En ese caso, bajá el PDF y usá <button class="link" data-act="bulkStudies">Subir estudios</button>, o reenviátelo con el PDF adjunto.</li></ul></div>` : '';
+  const srcBox = sendersBox(p, true);
   if (!files.length) return `<section class="sec gmail">${back}<div><span class="eyebrow">${who}</span><h1 class="h-xl">${gm.mode === 'new' ? 'No hay documentos nuevos' : 'No encontramos documentos'}</h1>
-    <p class="lead-s" style="margin-top:6px">${gm.mode === 'new' ? 'Desde la última búsqueda no llegaron mails con estudios, recetas o informes.' : `Buscamos mails con adjuntos que hablen de veterinaria, análisis, ecografías o radiografías, o que nombren a ${doc.pets.length === 1 ? esc(doc.pets[0].name) : 'tus mascotas'} o a sus veterinarias.`} Lo que ya trajiste no aparece de nuevo.</p></div>
-    ${qBox}${moreBox}<button class="btn big wide" data-act="go" data-to="libreta">Volver a la libreta</button></section>`;
+    <p class="lead-s" style="margin-top:6px">${gm.mode === 'new' ? 'Desde la última búsqueda no llegaron mails veterinarios con estudios.' : `Buscamos mails de veterinarias y laboratorios, o que nombren a ${doc.pets.length === 1 ? esc(doc.pets[0].name) : 'tus mascotas'}. Lo genérico (cursos, certificados, facturas) lo dejamos afuera.`} Lo que ya trajiste no aparece de nuevo.</p></div>
+    ${qBox}${tips}${srcBox}${noFile}${moreBox}<button class="btn big wide" data-act="go" data-to="libreta">Volver a la libreta</button></section>`;
   const date = c => c.date ? fmt(c.date.slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
   return `<section class="sec gmail">${back}
     <div><span class="eyebrow">${who}</span><h1 class="h-xl">Encontramos ${files.length} ${files.length === 1 ? 'documento que podría ser' : 'documentos que podrían ser'} de tus mascotas</h1>
@@ -1899,10 +1908,25 @@ function renderMail(p) {
     <div class="gm-list">${gm.cands.map(c => `<article class="gm-mail"><div class="gm-h"><b>${esc(c.subject || '(Sin asunto)')}</b><small>${esc(c.from)}${c.date ? ' · ' + date(c) : ''}</small></div>
       ${c.files.map(f => { const k = c.m + '|' + f.part; return `<label class="gm-file"><input type="checkbox" data-gsel="${esc(k)}" ${gm.sel.has(k) ? 'checked' : ''}>${bubble(f.type === 'application/pdf' ? 'doc' : 'camera', 'viaje')}<span class="what"><b>${esc(f.name)}</b><small>${f.type === 'application/pdf' ? 'PDF' : 'Foto'} · ${kb(f.size)}${/heic|heif/.test(f.type) ? ' · se adjunta sin leer' : ''}</small></span></label>`; }).join('')}
     </article>`).join('')}</div>
-    ${moreBox}
+    ${moreBox}${noFile}${tips}${srcBox}
     <p class="note">Cada archivo que importás se lee con IA (Claude, de Anthropic) y cuenta para tu tope (10 por día, 60 por mes). Lo revisás antes de guardar.</p>
     <div class="gm-go"><button class="btn big wide" data-act="mailImport"${n ? '' : ' disabled'}>Importar seleccionados${n ? ` (${n})` : ''}</button></div>
   </section>`;
+}
+/* "¿De dónde te llegan los estudios?": nombre o mail de la veterinaria o el laboratorio (compartido entre Gmail y Outlook) */
+function sendersBox(p, after) {
+  return `<div class="f gm-src"><label for="srcIn">¿De dónde te llegan los estudios? <span class="opt">(opcional)</span></label>
+    <div class="gm-src-row"><input id="srcIn" maxlength="80" autocomplete="off" placeholder="Veterinaria, laboratorio o mail"><button type="button" class="btn sm ghost" data-act="srcAdd" data-p="${p}">Agregar</button></div>
+    ${msenders.length ? `<div class="chips gm-src-chips">${msenders.map(x => `<span class="chip on">${esc(x)}<button type="button" class="chip-x" data-act="srcRm" data-v="${esc(x)}" aria-label="Quitar ${esc(x)}">${I('x')}</button></span>`).join('')}</div>` : ''}
+    <small class="hint">Por ejemplo “Panda” o lab@…. Lo sumamos a la búsqueda: sus mails entran aunque no digan “veterinaria”.</small>
+    ${after && gm?.srcDirty ? `<button type="button" class="btn sm" data-act="mailRangeGo" data-v="${esc(mstat[p].range || '12m')}">Buscar de nuevo con esto</button>` : ''}</div>`;
+}
+async function sendersPost(body) {
+  try {
+    const r = await fetch(`/api/mascotas?${MAILS.find(x => mstat[x]) || 'gmail'}=senders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    const d = await r.json(); if (!r.ok) throw new Error();
+    msenders = d.senders || []; if (gm) gm.srcDirty = true; render();
+  } catch { toast('No se pudo guardar. Probá de nuevo.'); }
 }
 function mailIntro(p, back) {
   const s = mstat[p], P = PROV[p], L = P.label;
@@ -1922,11 +1946,13 @@ function mailIntro(p, back) {
     </ul>
     <div class="f"><span class="lb" id="gmRangeL">Dónde buscar la primera vez</span>
       <div class="tiles" role="group" aria-labelledby="gmRangeL">${[['12m', 'Últimos 12 meses'], ['3y', 'Últimos 3 años'], ['all', 'Todo']].map(([v, l]) => `<button type="button" class="tile" data-act="mailRange" data-p="${p}" data-v="${v}" aria-pressed="${v === range}"><span>${l}</span></button>`).join('')}</div></div>
+    ${sendersBox(p, false)}
     ${s.ready ? `<button class="btn big wide" data-act="mailConnect" data-p="${p}">${I('mail')} ${s.expired ? `Volver a conectar ${L}` : `Conectar ${L}`}</button>` : `<p class="bk-msg">${mBack(p, 'sinconfig')}</p>`}
     <p class="note">${P.company} te va a pedir permiso para que Mimitos lea tus mails. ${P.testing}</p>
     ${p === 'gmail' ? `<p class="note">El uso que hace Mimitos de la información recibida de las API de Google cumple la <a href="${LIMITED_USE}" target="_blank" rel="noopener">Política de Datos del Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado. Más detalle en <a href="/privacidad" target="_blank" rel="noopener">Privacidad</a>.</p>` : `<p class="note">Más detalle en <a href="/privacidad" target="_blank" rel="noopener">Privacidad</a>.</p>`}
   </section>`;
 }
+app.addEventListener('keydown', e => { if (e.target.id === 'srcIn' && e.key === 'Enter') { e.preventDefault(); app.querySelector('[data-act="srcAdd"]')?.click(); } });
 app.addEventListener('change', e => { const k = e.target.closest('[data-gsel]'); if (k && gm?.sel) { if (k.checked) gm.sel.add(k.dataset.gsel); else gm.sel.delete(k.dataset.gsel); render(); } });
 /* importa los elegidos uno por uno y termina en la misma revisión que "Subir estudios" */
 async function mailImport(p, list) {
@@ -2271,6 +2297,9 @@ document.addEventListener('click', e => {
     case 'mailQueue': return mailImport(gm.p, mstat[gm.p].queue.map(x => ({ m: x.m, part: x.part, name: x.name, type: x.type })));
     case 'mailMore': return mailSearch(gm.p, gm.mode, gm.more);
     case 'mailOff': return mailOffPanel(b.dataset.p);
+    case 'mailRangeGo': return mailSearch(route.name, 'all', null, b.dataset.v);
+    case 'srcAdd': { const v = ($('#srcIn')?.value || '').trim(); if (v.length < 3) { $('#srcIn')?.focus(); return toast('Escribí el nombre o el mail (3 letras o más).'); } return sendersPost({ add: v }); }
+    case 'srcRm': return sendersPost({ remove: b.dataset.v });
     case 'pick': selectPet(b.dataset.id); if (TAB_OF[route.name] === 'inicio') return go('inicio'); return render();
     case 'go': return go(b.dataset.to);
     case 'goPet': selectPet(b.dataset.pet); return go(b.dataset.to);

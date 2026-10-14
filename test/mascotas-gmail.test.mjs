@@ -57,7 +57,7 @@ function fakeGoogle() {
       let m = /^\/messages\/([^/]+)$/.exec(p);
       if (m) {
         assert.equal(u.searchParams.get('format'), 'full');
-        assert.ok(u.searchParams.get('fields').startsWith('id,internalDate,payload('), 'pide solo la estructura, no el cuerpo');
+        assert.ok(u.searchParams.get('fields').startsWith('id,threadId,internalDate,payload('), 'pide solo la estructura, no el cuerpo');
         /* como Gmail: el attachmentId cambia en cada lectura */
         g.attachVersion++;
         const msg = JSON.parse(JSON.stringify(g.mails[m[1]]));
@@ -82,10 +82,12 @@ const doc = { pets: [
 ] };
 
 /* ---------- unidades ---------- */
-test('query: base veterinaria + nombres de mascotas y veterinarias del doc + rango', () => {
+test('query: señales veterinarias (con y sin acento) + nombres de mascotas y veterinarias del doc + rango; nada genérico', () => {
   const q = G.buildQuery(doc, { range: '3y' });
-  assert.ok(q.startsWith('has:attachment ('));
-  for (const t of ['veterinari*', 'hemograma', 'ecografía', 'ecografia', 'radiografia', 'receta', 'informe', '"Feliza"', '"Toto"', '"Veterinaria San Roque"', '"Dra. Paz"', '"Diagnovet"']) assert.ok(q.includes(t), t);
+  assert.ok(q.startsWith('(veterinaria OR veterinario'));
+  for (const t of ['vet', 'mascota', 'antirrábica', 'antirrabica', 'desparasitación', 'desparasitacion', '"Feliza"', '"Toto"', '"veterinaria san roque"', '"dra. paz"', '"diagnovet"', 'has:attachment OR subject:(']) assert.ok(q.includes(t), t);
+  /* los genéricos no van a la consulta: solo ordenan */
+  for (const t of [' informe ', ' estudio ', ' resultado ', ' receta ', ' laboratorio ']) assert.ok(!q.includes(t), t);
   assert.ok(q.endsWith(' newer_than:3y'));
   assert.ok(G.buildQuery(doc, { range: '12m' }).endsWith(' newer_than:1y'));
   assert.ok(!/newer_than|after:/.test(G.buildQuery(doc, { range: 'all' })));

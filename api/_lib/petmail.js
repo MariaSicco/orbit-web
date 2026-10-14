@@ -29,7 +29,21 @@ const MAX_IMPORTED = 3000, MAX_QUEUE = 100;
 const STATE_TTL = 600;
 
 export const RANGES = { '12m': 365, '3y': 3 * 365, all: 0 };   // días hacia atrás (0 = todo)
-export const BASE_TERMS = ['veterinari*', 'laboratorio', 'análisis', 'analisis', 'hemograma', 'ecografía', 'ecografia', 'radiografía', 'radiografia', 'estudio', 'resultado', 'receta', 'informe'];
+/* Relevancia. Un mail solo entra si tiene (a) una señal veterinaria, (b) un remitente conocido o
+   (c) un remitente que la persona agregó a mano. Los términos genéricos (análisis, informe, resultado,
+   receta…) suman puntos para ordenar, pero nunca alcanzan solos: así un "certificado de laboratorio
+   de IA" no se cuela. No suponemos que el proveedor ignore acentos: van las dos variantes. */
+export const VET_TERMS = ['veterinaria', 'veterinario', 'veterinarias', 'veterinarios', 'veterinary', 'vet', 'clínica veterinaria', 'clinica veterinaria', 'mascota', 'mascotas',
+  'canino', 'canina', 'felino', 'felina', 'perro', 'perra', 'gato', 'gata', 'cachorro', 'cachorra', 'antirrábica', 'antirrabica', 'vacuna', 'vacunas',
+  'vacunación', 'vacunacion', 'desparasitación', 'desparasitacion', 'desparasitante', 'antiparasitario', 'zoonosis'];
+export const BREEDS = ['caniche', 'labrador', 'golden', 'bulldog', 'beagle', 'boxer', 'ovejero', 'pastor alemán', 'pastor aleman', 'dogo', 'yorkshire', 'schnauzer',
+  'chihuahua', 'salchicha', 'border collie', 'pitbull', 'rottweiler', 'mestizo', 'mestiza', 'siamés', 'siames', 'persa', 'maine coon', 'bengalí', 'bengali'];
+export const GENERIC = ['laboratorio', 'análisis', 'analisis', 'hemograma', 'ecografía', 'ecografia', 'radiografía', 'radiografia', 'estudio', 'estudios',
+  'resultado', 'resultados', 'receta', 'informe', 'orina', 'bioquímica', 'bioquimica', 'placa', 'perfil'];
+export const BASE_TERMS = VET_TERMS;   // lo que va a la consulta del proveedor (sin genéricos)
+const NEGATIVE = ['certificado', 'curso', 'diploma', 'webinar', 'factura', 'newsletter', 'suscripción', 'suscripcion', 'inscripción', 'inscripcion', 'descuento', 'promo', 'oferta', 'cupón', 'cupon'];
+/* casillas públicas: su dominio no identifica a nadie, así que ahí solo vale la dirección exacta */
+const PUBLIC_MAIL = /^(gmail|googlemail|hotmail|outlook|live|msn|yahoo|icloud|me|aol|proton|protonmail)\./;
 
 const sKey = nonce => `orbit:petmstate:${nonce}`;
 
@@ -118,6 +132,72 @@ export function namesOf(doc) {
   }
   return out.slice(0, 20);
 }
+/* ---------- remitentes conocidos: los que la persona escribió a mano y los de lo que ya importó (compartido entre proveedores) ---------- */
+const sendersKey = email => `orbit:petmailsenders:${String(email).toLowerCase()}`;
+export const cleanSender = v => {
+  const t = String(v || '').trim().toLowerCase().replace(/^mailto:/, '');
+  if (/^[^\s@<>"]+@[a-z0-9.-]+\.[a-z]{2,}$/.test(t)) return t;                    // mail exacto
+  if (/^@?[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(t)) return t.replace(/^@/, '');         // dominio
+  return term(v);                                                                   // nombre ("Panda")
+};
+export async function getSenders(email) {
+  const s = (await kvGet(sendersKey(email))) || {};
+  return { manual: Array.isArray(s.manual) ? s.manual.slice(0, 20) : [], learned: Array.isArray(s.learned) ? s.learned.slice(-50) : [] };
+}
+export async function saveSenders(email, s) { await kvSet(sendersKey(email), { manual: s.manual.slice(0, 20), learned: s.learned.slice(-50) }); }
+const addrOf = from => { const m = /<([^>]+)>/.exec(String(from || '')); return (m ? m[1] : String(from || '')).trim().toLowerCase(); };
+export async function learnSender(email, from) {
+  const a = addrOf(from); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a)) return;
+  const s = await getSenders(email); if (s.learned.includes(a)) return;
+  s.learned.push(a); await saveSenders(email, s);
+}
+/* todo lo que identifica a "su" veterinaria: nombres cargados en el doc, remitentes aprendidos y los escritos a mano */
+export function relContext(doc, senders = { manual: [], learned: [] }) {
+  const known = [];
+  const add = (v, manual) => {
+    const c = cleanSender(v); if (!c || c.length < 3 || /^sin nombre$/i.test(c)) return;
+    const t = c.includes('@') ? 'email' : /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(c) ? 'domain' : 'name';
+    if (!known.some(k => k.t === t && k.v === (t === 'name' ? fold(c) : c))) known.push({ t, v: t === 'name' ? fold(c) : c, manual: Boolean(manual) });
+  };
+  for (const p of doc?.pets || []) {
+    for (const v of [p.vet?.name, p.vet?.er, ...(p.records || []).map(r => r.vet), ...(p.visits || []).map(v => v.vet), ...(p.studies || []).map(x => x.lab)]) add(v, false);
+  }
+  for (const v of senders.learned || []) add(v, false);
+  for (const v of senders.manual || []) add(v, true);
+  const pets = [...new Set((doc?.pets || []).map(p => fold(term(p.name))).filter(n => n.length >= 3 && n !== 'sin nombre'))];
+  const breeds = [...new Set([...BREEDS, ...(doc?.pets || []).map(p => p.breed)].map(b => fold(term(b))).filter(b => b.length >= 4))];
+  return { pets, breeds, known, vet: [...new Set(VET_TERMS.map(fold))] };
+}
+/* ¿cuánto se parece a un mail veterinario? Solo asunto, remitente y nombres de archivo; nunca el cuerpo */
+const has = (hay, w) => w && new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`).test(hay);
+export function relevance(c, rel) {
+  const subj = fold(c.subject), from = fold(c.from), files = fold((c.files || []).map(f => f.name.replace(/[-_.]+/g, ' ')).join(' '));
+  const text = `${subj} ${from} ${files}`;
+  const addr = addrOf(c.from), domain = addr.split('@')[1] || '';
+  const vetHits = rel.vet.filter(w => has(text, w)).length + rel.breeds.filter(w => has(text, w)).length;
+  const pet = rel.pets.some(n => has(text, n));
+  const knownHit = rel.known.find(k => k.t === 'email' ? addr === k.v
+    : k.t === 'domain' ? !PUBLIC_MAIL.test(domain) && (domain === k.v || domain.endsWith('.' + k.v))
+    : k.v.length >= 4 && has(from, k.v));
+  const knownInText = !knownHit && rel.known.some(k => k.t === 'name' && k.v.length >= 4 && has(`${subj} ${files}`, k.v));
+  const generic = GENERIC.filter(w => has(text, fold(w))).length;
+  const negative = NEGATIVE.filter(w => has(text, fold(w))).length;
+  let score = (vetHits ? 3 + Math.min(vetHits - 1, 2) : 0) + (pet ? 4 : 0) + (knownHit ? 5 : 0) + (knownInText ? 2 : 0) + Math.min(generic, 2) - 2 * negative;
+  const why = [vetHits && 'veterinario', pet && 'mascota', knownHit && (knownHit.manual ? 'agregado' : 'conocido')].filter(Boolean);
+  return { score, why, pass: Boolean(vetHits || pet || knownHit || knownInText) && score >= 3 };
+}
+/* para la consulta del proveedor: términos veterinarios, nombres y remitentes conocidos */
+export function queryParts(doc, senders) {
+  const rel = relContext(doc, senders);
+  const names = [...new Set([...(doc?.pets || []).map(p => term(p.name)), ...(doc?.pets || []).map(p => term(p.breed))].filter(n => n.length >= 3 && !/^sin nombre$/i.test(n)))];
+  /* nombres de veterinarias tal como están escritos y sin acento (no suponemos que el proveedor los ignore) */
+  const raw = [];
+  for (const p of doc?.pets || []) raw.push(p.vet?.name, p.vet?.er, ...(p.records || []).map(r => r.vet), ...(p.visits || []).map(v => v.vet), ...(p.studies || []).map(x => x.lab));
+  raw.push(...(senders?.manual || []));
+  const knownNames = [...new Set(raw.map(cleanSender).filter(c => c && c.length >= 3 && !c.includes('@') && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(c) && !/^sin nombre$/i.test(c)).flatMap(c => [c, fold(c)]).map(c => c.toLowerCase()))];
+  return { vet: VET_TERMS, names, froms: rel.known.filter(k => k.t !== 'name').map(k => k.v), knownNames };
+}
+
 /* desde cuándo buscar: "buscar de nuevo" usa la última búsqueda (con un día de margen; lo repetido lo filtra el dedupe) */
 export function sinceOf({ range = '12m', after = 0 } = {}, now = Date.now()) {
   if (after) return after;
@@ -127,9 +207,7 @@ export function sinceOf({ range = '12m', after = 0 } = {}, now = Date.now()) {
 /* para el modo sin búsqueda de texto: ¿el asunto, el remitente o un adjunto suenan veterinarios? */
 const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
 export function matchesTerms(text, doc) {
-  const t = fold(text);
-  const words = [...BASE_TERMS.map(w => fold(w.replace('*', ''))), ...namesOf(doc).map(fold)];
-  return words.some(w => w && t.includes(w));
+  return relevance({ subject: text, from: '', files: [] }, relContext(doc)).pass;
 }
 
 /* ---------- adjuntos ---------- */
@@ -205,38 +283,46 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
   let cur = body?.cursor ? readCursor(body.cursor, email) : null;
   if (body?.cursor && (!cur || cur.p !== P.id)) throw fail('cursor_invalido', 400);
   if (!cur) {
+    /* "probá con 3 años o Todo": la persona puede ampliar el rango desde el resultado */
+    if (body?.range && RANGES[body.range] !== undefined && body.range !== st.range) { st.range = body.range; st.lastSearch = ''; await saveState(P, email, st); }
     const mode = body?.mode === 'new' && st.lastSearch ? 'new' : 'all';
     const after = mode === 'new' ? Date.parse(st.lastSearch) - 864e5 : 0;
-    cur = { p: P.id, q: P.query(doc, { range: st.range, after }, t0), page: '', skip: 0, scanned: 0, started: new Date(t0).toISOString(), mode };
+    cur = { p: P.id, q: P.query(doc, { range: st.range, after, senders: await getSenders(email) }, t0), page: '', skip: 0, scanned: 0, started: new Date(t0).toISOString(), mode };
   }
   const at = await accessToken(P, email, st, cfg);
   /* lo ya importado y lo que está en cola no se vuelve a ofrecer */
   const imported = new Set([...st.imported, ...st.queue.map(x => dedupeKey(x.m, x.part))]);
-  const candidates = [];
+  const candidates = [], noFile = [];
+  const rel = relContext(doc, await getSenders(email));
+  const out = extra => ({ candidates: candidates.sort((a, b) => b.score - a.score), noFile, ...extra });
   for (;;) {
     const list = await P.list(at, cur);
     const items = list.items || [];
     for (let i = cur.skip; i < items.length;) {
-      if (now() - t0 > TIME_BUDGET_MS) return { candidates, cursor: signCursor({ ...cur, skip: i }, email), more: null, scanned: cur.scanned, done: false };
+      if (now() - t0 > TIME_BUDGET_MS) return out({ cursor: signCursor({ ...cur, skip: i }, email), more: null, scanned: cur.scanned, done: false });
       /* tope de 200 por búsqueda: se puede seguir con "Buscar más" */
-      if (cur.scanned >= MAX_MESSAGES) return { candidates, cursor: null, more: signCursor({ ...cur, skip: i, scanned: 0 }, email), scanned: cur.scanned, done: true };
+      if (cur.scanned >= MAX_MESSAGES) return out({ cursor: null, more: signCursor({ ...cur, skip: i, scanned: 0 }, email), scanned: cur.scanned, done: true });
       const n = Math.min(PARALLEL, items.length - i, MAX_MESSAGES - cur.scanned);
       const got = await Promise.all(items.slice(i, i + n).map(it => P.candidate(at, it, doc, cur).catch(e => { if (e.code === 'mail_vencido' || e.code === 'mail_limite') throw e; return null; })));
       for (const c of got) {
         if (!c) continue;
+        const r = relevance(c, rel);
+        if (!r.pass) continue;
         const files = c.files.filter(f => !imported.has(dedupeKey(c.m, f.part)));
-        if (files.length) candidates.push({ ...c, files });
+        /* veterinario pero sin adjunto (muchos laboratorios mandan un link): se lista aparte para abrirlo en el mail */
+        if (!c.files.length) { if (c.link) noFile.push({ m: c.m, date: c.date, from: c.from, subject: c.subject, link: c.link, score: r.score }); continue; }
+        if (files.length) candidates.push({ m: c.m, date: c.date, from: c.from, subject: c.subject, files, score: r.score, why: r.why });
       }
       i += n; cur.scanned += n;
     }
     if (!list.next) break;
-    if (now() - t0 > TIME_BUDGET_MS) return { candidates, cursor: signCursor({ ...cur, page: list.next, skip: 0 }, email), more: null, scanned: cur.scanned, done: false };
-    if (cur.scanned >= MAX_MESSAGES) return { candidates, cursor: null, more: signCursor({ ...cur, page: list.next, skip: 0, scanned: 0 }, email), scanned: cur.scanned, done: true };
+    if (now() - t0 > TIME_BUDGET_MS) return out({ cursor: signCursor({ ...cur, page: list.next, skip: 0 }, email), more: null, scanned: cur.scanned, done: false });
+    if (cur.scanned >= MAX_MESSAGES) return out({ cursor: null, more: signCursor({ ...cur, page: list.next, skip: 0, scanned: 0 }, email), scanned: cur.scanned, done: true });
     cur.page = list.next; cur.skip = 0;
   }
   st.lastSearch = cur.started; st.expired = false;
   await saveState(P, email, st);
-  return { candidates, cursor: null, more: null, scanned: cur.scanned, done: true };
+  return out({ cursor: null, more: null, scanned: cur.scanned, done: true });
 }
 
 /* ---------- importar un adjunto elegido ---------- */
@@ -265,6 +351,8 @@ export async function importOne(P, email, st, cfg, body, deps) {
   const ref = await deps.putFile(email, meta.name, buf, meta.type);
   await deps.addUsage(email, ref, buf.length);
   st.imported.push(key);
+  /* el remitente de lo que importó pasa a ser conocido: la próxima búsqueda lo encuentra aunque no diga "veterinaria" */
+  if (meta.from) await learnSender(email, meta.from).catch(() => {});
   st.queue = st.queue.filter(x => dedupeKey(x.m, x.part) !== key);
   await saveState(P, email, st);
   const file = { ref, name: meta.name, type: meta.type };
@@ -300,7 +388,17 @@ export async function handleMail(P, req, res, ctx) {
   if (!allowed) return nav ? back(res, 'cuenta') : res.status(403).json({ error: P.id + '_no_habilitado', allowed: false });
   const st = await getState(P, email);
 
-  if (action === 'status') return res.status(200).json(statusView(P, st, true, cfg.ready));
+  if (action === 'status') return res.status(200).json({ ...statusView(P, st, true, cfg.ready), senders: (await getSenders(email)).manual });
+  /* "¿De dónde te llegan los estudios?": nombres o mails que la persona agrega a mano (sirven para los dos proveedores) */
+  if (action === 'senders') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+    const b = ctx.body || {}, s = await getSenders(email);
+    const add = cleanSender(b.add), del = cleanSender(b.remove);
+    if (add && add.length >= 3 && !s.manual.some(x => cleanSender(x) === add)) s.manual.push(String(b.add).trim().slice(0, 80));
+    if (del) s.manual = s.manual.filter(x => cleanSender(x) !== del);
+    await saveSenders(email, s);
+    return res.status(200).json({ senders: s.manual });
+  }
   if (!cfg.ready) return nav ? back(res, `${P.id}/sinconfig`) : res.status(503).json({ error: P.id + '_no_configurado' });
 
   if (action === 'start') {

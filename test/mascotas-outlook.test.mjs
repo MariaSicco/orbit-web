@@ -92,8 +92,9 @@ const doc = { pets: [
 
 test('KQL: adjuntos + términos + nombres + fecha, con comillas escapadas para $search', () => {
   const k = O.buildKql(doc, Date.parse('2025-10-13T00:00:00Z'));
-  assert.ok(k.startsWith('hasAttachments:true AND (veterinari* OR laboratorio'));
-  assert.ok(k.includes('"Feliza"') && k.includes('"Veterinaria San Roque"'));
+  assert.ok(k.startsWith('(veterinaria OR veterinario'));
+  assert.ok(k.includes('"Feliza"') && k.includes('"veterinaria san roque"') && k.includes('antirrabica') && k.includes('antirrábica'));
+  assert.ok(!/ laboratorio | informe /.test(k));
   assert.ok(k.endsWith(' AND received>=2025-10-13'));
   assert.ok(!/received/.test(O.buildKql(doc, 0)));
   assert.equal(O.searchParam('a "b" c'), '"a \\"b\\" c"');
@@ -144,7 +145,7 @@ test('Outlook de punta a punta: conectar con PKCE → buscar → importar → no
 
   const s1 = await call('POST', { outlook: 'search' }, { mode: 'all' });
   assert.equal(s1.code, 200, JSON.stringify(s1.body));
-  assert.ok(ms.lastSearch.startsWith('"hasAttachments:true AND (') && ms.lastSearch.includes('received>='));
+  assert.ok(ms.lastSearch.startsWith('"(veterinaria OR ') && ms.lastSearch.includes('received>='));
   assert.deepEqual(s1.body.candidates.map(c => [c.subject, c.files.map(f => f.name)]), [['Ecografía de Feliza', ['eco-feliza.pdf']], ['Turno confirmado', ['receta.jpg']]]);
   assert.equal(ms.downloaded, undefined, 'buscar no baja ningún archivo');
   /* Microsoft rotó el refresh token: quedó guardado el nuevo, cifrado */
