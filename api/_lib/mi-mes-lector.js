@@ -34,6 +34,9 @@ export class ErrorLectura extends Error {
 const MONEDA = { type: 'string', enum: Object.keys(MONEDAS) };
 export const CAMPOS_DUDA = ['montos', 'totales', 'moneda', 'cuotas', 'fechas', 'periodo', 'tarjeta', 'limites', 'texto', 'otro'];
 const FECHA = { anyOf: [{ type: 'string', format: 'date' }, { type: 'null' }] };
+/* La API acepta hasta 16 campos con unión (anyOf o null) por esquema. Las fechas de pagos y
+   cargos van como texto: AAAA-MM-DD o "" si no figura (validarLectura lo toma como null). */
+const FECHA_TEXTO = { type: 'string' };
 const MONTO_MONEDA = { type: 'object', additionalProperties: false, required: ['moneda', 'monto'], properties: { moneda: MONEDA, monto: { type: 'number' } } };
 
 /* Esquema final: el mismo que devuelve el modo prueba (ejemplo.js).
@@ -67,9 +70,9 @@ export const ESQUEMA = {
         tarjeta: ULT4,
       } } },
     pagosYCreditos: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['fecha', 'concepto', 'monto', 'moneda', 'tipo'],
-      properties: { fecha: FECHA, concepto: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, tipo: { type: 'string', enum: TIPOS_PAGO } } } },
+      properties: { fecha: FECHA_TEXTO, concepto: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, tipo: { type: 'string', enum: TIPOS_PAGO } } } },
     cargos: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['fecha', 'concepto', 'monto', 'moneda', 'tipo'],
-      properties: { fecha: FECHA, concepto: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, tipo: { type: 'string', enum: TIPOS_CARGO } } } },
+      properties: { fecha: FECHA_TEXTO, concepto: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, tipo: { type: 'string', enum: TIPOS_CARGO } } } },
     cuotasAVencer: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['mes', 'monto', 'moneda', 'desde'],
       properties: { mes: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, desde: { type: 'boolean' } } } },
     confianza: { type: 'string', enum: ['alta', 'baja'] },
@@ -90,7 +93,7 @@ Reglas generales:
 - Transcribí, no estimes. Si un dato no está o no se lee con seguridad, poné null (o dejalo afuera de la lista) y bajá "confianza" a "baja". Nunca inventes ni completes montos.
 - No copies nombres de personas, direcciones, CUIT, números de cuenta ni números completos de tarjeta. De las tarjetas, solo los últimos 4 números.
 - Montos como número con punto decimal (12.345,67 → 12345.67). Un signo menos al final ("1.234,56-") o adelante es negativo.
-- Fechas en AAAA-MM-DD. Los resúmenes usan formatos como 05.03.26, 05-03-26, "5 Mar 26" o "26 Marzo 05" (este último es año, mes, día). El año de dos cifras es 20xx.
+- Fechas en AAAA-MM-DD (en pagos y cargos, si una línea no tiene fecha, cadena vacía). Los resúmenes usan formatos como 05.03.26, 05-03-26, "5 Mar 26" o "26 Marzo 05" (este último es año, mes, día). El año de dos cifras es 20xx.
 - Ignorá el texto legal, publicidad, planes de cuotas ofrecidos (Plan V), tasas y ejemplos de CFT: no son movimientos.
 - En algunos resúmenes el saldo actual aparece recién en la última hoja y en las anteriores el recuadro está vacío: buscalo en todas las hojas.
 
@@ -126,8 +129,11 @@ export async function leerResumenConClaude(pdf) {
     const pedido = {
       model: MODELO,
       max_tokens: 16000,
-      system: SISTEMA,
-      output_config: { effort: ESFUERZO, format: { type: 'json_schema', schema: ESQUEMA } },
+      /* Sin salida estricta (format json_schema): con este esquema la API responde 400
+         "compiled grammar is too large". El esquema va en las instrucciones y lo que vuelve
+         se controla igual por código (validarLectura + cuadreLectura) con un reintento. */
+      system: `${SISTEMA}\n\nRespondé SOLO con un objeto JSON (sin texto antes ni después, sin \`\`\`) que cumpla este JSON Schema:\n${JSON.stringify(ESQUEMA)}`,
+      output_config: { effort: ESFUERZO },
       messages: [{ role: 'user', content: intento === 1 ? contenido
         : [...contenido, { type: 'text', text: `Tu respuesta anterior no se pudo usar (${ultimoError}). Respondé de nuevo respetando el esquema.` }] }],
       ...(FALLBACK ? { betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' } : {}),
@@ -146,7 +152,7 @@ export async function leerResumenConClaude(pdf) {
     if (r.stop_reason === 'max_tokens') { ultimoError = 'la respuesta quedó cortada'; continue; }
     const texto = (r.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
     let json;
-    try { json = JSON.parse(texto); } catch { ultimoError = 'JSON inválido'; continue; }
+    try { json = JSON.parse(soloJson(texto)); } catch { ultimoError = 'JSON inválido'; continue; }
     const v = validarLectura(json);
     if (!v.ok) { ultimoError = v.errores.join(' '); continue; }
     const cuadre = cuadreLectura(json);
@@ -165,5 +171,11 @@ export async function leerResumenConClaude(pdf) {
   const e = new ErrorLectura('No pudimos leer bien este resumen. No guardamos nada: cargalo a mano.', 'invalida');
   e.uso = sumarUsos(usos);
   throw e;
+}
+/* Por si el modelo envuelve el JSON en ``` o agrega una frase: del primer "{" al último "}". */
+export function soloJson(texto) {
+  const t = String(texto || '').trim().replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '');
+  const a = t.indexOf('{'), b = t.lastIndexOf('}');
+  return a >= 0 && b > a ? t.slice(a, b + 1) : t;
 }
 const sumarUsos = us => us.reduce((a, u) => ({ entrada: a.entrada + u.entrada, salida: a.salida + u.salida }), { entrada: 0, salida: 0 });

@@ -104,7 +104,7 @@ async function conKey(fn) {
 }
 const leerReal = () => llamar(pedido('compro@orbit.test', PDF()));
 
-test('claude: lectura OK → modo real, confiable, con el PDF en base64 y JSON Schema', () => conKey(async logs => {
+test('claude: lectura OK → modo real, confiable, con el PDF en base64 y el esquema en las instrucciones', () => conKey(async logs => {
   const c = falso(respuestaClaude(resumenEjemplo()));
   lector.__usarCliente(c);
   const r = await leerReal();
@@ -112,7 +112,9 @@ test('claude: lectura OK → modo real, confiable, con el PDF en base64 y JSON S
   assert.deepEqual([r.body.modo, r.body.confiable, r.body.lectura.confianza], ['real', true, 'alta']);
   const { p, o } = c.pedidos[0];
   assert.equal(p.model, lector.MODELO);
-  assert.equal(p.output_config.format.type, 'json_schema');
+  // sin salida estricta: con el esquema completo la API responde 400 ("compiled grammar is too large")
+  assert.equal(p.output_config.format, undefined);
+  assert.match(p.system, /JSON Schema/);
   assert.equal(p.messages[0].content[0].type, 'document');
   assert.equal(p.messages[0].content[0].source.media_type, 'application/pdf');
   assert.ok(o.timeout <= 55_000);
@@ -172,3 +174,10 @@ test('claude: error de la API → 502; timeout → 504; rechazo → 422', () => 
   lector.__usarCliente(falso({ ...respuestaClaude({}), stop_reason: 'refusal' }));
   assert.equal((await leerReal()).body.motivo, 'rechazo');
 }));
+
+test('esquema: como mucho 16 campos con unión (límite de la API) y el JSON se limpia de ```', () => {
+  let n = 0;
+  (function rec(x) { if (!x || typeof x !== 'object') return; if (Array.isArray(x.anyOf) || Array.isArray(x.type)) n++; for (const v of Object.values(x)) if (typeof v === 'object') rec(v); })(lector.ESQUEMA);
+  assert.ok(n <= 16, `hay ${n} campos con unión`);
+  assert.equal(lector.soloJson('```json\n{"a":1}\n```'), '{"a":1}');
+});
