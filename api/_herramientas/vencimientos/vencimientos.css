@@ -232,6 +232,31 @@ main{max-width:760px;margin:0 auto;padding:4px 16px 24px;outline:none}
 .globo-acc .bt{min-height:44px;padding:10px 18px;font-size:15px}
 @media (prefers-reduced-motion:reduce){#guia .hueco,#guia .globo{transition:none}}
 
+.hola{margin:8px 2px 14px}
+.hola h1{font-size:clamp(34px,9vw,48px);font-weight:900;letter-spacing:-.05em;text-transform:uppercase;line-height:.9;margin:6px 0 10px}
+.hola h1 .it{font-weight:400}
+.hola p{margin:0;font-size:16.5px;line-height:1.45;color:var(--suave);max-width:40ch}
+.hola p b{color:var(--tinta);font-weight:600}
+.hola .ojo{color:var(--malT);font-weight:600}
+.calma{display:flex;gap:12px;align-items:center;background:var(--papel);border-radius:var(--r);padding:16px;box-shadow:var(--sombra);margin-top:6px}
+.calma svg{flex:none;width:34px;height:34px;padding:7px;border-radius:50%;background:var(--ok);stroke-width:2.4}
+.calma p{margin:0;font-size:14.5px;color:var(--suave)}
+.calma b{color:var(--tinta)}
+.mas-todo span{font-family:var(--mono);font-size:12px;background:var(--papel);border-radius:99px;padding:3px 8px;color:var(--suave)}
+.completa-min .btn-txt{margin:4px 0 0 10px;font-size:13.5px}
+#entrada{position:fixed;inset:0;z-index:80;background:var(--fondo);display:grid;place-items:center;padding:24px 20px calc(24px + env(safe-area-inset-bottom));overflow:auto;animation:entra .4s var(--ease)}
+#entrada.sale{opacity:0;transform:translateY(-12px);transition:opacity .3s var(--ease),transform .3s var(--ease)}
+.entrada-in{max-width:440px;text-align:center}
+.entrada-in .mono{color:var(--azul);font-weight:500}
+.entrada-in h1{font-size:clamp(30px,8vw,44px);font-weight:900;letter-spacing:-.05em;text-transform:uppercase;line-height:.92;margin:10px 0 14px;text-wrap:balance}
+.entrada-in h1 .it{font-weight:400;text-transform:none}
+.entrada-in p{font-size:16.5px;line-height:1.5;color:var(--suave);margin:0 auto 26px;max-width:34ch}
+.entrada-in p b{color:var(--tinta)}
+.entrada-in .ojo{color:var(--malT);font-weight:600}
+.entrada-in .bt{min-width:220px}
+.vc #entrada .ilus{width:min(240px,72%)}
+@media (prefers-reduced-motion:reduce){#entrada,#entrada.sale{animation:none;transition:none}}
+
 /* ── botones ── */
 .bt{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 20px;border-radius:14px;font-weight:600;font-size:16px;transition:transform .25s var(--ease),background .2s,opacity .2s;text-decoration:none}
 .bt:active{transform:scale(.98)}

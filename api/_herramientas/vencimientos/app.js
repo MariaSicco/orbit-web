@@ -49,7 +49,7 @@ function guardar(nuevo) {
 
 let hoy = V.hoyLocal();
 const ui = { vista: 'inicio', mes: V.mesDe(hoy), mesCal: V.mesDe(hoy), dia: hoy, resueltos: false,
-  onb: { paso: 1, sel: new Set() }, borrarArmado: null };
+  onb: { paso: 1, sel: new Set() }, borrarArmado: null, verTodo: false, verPasos: false };
 
 /* ── piezas ── */
 /* Ícono del servicio sobre su color; si no hay ícono propio, las iniciales. */
@@ -136,6 +136,14 @@ function completaTuCasa() {
   ];
   const hechos = pasos.filter(p => p.ok).length;
   if (hechos === pasos.length) return '';
+  const sig = pasos.find(p => !p.ok);
+  if (!ui.verPasos) return `<div class="completa completa-min">
+    <div class="completa-cab"><div><span class="mono">Completá tu casa · ${hechos} de ${pasos.length}</span><b>Próximo paso</b></div><span class="anillo" style="--p:${hechos / pasos.length}" aria-hidden="true"></span></div>
+    <ol><li><button type="button" data-acc="${sig.acc}" ${sig.s2 ? `data-s="${sig.s2}"` : ''}>
+      <span class="paso-ic"><svg><use href="#${sig.ic === 'sobre' || sig.ic === 'campana' ? 'i-' : 'c-'}${sig.ic}"/></svg></span>
+      <span class="paso-tx"><b>${sig.t}</b><small>${sig.s}</small></span><svg class="flecha"><use href="#i-der"/></svg></button></li></ol>
+    <button type="button" class="btn-txt" data-acc="ver-pasos">Ver todos los pasos</button>
+  </div>`;
   return `<div class="completa">
     <div class="completa-cab"><div><span class="mono">Completá tu casa</span><b>${hechos} de ${pasos.length} listos</b></div>
       <span class="anillo" style="--p:${hechos / pasos.length}" aria-hidden="true"></span></div>
@@ -146,6 +154,24 @@ function completaTuCasa() {
         ${p.ok ? '' : '<svg class="flecha"><use href="#i-der"/></svg>'}
       </button></li>`).join('')}</ol>
   </div>`;
+}
+
+function saludo() {
+  const h = new Date().getHours();
+  return h < 6 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches';
+}
+/* La situación en una o dos frases, en palabras simples. */
+function fraseDelMes() {
+  const atras = V.atrasados(d, hoy);
+  const abiertos = [...atras, ...V.ocurrenciasEntre(d, hoy, V.sumarDias(hoy, 30), hoy).filter(o => !o.resuelto)].filter(o => !o.cuenta.enTarjeta);
+  const venc = abiertos.filter(o => o.vence < hoy).length;
+  const prox = abiertos.find(o => o.vence >= hoy);
+  const total = sumaARS(abiertos);
+  if (!abiertos.length) return 'No tenés nada por pagar en los próximos 30 días. Podés relajarte.';
+  let f = `En los próximos 30 días tenés <b>${abiertos.length} ${abiertos.length === 1 ? 'cosa' : 'cosas'} por pagar</b>${total ? `, por ${plata(total)}` : ''}.`;
+  if (venc) f += ` <span class="ojo">Ojo: ${venc === 1 ? 'hay 1 vencida' : `hay ${venc} vencidas`}.</span>`;
+  else if (prox) f += ` Lo más cercano es <b>${esc(prox.cuenta.nombre)}</b>, ${V.difDias(hoy, prox.vence) <= 1 ? V.cuandoEs(prox.vence, hoy) : `el ${V.fechaCorta(prox.vence)}`}.`;
+  return f;
 }
 
 function vistaInicio() {
@@ -166,7 +192,11 @@ function vistaInicio() {
   const hoyTxt = `Hoy, ${['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][V.diaSemana(hoy)]} ${V.fechaLarga(hoy)}`;
 
   let html = `<div class="col-a">
-  <div class="vt vt-inicio"><div><h1 id="t-inicio">Lo que <span class="it">viene</span></h1><p>${hoyTxt}</p></div></div>
+  <div class="hola">
+    <span class="mono">${hoyTxt}</span>
+    <h1 id="t-inicio">${saludo()}<span class="it">.</span></h1>
+    <p>${fraseDelMes()}</p>
+  </div>
   <div class="mes">
     <span class="mono etq">Próximos 30 días</span>
     <p class="grande${!en30.length ? ' cero' : ''}">${!en30.length ? 'Nada' : total30 ? plata(total30) : `${en30.length} por pagar`}</p>
@@ -204,15 +234,17 @@ function vistaInicio() {
     ['La semana que viene', resto.filter(o => dias(o) >= 8 && dias(o) <= 14), ''],
     ['Más adelante', resto.filter(o => dias(o) >= 15), ''],
   ];
-  for (const [t, ocs, cl] of grupos) html += grupo(t, ocs, cl, sumaARS(ocs.filter(o => !o.cuenta.enTarjeta)) ? plata(sumaARS(ocs.filter(o => !o.cuenta.enTarjeta))) : '');
+  /* primero lo urgente; lo demás queda plegado para no abrumar */
+  const suma = ocs => sumaARS(ocs.filter(o => !o.cuenta.enTarjeta)) ? plata(sumaARS(ocs.filter(o => !o.cuenta.enTarjeta))) : '';
+  const urgentes = grupos.slice(0, 3), despues = grupos.slice(3);
+  for (const [t, ocs, cl] of urgentes) html += grupo(t, ocs, cl, suma(ocs));
+  const nDespues = despues.reduce((a, [, ocs]) => a + ocs.length, 0);
+  if (!urgentes.some(([, ocs]) => ocs.length) && abiertos.length) html += `<div class="calma"><svg><use href="#i-check"/></svg><p><b>Esta semana, sin apuros.</b> No vence nada en los próximos 7 días.</p></div>`;
+  if (nDespues) {
+    if (ui.verTodo) for (const [t, ocs, cl] of despues) html += grupo(t, ocs, cl, suma(ocs));
+    else html += `<div class="grupo"><button type="button" class="mas-res mas-todo" data-acc="ver-todo"><svg><use href="#i-cal"/></svg> Ver todo lo que viene <span>${nDespues} más</span> <svg><use href="#i-der"/></svg></button></div>`;
+  }
   if (!abiertos.length) html += `<div class="vacio vacio-ilus">${ILUS_LISTO}<p class="display">Todo <span class="it">al día.</span></p><p class="lead">No tenés nada pendiente en los próximos 45 días.</p></div>`;
-
-  /* por categoría, próximos 30 días */
-  const porCat = {};
-  for (const o of en30) if (o.monto != null && o.moneda === 'ARS') (porCat[o.cuenta.categoria || 'Otros'] ||= { n: 0, m: 0, c: o.cuenta }).m += o.monto;
-  const cats = Object.entries(porCat).sort((a, b) => b[1].m - a[1].m);
-  if (cats.length > 1) html += `<div class="grupo"><h2><span class="mono">En qué se va · 30 días</span></h2><div class="cat-strip">${cats.map(([k, v]) =>
-    `<div class="cat-chip">${avatar({ nombre: k, categoria: k, color: k === 'Tarjetas' ? '#3047FF' : '#0D0D0E' }, 'av-s')}<span><small>${esc(k)}</small><b>${plata(v.m)}</b></span></div>`).join('')}</div></div>`;
 
   const resueltos = ventana.filter(o => o.resuelto).concat(V.ocurrenciasEntre(d, V.sumarDias(hoy, -14), V.sumarDias(hoy, -1), hoy).filter(o => o.resuelto));
   if (resueltos.length) {
@@ -1015,6 +1047,9 @@ document.addEventListener('click', e => {
     case 'tick': tick(b.dataset.id, b); break;
     case 'ver-resueltos': ui.resueltos = true; render(); break;
     case 'ir': irA(b.dataset.v); break;
+    case 'ver-todo': ui.verTodo = true; render(); break;
+    case 'ver-pasos': ui.verPasos = true; render(); break;
+    case 'entrar': cerrarEntrada(); break;
     case 'intro-sig': slide = Math.min(SLIDES.length - 1, slide + 1); pintarSlide(); break;
     case 'intro-fin': marcarVisto(GUIA.intro); $id('hoja').classList.remove('hoja-intro'); cerrar(); render(); break;
     case 'tour-sig': paso++; pintarPaso(); break;
@@ -1287,9 +1322,39 @@ addEventListener('resize', () => { if (paso >= 0) ubicarPaso?.(); });
 addEventListener('scroll', () => { if (paso >= 0) requestAnimationFrame(() => ubicarPaso?.()); }, { passive: true });
 addEventListener('keydown', e => { if (paso >= 0 && e.key === 'Escape') cerrarTour(); });
 
+/* Entrada amable: una vez por día, saludo + la situación en una frase + "Ver mi casa". */
+const ENTRADA = 'orbit:vencimientos:entrada';
+function mostrarEntradaSiCorresponde() {
+  let ultima = null;
+  try { ultima = localStorage.getItem(ENTRADA); } catch {}
+  if (ultima === hoy || !d.cuentas.length || d.ejemplo) return false;
+  const el = document.createElement('div');
+  el.id = 'entrada';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-labelledby', 'entrada-t');
+  el.innerHTML = `<div class="entrada-in">
+    ${ILUS_CASA}
+    <span class="mono">${saludo()}</span>
+    <h1 id="entrada-t">Te damos la bienvenida a <span class="it">la administración de tu casa</span></h1>
+    <p>${fraseDelMes()}</p>
+    <button type="button" class="bt prim" data-acc="entrar">Ver mi casa <svg><use href="#i-flecha"/></svg></button>
+  </div>`;
+  document.body.appendChild(el);
+  setTimeout(() => el.querySelector('.bt')?.focus(), 50);
+  return true;
+}
+function cerrarEntrada() {
+  try { localStorage.setItem(ENTRADA, hoy); } catch {}
+  const el = $id('entrada');
+  if (!el) return;
+  el.classList.add('sale');
+  setTimeout(() => { el.remove(); guiaSiCorresponde(); }, matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 320);
+}
+addEventListener('keydown', e => { if (e.key === 'Escape' && $id('entrada')) cerrarEntrada(); });
+
 /* Al render: bienvenida si nunca la vio; recorrido la primera vez que hay datos en Inicio. */
 function guiaSiCorresponde() {
-  if (hoja.open || paso >= 0) return;
+  if (hoja.open || paso >= 0 || $id('entrada')) return;
   if (!visto(GUIA.intro) && !d.cuentas.length) { setTimeout(abrirIntro, 300); return; }
   if (!visto(GUIA.tour) && d.cuentas.length && ui.vista === 'inicio') setTimeout(() => { if (!hoja.open && paso < 0) abrirTour(); }, 600);
 }
@@ -1317,6 +1382,7 @@ document.addEventListener('visibilitychange', () => {
   render();
 });
 
+mostrarEntradaSiCorresponde();
 const inicial = location.hash.slice(1);
 if (['inicio', 'calendario', 'cuentas', 'numeros'].includes(inicial)) ui.vista = inicial;
 render();
