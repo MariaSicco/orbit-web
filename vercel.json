@@ -27,6 +27,10 @@
       "destination": "/api/mascotas?gmail=callback"
     },
     {
+      "source": "/mascotas/outlook/callback",
+      "destination": "/api/mascotas?outlook=callback"
+    },
+    {
       "source": "/mascota/:t",
       "destination": "/mascota"
     },

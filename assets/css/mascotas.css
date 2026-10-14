@@ -1141,3 +1141,6 @@ dialog{background:var(--bg)}
 .pet-pick .sug svg.i{width:18px;height:18px;flex:none;color:var(--act)}
 @media(min-width:1024px){.gm-go{bottom:20px}}
 @media(prefers-reduced-motion:reduce){.gm-file{transition:none}}
+.gm-accs{display:flex;flex-direction:column;gap:12px}
+.row.link-row:disabled{opacity:.55;cursor:default}
+.fbody a{color:var(--act);font-weight:600}

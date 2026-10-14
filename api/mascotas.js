@@ -17,8 +17,8 @@
    POST ?studyscan=1 {ref}    → lee un estudio ya subido (foto o PDF) con IA: fecha, tipo, laboratorio y un resumen fiel (no guarda nada)
    POST ?upload=1 {name,size,type} → URL firmada para subir un estudio a Blob privado
    GET  ?file=ref             → abre un estudio propio (URL firmada que vence en minutos)
-   ?gmail=status|start|callback|search|import|queue|unqueue|disconnect → "Conectar Gmail" (api/_lib/petgmail.js):
-                                busca estudios en el Gmail de la dueña y los importa por el mismo motor de ?studyscan
+   ?gmail=… y ?outlook=… (status|start|callback|search|import|queue|unqueue|disconnect) → "Conectar tu mail"
+                                (api/_lib/petmail.js + adaptadores): busca estudios en el mail y los importa por el mismo motor de ?studyscan
 
    Sin sesión:
    POST ?scanclear=1          → borra el registro de escaneos del QR
@@ -33,7 +33,9 @@ import { kvGet, kvSet, kvDel, getPurchases } from './_lib/kv.js';
 import { readSession, readBody } from './_lib/auth.js';
 import { isAdmin } from './_lib/admin.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath, putPrivate } from './_lib/blob.js';
-import { handleGmail } from './_lib/petgmail.js';
+import { handleMail } from './_lib/petmail.js';
+import { gmail } from './_lib/petgmail.js';
+import { outlook } from './_lib/petoutlook.js';
 import { QUOTA_BYTES, fits, addUsage, photoRef, sweep } from './_lib/petfiles.js';
 import { getVapid, getNotify, saveNotify, cleanSub, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
 
@@ -414,15 +416,16 @@ export default async function handler(req, res) {
 
   const s = readSession(req);
   /* ir y volver de Google son navegaciones: sin sesión o sin compra se vuelve a la app, no a un JSON */
-  const gNav = q.gmail === 'start' || q.gmail === 'callback';
+  const mailP = q.gmail ? gmail : q.outlook ? outlook : null;
+  const gNav = mailP && ['start', 'callback'].includes(String(q[mailP.id]));
   if (!s) return gNav ? res.redirect(302, '/acceso?next=mascotas') : res.status(401).json({ error: 'unauthorized' });
   /* todo lo de la dueña o el dueño exige la compra de Mimitos */
   const purchase = await mimitosPurchase(s.email);
   if (!purchase) return gNav ? res.redirect(302, '/mascotas') : res.status(402).json({ error: 'no_purchase', email: s.email, product: PRODUCT_ID });
 
-  /* Conectar Gmail: solo cuentas habilitadas (MIMITOS_GMAIL_ALLOW) o admin */
-  if (q.gmail) {
-    return handleGmail(req, res, {
+  /* Conectar tu mail (Gmail u Outlook): solo cuentas habilitadas (MIMITOS_MAIL_ALLOW) o admin */
+  if (mailP) {
+    return handleMail(mailP, req, res, {
       email: s.email,
       body: req.method === 'POST' ? await readBody(req) : {},
       getDoc: async () => (await kvGet(docKey(s.email))) || { pets: [], rev: 0 },
