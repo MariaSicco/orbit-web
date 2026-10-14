@@ -34,6 +34,9 @@ export class ErrorLectura extends Error {
 const MONEDA = { type: 'string', enum: Object.keys(MONEDAS) };
 export const CAMPOS_DUDA = ['montos', 'totales', 'moneda', 'cuotas', 'fechas', 'periodo', 'tarjeta', 'limites', 'texto', 'otro'];
 const FECHA = { anyOf: [{ type: 'string', format: 'date' }, { type: 'null' }] };
+/* La API acepta hasta 16 campos con unión (anyOf o null) por esquema. Las fechas de pagos y
+   cargos van como texto: AAAA-MM-DD o "" si no figura (validarLectura lo toma como null). */
+const FECHA_TEXTO = { type: 'string' };
 const MONTO_MONEDA = { type: 'object', additionalProperties: false, required: ['moneda', 'monto'], properties: { moneda: MONEDA, monto: { type: 'number' } } };
 
 /* Esquema final: el mismo que devuelve el modo prueba (ejemplo.js).
@@ -67,9 +70,9 @@ export const ESQUEMA = {
         tarjeta: ULT4,
       } } },
     pagosYCreditos: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['fecha', 'concepto', 'monto', 'moneda', 'tipo'],
-      properties: { fecha: FECHA, concepto: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, tipo: { type: 'string', enum: TIPOS_PAGO } } } },
+      properties: { fecha: FECHA_TEXTO, concepto: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, tipo: { type: 'string', enum: TIPOS_PAGO } } } },
     cargos: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['fecha', 'concepto', 'monto', 'moneda', 'tipo'],
-      properties: { fecha: FECHA, concepto: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, tipo: { type: 'string', enum: TIPOS_CARGO } } } },
+      properties: { fecha: FECHA_TEXTO, concepto: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, tipo: { type: 'string', enum: TIPOS_CARGO } } } },
     cuotasAVencer: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['mes', 'monto', 'moneda', 'desde'],
       properties: { mes: { type: 'string' }, monto: { type: 'number' }, moneda: MONEDA, desde: { type: 'boolean' } } } },
     confianza: { type: 'string', enum: ['alta', 'baja'] },
@@ -90,7 +93,7 @@ Reglas generales:
 - Transcribí, no estimes. Si un dato no está o no se lee con seguridad, poné null (o dejalo afuera de la lista) y bajá "confianza" a "baja". Nunca inventes ni completes montos.
 - No copies nombres de personas, direcciones, CUIT, números de cuenta ni números completos de tarjeta. De las tarjetas, solo los últimos 4 números.
 - Montos como número con punto decimal (12.345,67 → 12345.67). Un signo menos al final ("1.234,56-") o adelante es negativo.
-- Fechas en AAAA-MM-DD. Los resúmenes usan formatos como 05.03.26, 05-03-26, "5 Mar 26" o "26 Marzo 05" (este último es año, mes, día). El año de dos cifras es 20xx.
+- Fechas en AAAA-MM-DD (en pagos y cargos, si una línea no tiene fecha, cadena vacía). Los resúmenes usan formatos como 05.03.26, 05-03-26, "5 Mar 26" o "26 Marzo 05" (este último es año, mes, día). El año de dos cifras es 20xx.
 - Ignorá el texto legal, publicidad, planes de cuotas ofrecidos (Plan V), tasas y ejemplos de CFT: no son movimientos.
 - En algunos resúmenes el saldo actual aparece recién en la última hoja y en las anteriores el recuadro está vacío: buscalo en todas las hojas.
 

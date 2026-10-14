@@ -93,3 +93,14 @@ test('vencimientos-resumen: detecta PDF con contraseña', () => {
   assert.equal(api.conClave(Buffer.from('%PDF-1.4\ntrailer << /Encrypt 12 0 R /Root 1 0 R >>', 'latin1')), true);
   assert.equal(api.conClave(PDF), false);
 });
+
+test('el esquema del lector respeta el límite de la API: como mucho 16 campos con unión', async () => {
+  const { ESQUEMA } = await import('../api/_lib/mi-mes-lector.js');
+  let n = 0;
+  (function rec(x) {
+    if (!x || typeof x !== 'object') return;
+    if (Array.isArray(x.anyOf) || Array.isArray(x.type)) n++;
+    for (const v of Object.values(x)) if (typeof v === 'object') rec(v);
+  })(ESQUEMA);
+  assert.ok(n <= 16, `hay ${n} campos con unión`);
+});
