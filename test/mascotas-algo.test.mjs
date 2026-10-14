@@ -114,3 +114,52 @@ test('video: el servidor acepta video solo para "Algo pasó", hasta 20 MB, y con
     assert.equal((await up({ name: 'v.mp4', size: MB, type: 'video/mp4', purpose: 'episodio' })).body.error, 'limite_diario');
   } finally { delete process.env.BLOB_READ_WRITE_TOKEN; }
 });
+
+/* ---------- seguimiento: 72 h, "¿Sigue igual?" y últimos 7 días ---------- */
+const ep = (id, at, kind = 'vomito', x = {}) => ({ id, date: at.slice(0, 10), at, kind, text: '', ...x });
+const NOW = new Date(2026, 9, 14, 20, 0);   /* miércoles 14/10/2026, 20:00 */
+
+test('72 h: cuenta las veces del mismo tipo y dice desde cuándo ("Es la 3.ª vez desde ayer")', () => {
+  const p = { symptoms: [ep('a', '2026-10-13T22:10'), ep('b', '2026-10-14T08:00'), ep('x', '2026-10-14T09:00', 'diarrea'), ep('c', '2026-10-14T19:30')] };
+  const r = Z.epRepeat(p, p.symptoms[3]);
+  assert.equal(r.n, 3);
+  assert.equal(Z.repeatText(r, NOW), 'Es la 3.ª vez desde ayer');
+  assert.equal(Z.repeatText(Z.epRepeat(p, p.symptoms[0]), NOW), '', 'la primera vez no dice nada');
+  assert.equal(Z.epRepeat(p, p.symptoms[2]).n, 1, 'otro tipo no suma');
+});
+
+test('72 h: lo de hace más de 72 h no cuenta; el límite es estricto', () => {
+  const p = { symptoms: [ep('a', '2026-10-11T19:30'), ep('b', '2026-10-11T19:31'), ep('c', '2026-10-14T19:30')] };
+  assert.equal(Z.epRepeat(p, p.symptoms[2]).n, 2);
+  assert.equal(Z.repeatText(Z.epRepeat(p, p.symptoms[2]), NOW), 'Es la 2.ª vez desde el domingo');
+});
+
+test('72 h: la línea de tiempo junta el mismo tipo encadenado (cada uno a menos de 72 h del anterior)', () => {
+  const p = { symptoms: [ep('a', '2026-10-01T10:00'), ep('b', '2026-10-12T10:00'), ep('c', '2026-10-13T10:00'), ep('d', '2026-10-14T09:00', 'tos'), ep('e', '2026-10-14T10:00'), { id: 'n', date: '2026-10-12', text: 'Nota vieja' }] };
+  const g = Z.epGroups(p);
+  assert.deepEqual(g.map(x => [x.kind, x.n]), [['vomito', 1], ['vomito', 3], ['tos', 1]]);
+  const tl = Z.timeline(p);
+  assert.deepEqual(tl.map(e => e.title), ['Vómito · 3 veces', 'Tos o estornudos', 'Nota vieja', 'Vómito']);
+  assert.match(tl[0].sub, /3 veces, del 12 oct\.? al 14 oct/);
+  assert.equal(tl[0].ref.id, 'e', 'la entrada abre el último');
+});
+
+test('¿Sigue igual?: solo si lo pidió, al día siguiente (o el otro), sobre el último de cada tipo y sin respuesta', () => {
+  const p = { symptoms: [ep('a', '2026-10-13T08:00', 'vomito', { check: true }), ep('b', '2026-10-13T09:00', 'vomito', { check: true }),
+    ep('c', '2026-10-13T10:00', 'tos'), ep('d', '2026-10-14T10:00', 'diarrea', { check: true }), ep('e', '2026-10-10T10:00', 'herida', { check: true }),
+    ep('f', '2026-10-12T10:00', 'cojea', { check: true, res: 'mejor' })] };
+  assert.deepEqual(Z.followUps(p, NOW).map(s => s.id), ['b']);
+  p.symptoms[1].res = 'igual';
+  assert.deepEqual(Z.followUps(p, NOW), []);
+});
+
+test('Últimos 7 días: hoy y los 6 anteriores, de lo más nuevo a lo más viejo, agrupado', () => {
+  const p = { symptoms: [ep('a', '2026-10-07T10:00', 'herida'), ep('b', '2026-10-08T10:00', 'tos'), ep('c', '2026-10-13T10:00'), ep('d', '2026-10-14T10:00')] };
+  assert.deepEqual(Z.lastWeek(p, NOW).map(g => [g.last.id, g.n]), [['d', 2], ['b', 1]]);
+});
+
+test('compatibilidad: "¿Sigue igual?" y la respuesta se guardan; valores raros se descartan', () => {
+  const [x, y] = cleanDoc(docWith([ep('ep10aa', '2026-10-14T10:00', 'tos', { check: true, res: 'mejor' }), ep('ep11aa', '2026-10-14T10:00', 'tos', { check: 'si', res: 'peor' })]), EMAIL).pets[0].symptoms;
+  assert.equal(x.check, true); assert.equal(x.res, 'mejor');
+  assert.ok(!('check' in y) && !('res' in y));
+});

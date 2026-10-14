@@ -744,7 +744,7 @@ dPanel.addEventListener('close', () => { algo = null; });
 function algoSheet(p, ep) {
   if (!p) return;
   const edit = Boolean(ep);
-  algo = { p, ep, kind: ep?.kind || '', when: edit ? 'pick' : 'now', at: ep?.at || (ep?.date ? ep.date + 'T12:00' : Z.quickAt('now')), sev: ep?.sev || '', text: ep?.text || '', media: [...(ep?.media || [])], more: edit, busy: 0 };
+  algo = { p, ep, kind: ep?.kind || '', when: edit ? 'pick' : 'now', at: ep?.at || (ep?.date ? ep.date + 'T12:00' : Z.quickAt('now')), sev: ep?.sev || '', text: ep?.text || '', media: [...(ep?.media || [])], more: edit, busy: 0, check: edit ? Boolean(ep.check) : algoAskOn() };
   panel(edit ? 'Editar lo que pasó' : `¿Qué le pasó a ${p.name}?`, algoHtml());
   algoWire();
 }
@@ -767,6 +767,7 @@ function algoHtml() {
         <label class="btn ghost sm" for="alFile" id="alFileL">${I('camera')} Foto o video</label><input id="alFile" type="file" accept="image/*,video/mp4,video/quicktime,video/webm" class="sr" multiple>
         <small class="dim">Video de hasta ${Z.VIDEO_MAX_S} segundos.</small>
         <small id="alMsg" role="status"></small></div>
+      <label class="toggle"><input type="checkbox" id="alCheck"${a.check ? ' checked' : ''}><span><b>Preguntarme mañana si sigue igual</b><br><small class="dim">Te lo preguntamos en Inicio. Lo podés apagar cuando quieras.</small></span></label>
       <button type="button" class="btn big wide" id="alSave">Guardar</button>
       ${edit ? `<button type="button" class="btn ghost wide danger" id="alDel">${I('trash')} Borrar</button>` : ''}
     </div>
@@ -829,6 +830,7 @@ function algoWire() {
     if (e.target.id === 'alAt') algo.at = e.target.value;
   };
   body.onchange = async e => {
+    if (algo && e.target.id === 'alCheck') { algo.check = e.target.checked; store.set('algoAsk', algo.check ? '1' : '0'); return; }
     if (!algo || e.target.id !== 'alFile') return;
     const files = [...e.target.files].slice(0, ALGO_MAX_MEDIA - algo.media.length); e.target.value = '';
     const mine = algo;
@@ -899,12 +901,28 @@ function algoSave() {
   if (a.at > now) return toast('La hora no puede ser futura.');
   if (a.kind === 'otro' && !a.text.trim()) { $('#alText')?.focus(); return toast('Contá en la nota qué pasó.'); }
   const x = a.ep || { id: uid() };
-  for (const k of ['sev', 'media', 'at', 'kind']) delete x[k];
-  Object.assign(x, { date: a.at.slice(0, 10), at: a.at, kind: a.kind, text: a.text.trim().slice(0, 300), ...(a.sev ? { sev: a.sev } : {}), ...(a.media.length ? { media: a.media } : {}) });
+  for (const k of ['sev', 'media', 'at', 'kind', 'check']) delete x[k];
+  Object.assign(x, { date: a.at.slice(0, 10), at: a.at, kind: a.kind, text: a.text.trim().slice(0, 300), ...(a.sev ? { sev: a.sev } : {}), ...(a.media.length ? { media: a.media } : {}), ...(a.check ? { check: true } : {}) });
   if (!a.ep) a.p.symptoms.push(x);
   algo = null; dPanel.close(); changed();
   if (a.ep) return toast('Actualizado.');
-  toast(`Anotado: ${Z.epTitle(x)}, ${Z.epWhen(x)}.`, { label: 'Deshacer', fn: () => { drop(a.p.symptoms, x)(); changed(); toast('Listo, lo sacamos.'); } });
+  const again = Z.repeatText(Z.epRepeat(a.p, x));
+  toast(`Anotado: ${Z.epTitle(x)}, ${Z.epWhen(x)}.${again ? ` ${again}.` : ''}`, { label: 'Deshacer', fn: () => { drop(a.p.symptoms, x)(); changed(); toast('Listo, lo sacamos.'); } });
+}
+/* "¿Sigue igual?": encendido salvo que lo apague (comodidad de este navegador; cada episodio guarda si se pregunta) */
+const algoAskOn = () => store.get('algoAsk') !== '0';
+function followCard(p) {
+  const list = Z.followUps(p); if (!list.length) return '';
+  const s = list.at(-1), d = Z.epAt(s), when = Z.sinceWord(d);
+  return `<section class="sec card2 span2 al-follow" aria-labelledby="h-follow"><h2 id="h-follow">¿Sigue igual?</h2>
+    <p>${Cap(when)} anotaste <b>${esc(Z.epTitle(s).toLowerCase())}</b> de ${esc(p.name)}${s.at ? ` a las ${Z.fmtTime(d)}` : ''}. ¿Cómo sigue?</p>
+    <div class="chips" role="group" aria-label="Cómo sigue">${Object.entries(Z.RES).map(([k, l]) => `<button type="button" class="chip" data-act="algoRes" data-id="${s.id}" data-v="${k}">${l}</button>`).join('')}</div>
+    <button type="button" class="link" data-act="algoAskOff">No preguntar más</button></section>`;
+}
+function weekCard(p) {
+  const gs = Z.lastWeek(p); if (!gs.length) return '';
+  return `<section class="sec card2 span2 al-week" aria-labelledby="h-week"><div class="sec-h"><h2 id="h-week">Últimos 7 días</h2><button class="link" data-act="algo">${I('plus')} Algo pasó</button></div>
+    <div class="list">${gs.slice(0, 5).map(g => { const s = g.last, again = Z.repeatText(Z.epRepeat(p, s)); return `<button type="button" class="row link-row" data-act="detail" data-kind="sym" data-id="${s.id}">${bubble(Z.ALGO_I[s.kind] || 'note', 'perdida')}<span class="what"><b>${esc(Z.epTitle(s))}${g.n > 1 ? ` · ${g.n} veces` : ''}</b><small>${esc([Z.epWhen(s), again, Z.SEV[s.sev] || '', Z.RES[s.res] || ''].filter(Boolean).join(' · '))}</small></span>${I('chevron')}</button>`; }).join('')}</div></section>`;
 }
 function tripForm(p) {
   openForm({
@@ -1266,6 +1284,8 @@ function renderInicio(p) {
     <div class="dash-r">
       ${askBtn('ask-home span2')}
       <button type="button" class="algo-cta span2" data-act="algo">${I('plus')}<span><b>Algo pasó</b><small>Vómito, diarrea, picazón… anotalo en 2 toques</small></span></button>
+      ${followCard(p)}
+      ${weekCard(p)}
       ${mefui && window.MZAWAY ? window.MZAWAY.homeCard(p) : ''}
       ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
       ${scanBanner(p)}
@@ -1501,6 +1521,13 @@ function detail(p, kind, id) {
       + (x.media?.length ? `<div class="al-media big">${x.media.map((m, i) => isVid(m)
         ? `<video class="al-v" controls playsinline preload="none" src="${esc(fileUrl(m))}"${m.thumb ? ` poster="${esc(fileUrl({ ref: m.thumb }))}"` : ''} aria-label="Video ${i + 1}${m.dur ? `, ${Math.round(m.dur)} segundos` : ''}"></video>`
         : `<a class="al-th" href="${esc(fileUrl(m))}" target="_blank" rel="noopener" aria-label="Abrir foto ${i + 1}"><img src="${esc(fileUrl(m))}" alt=""></a>`).join('')}</div>` : '')
+      + (() => {
+        const again = Z.repeatText(Z.epRepeat(p, x)), g = Z.epGroups(p).find(gr => gr.items.includes(x));
+        const others = g && g.n > 1 ? g.items.filter(y => y !== x).reverse() : [];
+        return (again ? `<p class="al-again">${esc(again)}.</p>` : '')
+          + (x.res ? `<p class="dim">Al día siguiente: ${esc(Z.RES[x.res].toLowerCase())}.</p>` : '')
+          + (others.length ? `<div class="list al-others">${others.map(y => `<button type="button" class="row link-row" data-dact="other" data-id="${y.id}">${bubble(Z.ALGO_I[y.kind] || 'note', 'perdida')}<span class="what"><b>${esc(Z.epTitle(y))}</b><small>${esc([Z.epWhen(y), Z.SEV[y.sev] || '', y.kind === 'otro' ? '' : y.text].filter(Boolean).join(' · '))}</small></span>${I('chevron')}</button>`).join('')}</div>` : '');
+      })()
       + `<p class="note">${esc(Z.ALGO_NOTE)}</p>`;
     acts = btn('edit', 'edit', 'Editar', 'soft');
   } else if (kind === 'sym') {
@@ -1532,6 +1559,7 @@ function detail(p, kind, id) {
     if (a === 'ics') return calendar([Z.recordEvent(p, x)], `${p.name} ${x.name}`);
     if (a === 'icsMed') return calendar([Z.medEvent(p, x)], `${p.name} ${x.name}`);
     if (a === 'edit' && kind === 'sym' && x.kind) return algoSheet(p, x);
+    if (a === 'other') return detail(p, 'sym', b.dataset.id);
     dPanel.close();
     if (a === 'dup') return nextDose(p, x);
     if (a === 'renew') return renewSheet(p, x);
@@ -3245,6 +3273,10 @@ document.addEventListener('click', e => {
     case 'renewAsk': return renewAsk();
     case 'add': return cur ? addPanel(cur) : startOnboard();
     case 'algo': return cur ? algoSheet(cur) : startOnboard();
+    case 'algoRes': { const s = cur.symptoms.find(x => x.id === b.dataset.id); if (!s) return; s.res = b.dataset.v; changed();
+      return toast(s.res === 'igual' ? `Anotado. ${Z.ALGO_NOTE}` : 'Anotado. Gracias por contarnos.', { label: 'Deshacer', fn: () => { delete s.res; changed(); } }); }
+    case 'algoAskOff': { store.set('algoAsk', '0'); const pend = doc.pets.flatMap(q => Z.followUps(q)); pend.forEach(s => { s.check = false; }); changed();
+      return toast('Listo, no te preguntamos más. Lo podés volver a prender al anotar algo.', { label: 'Deshacer', fn: () => { store.set('algoAsk', '1'); pend.forEach(s => { s.check = true; }); changed(); } }); }
     case 'scan': return startScan(petById(scan?.petId) || cur);
     case 'scanSave': return saveScan();
     case 'scanBack': scan = null; return go('inicio');

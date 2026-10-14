@@ -378,15 +378,56 @@
     return isoLocal(d);
   }
 
+  /* ---------- seguimiento: el mismo tipo en las últimas 72 h ---------- */
+  const REPEAT_MS = 72 * HOUR;
+  const WD = ['el domingo', 'el lunes', 'el martes', 'el miércoles', 'el jueves', 'el viernes', 'el sábado'];
+  const dayDiff = (a, b) => { const x = new Date(a), y = new Date(b); x.setHours(0, 0, 0, 0); y.setHours(0, 0, 0, 0); return Math.round((y - x) / DAY); };
+  /* "hoy", "ayer", "anteayer" o el día de la semana, contado desde `now` */
+  const sinceWord = (d, now = new Date()) => { const n = dayDiff(d, now); return n <= 0 ? 'hoy' : n === 1 ? 'ayer' : n === 2 ? 'anteayer' : n < 7 ? WD[d.getDay()] : 'el ' + fmt(d, { day: 'numeric', month: 'short' }); };
+  const episodes = p => (p?.symptoms || []).filter(isEp).sort((a, b) => epAt(a) - epAt(b));
+  /* cuántas veces pasó lo mismo en las 72 h que terminan en este episodio (contándolo) y desde cuándo */
+  function epRepeat(p, s) {
+    const t = epAt(s); if (!t || !isEp(s)) return { n: 1, first: t };
+    const same = episodes(p).filter(x => x.kind === s.kind && epAt(x) <= t && t - epAt(x) < REPEAT_MS);
+    return { n: Math.max(1, same.length), first: same.length ? epAt(same[0]) : t };
+  }
+  const ordinal = n => `${n}.ª`;
+  /* "Es la 3.ª vez desde ayer" (solo desde la segunda vez) */
+  const repeatText = (r, now = new Date()) => r && r.n > 1 ? `Es la ${ordinal(r.n)} vez desde ${sinceWord(r.first, now)}` : '';
+  /* para la línea de tiempo: episodios del mismo tipo, cada uno a menos de 72 h del anterior, van juntos */
+  function epGroups(p) {
+    const open = {}, out = [];
+    for (const s of episodes(p)) {
+      const g = open[s.kind];
+      if (g && epAt(s) - epAt(g.items.at(-1)) < REPEAT_MS) g.items.push(s);
+      else { open[s.kind] = { kind: s.kind, items: [s] }; out.push(open[s.kind]); }
+    }
+    return out.map(g => ({ ...g, last: g.items.at(-1), first: g.items[0], n: g.items.length }));
+  }
+  /* "¿Sigue igual?": al día siguiente (hasta 2 días después) del último episodio de cada tipo, si pidió que le preguntemos */
+  const RES = { igual: 'Sigue igual', mejor: 'Está mejor', paso: 'Ya pasó' };
+  function followUps(p, now = new Date()) {
+    return epGroups(p).map(g => g.last).filter(s => s.check && !s.res && (d => d >= 1 && d <= 2)(dayDiff(epAt(s), now)));
+  }
+  /* los últimos 7 días (hoy incluido), de lo más nuevo a lo más viejo, agrupados */
+  function lastWeek(p, now = new Date()) {
+    return epGroups(p).filter(g => dayDiff(epAt(g.last), now) <= 6 && epAt(g.last) <= now).sort((a, b) => epAt(b.last) - epAt(a.last));
+  }
+
   /* todo lo que le pasó, en una sola línea de tiempo */
   function timeline(p) {
     const ev = [];
     for (const r of p.records || []) if (r.date) ev.push({ k: r.type === 'vacuna' ? 'vacuna' : r.type === 'desparasitacion' ? 'anti' : 'control', date: r.date, title: r.name || TYPE[r.type], sub: [TYPE[r.type], r.vet].filter(Boolean).join(' · '), ref: r, kind: 'rec' });
     for (const v of p.visits || []) ev.push({ k: 'consulta', date: v.date, title: v.reason || 'Consulta', sub: [v.vet, v.findings].filter(Boolean).join(' · '), ref: v, kind: 'visit' });
     for (const x of p.studies || []) ev.push({ k: 'estudio', date: x.date, title: x.title || STUDY[x.kind], sub: [STUDY[x.kind], x.files?.length ? `${x.files.length} archivo${x.files.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · '), ref: x, kind: 'study' });
-    for (const s of p.symptoms || []) ev.push(isEp(s)
-      ? { k: 'sintoma', date: s.date, at: s.at || '', title: epTitle(s), sub: ['Algo pasó', s.at ? fmtTime(epAt(s)) : '', SEV[s.sev] || '', s.kind === 'otro' ? '' : s.text, s.media?.length ? `${s.media.length} ${s.media.length > 1 ? 'adjuntos' : 'adjunto'}` : ''].filter(Boolean).join(' · '), ref: s, kind: 'sym' }
-      : { k: 'sintoma', date: s.date, title: s.text, sub: 'Algo que notaste', ref: s, kind: 'sym' });
+    for (const s of p.symptoms || []) if (!isEp(s)) ev.push({ k: 'sintoma', date: s.date, title: s.text, sub: 'Algo que notaste', ref: s, kind: 'sym' });
+    /* "+ Algo pasó": el mismo tipo a menos de 72 h del anterior va en una sola entrada ("Vómito · 3 veces") */
+    for (const g of epGroups(p)) {
+      const s = g.last, nMedia = g.items.reduce((a, x) => a + (x.media?.length || 0), 0);
+      const span = g.n > 1 ? (g.first.date === s.date ? `${g.n} veces hoy` : `${g.n} veces, del ${fmt(g.first.date, { day: 'numeric', month: 'short' })} al ${fmt(s.date, { day: 'numeric', month: 'short' })}`) : '';
+      ev.push({ k: 'sintoma', date: s.date, at: s.at || '', title: g.n > 1 ? `${epTitle(s)} · ${g.n} veces` : epTitle(s), n: g.n, items: g.items,
+        sub: ['Algo pasó', span || (s.at ? fmtTime(epAt(s)) : ''), SEV[s.sev] || '', s.kind === 'otro' ? '' : s.text, RES[s.res] ? 'Al día siguiente: ' + RES[s.res].toLowerCase() : '', nMedia ? `${nMedia} ${nMedia > 1 ? 'adjuntos' : 'adjunto'}` : ''].filter(Boolean).join(' · '), ref: s, kind: 'sym' });
+    }
     for (const c of p.surgeries || []) if (/^\d{4}-\d{2}-\d{2}$/.test(c.date || '')) ev.push({ k: 'cirugia', date: c.date, title: c.name, sub: 'Cirugía', ref: c, kind: 'surg' });
     for (const m of p.meds || []) if (m.start) ev.push({ k: 'remedio', date: m.start.slice(0, 10), title: m.name, sub: ['Remedio', m.dose].filter(Boolean).join(' · '), ref: m, kind: 'med' });
     return ev.sort((a, b) => b.date.localeCompare(a.date) || String(b.at || '').localeCompare(String(a.at || '')));
@@ -442,5 +483,5 @@
     return out.sort((a, b) => a.date.localeCompare(b.date)).slice(0, n);
   }
 
-  g.MZ = { VIDEO_MAX_S, VIDEO_MAX_BYTES, videoCheck, ALGO, ALGO_L, ALGO_I, SEV, ALGO_NOTE, epAt, epTitle, epWhen, isEp, quickAt, addBag, bagPrompt, foodSpend, RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
+  g.MZ = { REPEAT_MS, sinceWord, episodes, epRepeat, repeatText, epGroups, RES, followUps, lastWeek, VIDEO_MAX_S, VIDEO_MAX_BYTES, videoCheck, ALGO, ALGO_L, ALGO_I, SEV, ALGO_NOTE, epAt, epTitle, epWhen, isEp, quickAt, addBag, bagPrompt, foodSpend, RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
 })(typeof window !== 'undefined' ? window : globalThis);
