@@ -7,7 +7,7 @@
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
 import { kvGet, kvSet } from './_lib/kv.js';
 import { resumenEjemplo } from './_herramientas/mi-mes/ejemplo.js';
-import { hayKey, leerResumenConClaude, ErrorLectura, MODELO } from './_lib/mi-mes-lector.js';
+import { hayKey, leerResumenConClaude, ErrorLectura, MODELO, SISTEMA, ESQUEMA, ESFUERZO } from './_lib/mi-mes-lector.js';
 
 export const PRODUCTO = 'ob-021';
 export const MAX_BYTES = 4 * 1024 * 1024;
@@ -99,16 +99,25 @@ async function diagnostico() {
   return { ok: pruebas.every(p => p.ok), key: true, forma, modelo: MODELO, pruebas };
 }
 
-/* Una llamada mínima con el mismo PDF para ver qué responde Anthropic (status, tipo, mensaje). */
+/* Llamadas mínimas con el mismo PDF para ver qué responde Anthropic (status, tipo, mensaje):
+   una simple y otra con exactamente la configuración del lector (sistema, esquema, esfuerzo,
+   fallback), cortada en pocos tokens para que salga barata. */
 async function motivoPdf(buf) {
-  try {
-    const { default: Anthropic } = await import('@anthropic-ai/sdk');
-    const c = new Anthropic({ maxRetries: 0 });
-    const r = await c.messages.create({ model: MODELO, max_tokens: 20, messages: [{ role: 'user', content: [
-      { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: buf.toString('base64') } },
-      { type: 'text', text: '¿Cuántas páginas tiene? Respondé solo el número.' }] }] }, { timeout: 25000 });
-    return { ok: true, respuesta: (r.content || []).map(b => b.text || '').join('').slice(0, 40), entrada: r.usage?.input_tokens };
-  } catch (e) {
-    return { ok: false, status: e?.status ?? null, tipo: e?.error?.error?.type || e?.name || null, mensaje: String(e?.error?.error?.message || e?.message || '').slice(0, 300) };
-  }
+  const { default: Anthropic } = await import('@anthropic-ai/sdk');
+  const c = new Anthropic({ maxRetries: 0 });
+  const doc = { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: buf.toString('base64') } };
+  const correr = async (pedido) => {
+    try {
+      const r = await c.beta.messages.create(pedido, { timeout: 25000 });
+      return { ok: true, stop: r.stop_reason, respuesta: (r.content || []).map(b => b.text || '').join('').slice(0, 60), entrada: r.usage?.input_tokens };
+    } catch (e) {
+      return { ok: false, status: e?.status ?? null, tipo: e?.error?.error?.type || e?.name || null, mensaje: String(e?.error?.error?.message || e?.message || '').slice(0, 400) };
+    }
+  };
+  const simple = await correr({ model: MODELO, max_tokens: 20, messages: [{ role: 'user', content: [doc, { type: 'text', text: '¿Cuántas páginas tiene? Respondé solo el número.' }] }] });
+  const base = { model: MODELO, max_tokens: 60, system: SISTEMA, messages: [{ role: 'user', content: [doc, { type: 'text', text: 'Extraé los datos de este resumen de tarjeta.' }] }] };
+  const lector = await correr({ ...base, output_config: { effort: ESFUERZO, format: { type: 'json_schema', schema: ESQUEMA } }, betas: ['server-side-fallback-2026-07-01'], fallbacks: 'default' });
+  const sinFallback = lector.ok ? null : await correr({ ...base, output_config: { effort: ESFUERZO, format: { type: 'json_schema', schema: ESQUEMA } } });
+  const sinEsquema = lector.ok ? null : await correr({ ...base, output_config: { effort: ESFUERZO } });
+  return { simple, lector, sinFallback, sinEsquema };
 }
