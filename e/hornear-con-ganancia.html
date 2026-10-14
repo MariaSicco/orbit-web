@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="Hornear con ganancia">
+<meta property="og:image" content="https://www.orbitando.com.ar/assets/ebooks/hornear-con-ganancia/og.jpg">
+<title>Hornear con ganancia</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Guía práctica para ponerle precio a tu repostería, venderla y sostener tus precios cuando suben los insumos. Ebook + calculadora + cuaderno.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@500;600;700;800;900&family=Playfair+Display:ital,wght@1,500;1,600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<!-- Píxel de Meta de Orbit (867844293081970): se carga solo si la persona acepta las cookies. -->
+<style>
+img{max-width:100%}
+/* Layout: portada azul con un ticket que se imprime; franja de frases de clientas; después secciones en papel crema que se pueden tocar (comparador, planilla, descuento, chat, páginas). Una sola estética por marca. */
+:root{
+  --azul:#3047FF; --azul-osc:#1F31C9; --azul-claro:#E8EBFF;
+  --crema:#F2EFE8; --papel:#FAF8F3; --tinta:#0D0D0E; --gris:#5E5B66; --linea:#D9D4C7;
+  --lima:#D9FF45; --naranja:#FF4F2E; --rojo:#D93A1E; --verde:#1E7A46;
+  --f-disp:"Inter Tight",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-enf:"Playfair Display",Georgia,serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --ease:cubic-bezier(.7,0,.2,1);
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--crema);color:var(--tinta);font-family:var(--f-disp);font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--naranja);outline-offset:3px}
+.wrap{max-width:1160px;margin:0 auto;padding-inline:20px}
+.mono{font-family:var(--f-mono);font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase}
+.eyebrow{color:var(--azul)}
+h1,h2,h3{text-wrap:balance;margin:0}
+h2{font-weight:900;font-size:clamp(36px,5.4vw,64px);line-height:.94;letter-spacing:-.035em;text-transform:uppercase}
+h2 em,h1 em{font-family:var(--f-enf);font-style:italic;font-weight:600;text-transform:none;letter-spacing:-.01em}
+p{margin:0}
+section{padding-block:clamp(64px,9vw,112px)}
+.head{display:flex;flex-direction:column;gap:14px;max-width:760px}
+.head p.sub{font-size:20px;color:var(--gris);max-width:58ch}
+.num{font-variant-numeric:tabular-nums}
+
+/* CTA */
+.cta{display:inline-flex;align-items:center;gap:14px;background:var(--lima);color:var(--tinta);text-decoration:none;font-weight:900;font-size:20px;text-transform:uppercase;padding:18px 26px;border:2px solid var(--tinta);box-shadow:6px 6px 0 var(--tinta);transition:transform .2s var(--ease),box-shadow .2s var(--ease)}
+.cta:hover{transform:translate(-2px,-2px);box-shadow:8px 8px 0 var(--tinta)}
+.cta:active{transform:translate(4px,4px);box-shadow:2px 2px 0 var(--tinta)}
+.cta small{font-family:var(--f-mono);font-size:14px;font-weight:600;letter-spacing:.06em;border-left:2px solid var(--tinta);padding-left:14px}
+
+/* HERO */
+.hero{background:var(--azul);color:var(--crema);padding-block:28px 0;background-image:linear-gradient(rgba(255,255,255,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.07) 1px,transparent 1px);background-size:56px 56px;overflow:hidden}
+.top{display:flex;justify-content:space-between;gap:16px;padding-bottom:36px}
+.hero-grid{display:grid;grid-template-columns:1.25fr .75fr;gap:40px;align-items:start}
+.hero-grid>*{min-width:0}
+.hero h1{font-weight:900;font-size:clamp(54px,8.4vw,112px);line-height:.84;letter-spacing:-.045em;text-transform:uppercase}
+.hero h1 .g{color:var(--lima);display:block}
+.hero .lead{font-size:clamp(20px,2.3vw,26px);line-height:1.3;font-weight:600;max-width:30ch;margin-top:26px}
+.hero .lead em{font-family:var(--f-enf);font-style:italic;color:var(--lima)}
+.hero-cta{display:flex;flex-wrap:wrap;align-items:center;gap:18px 24px;margin-top:34px}
+.hero-cta .mono{color:#C9CFFF;line-height:1.7}
+.hero-stats{display:flex;flex-wrap:wrap;gap:0;margin-top:44px;border-top:1px solid rgba(242,239,232,.35)}
+.hero-stats div{padding:16px 28px 22px 0;margin-right:28px;display:flex;flex-direction:column;gap:2px}
+.hero-stats b{font-size:34px;font-weight:900;letter-spacing:-.03em;line-height:1}
+.hero-stats span{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#C9CFFF}
+
+/* Impresora + ticket */
+.printer{position:relative;padding-top:6px}
+.slot{height:26px;background:var(--tinta);border-radius:6px;position:relative;z-index:2;box-shadow:0 10px 0 -4px #000 inset}
+.slot::after{content:"";position:absolute;left:18px;right:18px;top:11px;height:4px;background:#2A2A30;border-radius:2px}
+.rcpt{position:relative;z-index:1;margin:-8px 22px 0;background:var(--papel);color:var(--tinta);font-family:var(--f-mono);font-size:15px;padding:24px 22px 18px;box-shadow:0 30px 60px rgba(5,10,60,.4);animation:print 1.6s var(--ease) .2s both;transform-origin:top}
+.rcpt::after{content:"";position:absolute;left:0;right:0;bottom:-12px;height:12px;background:radial-gradient(circle at 8px 0,var(--papel) 8px,transparent 8.5px) repeat-x;background-size:16px 12px}
+@keyframes print{from{clip-path:inset(0 0 100% 0);transform:translateY(-30px)}to{clip-path:inset(0 0 0 0);transform:none}}
+.rcpt .t-h{display:flex;justify-content:space-between;font-size:12px;letter-spacing:.12em;text-transform:uppercase;border-bottom:2px dashed var(--linea);padding-bottom:10px;margin-bottom:8px}
+.rcpt .r{display:flex;justify-content:space-between;padding:5px 0;font-variant-numeric:tabular-nums}
+.rcpt .r.dim{color:var(--gris)}
+.rcpt .sep{border-top:2px solid var(--tinta);margin:8px 0 4px}
+.rcpt .pz{display:flex;justify-content:space-between;align-items:baseline;background:var(--lima);margin:10px -8px 0;padding:10px 12px;font-family:var(--f-disp);font-weight:900;font-size:40px;letter-spacing:-.02em}
+.rcpt .pz small{font-size:15px;font-weight:800}
+.rcpt .tq{margin-top:12px;font-size:11px;color:var(--gris);text-align:center;letter-spacing:.08em}
+.stamp{position:absolute;right:-6px;top:150px;z-index:3;width:118px;height:118px;border-radius:50%;background:var(--naranja);color:var(--crema);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;font-weight:900;text-transform:uppercase;line-height:.95;font-size:15px;transform:rotate(12deg);box-shadow:0 14px 30px rgba(5,10,60,.35);animation:stamp .5s var(--ease) 1.7s both}
+.stamp b{font-size:26px;display:block}
+@keyframes stamp{from{transform:rotate(12deg) scale(2.2);opacity:0}to{transform:rotate(12deg) scale(1);opacity:1}}
+.hero-foot{height:56px}
+
+/* Marquee */
+.marquee{background:var(--lima);color:var(--tinta);border-block:2px solid var(--tinta);overflow:hidden;white-space:nowrap}
+.marquee .track{display:inline-flex;gap:0;animation:mq 38s linear infinite;padding-block:14px}
+.marquee span{font-weight:900;font-size:22px;text-transform:uppercase;letter-spacing:-.01em;padding-inline:22px}
+.marquee span i{font-family:var(--f-enf);font-weight:600;text-transform:none}
+.marquee span::after{content:"✳";margin-left:44px;color:var(--azul)}
+@keyframes mq{to{transform:translateX(-50%)}}
+
+/* Tabs genéricos */
+.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-top:36px}
+.tab{font:inherit;font-weight:800;font-size:16px;padding:10px 16px;border:2px solid var(--tinta);background:transparent;color:var(--tinta);cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:0;line-height:1.15;transition:background .2s var(--ease)}
+.tab small{font-family:var(--f-mono);font-weight:500;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris)}
+.tab[aria-selected="true"]{background:var(--tinta);color:var(--crema)}
+.tab[aria-selected="true"] small{color:#BDBAC2}
+
+/* Comparador a ojo vs armado */
+.cmp{margin-top:20px;background:var(--papel);border:2px solid var(--tinta);padding:clamp(20px,3vw,36px)}
+.cmp-grid{display:grid;grid-template-columns:1fr 300px;gap:40px;align-items:center}
+.cmp-grid>*{min-width:0}
+.bars{display:flex;flex-direction:column;gap:18px}
+.bar-l{display:flex;justify-content:space-between;gap:12px;font-weight:700;font-size:16px;margin-bottom:6px}
+.bar-l .num{font-family:var(--f-mono);font-weight:600}
+.bar{height:34px;background:var(--crema);position:relative;overflow:hidden}
+.bar i{position:absolute;inset:0 auto 0 0;width:0;transition:width .7s var(--ease)}
+.bar.ojo i{background:repeating-linear-gradient(-45deg,var(--naranja) 0 8px,#FF7A5E 8px 16px)}
+.bar.costo i{background:var(--tinta)}
+.bar.armado i{background:var(--azul)}
+.costline{position:absolute;top:-6px;bottom:-6px;width:0;border-left:2px dashed var(--tinta);transition:left .7s var(--ease)}
+.verdict{display:flex;flex-direction:column;gap:14px}
+.verdict .v{padding:16px 18px;border:2px solid var(--tinta)}
+.verdict .v.bad{background:#FFE4DD}
+.verdict .v.good{background:var(--lima)}
+.verdict .v span{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;display:block}
+.verdict .v b{font-size:34px;font-weight:900;letter-spacing:-.03em;line-height:1.05;display:block}
+.verdict .v p{font-size:14px;color:var(--gris);margin-top:4px}
+.cmp-note{margin-top:22px;font-size:16px;color:var(--gris);max-width:70ch}
+.quote{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.quote>*{min-width:0}
+.doc{background:#fff;border:1px solid var(--linea);padding:22px;font-size:15px;line-height:1.5;box-shadow:0 18px 40px rgba(13,13,14,.08)}
+.doc h4{margin:0 0 10px;font-size:17px;font-weight:900;text-transform:uppercase}
+.doc .r{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px dashed var(--linea);font-variant-numeric:tabular-nums}
+.doc .r:last-child{border:0}
+
+/* Planilla */
+.sheet-sec{background:var(--tinta);color:var(--crema)}
+.sheet-sec .head p.sub{color:#BDBAC2}
+.sheet-sec .eyebrow{color:var(--lima)}
+.sheet-sec .tab{border-color:var(--crema);color:var(--crema)}
+.sheet-sec .tab small{color:#9C99A3}
+.sheet-sec .tab[aria-selected="true"]{background:var(--lima);color:var(--tinta);border-color:var(--lima)}
+.sheet-sec .tab[aria-selected="true"] small{color:#3A3D10}
+.app{margin-top:20px;display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start}
+.app>*{min-width:0}
+.xl{background:#fff;color:var(--tinta);border-radius:6px;overflow:hidden;box-shadow:0 30px 60px rgba(0,0,0,.4)}
+.xl-bar{display:flex;align-items:center;gap:10px;background:#EDEBE6;padding:8px 12px;font-family:var(--f-mono);font-size:12px;color:var(--gris);border-bottom:1px solid #D6D2C8}
+.xl-bar .fx{background:#fff;border:1px solid #D6D2C8;padding:3px 8px;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.xl-scroll{overflow-x:auto}
+.xl table{border-collapse:collapse;width:100%;min-width:560px;font-size:14px;font-variant-numeric:tabular-nums}
+.xl th{background:#F4F2EE;font-family:var(--f-mono);font-weight:500;font-size:11px;color:#8A8691;padding:4px 8px;border:1px solid #E2DED5;text-align:center}
+.xl td{border:1px solid #E7E3DA;padding:0 8px;height:34px;white-space:nowrap}
+.xl td.h{font-weight:800;background:#FBFAF7;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.xl td.rn{background:#F4F2EE;color:#8A8691;font-family:var(--f-mono);font-size:11px;text-align:center;width:34px;padding:0}
+.xl td.n{text-align:right}
+.xl td.in{background:var(--azul-claro);padding:0}
+.xl td.in input{width:100%;height:33px;border:0;background:transparent;font:inherit;text-align:right;padding:0 8px;color:var(--azul-osc);font-weight:700}
+.xl td.in input:focus{outline:2px solid var(--azul);outline-offset:-2px;background:#fff}
+.xl tr.tot td{font-weight:900;background:#FBFAF7}
+.xl tr.key td{background:var(--lima);font-weight:900;font-size:16px}
+.side{display:flex;flex-direction:column;gap:14px}
+.side .card{border:1px solid #3A3A40;padding:18px}
+.side .card .mono{color:var(--lima)}
+.side .card p{color:#C9C6BE;font-size:15px;margin-top:8px}
+.side .big{font-size:52px;font-weight:900;letter-spacing:-.04em;line-height:1;color:var(--crema)}
+.legend{display:flex;align-items:center;gap:8px;font-size:13px;color:#BDBAC2}
+.legend i{width:16px;height:16px;background:var(--azul-claro);border:1px solid var(--azul)}
+
+/* Descuento */
+.desc{display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;margin-top:40px}
+.desc>*{min-width:0}
+.slider{display:flex;flex-direction:column;gap:12px}
+.slider label{font-weight:800;font-size:18px;display:flex;justify-content:space-between}
+.slider input[type=range]{width:100%;accent-color:var(--naranja);height:28px}
+.tbl{width:100%;border-collapse:collapse;font-size:16px;font-variant-numeric:tabular-nums;margin-top:10px}
+.tbl th,.tbl td{padding:10px 8px;border-bottom:1px solid var(--linea);text-align:right}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--gris);font-weight:500}
+.tbl tr.k td{font-weight:900;border-bottom:2px solid var(--tinta)}
+.hit{font-weight:900;font-size:clamp(64px,10vw,128px);line-height:.85;letter-spacing:-.05em;color:var(--naranja)}
+.hit-t{font-size:22px;font-weight:700;margin-top:12px;max-width:26ch}
+.hit-s{color:var(--gris);margin-top:10px;font-size:16px}
+
+/* Chat */
+.chat-grid{display:grid;grid-template-columns:1fr 380px;gap:56px;align-items:center;margin-top:8px}
+.chat-grid>*{min-width:0}
+.chips{display:flex;flex-direction:column;gap:10px;margin-top:28px;max-width:420px}
+.chips .tab{flex-direction:row;justify-content:space-between;width:100%;align-items:center;text-align:left}
+.phone{background:var(--tinta);border-radius:38px;padding:12px;box-shadow:0 40px 80px rgba(13,13,14,.25);max-width:380px;width:100%;margin-inline:auto}
+.screen{background:#E9E4D8;border-radius:28px;overflow:hidden;min-height:520px;display:flex;flex-direction:column}
+.ph-top{background:var(--azul);color:var(--crema);padding:16px 18px;display:flex;align-items:center;gap:12px}
+.av{width:38px;height:38px;border-radius:50%;background:var(--lima);color:var(--tinta);display:flex;align-items:center;justify-content:center;font-weight:900}
+.ph-top b{display:block;font-size:16px}.ph-top span{font-size:12px;color:#C9CFFF}
+.msgs{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:10px;justify-content:flex-end}
+.b{max-width:84%;padding:10px 12px 18px;border-radius:12px;font-size:15px;line-height:1.4;position:relative;animation:pop .35s var(--ease) both}
+.b.in{background:#fff;align-self:flex-start;border-top-left-radius:2px}
+.b.out{background:#DCE1FF;align-self:flex-end;border-top-right-radius:2px;animation-delay:.6s}
+.b time{position:absolute;right:10px;bottom:4px;font-size:10px;color:var(--gris);font-family:var(--f-mono)}
+.typing{align-self:flex-end;background:#DCE1FF;padding:10px 14px;border-radius:12px;display:flex;gap:4px;animation:gone .01s linear .6s both}
+.typing i{width:6px;height:6px;border-radius:50%;background:var(--azul);animation:dot 1s infinite}
+.typing i:nth-child(2){animation-delay:.15s}.typing i:nth-child(3){animation-delay:.3s}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+@keyframes dot{50%{transform:translateY(-3px);opacity:.4}}
+@keyframes gone{to{display:none;opacity:0;height:0;padding:0}}
+.why{margin-top:18px;font-size:15px;color:var(--gris);max-width:44ch}
+
+/* Hojear */
+.pages{display:flex;gap:20px;overflow-x:auto;scroll-snap-type:x mandatory;padding:28px 20px 30px;margin-top:20px;scrollbar-width:thin}
+.pg{flex:0 0 auto;width:min(300px,72vw);scroll-snap-align:start;display:flex;flex-direction:column;gap:10px}
+.pg img{width:100%;height:auto;display:block;box-shadow:0 18px 40px rgba(13,13,14,.18);border:1px solid var(--linea);transition:transform .3s var(--ease)}
+.pg:nth-child(odd) img{transform:rotate(-1.2deg)}.pg:nth-child(even) img{transform:rotate(1deg)}
+.pg:hover img{transform:none translateY(-6px)}
+.pg span{font-family:var(--f-mono);font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--gris)}
+.pages-wrap{position:relative}
+
+/* Incluye */
+.incluye{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:40px;border-top:2px solid var(--tinta)}
+.pz3{padding:26px 24px 30px 0;border-bottom:1px solid var(--linea);display:flex;flex-direction:column;gap:10px}
+.pz3+.pz3{padding-left:24px;border-left:1px solid var(--linea)}
+.pz3 .mono{color:var(--azul)}
+.pz3 h3{font-size:26px;font-weight:900;letter-spacing:-.02em;line-height:1.05}
+.pz3 p{color:var(--gris);font-size:16px}
+.shot{margin:36px 0 0}
+.shot img{width:100%;height:auto;display:block;border:2px solid var(--tinta)}
+
+/* Para quién */
+.quien{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:40px}
+.quien>div{padding:28px;border:2px solid var(--tinta);background:var(--papel)}
+.quien>div.no{background:transparent;border-style:dashed;border-color:var(--gris)}
+.quien h3{font-size:22px;font-weight:900;text-transform:uppercase;margin-bottom:14px}
+.quien ul{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;font-size:17px}
+
+/* Índice */
+.toc{list-style:none;margin:36px 0 0;padding:0;display:grid;grid-template-columns:repeat(3,1fr);gap:0 32px}
+.toc li{display:grid;grid-template-columns:34px 1fr;gap:8px;padding:12px 0;border-bottom:1px solid var(--linea);font-size:16px}
+.toc .n{font-family:var(--f-mono);font-weight:600;font-size:13px;color:var(--azul);padding-top:2px}
+.toc b{font-weight:800}
+
+/* Oferta */
+.oferta{background:var(--azul);color:var(--crema)}
+.oferta-box{display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end;border-top:2px solid var(--crema);padding-top:36px;margin-top:20px}
+.oferta-box>*{min-width:0}
+.oferta ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px;font-size:19px}
+.oferta li::before{content:"+ ";font-family:var(--f-mono);color:var(--lima)}
+.price-big{font-weight:900;font-size:clamp(84px,13vw,160px);line-height:.85;letter-spacing:-.05em}
+.price-big small{font-size:.28em;letter-spacing:0;vertical-align:top;margin-right:6px}
+.pago{color:#C9CFFF}
+.garantia{margin-top:44px;display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;background:var(--azul-osc);padding:22px 24px}
+.sello{width:84px;height:84px;border-radius:50%;background:var(--naranja);display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:900;line-height:.9;transform:rotate(-8deg)}
+.sello b{font-size:34px}.sello i{font-style:normal;font-family:var(--f-mono);font-size:11px;letter-spacing:.1em}
+
+/* FAQ */
+.faq{margin-top:36px;border-top:2px solid var(--tinta)}
+.faq details{border-bottom:1px solid var(--linea)}
+.faq summary{cursor:pointer;list-style:none;padding:20px 40px 20px 0;font-weight:800;font-size:20px;position:relative}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";position:absolute;right:4px;top:16px;font-family:var(--f-mono);font-size:24px;color:var(--azul);transition:transform .25s var(--ease)}
+.faq details[open] summary::after{transform:rotate(45deg)}
+.faq details p{padding:0 0 22px;color:var(--gris);max-width:64ch}
+
+/* Barra fija móvil */
+.sticky{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--tinta);color:var(--crema);display:none;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));transform:translateY(110%);transition:transform .35s var(--ease)}
+.sticky.on{transform:none}
+.sticky b{font-size:15px;line-height:1.2}
+.sticky a{background:var(--lima);color:var(--tinta);text-decoration:none;font-weight:900;text-transform:uppercase;padding:12px 16px;font-size:15px;white-space:nowrap}
+
+.ck{position:fixed;left:16px;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:30;max-width:560px;margin-inline:auto;background:var(--tinta);color:var(--crema);padding:16px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:12px 16px;font-size:15px;box-shadow:0 20px 40px rgba(13,13,14,.3)}
+.ck p{flex:1 1 260px}
+.ck a{color:var(--lima)}
+.ck div{display:flex;gap:8px}
+.ck button{font:inherit;font-weight:800;padding:10px 14px;border:1px solid var(--crema);background:transparent;color:var(--crema);cursor:pointer}
+.ck button.ok{background:var(--lima);color:var(--tinta);border-color:var(--lima)}
+footer{border-top:2px solid var(--tinta);padding-block:36px 48px;font-size:15px;color:var(--gris)}
+footer .cols{display:flex;flex-wrap:wrap;justify-content:space-between;gap:20px}
+footer b{color:var(--tinta)}
+
+@media (max-width:900px){
+  .hero-grid,.cmp-grid,.app,.desc,.chat-grid,.oferta-box,.quote{grid-template-columns:1fr}
+  .printer{max-width:380px;margin-inline:auto;width:100%}
+  .incluye{grid-template-columns:1fr}
+  .pz3+.pz3{padding-left:0;border-left:0}
+  .toc{grid-template-columns:1fr}
+  .quien{grid-template-columns:1fr}
+  .sticky{display:flex}
+  footer{padding-bottom:110px}
+}
+@media (max-width:520px){
+  .cta{font-size:17px;padding:16px 20px}
+  .stamp{width:96px;height:96px;font-size:13px;top:120px}
+  .stamp b{font-size:21px}
+  .hero-stats div{padding-right:0;margin-right:22px}
+  .hero-stats b{font-size:28px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="top mono"><span>Guía práctica · Repostería</span><span>Orbit</span></div>
+    <div class="hero-grid">
+      <div>
+        <h1>Hornear con <span class="g">ganancia</span></h1>
+        <p class="lead">Ponle precio a tu repostería, <em>véndela</em> y sostén tus precios cuando suben los insumos.</p>
+        <div class="hero-cta">
+          <a class="cta" href="https://pay.hotmart.com/A108017451O" data-checkout>Lo quiero <small>US$ 19</small></a>
+          <span class="mono">Descarga inmediata<br>Pago único</span>
+        </div>
+        <div class="hero-stats">
+          <div><b>78</b><span>páginas</span></div>
+          <div><b>11</b><span>capítulos</span></div>
+          <div><b>3</b><span>reposterías de ejemplo</span></div>
+          <div><b>+2</b><span>bonus: calculadora y cuaderno</span></div>
+        </div>
+      </div>
+      <div class="printer" aria-label="Ticket de ejemplo: costo y precio de un pastel">
+        <div class="slot" aria-hidden="true"></div>
+        <div class="rcpt">
+          <div class="t-h"><span>Pastel chocolate · 20 cm</span><span>#001</span></div>
+          <div class="r"><span>Ingredientes + merma</span><span>$182</span></div>
+          <div class="r"><span>Caja, base, sticker</span><span>$45</span></div>
+          <div class="r"><span>Tu tiempo · 1.2 h</span><span>$210</span></div>
+          <div class="r"><span>Gas, luz, horno…</span><span>$33</span></div>
+          <div class="sep"></div>
+          <div class="r"><b>Costo real</b><b>$470</b></div>
+          <div class="r dim"><span>Margen 25 % · comisión 4 %</span><span></span></div>
+          <div class="pz"><small>PRECIO</small><span>$670</span></div>
+          <div class="tq">ANTES LO VENDÍA A $525</div>
+        </div>
+        <div class="stamp" aria-hidden="true"><b>+$139</b>de ganancia<br>por pastel</div>
+      </div>
+    </div>
+  </div>
+  <div class="hero-foot"></div>
+  <div class="marquee" aria-hidden="true"><div class="track">
+    <span>«¿Cuánto sale?»</span><span>«Lo vi más <i>barato</i>»</span><span>«¿Me haces un descuentito?»</span><span>«Subió la mantequilla <i>otra vez</i>»</span><span>«¿Cuánto cobro por mi hora?»</span><span>«Está caro»</span>
+    <span>«¿Cuánto sale?»</span><span>«Lo vi más <i>barato</i>»</span><span>«¿Me haces un descuentito?»</span><span>«Subió la mantequilla <i>otra vez</i>»</span><span>«¿Cuánto cobro por mi hora?»</span><span>«Está caro»</span>
+  </div></div>
+</header>
+
+<main>
+  <!-- A OJO VS ARMADO -->
+  <section id="ejemplos">
+    <div class="wrap">
+      <div class="head">
+        <p class="mono eyebrow">Tres reposterías del libro</p>
+        <h2>El mismo producto. <em>Dos precios.</em></h2>
+        <p class="sub">El precio a ojo contra el precio armado con el método. Toca cada ejemplo.</p>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Ejemplos">
+        <button class="tab" role="tab" aria-selected="true" data-ex="ana" id="t-ana">Ana<small>Pastel por encargo</small></button>
+        <button class="tab" role="tab" aria-selected="false" data-ex="diego" id="t-diego">Diego<small>Brownies en tandas</small></button>
+        <button class="tab" role="tab" aria-selected="false" data-ex="sofia" id="t-sofia">Sofía<small>Pasteles para eventos</small></button>
+      </div>
+      <div class="cmp" id="cmp" role="tabpanel" aria-live="polite">
+        <div class="cmp-grid" id="cmp-bars">
+          <div class="bars">
+            <div><div class="bar-l"><span id="l-ojo">Precio a ojo</span><span class="num" id="v-ojo"></span></div><div class="bar ojo"><i id="b-ojo"></i><span class="costline" id="c1"></span></div></div>
+            <div><div class="bar-l"><span>Costo real (lo que de verdad le cuesta)</span><span class="num" id="v-costo"></span></div><div class="bar costo"><i id="b-costo"></i></div></div>
+            <div><div class="bar-l"><span>Precio armado con el método</span><span class="num" id="v-arm"></span></div><div class="bar armado"><i id="b-arm"></i><span class="costline" id="c2"></span></div></div>
+          </div>
+          <div class="verdict">
+            <div class="v bad"><span id="vb-l">A ojo le quedaban</span><b class="num" id="vb"></b><p id="vb-p"></p></div>
+            <div class="v good"><span>Con el método le quedan</span><b class="num" id="vg"></b><p id="vg-p"></p></div>
+          </div>
+        </div>
+        <div class="quote" id="cmp-quote" hidden>
+          <div class="doc">
+            <h4>Cotización · pastel temático</h4>
+            <div class="r"><span>Dos pisos, 30 personas, fondant y 2 figuras</span><span></span></div>
+            <div class="r"><span>Entrega en la ciudad y base decorada</span><span>incluido</span></div>
+            <div class="r"><b>Precio total</b><b>$2,800</b></div>
+            <div class="r"><span>Anticipo para confirmar (50 %)</span><span>$1,400</span></div>
+            <div class="r"><span>Saldo, 48 h antes</span><span>$1,400</span></div>
+            <div class="r"><span>Cambios de diseño</span><span>hasta 7 días antes</span></div>
+          </div>
+          <div class="doc">
+            <h4>De dónde sale el número</h4>
+            <div class="r"><span>Materiales, decoración y base</span><span>$650</span></div>
+            <div class="r"><span>5 horas de trabajo a $200</span><span>$1,000</span></div>
+            <div class="r"><span>Gastos fijos de esas 5 horas</span><span>$150</span></div>
+            <div class="r"><b>Costo total</b><b>$1,800</b></div>
+            <div class="r"><span>Margen 35 %, sin comisión</span><span>÷ 0.65</span></div>
+            <div class="r"><b>Precio redondeado</b><b>$2,800</b></div>
+          </div>
+        </div>
+        <p class="cmp-note" id="cmp-note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PLANILLA -->
+  <section class="sheet-sec" id="como-se-usa">
+    <div class="wrap">
+      <div class="head">
+        <p class="mono eyebrow">Así se usa la calculadora</p>
+        <h2>Tres pasos. <em>Un precio que puedes defender.</em></h2>
+        <p class="sub">Esta es una versión reducida de la calculadora que viene con el libro, cargada con el pastel de Ana. Cambia cualquier celda azul y mira cómo se mueve todo.</p>
+      </div>
+      <div class="tabs" role="tablist" aria-label="Pasos de la calculadora">
+        <button class="tab" role="tab" aria-selected="true" data-step="1" id="s1">1 · Lo que lleva<small>Insumos y empaque</small></button>
+        <button class="tab" role="tab" aria-selected="false" data-step="2" id="s2">2 · Tu tiempo y tus gastos<small>Valor hora</small></button>
+        <button class="tab" role="tab" aria-selected="false" data-step="3" id="s3">3 · El precio<small>Margen y comisión</small></button>
+      </div>
+      <div class="app">
+        <div class="xl" role="tabpanel">
+          <div class="xl-bar"><span>fx</span><span class="fx" id="fx">=Precio del paquete ÷ Cantidad del paquete × Uso</span></div>
+          <div class="xl-scroll">
+            <table id="st1">
+              <thead><tr><th></th><th>A</th><th>B</th><th>C</th><th>D</th><th>E</th></tr></thead>
+              <tbody id="ing-body"></tbody>
+            </table>
+            <table id="st2" hidden>
+              <thead><tr><th></th><th>A</th><th>B</th><th>C</th></tr></thead>
+              <tbody>
+                <tr><td class="rn">1</td><td class="h">Tu hora</td><td class="h"></td><td class="h">Nota</td></tr>
+                <tr><td class="rn">2</td><td>Sueldo que quieres al mes</td><td class="in"><input id="sueldo" inputmode="decimal" value="14000" aria-label="Sueldo al mes"></td><td>Lo que te pagas</td></tr>
+                <tr><td class="rn">3</td><td>Horas de producción al mes</td><td class="in"><input id="horas" inputmode="decimal" value="80" aria-label="Horas de producción"></td><td>Solo las que horneas</td></tr>
+                <tr class="tot"><td class="rn">4</td><td>Valor hora</td><td class="n" id="vh"></td><td>Sueldo ÷ horas</td></tr>
+                <tr><td class="rn">5</td><td class="h">Gastos fijos</td><td class="h"></td><td class="h"></td></tr>
+                <tr><td class="rn">6</td><td>Gastos fijos del mes</td><td class="in"><input id="gfm" inputmode="decimal" value="2200" aria-label="Gastos fijos del mes"></td><td>Gas, luz, internet, horno…</td></tr>
+                <tr class="tot"><td class="rn">7</td><td>Gastos fijos por hora</td><td class="n" id="gfh"></td><td>Gastos ÷ horas</td></tr>
+                <tr><td class="rn">8</td><td class="h">Este pastel</td><td class="h"></td><td class="h"></td></tr>
+                <tr><td class="rn">9</td><td>Horas que te lleva</td><td class="in"><input id="hp" inputmode="decimal" value="1.2" aria-label="Horas por pastel"></td><td>Tómale el tiempo</td></tr>
+                <tr><td class="rn">10</td><td>Tu tiempo</td><td class="n" id="mo"></td><td>Horas × valor hora</td></tr>
+                <tr><td class="rn">11</td><td>Gastos fijos del pastel</td><td class="n" id="gfp"></td><td>Horas × gastos por hora</td></tr>
+              </tbody>
+            </table>
+            <table id="st3" hidden>
+              <thead><tr><th></th><th>A</th><th>B</th><th>C</th></tr></thead>
+              <tbody>
+                <tr><td class="rn">1</td><td>Materiales</td><td class="n" id="p-mat"></td><td>Del paso 1</td></tr>
+                <tr><td class="rn">2</td><td>Tu tiempo</td><td class="n" id="p-mo"></td><td>Del paso 2</td></tr>
+                <tr><td class="rn">3</td><td>Gastos fijos</td><td class="n" id="p-gf"></td><td>Del paso 2</td></tr>
+                <tr class="tot"><td class="rn">4</td><td>Costo total</td><td class="n" id="p-ct"></td><td></td></tr>
+                <tr><td class="rn">5</td><td>Margen que quieres</td><td class="in"><input id="mg" inputmode="decimal" value="25" aria-label="Margen en porcentaje"></td><td>% del precio</td></tr>
+                <tr><td class="rn">6</td><td>Comisión de cobro</td><td class="in"><input id="cm" inputmode="decimal" value="4" aria-label="Comisión en porcentaje"></td><td>% terminal o link</td></tr>
+                <tr><td class="rn">7</td><td>Precio calculado</td><td class="n" id="p-calc"></td><td>Costo ÷ (1 − margen − comisión)</td></tr>
+                <tr class="key"><td class="rn">8</td><td>PRECIO DE LISTA</td><td class="n" id="p-lista"></td><td>Redondeado</td></tr>
+                <tr><td class="rn">9</td><td>Precio piso</td><td class="n" id="p-piso"></td><td>Debajo de esto, pierdes</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="side">
+          <div class="card"><span class="mono" id="side-l">Materiales del pastel</span><div class="big num" id="side-v">$227</div><p id="side-p">Ingredientes con 4 % de merma, más la caja, la base y el sticker.</p></div>
+          <div class="card"><span class="mono">Precio de lista</span><div class="big num" id="side-price">$670</div><p>Se actualiza con cada cambio que hagas en los tres pasos.</p></div>
+          <div class="legend"><i></i>Celdas azules: las llenas tú. El resto se calcula solo.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DESCUENTO -->
+  <section id="descuento">
+    <div class="wrap">
+      <div class="head">
+        <p class="mono eyebrow">Capítulo 8 · El costo de un descuento</p>
+        <h2>¿Cuánto te cuesta <em>un descuentito?</em></h2>
+        <p class="sub">Mueve la barra. Es el pastel de Ana: precio $670, costo $470, comisión 4 %.</p>
+      </div>
+      <div class="desc">
+        <div class="slider">
+          <label for="dsc"><span>Descuento</span><span class="num" id="dsc-v">10 %</span></label>
+          <input type="range" id="dsc" min="0" max="25" step="1" value="10">
+          <table class="tbl" aria-label="Ganancia con y sin descuento">
+            <thead><tr><th></th><th>Precio de lista</th><th>Con descuento</th></tr></thead>
+            <tbody>
+              <tr><td>Precio</td><td>$670.00</td><td id="d-p"></td></tr>
+              <tr><td>Comisión 4 %</td><td>−$26.80</td><td id="d-c"></td></tr>
+              <tr><td>Costo total</td><td>−$470.00</td><td>−$470.00</td></tr>
+              <tr class="k"><td>Le queda</td><td>$173.20</td><td id="d-g"></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div>
+          <div class="hit num" id="d-hit">−37 %</div>
+          <p class="hit-t">de ganancia por pastel, por un descuento que parece chico.</p>
+          <p class="hit-s" id="d-more">Para ganar lo mismo tendría que vender un 59 % más de pasteles.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHAT -->
+  <section style="padding-top:0" id="responder">
+    <div class="wrap chat-grid">
+      <div>
+        <div class="head">
+          <p class="mono eyebrow">Capítulo 8 · Qué contestar</p>
+          <h2>Los mensajes que <em>más cuestan</em> responder</h2>
+          <p class="sub">El libro trae respuestas listas para adaptar. Elige un mensaje y mira cómo contesta Ana.</p>
+        </div>
+        <div class="chips" role="tablist" aria-label="Mensajes de clientes">
+          <button class="tab" role="tab" aria-selected="true" data-chat="0">«¿Cuánto sale?»<small>precio + qué incluye + siguiente paso</small></button>
+          <button class="tab" role="tab" aria-selected="false" data-chat="1">«Lo vi más barato»<small>contar qué tiene el tuyo</small></button>
+          <button class="tab" role="tab" aria-selected="false" data-chat="2">«No me alcanza»<small>ajustar el producto, no el precio</small></button>
+          <button class="tab" role="tab" aria-selected="false" data-chat="3">«¿Me haces un descuentito?»<small>decir que no y ofrecer algo</small></button>
+        </div>
+        <p class="why" id="why"></p>
+      </div>
+      <div class="phone"><div class="screen">
+        <div class="ph-top"><div class="av">A</div><div><b>Pasteles de Ana</b><span>Pedidos con 48 h de anticipación</span></div></div>
+        <div class="msgs" id="msgs" aria-live="polite"></div>
+      </div></div>
+    </div>
+  </section>
+
+  <!-- HOJEAR -->
+  <section style="padding-top:0;padding-bottom:40px" id="hojear">
+    <div class="wrap"><div class="head"><p class="mono eyebrow">Hojéalo</p><h2>Páginas <em>de verdad</em></h2><p class="sub">Desliza para ver algunas páginas del ebook.</p></div></div>
+    <div class="pages" tabindex="0" aria-label="Páginas del ebook">
+      <figure class="pg" style="margin:0"><img src="/assets/ebooks/hornear-con-ganancia/p1.jpg" alt="Portada del ebook"><span>Portada</span></figure>
+      <figure class="pg" style="margin:0"><img src="/assets/ebooks/hornear-con-ganancia/p2.jpg" alt="Índice del ebook"><span>Contenido</span></figure>
+      <figure class="pg" style="margin:0"><img src="/assets/ebooks/hornear-con-ganancia/p7.jpg" alt="Apertura del capítulo 1"><span>Cap. 1 · El precio a ojo</span></figure>
+      <figure class="pg" style="margin:0"><img src="/assets/ebooks/hornear-con-ganancia/p14.jpg" alt="Ficha de costo de un pastel"><span>Cap. 2 · La ficha del pastel</span></figure>
+      <figure class="pg" style="margin:0"><img src="/assets/ebooks/hornear-con-ganancia/p39.jpg" alt="Tabla de precios de lista de los tres ejemplos"><span>Cap. 5 · Tu precio, armado</span></figure>
+      <figure class="pg" style="margin:0"><img src="/assets/ebooks/hornear-con-ganancia/p55.jpg" alt="Respuestas a clientes"><span>Cap. 8 · Responder</span></figure>
+      <figure class="pg" style="margin:0"><img src="/assets/ebooks/hornear-con-ganancia/p61.jpg" alt="Cotización de un pedido por encargo"><span>Cap. 9 · Encargos y anticipo</span></figure>
+      <figure class="pg" style="margin:0"><img src="/assets/ebooks/hornear-con-ganancia/p78.jpg" alt="Página de los bonus"><span>Bonus</span></figure>
+    </div>
+  </section>
+
+  <!-- INCLUYE -->
+  <section style="padding-top:40px">
+    <div class="wrap">
+      <div class="head"><p class="mono eyebrow">Qué incluye</p><h2>Tres piezas que <em>se usan juntas</em></h2></div>
+      <div class="incluye">
+        <div class="pz3"><span class="mono">Ebook · PDF · 78 págs.</span><h3>El método completo</h3><p>Costos, precio, menú, cómo responder, encargos con anticipo y qué hacer cuando suben los insumos.</p></div>
+        <div class="pz3"><span class="mono">Calculadora · Excel</span><h3>La planilla que probaste arriba</h3><p>Completa: insumos, valor hora, gastos fijos, comisión, cinco productos, cotizador de encargos y tu índice de insumos.</p></div>
+        <div class="pz3"><span class="mono">Cuaderno · PDF · 11 págs.</span><h3>Las mismas cuentas en papel</h3><p>Ficha de producto, menú, toma de pedidos y agenda, para imprimir.</p></div>
+      </div>
+      <figure class="shot"><img src="/assets/ebooks/hornear-con-ganancia/mockup-interiores.jpg" alt="Ebook abierto con páginas interiores" loading="lazy"></figure>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <h2>¿Es para ti?</h2>
+      <div class="quien">
+        <div><h3>Sí, si…</h3><ul>
+          <li>Vendes pasteles, galletas, brownies o cupcakes desde casa, por encargo, por mensaje o en bazares.</li>
+          <li>Ya sabes hornear y quieres que cada venta te deje dinero.</li>
+          <li>Te da miedo subir precios y no sabes cómo avisarlo.</li>
+          <li>Quieres un sistema simple que puedas revisar en 20 minutos al mes.</li>
+        </ul></div>
+        <div class="no"><h3>No, si…</h3><ul>
+          <li>Buscas recetas: este libro no trae ninguna.</li>
+          <li>Esperas una promesa de ingresos. Nadie puede prometerte cuánto vas a vender.</li>
+          <li>Necesitas asesoría contable o fiscal de tu país.</li>
+        </ul></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <p class="mono eyebrow">Índice</p>
+      <ol class="toc">
+        <li><span class="n">01</span><span><b>El precio a ojo</b> y sus cinco fugas</span></li>
+        <li><span class="n">02</span><span><b>Lo que lleva cada pastel</b></span></li>
+        <li><span class="n">03</span><span><b>Tu hora tiene precio</b></span></li>
+        <li><span class="n">04</span><span><b>Los gastos que nadie ve</b></span></li>
+        <li><span class="n">05</span><span><b>Del costo al precio</b></span></li>
+        <li><span class="n">06</span><span><b>El mercado como espejo</b></span></li>
+        <li><span class="n">07</span><span><b>Dónde vender</b> y cómo mostrar tu menú</span></li>
+        <li><span class="n">08</span><span><b>Responder «¿cuánto sale?»</b></span></li>
+        <li><span class="n">09</span><span><b>Pedidos por encargo</b> y anticipo</span></li>
+        <li><span class="n">10</span><span><b>Cuando suben los insumos</b></span></li>
+        <li><span class="n">11</span><span><b>La rutina de 20 minutos</b></span></li>
+        <li><span class="n">A</span><span><b>Anexo:</b> fórmulas y glosario</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="oferta" id="comprar">
+    <div class="wrap">
+      <h2>Todo junto, <em>hoy</em></h2>
+      <div class="oferta-box">
+        <ul>
+          <li>Ebook de 78 páginas en PDF</li>
+          <li>Calculadora en Excel, en cualquier moneda</li>
+          <li>Cuaderno imprimible de 11 páginas</li>
+          <li>Acceso inmediato después del pago</li>
+        </ul>
+        <div><div class="price-big num"><small>US$</small>19</div><p class="pago mono" style="margin-top:12px">Pago único · Se cobra en tu moneda local</p></div>
+      </div>
+      <div style="margin-top:36px"><a class="cta" href="https://pay.hotmart.com/A108017451O" data-checkout>Comprar ahora <small>US$ 19</small></a></div>
+      <p class="pago" style="margin-top:20px;max-width:62ch">En México puedes pagar con tarjeta, OXXO, SPEI, Mercado Pago, Kueski Pay o PayPal. El pago lo procesa Hotmart.</p>
+      <div class="garantia">
+        <div class="sello" aria-hidden="true"><b>7</b><i>DÍAS</i></div>
+        <p><b>Garantía de 7 días de Hotmart.</b> Si no es para ti, pides el reembolso desde tu compra en Hotmart dentro de los 7 días.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq">
+        <details><summary>¿Cómo lo recibo?</summary><p>Apenas se aprueba el pago te llega un correo de Hotmart con el acceso. Desde ahí descargas el ebook, la calculadora y el cuaderno.</p></details>
+        <details><summary>¿Sirve si no vivo en México?</summary><p>Sí. Los ejemplos usan una moneda ficticia y el método funciona igual en pesos mexicanos, colombianos, chilenos, soles o dólares. La calculadora acepta cualquier moneda.</p></details>
+        <details><summary>¿Necesito saber Excel?</summary><p>No. La calculadora ya tiene las fórmulas: solo escribes tus números en las celdas azules, como en la versión de arriba. Si prefieres papel, usa el cuaderno.</p></details>
+        <details><summary>¿Trae recetas?</summary><p>No. Es para quien ya sabe hornear y quiere que su repostería deje dinero: costos, precios, venta y encargos.</p></details>
+        <details><summary>¿Me garantiza que voy a ganar más?</summary><p>No. Te da un método para saber cuánto te cuesta cada producto y ponerle un precio que lo cubra. Lo que vendas depende de tu producto, tu mercado y tu trabajo.</p></details>
+        <details><summary>¿Lo puedo ver en el celular?</summary><p>Sí, el PDF se lee en el celular, la tableta o la computadora. La calculadora funciona mejor en computadora o en la app de Excel o Google Sheets.</p></details>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap cols">
+    <p><b>Orbit</b> · Estudio de productos digitales · orbitando.com.ar</p>
+    <p>Dudas: <b>orbitando.studioba@gmail.com</b></p>
+    <p>Pagos procesados por Hotmart. Ejemplos y montos ficticios.</p>
+  </div>
+</footer>
+
+<div class="ck" id="ck" role="dialog" aria-label="Aviso de cookies" hidden>
+  <p>Usamos cookies de medición para saber qué anuncios funcionan. ¿Las aceptas? <a href="https://www.orbitando.com.ar/privacidad#cookies">Política de privacidad</a></p>
+  <div><button type="button" data-ck="no">No, gracias</button><button type="button" data-ck="si" class="ok">Aceptar</button></div>
+</div>
+<div class="sticky" id="sticky"><b>Hornear con ganancia<br><span class="mono" style="font-size:11px;color:#BDBAC2">Ebook + calculadora + cuaderno</span></b><a href="https://pay.hotmart.com/A108017451O" data-checkout>US$ 19 · Comprar</a></div>
+
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var money=function(n,d){d=d==null?0:d;var s=Math.abs(n).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});return (n<0?"−$":"$")+s};
+  var val=function(el){var v=parseFloat(String(el.value).replace(/,/g,""));return isFinite(v)&&v>=0?v:0};
+  function redondeo(p){var m=p<=100?5:p<=1000?10:50;return Math.ceil(p/m)*m}
+  function tabs(sel,cb){var bs=document.querySelectorAll(sel);bs.forEach(function(b){b.addEventListener("click",function(){bs.forEach(function(x){x.setAttribute("aria-selected",x===b?"true":"false")});cb(b)})})}
+
+  /* 1. Comparador */
+  var EX={
+    ana:{ojo:525,costo:470,arm:670,com:.04,l:"A ojo: el precio de otra repostera",vbl:"A ojo le quedaban",unit:"por pastel",
+      note:"Ana copiaba el precio de otra repostera: $525. Después de la comisión de la terminal le quedaban $34 por pastel, y el primer aumento del chocolate la ponía en números rojos. Con el precio armado le quedan $173."},
+    diego:{ojo:20.5,costo:29.33,arm:45,com:.016,l:"A ojo: chocolate y mantequilla «por tres»",vbl:"A ojo perdía",unit:"por brownie",
+      note:"Diego multiplicaba por tres el chocolate y la mantequilla. Dejaba afuera el azúcar, el huevo, la harina, la nuez, la bolsita, el sticker y la merma: casi la mitad del costo. Cada brownie que vendía le restaba dinero."},
+    sofia:{quote:true,note:"Sofía no improvisa el precio de un pastel para un evento: lo arma, lo pone por escrito y pide 50 % de anticipo antes de comprar insumos. El capítulo 9 trae la cotización completa y la política de cambios."}
+  };
+  function showEx(k){
+    var e=EX[k];$("cmp-note").textContent=e.note;
+    $("cmp-bars").hidden=!!e.quote;$("cmp-quote").hidden=!e.quote;
+    if(e.quote)return;
+    var max=e.arm*1.08,pc=function(v){return (v/max*100)+"%"};
+    $("l-ojo").textContent=e.l;
+    $("v-ojo").textContent=money(e.ojo,e.ojo<100?2:0);$("v-costo").textContent=money(e.costo,e.costo<100?2:0);$("v-arm").textContent=money(e.arm,0);
+    ["b-ojo","b-costo","b-arm"].forEach(function(id){$(id).style.width="0"});
+    requestAnimationFrame(function(){requestAnimationFrame(function(){
+      $("b-ojo").style.width=pc(e.ojo);$("b-costo").style.width=pc(e.costo);$("b-arm").style.width=pc(e.arm);
+      $("c1").style.left=pc(e.costo);$("c2").style.left=pc(e.costo);
+    })});
+    var g0=e.ojo*(1-e.com)-e.costo,g1=e.arm*(1-e.com)-e.costo,d=e.costo<100?2:0;
+    $("vb-l").textContent=g0<0?"A ojo perdía":"A ojo le quedaban";
+    $("vb").textContent=money(Math.abs(g0),d);$("vb-p").textContent=e.unit+", después de la comisión";
+    $("vg").textContent=money(g1,d);$("vg-p").textContent=e.unit+", con el sueldo de su tiempo ya pagado";
+  }
+  tabs("[data-ex]",function(b){showEx(b.dataset.ex)});showEx("ana");
+
+  /* 2. Planilla */
+  var ING=[["Harina de trigo","g",1000,30,300],["Azúcar","g",1000,30,300],["Cocoa","g",250,75,60],["Mantequilla","g",1000,240,200],["Huevos","u",30,90,4],["Leche","ml",1000,28,250],["Chocolate semiamargo","g",1000,260,200],["Crema para batir","ml",1000,90,200],["Polvo para hornear","g",100,20,10]];
+  var EMP=[["Base de cartón",12],["Caja para pastel",30],["Sticker con logo",3]];
+  var tb=$("ing-body"),h='<tr><td class="rn">1</td><td class="h">Insumo</td><td class="h">Paquete</td><td class="h">Precio paquete</td><td class="h">Uso</td><td class="h">Costo</td></tr>';
+  ING.forEach(function(r,i){h+='<tr><td class="rn">'+(i+2)+'</td><td>'+r[0]+'</td><td class="n">'+r[2].toLocaleString("en-US")+' '+r[1]+'</td><td class="in"><input id="pp'+i+'" inputmode="decimal" value="'+r[3]+'" aria-label="Precio del paquete de '+r[0]+'"></td><td class="in"><input id="us'+i+'" inputmode="decimal" value="'+r[4]+'" aria-label="Uso de '+r[0]+' en '+r[1]+'"></td><td class="n" id="ci'+i+'"></td></tr>'});
+  var n=ING.length+2;
+  h+='<tr class="tot"><td class="rn">'+n+'</td><td>Ingredientes</td><td></td><td></td><td></td><td class="n" id="ing-t"></td></tr>';
+  h+='<tr><td class="rn">'+(n+1)+'</td><td>Merma (%)</td><td></td><td></td><td class="in"><input id="merma" inputmode="decimal" value="4" aria-label="Merma en porcentaje"></td><td class="n" id="ing-m"></td></tr>';
+  EMP.forEach(function(r,i){h+='<tr><td class="rn">'+(n+2+i)+'</td><td>'+r[0]+'</td><td class="n">1 u</td><td class="in"><input id="em'+i+'" inputmode="decimal" value="'+r[1]+'" aria-label="Precio de '+r[0]+'"></td><td class="n">1</td><td class="n" id="ce'+i+'"></td></tr>'});
+  h+='<tr class="key"><td class="rn">'+(n+5)+'</td><td>Materiales por pastel</td><td></td><td></td><td></td><td class="n" id="mat-t"></td></tr>';
+  tb.innerHTML=h;
+
+  var step=1,S={};
+  function calc(){
+    var ing=0;ING.forEach(function(r,i){var c=val($("pp"+i))/r[2]*val($("us"+i));$("ci"+i).textContent=money(c,2);ing+=c});
+    var m=val($("merma"))/100,im=ing*(1+m),emp=0;
+    EMP.forEach(function(r,i){var c=val($("em"+i));$("ce"+i).textContent=money(c,2);emp+=c});
+    var mat=im+emp;$("ing-t").textContent=money(ing,2);$("ing-m").textContent=money(im,2);$("mat-t").textContent=money(mat,2);
+    var hrs=val($("horas")),vh=hrs?val($("sueldo"))/hrs:0,gfh=hrs?val($("gfm"))/hrs:0,hp=val($("hp"));
+    var mo=vh*hp,gf=gfh*hp;
+    $("vh").textContent=money(vh,2);$("gfh").textContent=money(gfh,2);$("mo").textContent=money(mo,2);$("gfp").textContent=money(gf,2);
+    var ct=mat+mo+gf,mg=val($("mg"))/100,cm=val($("cm"))/100,den=1-mg-cm;
+    $("p-mat").textContent=money(mat,2);$("p-mo").textContent=money(mo,2);$("p-gf").textContent=money(gf,2);$("p-ct").textContent=money(ct,2);
+    var pc=den>0?ct/den:NaN,pl=den>0?redondeo(pc):NaN,piso=cm<1?ct/(1-cm):NaN;
+    $("p-calc").textContent=isFinite(pc)?money(pc,2):"revisa margen";$("p-lista").textContent=isFinite(pl)?money(pl,0):"—";$("p-piso").textContent=isFinite(piso)?money(piso,2):"—";
+    $("side-price").textContent=isFinite(pl)?money(pl,0):"—";
+    S={mat:mat,mo:mo,gf:gf,ct:ct,vh:vh};side();
+  }
+  var FX={1:"=Precio del paquete ÷ Cantidad del paquete × Uso",2:"=Sueldo del mes ÷ Horas de producción",3:"=Costo total ÷ (1 − Margen − Comisión)"};
+  function side(){
+    if(step===1){$("side-l").textContent="Materiales del pastel";$("side-v").textContent=money(S.mat,0);$("side-p").textContent="Ingredientes con merma, más la caja, la base y el sticker. Lo que la mayoría olvida contar."}
+    if(step===2){$("side-l").textContent="Tu valor hora";$("side-v").textContent=money(S.vh,0);$("side-p").textContent="Se divide solo entre las horas en que horneas, porque las de compras, redes y entregas también hay que pagarlas."}
+    if(step===3){$("side-l").textContent="Costo total";$("side-v").textContent=money(S.ct,0);$("side-p").textContent="Si vendes a este número cubres todo y te pagas tu sueldo, pero el negocio no gana nada. Por eso se suma el margen."}
+  }
+  tabs("[data-step]",function(b){step=+b.dataset.step;[1,2,3].forEach(function(i){$("st"+i).hidden=i!==step});$("fx").textContent=FX[step];side()});
+  document.querySelector(".xl").addEventListener("input",calc);calc();
+
+  /* 3. Descuento */
+  function desc(){
+    var d=+$("dsc").value/100,p=670*(1-d),c=p*.04,g=p-c-470,g0=173.2;
+    $("dsc-v").textContent=Math.round(d*100)+" %";
+    $("d-p").textContent=money(p,2);$("d-c").textContent="−"+money(c,2);$("d-g").textContent=money(g,2);
+    var loss=(1-g/g0)*100;$("d-hit").textContent=d===0?"0 %":"−"+Math.round(loss)+" %";
+    $("d-more").textContent=g<=0?"Con este descuento pierde dinero en cada pastel.":d===0?"Sin descuento: $173.20 por pastel.":"Para ganar lo mismo tendría que vender un "+Math.round((g0/g-1)*100)+" % más de pasteles.";
+  }
+  $("dsc").addEventListener("input",desc);desc();
+
+  /* 4. Chat */
+  var CH=[
+    ["Hola! cuánto sale el pastel de chocolate?","¡Hola! El pastel de chocolate con ganache de 20 cm, para 12 personas, cuesta <b>$670</b>. Lleva chocolate semiamargo de verdad y va en caja con base, listo para regalar.<br><br>Lo preparo con 48 horas de anticipación. ¿Para qué día lo necesitas?","Precio, qué incluye y una pregunta que lleva al pedido. No pide perdón ni ofrece descuento."],
+    ["Lo vi más barato en otro lado 😕","Puede ser, hay pasteles de muchos precios. El mío es de 20 cm, para 12 personas, con mantequilla y chocolate semiamargo, y va en caja para regalo. Si buscas algo más sencillo, te ofrezco una caja de 6 cupcakes del mismo sabor: <b>$290</b>.","Cuenta qué tiene el suyo, sin hablar mal del otro, y ofrece una alternativa."],
+    ["Uy, ahorita no me alcanza","Te entiendo. Si quieres, te lo hago de 15 cm, para 8 personas, con el mismo sabor y la misma presentación. Cuesta <b>$480</b>.","No baja el precio: ajusta el producto a un tamaño que entre en el presupuesto."],
+    ["Me haces un descuentito? 🙏","Los precios son los del menú, que actualizo según el costo de mis insumos. Lo que sí puedo hacer: si pides dos, el envío va incluido.","Dice que no al descuento con amabilidad y ofrece un extra que le cuesta poco."]
+  ];
+  function chat(i){var c=CH[i];$("msgs").innerHTML='<div class="b in">'+c[0]+'<time>10:41</time></div><div class="typing" aria-hidden="true"><i></i><i></i><i></i></div><div class="b out">'+c[1]+'<time>10:42</time></div>';$("why").textContent=c[2]}
+  tabs("[data-chat]",function(b){chat(+b.dataset.chat)});chat(0);
+
+  /* Barra fija en móvil */
+  var st=$("sticky"),hero=document.querySelector(".hero"),of=$("comprar");
+  function onScroll(){var y=window.scrollY||0,hb=hero.offsetHeight,ot=of.getBoundingClientRect();st.classList.toggle("on",y>hb&&!(ot.top<window.innerHeight&&ot.bottom>0))}
+  window.addEventListener("scroll",onScroll,{passive:true});
+
+  /* Píxel de Meta con consentimiento (misma clave y criterio que orbit.js) */
+  var PIXEL="867844293081970",CK="orbit-cookies",q=[],loaded=false;
+  var ckGet=function(){try{return localStorage.getItem(CK)}catch(e){return null}};
+  var ckSet=function(v){try{localStorage.setItem(CK,v)}catch(e){}};
+  function loadPixel(){
+    if(loaded||ckGet()!=="si")return;loaded=true;
+    !function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+    window.fbq("consent","grant");window.fbq("init",PIXEL);window.fbq("track","PageView");
+    while(q.length)window.fbq("track",q[0][0],q.shift()[1]);
+  }
+  function track(ev){if(ckGet()==="no")return;var p={value:19,currency:"USD",content_name:"Hornear con ganancia",content_ids:["hotmart-8723366"],content_type:"product"};if(loaded)window.fbq("track",ev,p);else q.push([ev,p])}
+  var ck=$("ck");
+  if(ckGet()===null){ck.hidden=false}else{loadPixel()}
+  ck.addEventListener("click",function(e){var b=e.target.closest("[data-ck]");if(!b)return;ckSet(b.dataset.ck);ck.hidden=true;if(b.dataset.ck==="si")loadPixel();else q.length=0});
+  track("ViewContent");
+  var qs="";try{qs=window.location.search||""}catch(e){}
+  document.querySelectorAll("[data-checkout]").forEach(function(a){
+    if(qs.length>1){a.href=a.href+(a.href.indexOf("?")<0?"?":"&")+qs.slice(1)}
+    a.addEventListener("click",function(){track("InitiateCheckout")});
+  });
+})();
+</script>
+
+</body>
+</html>
