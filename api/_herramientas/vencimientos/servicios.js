@@ -9,6 +9,7 @@ export const CATEGORIAS = [
   { id: 'Vivienda', icono: 'casa' },
   { id: 'Auto', icono: 'auto' },
   { id: 'Salud y seguros', icono: 'escudo' },
+  { id: 'Tarjetas', icono: 'tarjeta' },
   { id: 'Conectividad', icono: 'wifi' },
   { id: 'Suscripciones', icono: 'play' },
   { id: 'Trámites', icono: 'doc' },

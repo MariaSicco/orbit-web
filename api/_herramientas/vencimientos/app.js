@@ -6,6 +6,7 @@ import { datosEjemplo } from './ejemplo.js';
 import { propuestaDesde, cuentaQueCoincide } from './factura.js';
 import { cuentasDesdeMails } from './correo-lector.js';
 import { configCorreo, buscarEnGmail, buscarEnOutlook, mailsDemo } from './correo.js';
+import { cuentasDesdeResumen } from './resumen-tarjeta.js';
 
 const CLAVE = 'orbit:vencimientos:v1';
 const $id = id => document.getElementById(id);
@@ -64,6 +65,7 @@ function textoEstado(o) {
 function montoFila(o) {
   if (o.cuenta.tipo === 'tramite') return '<span class="fila-monto"><small>Trámite</small></span>';
   if (o.monto == null) return '<span class="fila-monto"><small>Sin monto</small></span>';
+  if (o.cuenta.enTarjeta) return `<span class="fila-monto"><span class="aprox">${o.origen === 'estimado' ? '≈ ' : ''}</span>${plata(o.monto, o.moneda)}<small>en la tarjeta</small></span>`;
   if (o.origen === 'estimado') return `<span class="fila-monto"><span class="aprox">≈</span> ${plata(o.monto, o.moneda)}<small>estimado</small></span>`;
   return `<span class="fila-monto">${plata(o.monto, o.moneda)}${o.origen === 'factura' && !o.resuelto ? '<small>factura</small>' : ''}</span>`;
 }
@@ -172,8 +174,12 @@ function primerUso() {
     </div>
     <div class="primer primer-mail">
       <h2>Que las busque <span class="it">la app</span></h2>
-      <p>Conectá tu mail y encontramos tus facturas de luz, gas, agua, expensas y más, con sus fechas y montos. Se lee en tu teléfono y no guardamos tus mails.</p>
-      <button type="button" class="bt prim ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar mis facturas en el mail</button>
+      <p>Subí el resumen de tu tarjeta y conectá tu mail: encontramos lo que pagás todos los meses, con fechas y montos.</p>
+      <div class="acciones">
+        <button type="button" class="bt prim ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subí el resumen de tu tarjeta</button>
+        <button type="button" class="bt prim ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar mis facturas en el mail</button>
+      </div>
+      <p style="margin:12px 0 0;font-size:13px">El resumen trae lo que se cobra en la tarjeta; el mail, las facturas con vencimiento. Usá los dos.</p>
     </div>
     <div class="primer">
       <h2>O elegí <span class="it">a mano</span></h2>
@@ -520,7 +526,7 @@ function elegirServicio(filtro = '') {
 function abrirAgregar() {
   abrir('Agregar', `
     <button type="button" class="bt prim ancho foto-bt" data-acc="leer"><svg><use href="#i-camara"/></svg> Sacale una foto a la factura</button>
-    <button type="button" class="bt sec ancho" data-acc="correo" style="margin-top:10px"><svg><use href="#i-sobre"/></svg> Buscar en mi mail</button>
+    <div class="acciones dos" style="margin-top:10px"><button type="button" class="bt sec" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Resumen de tarjeta</button><button type="button" class="bt sec" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar en mi mail</button></div>
     <p class="leyenda" style="margin:8px 2px 16px">Leemos la fecha, el 2º vencimiento y el monto, de una foto, del PDF o directo de tu mail.</p>
     <div class="buscar"><svg><use href="#i-buscar"/></svg><input type="search" id="buscar-serv" placeholder="Buscá: luz, ABL, prepaga, VTV…" aria-label="Buscar un servicio o vencimiento" autocomplete="off"></div>
     <button type="button" class="bt sec ancho" data-acc="elegir" data-s=""><svg><use href="#i-mas"/></svg> Otra cuenta, con nombre propio</button>
@@ -740,26 +746,26 @@ async function buscarCorreo(proveedor) {
     return;
   }
   encontrados = cuentasDesdeMails(mails, hoy);
-  mostrarEncontrados(mails.length);
+  mostrarEncontrados(`Revisamos ${mails.length} mails.`, `Revisamos ${mails.length} mails y no encontramos facturas con fecha de vencimiento. Puede que te lleguen a otro mail o en papel.`);
 }
-function mostrarEncontrados(revisados) {
+function mostrarEncontrados(origen, siVacio) {
   if (!encontrados.length) {
-    abrir('No encontramos facturas', `<p class="nota">Revisamos ${revisados} mails y no encontramos facturas con fecha de vencimiento. Puede que te lleguen a otro mail o en papel.</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="leer"><svg><use href="#i-camara"/></svg> Sacale una foto a una factura</button><button type="button" class="bt sec ancho" data-acc="leer-manual">Cargar a mano</button></div>`);
+    abrir('No encontramos nada', `<p class="nota">${esc(siVacio)}</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="leer"><svg><use href="#i-camara"/></svg> Sacale una foto a una factura</button><button type="button" class="bt sec ancho" data-acc="leer-manual">Cargar a mano</button></div>`);
     return;
   }
   const filas = encontrados.map((c, i) => {
     const ya = cuentaQueCoincide(d.cuentas, c);
     const sub = [`${c.proximoEstimado ? 'próximo ≈ ' : 'vence '}${V.fechaCorta(c.proximo)} ${V.mesDe(c.proximo) !== V.mesDe(hoy) ? `de ${V.nombreMes(V.mesDe(c.proximo))}` : ''}`.trim(),
-      V.nombreFrecuencia(c.frecuencia).toLowerCase(), `${c.encontradas} factura${c.encontradas > 1 ? 's' : ''}`, ya ? `ya la tenés: se actualiza` : ''].filter(Boolean).join(' · ');
+      V.nombreFrecuencia(c.frecuencia).toLowerCase(), c.tarjeta ? 'total del resumen' : c.origen ? `en ${c.origen}` : `${c.encontradas} factura${c.encontradas > 1 ? 's' : ''}`, ya ? `ya la tenés: se actualiza` : ''].filter(Boolean).join(' · ');
     return `<li><label class="encontrada">
-      <input type="checkbox" name="c" value="${i}" ${c.conocido || ya || c.nombre === 'Expensas' ? 'checked' : ''}>
+      <input type="checkbox" name="c" value="${i}" ${c.conocido || ya || c.nombre === 'Expensas' || c.origen ? 'checked' : ''}>
       ${avatar({ nombre: c.nombre, color: c.color })}
       <span class="fila-txt"><b>${esc(c.nombre)}</b><small>${esc(sub)}</small></span>
-      <span class="fila-monto">${c.monto != null ? plata(c.monto) : '<small>Sin monto</small>'}</span>
+      <span class="fila-monto">${c.monto != null ? plata(c.monto, c.moneda) : '<small>Sin monto</small>'}</span>
     </label></li>`;
   }).join('');
   abrir(`Encontramos ${encontrados.length}`, `
-    <p class="leyenda" style="margin-top:0">Revisamos ${revisados} mails. Destildá lo que no sea tuyo o no quieras cargar. Las fechas con ≈ son estimadas a partir de las facturas anteriores.</p>
+    <p class="leyenda" style="margin-top:0">${esc(origen)} Destildá lo que no sea tuyo o no quieras cargar. Las fechas con ≈ son estimadas a partir de los cobros anteriores.</p>
     <form data-form="correo"><ul class="lista lista-sel">${filas}</ul>
     <div class="acciones" style="margin-top:16px"><button class="bt prim ancho" type="submit"><svg><use href="#i-check"/></svg> Cargar las elegidas</button>
     <button type="button" class="bt sec ancho" data-acc="cerrar">Ahora no</button></div></form>`);
@@ -782,7 +788,9 @@ function guardarDesdeMail(form) {
       c = { id: V.nuevoId(), nombre: e.nombre, categoria: e.categoria, frecuencia: e.frecuencia, primerVto: e.proximo,
         ...(e.preset ? { preset: e.preset } : {}), ...(e.color ? { color: e.color } : {}),
         ...(e.monto != null ? { monto: e.monto } : {}), ...(e.segundoVto ? { segundoVto: e.segundoVto } : {}),
-        ...(servicio(e.preset)?.debito ? { debito: true } : {}), ...(servicio(e.preset)?.habil ? { habil: true } : {}) };
+        ...(e.debito || servicio(e.preset)?.debito ? { debito: true } : {}), ...(servicio(e.preset)?.habil ? { habil: true } : {}),
+        ...(e.moneda === 'USD' ? { moneda: 'USD' } : {}), ...(e.nota ? { nota: e.nota } : {}),
+        ...(e.origen && !e.tarjeta ? { enTarjeta: e.origen, nota: `Se cobra en la tarjeta ${e.origen}: ya está dentro de su total.` } : {}) };
       nuevas++;
     }
     n = V.guardarCuenta(n, c);
@@ -799,6 +807,25 @@ function guardarDesdeMail(form) {
   guardar(n);
   cerrar();
   toast(`Listo: ${nuevas ? `${nuevas} cuenta${nuevas > 1 ? 's' : ''} nueva${nuevas > 1 ? 's' : ''}` : ''}${nuevas && actualizadas ? ' y ' : ''}${actualizadas ? `${actualizadas} actualizada${actualizadas > 1 ? 's' : ''}` : ''}.`, [{ t: 'Al calendario', fn: () => descargarICS() }], 8000);
+}
+
+/* ── resumen de tarjeta ── */
+async function leerResumen(file) {
+  if (!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) { toast('Subí el resumen en PDF, como lo descargás del banco.'); return; }
+  if (file.size > 4 * 1024 * 1024) { toast('El PDF pesa más de 4 MB. Descargalo de nuevo desde el banco.'); return; }
+  abrir('Leyendo tu resumen', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p><b>Estamos leyendo el resumen.</b><br>Tarda hasta un minuto. No lo guardamos: se lee y se descarta.</p></div>`);
+  let r, j;
+  try {
+    r = await fetch('/api/vencimientos-resumen', { method: 'POST', body: file, credentials: 'same-origin', headers: { 'Content-Type': 'application/pdf' } });
+    j = await r.json().catch(() => ({}));
+  } catch { return errorLectura('Sin conexión. La lectura necesita internet; probá de nuevo.'); }
+  if (r.status === 401) return errorLectura('Tu sesión de Orbit se cerró. Entrá de nuevo para leer el resumen.', true);
+  if (!r.ok || !j.ok) return errorLectura(j.error || 'No pudimos leer el resumen. Probá de nuevo en un rato.');
+  encontrados = cuentasDesdeResumen(j.lectura, hoy);
+  const t = j.lectura?.tarjeta || {};
+  const de = [t.red, t.banco].filter(Boolean).join(' ') || 'tu tarjeta';
+  mostrarEncontrados(`${j.modo === 'prueba' ? 'Modo prueba: es un resumen de ejemplo, no el tuyo. ' : ''}Leímos el resumen de ${de}.${j.confiable === false ? ' Algunos montos no cerraron: revisalos.' : ''}`,
+    `Leímos el resumen de ${de} y no encontramos cobros que se repitan. Igual podés cargar la tarjeta a mano.`);
 }
 
 /* ── archivos ── */
@@ -842,9 +869,9 @@ function abrirAjustes() {
     <p class="leyenda">Después de cambiarlos, volvé a sumar el calendario. En iPhone los avisos llegan solos; en Google Calendar, revisá las notificaciones del evento.</p>
     <div class="acciones" style="margin-top:12px"><button type="button" class="bt prim ancho" data-acc="ics"><svg><use href="#i-campana"/></svg> Sumar todo al calendario</button></div>
   </div>
-  <div class="ajustes-sec"><h3>Tu mail</h3>
+  <div class="ajustes-sec"><h3>Tu mail y tus tarjetas</h3>
     <p class="leyenda" style="margin-top:0">Buscá facturas nuevas cuando quieras. El permiso es de solo lectura y se cierra al terminar.</p>
-    <div class="acciones"><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar facturas en el mail</button></div>
+    <div class="acciones"><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar facturas en el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subir un resumen de tarjeta</button></div>
   </div>
   <div class="ajustes-sec"><h3>Tu copia</h3>
     <p class="leyenda" style="margin-top:0">Tus datos viven solo en este dispositivo. ${ult}</p>
@@ -941,6 +968,7 @@ document.addEventListener('click', e => {
     case 'leer-reintentar': $id('f-factura').click(); break;
     case 'leer-manual': abrirAgregar(); break;
     case 'correo': abrirCorreo(); break;
+    case 'resumen': $id('f-resumen').click(); break;
     case 'correo-gmail': buscarCorreo('gmail'); break;
     case 'correo-outlook': buscarCorreo('outlook'); break;
     case 'ejemplo': cerrar(); guardar(datosEjemplo(hoy)); ui.mes = V.mesDe(hoy); toast('Datos de ejemplo cargados.'); break;
@@ -1036,6 +1064,10 @@ document.addEventListener('submit', e => {
   }
 });
 
+$id('f-resumen').addEventListener('change', e => {
+  const file = e.target.files?.[0]; e.target.value = '';
+  if (file) leerResumen(file);
+});
 $id('f-factura').addEventListener('change', e => {
   const file = e.target.files?.[0]; e.target.value = '';
   if (file) leerFactura(file);

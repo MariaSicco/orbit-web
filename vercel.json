@@ -42,6 +42,9 @@
     },
     "api/leer-factura.js": {
       "maxDuration": 60
+    },
+    "api/vencimientos-resumen.js": {
+      "maxDuration": 60
     }
   }
 }

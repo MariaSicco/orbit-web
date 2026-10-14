@@ -177,6 +177,7 @@ test('proximoDia: si el día ya pasó este mes, va al siguiente', () => {
 test('plata: formato argentino y lectura flexible', () => {
   assert.equal(V.formatoPesos($(1234567)), '$ 1.234.567');
   assert.equal(V.formatoMoneda($(80), 'USD'), 'US$ 80');
+  assert.equal(V.formatoMoneda(1099, 'USD'), 'US$ 10,99');
   assert.equal(V.leerPesos('12.345'), $(12345));
   assert.equal(V.leerPesos('$ 1.234.567'), $(1234567));
   assert.equal(V.leerPesos('12345,50'), 1234550);
@@ -286,4 +287,12 @@ test('planes de suscripciones: IVA sumado donde la página dice + impuestos', as
   assert.equal(sp.monto, 544400); // 4.499 × 1,21 = 5.443,79 → 5.444
   const dis = S.servicio('disney').planes[0];
   assert.equal(dis.monto, dis.lista); // Disney+ publica precio final
+});
+
+test('lo que se cobra en una tarjeta se ve pero no se suma dos veces', () => {
+  const d = base();
+  d.cuentas.push({ id: 'net', nombre: 'Netflix', categoria: 'Suscripciones', frecuencia: 1, primerVto: '2026-10-25', monto: $(18149), debito: true, enTarjeta: 'Visa ·1234' });
+  const r = V.resumenMes(d, '2026-10', HOY);
+  assert.equal(r.ars.total, $(560000));
+  assert.ok(r.ocurrencias.some(o => o.cuentaId === 'net'));
 });

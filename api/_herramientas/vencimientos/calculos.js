@@ -66,7 +66,7 @@ export function formatoPesos(c, { simbolo = '$', decimales = false } = {}) {
   const cent = decimales && v % 100 ? ',' + pad(v % 100) : '';
   return `${neg ? '−' : ''}${simbolo} ${enteros}${cent}`;
 }
-export const formatoMoneda = (c, moneda) => formatoPesos(c, { simbolo: moneda === 'USD' ? 'US$' : '$' });
+export const formatoMoneda = (c, moneda) => formatoPesos(c, moneda === 'USD' ? { simbolo: 'US$', decimales: true } : { simbolo: '$' });
 /* "12.345,50", "12345.5", "$ 12.345" → centavos. Vacío o basura → null. */
 export function leerPesos(txt) {
   let s = String(txt ?? '').replace(/[^\d.,-]/g, '');
@@ -217,6 +217,7 @@ export function resumenMes(d, ym, hoy) {
   let cantPendientes = 0;
   for (const o of ocs) {
     if (o.estado === 'salteado') continue;
+    if (o.cuenta.enTarjeta) continue; // ya está dentro del total de la tarjeta: no se suma dos veces
     if (!o.resuelto) cantPendientes++;
     if (o.monto == null) { if (o.cuenta.tipo !== 'tramite') por[o.moneda].sinMonto++; continue; }
     const t = por[o.moneda];
