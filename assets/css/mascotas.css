@@ -205,7 +205,25 @@ main.wide{max-width:1180px}
 .gate .price-row{display:flex;flex-direction:column;gap:4px;width:100%}
 .gate .price-row>span{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .gate .price-row small{color:var(--ink2);font-size:13.5px}
-.tbd{font:600 13px/1 var(--mono);letter-spacing:.08em;background:var(--soon-bg);color:var(--soon);border:1px dashed var(--soon);border-radius:8px;padding:6px 10px}
+/* precio de lanzamiento con el de lista tachado y el modelo: pago único, 12 meses de funciones inteligentes */
+.gate .price-row{gap:8px;background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh1)}
+.gate .price-row .price{display:flex;align-items:baseline;justify-content:flex-start;gap:12px;flex-wrap:wrap}
+.gate .price-row .now{font-size:34px;line-height:1.05;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.gate .price-row .was{color:var(--ink2);font-size:17px;font-weight:600;text-decoration-thickness:2px}
+.gate .price-row small s{text-decoration-thickness:1.5px}
+.gate .terms{list-style:none;margin:6px 0 0;padding:10px 0 0;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.gate .terms li{display:grid;grid-template-columns:20px 1fr;gap:8px;align-items:start;font-size:14px;line-height:1.45;color:var(--ink2)}
+.gate .terms li b{color:var(--ink);font-weight:700}
+.gate .terms .i{width:18px;height:18px;margin-top:1px;color:var(--ok)}
+/* funciones inteligentes: Cuenta → Tu compra, aviso de "te quedan" y pantalla de vencidas */
+.ai-card{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+.ai-card b{display:block;font-weight:600;font-size:15px}
+.ai-card small{display:block;color:var(--ink2);font-size:13.5px;line-height:1.45;margin-top:2px}
+.ai-card + .btn{margin-top:12px;min-height:44px}
+.ai-left{align-self:flex-start;font-size:13.5px;font-weight:600;color:var(--soon);background:var(--soon-bg);border-radius:999px;padding:8px 14px;margin:8px 0 0}
+.ai-renew-ok{display:flex;gap:8px;align-items:center;font-weight:600;color:var(--ok);margin:12px 0 0}
+.ai-renew-ok .i{width:18px;height:18px}
+.state.ai-off .cta{display:flex;flex-direction:column;gap:10px;width:100%;max-width:420px}
 .gate .cta{display:flex;flex-direction:column;gap:10px;width:100%}
 .gate .art{display:grid;place-items:center;padding:8px 0;width:100%;max-width:420px;justify-self:center;aspect-ratio:1}
 .gate .art svg{width:100%;height:auto;display:block}

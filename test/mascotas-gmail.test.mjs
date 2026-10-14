@@ -193,6 +193,10 @@ test('conectar → buscar → importar → no se vuelve a ofrecer → desconecta
   assert.deepEqual(s1.body.candidates.flatMap(c => c.files.map(f => `${c.m}:${f.part}`)), ['m0000001:1', 'm0000002:2', 'm0000002:3']);
   const after = await kvGet(`orbit:petgmail:${EMAIL}`);
   assert.ok(after.lastSearch);
+  /* buscar, filtrar y clasificar no consume importaciones inteligentes */
+  const Q = await import('../api/_lib/petquota.js');
+  assert.equal((await Q.aiStatus(EMAIL, { purchaseDate: '2026-10-12' })).imports.left, Q.IMPORTS_FIRST, 'buscar no consume');
+  assert.equal(await kvGet(`orbit:petaiday:${EMAIL}:${new Date().toISOString().slice(0, 10)}`), null);
   assert.ok(!JSON.stringify(after).includes('Ecografía de Feliza') && !JSON.stringify(after).includes('diagnovet.com'), 'no guarda asunto ni remitente');
 
   /* importar uno con dependencias falsas (Blob y la IA), por la misma función que usa el endpoint */
@@ -225,6 +229,7 @@ test('conectar → buscar → importar → no se vuelve a ofrecer → desconecta
   const s2 = await call('POST', { gmail: 'search' }, { mode: 'new' });
   assert.match(google.lastQ, / after:\d+$/);
   assert.ok(!s2.body.candidates.some(c => c.m === 'm0000001'));
+  assert.equal((await Q.aiStatus(EMAIL, { purchaseDate: '2026-10-12' })).imports.left, Q.IMPORTS_FIRST, 'buscar de nuevo tampoco');
 
   /* desconectar: revoca en Google y borra todo */
   const off = await call('POST', { gmail: 'disconnect' }, {});

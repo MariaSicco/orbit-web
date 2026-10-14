@@ -396,8 +396,11 @@ window.ORBIT_PRODUCTS = [
   {
     /* Mimitos: herramienta online (app en /mascotas), una sola versión paga.
        Se entrega como acceso desde Mi cuenta, igual que Orbit IVA. */
+    /* Precio aprobado (14/10/2026): lanzamiento USD 24 / ARS 35.990 hasta el 12/11/2026 inclusive.
+       La tienda no tiene precio tachado ni promo con fecha: se carga el de lanzamiento como vigente.
+       // PRECIO DE LISTA desde 13/11/2026: price: 29, ars: 43990 */
     id: 'ob-018', cover: 'libro', code: 'OB\u2014018', n: '18', name: 'Mimitos',
-    family: 'systems', status: 'soon', price: 79, // PRECIO PENDIENTE: mismo valor que el otro producto 'soon' (ob-005); no se muestra mientras sea 'soon'
+    family: 'systems', status: 'soon', price: 24, ars: 35990,
     accent: 'blue', checkout: '', photo: 'ob-018',
     acceso: '/mascotas',
     pantallasDir: 'ob-018',
@@ -411,11 +414,13 @@ window.ORBIT_PRODUCTS = [
       ['p4', {es: 'Agenda', en: 'Calendar'},
              {es: 'Todas las fechas de todas tus mascotas, con archivo para tu calendario.', en: 'Every date for all your pets, with a file for your calendar.'}],
     ],
-    tagline: {es: 'La libreta sanitaria de tu mascota en el celu: vacunas, desparasitaciones, consultas y peso, con avisos antes de cada fecha.', en: 'Your pet’s health booklet on your phone: vaccines, deworming, vet visits and weight, with reminders before every date.'},
+    tagline: {es: 'La libreta sanitaria de tu mascota en el celu: vacunas, desparasitaciones, consultas y peso, con avisos antes de cada fecha. Pago único: Mimitos es tuya para siempre.', en: 'Your pet’s health booklet on your phone: vaccines, deworming, vet visits and weight, with reminders before every date. One-time payment: Mimitos is yours forever.'},
     specs: [
       [{es: 'Formato', en: 'Format'}, {es: 'Online, sin instalar', en: 'Online, no install'}],
       [{es: 'Mascotas', en: 'Pets'}, {es: 'Todas las que tengas', en: 'As many as you have'}],
-      [{es: 'Pago', en: 'Payment'}, {es: 'Único, una sola versión', en: 'One-time, a single version'}],
+      [{es: 'Pago', en: 'Payment'}, {es: 'Único. Mimitos es tuya para siempre', en: 'One-time. Mimitos is yours forever'}],
+      [{es: 'Suscripción', en: 'Subscription'}, {es: 'No es una suscripción', en: 'Not a subscription'}],
+      [{es: 'Funciones inteligentes', en: 'Smart features'}, {es: 'Incluye 12 meses · Uso personal razonable', en: '12 months included · Reasonable personal use'}],
       [{es: 'Acceso', en: 'Access'}, {es: 'Con tu cuenta de Orbit', en: 'With your Orbit account'}],
       [{es: 'Alcance', en: 'Scope'}, {es: 'Organizador, no reemplaza al veterinario', en: 'An organizer, not a substitute for your vet'}],
     ],
@@ -425,6 +430,7 @@ window.ORBIT_PRODUCTS = [
       [{es: 'Foto de la libreta', en: 'Booklet photo'}, {es: 'Le sacás foto (hasta 4 páginas) y se leen vacunas, antiparasitarios y controles con su fecha, la próxima dosis si está escrita, la marca y el veterinario. Lo revisás antes de guardar', en: 'Take a photo (up to 4 pages) and it reads vaccines, deworming and check-ups with their date, the next dose if written, the brand and the vet. You review it before saving'}],
       [{es: 'QR y modo perdida', en: 'QR and lost mode'}, {es: 'Un QR para la chapita: quien la encuentra ve cómo contactarte y te avisa dónde está. Y un cartel de búsqueda listo para compartir', en: 'A QR for the collar tag: whoever finds them sees how to reach you and can tell you where they are. Plus a ready-to-share lost poster'}],
       [{es: 'Modo cuidador', en: 'Sitter mode'}, {es: 'Un link con comida, paseos y remedios para quien la cuida. Marca si comió, paseó y le dio la pastilla, y vos lo ves en la app', en: 'A link with food, walks and meds for whoever looks after them. They mark meals, walks and pills, and you see it in the app'}],
+      [{es: '12 meses de funciones inteligentes', en: '12 months of smart features'}, {es: 'Preguntale a Mimitos, lectura automática de la foto de la libreta y de los estudios, importación desde el mail y las funciones con IA que sumemos. Uso personal razonable. Pasados los 12 meses no perdés nada: la app y todo lo que cargaste siguen siendo tuyos; solo se pausan estas funciones hasta que las renueves', en: 'Ask Mimitos, automatic reading of booklet photos and test results, importing from your email and the AI features we add. Reasonable personal use. After 12 months you lose nothing: the app and everything you saved stay yours; only these features pause until you renew them'}],
       [{es: 'Estudios, agenda y gastos', en: 'Tests, calendar and spending'}, {es: 'Análisis y radiografías en foto o PDF, todas las fechas en un calendario y cuánto gastás por mes. Mimitos es un organizador: no reemplaza al veterinario', en: 'Lab tests and X-rays as photos or PDFs, every date in one calendar and what you spend each month. Mimitos is an organizer: it does not replace your vet'}],
     ],
     for: [

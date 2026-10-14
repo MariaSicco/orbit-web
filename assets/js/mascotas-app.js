@@ -19,6 +19,8 @@ const SUGGEST = {
 /* ---------- estado ---------- */
 let mode = 'loading', doc = { pets: [] }, rev = 0, me = { email: '', name: '' };
 let purchase = null, notify = null, scans = [], curId = '';
+/* funciones inteligentes: vencimiento y, solo si quedan pocas, cuántas importaciones quedan (api/_lib/petquota.js) */
+let aiq = null, renewAsked = false;
 /* Conectar tu mail: estado de cada proveedor (undefined mientras carga, null si la cuenta no está habilitada) y la búsqueda en curso */
 const mstat = { gmail: undefined, outlook: undefined };
 let gm = null, msenders = [];
@@ -196,6 +198,31 @@ async function uploadPhoto(data) {
 }
 
 const BUY_URL = '/p/ob-018';
+/* Precio aprobado (14/10/2026): lanzamiento hasta el 12/11/2026 inclusive. El 13/11 se saca el bloque
+   de lanzamiento y queda el de lista (ver api/_lib/catalog.js y assets/js/products.js). */
+const PRICE = { ars: 35990, usd: 24, listArs: 43990, listUsd: 29, until: '12/11' };
+const ars = n => '$\u00a0' + n.toLocaleString('es-AR');
+const AI_ROUTES = ['lectura', 'preguntar', 'gmail', 'outlook'];
+const aiExpired = () => Boolean(aiq?.expired);
+const longDate = v => v ? fmt(String(v).slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' }) : '';
+const AI_EXPIRED_MSG = () => `Tus funciones inteligentes vencieron el ${longDate(aiq?.expiresAt)}. Mimitos sigue siendo tuya con todo lo que cargaste.`;
+/* el servidor devolvió cuántas quedan después de una importación */
+const setQuota = q => { if (q && aiq?.imports && Number.isFinite(q.left)) { aiq.imports.left = q.left; aiq.imports.show = Boolean(q.show); } };
+const markExpired = at => { aiq = { ...(aiq || {}), expired: true, expiresAt: at || aiq?.expiresAt || null }; };
+/* "Te quedan N": solo con 10 o menos */
+function aiLeftNote() {
+  const n = aiq?.imports?.left;
+  if (!aiq || aiq.expired || !aiq.imports?.show || !Number.isFinite(n)) return '';
+  return `<p class="ai-left" role="status">${n === 0 ? 'No te quedan importaciones inteligentes por ahora.' : n === 1 ? 'Te queda 1 importación inteligente.' : `Te quedan ${n} importaciones inteligentes.`}</p>`;
+}
+/* por qué no se pudo leer con IA (topes internos o vencimiento) */
+function limitMsg(d = {}) {
+  if (d.error === 'ai_expired') { markExpired(d.expiredAt); return `Tus funciones inteligentes vencieron el ${longDate(aiq.expiresAt)}.`; }
+  if (d.error === 'limite_diario') return 'Llegaste al tope de importaciones inteligentes de hoy. Mañana podés seguir.';
+  if (d.error === 'limite_paginas') return 'Llegaste al máximo de páginas leídas que incluyen tus 12 meses.';
+  if (d.error === 'limite_periodo' && d.renews) return `Usaste las importaciones inteligentes de tus primeros 30 días. Se suman más el ${longDate(d.renews)}.`;
+  return 'Usaste las importaciones inteligentes que incluyen tus 12 meses.';
+}
 
 /* ---------- formulario genérico ---------- */
 const dForm = $('#dForm'), dPanel = $('#dPanel');
@@ -649,6 +676,7 @@ function view() {
   if (mode === 'nopurchase') return renderNoPurchase();
   if (mode === 'error') return renderError();
   if (route.name === 'alta') return renderOnboard();
+  if (aiExpired() && AI_ROUTES.includes(route.name)) return renderAiExpired();
   if (route.name === 'lectura') return renderScan();
   if (route.name === 'estudios') return renderBulk();
   if (route.name === 'gmail' || route.name === 'outlook') return renderMail(route.name);
@@ -706,8 +734,14 @@ function renderGate() {
         <div class="hook">${bubble('flask', 'salud')}<span><b>Estudios guardados en su historia</b><small>Análisis, radiografías y ecografías en foto o PDF, con lo que dijo el veterinario.</small></span></div>
       </div>
       <div class="price-row">
-        <span><span class="eyebrow">Todo incluido</span><b class="tbd">${/* PRECIO PENDIENTE */ 'PENDIENTE'}</b></span>
-        <small>Pago único. Una sola versión, para todas tus mascotas.</small>
+        <span class="eyebrow">Precio de lanzamiento · hasta el ${PRICE.until}</span>
+        <span class="price"><b class="now">${ars(PRICE.ars)}</b><s class="was"><span class="sr">Precio de lista: </span>${ars(PRICE.listArs)}</s></span>
+        <small>O USD ${PRICE.usd} con PayPal <s><span class="sr">en lugar de </span>USD ${PRICE.listUsd}</s>. Una sola versión, para todas tus mascotas.</small>
+        <ul class="terms">
+          <li>${I('check')}<span><b>Pago único.</b> Mimitos es tuya para siempre.</span></li>
+          <li>${I('check')}<span><b>Incluye 12 meses de funciones inteligentes.</b> Preguntale a Mimitos, lectura automática de la libreta y los estudios e importación desde el mail. Uso personal razonable.</span></li>
+          <li>${I('check')}<span><b>No es una suscripción.</b> Pasados los 12 meses no perdés nada: solo se pausan esas funciones hasta que las renueves.</span></li>
+        </ul>
       </div>
       <div class="cta">
         <a class="btn big wide" href="${BUY_URL}">Conseguir Mimitos</a>
@@ -1395,7 +1429,8 @@ function renderCuenta() {
       <section class="card profile"><span class="ini" aria-hidden="true">${esc(initial)}</span><span class="what"><b>${esc(me.name || 'Tu cuenta de Orbit')}</b><small>${esc(me.email)}</small></span></section>
       <section class="card buy-card">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:12px"><span><span class="eyebrow">Tu compra</span><b style="display:block;font-size:22px;line-height:1.15;font-weight:700;letter-spacing:-.02em">Mimitos by Orbit</b></span><span class="badge ok">Activa</span></div>
-        <p class="dim">${purchase?.date ? `Comprada el ${fmt(purchase.date.slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' })}. ` : ''}Pago único: tenés la app completa, para todas tus mascotas.</p>
+        <p class="dim">${purchase?.date ? `Comprada el ${longDate(purchase.date)}. ` : ''}Pago único. Mimitos es tuya para siempre, para todas tus mascotas. No es una suscripción.</p>
+        ${aiCard()}
       </section>
       <section class="sec"><div class="sec-h"><h2>Tus mascotas</h2><button class="link" data-act="newPet">${I('plus')} Agregar</button></div>
         ${doc.pets.length ? `<div class="list">${doc.pets.map(p => `<button class="row link-row" data-act="editPetId" data-id="${p.id}">${avatar(p)}<span class="what"><b>${esc(p.name)}</b><small>${esc(petMeta(p))}</small></span>${I('edit')}</button>`).join('')}</div>` : `<div class="empty dash"><p>Todavía no cargaste ninguna.</p></div>`}
@@ -1412,6 +1447,38 @@ function renderCuenta() {
       ${gmailAccount()}
       <button class="btn ghost wide" data-act="logout">${I('logout')} Cerrar sesión</button>
     </div></div>`;
+}
+/* Cuenta → Tu compra: hasta cuándo están incluidas las funciones inteligentes */
+function aiCard() {
+  if (!aiq) return '';
+  const what = 'Preguntale a Mimitos, lectura automática de la libreta y los estudios e importación desde el mail.';
+  if (aiq.admin) return `<div class="ai-card"><span class="what"><b>Funciones inteligentes</b><small>Cuenta administradora: sin vencimiento.</small></span><span class="badge ok">Activas</span></div>`;
+  if (aiq.expired) return `<div class="ai-card off"><span class="what"><b>Funciones inteligentes</b><small>${esc(AI_EXPIRED_MSG())}</small></span><span class="badge soon">Vencidas</span></div>
+    ${renewBtn('btn sm ghost')}`;
+  return `<div class="ai-card"><span class="what"><b>Incluye 12 meses de funciones inteligentes</b><small>Incluidas hasta el ${longDate(aiq.expiresAt)}. ${what} Uso personal razonable.</small></span><span class="badge ok">Activas</span></div>${aiLeftNote()}`;
+}
+const renewBtn = (cls = 'btn big wide') => renewAsked
+  ? `<p class="ai-renew-ok" role="status">${I('check')} Listo: te avisamos cuando puedas renovar.</p>`
+  : `<button class="${cls}" data-act="renewAsk">Avisame cuando pueda renovar</button>`;
+/* pantalla de una función inteligente vencida: la app y los datos siguen; solo se pausa esto */
+function renderAiExpired() {
+  const back = route.name === 'preguntar' ? (ask.from || 'inicio') : route.name === 'lectura' ? 'inicio' : 'libreta';
+  return `<section class="state ai-off">
+    ${bubble('sparkle', 'salud')}
+    <span class="eyebrow">Funciones inteligentes</span>
+    <h1 class="h-xl">Tus funciones inteligentes vencieron el ${longDate(aiq?.expiresAt)}.</h1>
+    <p class="lead">Mimitos sigue siendo tuya con todo lo que cargaste.</p>
+    <p class="dim">La libreta, los avisos, el QR, el modo cuidador, la agenda y los gastos siguen andando. Se pausaron Preguntale a Mimitos, la lectura automática de la libreta y los estudios y la importación desde el mail. Mientras tanto, podés cargar todo a mano.</p>
+    <div class="cta">${renewBtn()}<button class="btn ghost wide" data-act="go" data-to="${back}">Volver a Mimitos</button></div>
+    <p class="note">Avisarte no te compromete a nada y no te cobramos nada.</p>
+  </section>`;
+}
+async function renewAsk() {
+  try {
+    const r = await fetch('/api/mascotas?renew=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+    if (!r.ok) throw new Error();
+    renewAsked = true; render(); toast('Listo. Te avisamos cuando puedas renovar.');
+  } catch { toast('No se pudo guardar. Probá de nuevo.'); }
 }
 function exportCopy() {
   const data = { app: 'mimitos-by-orbit', version: 2, exportedAt: new Date().toISOString(), pets: doc.pets };
@@ -1669,7 +1736,8 @@ function addPanel(p) {
     ${opt('sintoma', 'note', 'plata', 'Algo que notaste', 'No come, vomita, se rasca…')}
     ${opt('problema', 'heart', 'perdida', 'Problema de salud', 'Algo que tuvo o tiene')}
   </div>
-  <button class="scanbox" data-add="scan">${bubble('camera', 'viaje')}<span><b>Foto de la libreta</b><small>Leemos vacunas, antiparasitarios y controles con sus fechas. Vos revisás antes de guardar.</small></span></button>`);
+  <button class="scanbox" data-add="scan">${bubble('camera', 'viaje')}<span><b>Foto de la libreta</b><small>${aiExpired() ? 'Función inteligente vencida: podés cargar las vacunas a mano.' : 'Leemos vacunas, antiparasitarios y controles con sus fechas. Vos revisás antes de guardar.'}</small></span></button>
+  ${aiLeftNote()}`);
   $('#pBody').onclick = e => {
     const b = e.target.closest('[data-add]'); if (!b) return;
     dPanel.close();
@@ -1723,8 +1791,10 @@ async function runBulk(p, files) {
       it.status = 'leyendo'; render();
       const r = await fetch('/api/mascotas?studyscan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: it.ref.ref }) });
       const d = await r.json().catch(() => ({}));
-      if (r.status === 429) { bulk.noIA = d.error === 'limite_mensual' ? `Llegaste al tope de ${d.limit} lecturas con IA de este mes.` : `Llegaste al tope de ${d.limit} lecturas con IA por hoy.`; it.status = 'manual'; it.msg = bulk.noIA + ' Quedó adjunto: completalo a mano.'; continue; }
-      if (!r.ok) { it.status = 'manual'; it.msg = d.error === 'pdf_muy_largo' ? 'El PDF es demasiado largo para leerlo entero (hasta 100 páginas). Quedó adjunto: completalo a mano.' : d.error === 'tipo_no_legible' ? 'Este formato no se puede leer. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; continue; }
+      if (r.status === 429 || d.error === 'ai_expired') { bulk.noIA = limitMsg(d); it.status = 'manual'; it.msg = bulk.noIA + ' Quedó adjunto: completalo a mano.'; continue; }
+      if (!r.ok) { it.status = 'manual'; it.msg = d.error === 'pdf_muy_largo' || d.error === 'pdf_no_se_pudo_cortar' ? 'No pudimos leer este PDF. Quedó adjunto: completalo a mano.' : d.error === 'tipo_no_legible' ? 'Este formato no se puede leer. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; continue; }
+      setQuota(d.quota);
+      if (d.truncated) it.msg = d.note || 'Leímos las primeras 20 páginas; el archivo completo quedó guardado.';
       it.data = { ...it.data, ...d, title: d.title || it.data.title }; it.status = d.confidence === 'baja' || d.warnings?.length || !d.date ? 'revisar' : 'listo';
     } catch (e) {
       if (String(e.message) === 'cupo_lleno') { bulk.full = true; it.msg = 'No se subió: no hay más espacio en tu cuenta (200 MB).'; }
@@ -1763,7 +1833,8 @@ function renderBulk() {
     ${working ? `<div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="${bulk.items.length}" aria-valuenow="${done}"><i style="width:${Math.round(done / bulk.items.length * 100)}%"></i></div>` : ''}
     <div class="bk-list">${bulk.items.map(card).join('')}</div>
     ${bulk.queued ? `<p class="bk-msg" role="status">${esc(bulk.queued)}</p>` : ''}
-    <p class="note">${HIST_NOTE} Cada archivo leído cuenta como una lectura con IA (${10} por día, 60 por mes).</p>
+    ${aiLeftNote()}
+    <p class="note">${HIST_NOTE} Cada archivo leído cuenta como una importación inteligente: uso personal razonable, incluido por 12 meses.</p>
     ${working ? '' : `<p class="err-msg" id="bkErr" role="alert" hidden></p><button class="btn big wide" data-act="bulkSave"${keep ? '' : ' disabled'}>Guardar ${keep} ${keep === 1 ? 'estudio' : 'estudios'} en su historial</button>`}
   </section>`;
 }
@@ -1893,7 +1964,7 @@ function renderMail(p) {
   if (gm.phase === 'searching') return `<section class="sec reading" aria-busy="true">${back}<div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu ${L}</h1><p class="dim" role="status">Revisamos ${gm.scanned} ${gm.scanned === 1 ? 'mail' : 'mails'}${gm.cands.length ? ` y encontramos ${gmFiles().length} ${gmFiles().length === 1 ? 'documento' : 'documentos'}` : ''}. Solo miramos el asunto, quién lo mandó y los adjuntos.</p></section>`;
   if (gm.phase === 'error') return `<section class="sec">${back}<h1 class="h-xl">No pudimos buscar</h1><p class="dim">${esc(gm.err)}</p><button class="btn big wide" data-act="mailOpen" data-p="${p}" data-mode="${gm.mode}">Probar de nuevo</button></section>`;
   const files = gmFiles(), n = gm.sel.size, queue = s.queue || [];
-  const qBox = queue.length ? `<div class="gm-queue"><span class="what"><b>${queue.length} en cola</b><small>Los elegiste y no entraron en el tope de lecturas con IA. Seguí cuando se renueve.</small></span><button class="btn sm ghost" data-act="mailQueue">Seguir con la cola</button></div>` : '';
+  const qBox = queue.length ? `<div class="gm-queue"><span class="what"><b>${queue.length} en cola</b><small>Los elegiste y no entraron en el tope de importaciones inteligentes. Seguí cuando se renueve.</small></span><button class="btn sm ghost" data-act="mailQueue">Seguir con la cola</button></div>` : '';
   const moreBox = gm.more ? `<div class="gm-more"><p class="note">Revisamos los ${gm.scanned} mails más recientes. Puede haber más viejos.</p><button class="btn sm ghost" data-act="mailMore">Buscar 200 más</button></div>` : '';
   const who = s.address ? `${L} · ${esc(s.address)}` : L;
   const noFile = gm.noFile?.length ? `<section class="gm-nofile"><h2>Sin archivo adjunto: abrilo en ${L}</h2><p class="note">Parecen de tu veterinaria o laboratorio, pero no traen el PDF (muchos mandan un link). Abrilo, bajá el estudio y sumalo con “Subir estudios”.</p>
@@ -1917,7 +1988,8 @@ function renderMail(p) {
       ${c.files.map(f => { const k = c.m + '|' + f.part; return `<label class="gm-file"><input type="checkbox" data-gsel="${esc(k)}" ${gm.sel.has(k) ? 'checked' : ''}>${bubble(f.type === 'link' ? 'download' : f.type === 'application/pdf' ? 'doc' : 'camera', f.type === 'link' ? 'cuida' : 'viaje')}<span class="what"><b>${esc(f.name)}</b><small>${f.type === 'link' ? 'Link en el mail · lo bajamos del sitio del laboratorio' : `${f.type === 'application/pdf' ? 'PDF' : 'Foto'} · ${kb(f.size)}`}${/heic|heif/.test(f.type) ? ' · se adjunta sin leer' : ''}</small></span></label>`; }).join('')}
     </article>`).join('')}</div>
     ${moreBox}${noFile}${tips}${srcBox}
-    <p class="note">Cada archivo que importás se lee con IA (Claude, de Anthropic) y cuenta para tu tope (10 por día, 60 por mes). Lo revisás antes de guardar.</p>
+    ${aiLeftNote()}
+    <p class="note">Cada archivo que importás se lee con IA (Claude, de Anthropic) y cuenta como una importación inteligente. Buscar y elegir no cuenta. Lo revisás antes de guardar.</p>
     <div class="gm-go"><button class="btn big wide" data-act="mailImport"${n ? '' : ' disabled'}>Importar seleccionados${n ? ` (${n})` : ''}</button></div>
   </section>`;
 }
@@ -2009,7 +2081,9 @@ async function importItem(p, it, done) {
     it.ref = d.ref; it.petId = d.petId || ''; it.sug = d.petId || ''; it.keep = true;
     if (it.gm.type === 'link' && d.ref?.name) it.name = d.ref.name;
     if (d.data) { it.data = { ...it.data, ...d.data, title: d.data.title || it.data.title }; it.status = d.data.confidence === 'baja' || d.data.warnings?.length || !d.data.date ? 'revisar' : 'listo'; }
-    else { it.status = 'manual'; it.msg = d.manual === 'tipo_no_legible' ? 'Este formato no se puede leer: quedó adjunto, completalo a mano.' : /^limite/.test(d.manual) ? 'Se terminó el tope de lecturas con IA: quedó adjunto, completalo a mano.' : d.manual === 'pdf_muy_largo' ? 'El PDF es demasiado largo para leerlo entero. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; }
+    else { it.status = 'manual'; it.msg = d.manual === 'tipo_no_legible' ? 'Este formato no se puede leer: quedó adjunto, completalo a mano.' : /^limite|^ai_expired$/.test(d.manual) ? limitMsg({ error: d.manual }) + ' Quedó adjunto: completalo a mano.' : d.manual === 'pdf_muy_largo' || d.manual === 'pdf_no_se_pudo_cortar' ? 'No pudimos leer este PDF. Quedó adjunto: completalo a mano.' : 'No lo pudimos leer. Quedó adjunto: completalo a mano.'; }
+    setQuota(d.quota);
+    if (d.data && d.truncated) it.msg = d.note || 'Leímos las primeras 20 páginas; el archivo completo quedó guardado.';
   } catch { it.status = 'error'; it.keep = false; it.msg = 'No se pudo traer: revisá la conexión.'; it.retry = true; }
   return null;
 }
@@ -2017,7 +2091,7 @@ async function queueRest(p, rest, d) {
   rest.forEach(x => { x.status = 'cola'; x.keep = false; x.msg = ''; x.acts = null; x.retry = false; });
   const q = await fetch(`/api/mascotas?${p}=queue`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items: rest.map(x => x.gm) }) }).then(x => x.json()).catch(() => null);
   if (q?.queue) mstat[p].queue = q.queue;
-  bulk.queued = `${d.error === 'limite_mensual' ? `Llegaste al tope de ${d.limit} lecturas con IA de este mes` : `Llegaste al tope de ${d.limit} lecturas con IA por hoy`}: ${rest.length === 1 ? 'quedó 1 en cola' : `quedaron ${rest.length} en cola`}. ${d.error === 'limite_mensual' ? 'El mes que viene' : 'Mañana'} entrá a tu mail desde el historial y tocá «Seguir con la cola».`;
+  bulk.queued = `${limitMsg(d)} ${rest.length === 1 ? 'Quedó 1 en cola' : `Quedaron ${rest.length} en cola`}: cuando se renueve, entrá a tu mail desde el historial y tocá «Seguir con la cola».`;
 }
 /* importa los elegidos uno por uno y termina en la misma revisión que "Subir estudios" */
 async function mailImport(p, list) {
@@ -2086,6 +2160,7 @@ function mailOffPanel(p) {
 /* ---------- leer la libreta con IA ---------- */
 let scan = null;
 function startScan(p) {
+  if (aiExpired()) { setRoute('lectura'); return render(); }
   const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
   inp.onchange = () => { const files = [...inp.files].slice(0, 4); if (files.length) runScan(p, files); };
   inp.click();
@@ -2099,7 +2174,9 @@ async function runScan(p, files) {
     const r = await fetch('/api/mascotas?scan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, species: p.species }) });
     const d = await r.json();
     if (r.status === 402) { scan = null; mode = 'nopurchase'; return render(); }
-    if (!r.ok) throw Object.assign(new Error(d.error === 'limite_diario' ? `Llegaste al límite de ${d.limit || 10} lecturas con foto por día. Probá mañana o cargá las vacunas a mano.` : d.error === 'limite_mensual' ? `Llegaste al límite de ${d.limit || 60} lecturas con foto de este mes. Se renueva el 1.º; mientras tanto, cargá las vacunas a mano.` : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
+    if (d.error === 'ai_expired') { markExpired(d.expiredAt); scan = null; return render(); }
+    if (!r.ok) throw Object.assign(new Error(/^limite_/.test(d.error || '') ? limitMsg(d) + ' Mientras tanto, cargá las vacunas a mano.' : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
+    setQuota(d.quota);
     scan = { ...scan, state: 'review', items: prev.concat(d.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) }))), warnings: d.warnings || [] };
   } catch (err) { scan = { ...scan, state: 'error', msg: err.message || 'No pudimos leer las fotos.', plain: Boolean(err.plain) }; }
   render();
@@ -2338,7 +2415,7 @@ async function drawPoster(p, url) {
 /* ---------- PREGUNTALE A MIMITOS ----------
    Chat que responde SOLO con lo cargado en la cuenta (api/mascotas?ask). La conversación queda en memoria
    y en sessionStorage de este navegador; al servidor viajan solo las últimas 6 vueltas, y no se guarda allá. */
-const ASK_MAX = 500, ASK_TURNS = 6, ASK_LOW = 5;
+const ASK_MAX = 500, ASK_TURNS = 6, ASK_LOW = 10;
 const ASK_IC = {
   stars: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 4.6 4.6 1.7-4.6 1.7L10 16.1l-1.7-4.6L3.7 9.8l4.6-1.7z"/><path d="M18 13.5l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z"/></svg>',
   send: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>',
@@ -2406,7 +2483,7 @@ function renderAsk() {
     <div class="ask-log" id="askLog">${askLog()}</div>
     <p class="sr" aria-live="polite" id="askLive"></p>
     <form class="ask-form" id="askForm" novalidate>
-      ${capped ? `<p class="ask-cap" role="status">${left.day <= 0 ? `Llegaste a las ${left.perDay} preguntas de hoy. Mañana podés seguir preguntando.` : `Llegaste a las ${left.perMonth} preguntas de este mes. El mes que viene se renueva.`}</p>` : `
+      ${capped ? `<p class="ask-cap" role="status">${left.day <= 0 ? 'Llegaste al tope de preguntas de hoy. Mañana podés seguir preguntando.' : 'Llegaste al tope de preguntas de este mes. El mes que viene se renueva.'}</p>` : `
       <div class="ask-box"><label class="sr" for="askIn">Tu pregunta</label>
         <textarea id="askIn" rows="1" maxlength="${ASK_MAX}" placeholder="Preguntá sobre ${esc(doc.pets.length > 1 ? 'tus mascotas' : p.name)}…" aria-describedby="askCount askPriv" ${ask.pending ? 'disabled' : ''}>${esc(ask.draft)}</textarea>
         <button type="submit" class="ask-send" aria-label="Preguntar" ${ask.pending ? 'disabled' : ''}>${ASK_IC.send}</button></div>
@@ -2449,6 +2526,7 @@ async function askSend(q) {
     return;
   }
   const e = d?.error || '';
+  if (e === 'ai_expired') { markExpired(d.expiredAt); ask.draft = q; return render(); }
   if (r?.status === 429 && /limite/.test(e)) { ask.left = d.left || { day: e === 'limite_diario' ? 0 : 1, month: e === 'limite_mensual' ? 0 : 1, perDay: d.limit, perMonth: d.limit }; ask.error = null; ask.draft = q; return render(); }
   if (r?.status === 401) ask.error = { t: 'Se cerró tu sesión.', d: 'Entrá de nuevo para seguir preguntando.' };
   else if (r?.status === 409 && e === 'sin_mascotas') ask.error = { t: 'Primero cargá a tu mascota.' };
@@ -2526,6 +2604,7 @@ document.addEventListener('click', e => {
     case 'askCite': return askCite(+b.dataset.t, b.dataset.c);
     case 'goPet': selectPet(b.dataset.pet); return go(b.dataset.to);
     case 'relogin': return relogin();
+    case 'renewAsk': return renewAsk();
     case 'add': return cur ? addPanel(cur) : startOnboard();
     case 'scan': return startScan(petById(scan?.petId) || cur);
     case 'scanSave': return saveScan();
@@ -2585,7 +2664,7 @@ async function boot() {
   let d = null, st = 0;
   try { const r = await fetch('/api/mascotas', { credentials: 'same-origin' }); st = r.status; d = await r.json().catch(() => null); } catch { st = 0; }
   if (st === 200 && d && d.doc) {
-    mode = 'full'; purchase = d.purchase || null; me.email = d.email || '';
+    mode = 'full'; purchase = d.purchase || null; me.email = d.email || ''; aiq = d.ai || null; renewAsked = Boolean(d.renew);
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
     fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => {

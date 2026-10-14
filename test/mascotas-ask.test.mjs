@@ -172,7 +172,7 @@ test('tope: separado del de estudios, con lo que queda y 429 al llegar', async (
   assert.equal(aiCalls.length, 0);
   const st = await call({ email, method: 'GET' });
   assert.equal(st.out.left.day, 0);
-  assert.equal(A.ASK_PER_DAY, 30); assert.equal(A.ASK_PER_MONTH, 300);
+  assert.equal(A.ASK_PER_DAY, 30); assert.equal(A.ASK_PER_MONTH, 150); assert.equal(A.LOW_LEFT, 10);
 });
 
 test('pregunta médica: el system prompt lo prohíbe y, si la IA no deriva, el servidor agrega "consultá a tu vete"', async () => {

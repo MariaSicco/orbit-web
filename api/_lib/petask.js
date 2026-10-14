@@ -8,21 +8,22 @@
    - Red de seguridad sin IA: si la pregunta es médica y la respuesta no deriva al veterinario, se agrega;
      si menciona síntomas de urgencia, se agrega lo de la guardia.
    - La conversación NO se guarda en el servidor: el navegador manda las últimas vueltas en cada pregunta.
-   - Tope propio (separado del de lectura de estudios) con contadores en KV.
+   - Tope propio (separado de las importaciones inteligentes) con contadores en KV: 150 por mes y 30 por día.
+   - Vence con las demás funciones inteligentes a los 12 meses de la compra (api/_lib/petquota.js).
    - Logs: solo errores y uso de tokens agregado. Nunca la pregunta ni los datos. */
 import { createHash } from 'node:crypto';
 import { kvGet, kvSet } from './kv.js';
 import '../../assets/js/mascotas-rules.js';
 
 /* ---------- constantes fáciles de cambiar ---------- */
-export const ASK_PER_DAY = 30;
-export const ASK_PER_MONTH = 300;
+export const ASK_PER_DAY = 30;         /* anti-abuso */
+export const ASK_PER_MONTH = 150;      /* tope interno (aprobado 14/10/2026); no se muestra salvo que queden ≤ LOW_LEFT */
 export const MAX_QUESTION = 500;
 export const MAX_TURNS = 6;               /* vueltas de historial que se mandan a la IA */
 export const MAX_ANSWER_CHARS = 2000;     /* largo de cada respuesta previa que se reenvía */
 export const CONTEXT_MAX_CHARS = 28000;   /* ~8k tokens de datos: si hay más, se prioriza y se avisa */
 export const ASK_MAX_TOKENS = 1200;       /* incluye el razonamiento adaptativo; con esfuerzo bajo alcanza */
-export const LOW_LEFT = 5;                /* desde cuántas preguntas restantes se muestra el aviso */
+export const LOW_LEFT = 10;               /* desde cuántas preguntas restantes se muestra el aviso */
 export const DEFAULT_ASK_MODEL = 'claude-haiku-5-5';
 export const askModel = () => process.env.ORBIT_ASK_MODEL || process.env.ORBIT_MODEL || DEFAULT_ASK_MODEL;
 const TZ_DEFAULT = 'America/Argentina/Buenos_Aires';
@@ -280,7 +281,10 @@ export async function callClaude({ system, messages, model = askModel(), maxToke
 /* ---------- el endpoint ----------
    GET  ?ask=1                        → { left }
    POST ?ask=1 {question, petId?, history?, tz?} → { answer, citations, usage, left, trimmed, medical, urgent } */
-export async function handleAsk(req, res, { email, body = {}, getDoc, getScans = async () => [], getTz = async () => '', call = callClaude, now = new Date() }) {
+export async function handleAsk(req, res, { email, body = {}, getDoc, getScans = async () => [], getTz = async () => '', gate = async () => null, call = callClaude, now = new Date() }) {
+  /* funciones inteligentes vencidas (12 meses desde la compra): 403 ai_expired, sin llamar a la IA */
+  const closed = await gate();
+  if (closed) return res.status(403).json(closed);
   if (req.method === 'GET') return res.status(200).json({ left: await askLeft(email, now) });
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   const question = s(body.question).replace(/[\u0000-\u0008\u000b-\u001f]/g, ' ').trim();

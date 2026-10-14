@@ -18,6 +18,9 @@
    POST ?upload=1 {name,size,type} → URL firmada para subir un estudio a Blob privado
    GET  ?file=ref             → abre un estudio propio (URL firmada que vence en minutos)
    GET  ?ask=1                → cuántas preguntas quedan hoy y este mes
+   POST ?renew=1              → "Avisame cuando pueda renovar": guarda el interés en KV (no cobra nada)
+   Funciones inteligentes (lectura de libreta y estudios, importación desde el mail y Preguntale a Mimitos):
+   topes internos y vencimiento a 12 meses en api/_lib/petquota.js. Vencidas → 403 { error: 'ai_expired' }
    POST ?ask=1 {question, petId?, history?, tz?} → "Preguntale a Mimitos": responde SOLO con los datos de la cuenta,
                                 con citas validadas (api/_lib/petask.js). La conversación no se guarda en el servidor
    ?gmail=… y ?outlook=… (status|start|callback|search|import|queue|unqueue|disconnect) → "Conectar tu mail"
@@ -42,6 +45,7 @@ import { handleAsk } from './_lib/petask.js';
 import { gmail } from './_lib/petgmail.js';
 import { outlook } from './_lib/petoutlook.js';
 import { QUOTA_BYTES, fits, addUsage, photoRef, sweep } from './_lib/petfiles.js';
+import { aiStatus, checkImport, takeImport, refundImport, prepareForAI, TRUNCATED_NOTE, saveRenewInterest, renewInterest } from './_lib/petquota.js';
 import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
@@ -51,9 +55,6 @@ const sitterKey = t => `orbit:petsitter:${t}`;
 const imgKey = id => `orbit:petimg:${id}`;
 const scansKey = email => `orbit:petscans:${email.toLowerCase()}`;
 const folder = email => 'mascotas/' + createHash('sha256').update('orbit-pets:' + email.toLowerCase()).digest('hex').slice(0, 16);
-/* tope de lecturas con foto (IA) por cuenta: fácil de cambiar acá */
-const SCANS_PER_DAY = 10;
-const SCANS_PER_MONTH = 60;
 const MAX_DOC = 700 * 1024;
 /* foto recortada con transparencia (PNG o WebP, ~800 px) o foto entera en JPEG */
 const MAX_IMG = 450 * 1024;
@@ -296,26 +297,6 @@ async function scanStudy(buf, type, pets) {
     ...(pets?.length ? { pet: { name: str(j.pet?.name, 60), species: str(j.pet?.species, 30), breed: str(j.pet?.breed, 60) } } : {}),
   };
 }
-/* el mismo tope de lecturas con IA que la libreta: cada archivo cuenta una */
-/* ¿queda tope? (sin gastarlo) */
-async function peekScan(email) {
-  const now = new Date().toISOString();
-  const n = (await kvGet(`orbit:petscan:${email.toLowerCase()}:${now.slice(0, 10)}`)) || 0, nm = (await kvGet(`orbit:petscanm:${email.toLowerCase()}:${now.slice(0, 7)}`)) || 0;
-  if (n >= SCANS_PER_DAY) return { error: 'limite_diario', limit: SCANS_PER_DAY };
-  if (nm >= SCANS_PER_MONTH) return { error: 'limite_mensual', limit: SCANS_PER_MONTH };
-  return null;
-}
-async function takeScan(email) {
-  const now = new Date().toISOString();
-  const k = `orbit:petscan:${email.toLowerCase()}:${now.slice(0, 10)}`, km = `orbit:petscanm:${email.toLowerCase()}:${now.slice(0, 7)}`;
-  const n = (await kvGet(k)) || 0, nm = (await kvGet(km)) || 0;
-  if (n >= SCANS_PER_DAY) return { error: 'limite_diario', limit: SCANS_PER_DAY };
-  if (nm >= SCANS_PER_MONTH) return { error: 'limite_mensual', limit: SCANS_PER_MONTH };
-  await kvSet(k, n + 1, 60 * 60 * 26);
-  await kvSet(km, nm + 1, 60 * 60 * 24 * 32);
-  return null;
-}
-
 async function scanAlert(email, pet, token, req) {
   const w = where(req);
   /* el mismo celu escaneando varias veces seguidas cuenta una sola vez en el registro */
@@ -431,15 +412,28 @@ export default async function handler(req, res) {
   const s = { email: acc.email };
   /* admin: la base no mira la compra; si igual compró, se muestra su fecha */
   const purchase = acc.compra ? { date: acc.compra.date || null } : await mimitosPurchase(acc.email).catch(() => ({ date: null, admin: true }));
+  /* funciones inteligentes: 12 meses desde la compra (admin sin vencimiento) */
+  const aiCtx = { purchaseDate: purchase?.date || null, admin: Boolean(acc.admin) };
+  const expiredBody = async () => { const st = await aiStatus(s.email, aiCtx); return { error: 'ai_expired', expiredAt: st.expiresAt }; };
+  const isExpired = async () => (await aiStatus(s.email, aiCtx)).expired;
 
   /* Conectar tu mail (Gmail u Outlook): solo cuentas habilitadas (MIMITOS_MAIL_ALLOW) o admin */
   if (mailP) {
+    /* vencidas: no se busca, no se importa ni se conecta; sí se puede ver el estado, desconectar y sacar de la cola */
+    const act = String(q[mailP.id]);
+    if (['search', 'import', 'queue', 'start'].includes(act) && await isExpired()) {
+      return act === 'start' ? res.redirect(302, '/mascotas#/cuenta') : res.status(403).json(await expiredBody());
+    }
     return handleMail(mailP, req, res, {
       email: s.email,
       body: req.method === 'POST' ? await readBody(req) : {},
       getDoc: async () => (await kvGet(docKey(s.email))) || { pets: [], rev: 0 },
       deps: {
-        peekScan, takeScan, scanStudy,
+        peekScan: email => checkImport(email, aiCtx, 1),
+        takeScan: async (email, pages) => { const t = await takeImport(email, aiCtx, pages); return t.ok ? { ticket: t.ticket, left: t.left, show: t.show } : t; },
+        refundScan: ticket => refundImport(ticket),
+        prepare: prepareForAI, truncatedNote: TRUNCATED_NOTE,
+        scanStudy,
         fits: (email, bytes) => fits(email, bytes),
         addUsage: (email, ref, bytes) => addUsage(email, ref, bytes),
         putFile: async (email, name, buf, type) => {
@@ -479,6 +473,7 @@ export default async function handler(req, res) {
       getDoc: async () => (await kvGet(docKey(s.email))) || { pets: [] },
       getScans: async () => ((await kvGet(scansKey(s.email))) || []).filter(x => Date.parse(x.at) > Date.now() - SCAN_DAYS * 864e5).slice(-MAX_SCANS),
       getTz: async () => (await getNotify(s.email)).tz,
+      gate: async () => (await isExpired()) ? await expiredBody() : null,
     });
   }
 
@@ -492,10 +487,18 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const doc = (await kvGet(docKey(s.email))) || { pets: [], rev: 0 };
     const scans = ((await kvGet(scansKey(s.email))) || []).filter(x => Date.parse(x.at) > Date.now() - SCAN_DAYS * 864e5).slice(-MAX_SCANS);
-    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans });
+    const ai = await aiStatus(s.email, aiCtx).catch(() => null);
+    const renew = ai?.expired ? await renewInterest(s.email).catch(() => false) : false;
+    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans, ai, renew });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   const body = await readBody(req);
+
+  /* "Avisame cuando pueda renovar": solo guarda el interés; todavía no hay checkout de renovación */
+  if (q.renew) {
+    await saveRenewInterest(s.email);
+    return res.status(200).json({ ok: true, renew: true });
+  }
 
   if (q.photo) {
     const data = String(body.data || '');
@@ -526,7 +529,8 @@ export default async function handler(req, res) {
   if (q.studyscan) {
     const ref = String(body.ref || '');
     if (!isBlobRef(ref) || /\.\.|\/\//.test(ref) || !refPath(ref).startsWith(folder(s.email) + '/')) return res.status(403).json({ error: 'forbidden' });
-    const stop = await takeScan(s.email); if (stop) return res.status(429).json(stop);
+    const stop = await checkImport(s.email, aiCtx, 1); if (stop) return res.status(stop.status).json(stop);
+    let took = null;
     try {
       const f = await fetch(await signedGet(refPath(ref), { minutes: 5 }));
       if (!f.ok) return res.status(404).json({ error: 'archivo_no_encontrado' });
@@ -536,25 +540,33 @@ export default async function handler(req, res) {
       if (!/^(image\/(jpeg|png|webp|gif)|application\/pdf)$/.test(type)) return res.status(415).json({ error: 'tipo_no_legible' });
       const buf = Buffer.from(await f.arrayBuffer());
       if (buf.length > 20 * 1024 * 1024) return res.status(413).json({ error: 'too_big' });
-      return res.status(200).json(await scanStudy(buf, type));
-    } catch (e) { return res.status(e.status || 502).json({ error: e.message || 'ia_error' }); }
+      /* PDF de más de 20 páginas: a la IA van las primeras 20; el archivo completo ya está guardado */
+      const prep = await prepareForAI(buf, type);
+      took = await takeImport(s.email, aiCtx, prep.pages);
+      if (!took.ok) { const t = took; took = null; return res.status(t.status).json(t); }
+      const out = await scanStudy(prep.buf, type);
+      return res.status(200).json({ ...out, ...(prep.truncated ? { truncated: true, pages: prep.total, note: TRUNCATED_NOTE } : {}), quota: { left: took.left, show: took.show } });
+    } catch (e) {
+      /* la IA falló: se devuelve la importación */
+      if (took?.ok) await refundImport(took.ticket).catch(() => {});
+      return res.status(e.status || 502).json({ error: e.message || 'ia_error' });
+    }
   }
 
   /* leer la libreta con IA: devuelve registros para que la persona los revise; no guarda nada */
   if (q.scan) {
     const images = (Array.isArray(body.images) ? body.images : []).filter(x => /^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(x || '') && x.length < 1.6e6).slice(0, 4);
     if (!images.length) return res.status(400).json({ error: 'sin_fotos' });
-    const now = new Date().toISOString();
-    const k = `orbit:petscan:${s.email.toLowerCase()}:${now.slice(0, 10)}`, km = `orbit:petscanm:${s.email.toLowerCase()}:${now.slice(0, 7)}`;
-    const n = (await kvGet(k)) || 0, nm = (await kvGet(km)) || 0;
-    if (n >= SCANS_PER_DAY) return res.status(429).json({ error: 'limite_diario', limit: SCANS_PER_DAY });
-    if (nm >= SCANS_PER_MONTH) return res.status(429).json({ error: 'limite_mensual', limit: SCANS_PER_MONTH });
-    await kvSet(k, n + 1, 60 * 60 * 26);
-    await kvSet(km, nm + 1, 60 * 60 * 24 * 32);
+    /* las fotos de la libreta (hasta 4) son un documento: una importación, una página por foto */
+    const took = await takeImport(s.email, aiCtx, images.length);
+    if (!took.ok) return res.status(took.status).json(took);
     try {
       const out = await scanBooklet(images, str(body.species, 10));
-      return res.status(200).json(out);
-    } catch (e) { return res.status(e.status || 502).json({ error: e.message || 'ia_error' }); }
+      return res.status(200).json({ ...out, quota: { left: took.left, show: took.show } });
+    } catch (e) {
+      await refundImport(took.ticket).catch(() => {});
+      return res.status(e.status || 502).json({ error: e.message || 'ia_error' });
+    }
   }
 
   if (q.scanclear) {

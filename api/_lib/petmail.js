@@ -362,6 +362,8 @@ export async function importOne(P, email, st, cfg, body, deps) {
   /* el tope de IA se mira antes de bajar nada: si no hay lugar, queda en cola */
   if (canRead) {
     const stop = await deps.peekScan(email);
+    /* funciones inteligentes vencidas: no se trae nada ni se encola */
+    if (stop?.error === 'ai_expired') return { status: 403, body: { error: 'ai_expired', expiredAt: stop.expiredAt || null } };
     if (stop) {
       if (!st.queue.some(x => dedupeKey(x.m, x.part) === key)) st.queue.push({ m, part, name: meta.name, type: meta.type });
       await saveState(P, email, st);
@@ -394,12 +396,21 @@ export async function importOne(P, email, st, cfg, body, deps) {
   const file = { ref, name: meta.name, type: meta.type };
   const only = deps.pets.length === 1 ? deps.pets[0].id : '';
   if (!canRead) return { status: 200, body: { ref: file, data: null, manual: 'tipo_no_legible', petId: only } };
-  const stop = await deps.takeScan(email);
-  if (stop) return { status: 200, body: { ref: file, data: null, manual: stop.error, limit: stop.limit, petId: only } };
+  /* PDF de más de 20 páginas: a la IA van las primeras 20 (el archivo completo ya quedó guardado) */
+  let prep = { buf, pages: 1, truncated: false };
+  if (deps.prepare) {
+    try { prep = await deps.prepare(buf, meta.type); }
+    catch (e) { return { status: 200, body: { ref: file, data: null, manual: e.message || 'pdf_no_se_pudo_cortar', petId: suggestPet(deps.pets, {}, meta.name) } }; }
+  }
+  /* el crédito se descuenta recién acá, al mandar el documento a la IA; si la IA falla, se devuelve */
+  const took = await deps.takeScan(email, prep.pages);
+  if (took?.error) return { status: 200, body: { ref: file, data: null, manual: took.error, limit: took.limit, petId: only } };
+  const extra = { ...(prep.truncated ? { truncated: true, pages: prep.total, note: deps.truncatedNote || '' } : {}), ...(took && Number.isFinite(took.left) ? { quota: { left: took.left, show: Boolean(took.show) } } : {}) };
   try {
-    const data = await deps.scanStudy(buf, meta.type, deps.pets);
-    return { status: 200, body: { ref: file, data, petId: suggestPet(deps.pets, { petName: data.pet?.name, species: data.pet?.species, breed: data.pet?.breed, lab: data.lab }, meta.name) } };
+    const data = await deps.scanStudy(prep.buf, meta.type, deps.pets);
+    return { status: 200, body: { ref: file, data, ...extra, petId: suggestPet(deps.pets, { petName: data.pet?.name, species: data.pet?.species, breed: data.pet?.breed, lab: data.lab }, meta.name) } };
   } catch (e) {
+    if (took?.ticket && deps.refundScan) await deps.refundScan(took.ticket).catch(() => {});
     return { status: 200, body: { ref: file, data: null, manual: e.message || 'ia_error', petId: suggestPet(deps.pets, {}, meta.name) } };
   }
 }
