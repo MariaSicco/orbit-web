@@ -594,11 +594,11 @@ const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['ag
 /* en el celu: 4 secciones y el + en el medio; Cuenta queda en el avatar de arriba */
 const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
 const TAB_OF = { antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta' };
-const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook'];
+const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
 const nav = $('#nav'), topBar = $('.top');
 function parseHash() { const [name = 'inicio', arg = ''] = location.hash.replace(/^#\/?/, '').split('/'); return { name: name || 'inicio', arg: decodeURIComponent(arg) }; }
 function go(name, arg) { const h = '#/' + name + (arg ? '/' + encodeURIComponent(arg) : ''); if (location.hash === h) render(); else location.hash = h; }
-window.addEventListener('hashchange', () => { route = parseHash(); if (dPanel.open) dPanel.close(); mailRoute(); render(); window.scrollTo(0, 0); });
+window.addEventListener('hashchange', () => { route = parseHash(); if (dPanel.open) dPanel.close(); mailRoute(); render(); window.scrollTo(0, 0); if (route.name === 'preguntar' && mode === 'full') askLoadLeft(); });
 function drawNav() {
   const tab = TAB_OF[route.name] || route.name;
   nav.innerHTML = `<a class="brand side-only" href="#/inicio" aria-label="Mimitos, inicio">${HEART}<b>mimitos</b><span class="by">by Orbit</span></a>
@@ -617,9 +617,10 @@ function drawTop(bare) {
   /* escritorio: barra liviana con las secciones, las mascotas y el + */
   const desk = `<nav class="tnav desk-only" aria-label="Secciones">${TABS.filter(t => t[0] !== 'cuenta').map(([k, , l]) => `<a href="#/${k}" ${tab === k ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>
     ${doc.pets.length ? `<div class="tpets desk-only" aria-label="Tus mascotas">${doc.pets.map(x => `<button type="button" class="tpet" data-act="pick" data-id="${x.id}" aria-current="${x.id === p?.id}" title="${esc(x.name)}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}<button type="button" class="tpet add" data-act="newPet" aria-label="Agregar mascota">${I('plus')}</button></div>` : ''}
+    ${doc.pets.length ? askBtn('desk-only') : ''}
     <button type="button" class="btn sm lime desk-only" data-act="add">${I('plus')} Cargar algo</button>`;
   $('#tnavBox').innerHTML = desk;
-  box.innerHTML = `<a class="round" href="#/avisos" aria-label="Avisos">${I('bell')}</a><a class="me${onHome ? ' desk-only' : ''}" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a>`;
+  box.innerHTML = `${doc.pets.length ? `<button type="button" class="round ask-ic mob-only" data-act="askGo" aria-label="Preguntale a Mimitos">${ASK_IC.stars}</button>` : ''}<a class="round" href="#/avisos" aria-label="Avisos">${I('bell')}</a><a class="me${onHome ? ' desk-only' : ''}" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a>`;
 }
 const greet = () => { const h = new Date().getHours(); return h < 6 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'; };
 const HEART = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27.5c-6.3-4.2-11-8.3-11-13.4C5 10.6 7.7 8 10.9 8c2.2 0 4 1.1 5.1 2.9C17.1 9.1 18.9 8 21.1 8 24.3 8 27 10.6 27 14.1c0 5.1-4.7 9.2-11 13.4z" fill="#D9694A"/><circle cx="12" cy="16" r="1.5" fill="#1F1A17"/><circle cx="20" cy="16" r="1.5" fill="#1F1A17"/><path d="M14 19.6c1.1.9 2.9.9 4 0" fill="none" stroke="#1F1A17" stroke-width="1.5" stroke-linecap="round"/></svg>';
@@ -632,6 +633,7 @@ function render() {
   nav.hidden = bare;
   if (!bare) drawNav();
   document.body.dataset.route = bare ? '' : route.name;
+  document.body.dataset.view = mode === 'full' ? route.name : '';
   applyHue(route.name === 'alta' && ob ? ob.pet : curPet());
   drawTop(bare);
   app.className = mode === 'full' && (BARE.includes(route.name) || !doc.pets.length && route.name !== 'cuenta' && route.name !== 'avisos') ? '' : 'wide';
@@ -650,6 +652,7 @@ function view() {
   if (route.name === 'lectura') return renderScan();
   if (route.name === 'estudios') return renderBulk();
   if (route.name === 'gmail' || route.name === 'outlook') return renderMail(route.name);
+  if (route.name === 'preguntar') return renderAsk();
   if (!doc.pets.length && route.name !== 'cuenta' && route.name !== 'avisos') return renderFirst();
   const p = curPet(); if (p && p.id !== curId) curId = p.id;
   switch (route.name) {
@@ -786,6 +789,7 @@ function renderInicio(p) {
   return `<div class="dash">
     <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
     <div class="dash-r">
+      ${askBtn('ask-home span2')}
       ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
       ${scanBanner(p)}
       ${notify && !notify.devices && !notify.mail ? `<button class="banner nudge span2" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span style="flex:1"><b>Que no se te pase ninguna fecha</b><small class="dim">Activá los avisos en el celu o por mail.</small></span>${I('chevron')}</button>` : ''}
@@ -2331,6 +2335,161 @@ async function drawPoster(p, url) {
   if (url) { const q = qrCanvas(url, 240); if (q) { x.fillStyle = '#fff'; x.fillRect(W - 290, 960, 240, 240); x.drawImage(q, W - 280, 970, 220, 220); } }
 }
 
+/* ---------- PREGUNTALE A MIMITOS ----------
+   Chat que responde SOLO con lo cargado en la cuenta (api/mascotas?ask). La conversación queda en memoria
+   y en sessionStorage de este navegador; al servidor viajan solo las últimas 6 vueltas, y no se guarda allá. */
+const ASK_MAX = 500, ASK_TURNS = 6, ASK_LOW = 5;
+const ASK_IC = {
+  stars: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 3.5l1.7 4.6 4.6 1.7-4.6 1.7L10 16.1l-1.7-4.6L3.7 9.8l4.6-1.7z"/><path d="M18 13.5l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z"/></svg>',
+  send: '<svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V5M5.5 11.5 12 5l6.5 6.5"/></svg>',
+};
+const askStore = { get() { try { return JSON.parse(sessionStorage.getItem('mimitos:ask') || 'null'); } catch { return null; } }, set(v) { try { sessionStorage.setItem('mimitos:ask', JSON.stringify(v)); } catch {} }, clear() { try { sessionStorage.removeItem('mimitos:ask'); } catch {} } };
+const ask = { turns: (askStore.get()?.turns || []).filter(t => t && t.q && t.a).slice(-30), pending: '', error: null, left: null, draft: '', from: 'inicio' };
+const askSave = () => askStore.set({ turns: ask.turns.slice(-30) });
+const askBtn = (cls = '') => `<button type="button" class="ask-cta ${cls}" data-act="askGo">${ASK_IC.stars}<span>Preguntale a Mimitos</span></button>`;
+/* ejemplos con los nombres reales de la cuenta */
+function askExamples() {
+  const a = curPet(); if (!a) return [];
+  const b = doc.pets.find(x => x.id !== a.id) || a;
+  const surg = doc.pets.find(x => x.surgeries.some(s => s.name));
+  const out = [
+    a.records.some(r => r.type === 'desparasitacion') ? `¿Cuándo fue la última pipeta de ${a.name}?` : `¿Cuándo le toca la próxima vacuna a ${a.name}?`,
+    `¿${b.name} tiene todas las vacunas al día?`,
+    `¿Cuánto aumentó de peso ${a.name} este año?`,
+    `¿Cuándo fue la última vez que ${a.name} tuvo diarrea?`,
+    ...(surg ? [`¿Qué estudios le hicieron a ${surg.name} antes de la cirugía?`, `¿Qué medicación tomó ${surg.name} después de la cirugía?`] : []),
+    '¿Cuánto gasté en veterinario este mes?',
+  ];
+  return out;
+}
+const ddmm = d => d && /^\d{4}-\d{2}-\d{2}/.test(d) ? `${d.slice(8, 10)}/${d.slice(5, 7)}` : '';
+function citeChip(c, i) {
+  const lab = String(c.label || ''), short = lab.length > 24 ? lab.slice(0, 23).trim() + '…' : lab;
+  const many = doc.pets.length > 1 ? `${c.petName} · ` : '';
+  const when = c.kind === 'gastos' ? (c.date || '').slice(5, 7) + '/' + (c.date || '').slice(0, 4) : ddmm(c.date);
+  return `<button type="button" class="cite" data-act="askCite" data-t="${i}" data-c="${esc(c.id)}" aria-label="Ver ${esc(c.label)}${c.petName ? ' de ' + esc(c.petName) : ''}${c.date ? ', ' + esc(c.date) : ''}"><span class="n" aria-hidden="true">${i + 1}</span>${esc(many + short)}${when ? ` · ${esc(when)}` : ''}</button>`;
+}
+/* el texto de la respuesta: escapado, con las citas como numeritos que también abren el registro */
+function askText(t, ti) {
+  const ids = (t.cites || []).map(c => c.id);
+  return esc(t.a).replace(/\[r:([a-z0-9]+)\]/g, (m, id) => { const k = ids.indexOf(id); return k < 0 ? '' : `<button type="button" class="cref" data-act="askCite" data-t="${ti}" data-c="${id}" aria-label="Fuente ${k + 1}">${k + 1}</button>`; })
+    .split(/\n{2,}/).map(par => `<p>${par.replace(/\n/g, '<br>')}</p>`).join('');
+}
+function askLog() {
+  const p = curPet();
+  const left = ask.left;
+  const turns = ask.turns.map((t, i) => `<div class="ask-turn">
+      <p class="ask-q"><span class="sr">Vos: </span>${esc(t.q)}</p>
+      <div class="ask-a${t.medical ? ' med' : ''}"><span class="sr">Mimitos: </span>${askText(t, i)}
+        ${t.trimmed ? '<p class="ask-trim">Tenías muchos datos: miré lo más reciente.</p>' : ''}
+        ${t.cites?.length ? `<div class="cites" role="group" aria-label="De dónde sale">${t.cites.map(citeChip).join('')}</div>` : ''}</div></div>`).join('');
+  const pending = ask.pending ? `<div class="ask-turn"><p class="ask-q"><span class="sr">Vos: </span>${esc(ask.pending)}</p>
+      <div class="ask-a thinking" aria-busy="true"><span class="think-t">${ASK_IC.stars} Pensando…</span><span class="sk" style="width:92%;height:12px;border-radius:6px"></span><span class="sk" style="width:76%;height:12px;border-radius:6px"></span><span class="sk" style="width:54%;height:12px;border-radius:6px"></span></div></div>` : '';
+  const err = ask.error ? `<div class="ask-err" role="alert">${I('alert')}<span><b>${esc(ask.error.t)}</b>${ask.error.d ? `<small>${esc(ask.error.d)}</small>` : ''}</span>${ask.error.retry ? '<button type="button" class="btn sm" data-act="askRetry">Reintentar</button>' : ''}</div>` : '';
+  const intro = !ask.turns.length && !ask.pending ? `<div class="ask-intro">
+      <span class="ask-mark">${ASK_IC.stars}</span>
+      <h1>¿Qué querés saber de ${doc.pets.length > 1 ? 'tus mascotas' : esc(p.name)}?</h1>
+      <p class="dim">Busco en lo que cargaste: vacunas, pipetas, peso, gastos, consultas, estudios y notas. Te digo de dónde sale cada dato.</p>
+      <div class="ask-ex" role="group" aria-label="Ejemplos para preguntar">${askExamples().map(q => `<button type="button" class="chip" data-act="askEx" data-q="${esc(q)}">${esc(q)}</button>`).join('')}</div></div>` : '';
+  const capped = left && (left.day <= 0 || left.month <= 0);
+  const leftTxt = capped ? '' : left && Math.min(left.day, left.month) <= ASK_LOW ? `<p class="ask-left">${Math.min(left.day, left.month) === 1 ? 'Te queda 1 pregunta' : `Te quedan ${Math.min(left.day, left.month)} preguntas`} ${left.day <= left.month ? 'por hoy' : 'este mes'}.</p>` : '';
+  return intro + turns + pending + err + leftTxt;
+}
+function renderAsk() {
+  const p = curPet();
+  const head = `<header class="ask-h"><button type="button" class="round" data-act="askBack" aria-label="Volver">${I('back')}</button><h1 class="ask-title">${ASK_IC.stars}<span>Preguntale a Mimitos</span></h1>${ask.turns.length ? `<button type="button" class="btn ghost sm" data-act="askNew">${I('plus')}<span>Nueva<span class="ask-long"> conversación</span></span></button>` : '<span class="ask-sp"></span>'}</header>`;
+  if (!p) return `<section class="ask">${head}<div class="empty" style="margin-top:12px">${bubble('paw', 'salud')}<h2>Primero cargá a tu mascota</h2><p>Mimitos responde con lo que cargás. Cuando tengas a tu mascota y algún dato, preguntale lo que quieras.</p><button class="btn" data-act="newPet">${I('plus')} Agregar a mi mascota</button></div></section>`;
+  const left = ask.left, capped = left && (left.day <= 0 || left.month <= 0);
+  after(() => { const el = $('#askIn'); if (el && !ask.pending && !capped && !matchMedia('(pointer:coarse)').matches) el.focus({ preventScroll: true }); askScroll(); });
+  return `<section class="ask">${head}
+    <p class="ask-note">${I('alert')}<span>Mimitos responde con lo que cargaste. No es un veterinario: ante cualquier duda de salud, consultá con tu vete.</span></p>
+    <div class="ask-log" id="askLog">${askLog()}</div>
+    <p class="sr" aria-live="polite" id="askLive"></p>
+    <form class="ask-form" id="askForm" novalidate>
+      ${capped ? `<p class="ask-cap" role="status">${left.day <= 0 ? `Llegaste a las ${left.perDay} preguntas de hoy. Mañana podés seguir preguntando.` : `Llegaste a las ${left.perMonth} preguntas de este mes. El mes que viene se renueva.`}</p>` : `
+      <div class="ask-box"><label class="sr" for="askIn">Tu pregunta</label>
+        <textarea id="askIn" rows="1" maxlength="${ASK_MAX}" placeholder="Preguntá sobre ${esc(doc.pets.length > 1 ? 'tus mascotas' : p.name)}…" aria-describedby="askCount askPriv" ${ask.pending ? 'disabled' : ''}>${esc(ask.draft)}</textarea>
+        <button type="submit" class="ask-send" aria-label="Preguntar" ${ask.pending ? 'disabled' : ''}>${ASK_IC.send}</button></div>
+      <p class="ask-count" id="askCount" aria-live="polite">${ask.draft.length > ASK_MAX - 80 ? `${ask.draft.length}/${ASK_MAX}` : ''}</p>`}
+      <p class="ask-priv" id="askPriv">La conversación no se guarda en nuestro servidor: queda solo en esta pestaña hasta que la cierres.</p>
+    </form></section>`;
+}
+function askScroll() { if (ask.turns.length || ask.pending) requestAnimationFrame(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' })); }
+/* redibuja solo la conversación (así no se pierde lo que estás escribiendo) */
+function askDraw() {
+  if (route.name !== 'preguntar') return;
+  const log = $('#askLog');
+  if (!log || Boolean($('.ask-cap')) !== Boolean(ask.left && (ask.left.day <= 0 || ask.left.month <= 0)) || Boolean($('[data-act="askNew"]')) !== Boolean(ask.turns.length)) return render();
+  log.innerHTML = askLog();
+  const el = $('#askIn'), sb = $('.ask-send'); if (el) el.disabled = Boolean(ask.pending); if (sb) sb.disabled = Boolean(ask.pending);
+  askScroll();
+}
+async function askLoadLeft() { try { const r = await fetch('/api/mascotas?ask=1'); if (r.ok) { ask.left = (await r.json()).left || null; askDraw(); } } catch {} }
+function askOpen() { if (route.name !== 'preguntar') ask.from = route.name; go('preguntar'); }
+async function askSend(q) {
+  q = String(q || '').trim();
+  if (!q || ask.pending) return;
+  if (q.length > ASK_MAX) { ask.error = { t: `La pregunta es muy larga: hasta ${ASK_MAX} caracteres.` }; return askDraw(); }
+  ask.pending = q; ask.error = null; ask.draft = '';
+  const el = $('#askIn'); if (el) { el.value = ''; askGrow(el); }
+  const c = $('#askCount'); if (c) c.textContent = '';
+  askDraw();
+  const live = $('#askLive'); if (live) live.textContent = 'Pensando…';
+  const history = ask.turns.slice(-ASK_TURNS).map(t => ({ q: t.q, a: t.a }));
+  let tz = ''; try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch {}
+  let r = null, d = null;
+  try { r = await fetch('/api/mascotas?ask=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question: q, petId: curPet()?.id || '', history, tz }) }); d = await r.json().catch(() => null); } catch { r = null; }
+  ask.pending = '';
+  if (r && r.ok && d && typeof d.answer === 'string') {
+    ask.turns.push({ q, a: d.answer, cites: d.citations || [], medical: Boolean(d.medical), trimmed: Boolean(d.trimmed) });
+    ask.left = d.left || ask.left; askSave();
+    askDraw();
+    if ($('#askLive')) $('#askLive').textContent = 'Mimitos respondió: ' + d.answer.replace(/\[r:[a-z0-9]+\]/g, '');
+    const f = $('#askIn'); if (f && !matchMedia('(pointer:coarse)').matches) f.focus({ preventScroll: true });
+    return;
+  }
+  const e = d?.error || '';
+  if (r?.status === 429 && /limite/.test(e)) { ask.left = d.left || { day: e === 'limite_diario' ? 0 : 1, month: e === 'limite_mensual' ? 0 : 1, perDay: d.limit, perMonth: d.limit }; ask.error = null; ask.draft = q; return render(); }
+  if (r?.status === 401) ask.error = { t: 'Se cerró tu sesión.', d: 'Entrá de nuevo para seguir preguntando.' };
+  else if (r?.status === 409 && e === 'sin_mascotas') ask.error = { t: 'Primero cargá a tu mascota.' };
+  else if (e === 'ia_no_configurada') ask.error = { t: 'Mimitos no está disponible en este momento.', d: 'Tus datos están bien. Probá de nuevo más tarde.' };
+  else if (!r) ask.error = { t: 'No pudimos conectar.', d: 'Revisá tu conexión y reintentá.', retry: q };
+  else ask.error = { t: 'No pudimos responder esta vez.', d: 'No se descontó de tus preguntas. Reintentá en un ratito.', retry: q };
+  ask.draft = ask.error.retry ? '' : q;
+  askDraw();
+  if ($('#askLive')) $('#askLive').textContent = ask.error.t;
+}
+function askGrow(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 160) + 'px'; }
+/* abrir de dónde sale el dato */
+function askCite(ti, id) {
+  const c = ask.turns[ti]?.cites?.find(x => x.id === id); if (!c) return;
+  const p = petById(c.petId); if (!p) return toast('Ese dato ya no está cargado.');
+  selectPet(p.id);
+  const has = (list, key) => (list || []).some(x => x.id === key);
+  switch (c.section) {
+    case 'rec': case 'visit': case 'study': case 'sym': case 'surg': case 'med': {
+      const list = { rec: p.records, visit: p.visits, study: p.studies, sym: p.symptoms, surg: p.surgeries, med: p.meds }[c.section];
+      return has(list, c.itemId) ? detail(p, c.section, c.itemId) : toast('Ese dato ya no está cargado.');
+    }
+    case 'weight': { const w = p.weights.find(x => x.date === c.itemId); return w ? panel(`Peso de ${p.name}`, `<dl class="dl"><div><dt>Fecha</dt><dd>${fmt(w.date, { day: 'numeric', month: 'long', year: 'numeric' })}</dd></div><div><dt>Peso</dt><dd>${kg(w.kg)}</dd></div></dl><div class="d-acts"><button class="btn soft wide" data-askgo="datos">Ver sus datos</button></div>`) : toast('Ese peso ya no está cargado.'); }
+    case 'expense': { const x = p.expenses.find(e => e.id === c.itemId); if (!x) return toast('Ese gasto ya no está cargado.'); ui.gastos.ym = x.date.slice(0, 7); ui.gastos.pet = p.id; return go('gastos'); }
+    case 'gastos': ui.gastos.ym = String(c.itemId).slice(0, 7); ui.gastos.pet = p.id; return go('gastos');
+    case 'antecedentes': return go('antecedentes');
+    case 'datos': return go('datos');
+    case 'qr': return sharePanel(p);
+    default: return go('inicio');
+  }
+}
+/* el panel del peso citado vive fuera de #app: su botón se resuelve acá */
+$('#pBody').addEventListener('click', e => { const b = e.target.closest('[data-askgo]'); if (b) { dPanel.close(); go(b.dataset.askgo); } });
+app.addEventListener('submit', e => { if (e.target.id !== 'askForm') return; e.preventDefault(); askSend($('#askIn')?.value); });
+app.addEventListener('input', e => {
+  if (e.target.id !== 'askIn') return;
+  ask.draft = e.target.value; askGrow(e.target);
+  const c = $('#askCount'); if (c) c.textContent = ask.draft.length > ASK_MAX - 80 ? `${ask.draft.length}/${ASK_MAX}` : '';
+});
+app.addEventListener('keydown', e => { if (e.target.id === 'askIn' && e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); askSend(e.target.value); } });
+
 /* ---------- acciones ---------- */
 document.addEventListener('click', e => {
   const fx = e.target.closest('[data-fix]'); if (fx && scan && app.contains(fx)) return fixScanItem(+fx.dataset.fix);
@@ -2359,6 +2518,12 @@ document.addEventListener('click', e => {
     case 'srcRm': return sendersPost({ remove: b.dataset.v });
     case 'pick': selectPet(b.dataset.id); if (TAB_OF[route.name] === 'inicio') return go('inicio'); return render();
     case 'go': return go(b.dataset.to);
+    case 'askGo': return askOpen();
+    case 'askBack': return go(ask.from && ask.from !== 'preguntar' ? ask.from : 'inicio');
+    case 'askNew': ask.turns = []; ask.error = null; ask.pending = ''; askStore.clear(); render(); return $('#askIn')?.focus();
+    case 'askEx': return askSend(b.dataset.q);
+    case 'askRetry': { const q = ask.error?.retry; ask.error = null; return askSend(q); }
+    case 'askCite': return askCite(+b.dataset.t, b.dataset.c);
     case 'goPet': selectPet(b.dataset.pet); return go(b.dataset.to);
     case 'relogin': return relogin();
     case 'add': return cur ? addPanel(cur) : startOnboard();
@@ -2430,7 +2595,8 @@ async function boot() {
       if ((x.devices || x.mail) && localTz() && x.tz !== localTz()) notifyPost({}).catch(() => {});
     }).catch(() => {});
     loadMail();
-    fetch('/api/me').then(r => r.ok ? r.json() : null).then(x => { if (x?.name) { me.name = x.name; if (route.name === 'cuenta' || !doc.pets.length) render(); else if (mode === 'full') drawTop(false); } }).catch(() => {});
+    if (route.name === 'preguntar') askLoadLeft();
+    fetch('/api/me').then(r => r.ok ? r.json() : null).then(x => { if (x?.name) { me.name = x.name; if (route.name === 'cuenta' || !doc.pets.length) render(); else if (mode === 'full') drawTop(BARE.includes(route.name)); } }).catch(() => {});
   } else if (st === 402 && d?.error === 'no_purchase') { mode = 'nopurchase'; me.email = d.email || ''; }
   else if (st === 401 || st === 403) mode = 'guest';
   else mode = 'error';

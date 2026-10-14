@@ -17,6 +17,9 @@
    POST ?studyscan=1 {ref}    → lee un estudio ya subido (foto o PDF) con IA: fecha, tipo, laboratorio y un resumen fiel (no guarda nada)
    POST ?upload=1 {name,size,type} → URL firmada para subir un estudio a Blob privado
    GET  ?file=ref             → abre un estudio propio (URL firmada que vence en minutos)
+   GET  ?ask=1                → cuántas preguntas quedan hoy y este mes
+   POST ?ask=1 {question, petId?, history?, tz?} → "Preguntale a Mimitos": responde SOLO con los datos de la cuenta,
+                                con citas validadas (api/_lib/petask.js). La conversación no se guarda en el servidor
    ?gmail=… y ?outlook=… (status|start|callback|search|import|queue|unqueue|disconnect) → "Conectar tu mail"
                                 (api/_lib/petmail.js + adaptadores): busca estudios en el mail y los importa por el mismo motor de ?studyscan
 
@@ -35,6 +38,7 @@ import { accesoHerramienta } from './_lib/herramienta-acceso.js';
 import { isAdmin } from './_lib/admin.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath, putPrivate } from './_lib/blob.js';
 import { handleMail } from './_lib/petmail.js';
+import { handleAsk } from './_lib/petask.js';
 import { gmail } from './_lib/petgmail.js';
 import { outlook } from './_lib/petoutlook.js';
 import { QUOTA_BYTES, fits, addUsage, photoRef, sweep } from './_lib/petfiles.js';
@@ -465,6 +469,17 @@ export default async function handler(req, res) {
     await saveNotify(n);
     if (b.test) await pushTo(n, { title: 'Listo, los avisos andan', body: 'Así te vamos a avisar antes de cada vacuna, pipeta o bolsa de alimento.', url: '/mascotas', tag: 'test' });
     return res.status(200).json(await view());
+  }
+
+  /* Preguntale a Mimitos: tope propio, contexto armado acá desde el doc de la cuenta */
+  if (q.ask) {
+    return handleAsk(req, res, {
+      email: s.email,
+      body: req.method === 'POST' ? await readBody(req) : {},
+      getDoc: async () => (await kvGet(docKey(s.email))) || { pets: [] },
+      getScans: async () => ((await kvGet(scansKey(s.email))) || []).filter(x => Date.parse(x.at) > Date.now() - SCAN_DAYS * 864e5).slice(-MAX_SCANS),
+      getTz: async () => (await getNotify(s.email)).tz,
+    });
   }
 
   if (req.method === 'GET' && q.file) {
