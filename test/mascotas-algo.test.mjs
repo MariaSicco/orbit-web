@@ -1,0 +1,78 @@
+/* Mimitos · "+ Algo pasó": modelo del episodio, compatibilidad con las notas viejas y archivos del Blob privado.
+   Correr con: node --test test/mascotas-algo.test.mjs  (KV en memoria; no toca datos reales) */
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+for (const k of ['KV_REST_API_URL', 'KV_REST_API_TOKEN', 'UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN', 'BLOB_READ_WRITE_TOKEN', 'BLOB_STORE_ID']) delete process.env[k];
+process.env.SESSION_SECRET = 'prueba-secreta-de-mimitos-algo-1234567890';
+await import('../assets/js/mascotas-rules.js');
+await import('../assets/js/mascotas-core.js');
+const Z = globalThis.MZ;
+const { cleanDoc, folder, EPISODE_KINDS } = await import('../api/mascotas.js');
+const F = await import('../api/_lib/petfiles.js');
+
+const EMAIL = 'duena@ejemplo.com';
+const mine = n => `blob:${folder(EMAIL)}/abc${n}-foto.jpg`;
+const docWith = symptoms => ({ pets: [{ id: 'luna0001', name: 'Luna', species: 'perro', symptoms }] });
+
+test('compatibilidad: una nota vieja { id, date, text } queda igual, sin campos nuevos', () => {
+  const out = cleanDoc(docWith([{ id: 'sy01aa', date: '2026-07-03', text: 'Diarrea dos días' }]), EMAIL).pets[0].symptoms;
+  assert.deepEqual(out, [{ id: 'sy01aa', date: '2026-07-03', text: 'Diarrea dos días' }]);
+});
+
+test('episodio: guarda tipo, hora, intensidad, nota y foto propia; el día sale de la hora si falta', () => {
+  const ep = { id: 'ep01aa', at: '2026-10-14T09:30', kind: 'vomito', sev: 'moderada', text: 'Después de comer', media: [{ ref: mine(1), type: 'image/jpeg', name: 'foto.jpg' }] };
+  const [x] = cleanDoc(docWith([ep]), EMAIL).pets[0].symptoms;
+  assert.deepEqual(x, { id: 'ep01aa', date: '2026-10-14', text: 'Después de comer', kind: 'vomito', at: '2026-10-14T09:30', sev: 'moderada', media: [{ ref: mine(1), type: 'image/jpeg', name: 'foto.jpg' }] });
+});
+
+test('episodio: en 2 toques alcanza con tipo y hora (sin nota)', () => {
+  const [x] = cleanDoc(docWith([{ id: 'ep02aa', date: '2026-10-14', at: '2026-10-14T10:00', kind: 'diarrea', text: '' }]), EMAIL).pets[0].symptoms;
+  assert.equal(x.kind, 'diarrea');
+  assert.equal(x.text, '');
+});
+
+test('episodio: tipo, intensidad y hora inválidos se descartan; sin tipo ni texto no se guarda', () => {
+  const out = cleanDoc(docWith([
+    { id: 'ep03aa', date: '2026-10-14', at: '14/10 10:00', kind: 'convulsion', sev: 'grave', text: 'algo' },
+    { id: 'ep04aa', date: '2026-10-14', kind: 'nada', text: '' },
+  ]), EMAIL).pets[0].symptoms;
+  assert.equal(out.length, 1);
+  assert.deepEqual(out[0], { id: 'ep03aa', date: '2026-10-14', text: 'algo' });
+  assert.deepEqual(EPISODE_KINDS, Z.ALGO.map(a => a[0]), 'el servidor y la app usan los mismos tipos');
+});
+
+test('episodio: solo archivos de la carpeta de la cuenta, máximo 4, tipo imagen o video', () => {
+  const other = `blob:${folder('otra@ejemplo.com')}/x-foto.jpg`;
+  const media = [{ ref: other, type: 'image/jpeg' }, { ref: mine(1), type: 'text/html' }, { ref: mine(2), type: 'image/jpeg' }, { ref: mine(3), type: 'video/mp4', dur: 12.4, thumb: mine(4) },
+    { ref: mine(5), type: 'image/jpeg' }, { ref: mine(6), type: 'image/jpeg' }, { ref: mine(7), type: 'image/jpeg' }];
+  const [x] = cleanDoc(docWith([{ id: 'ep05aa', date: '2026-10-14', kind: 'herida', media }]), EMAIL).pets[0].symptoms;
+  assert.deepEqual(x.media.map(m => m.ref), [mine(2), mine(3)]);
+  assert.equal(x.media[1].thumb, mine(4));
+  assert.equal(x.media[1].dur, 12.4);
+});
+
+test('archivos: las fotos y videos de los episodios cuentan como usados (la limpieza no los borra)', () => {
+  const doc = cleanDoc(docWith([{ id: 'ep06aa', date: '2026-10-14', kind: 'herida', media: [{ ref: mine(1), type: 'image/jpeg' }, { ref: mine(2), type: 'video/mp4', thumb: mine(3) }] }]), EMAIL);
+  const used = F.refsOf(doc);
+  for (const n of [1, 2, 3]) assert.ok(used.has(mine(n)), 'usa ' + n);
+});
+
+test('línea de tiempo: el episodio se titula por su tipo y lleva hora e intensidad; la nota vieja sigue igual', () => {
+  const p = { symptoms: [{ id: 'a', date: '2026-10-13', text: 'Se rasca la oreja' }, { id: 'b', date: '2026-10-14', at: '2026-10-14T08:05', kind: 'vomito', sev: 'leve', text: '' }, { id: 'c', date: '2026-10-14', at: '2026-10-14T18:40', kind: 'otro', text: 'Comió una media' }] };
+  const tl = Z.timeline(p);
+  assert.deepEqual(tl.map(e => e.title), ['Comió una media', 'Vómito', 'Se rasca la oreja']);
+  assert.match(tl[1].sub, /Algo pasó · 08:05 · Leve/);
+  assert.equal(tl[2].sub, 'Algo que notaste');
+});
+
+test('horas rápidas: ahora, hace 1 h y hoy a la mañana (9:00, o ahora si es más temprano)', () => {
+  const now = new Date(2026, 9, 14, 15, 20, 33);
+  assert.equal(Z.quickAt('now', now), '2026-10-14T15:20');
+  assert.equal(Z.quickAt('1h', now), '2026-10-14T14:20');
+  assert.equal(Z.quickAt('manana', now), '2026-10-14T09:00');
+  assert.equal(Z.quickAt('manana', new Date(2026, 9, 14, 7, 5)), '2026-10-14T07:05');
+});
+
+test('sin diagnóstico: el texto fijo de la hoja no cambia', () => {
+  assert.equal(Z.ALGO_NOTE, 'Mimitos solo lo anota. Si te preocupa, consultá con tu vete; si es urgente, buscá una guardia.');
+});

@@ -173,7 +173,9 @@ export function cleanDoc(d, email) {
     expenses: (Array.isArray(p?.expenses) ? p.expenses : []).slice(-600).map(x => ({
       id: id(x?.id), date: day(x?.date), cat: pick(x?.cat, EXP, 'otros'), amount: num(x?.amount) ?? 0, note: str(x?.note, 120),
     })).filter(x => x.date && x.amount > 0),
-    symptoms: (Array.isArray(p?.symptoms) ? p.symptoms : []).slice(-200).map(x => ({ id: id(x?.id), date: day(x?.date), text: str(x?.text, 300) })).filter(x => x.date && x.text),
+    /* "Algo que notaste" y "+ Algo pasó": las notas viejas son { id, date, text }; los episodios suman
+       tipo, hora, intensidad, fotos o videos (Blob privado de la cuenta) y el "¿Sigue igual?" (todo opcional) */
+    symptoms: (Array.isArray(p?.symptoms) ? p.symptoms : []).slice(-MAX_EPISODES).map(cleanEpisode(okRef)).filter(x => x.date && (x.text || x.kind)),
     log: cleanLog(p?.log),
   }));
   /* turnos (Veterinarias cerca → Anotar turno); los docs viejos no los tienen */
@@ -182,6 +184,23 @@ export function cleanDoc(d, email) {
   /* "Me fui" (api/_lib/petaway.js): salida en curso, ajustes e historial; los docs viejos no lo tienen */
   return { pets, appointments: cleanAppointments(d?.appointments, pets), ...(zone ? { zone } : {}), ...cleanAway(d, pets.map(p => p.id)) };
 }
+/* un episodio de "+ Algo pasó" (o una nota vieja): solo lo que la app usa; los campos vacíos no se guardan */
+export const EPISODE_KINDS = ['vomito', 'diarrea', 'picazon', 'herida', 'nocomio', 'tos', 'cojea', 'raro', 'otro'];
+export const MAX_EPISODES = 300, MAX_EPISODE_MEDIA = 4;
+const localAt = v => /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v || '') ? v : '';
+export const cleanEpisode = okRef => x => {
+  const kind = pick(x?.kind, EPISODE_KINDS, ''), at = localAt(x?.at);
+  const media = (Array.isArray(x?.media) ? x.media : []).slice(0, MAX_EPISODE_MEDIA)
+    .map(m => ({ ref: okRef(m?.ref) ? m.ref : '', type: /^(image|video)\/[a-z0-9.+-]{2,30}$/.test(m?.type || '') ? m.type : '', name: str(m?.name, 80),
+      ...(okRef(m?.thumb) ? { thumb: m.thumb } : {}), ...(num(m?.dur, 60) ? { dur: num(m.dur, 60) } : {}) }))
+    .filter(m => m.ref && m.type);
+  return {
+    id: id(x?.id), date: day(x?.date) || (at ? at.slice(0, 10) : ''), text: str(x?.text, 300),
+    ...(kind ? { kind } : {}), ...(at ? { at } : {}), ...(pick(x?.sev, ['leve', 'moderada', 'fuerte'], '') ? { sev: x.sev } : {}),
+    ...(media.length ? { media } : {}), ...(x?.check === true ? { check: true } : {}),
+    ...(pick(x?.res, ['igual', 'mejor', 'paso'], '') ? { res: x.res } : {}),
+  };
+};
 export function cleanZone(z) {
   const lat = Number(z?.lat), lng = Number(z?.lng);
   const label = String(z?.label ?? '').replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 60);
@@ -748,7 +767,7 @@ export default async function handler(req, res) {
   if ((body.rev ?? 0) !== (current.rev || 0)) return res.status(409).json({ error: 'conflict', doc: current });
   const clean = cleanDoc(body.doc, s.email);
   /* archivos subidos que se usan por primera vez: tamaño real al cupo (o se borran y se rechaza el guardado) */
-  const ver = await verifyUploads(s.email, clean.pets.flatMap(p => p.studies.flatMap(x => x.files.map(f => f.ref))));
+  const ver = await verifyUploads(s.email, clean.pets.flatMap(p => [...p.studies.flatMap(x => x.files.map(f => f.ref)), ...p.symptoms.flatMap(x => (x.media || []).flatMap(m => [m.ref, m.thumb].filter(Boolean)))]));
   if (!ver.ok) return res.status(422).json({ error: ver.error, ref: ver.ref });
   for (const p of clean.pets) {
     const old = current.pets.find(c => c.id === p.id);

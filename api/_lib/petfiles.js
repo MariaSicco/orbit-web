@@ -25,6 +25,8 @@ export function refsOf(doc) {
   for (const p of doc?.pets || []) {
     for (const u of [p.photo, p.photoFull, ...(p.photos || []), ...(p.records || []).map(r => r.sticker)]) { const r = imgRef(u); if (r) out.add(r); }
     for (const x of p.studies || []) for (const f of x.files || []) if (isBlobRef(f.ref)) out.add(f.ref);
+    /* "+ Algo pasó": fotos y videos del episodio (y la miniatura del video) */
+    for (const x of p.symptoms || []) for (const m of x.media || []) for (const r of [m.ref, m.thumb]) if (isBlobRef(r)) out.add(r);
   }
   return out;
 }

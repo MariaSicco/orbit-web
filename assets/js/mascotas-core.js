@@ -8,7 +8,7 @@
   const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   const isoLocal = d => `${iso(d)}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
   const fmt = (s, o) => { const d = typeof s === 'string' ? pd(s) : s; return d ? d.toLocaleDateString('es-AR', o || { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; };
-  const fmtTime = d => d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  const fmtTime = d => d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
   const fmtWhen = d => {
     const t = today(), dd = new Date(d); dd.setHours(0, 0, 0, 0);
     const diff = Math.round((dd - t) / DAY);
@@ -317,6 +317,14 @@
     download: '<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M5 19.5h14"/>',
     star: '<path d="m12 4 2.4 4.9 5.4.8-3.9 3.8.9 5.4L12 16.4 7.2 18.9l.9-5.4-3.9-3.8 5.4-.8z"/>',
     sticker: '<path d="M14.5 20H7a3 3 0 0 1-3-3V7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v7.5z"/><path d="M14.5 20v-3.5a2 2 0 0 1 2-2H20"/>',
+    vomit: '<path d="M7 9a5 5 0 0 1 10 0c0 2.2-1.4 3.6-3 4.4"/><path d="M9.5 8.5h.01M14.5 8.5h.01"/><path d="M12 13v2.5"/><path d="M12 15.5s-2.5 2.2-2.5 3.7a2.5 2.5 0 0 0 5 0c0-1.5-2.5-3.7-2.5-3.7z"/>',
+    poop: '<path d="M7.5 19.5h9a3 3 0 0 0 .9-5.9 3 3 0 0 0-2.9-3.9 2.6 2.6 0 0 0-2.2-4.2c.2 1.6-2.3 2-2.3 4.2a3 3 0 0 0-2.7 3.9 3 3 0 0 0 .2 5.9z"/>',
+    scratch: '<path d="M6 4.5c1.5 5 1.5 10 0 15M11 3.5c1.6 5.5 1.6 11.5 0 17M16 4.5c1.5 5 1.5 10 0 15"/>',
+    bandage: '<rect x="2.5" y="8.5" width="19" height="7" rx="3.5" transform="rotate(-45 12 12)"/><path d="M10.6 10.6h.01M13.4 13.4h.01M10.6 13.4h.01M13.4 10.6h.01"/>',
+    cough: '<path d="M3.5 9h9a2.5 2.5 0 1 0-2.5-2.5"/><path d="M3.5 13h14a2.5 2.5 0 1 1-2.5 2.5"/><path d="M3.5 17h6"/>',
+    limp: '<path d="M8 21l2-6-2-4 2-5"/><path d="M14 21l-1-6 3-3-1-5"/><circle cx="12" cy="4" r="1.6"/>',
+    mood: '<circle cx="12" cy="12" r="8.5"/><path d="M9 10h.01M15 10h.01"/><path d="M8.5 15.5c1-1 2-1 3 0s2 1 3 0"/>',
+    video: '<rect x="3" y="6" width="13" height="12" rx="2.5"/><path d="m16 10.5 5-3v9l-5-3"/>',
     wifi: '<path d="M3 3l18 18"/><path d="M8.5 16.5a5 5 0 0 1 7 0M5 12.5a10 10 0 0 1 4-2.3M15 10.2a10 10 0 0 1 4 2.3"/><path d="M12 20h.01"/>',
   };
   const icon = (n, cls = '') => `<svg class="i ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[n] || P.paw}</svg>`;
@@ -336,16 +344,42 @@
   const BREEDS = { perro: ["Mestizo", "Akita Inu", "Alaskan Malamute", "American Bully", "Basenji", "Basset Hound", "Beagle", "Bichón Frisé", "Bichón Maltés", "Bloodhound", "Border Collie", "Boston Terrier", "Bóxer", "Boyero de Berna", "Braco Alemán", "Bull Terrier", "Bulldog Francés", "Bulldog Inglés", "Bullmastiff", "Cane Corso", "Caniche Toy", "Caniche Mini", "Caniche Estándar", "Cavalier King Charles", "Chihuahua", "Chow Chow", "Cimarrón Uruguayo", "Cocker Spaniel Inglés", "Cocker Spaniel Americano", "Collie", "Dachshund (Salchicha)", "Dálmata", "Doberman", "Dogo Argentino", "Dogo de Burdeos", "Fila Brasileiro", "Fox Terrier", "Galgo", "Golden Retriever", "Gran Danés", "Husky Siberiano", "Jack Russell Terrier", "Labrador Retriever", "Lhasa Apso", "Mastín Napolitano", "Ovejero Alemán", "Ovejero Belga", "Pastor Australiano", "Pastor Blanco Suizo", "Pekinés", "Pinscher Miniatura", "Pit Bull", "Pointer", "Pomerania", "Pug", "Rottweiler", "Samoyedo", "San Bernardo", "Schnauzer Miniatura", "Schnauzer Estándar", "Schnauzer Gigante", "Setter Irlandés", "Shar Pei", "Shiba Inu", "Shih Tzu", "Springer Spaniel", "Staffordshire Bull Terrier", "Teckel", "Terranova", "Vizsla", "Weimaraner", "West Highland Terrier", "Whippet", "Yorkshire Terrier"], gato: ["Común europeo (mestizo)", "Abisinio", "American Shorthair", "Angora Turco", "Azul Ruso", "Bengalí", "Birmano", "Bombay", "British Shorthair", "Burmés", "Cornish Rex", "Devon Rex", "Esfinge (Sphynx)", "Exótico de pelo corto", "Himalayo", "Maine Coon", "Manx", "Munchkin", "Bosque de Noruega", "Oriental", "Persa", "Ragdoll", "Savannah", "Scottish Fold", "Siamés", "Siberiano", "Somalí", "Van Turco"], otra: [] };
   const SURGERIES = ['Castración', 'Limpieza dental o extracción', 'Extracción de un bulto o tumor', 'Fractura', 'Cirugía de ojos', 'Cesárea'];
   const STUDY = { sangre: 'Análisis de sangre', orina: 'Análisis de orina', materia: 'Análisis de materia fecal', rx: 'Radiografía', eco: 'Ecografía', otro: 'Otro estudio' };
+  /* ---------- "+ Algo pasó": registro rápido de lo que le pasa en el día a día ----------
+     Vive en p.symptoms (el mismo lugar que "Algo que notaste"), con campos opcionales:
+     { id, date, text, kind?, at?, sev?, media?: [{ ref, type, name, thumb? }], check?, res? }.
+     Las anotaciones viejas ({ id, date, text }) siguen andando igual: sin kind son una nota libre.
+     Mimitos solo lo anota: nunca diagnostica ni sugiere tratamientos. */
+  const ALGO = [['vomito', 'Vómito', 'vomit'], ['diarrea', 'Diarrea', 'poop'], ['picazon', 'Picazón', 'scratch'], ['herida', 'Herida', 'bandage'], ['nocomio', 'No comió', 'bowl'], ['tos', 'Tos o estornudos', 'cough'], ['cojea', 'Cojea', 'limp'], ['raro', 'Comportamiento raro', 'mood'], ['otro', 'Otro', 'note']];
+  const ALGO_L = Object.fromEntries(ALGO.map(([k, l]) => [k, l]));
+  const ALGO_I = Object.fromEntries(ALGO.map(([k, , i]) => [k, i]));
+  const SEV = { leve: 'Leve', moderada: 'Moderada', fuerte: 'Fuerte' };
+  const ALGO_NOTE = 'Mimitos solo lo anota. Si te preocupa, consultá con tu vete; si es urgente, buscá una guardia.';
+  /* cuándo pasó: la hora si la hay (hora local AAAA-MM-DDTHH:MM); si no, el mediodía del día */
+  const epAt = s => { if (s?.at && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s.at)) { const [d, t] = s.at.split('T'); const [y, m, dd] = d.split('-').map(Number); const [h, mi] = t.split(':').map(Number); return new Date(y, m - 1, dd, h, mi); } const d = pd(s?.date); if (d) d.setHours(12); return d; };
+  const epTitle = s => s.kind ? (s.kind === 'otro' && s.text ? s.text : ALGO_L[s.kind] || 'Algo pasó') : s.text;
+  const isEp = s => Boolean(s && s.kind);
+  /* cuándo, en palabras: "hoy 14:30", "ayer 9:10", "12 oct 18:00" */
+  const epWhen = s => s.at ? fmtWhen(epAt(s)) : fmt(s.date, { day: 'numeric', month: 'short' });
+  /* las horas rápidas de la hoja: ahora, hace 1 h y hoy a la mañana (9:00, o ahora si todavía no son las 9) */
+  function quickAt(k, now = new Date()) {
+    const d = new Date(now); d.setSeconds(0, 0);
+    if (k === '1h') d.setTime(d.getTime() - HOUR);
+    if (k === 'manana') { const m = new Date(d); m.setHours(9, 0, 0, 0); if (m < d) d.setTime(m.getTime()); }
+    return isoLocal(d);
+  }
+
   /* todo lo que le pasó, en una sola línea de tiempo */
   function timeline(p) {
     const ev = [];
     for (const r of p.records || []) if (r.date) ev.push({ k: r.type === 'vacuna' ? 'vacuna' : r.type === 'desparasitacion' ? 'anti' : 'control', date: r.date, title: r.name || TYPE[r.type], sub: [TYPE[r.type], r.vet].filter(Boolean).join(' · '), ref: r, kind: 'rec' });
     for (const v of p.visits || []) ev.push({ k: 'consulta', date: v.date, title: v.reason || 'Consulta', sub: [v.vet, v.findings].filter(Boolean).join(' · '), ref: v, kind: 'visit' });
     for (const x of p.studies || []) ev.push({ k: 'estudio', date: x.date, title: x.title || STUDY[x.kind], sub: [STUDY[x.kind], x.files?.length ? `${x.files.length} archivo${x.files.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · '), ref: x, kind: 'study' });
-    for (const s of p.symptoms || []) ev.push({ k: 'sintoma', date: s.date, title: s.text, sub: 'Algo que notaste', ref: s, kind: 'sym' });
+    for (const s of p.symptoms || []) ev.push(isEp(s)
+      ? { k: 'sintoma', date: s.date, at: s.at || '', title: epTitle(s), sub: ['Algo pasó', s.at ? fmtTime(epAt(s)) : '', SEV[s.sev] || '', s.kind === 'otro' ? '' : s.text, s.media?.length ? `${s.media.length} ${s.media.length > 1 ? 'adjuntos' : 'adjunto'}` : ''].filter(Boolean).join(' · '), ref: s, kind: 'sym' }
+      : { k: 'sintoma', date: s.date, title: s.text, sub: 'Algo que notaste', ref: s, kind: 'sym' });
     for (const c of p.surgeries || []) if (/^\d{4}-\d{2}-\d{2}$/.test(c.date || '')) ev.push({ k: 'cirugia', date: c.date, title: c.name, sub: 'Cirugía', ref: c, kind: 'surg' });
     for (const m of p.meds || []) if (m.start) ev.push({ k: 'remedio', date: m.start.slice(0, 10), title: m.name, sub: ['Remedio', m.dose].filter(Boolean).join(' · '), ref: m, kind: 'med' });
-    return ev.sort((a, b) => b.date.localeCompare(a.date));
+    return ev.sort((a, b) => b.date.localeCompare(a.date) || String(b.at || '').localeCompare(String(a.at || '')));
   }
   /* el resumen que un veterinario quiere ver primero */
   function summary(p) {
@@ -398,5 +432,5 @@
     return out.sort((a, b) => a.date.localeCompare(b.date)).slice(0, n);
   }
 
-  g.MZ = { addBag, bagPrompt, foodSpend, RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
+  g.MZ = { ALGO, ALGO_L, ALGO_I, SEV, ALGO_NOTE, epAt, epTitle, epWhen, isEp, quickAt, addBag, bagPrompt, foodSpend, RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
 })(typeof window !== 'undefined' ? window : globalThis);

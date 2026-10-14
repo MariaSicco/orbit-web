@@ -734,6 +734,143 @@ function symptomForm(p, s) {
     onSave(v) { if (!v.text) return 'Escribí qué notaste.'; const x = s || { id: uid() }; Object.assign(x, v); if (!s) p.symptoms.push(x); toast('Anotado en su historia.'); },
   });
 }
+/* ---------- "+ Algo pasó": registro rápido de lo que le pasa en el día a día ----------
+   Caso típico en 2 toques: "+ Algo pasó" y el tipo (queda anotado ahora). Con "Sumar intensidad, nota o foto"
+   abierto, el tipo se elige y se guarda con "Guardar". Vive en p.symptoms (mascotas-core.js, Z.ALGO). */
+let algo = null;
+const ALGO_WHEN = [['now', 'Ahora'], ['1h', 'Hace 1 h'], ['manana', 'Hoy a la mañana'], ['pick', 'Elegir']];
+const ALGO_MAX_MEDIA = 4;
+dPanel.addEventListener('close', () => { algo = null; });
+function algoSheet(p, ep) {
+  if (!p) return;
+  const edit = Boolean(ep);
+  algo = { p, ep, kind: ep?.kind || '', when: edit ? 'pick' : 'now', at: ep?.at || (ep?.date ? ep.date + 'T12:00' : Z.quickAt('now')), sev: ep?.sev || '', text: ep?.text || '', media: [...(ep?.media || [])], more: edit, busy: 0 };
+  panel(edit ? 'Editar lo que pasó' : `¿Qué le pasó a ${p.name}?`, algoHtml());
+  algoWire();
+}
+function algoHtml() {
+  const a = algo, edit = Boolean(a.ep);
+  return `<div class="algo">
+    <div class="f al-when"><span class="lb" id="alWhenL">Cuándo</span>
+      <div class="chips" role="group" aria-labelledby="alWhenL">${ALGO_WHEN.map(([k, l]) => `<button type="button" class="chip" data-alw="${k}" aria-pressed="${a.when === k}">${l}</button>`).join('')}</div>
+      <div class="al-pick" id="alPick"${a.when === 'pick' ? '' : ' hidden'}><label for="alAt" class="sr">Día y hora</label><input type="datetime-local" id="alAt" value="${esc(a.at)}" max="${Z.quickAt('now')}"></div>
+    </div>
+    <div class="al-grid" role="group" aria-label="Qué pasó">${Z.ALGO.map(([k, l, ic]) => `<button type="button" class="al-k" data-alk="${k}" aria-pressed="${a.more && a.kind === k}">${I(ic)}<span>${l}</span></button>`).join('')}</div>
+    <p class="al-hint" id="alHint" role="status">${a.more ? 'Elegí qué pasó y tocá Guardar.' : 'Tocá lo que pasó y queda anotado.'}</p>
+    <button type="button" class="al-more-b" id="alMoreB" aria-expanded="${a.more}" aria-controls="alMore">${I(a.more ? 'back' : 'plus')} ${a.more ? 'Menos detalles' : 'Sumar intensidad, nota o foto'}</button>
+    <div class="al-more" id="alMore"${a.more ? '' : ' hidden'}>
+      <div class="f"><span class="lb" id="alSevL">Intensidad <span class="opt">(opcional)</span></span>
+        <div class="chips" role="group" aria-labelledby="alSevL">${Object.entries(Z.SEV).map(([k, l]) => `<button type="button" class="chip" data-als="${k}" aria-pressed="${a.sev === k}">${l}</button>`).join('')}</div></div>
+      <div class="f"><label for="alText">Nota <span class="opt">(opcional)</span></label><textarea id="alText" maxlength="300" placeholder="Dos veces después de comer, tenía pasto…">${esc(a.text)}</textarea></div>
+      <div class="f"><span class="lb">Foto <span class="opt">(opcional)</span></span>
+        <div class="al-media" id="alMedia"></div>
+        <label class="btn ghost sm" for="alFile" id="alFileL">${I('camera')} Sacar o subir foto</label><input id="alFile" type="file" accept="image/*" class="sr" multiple>
+        <small id="alMsg" role="status"></small></div>
+      <button type="button" class="btn big wide" id="alSave">Guardar</button>
+      ${edit ? `<button type="button" class="btn ghost wide danger" id="alDel">${I('trash')} Borrar</button>` : ''}
+    </div>
+    <p class="note al-nodx">${esc(Z.ALGO_NOTE)} <button type="button" class="link" data-al="er">${I('pin')} Veterinarias cerca → Guardias 24 h</button></p>
+  </div>`;
+}
+function algoMediaDraw() {
+  const box = $('#alMedia'); if (!box || !algo) return;
+  box.innerHTML = algo.media.map((m, i) => `<span class="al-th">${m.type.startsWith('video/') ? `<span class="al-vid">${I('video')}${m.dur ? `<small>${Math.round(m.dur)} s</small>` : ''}</span>` : `<img src="${esc(fileUrl(m))}" alt="Foto ${i + 1}">`}<button type="button" class="ibtn" data-alrm="${i}" aria-label="Quitar ${esc(m.name || 'archivo')}">${I('x')}</button></span>`).join('');
+  box.hidden = !algo.media.length;
+  const lb = $('#alFileL'); if (lb) lb.hidden = algo.media.length >= ALGO_MAX_MEDIA;
+  algoSync();
+}
+function algoSync() {
+  const s = $('#alSave'); if (!s || !algo) return;
+  s.disabled = Boolean(algo.busy) || !algo.kind;
+  s.textContent = algo.busy ? 'Subiendo…' : 'Guardar';
+}
+function algoWire() {
+  const body = $('#pBody');
+  algoMediaDraw();
+  body.onclick = e => {
+    if (!algo) return;
+    const w = e.target.closest('[data-alw]');
+    if (w) {
+      algo.when = w.dataset.alw;
+      body.querySelectorAll('[data-alw]').forEach(c => c.setAttribute('aria-pressed', String(c === w)));
+      $('#alPick').hidden = algo.when !== 'pick';
+      if (algo.when === 'pick') { const el = $('#alAt'); el.max = Z.quickAt('now'); try { el.showPicker(); } catch { el.focus(); } }
+      else { algo.at = Z.quickAt(algo.when); $('#alAt').value = algo.at; }
+      return;
+    }
+    const k = e.target.closest('[data-alk]');
+    if (k) {
+      algo.kind = k.dataset.alk;
+      /* "Otro" necesita una palabra: abre la nota */
+      if (!algo.more && algo.kind !== 'otro') return algoSave();
+      if (!algo.more) algoMore(true);
+      body.querySelectorAll('[data-alk]').forEach(c => c.setAttribute('aria-pressed', String(c === k)));
+      $('#alHint').textContent = algo.kind === 'otro' ? 'Contá en la nota qué pasó y tocá Guardar.' : 'Tocá Guardar.';
+      if (algo.kind === 'otro') $('#alText').focus();
+      return algoSync();
+    }
+    const sv = e.target.closest('[data-als]');
+    if (sv) { algo.sev = algo.sev === sv.dataset.als ? '' : sv.dataset.als; body.querySelectorAll('[data-als]').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.als === algo.sev))); return; }
+    const rm = e.target.closest('[data-alrm]');
+    if (rm) { algo.media.splice(+rm.dataset.alrm, 1); return algoMediaDraw(); }
+    if (e.target.closest('#alMoreB')) return algoMore(!algo.more);
+    if (e.target.closest('#alSave')) return algoSave();
+    if (e.target.closest('#alDel')) { const { p, ep } = algo; dPanel.close(); return undoable(`${Z.epTitle(ep)} borrado.`, drop(p.symptoms, ep)); }
+    if (e.target.closest('[data-al="er"]')) {
+      const p = algo.p; dPanel.close();
+      if (window.MZVETS) { window.MZVETS.state.from = ['agenda', 'libreta'].includes(TAB_OF[route.name] || route.name) ? (TAB_OF[route.name] || route.name) : 'inicio'; window.MZVETS.state.kind = 'er'; }
+      return go('vets', p.id);
+    }
+  };
+  body.oninput = e => {
+    if (!algo) return;
+    if (e.target.id === 'alText') algo.text = e.target.value;
+    if (e.target.id === 'alAt') algo.at = e.target.value;
+  };
+  body.onchange = async e => {
+    if (!algo || e.target.id !== 'alFile') return;
+    const files = [...e.target.files].slice(0, ALGO_MAX_MEDIA - algo.media.length); e.target.value = '';
+    const mine = algo;
+    for (const f of files) await algoAdd(mine, f);
+  };
+}
+function algoMore(on) {
+  algo.more = on;
+  $('#alMore').hidden = !on;
+  const b = $('#alMoreB'); b.setAttribute('aria-expanded', String(on)); b.innerHTML = `${I(on ? 'back' : 'plus')} ${on ? 'Menos detalles' : 'Sumar intensidad, nota o foto'}`;
+  $('#alHint').textContent = on ? (algo.kind ? 'Tocá Guardar.' : 'Elegí qué pasó y tocá Guardar.') : 'Tocá lo que pasó y queda anotado.';
+  if (!on) { algo.kind = algo.ep?.kind || ''; $('#pBody').querySelectorAll('[data-alk]').forEach(c => c.setAttribute('aria-pressed', 'false')); }
+  algoSync();
+}
+/* foto: se comprime en el navegador y va al Blob privado de la cuenta, como los estudios (?upload, cupo y tope diario) */
+async function algoAdd(st, f) {
+  const msg = t => { if (algo === st && $('#alMsg')) $('#alMsg').textContent = t; };
+  if (!/^image\//.test(f.type)) return msg('Elegí una foto.');
+  st.busy++; algoSync(); msg('Subiendo la foto…');
+  try {
+    const data = await shrink(f, 1600, .82);
+    const file = dataToFile(data, (f.name || 'foto').replace(/\.[^.]+$/, '') + '.jpg');
+    const up = await uploadStudy(file);
+    st.media.push({ ref: up.ref, type: 'image/jpeg', name: up.name });
+    msg('');
+  } catch (e) { msg(e?.msg || 'No se pudo subir la foto. Probá de nuevo.'); }
+  finally { st.busy--; if (algo === st) algoMediaDraw(); }
+}
+function algoSave() {
+  const a = algo; if (!a || !a.kind || a.busy) return;
+  const now = Z.quickAt('now');
+  if (a.when !== 'pick') a.at = Z.quickAt(a.when);
+  if (!a.at) return toast('Elegí el día y la hora.');
+  if (a.at > now) return toast('La hora no puede ser futura.');
+  if (a.kind === 'otro' && !a.text.trim()) { $('#alText')?.focus(); return toast('Contá en la nota qué pasó.'); }
+  const x = a.ep || { id: uid() };
+  for (const k of ['sev', 'media', 'at', 'kind']) delete x[k];
+  Object.assign(x, { date: a.at.slice(0, 10), at: a.at, kind: a.kind, text: a.text.trim().slice(0, 300), ...(a.sev ? { sev: a.sev } : {}), ...(a.media.length ? { media: a.media } : {}) });
+  if (!a.ep) a.p.symptoms.push(x);
+  algo = null; dPanel.close(); changed();
+  if (a.ep) return toast('Actualizado.');
+  toast(`Anotado: ${Z.epTitle(x)}, ${Z.epWhen(x)}.`, { label: 'Deshacer', fn: () => { drop(a.p.symptoms, x)(); changed(); toast('Listo, lo sacamos.'); } });
+}
 function tripForm(p) {
   openForm({
     title: 'Viaje al exterior', values: p.trip,
@@ -908,6 +1045,7 @@ function drawTop(bare) {
   const desk = `<nav class="tnav desk-only" aria-label="Secciones">${TABS.filter(t => t[0] !== 'cuenta').map(([k, , l]) => `<a href="#/${k}" ${tab === k ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>
     ${doc.pets.length ? `<div class="tpets desk-only" aria-label="Tus mascotas">${topPets(p).map(x => `<button type="button" class="tpet" data-act="pick" data-id="${x.id}" aria-current="${x.id === p?.id}" title="${esc(x.name)}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}${topPets(p).length < doc.pets.length ? `<button type="button" class="tpet more" data-act="petsMore" aria-label="Ver todas tus mascotas (${doc.pets.length})">+${doc.pets.length - topPets(p).length}</button>` : ''}<button type="button" class="tpet add" data-act="newPet" aria-label="Agregar mascota">${I('plus')}</button></div>` : ''}
     ${doc.pets.length ? askBtn('desk-only') : ''}
+    ${doc.pets.length ? `<button type="button" class="btn sm ghost desk-only al-top" data-act="algo">${I('plus')} Algo pasó</button>` : ''}
     <button type="button" class="btn sm lime desk-only" data-act="add">${I('plus')} Cargar algo</button>`;
   $('#tnavBox').innerHTML = desk;
   box.innerHTML = `${doc.pets.length ? `<button type="button" class="round ask-ic mob-only" data-act="askGo" aria-label="Preguntale a Mimitos">${ASK_IC.stars}</button>` : ''}<a class="round" href="#/avisos" aria-label="Avisos">${I('bell')}</a><a class="me${onHome ? ' desk-only' : ''}" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a>`;
@@ -1092,6 +1230,7 @@ function renderInicio(p) {
     <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
     <div class="dash-r">
       ${askBtn('ask-home span2')}
+      <button type="button" class="algo-cta span2" data-act="algo">${I('plus')}<span><b>Algo pasó</b><small>Vómito, diarrea, picazón… anotalo en 2 toques</small></span></button>
       ${mefui && window.MZAWAY ? window.MZAWAY.homeCard(p) : ''}
       ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
       ${scanBanner(p)}
@@ -1258,7 +1397,7 @@ function scanLog(p) {
 
 /* historial con filtros: tipo, año y texto */
 const KIND_UI = { vacuna: ['syringe', 'salud'], anti: ['drop', 'salud'], control: ['steth', 'cuida'], consulta: ['steth', 'cuida'], estudio: ['flask', 'viaje'], sintoma: ['note', 'plata'], cirugia: ['scalpel', 'perdida'], remedio: ['pill', 'med'] };
-const FIL = [['todo', 'Todo'], ['vacuna', 'Vacunas'], ['anti', 'Antiparasitarios'], ['consulta', 'Consultas'], ['estudio', 'Estudios'], ['sintoma', 'Notas'], ['remedio', 'Remedios']];
+const FIL = [['todo', 'Todo'], ['vacuna', 'Vacunas'], ['anti', 'Antiparasitarios'], ['consulta', 'Consultas'], ['estudio', 'Estudios'], ['sintoma', 'Algo pasó'], ['remedio', 'Remedios']];
 const norm1 = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 function historyItems(p) {
   const h = ui.hist, q = norm1(h.q);
@@ -1281,7 +1420,7 @@ function historyList(p) {
   if (!tl.length) return any ? `<div class="empty dash"><p>No encontramos nada con esos filtros.</p><button class="btn sm ghost" data-act="hclear">Limpiar filtros</button></div>`
     : `<div class="empty dash"><p>Su historia empieza acá. Cada vacuna, consulta o estudio que cargues aparece en orden, con fecha.</p><button class="btn sm soft" data-act="add">${I('plus')} Cargar lo primero</button></div>`;
   let year = '';
-  return `<p class="sr" role="status">${tl.length} resultados</p><div class="timeline">${tl.slice(0, 60).map(e => { const y = e.date.slice(0, 4), head = y !== year ? `<div class="year">${y}</div>` : ''; year = y; const u = KIND_UI[e.k]; return `${head}<button class="tl" data-act="detail" data-kind="${e.kind}" data-id="${e.ref.id}"><span class="tl-date">${fmt(e.date, { day: '2-digit', month: 'short' })}</span>${bubble(u[0], u[1])}<span class="what"><b>${esc(e.title)}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span>${I('chevron')}</button>`; }).join('')}</div>`;
+  return `<p class="sr" role="status">${tl.length} resultados</p><div class="timeline">${tl.slice(0, 60).map(e => { const y = e.date.slice(0, 4), head = y !== year ? `<div class="year">${y}</div>` : ''; year = y; const u = e.ref?.kind ? [Z.ALGO_I[e.ref.kind] || 'note', 'perdida'] : KIND_UI[e.k]; return `${head}<button class="tl" data-act="detail" data-kind="${e.kind}" data-id="${e.ref.id}"><span class="tl-date">${fmt(e.date, { day: '2-digit', month: 'short' })}</span>${bubble(u[0], u[1])}<span class="what"><b>${esc(e.title)}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span>${I('chevron')}</button>`; }).join('')}</div>`;
 }
 app.addEventListener('input', e => {
   if (e.target.id === 'histQ') { ui.hist.q = e.target.value; $('#histList').innerHTML = historyList(curPet()); }
@@ -1320,6 +1459,13 @@ function detail(p, kind, id) {
     head = `<div class="d-head">${bubble('flask', 'viaje')}<div><span class="eyebrow">${Z.STUDY[x.kind]}</span></div></div>`;
     body = dl([['Fecha', fmt(x.date, { day: 'numeric', month: 'long', year: 'numeric' })], ['Resultado', esc(x.notes)]]) + (x.files.length ? `<div class="list">${x.files.map(f => `<a class="row link-row" href="${esc(fileUrl(f))}" target="_blank" rel="noopener">${bubble(f.type === 'application/pdf' ? 'file' : 'camera', 'viaje')}<span class="what"><b>${esc(f.name)}</b><small>Abrir archivo</small></span>${I('chevron')}</a>`).join('')}</div>` : '<p class="note">Sin archivos. Editalo para subir la foto o el PDF del estudio.</p>');
     acts = btn('edit', 'edit', 'Editar', 'soft');
+  } else if (kind === 'sym' && x.kind) {
+    title = Z.epTitle(x);
+    head = `<div class="d-head">${bubble(Z.ALGO_I[x.kind] || 'note', 'perdida')}<div><span class="eyebrow">Algo pasó · ${esc(Z.epWhen(x))}</span>${x.sev ? `<span class="badge ${x.sev === 'fuerte' ? 'late' : x.sev === 'moderada' ? 'soon' : 'ok'}">${Z.SEV[x.sev]}</span>` : ''}</div></div>`;
+    body = (x.text && x.kind !== 'otro' ? `<p style="white-space:pre-wrap">${esc(x.text)}</p>` : '')
+      + (x.media?.length ? `<div class="al-media big">${x.media.map((m, i) => `<a class="al-th" href="${esc(fileUrl(m))}" target="_blank" rel="noopener" aria-label="Abrir ${m.type.startsWith('video/') ? 'video' : 'foto'} ${i + 1}">${m.type.startsWith('video/') ? `<span class="al-vid">${I('video')}${m.dur ? `<small>${Math.round(m.dur)} s</small>` : ''}</span>` : `<img src="${esc(fileUrl(m))}" alt="">`}</a>`).join('')}</div>` : '')
+      + `<p class="note">${esc(Z.ALGO_NOTE)}</p>`;
+    acts = btn('edit', 'edit', 'Editar', 'soft');
   } else if (kind === 'sym') {
     title = 'Algo que notaste';
     head = `<div class="d-head">${bubble('note', 'plata')}<div><span class="eyebrow">${fmt(x.date, { day: 'numeric', month: 'long', year: 'numeric' })}</span></div></div>`;
@@ -1348,12 +1494,13 @@ function detail(p, kind, id) {
     }
     if (a === 'ics') return calendar([Z.recordEvent(p, x)], `${p.name} ${x.name}`);
     if (a === 'icsMed') return calendar([Z.medEvent(p, x)], `${p.name} ${x.name}`);
+    if (a === 'edit' && kind === 'sym' && x.kind) return algoSheet(p, x);
     dPanel.close();
     if (a === 'dup') return nextDose(p, x);
     if (a === 'renew') return renewSheet(p, x);
     if (a === 'postpone') return postponeSheet(p, x);
     if (a === 'turno') return window.MZVETS?.start(p, x, route.name === 'agenda' ? 'agenda' : route.name === 'libreta' ? 'libreta' : 'inicio');
-    ({ rec: () => recForm(p, x), visit: () => visitForm(p, x), study: () => studyForm(p, x), sym: () => symptomForm(p, x), surg: () => surgeryForm(p, x), med: () => medForm(p, x) })[kind]();
+    ({ rec: () => recForm(p, x), visit: () => visitForm(p, x), study: () => studyForm(p, x), sym: () => x.kind ? algoSheet(p, x) : symptomForm(p, x), surg: () => surgeryForm(p, x), med: () => medForm(p, x) })[kind]();
   };
 }
 function panel(title, html) { $('#dPanelT').textContent = title; $('#pBody').innerHTML = html; $('#pBody').onclick = null; if (!dPanel.open) dPanel.showModal(); }
@@ -1624,7 +1771,7 @@ function libretaDoc(p) {
     ${kv([['Problemas de salud', p.conditions.length ? p.conditions.map(c => `${esc(c.name)} (${{ activa: 'activo', controlada: 'controlado', resuelta: 'resuelto' }[c.status]})`).join(', ') : 'Ninguno cargado'], ['Cirugías', p.surgeries.length ? p.surgeries.map(c => esc(c.name) + (c.date ? ' ' + dd(c.date) : '')).join(', ') : 'Ninguna cargada'], ['Remedios de siempre', esc(p.chronic) || 'Ninguno']])}
     ${(() => { const h = histEvents(p); return h.length ? `<h2>Historial clínico</h2><p class="m">${HIST_NOTE}</p>${t(`<tr><th>Fecha</th><th>Qué</th><th>Detalle</th></tr>${h.map(e => `<tr><td>${e.date ? dd(e.date) : '—'}</td><td><b>${esc(e.title)}</b><br><span class="m">${HK[e.k][2]}</span></td><td>${esc(e.kind === 'study' ? [e.ref.lab, e.ref.notes].filter(Boolean).join(' · ') : e.sub)}${e.kind === 'study' && e.ref.files?.length ? ` <span class="m">(${e.ref.files.length} archivo${e.ref.files.length > 1 ? 's' : ''} en Mimitos)</span>` : ''}</td></tr>`).join('')}`)}` : ''; })()}
     ${p.meds.length ? `<h2>Medicación</h2>${t(`<tr><th>Medicamento</th><th>Dosis</th><th>Frecuencia</th><th>Desde</th><th>Estado</th></tr>${p.meds.map(m => `<tr><td>${esc(m.name)}</td><td>${esc(m.dose)}</td><td>cada ${m.every} h</td><td>${m.start ? dd(m.start.slice(0, 10)) : ''}</td><td>${Z.medState(m, p.log).state === 'ended' ? 'Terminado' : 'En curso'}</td></tr>`).join('')}`)}` : ''}
-    ${syms.length ? `<h2>Lo que notamos</h2>${t(syms.map(s => `<tr><td style="width:90px">${dd(s.date)}</td><td>${esc(s.text)}</td></tr>`).join(''))}` : ''}
+    ${syms.length ? `<h2>Lo que notamos</h2>${t(syms.map(s => `<tr><td style="width:90px">${dd(s.date)}</td><td>${s.kind ? `<b>${esc(Z.epTitle(s))}</b>${s.sev ? ' · ' + Z.SEV[s.sev] : ''}${s.text && s.kind !== 'otro' ? ' · ' + esc(s.text) : ''}` : esc(s.text)}</td></tr>`).join(''))}` : ''}
     <p class="foot">Generado con Mimitos by Orbit (orbitando.com.ar/mascotas). Mimitos es un organizador: no reemplaza al veterinario ni su criterio.</p>
   </article>`;
 }
@@ -2070,6 +2217,7 @@ function suggestPanel(p) {
 function addPanel(p) {
   const opt = (act, ic, c, t, d) => `<button class="row link-row" data-add="${act}">${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`;
   panel(`Cargar en la libreta de ${p.name}`, `<div class="list">
+    ${opt('algo', 'alert', 'perdida', 'Algo pasó', 'Vómito, diarrea, picazón… con hora y foto')}
     ${opt('vacuna', 'syringe', 'salud', 'Vacuna', 'Con lote, veterinaria y foto del sticker')}
     ${opt('anti', 'drop', 'salud', 'Antiparasitario', 'Interno o externo: pipeta, collar, comprimido')}
     ${opt('consulta', 'steth', 'cuida', 'Consulta o control', 'Por qué fueron y qué te dijeron')}
@@ -2077,15 +2225,16 @@ function addPanel(p) {
     ${opt('remedio', 'pill', 'med', 'Remedio', 'Con horarios y aviso en cada toma')}
     ${opt('estudio', 'flask', 'viaje', 'Estudio', 'Análisis, radiografía o ecografía')}
     ${opt('estudios', 'file', 'viaje', 'Subir varios estudios', 'Fotos o PDF de una: los leemos y los ordenamos')}
-    ${opt('sintoma', 'note', 'plata', 'Algo que notaste', 'No come, vomita, se rasca…')}
     ${opt('problema', 'heart', 'perdida', 'Problema de salud', 'Algo que tuvo o tiene')}
   </div>
   <button class="scanbox" data-add="scan">${bubble('camera', 'viaje')}<span><b>Foto de la libreta</b><small>${aiExpired() ? 'Función inteligente vencida: podés cargar las vacunas a mano.' : 'Leemos vacunas, antiparasitarios y controles con sus fechas. Vos revisás antes de guardar.'}</small></span></button>
   ${aiLeftNote()}`);
   $('#pBody').onclick = e => {
     const b = e.target.closest('[data-add]'); if (!b) return;
+    /* la hoja de "Algo pasó" usa el mismo panel: se reemplaza sin cerrarlo (el cierre vaciaría la hoja nueva) */
+    if (b.dataset.add === 'algo') return algoSheet(p);
     dPanel.close();
-    ({ estudios: () => startBulk(p), scan: () => startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas', scope: 'externa' }), consulta: () => visitForm(p), estudio: () => studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
+    ({ algo: () => algoSheet(p), estudios: () => startBulk(p), scan: () => startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas', scope: 'externa' }), consulta: () => visitForm(p), estudio: () => studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
   };
 }
 
@@ -2100,7 +2249,7 @@ function histEvents(p) {
   return ev.sort((a, b) => (a.date || '').localeCompare(b.date || ''));
 }
 function histEntry(e) {
-  const [ic, c, lab] = HK[e.k], st = e.kind === 'study' ? e.ref : null;
+  const [ic, c, lab] = e.ref?.kind ? [Z.ALGO_I[e.ref.kind] || 'note', 'perdida', 'Algo pasó'] : HK[e.k], st = e.kind === 'study' ? e.ref : null;
   const files = st?.files?.length ? `<span class="h-files">${st.files.map(f => `<a href="/api/mascotas?file=${encodeURIComponent(f.ref)}" target="_blank" rel="noopener">${I('file')} ${esc(f.name)}</a>`).join('')}</span>` : '';
   const sub = st ? [st.lab, st.notes].filter(Boolean).join(' · ') : e.sub;
   const det = e.kind && e.kind !== 'cond' ? `<button class="e-edit" data-act="detail" data-kind="${e.kind}" data-id="${e.ref.id}" aria-label="Ver ${esc(e.title)}">${I('more')}</button>` : '<span></span>';
@@ -2611,6 +2760,7 @@ function renderDatos(p) {
   const facts = [['Especie', Z.species(p)], ['Raza', p.breed], ['Sexo', p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : ''], ['Nacimiento', p.birth ? fmt(p.birth) : ''], ['Peso', p.weight ? kg(p.weight) : ''], ['Color', p.color], ['Microchip', p.chip], ['Señas', p.marks], ['Carácter', p.temper]].filter(f => f[1]);
   const call = n => `<a class="ibtn go" href="tel:${esc(n.replace(/[^\d+]/g, ''))}" aria-label="Llamar">${I('phone')}</a>`;
   return `${backTo(p)}<div><span class="eyebrow">${esc(p.name)}</span><h1 class="h-xl">Datos y veterinaria</h1></div>
+    <button type="button" class="algo-cta" data-act="algo">${I('plus')}<span><b>Algo pasó</b><small>Anotá lo que le pasa a ${esc(p.name)}, con hora y foto</small></span></button>
     <section class="sec"><div class="sec-h"><h2>Sus datos</h2><button class="link" data-act="editPet">${I('edit')} Editar</button></div>
       ${facts.length ? `<div class="facts">${facts.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div>` : `<div class="empty dash"><p>Raza, color, microchip y señas ayudan a reconocerla si se pierde.</p></div>`}</section>
     <section class="sec"><div class="sec-h"><h2>Veterinaria y guardia</h2><button class="link" data-act="vet">${p.vet.name || p.vet.er ? `${I('edit')} Editar` : ''}</button></div>
@@ -3013,6 +3163,7 @@ document.addEventListener('click', e => {
     case 'relogin': return relogin();
     case 'renewAsk': return renewAsk();
     case 'add': return cur ? addPanel(cur) : startOnboard();
+    case 'algo': return cur ? algoSheet(cur) : startOnboard();
     case 'scan': return startScan(petById(scan?.petId) || cur);
     case 'scanSave': return saveScan();
     case 'scanBack': scan = null; return go('inicio');
