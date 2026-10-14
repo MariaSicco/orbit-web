@@ -52,3 +52,86 @@ test('emparejado: el código vence a los 10 minutos y dos canjes a la vez dan un
   const rs = await Promise.all([W.redeemPairing(b.code), W.redeemPairing(b.code)]);
   assert.equal(rs.filter(x => x.token).length, 1);
 });
+
+/* ---------- rutas ?cam=… de punta a punta (api/mascotas.js) ---------- */
+const { makeSession } = await import('../api/_lib/auth.js');
+const { default: mascotas } = await import('../api/mascotas.js');
+const call = (method, query, body, { email, token, ip = '1.2.3.4' } = {}) => new Promise(ok => {
+  const res = { code: 200, headers: {}, setHeader(k, v) { this.headers[k.toLowerCase()] = v; }, status(c) { this.code = c; return this; }, json(o) { ok({ code: this.code, body: o }); }, end(b) { ok({ code: this.code, raw: b }); }, redirect(c, u) { ok({ code: c, location: u }); } };
+  mascotas({ method, query, body, headers: { ...(email ? { cookie: `orbit_session=${makeSession(email)}` } : {}), ...(token ? { authorization: 'Bearer ' + token } : {}), 'x-forwarded-for': ip } }, res);
+});
+async function paired(email, petId = 'feliza01') {
+  await buy(email);
+  await kvSet(`orbit:pets:${email}`, { rev: 1, pets: [{ id: petId, name: 'Feliza', species: 'gato', sex: 'h', records: [], meds: [], log: [] }], away: { on: true, id: 'sal1', since: new Date(Date.now() - 3600e3).toISOString(), pets: [] } });
+  const p = await call('POST', { cam: 'pair' }, { petId, name: 'Living' }, { email });
+  assert.equal(p.code, 200);
+  const r = await call('POST', { cam: 'redeem' }, { code: p.body.code, label: 'Living' });
+  assert.equal(r.code, 200); assert.equal(r.body.pet, 'Feliza');
+  return r.body;
+}
+const ev = (type, offsetS = 0, dur = 20) => ({ type, start: new Date(Date.now() - 600e3 + offsetS * 1000).toISOString(), dur, conf: 0.8 });
+
+test('rutas: emparejar, me, ping, lista, eventos con agrupación y avisos (1 cada 15 min por tipo)', async () => {
+  process.env.MIMITOS_MEFUI = '1'; process.env.MIMITOS_MEFUI_ALLOW = 'ruta@x.com, ajena@x.com';
+  const cam = await paired('ruta@x.com');
+  assert.equal((await call('GET', { cam: 'me' }, null, { token: cam.token })).body.pet, 'Feliza');
+  assert.equal((await call('GET', { cam: 'me' }, null, { token: 'x'.repeat(43) })).code, 401);
+  const list = await call('GET', { cam: 'list' }, null, { email: 'ruta@x.com' });
+  assert.equal(list.body.cams.length, 1); assert.equal(list.body.cams[0].online, true);
+  assert.ok(!JSON.stringify(list.body).includes('hash'), 'la lista nunca muestra el hash');
+  /* evento: primero avisa; el mismo tipo a menos de 1 min se agrupa; otro tipo avisa aparte; el mismo tipo después de 1 min queda pendiente para el resumen */
+  const a = await call('POST', { cam: 'event' }, ev('ladrido', 0), { token: cam.token });
+  assert.equal(a.code, 200); assert.equal(a.body.notify, 'avisado');
+  const b = await call('POST', { cam: 'event' }, ev('ladrido', 40), { token: cam.token });
+  assert.equal(b.body.merged, true);
+  const c = await call('POST', { cam: 'event' }, ev('aullido', 50), { token: cam.token });
+  assert.equal(c.body.notify, 'avisado');
+  const d = await call('POST', { cam: 'event' }, { ...ev('ladrido', 0), start: new Date(Date.now() - 10e3).toISOString() }, { token: cam.token });
+  assert.equal(d.body.notify, 'agrupado');
+  const evs = (await call('GET', { cam: 'events' }, null, { email: 'ruta@x.com' })).body.events;
+  assert.deepEqual(evs.map(e => [e.type, e.n]), [['ladrido', 2], ['aullido', 1], ['ladrido', 1]]);
+  assert.equal(evs[0].dur, 60, 'el agrupado va del primero al último');
+  /* evento inválido o del futuro → 400; el audio no tiene lugar en el cuerpo */
+  assert.equal((await call('POST', { cam: 'event' }, { type: 'grito', start: new Date().toISOString(), dur: 3, conf: 0.5 }, { token: cam.token })).code, 400);
+  assert.equal((await call('POST', { cam: 'event' }, { ...ev('ladrido'), start: new Date(Date.now() + 3600e3).toISOString() }, { token: cam.token })).code, 400);
+  /* resumen de lo agrupado: sale con el cron cuando pasan los 15 min */
+  const sent = [];
+  const send = { push: async (n, p) => { sent.push(p.title); return 1; }, mail: async () => true };
+  assert.equal((await W.flushPending({ send })).resumenes, 0, 'todavía no pasaron 15 min');
+  await kvSet('orbit:petcam:ping:ruta@x.com:ladrido', null, 1); const { kvDel } = await import('../api/_lib/kv.js'); await kvDel('orbit:petcam:ping:ruta@x.com:ladrido');
+  assert.equal((await W.flushPending({ send })).resumenes, 1);
+  assert.match(sent[0], /^Feliza ladró 1 vez más desde las \d\d:\d\d$/);
+});
+
+test('rutas: tope de eventos por cámara (60 por hora → 429)', async () => {
+  process.env.MIMITOS_MEFUI = '1'; process.env.MIMITOS_MEFUI_ALLOW = 'tope@x.com';
+  const cam = await paired('tope@x.com');
+  let last;
+  for (let i = 0; i < W.EV_PER_HOUR + 1; i++) last = await call('POST', { cam: 'event' }, ev(i % 2 ? 'maullido' : 'llanto', i * 70, 5), { token: cam.token });
+  assert.equal(last.code, 429);
+});
+
+test('rutas: una cuenta ajena no ve ni desconecta cámaras de otra; revocar y desvincular cortan el token', async () => {
+  process.env.MIMITOS_MEFUI = '1'; process.env.MIMITOS_MEFUI_ALLOW = 'duena@x.com, ajena@x.com';
+  const cam = await paired('duena@x.com');
+  await buy('ajena@x.com');
+  assert.equal((await call('POST', { cam: 'revoke' }, { camId: cam.camId }, { email: 'ajena@x.com' })).code, 404);
+  assert.deepEqual((await call('GET', { cam: 'list' }, null, { email: 'ajena@x.com' })).body.cams, []);
+  assert.equal(await W.ownsCamera('ajena@x.com', cam.camId), false);
+  await call('POST', { cam: 'event' }, ev('ladrido'), { token: cam.token });
+  assert.deepEqual((await call('GET', { cam: 'events' }, null, { email: 'ajena@x.com' })).body.events, []);
+  /* sin sesión, las rutas de la dueña → 401 */
+  assert.equal((await call('GET', { cam: 'list' }, null, {})).code, 401);
+  assert.equal((await call('POST', { cam: 'revoke' }, { camId: cam.camId }, { email: 'duena@x.com' })).code, 200);
+  assert.equal((await call('POST', { cam: 'ping' }, {}, { token: cam.token })).code, 401);
+  const cam2 = await paired('duena@x.com');
+  assert.equal((await call('POST', { cam: 'unpair' }, {}, { token: cam2.token })).code, 200);
+  assert.equal((await call('GET', { cam: 'me' }, null, { token: cam2.token })).code, 401);
+});
+
+test('rutas: canje con tope por IP (fuerza bruta de códigos → 429)', async () => {
+  process.env.MIMITOS_MEFUI = '1';
+  let last;
+  for (let i = 0; i < 11; i++) last = await call('POST', { cam: 'redeem' }, { code: 'AAAAAAAA' }, { ip: '9.9.9.9' });
+  assert.equal(last.code, 429);
+});

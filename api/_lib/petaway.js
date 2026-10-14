@@ -152,7 +152,7 @@ export async function syncAwayIndex(email, doc) {
   return on;
 }
 
-const hhmm = (ms, tz) => new Intl.DateTimeFormat('es-AR', { timeZone: tz || 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit' }).format(new Date(ms));
+const hhmm = (ms, tz) => new Intl.DateTimeFormat('es-AR', { timeZone: tz || 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }).format(new Date(ms));
 const SITE = () => process.env.SITE_URL || 'https://www.orbitando.com.ar';
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 /* mail suelto de "Me fui" y de la cámara, con la estética de Mimitos y su propio pie */
@@ -335,6 +335,7 @@ export async function eventsOf(email, since = 0) {
    POST ?cam=redeem {code, label}            → { token, camId, pet }   (tope por IP: 10 por hora)
    GET  ?cam=me      (Bearer token)          → { camId, name, pet, away }
    POST ?cam=ping    (Bearer token)          → { ok, away }            (marca "visto"; como mucho, una escritura cada 2 min)
+   POST ?cam=unpair  (Bearer token)          → { ok }            (el celu cámara se desvincula solo)
    POST ?cam=event   (Bearer token) {type, start, dur, conf} → { ok, merged, notify }  (solo el evento: el audio nunca viaja)
    Dueña o dueño (sesión + compra, y la cuenta habilitada):
    POST ?cam=pair {petId, name}              → { code, exp }
@@ -361,7 +362,7 @@ export async function handleCam(req, res, deps = {}) {
     return res.status(200).json({ token: r.token, camId: r.camId, name: r.name, pet: (doc?.pets || []).find(p => p.id === r.petId)?.name || '' });
   }
 
-  if (['me', 'ping', 'event'].includes(act)) {
+  if (['me', 'ping', 'event', 'unpair'].includes(act)) {
     const cam = await verifyCameraToken(bearer(req));
     if (!cam) return res.status(401).json({ error: 'camara_no_valida' });
     const doc = await kvGet(`orbit:pets:${cam.email}`);
@@ -372,6 +373,8 @@ export async function handleCam(req, res, deps = {}) {
     if (act === 'me') { await touch(); return res.status(200).json({ camId: cam.camId, name: me?.name || '', pet, away }); }
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
     if (act === 'ping') { await touch(); return res.status(200).json({ ok: true, away }); }
+    /* "Desvincular este celu" desde la cámara misma */
+    if (act === 'unpair') { await revokeCamera(cam.email, cam.camId); return res.status(200).json({ ok: true }); }
     /* evento: tope por cámara (hora y día) */
     const hr = new Date(now).toISOString().slice(0, 13);
     const nh = await kvIncrBy(`orbit:petcam:rl:ev:${cam.camId}:${hr}`, 1, 3600);

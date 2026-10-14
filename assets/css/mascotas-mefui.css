@@ -1,0 +1,46 @@
+/* Mimitos · "Me fui" y Cámara Mimitos (lado de la dueña). Usa los tokens de mascotas.css. */
+.mf{display:flex;flex-direction:column;gap:16px}
+.mf>.link{align-self:flex-start;min-height:44px}
+.mf-start{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;width:100%;min-height:72px;padding:14px 16px;border:0;border-radius:26px;background:#fff;box-shadow:var(--sh1);text-align:left;cursor:pointer;transition:transform .15s var(--ease),box-shadow .2s var(--ease)}
+.mf-start:hover{box-shadow:var(--sh2)}
+.mf-start:active{transform:scale(.99)}
+.mf-start .what{display:flex;flex-direction:column;gap:2px;min-width:0}
+.mf-start .what b{font-size:17px;font-weight:700;letter-spacing:-.01em}
+.mf-start .what small{color:var(--ink2);font-size:13.5px;line-height:1.4}
+.mf-card{display:flex;flex-direction:column;gap:10px;background:var(--cuida);color:var(--ink);border-radius:26px;padding:20px}
+.mf-top{display:flex;align-items:center;gap:8px}
+.mf-top h2{margin:0;color:var(--cuida-i)}
+.mf-dot{width:10px;height:10px;border-radius:50%;background:var(--cuida-i);box-shadow:0 0 0 0 rgba(142,51,88,.45);animation:mfPulse 2.4s var(--ease) infinite}
+@keyframes mfPulse{0%{box-shadow:0 0 0 0 rgba(142,51,88,.45)}70%{box-shadow:0 0 0 10px rgba(142,51,88,0)}100%{box-shadow:0 0 0 0 rgba(142,51,88,0)}}
+.mf-clock{margin:0;font-size:22px;line-height:1.25;letter-spacing:-.015em;font-variant-numeric:tabular-nums}
+.mf-clock b{font-weight:700}
+.mf-clock span{font-size:15px;color:var(--ink2)}
+.mf-card .dim{color:var(--ink2)}
+.mf-big{margin:0;font-size:20px;line-height:1.3;font-weight:700;letter-spacing:-.015em;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mf-h3{font-size:15px;margin:14px 0 6px}
+.mf-checks{display:flex;flex-wrap:wrap;gap:6px;margin:0}
+.mf-checks .badge{display:inline-flex;gap:4px;align-items:center}
+.mf-checks svg.i{width:14px;height:14px}
+.mf-bars{list-style:none;margin:6px 0 0;padding:0;display:grid;grid-template-columns:repeat(7,1fr);gap:8px;align-items:end;height:132px}
+.mf-bars li{display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end}
+.mf-bar{display:block;width:100%;max-width:34px;height:max(var(--h),3px);border-radius:8px;background:var(--cuida-i);opacity:.85;transform-origin:bottom;animation:mfGrow .4s var(--ease) both}
+@keyframes mfGrow{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.mf-bl{font:500 11.5px/1 var(--mono);text-transform:uppercase;color:var(--ink3)}
+.mf-tl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;background:var(--card);border-radius:24px;box-shadow:var(--sh1);overflow:hidden}
+.mf-tl li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:center;padding:12px 14px;min-height:60px;border-top:1px solid var(--line)}
+.mf-tl li:first-child{border-top:0}
+.mf-tl .what{display:flex;flex-direction:column;min-width:0}
+.mf-tl .what b{font-weight:600;font-size:15px}
+.mf-tl .what small{color:var(--ink2);font-size:13px}
+.mf-on{color:var(--ok);font-weight:600}
+.mf-ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:8px;font-size:14.5px;line-height:1.5}
+.mf-code{margin:6px 0;font:700 40px/1.1 var(--mono);letter-spacing:.12em;text-align:center;font-variant-numeric:tabular-nums}
+.mf-code span{color:var(--ink3);margin:0 .1em}
+.mf-qr{display:grid;place-items:center;padding:12px;background:#fff;border-radius:18px;box-shadow:var(--sh1);align-self:center;width:fit-content;margin:0 auto}
+.mf-live{position:relative;background:#111;border-radius:18px;overflow:hidden;aspect-ratio:4/3}
+.mf-live video{width:100%;height:100%;object-fit:cover;display:block}
+.mf-live-st{position:absolute;inset:auto 12px 12px;margin:0;color:#fff;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+.mf-live-st:empty{display:none}
+.row.x4 .btn.sm{white-space:nowrap}
+@media (max-width:420px){.row.x4{grid-template-columns:auto minmax(0,1fr);}.row.x4>.btn,.row.x4>span:empty{grid-column:2}}
+@media (prefers-reduced-motion:reduce){.mf-dot,.mf-bar{animation:none}.mf-start{transition:none}}

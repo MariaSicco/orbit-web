@@ -23,6 +23,8 @@ let purchase = null, notify = null, scans = [], curId = '';
 let aiq = null, renewAsked = false;
 /* link del cuidador: hasta cuándo anda ({ active, until } o { active:false, expired:true }), lo manda el servidor */
 let sitterLinks = {};
+/* "Me fui" y Cámara Mimitos (mascotas-mefui.js): solo si el servidor la habilita para esta cuenta (MIMITOS_MEFUI) */
+let mefui = false;
 /* Conectar tu mail: estado de cada proveedor (undefined mientras carga, null si la cuenta no está habilitada) y la búsqueda en curso */
 const mstat = { gmail: undefined, outlook: undefined };
 let gm = null, msenders = [];
@@ -95,7 +97,14 @@ async function flush() {
 }
 window.addEventListener('online', () => { if (mode === 'full' && dirty) flush(); });
 async function flushNow() { if (saveTimer) { clearTimeout(saveTimer); await flush(); } while (saving) await new Promise(r => setTimeout(r, 100)); }
-function adopt(d) { doc = d; doc.pets = (doc.pets || []).map(norm); doc.appointments = Array.isArray(doc.appointments) ? doc.appointments : []; rev = d.rev || 0; }
+function adopt(d) { doc = d; doc.pets = (doc.pets || []).map(norm); doc.appointments = Array.isArray(doc.appointments) ? doc.appointments : []; normAway(); rev = d.rev || 0; }
+/* "Me fui": completa lo que falte (docs viejos) con la base de mascotas-away-rules.js */
+function normAway() {
+  const AW = window.MZAWAYR; if (!AW) return;
+  const b = AW.blankAway();
+  doc.away = { ...b, ...(doc.away || {}) }; doc.away.check = { ...b.check, ...(doc.away.check || {}) }; if (!Array.isArray(doc.away.pets)) doc.away.pets = [];
+  doc.awaySet = { ...AW.blankSet(), ...(doc.awaySet || {}) }; doc.awayLog = Array.isArray(doc.awayLog) ? doc.awayLog : [];
+}
 window.addEventListener('beforeunload', e => { if (mode === 'full' && dirty) { e.preventDefault(); e.returnValue = ''; } });
 /* lo que anota el cuidador aparece al volver a la app */
 document.addEventListener('visibilitychange', async () => {
@@ -854,7 +863,7 @@ async function uploadStudy(file) {
 const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['agenda', 'grid', 'Agenda'], ['gastos', 'wallet', 'Gastos'], ['cuenta', 'user', 'Cuenta']];
 /* en el celu: 4 secciones y el + en el medio; Cuenta queda en el avatar de arriba */
 const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
-const TAB_OF = { vets: 'inicio', antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta' };
+const TAB_OF = { vets: 'inicio', antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta', mefui: 'inicio' };
 const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
 const nav = $('#nav'), topBar = $('.top');
 function parseHash() { const [name = 'inicio', arg = ''] = location.hash.replace(/^#\/?/, '').split('/'); return { name: name || 'inicio', arg: decodeURIComponent(arg) }; }
@@ -949,6 +958,7 @@ function view() {
     case 'viajes': return renderViajes(p);
     case 'datos': return renderDatos(p);
     case 'vets': return window.MZVETS ? window.MZVETS.render(p, route.arg) : renderInicio(p);
+    case 'mefui': return mefui && window.MZAWAY ? window.MZAWAY.render(p) : renderInicio(p);
     default: return renderInicio(p);
   }
 }
@@ -1082,6 +1092,7 @@ function renderInicio(p) {
     <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
     <div class="dash-r">
       ${askBtn('ask-home span2')}
+      ${mefui && window.MZAWAY ? window.MZAWAY.homeCard(p) : ''}
       ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
       ${scanBanner(p)}
       ${notify && !notify.devices && !notify.mail ? `<button class="banner nudge span2" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span style="flex:1"><b>Que no se te pase ninguna fecha</b><small class="dim">Activá los avisos en el celu o por mail.</small></span>${I('chevron')}</button>` : ''}
@@ -1739,6 +1750,7 @@ function renderCuenta() {
           <a class="row link-row" href="/terminos" target="_blank" rel="noopener">${bubble('doc', 'med')}<span class="what"><b>Términos y condiciones</b><small>Licencia y soporte</small></span>${I('chevron')}</a>
         </div>
       </section>
+      ${mefui && window.MZAWAY ? window.MZAWAY.cuentaSection() : ''}
       ${gmailAccount()}
       <button class="btn ghost wide" data-act="logout">${I('logout')} Cerrar sesión</button>
     </div></div>`;
@@ -2763,6 +2775,7 @@ function askExamples() {
     `¿Cuándo fue la última vez que ${a.name} tuvo diarrea?`,
     ...(surg ? [`¿Qué estudios le hicieron a ${surg.name} antes de la cirugía?`, `¿Qué medicación tomó ${surg.name} después de la cirugía?`] : []),
     '¿Cuánto gasté en veterinario este mes?',
+    ...(mefui && (doc.awayLog?.length || doc.away?.on) ? [`¿Cuánto estuvo ${a.sex === 'm' ? 'solo' : 'sola'} ${a.name} esta semana?`] : []),
   ];
   return out;
 }
@@ -2885,6 +2898,7 @@ function askCite(ti, id) {
     case 'antecedentes': return go('antecedentes');
     case 'datos': return go('datos');
     case 'qr': return sharePanel(p);
+    case 'mefui': return go('mefui');
     default: return go('inicio');
   }
 }
@@ -2997,7 +3011,7 @@ async function boot() {
   let d = null, st = 0;
   try { const r = await fetch('/api/mascotas', { credentials: 'same-origin' }); st = r.status; d = await r.json().catch(() => null); } catch { st = 0; }
   if (st === 200 && d && d.doc) {
-    mode = 'full'; purchase = d.purchase || null; me.email = d.email || ''; aiq = d.ai || null; renewAsked = Boolean(d.renew); sitterLinks = d.sitterLinks && typeof d.sitterLinks === 'object' ? d.sitterLinks : {}; mailAllowed = d.mail && typeof d.mail === 'object' ? Boolean(d.mail.allowed) : null;
+    mode = 'full'; purchase = d.purchase || null; me.email = d.email || ''; aiq = d.ai || null; renewAsked = Boolean(d.renew); sitterLinks = d.sitterLinks && typeof d.sitterLinks === 'object' ? d.sitterLinks : {}; mailAllowed = d.mail && typeof d.mail === 'object' ? Boolean(d.mail.allowed) : null; mefui = Boolean(d.mefui);
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
     fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => {
@@ -3019,12 +3033,12 @@ try {
   navigator.serviceWorker?.addEventListener('message', e => {
     if (e.data?.type !== 'mimitos:open') return;
     const u = new URL(e.data.url, location.origin);
-    if (u.origin === location.origin && u.hash.startsWith('#/renovar/')) location.hash = u.hash;
+    if (u.origin === location.origin && (u.hash.startsWith('#/renovar/') || u.hash === '#/mefui')) location.hash = u.hash;
   });
   navigator.serviceWorker?.startMessages?.();
 } catch {}
 /* puente para los módulos aparte (mascotas-vets.js: Veterinarias cerca y turnos) */
-window.MZAPP = { get doc() { return doc; }, get notify() { return notify; }, get route() { return route; }, dPanel, curPet, petById, changed, render, go, panel, toast, openForm, calendar, visitForm };
+window.MZAPP = { get doc() { return doc; }, get mefui() { return mefui; }, get mode() { return mode; }, get notify() { return notify; }, get route() { return route; }, dPanel, curPet, petById, changed, render, go, panel, toast, openForm, calendar, visitForm };
 route = parseHash();
 render();
 boot();
