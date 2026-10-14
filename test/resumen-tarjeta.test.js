@@ -54,7 +54,7 @@ test('lo que se repite: suscripciones, prepaga y servicios adheridos; afuera cuo
   assert.equal(por('icloud').moneda, 'USD');
   assert.equal(por('prepaga').monto, $(160400));
   assert.equal(por('edenor').proximo, '2026-11-11'); // 11/9 + 1 mes ya pasó → 11/11
-  assert.ok(cs.some(c => c.nombre.startsWith('Club de lectura')));            // rubro Suscripciones, aunque no esté precargado
+  assert.ok(cs.some(c => c.nombre === 'Club Lectura'));            // rubro Suscripciones, aunque no esté precargado
   assert.ok(!cs.some(c => /supermercado|electro/i.test(c.nombre)));
 });
 
@@ -117,4 +117,19 @@ test('lector: sin salida estricta, el esquema va en las instrucciones y el JSON 
   assert.ok(r.lectura.consumos.length > 0);
   assert.equal(pedidos[0].output_config.format, undefined);
   assert.match(pedidos[0].system, /JSON Schema/);
+});
+
+test('nombres legibles desde el comercio del resumen', () => {
+  assert.equal(R.nombreDesdeComercio('ANTHROPIC CLAUD IN1UDQBIBUSD'), 'Anthropic');
+  assert.equal(R.nombreDesdeComercio('MAGNIFIC IN1UCKRVAUSD'), 'Magnific');
+  assert.equal(R.nombreDesdeComercio('WWW.ARTLIST.IO A CB_199CBLUSD'), 'Artlist');
+  assert.equal(R.nombreDesdeComercio('WWW.MAKE.COM USD ,'), 'Make');
+  assert.equal(R.nombreDesdeComercio('WWW.PALERMO.EDU.AR'), 'Palermo');
+  assert.equal(R.nombreDesdeComercio('RUNWAY PRO PLAN'), 'Runway');
+  assert.equal(R.nombreDesdeComercio('123 456'), 'Débito en la tarjeta');
+  const cs = R.cuentasDesdeResumen({ tarjeta: { red: 'Visa' }, vencimiento: '2026-11-11', totales: [{ moneda: 'ARS', monto: 1 }], consumos: [
+    { fecha: '2026-10-15', comercio: 'DIRECTV ARGENTINA', monto: 12900, moneda: 'ARS', rubro: 'Servicios', cuota: null },
+    { fecha: '2026-10-05', comercio: 'WWW.PALERMO.EDU.AR', monto: 440000, moneda: 'ARS', rubro: 'Suscripciones', cuota: null }] }, '2026-10-14');
+  assert.equal(cs.find(c => c.preset === 'cable').nombre, 'Directv');
+  assert.equal(cs.find(c => c.nombre === 'Palermo').categoria, 'Otros');
 });

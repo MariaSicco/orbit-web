@@ -33,12 +33,21 @@ export function servicioDelComercio(comercio) {
   return null;
 }
 
-/* "NETFLIX.COM 866-579" → "Netflix.com" (para lo que no está precargado) */
-function nombreDesdeComercio(comercio) {
-  const t = String(comercio || '').replace(/[*#]+/g, ' ').replace(/\b\d[\d\-/ ]*\b/g, ' ').replace(/\s+/g, ' ').trim();
-  const corto = t.split(' ').slice(0, 3).join(' ');
-  return (corto.charAt(0).toUpperCase() + corto.slice(1).toLowerCase()).slice(0, 40) || 'Débito en la tarjeta';
+/* Nombre legible desde el comercio del resumen:
+   "ANTHROPIC CLAUD IN1UDQBIBUSD" → "Anthropic", "WWW.MAKE.COM USD ," → "Make",
+   "WWW.PALERMO.EDU.AR" → "Palermo", "RUNWAY PRO PLAN" → "Runway". */
+const RUIDO = new Set(['www', 'com', 'io', 'ar', 'edu', 'net', 'org', 'co', 'app', 'ai', 'usd', 'ars', 'a', 'de', 'la', 'el', 'pago', 'pagos', 'deb', 'aut', 'debito',
+  'automatico', 'merpago', 'mercadopago', 'mp', 'dlo', 'dlocal', 'paypal', 'pp', 'stripe', 'payu', 'cobro', 'suscripcion', 'subscription', 'plan', 'pro', 'bill', 'inc', 'llc', 'srl', 'sa']);
+export function nombreDesdeComercio(comercio) {
+  const palabras = String(comercio || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/https?:\/\//g, ' ').split(/[^a-z0-9]+/)
+    .filter(w => w && !/\d/.test(w) && !RUIDO.has(w) && w.length > 1);
+  if (!palabras.length) return 'Débito en la tarjeta';
+  const elegidas = palabras[0].length >= 5 ? [palabras[0]] : palabras.slice(0, 2);
+  return elegidas.map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ').slice(0, 40);
 }
+/* Servicios precargados genéricos ("Celular", "Cable / TV"): mejor el nombre de la empresa del resumen. */
+const GENERICOS = new Set(['luz', 'gas', 'agua', 'internet', 'celular', 'cable', 'prepaga', 'seguro-auto', 'gimnasio', 'peaje', 'tasa-municipal']);
 
 const pesos = n => Math.round(Number(n) * 100);
 const RED_CORTA = { 'American Express': 'Amex', Mastercard: 'Mastercard', Visa: 'Visa', Cabal: 'Cabal', Naranja: 'Naranja' };
@@ -87,7 +96,8 @@ export function cuentasDesdeResumen(lectura, hoy) {
     let proximo = esFecha(ultimo.fecha) ? sumarMeses(ultimo.fecha, 1) : (vto ? sumarMeses(vto, 1) : hoy);
     while (proximo < hoy) proximo = sumarMeses(proximo, 1);
     out.push({
-      clave, preset: s?.id || null, nombre: s?.nombre || nombreDesdeComercio(ultimo.comercio), categoria: s?.categoria || 'Suscripciones', color: s?.color || null,
+      clave, preset: s?.id || null, nombre: s && !GENERICOS.has(s.id) ? s.nombre : nombreDesdeComercio(ultimo.comercio),
+      categoria: s?.categoria || (/\.edu|universidad|colegio|escuela|instituto/i.test(ultimo.comercio) ? 'Otros' : 'Suscripciones'), color: s?.color || null,
       frecuencia: 1, proximo, proximoEstimado: true, monto: pesos(total), moneda, segundoVto: null,
       historia: esFecha(ultimo.fecha) ? [{ vence: ultimo.fecha, monto: pesos(total) }] : [], // el cobro de este resumen, para "cuánto subió"
       encontradas: cs.length, conocido: !!s, debito: true, origen,
