@@ -29,7 +29,7 @@ const store = {
 };
 const pref = { get(k, d) { try { return localStorage.getItem('mimitos:cam:' + k) ?? d; } catch { return d; } }, set(k, v) { try { localStorage.setItem('mimitos:cam:' + k, v); } catch {} } };
 async function api(act, { method = 'GET', body, token } = {}) {
-  const r = await fetch(API + act, { method, headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: body ? JSON.stringify(body) : undefined, credentials: 'omit', cache: 'no-store' });
+  const r = await fetch(API + act, { method, headers: { ...(body ? { 'Content-Type': 'application/json' } : {}), ...(token ? { Authorization: 'Bearer ' + token } : {}) }, body: body ? JSON.stringify(body) : undefined, credentials: 'same-origin', cache: 'no-store' });
   const d = await r.json().catch(() => ({}));
   return { ok: r.ok, status: r.status, d };
 }
