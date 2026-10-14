@@ -31,6 +31,7 @@
 import { randomBytes, createHash } from 'node:crypto';
 import { kvGet, kvSet, kvDel, getPurchases } from './_lib/kv.js';
 import { readSession, readBody } from './_lib/auth.js';
+import { accesoHerramienta } from './_lib/herramienta-acceso.js';
 import { isAdmin } from './_lib/admin.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath, putPrivate } from './_lib/blob.js';
 import { handleMail } from './_lib/petmail.js';
@@ -414,14 +415,18 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true, pet: sitterView(pet) });
   }
 
-  const s = readSession(req);
   /* ir y volver de Google son navegaciones: sin sesión o sin compra se vuelve a la app, no a un JSON */
   const mailP = q.gmail ? gmail : q.outlook ? outlook : null;
   const gNav = mailP && ['start', 'callback'].includes(String(q[mailP.id]));
-  if (!s) return gNav ? res.redirect(302, '/acceso?next=mascotas') : res.status(401).json({ error: 'unauthorized' });
-  /* todo lo de la dueña o el dueño exige la compra de Mimitos */
-  const purchase = await mimitosPurchase(s.email);
-  if (!purchase) return gNav ? res.redirect(302, '/mascotas') : res.status(402).json({ error: 'no_purchase', email: s.email, product: PRODUCT_ID });
+  /* todo lo de la dueña o el dueño exige sesión y la compra de Mimitos: lo resuelve la base
+     de herramientas (sesión + compra vigente, admin sin compra). La app espera 401 y 402. */
+  const acc = await accesoHerramienta(req, PRODUCT_ID);
+  if (!acc.ok && acc.motivo === 'sin_sesion') return gNav ? res.redirect(302, '/acceso?next=mascotas') : res.status(401).json({ error: 'unauthorized' });
+  if (!acc.ok && acc.motivo === 'sin_compra') return gNav ? res.redirect(302, '/mascotas') : res.status(402).json({ error: 'no_purchase', email: acc.email, product: PRODUCT_ID });
+  if (!acc.ok) return res.status(acc.status).json({ error: 'unavailable', motivo: acc.motivo });
+  const s = { email: acc.email };
+  /* admin: la base no mira la compra; si igual compró, se muestra su fecha */
+  const purchase = acc.compra ? { date: acc.compra.date || null } : await mimitosPurchase(acc.email).catch(() => ({ date: null, admin: true }));
 
   /* Conectar tu mail (Gmail u Outlook): solo cuentas habilitadas (MIMITOS_MAIL_ALLOW) o admin */
   if (mailP) {

@@ -225,9 +225,11 @@
 <script src="assets/js/products.js?v=54"></script>
 <script src="/api/catalog"></script>
 <script src="assets/js/orbit.js?v=58"></script>
+<script src="assets/js/herramientas.js?v=1"></script>
 <script>
 (async () => {
 const {$, $$, L, tr, cover, toast, P, url} = ORBIT;
+const H = window.OrbitHerramientas;
 
 /* ── sesión ── */
 /* la pista de sesión la lee el nav; la mantenemos al día con lo que dice el servidor */
@@ -265,7 +267,7 @@ $('#out').onclick = signOut; $('#out2').onclick = signOut;
 /* ── datos ── */
 const purchases = (me.purchases || []).slice().sort((a, b) => new Date(b.date) - new Date(a.date));
 const orders = me.orders || [];
-const items = purchases.map(x => ({ ...x, p: P.find(y => y.id === x.productId) })).filter(x => x.p);
+const items = purchases.map(x => ({ ...x, p: P.find(y => y.id === x.productId) || H.productoMinimo(x) })).filter(x => x.p);
 const ownedIds = new Set(items.map(x => x.productId));
 const lastOrder = orders.find(o => o.status === 'paid') || orders[0];
 
@@ -298,7 +300,7 @@ if (items.length) {
   $('#resume').innerHTML = '<div class="resume"><div>' + cover(it.p) + '</div>'
     + '<div><span class="mono dim">' + it.p.code + ' · ' + L('Comprado', 'Purchased') + ' ' + fmt(it.date) + '</span>'
     + '<h3>' + it.p.name + '</h3><p>' + L(it.p.tagline) + '</p></div>'
-    + '<div class="acts"><button class="btn btn-acid" data-dl="' + it.productId + '">' + L('Descargar', 'Download') + ' <span class="ar">↓</span></button>'
+    + '<div class="acts">' + H.accion(it.p, it, L)
     + '<a class="btn btn-line" href="' + url(it.p) + '">' + L('Ver guía', 'View guide') + '</a></div></div>';
 }
 const suggest = P.find(p => !ownedIds.has(p.id) && p.status !== 'soon');
@@ -310,14 +312,14 @@ if (suggest) {
 }
 
 /* ── productos ── */
-$('#items').innerHTML = items.length ? items.map(({ p, date, downloadable }) =>
-  '<div class="item"><div>' + cover(p) + '</div>'
+$('#items').innerHTML = items.length ? items.map(compra => { const { p, date } = compra;
+  return '<div class="item"><div>' + cover(p) + '</div>'
   + '<div><span class="mono dim">' + p.code + ' · ' + L('Comprado', 'Purchased') + ' ' + fmt(date) + '</span>'
   + '<h3>' + p.name + '</h3><p>' + L(p.tagline) + '</p>'
   + '<div class="meta">' + p.specs.slice(0, 3).map(([k, v]) => '<span>' + L(k) + ': ' + L(v) + '</span>').join('')
-  + '<span>' + (downloadable ? L('Listo para descargar', 'Ready to download') : L('Archivo en preparación', 'File in preparation')) + '</span></div></div>'
-  + '<div class="acts"><button class="btn btn-acid" data-dl="' + p.id + '">' + L('Descargar', 'Download') + ' <span class="ar">↓</span></button>'
-  + '<a class="btn btn-line" href="' + url(p) + '">' + L('Ver guía', 'View guide') + '</a></div></div>').join('')
+  + '<span>' + H.estado(compra, L) + '</span></div></div>'
+  + '<div class="acts">' + H.accion(p, compra, L)
+  + '<a class="btn btn-line" href="' + url(p) + '">' + L('Ver guía', 'View guide') + '</a></div></div>'; }).join('')
   : zeroLib;
 
 /* ── pedidos ── */

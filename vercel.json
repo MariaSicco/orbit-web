@@ -37,6 +37,14 @@
     {
       "source": "/cuida/:t",
       "destination": "/mascota"
+    },
+    {
+      "source": "/herramientas/:slug",
+      "destination": "/api/herramienta?slug=:slug"
+    },
+    {
+      "source": "/herramientas/:slug/:path*",
+      "destination": "/api/herramienta?slug=:slug&path=:path*"
     }
   ],
   "crons": [
@@ -48,5 +56,30 @@
       "path": "/api/cron/mascotas",
       "schedule": "0 * * * *"
     }
-  ]
+  ],
+  "headers": [
+    {
+      "source": "/herramientas/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    },
+    {
+      "source": "/e/(.*)",
+      "headers": [
+        {
+          "key": "X-Robots-Tag",
+          "value": "noindex, nofollow"
+        }
+      ]
+    }
+  ],
+  "functions": {
+    "api/herramienta.js": {
+      "includeFiles": "api/_herramientas/**"
+    }
+  }
 }

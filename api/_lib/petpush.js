@@ -5,7 +5,8 @@
      (tz: zona horaria IANA del navegador; sent: solo lectura, lo usaba el cron diario anterior)
    - orbit:petidx: conjunto de emails con avisos activos (push o mail), para que el cron horario no recorra todo. */
 import webpush from 'web-push';
-import { kvGet, kvSet, kvSAdd, kvSRem, getPurchases } from './kv.js';
+import { kvGet, kvSet, kvSAdd, kvSRem } from './kv.js';
+import { compraDe } from './herramienta-acceso.js';
 import { isAdmin } from './admin.js';
 /* reglas compartidas con la app (define globalThis.MZRULES): qué fecha está vigente y cuál es sugerida */
 import '../../assets/js/mascotas-rules.js';
@@ -15,10 +16,10 @@ import { sendEmail, emailReady } from './email.js';
 /* Mimitos es paga: sin compra del producto no hay app, avisos ni links públicos.
    Administración entra sin compra. Una compra marcada como reintegrada no cuenta. */
 export const PRODUCT_ID = process.env.MASCOTAS_PRODUCT_ID || 'ob-018';
-const validPurchase = p => p && p.productId === PRODUCT_ID && !p.refunded && p.status !== 'refunded';
+/* La regla de "tiene la compra" es la de la base de herramientas (api/_lib/herramienta-acceso.js) */
 export async function mimitosPurchase(email) {
   if (!email) return null;
-  const p = (await getPurchases(String(email))).filter(validPurchase).sort((a, b) => String(a.date || '').localeCompare(String(b.date || '')))[0];
+  const p = await compraDe(email, PRODUCT_ID);
   if (p) return { date: p.date || null };
   return isAdmin(email) ? { date: null, admin: true } : null;
 }
