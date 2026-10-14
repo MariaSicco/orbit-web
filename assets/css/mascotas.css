@@ -1328,3 +1328,23 @@ body[data-view="preguntar"] .disclaimer,body[data-view="preguntar"] .made{displa
 .sl-state{margin:4px 0 12px;font-size:14px}
 .sl-state.banner{background:var(--perdida);box-shadow:none;align-items:flex-start}
 .sl-state.banner b{display:block}
+/* "Ya se la di": el botón de cerrar una fecha vencida, de hoy o pronto (Inicio, Agenda, Libreta y detalle) */
+.ibtn.renew{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;padding:0 14px;border-radius:999px;font-size:14.5px}
+.ibtn.renew svg.i{width:17px;height:17px;stroke-width:2.4}
+.ibtn.renew.wide{width:100%}
+.pstat-w{display:flex;flex-direction:column;border-radius:22px;background:#fff;min-width:0}
+.pstat-w>.pstat{background:none;width:100%}
+.pstat-w.has-rn>.pstat{padding-bottom:8px;min-height:64px}
+.pstat-w>.ibtn.renew{margin:0 10px 10px;width:auto;padding:0 10px}
+.care-item{display:flex;flex-direction:column;background:var(--bg);border-radius:20px;overflow:hidden}
+.care-item>.care-row{background:none;width:100%;font:inherit;color:inherit}
+.care-act{padding:0 10px 10px}
+.entry.lrow>.e-rib{display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:flex-end}
+@media(max-width:639px){.entry.lrow>.e-rib{justify-content:flex-start}}
+.rn-what{display:flex;align-items:center;gap:12px;background:var(--card);border-radius:var(--r-s);padding:12px 14px;color:var(--ink)}
+.rn-what b{display:block;font-size:16px;font-weight:700}
+.rn-what small{display:block;color:var(--ink2);font-size:13.5px}
+#fBody .chip[data-quick][aria-pressed="true"]{background:var(--act-soft);color:var(--act);box-shadow:inset 0 0 0 2px var(--act);font-weight:600}
+/* hojas cortas: Guardar queda a la vista sin scrollear */
+#fForm.stick #fSave{position:sticky;bottom:0;z-index:2;box-shadow:0 -12px 16px -4px var(--bg)}
+@media print{.ibtn.renew{display:none!important}}

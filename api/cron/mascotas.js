@@ -63,7 +63,7 @@ export async function runAvisos({ now = new Date(), hoy = '', send = {} } = {}) 
       const due = dueToday(doc, date).filter(i => !n.off[i.kind] && !n.sent[i.tag]);   // sent: lo que ya mandó el cron diario anterior
       const items = [];
       for (const i of due) if (await kvSetNX(sentKey(n.email, i, date), 1, SENT_TTL)) items.push(i);
-      for (const i of items) out.push += await push(n, { title: i.title, body: i.body, url: '/mascotas', tag: i.tag });
+      for (const i of items) out.push += await push(n, { title: i.title, body: i.body, url: i.url || '/mascotas', tag: i.tag, ...(i.action ? { actions: [{ action: 'renew', title: i.action }] } : {}) });
       if (items.length && n.mail && await mail(n.email, items)) out.mails++;
       out.avisos += items.length;
       await kvSet(dayKey(n.email), date, DAY_TTL);

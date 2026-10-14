@@ -185,6 +185,53 @@
   /* un registro del calendario sugerido: tiene próxima fecha, todavía no fecha de aplicación, y la marca en las notas */
   const { SUG_NOTE, isSug } = R;
 
+  /* ---------- "Ya se la di": cerrar una fecha vencida, de hoy o de los próximos 14 días ----------
+     Crea la dosis nueva (el último registro manda, mascotas-rules.js), así la vieja queda "Renovada"
+     y el cron deja de avisar por ella. Una fecha del calendario sugerido (sin aplicar) se completa en el lugar. */
+  const RENEW_DAYS = 14;
+  const renewable = r => { const s = r && status(r.next); return Boolean(s && s.days <= RENEW_DAYS); };
+  const renewLabel = r => r.type === 'vacuna' ? 'Ya se la di' : r.type === 'desparasitacion' ? 'Ya se la puse' : 'Ya fue';
+  const notYetLabel = r => r.type === 'vacuna' ? 'No se la di todavía' : r.type === 'desparasitacion' ? 'No se la puse todavía' : 'No fue todavía';
+  const monthsBetween = (a, b) => { const x = pd(a), y = pd(b); return x && y ? Math.max(1, Math.round((y - x) / (30.44 * DAY))) : 0; };
+  const nameKey = n => String(n || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+  /* cada cuántos meses: el intervalo de la dosis anterior; si no hay, el del calendario sugerido por especie y edad */
+  function renewGap(p, r) {
+    if (r.date && r.next && !isSug(r)) return { months: monthsBetween(r.date, r.next), src: 'anterior' };
+    const prev = (p.records || []).filter(x => x !== r && x.type === r.type && nameKey(x.name) === nameKey(r.name) && x.date && x.next && !isSug(x)).sort((a, b) => b.date.localeCompare(a.date))[0];
+    if (prev) return { months: monthsBetween(prev.date, prev.next), src: 'anterior' };
+    const sch = ((SCHEDULE[p.species] || SCHEDULE.otra)[stage(p)] || []).find(x => x.type === r.type && nameKey(x.name) === nameKey(r.name));
+    return sch ? { months: sch.every, src: 'calendario' } : { months: 0, src: '' };
+  }
+  /* lo que la hoja trae prellenado */
+  function renewPlan(p, r, date = iso(today())) {
+    const g = renewGap(p, r);
+    return { type: r.type, name: r.name, scope: r.scope || '', date, next: g.months ? addMonths(date, g.months) : '', gap: g.months, src: g.src, vet: r.vet || p.vet?.name || '', lot: r.lot || '' };
+  }
+  function renewCheck(r, v) {
+    const t = iso(today());
+    if (!v.date) return 'Elegí cuándo fue.';
+    if (v.date > t) return 'La fecha no puede ser futura. Si todavía no pasó, usá "Posponer".';
+    if (r.date && v.date < r.date && !isSug(r)) return `Esa fecha es anterior a la dosis que ya tenías (${fmt(r.date)}).`;
+    if (v.next && v.next <= v.date) return 'La próxima tiene que ser después de la fecha de hoy.';
+    return '';
+  }
+  /* aplica y devuelve { rec, undo } */
+  function applyRenew(p, r, v, id) {
+    const vals = { date: v.date, next: v.next || '', vet: v.vet || '', lot: v.lot || '' };
+    if (isSug(r)) {
+      const snap = { ...r };
+      Object.assign(r, vals, { notes: '', sticker: v.sticker || r.sticker || '' });
+      return { rec: r, undo: () => { for (const k of Object.keys(r)) delete r[k]; Object.assign(r, snap); } };
+    }
+    const rec = { id, type: r.type, name: r.name, scope: r.scope || '', ...vals, notes: '', sticker: v.sticker || '' };
+    p.records.push(rec);
+    return { rec, undo: () => { const i = p.records.indexOf(rec); if (i >= 0) p.records.splice(i, 1); } };
+  }
+  /* "No se la di todavía": corre la próxima fecha del registro vigente, sin crear una dosis */
+  function postpone(r, next) { const old = r.next; r.next = next; return () => { r.next = old; }; }
+  /* "la Antirrábica", "la Pipeta antipulgas", "el Control anual" */
+  const art = r => (r.type === 'vacuna' || /a$/i.test(String(r.name || '').trim().split(/\s+/)[0]) ? 'la ' : 'el ') + (r.name || TYPE[r.type]);
+
   /* ---------- íconos (línea, puntas redondeadas) ---------- */
   const P = {
     paw: '<circle cx="7" cy="9" r="1.9"/><circle cx="12" cy="6.5" r="1.9"/><circle cx="17" cy="9" r="1.9"/><path d="M12 12c-3 0-5.5 3.2-5.5 5.6 0 1.6 1.3 2.4 2.8 2.4 1 0 1.8-.5 2.7-.5s1.7.5 2.7.5c1.5 0 2.8-.8 2.8-2.4C17.5 15.2 15 12 12 12z"/>',
@@ -323,5 +370,5 @@
     return out.sort((a, b) => a.date.localeCompare(b.date)).slice(0, n);
   }
 
-  g.MZ = { scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
+  g.MZ = { RENEW_DAYS, renewable, renewLabel, notYetLabel, renewGap, renewPlan, renewCheck, applyRenew, postpone, art, inDays, monthsBetween, scopeOf, agenda, nextAlerts, SCHEDULE, stage, suggested, addMonths, SUG_NOTE, isSug, BREEDS, CONDITIONS, SURGERIES, STUDY, timeline, summary, icon, petIcon, tone, recIcon, DAY, HOUR, today, pd, iso, isoLocal, fmt, fmtTime, fmtWhen, money, esc, TYPE, EXP, DEST, species, age, status, upcoming, medState, food, trip, ics, recordEvent, medEvent, foodEvent };
 })(typeof window !== 'undefined' ? window : globalThis);

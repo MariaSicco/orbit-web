@@ -9,12 +9,13 @@
   const isSug = r => Boolean(r) && !r.date && String(r.notes || '').startsWith('Calendario sugerido');
   const key = r => (r.type || '') + '|' + String(r.name || '').toLowerCase().trim();
   /* lo último de cada tipo + nombre manda: si ya cargaste la Séxtuple real, la sugerida (sin fecha)
-     y las dosis anteriores dejan de contar. Una dosis adelantada reemplaza a la próxima que estaba prevista. */
+     y las dosis anteriores dejan de contar. Una dosis adelantada reemplaza a la próxima que estaba prevista.
+     Con la misma fecha de aplicación gana la cargada después ("Ya se la di" el mismo día que la anterior). */
   function latest(records) {
     const last = new Map();
     for (const r of records || []) {
       const k = key(r), prev = last.get(k);
-      if (!prev || (r.date || '') > (prev.date || '')) last.set(k, r);
+      if (!prev || (r.date || '') >= (prev.date || '')) last.set(k, r);
     }
     return [...last.values()];
   }

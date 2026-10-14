@@ -290,6 +290,8 @@ function openForm(o) {
   $('#dFormT').textContent = o.title;
   $('#fBody').innerHTML = (o.intro ? `<p class="note">${o.intro}</p>` : '') + o.fields.map(f => Array.isArray(f) ? `<div class="two${f.some(x => x.stack) ? ' stack-s' : ''}">${f.map(x => field(x, o.values?.[x.k])).join('')}</div>` : field(f, o.values?.[f.k])).join('');
   $('#fSave').textContent = o.saveLabel || 'Guardar';
+  const alt = $('#fAlt'); alt.hidden = !o.alt; alt.textContent = o.alt?.label || ''; alt.onclick = o.alt ? () => o.alt.fn() : null;
+  $('#fForm').classList.toggle('stick', Boolean(o.stick));
   const del = $('#fDel'); del.hidden = !o.onDelete; del.innerHTML = `${I('trash')} ${esc(o.deleteLabel || 'Borrar')}`; del.dataset.sure = '';
   $('#fErr').hidden = true;
   if (!dForm.open) dForm.showModal();
@@ -434,6 +436,83 @@ function nextDose(p, r) {
   const gap = r.date && r.next ? monthsBetween(r.date, r.next) : 12;
   const date = r.next && r.next <= iso(Z.today()) ? r.next : iso(Z.today());
   recForm(p, null, { title: 'Próxima dosis', type: r.type, name: r.name, vet: r.vet, scope: r.scope, lot: '', date, next: Z.addMonths(date, gap) });
+}
+/* ---------- "Ya se la di": un toque abre la hoja prellenada, el segundo guarda ---------- */
+/* "14 de octubre", o "14 de octubre de 2027" si no es este año */
+const dayLong = s => fmt(s, s.slice(0, 4) === iso(Z.today()).slice(0, 4) ? { day: 'numeric', month: 'long' } : { day: 'numeric', month: 'long', year: 'numeric' });
+const doneBtn = (p, r, cls = '') => `<button type="button" class="ibtn go renew ${cls}" data-act="renew" data-pet="${p.id}" data-rec="${r.id}" aria-label="${Z.renewLabel(r)}: ${esc(r.name || TYPE[r.type])} de ${esc(p.name)}">${I('check')}<span>${Z.renewLabel(r)}</span></button>`;
+function renewSheet(p, r) {
+  const today = iso(Z.today()), plan = Z.renewPlan(p, r, today), what = r.name || TYPE[r.type];
+  let gap = plan.gap, nextTouched = false;
+  const nextHint = () => gap ? `La calculamos sola: cada ${gap} ${gap === 1 ? 'mes' : 'meses'}${plan.src === 'calendario' && gap === plan.gap ? ', según el calendario sugerido' : plan.src === 'anterior' && gap === plan.gap ? ', como la dosis anterior' : ''}.` : '¿Cada cuánto toca? Elegí un atajo o una fecha.';
+  const press = (k, d) => document.querySelectorAll(`#fBody [data-quick="f_${k}"]`).forEach(c => c.setAttribute('aria-pressed', String(c.dataset.d === d)));
+  const dateChip = v => v === today ? '0' : v === iso(new Date(Z.today().getTime() - Z.DAY)) ? '-1' : 'pick';
+  const recalc = () => { const d = $('#f_date').value; if (gap && d && !nextTouched) setVal('next', Z.addMonths(d, gap)); press('date', dateChip(d)); const h = $('#f_next_h'); if (h) h.textContent = nextHint(); };
+  openForm({
+    title: Z.renewLabel(r),
+    intro: `<span class="rn-what">${bubble(recIcon(r), 'salud')}<span><b>${esc(what)}</b><small>${TYPE[r.type]} de ${esc(p.name)}${r.next ? ` · tocaba el ${fmt(r.next, { day: 'numeric', month: 'short' })}` : ''}</small></span></span>`,
+    values: { date: today, next: plan.next, vet: plan.vet, lot: plan.lot },
+    noFocus: true, stick: true,
+    fields: [
+      { k: 'date', label: r.type === 'vacuna' ? 'Se la diste el' : r.type === 'desparasitacion' ? 'Se la pusiste el' : 'Fue el', type: 'date', quick: [['0', 'Hoy'], ['-1', 'Ayer'], ['pick', 'Elegir fecha']] },
+      { k: 'next', label: 'Próxima', type: 'date', quick: [['1', '+1 mes'], ['3', '+3 meses'], ['6', '+6 meses'], ['12', '+12 meses']], hint: nextHint() },
+      [{ k: 'vet', label: 'Veterinaria', max: 80, opt: true }, { k: 'lot', label: 'Lote o marca', max: 80, opt: true }],
+      { k: 'sticker', label: 'Foto del sticker', type: 'photo', square: true, opt: true },
+    ],
+    alt: { label: `${Z.notYetLabel(r)} · Posponer`, fn: () => postponeSheet(p, r) },
+    after() {
+      $('#f_date').max = today; if (r.date && !Z.isSug(r)) $('#f_date').min = r.date;
+      $('#f_date').addEventListener('input', recalc);
+      $('#f_next').addEventListener('input', () => { nextTouched = true; press('next', ''); });
+      press('date', '0'); press('next', String(gap));
+    },
+    onQuick(k, d) {
+      if (k === 'date') {
+        if (d === 'pick') { const el = $('#f_date'); press('date', 'pick'); try { el.showPicker(); } catch { el.focus(); } return; }
+        setVal('date', iso(new Date(Z.today().getTime() + Number(d) * Z.DAY))); return recalc();
+      }
+      gap = +d; nextTouched = false; recalc(); press('next', d);
+    },
+    async onSave(v) {
+      const err = Z.renewCheck(r, v); if (err) return err;
+      const res = Z.applyRenew(p, r, v, uid());
+      if (v.sticker) { try { res.rec.sticker = await uploadPhoto(v.sticker); } catch (e) { toast((e?.msg || 'La foto del sticker no se pudo subir.') + ' El resto quedó guardado.'); } }
+      const msg = `Listo, anotamos ${Z.art(r)} de ${p.name}.${res.rec.next ? ` La próxima es el ${dayLong(res.rec.next)}.` : ''}`;
+      form.afterSave = () => toast(msg, { label: 'Deshacer', fn: () => { res.undo(); changed(); toast('Listo, lo deshicimos.'); } });
+    },
+  });
+}
+/* "No se la di todavía": corre la fecha del registro vigente, sin crear una dosis */
+function postponeSheet(p, r) {
+  const what = r.name || TYPE[r.type], first = Z.inDays(7);
+  openForm({
+    title: 'Posponer',
+    intro: `${esc(what)} de ${esc(p.name)}${r.next ? `, que tocaba el ${fmt(r.next, { day: 'numeric', month: 'long' })}` : ''}. Elegí la nueva fecha: no se anota ninguna dosis.`,
+    values: { next: first }, noFocus: true,
+    fields: [{ k: 'next', label: 'Nueva fecha', type: 'date', quick: [['7', 'En 1 semana'], ['14', 'En 2 semanas'], ['30', 'En 1 mes']] }],
+    saveLabel: 'Posponer',
+    after() { $('#f_next').min = iso(Z.today()); document.querySelectorAll('#fBody [data-quick]').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.d === '7'))); $('#f_next').addEventListener('input', () => document.querySelectorAll('#fBody [data-quick]').forEach(c => c.setAttribute('aria-pressed', 'false'))); },
+    onQuick(k, d) { setVal('next', Z.inDays(+d)); document.querySelectorAll('#fBody [data-quick]').forEach(c => c.setAttribute('aria-pressed', String(c.dataset.d === d))); },
+    onSave(v) {
+      if (!v.next) return 'Elegí la nueva fecha.';
+      if (v.next < iso(Z.today())) return 'La nueva fecha no puede ser pasada.';
+      const undo = Z.postpone(r, v.next);
+      form.afterSave = () => toast(`Listo, pasamos ${Z.art(r)} de ${p.name} al ${dayLong(v.next)}.`, { label: 'Deshacer', fn: () => { undo(); changed(); toast('Listo, volvió a su fecha.'); } });
+    },
+  });
+}
+/* desde el aviso: #/renovar/<mascota>|<registro> */
+function openRenewRoute(arg) {
+  const [pid, rid] = String(arg || '').split('|');
+  const q = petById(pid), r = q?.records.find(x => x.id === rid);
+  setRoute('inicio');
+  if (!q) return;
+  selectPet(q.id);
+  after(() => {
+    if (!r) return toast('Esa fecha ya no está cargada.');
+    if (!Z.upcoming(q).some(x => x.r.id === r.id)) return toast(`${Cap(Z.art(r))} de ${q.name} ya está anotada.`);
+    renewSheet(q, r);
+  });
 }
 function medForm(p, m) {
   const now = new Date(); now.setMinutes(0, 0, 0);
@@ -706,6 +785,7 @@ window.addEventListener('scroll', () => $('.top').classList.toggle('scrolled', w
 
 /* ---------- render ---------- */
 function render() {
+  if (mode === 'full' && route.name === 'renovar') openRenewRoute(route.arg);
   const bare = mode !== 'full' || BARE.includes(route.name);
   document.body.dataset.shell = bare ? 'bare' : 'app';
   nav.hidden = bare;
@@ -916,7 +996,9 @@ async function loadHeroArt() {
 function petHero(p, sm, vacc, anti) {
   const up = Z.upcoming(p), d = r => fmt(r.next, { day: 'numeric', month: 'short' }).replace('.', '');
   const pip = up.find(x => x.r.type === 'desparasitacion'), ctl = up.find(x => x.r.type === 'control');
-  const stat = (act, to, ic, c, k, v, late) => `<button class="pstat" data-act="${act}"${to}><span class="sic s-${c}">${I(ic)}</span><span><small>${k}</small><b${late ? ' class="late"' : ''}>${v}</b></span></button>`;
+  /* la primera fecha de cada tipo que ya se puede cerrar (vencida, hoy o en 14 días) lleva su "Ya se la di" */
+  const due = t => up.find(x => x.r.type === t && Z.renewable(x.r));
+  const stat = (act, to, ic, c, k, v, late, rn) => `<div class="pstat-w${rn ? ' has-rn' : ''}"><button class="pstat" data-act="${act}"${to}><span class="sic s-${c}">${I(ic)}</span><span><small>${k}</small><b${late ? ' class="late"' : ''}>${v}</b></span></button>${rn ? doneBtn(p, rn.r, 'wide') : ''}</div>`;
   const sexIc = p.sex === 'h' ? ['female', 'Hembra'] : p.sex === 'm' ? ['male', 'Macho'] : null;
   const cut = Boolean(p.photo && p.photoFull);
   if (!p.photo) after(loadHeroArt);
@@ -932,9 +1014,9 @@ function petHero(p, sm, vacc, anti) {
         <div class="ps-ic"><span class="round s-violeta" role="img" aria-label="${esc(Z.species(p))}">${Z.petIcon(p)}</span>${sexIc ? `<span class="round s-rosa" role="img" aria-label="${sexIc[1]}">${I(sexIc[0])}</span>` : ''}<button class="round" data-act="editPet" aria-label="Editar perfil de ${esc(p.name)}">${I('edit')}</button></div>
       </div>
       <div class="pstats">
-        ${stat('libsec', ' data-sec="vac"', 'syringe', 'rosa', 'Vacunas', esc(vacc[1] === 'late' ? 'Vencida' : vacc[0]), vacc[1] === 'late')}
-        ${stat('libsec', ' data-sec="des"', 'drop', 'naranja', 'Pipeta', pip ? (pip.s.days < 0 ? 'Vencida' : d(pip.r)) : esc(anti[0]), pip ? pip.s.days < 0 : anti[1] === 'late')}
-        ${stat('go', ' data-to="agenda"', 'steth', 'violeta', 'Control', ctl ? d(ctl.r) : 'Sin turno', ctl && ctl.s.days < 0)}
+        ${stat('libsec', ' data-sec="vac"', 'syringe', 'rosa', 'Vacunas', esc(vacc[1] === 'late' ? 'Vencida' : vacc[0]), vacc[1] === 'late', due('vacuna'))}
+        ${stat('libsec', ' data-sec="des"', 'drop', 'naranja', 'Pipeta', pip ? (pip.s.days < 0 ? 'Vencida' : d(pip.r)) : esc(anti[0]), pip ? pip.s.days < 0 : anti[1] === 'late', due('desparasitacion'))}
+        ${stat('go', ' data-to="agenda"', 'steth', 'violeta', 'Control', ctl ? d(ctl.r) : 'Sin turno', ctl && ctl.s.days < 0, due('control'))}
         ${stat('go', ' data-to="datos"', 'scale', 'verde', 'Peso', p.weight ? kg(p.weight) : 'Sin cargar', false)}
       </div>
     </div>
@@ -946,10 +1028,10 @@ function careCard(p) {
   const list = Z.upcoming(p).filter(x => x.s.days <= 180).slice(0, 4);
   const when = x => x.s.days < 0 ? `Vencida hace ${-x.s.days} d` : x.s.days === 0 ? 'Hoy' : x.s.days === 1 ? 'Mañana' : `En ${x.s.days} días`;
   return `<section class="sec card2 care-card" aria-labelledby="h-care"><h2 id="h-care">Próximos cuidados</h2>
-    ${list.length ? `<div class="care">${list.map(x => `<button class="care-row" data-act="detail" data-kind="rec" data-id="${x.r.id}">
+    ${list.length ? `<div class="care">${list.map(x => `<div class="care-item"><button class="care-row" data-act="detail" data-kind="rec" data-id="${x.r.id}">
       <span class="sic s-${x.r.type === 'vacuna' ? 'violeta' : x.r.type === 'desparasitacion' ? 'rosa' : 'naranja'}">${I(recIcon(x.r))}</span>
       <span class="what"><b>${esc(x.r.name)}</b><small>${esc(x.r.vet || x.r.lot || Z.TYPE[x.r.type] || '')}${Z.isSug(x.r) ? ' · sugerida' : ''}</small></span>
-      <span class="rib ${x.s.days < 0 ? 'r-late' : RIB[x.r.type] || 'r-lila'}"><b>${fmt(x.r.next, { day: 'numeric', month: 'short' }).replace('.', '')}</b><small>${when(x)}</small></span></button>`).join('')}</div>`
+      <span class="rib ${x.s.days < 0 ? 'r-late' : RIB[x.r.type] || 'r-lila'}"><b>${fmt(x.r.next, { day: 'numeric', month: 'short' }).replace('.', '')}</b><small>${when(x)}</small></span></button>${Z.renewable(x.r) ? `<div class="care-act">${doneBtn(p, x.r, 'wide')}</div>` : ''}</div>`).join('')}</div>`
       : `<p class="dim">Cuando cargues una vacuna o una pipeta con su próxima fecha, aparece acá.</p>${p.records.some(r => r.next) ? '' : `<button class="btn sm soft" data-act="suggest" style="align-self:flex-start">${I('sparkle')} Armar el calendario sugerido</button>`}`}
     <button class="btn ghost sm" data-act="go" data-to="agenda" style="align-self:flex-start">Ver más</button></section>`;
 }
@@ -1048,7 +1130,10 @@ function detail(p, kind, id) {
     head = `<div class="d-head">${x.sticker ? `<div class="stk has big"><img src="${esc(x.sticker)}" alt="Sticker de ${esc(title)}"></div>` : bubble(recIcon(x), 'salud')}<div><span class="eyebrow">${TYPE[x.type]}${x.type === 'desparasitacion' ? ' ' + Z.scopeOf(x) : ''}</span>${s ? `<span class="badge ${s.days < 0 ? 'late' : s.days <= 14 ? 'soon' : 'ok'}">${s.days < 0 ? s.t : 'Próxima: ' + (s.days <= 14 ? s.t.toLowerCase() : fmt(x.next))}</span>` : ''}</div></div>`;
     body = dl([['Se aplicó', x.date ? fmt(x.date, { day: 'numeric', month: 'long', year: 'numeric' }) : Z.isSug(x) ? 'Todavía no (fecha sugerida)' : ''], ['Próxima dosis', x.next ? fmt(x.next, { day: 'numeric', month: 'long', year: 'numeric' }) : ''], ['Lote o marca', esc(x.lot)], ['Veterinaria', esc(x.vet)], ['Notas', esc(x.notes)]]);
     if (Z.isSug(x)) body += '<p class="note">Fecha de referencia del calendario sugerido. Confirmala con tu veterinario y, cuando se la pongan, editala con la fecha real.</p>';
-    acts = btn('edit', 'edit', Z.isSug(x) ? 'Marcar como aplicada' : 'Editar', 'soft') + (x.type !== 'otro' ? btn('dup', 'copy', 'Duplicar como próxima dosis') : '') + (x.next ? btn('ics', 'cal', 'Agregar al calendario') : '');
+    const rn = Z.upcoming(p).some(u => u.r.id === x.id) && Z.renewable(x);
+    acts = rn ? btn('renew', 'check', Z.renewLabel(x), 'big') + btn('postpone', 'cal', `${Z.notYetLabel(x)} · Posponer`) + btn('edit', 'edit', 'Editar', 'ghost')
+      : btn('edit', 'edit', Z.isSug(x) ? 'Marcar como aplicada' : 'Editar', 'soft') + (x.type !== 'otro' ? btn('dup', 'copy', 'Duplicar como próxima dosis') : '');
+    acts += x.next ? btn('ics', 'cal', 'Agregar al calendario') : '';
   } else if (kind === 'visit') {
     title = x.reason || 'Consulta';
     head = `<div class="d-head">${bubble('steth', 'cuida')}<div><span class="eyebrow">Consulta</span></div></div>`;
@@ -1089,6 +1174,8 @@ function detail(p, kind, id) {
     if (a === 'icsMed') return calendar([Z.medEvent(p, x)], `${p.name} ${x.name}`);
     dPanel.close();
     if (a === 'dup') return nextDose(p, x);
+    if (a === 'renew') return renewSheet(p, x);
+    if (a === 'postpone') return postponeSheet(p, x);
     ({ rec: () => recForm(p, x), visit: () => visitForm(p, x), study: () => studyForm(p, x), sym: () => symptomForm(p, x), surg: () => surgeryForm(p, x), med: () => medForm(p, x) })[kind]();
   };
 }
@@ -1143,7 +1230,7 @@ function nextRib(r, s, renewed, print = false) {
   const k = s.days < 0 ? 'Venció' : s.days === 0 ? '' : 'Próxima';
   return `<span class="lrib ${cls}${print ? ' pr' : ''}" title="${esc(s.t)}">${k ? `<small>${k}</small>` : ''}<b>${s.days === 0 ? 'HOY' : d}</b></span>`;
 }
-function recEntry(r, isLate, isCurrent) {
+function recEntry(r, isLate, isCurrent, p) {
   const s = r.next ? Z.status(r.next) : null;
   const renewed = Boolean(r.next && r.date && !isCurrent && !isLate);
   const rib = s && (isCurrent || isLate || renewed) ? nextRib(r, s, renewed) : '';
@@ -1154,7 +1241,7 @@ function recEntry(r, isLate, isCurrent) {
       ${r.lot || r.vet ? `<span class="e-sub">${esc([r.lot ? 'Lote/marca: ' + r.lot : '', r.vet].filter(Boolean).join(' · '))}</span>` : ''}
       ${Z.isSug(r) ? '<span class="badge none" style="align-self:flex-start;margin-top:2px">Sugerida, sin confirmar</span>' : ''}
     </div>
-    ${rib ? `<div class="e-rib">${rib}</div>` : ''}
+    ${rib ? `<div class="e-rib">${rib}${p && (isCurrent || isLate) && Z.renewable(r) ? doneBtn(p, r) : ''}</div>` : ''}
     <button class="e-edit" data-act="detail" data-kind="rec" data-id="${r.id}" aria-label="Ver ${esc(r.name)}">${I('more')}</button></li>`;
 }
 /* lo último de cada vacuna manda: si ya se dio la de este año, la del año pasado no figura como vencida */
@@ -1162,7 +1249,7 @@ function lateIds(p) { return new Set(Z.upcoming(p).filter(x => x.s.days < 0).map
 function libPages(p) {
   const late = lateIds(p);
   const current = new Set(Z.upcoming(p).map(x => x.r.id));
-  const recE = r => recEntry(r, late.has(r.id), current.has(r.id));
+  const recE = r => recEntry(r, late.has(r.id), current.has(r.id), p);
   const pages = [];
   const chunk = (sec, title, items, empty) => {
     if (!items.length) { pages.push({ sec, title, html: empty }); return; }
@@ -1381,7 +1468,7 @@ const stCls = s => !s ? 'none' : s.days < 0 ? 'late' : s.days <= 14 ? 'soon' : '
 function agendaRow(x) {
   const ic = x.kind === 'food' ? ['bowl', 'comida'] : x.kind === 'trip' ? ['plane', 'viaje'] : [recIcon(x.r), 'salud'];
   const act = x.kind === 'rec' ? `data-act="detailOf" data-pet="${x.pet.id}" data-kind="rec" data-id="${x.r.id}"` : x.kind === 'food' ? `data-act="goPet" data-pet="${x.pet.id}" data-to="gastos"` : `data-act="goPet" data-pet="${x.pet.id}" data-to="viajes"`;
-  const ics = x.kind === 'rec' ? `<button class="ibtn" data-act="icsRec" data-pet="${x.pet.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.title)} al calendario">${I('cal')}</button>` : x.kind === 'food' ? `<button class="ibtn" data-act="icsFood" data-pet="${x.pet.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button>` : '<span></span>';
+  const ics = x.kind === 'rec' && Z.renewable(x.r) ? doneBtn(x.pet, x.r) : x.kind === 'rec' ? `<button class="ibtn" data-act="icsRec" data-pet="${x.pet.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.title)} al calendario">${I('cal')}</button>` : x.kind === 'food' ? `<button class="ibtn" data-act="icsFood" data-pet="${x.pet.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button>` : '<span></span>';
   return `<div class="row ${x.s?.c || ''}"><span class="ag-date"><b>${fmt(x.date, { day: 'numeric' })}</b><small>${fmt(x.date, { month: 'short' }).replace('.', '')}</small></span><button class="what plain" ${act}><b>${esc(x.title)}</b><small>${esc(x.pet.name)} · ${x.s && x.s.days <= 14 ? `<span class="stt">${x.s.t}</span>` : esc(x.sub)}${x.kind === 'rec' && Z.isSug(x.r) ? ' · sugerida, confirmala con tu veterinario' : ''}</small></button>${ics}</div>`;
 }
 function renderAgenda() {
@@ -2740,6 +2827,7 @@ document.addEventListener('click', e => {
     case 'aOn': return enablePush();
     case 'aOff': return disablePush();
     case 'aTest': return notifyPost({ test: true }).then(() => toast('Mandado. Llega en unos segundos.')).catch(() => toast('No se pudo mandar.'));
+    case 'renew': { const r = p?.records.find(x => x.id === b.dataset.rec); return r ? renewSheet(p, r) : null; }
     case 'icsRec': { const r = p.records.find(x => x.id === b.dataset.rec); return calendar([Z.recordEvent(p, r)], `${p.name} ${r.name}`); }
     case 'icsFood': return calendar([Z.foodEvent(p, p.food)], `${p.name} alimento`);
     case 'icsAll': return calendar(doc.pets.flatMap(q => [...Z.upcoming(q).filter(x => x.s.days >= 0).map(x => Z.recordEvent(q, x.r)), Z.foodEvent(q, q.food), ...q.meds.filter(m => m.start && Z.medState(m, q.log).state !== 'ended').map(m => Z.medEvent(q, m))]), 'Mimitos fechas');
@@ -2768,6 +2856,15 @@ async function boot() {
   else mode = 'error';
   render();
 }
+/* el aviso tocado con la app abierta: el service worker manda a qué hoja ir */
+try {
+  navigator.serviceWorker?.addEventListener('message', e => {
+    if (e.data?.type !== 'mimitos:open') return;
+    const u = new URL(e.data.url, location.origin);
+    if (u.origin === location.origin && u.hash.startsWith('#/renovar/')) location.hash = u.hash;
+  });
+  navigator.serviceWorker?.startMessages?.();
+} catch {}
 route = parseHash();
 render();
 boot();

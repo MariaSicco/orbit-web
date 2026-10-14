@@ -123,14 +123,18 @@ export function dueToday(doc, today = todayAR()) {
       if (d !== 3 && d !== 0) continue;
       const what = phrase(r);
       const sug = R.isSug(r);
+      const action = r.type === 'vacuna' ? 'Ya se la di' : r.type === 'desparasitacion' ? 'Ya se la puse' : 'Ya fue';
       out.push({
         tag: `rec:${p.id}:${r.id}:${r.next}:${d}`, kind: KIND_OF[r.type] || 'vac', petId: p.id, pet: p.name, sug,
+        /* tocar el aviso (o su botón) abre la hoja "Ya se la di" de esta fecha */
+        url: `/mascotas#/renovar/${encodeURIComponent(p.id + '|' + r.id)}`,
+        action,
         title: sug
           ? (d ? `Fecha sugerida para ${p.name}: ${String(r.name || '').trim()}, el ${dayName(r.next)}` : `Fecha sugerida para ${p.name}: ${String(r.name || '').trim()}, hoy`)
           : (d ? `A ${p.name} le toca ${what} el ${dayName(r.next)}` : `Hoy a ${p.name} le toca ${what}`),
         body: sug
           ? 'Es una fecha sugerida, de referencia general: confirmala con tu veterinario. Cuando la confirmes, editala en Mimitos.'
-          : (d ? '¿Ya sacaste turno? Cuando se la pongan, marcala en Mimitos.' : 'Cuando esté hecho, marcalo en Mimitos y te avisamos de la próxima.'),
+          : (d ? `¿Ya sacaste turno? Cuando se la pongan, tocá "${action}" en Mimitos.` : 'Cuando esté hecho, tocá este aviso y anotalo en dos toques. Te avisamos de la próxima.'),
       });
     }
     const f = p.food || {};
