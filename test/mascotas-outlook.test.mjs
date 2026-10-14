@@ -100,12 +100,12 @@ test('KQL: adjuntos + términos + nombres + fecha, con comillas escapadas para $
   assert.equal(O.searchParam('a "b" c'), '"a \\"b\\" c"');
 });
 
-test('gating: MIMITOS_MAIL_ALLOW y, si no está, la vieja MIMITOS_GMAIL_ALLOW', () => {
-  assert.ok(M.mailAllowed('majo@ejemplo.com'));
-  assert.ok(!M.mailAllowed('otra@ejemplo.com'));
-  delete process.env.MIMITOS_MAIL_ALLOW; process.env.MIMITOS_GMAIL_ALLOW = 'vieja@ejemplo.com';
-  assert.ok(M.mailAllowed('vieja@ejemplo.com'));
-  delete process.env.MIMITOS_GMAIL_ALLOW; process.env.MIMITOS_MAIL_ALLOW = 'majo@ejemplo.com';
+test('gating: MIMITOS_MAIL_ALLOW con valores es lista para Outlook; la vieja MIMITOS_GMAIL_ALLOW ya no restringe a Outlook', () => {
+  assert.ok(M.mailAllowed('majo@ejemplo.com', 'outlook'));
+  assert.ok(!M.mailAllowed('otra@ejemplo.com', 'outlook'));
+  delete process.env.MIMITOS_MAIL_ALLOW; process.env.MIMITOS_GMAIL_ALLOW = 'vieja@ejemplo.com'; process.env.MIMITOS_GMAIL_OPEN = '0';
+  assert.ok(M.mailAllowed('otra@ejemplo.com', 'outlook'));
+  delete process.env.MIMITOS_GMAIL_ALLOW; delete process.env.MIMITOS_GMAIL_OPEN; process.env.MIMITOS_MAIL_ALLOW = 'majo@ejemplo.com';
 });
 
 test('dedupe: los ids largos de Outlook se guardan con hash; los de Gmail quedan legibles', () => {

@@ -61,6 +61,8 @@ const memSet = key => { let v = mem.get(key); if (!v || !(v.val instanceof Set))
 export async function kvSAdd(key, member) { if (!hasKV) { memSet(key).add(member); return; } await cmd('SADD', key, member); }
 export async function kvSRem(key, member) { if (!hasKV) { memSet(key).delete(member); return; } await cmd('SREM', key, member); }
 export async function kvSMembers(key) { if (!hasKV) return [...memSet(key)]; return (await cmd('SMEMBERS', key)) || []; }
+export async function kvSIsMember(key, member) { if (!hasKV) return memSet(key).has(member); return Number(await cmd('SISMEMBER', key, member)) === 1; }
+export async function kvSCard(key) { if (!hasKV) return memSet(key).size; return Number(await cmd('SCARD', key)) || 0; }
 
 /* Recorrido para los informes del panel: SCAN por patrón + lectura en tandas. */
 export async function kvKeys(pattern, max = 5000) {

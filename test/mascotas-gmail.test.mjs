@@ -8,7 +8,9 @@ process.env.SESSION_SECRET = 'prueba-secreta-de-mimitos-1234567890';
 process.env.GOOGLE_CLIENT_ID = 'cliente-de-prueba.apps.googleusercontent.com';
 process.env.GOOGLE_CLIENT_SECRET = 'secreto-de-prueba';
 process.env.MIMITOS_TOKEN_KEY = randomBytes(32).toString('base64');
-process.env.MIMITOS_GMAIL_ALLOW = 'majo@ejemplo.com, socia@ejemplo.com';
+/* lista restringida (modo prueba): con valores, solo esas cuentas y admin */
+process.env.MIMITOS_MAIL_ALLOW = 'majo@ejemplo.com, socia@ejemplo.com';
+delete process.env.MIMITOS_GMAIL_ALLOW; delete process.env.MIMITOS_GMAIL_OPEN; delete process.env.MIMITOS_GMAIL_CAP;
 process.env.ADMIN_EMAILS = 'admin@ejemplo.com';
 const { kvGet, kvSet } = await import('../api/_lib/kv.js');
 const { makeSession } = await import('../api/_lib/auth.js');
@@ -121,7 +123,7 @@ test('state anti-CSRF: ligado a la sesión, de un solo uso', async () => {
   assert.equal(await G.checkState(n + '.firmaFalsa', EMAIL), null);
 });
 
-test('gating: solo la lista MIMITOS_GMAIL_ALLOW y admin', () => {
+test('gating: con MIMITOS_MAIL_ALLOW cargada, solo esa lista y admin', () => {
   assert.ok(G.gmailAllowed('majo@ejemplo.com'));
   assert.ok(G.gmailAllowed(' Socia@Ejemplo.com '));
   assert.ok(G.gmailAllowed('admin@ejemplo.com'));

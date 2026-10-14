@@ -470,7 +470,7 @@ export default async function handler(req, res) {
   const expiredBody = async () => { const st = await aiStatus(s.email, aiCtx); return { error: 'ai_expired', expiredAt: st.expiresAt }; };
   const isExpired = async () => (await aiStatus(s.email, aiCtx)).expired;
 
-  /* Conectar tu mail (Gmail u Outlook): solo cuentas habilitadas (MIMITOS_MAIL_ALLOW) o admin */
+  /* Conectar tu mail (Gmail u Outlook): todos los compradores, salvo lista en MIMITOS_MAIL_ALLOW; Gmail con interruptor y cupo (petmail.js) */
   if (mailP) {
     /* vencidas: no se busca, no se importa ni se conecta; sí se puede ver el estado, desconectar y sacar de la cola */
     const act = String(q[mailP.id]);

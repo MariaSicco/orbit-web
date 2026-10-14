@@ -1,12 +1,16 @@
 /* Mimitos · adaptador de Gmail para "Conectar tu mail" (el motor común está en petmail.js).
 
    Permiso mínimo: solo https://www.googleapis.com/auth/gmail.readonly (leer). Mimitos no manda,
-   no borra ni modifica mails. Mientras la app de Google esté en modo "testing", solo entran los test
-   users cargados en Google Cloud y el refresh token vence a los 7 días: la app lo detecta y pide reconectar.
+   no borra ni modifica mails. En modo "Prueba" (testing) de Google solo entran los test users cargados en
+   Google Cloud y el refresh token vence a los 7 días. Publicada "En producción" sin verificar, entra cualquiera
+   (con la pantalla de "app no verificada") hasta 100 usuarios en toda la vida del proyecto: por eso el cupo
+   MIMITOS_GMAIL_CAP (petmail.js). Si el token vence o se revoca, la app lo detecta y pide reconectar.
 
    Rutas (todas bajo /api/mascotas):
-   GET  ?gmail=status            → { allowed, ready, connected, address, lastSearch, range, expired, queue:[…] }
+   GET  ?gmail=status            → { allowed, ready, full, connected, address, lastSearch, range, expired, queue:[…] }
    GET  ?gmail=start&range=12m|3y|all → 302 a Google (state anti-CSRF ligado a la sesión, un solo uso, 10 min)
+                                   o, si Gmail llegó al cupo, a /mascotas#/gmail/completo (y guarda el interés)
+   POST ?gmail=interest          → con el cupo lleno, guarda que la cuenta quiere Gmail → { ok, full }
    GET  ?gmail=callback          → intercambia el code y vuelve a /mascotas#/gmail/<resultado>
         (también entra por /mascotas/gmail/callback, que es el redirect URI que se registra en Google)
    POST ?gmail=search {mode:'new'|'all', cursor?} → { candidates, cursor|null, more|null, scanned, done }
@@ -28,7 +32,7 @@ const { fail, form } = M;
 
 /* lo común, re-exportado para quien ya lo usaba desde acá */
 export { MAX_MESSAGES, PAGE, TIME_BUDGET_MS, MAX_FILE, MIN_IMG, BASE_TERMS, tokenKey, seal, open, signCursor, readCursor, namesOf, typeOf, readable, dedupeKey, suggestPet, allowList } from './petmail.js';
-export const gmailAllowed = M.mailAllowed;
+export const gmailAllowed = email => M.mailAllowed(email, 'gmail');
 export const RANGES = { '12m': 'newer_than:1y', '3y': 'newer_than:3y', all: '' };
 
 export function redirectUri(req) { return process.env.GOOGLE_REDIRECT_URI || M.hostBase(req) + '/mascotas/gmail/callback'; }

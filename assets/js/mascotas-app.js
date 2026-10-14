@@ -1914,15 +1914,17 @@ function saveBulk() {
 }
 
 /* ---------- Conectar tu mail (Gmail u Outlook): busca estudios y los trae por el mismo motor (api/_lib/petmail.js) ----------
-   Nada se descarga ni se lee con IA hasta que la persona elige. Solo se ve si la cuenta está habilitada. */
+   Nada se descarga ni se lee con IA hasta que la persona elige. Está para todos los compradores (salvo lista en
+   MIMITOS_MAIL_ALLOW); Gmail tiene el cupo de Google para apps sin verificar: con el cupo lleno, status.full. */
 const LIMITED_USE = 'https://developers.google.com/terms/api-services-user-data-policy';
 const PROV = {
-  gmail: { label: 'Gmail', company: 'Google', testing: 'Mientras Mimitos está en prueba, Google muestra un aviso de “app no verificada” y la conexión dura 7 días; después la volvés a conectar.', remove: 'myaccount.google.com/permissions' },
-  outlook: { label: 'Outlook', company: 'Microsoft', who: 'Outlook, Hotmail, Live o Microsoft 365', testing: 'Microsoft puede mostrar que la app es de un “editor no verificado”. Con una cuenta de trabajo o de la facultad, tu organización puede no permitirla: en ese caso, usá tu cuenta personal.', remove: 'account.live.com/consent/Manage' },
+  /* see: lo que la persona va a ver en la pantalla del proveedor, paso a paso, antes de ir */
+  gmail: { label: 'Gmail', company: 'Google', see: ['Google te va a mostrar “Google no verificó esta app”. Es normal mientras Google revisa Mimitos.', 'Tocá “Configuración avanzada” y después “Ir a Mimitos”.', 'Aceptá el permiso de leer tus mails y volvés a Mimitos.'], remove: 'myaccount.google.com/permissions' },
+  outlook: { label: 'Outlook', company: 'Microsoft', who: 'Outlook, Hotmail, Live o Microsoft 365', see: ['Microsoft te va a mostrar “editor no verificado”: tocá Aceptar.', 'Con una cuenta de trabajo o de la facultad, tu organización puede no permitirla: en ese caso, usá tu cuenta personal.'], remove: 'account.live.com/consent/Manage' },
 };
 const MAILS = ['gmail', 'outlook'];
 const mErr = (p, code) => ({
-  vencido: p === 'gmail' ? 'La conexión con Gmail venció. Mientras Mimitos esté en prueba, Google la corta a los 7 días: volvé a conectar y seguís.' : 'La conexión con Outlook venció o se quitó el permiso. Volvé a conectar y seguís.',
+  vencido: `La conexión con ${PROV[p].label} venció o se quitó el permiso. Volvé a conectar y seguís.`,
   limite: `${PROV[p].label} nos pidió esperar un poco. Probá de nuevo en un rato.`,
   no_conectado: `${PROV[p].label} no está conectado.`,
   no_configurado: `La conexión con ${PROV[p].label} todavía no está configurada.`,
@@ -1938,11 +1940,21 @@ const mBack = (p, arg) => ({
   sinpermiso: `Para buscar tus estudios, Mimitos necesita el permiso de leer tus mails. En la pantalla de ${PROV[p].company}, aceptalo.`,
   error: `No pudimos conectar ${PROV[p].label}. Probá de nuevo en un rato.`,
   sinconfig: `La conexión con ${PROV[p].label} todavía no está configurada.`,
+  completo: GMAIL_FULL,
 })[arg];
+const GMAIL_FULL = 'Gmail está completo por ahora. Podés usar Outlook o Subir estudios; te avisamos cuando se libere.';
+/* Gmail completo para esta cuenta: no la conectó nunca y Google ya no deja sumar usuarios hasta verificar la app */
+const mFull = p => Boolean(mstat[p]?.full && !mstat[p]?.connected);
+let mInterest = false;
+function mailInterest(p) {
+  if (mInterest || !mFull(p)) return;
+  mInterest = true;
+  fetch(`/api/mascotas?${p}=interest`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => { mInterest = false; });
+}
 const mOn = () => MAILS.some(p => mstat[p]?.allowed);
 const mAny = () => MAILS.some(p => mstat[p]?.connected);
 const gmailBtn = () => mOn() ? `<button class="btn sm ghost" data-act="mailPick">${I('mail')} ${mAny() ? 'Buscar en tu mail' : 'Conectar tu mail'}</button>` : '';
-/* "Conectar tu mail" solo existe para cuentas habilitadas. El GET principal trae mail.allowed:
+/* "Conectar tu mail" existe para las cuentas habilitadas (hoy, todos los compradores). El GET principal trae mail.allowed:
    si dice que no, no se consulta el estado (así no quedan 403 en la consola). Si el servidor
    todavía no manda el dato (null), se consulta como antes. */
 let mailAllowed = null;
@@ -1965,7 +1977,7 @@ function mailRoute() {
 function mailPickPanel() {
   const row = p => {
     const s = mstat[p]; if (!s) return '';
-    const sub = s.connected ? `Conectado como ${esc(s.address || PROV[p].label)}` : !s.ready ? 'Todavía no disponible' : s.expired ? 'La conexión venció: volvé a conectar' : p === 'outlook' ? 'Outlook, Hotmail, Live o Microsoft 365' : 'Tu cuenta de Google';
+    const sub = s.connected ? `Conectado como ${esc(s.address || PROV[p].label)}` : !s.ready ? 'Todavía no disponible' : mFull(p) ? 'Completo por ahora' : s.expired ? 'La conexión venció: volvé a conectar' : p === 'outlook' ? 'Outlook, Hotmail, Live o Microsoft 365' : 'Tu cuenta de Google';
     return `<button class="row link-row" data-mail="${p}"${s.ready || s.connected ? '' : ' disabled'}>${bubble('mail', p === 'gmail' ? 'viaje' : 'cuida')}<span class="what"><b>${s.connected ? `Buscar en ${PROV[p].label}` : `Conectar ${PROV[p].label}`}</b><small>${sub}</small></span>${I('chevron')}</button>`;
   };
   panel('Traé estudios desde tu mail', `<p class="dim">Buscamos los análisis, ecografías, radiografías, recetas e informes que te mandaron y elegís cuáles sumar. Podés conectar uno o los dos.</p><div class="list">${MAILS.map(row).join('')}</div>`);
@@ -2017,6 +2029,7 @@ function renderMail(p) {
   const back = `<button class="link" data-act="go" data-to="libreta" style="align-self:flex-start">${I('back')} ${pet ? `Libreta de ${esc(pet.name)}` : 'Volver'}</button>`;
   if (!s.connected || gm?.phase === 'intro' || !gm) {
     if (s.connected && !gm) { after(() => mailSearch(p, s.lastSearch ? 'new' : 'all')); return `<section class="sec reading"><div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu ${L}</h1></section>`; }
+    if (mFull(p)) mailInterest(p);
     return mailIntro(p, back);
   }
   if (gm.phase === 'searching') return `<section class="sec reading" aria-busy="true">${back}<div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu ${L}</h1><p class="dim" role="status">Revisamos ${gm.scanned} ${gm.scanned === 1 ? 'mail' : 'mails'}${gm.cands.length ? ` y encontramos ${gmFiles().length} ${gmFiles().length === 1 ? 'documento' : 'documentos'}` : ''}. Solo miramos el asunto, quién lo mandó y los adjuntos.</p></section>`;
@@ -2070,7 +2083,7 @@ function mailIntro(p, back) {
   const s = mstat[p], P = PROV[p], L = P.label;
   const range = (gm?.p === p && gm.range) || s.range || '12m';
   const fact = (ic, c, t, d) => `<li>${bubble(ic, c)}<span><b>${t}</b><small>${d}</small></span></li>`;
-  const msg = (gm?.p === p && gm.back) || (s.expired ? mErr(p, 'vencido') : '');
+  const msg = mFull(p) ? '' : (gm?.p === p && gm.back) || (s.expired ? mErr(p, 'vencido') : '');
   const removeTxt = p === 'gmail' ? 'Desconectás cuando quieras desde Cuenta y lo revocamos en Google.' : 'Desconectás cuando quieras desde Cuenta y borramos todo lo guardado; el permiso en Microsoft lo quitás en account.live.com/consent/Manage (cuenta personal) o en myapps.microsoft.com (trabajo).';
   return `<section class="sec gmail-intro">${back}
     <div><span class="eyebrow">Historial clínico</span><h1 class="h-xl">Traé los estudios desde tu ${L}</h1>
@@ -2082,11 +2095,15 @@ function mailIntro(p, back) {
       ${fact('sparkle', 'plata', 'Qué se manda a la IA', `Cada archivo que importás se manda a la IA (Claude, de Anthropic) para leer la fecha, el tipo, un resumen y de qué mascota parece. Lo revisás antes de guardar. Tus datos de ${L} no se usan para publicidad ni para entrenar IA.`)}
       ${fact('x', 'med', 'Qué no hace', `Mimitos no manda, no borra ni modifica mails: el permiso es solo de lectura. ${removeTxt}`)}
     </ul>
-    <div class="f"><span class="lb" id="gmRangeL">Dónde buscar la primera vez</span>
+    ${mFull(p) ? '' : `<div class="f"><span class="lb" id="gmRangeL">Dónde buscar la primera vez</span>
       <div class="tiles" role="group" aria-labelledby="gmRangeL">${[['12m', 'Últimos 12 meses'], ['3y', 'Últimos 3 años'], ['all', 'Todo']].map(([v, l]) => `<button type="button" class="tile" data-act="mailRange" data-p="${p}" data-v="${v}" aria-pressed="${v === range}"><span>${l}</span></button>`).join('')}</div></div>
-    ${sendersBox(p, false)}
-    ${s.ready ? `<button class="btn big wide" data-act="mailConnect" data-p="${p}">${I('mail')} ${s.expired ? `Volver a conectar ${L}` : `Conectar ${L}`}</button>` : `<p class="bk-msg">${mBack(p, 'sinconfig')}</p>`}
-    <p class="note">${P.company} te va a pedir permiso para que Mimitos lea tus mails. ${P.testing}</p>
+    ${sendersBox(p, false)}`}
+    ${mFull(p) ? `<div class="gm-full" role="status"><p class="bk-msg">${GMAIL_FULL}</p>
+      <div class="gm-acts">${mstat.outlook && p !== 'outlook' ? `<button class="btn" data-act="mailOpen" data-p="outlook">${I('mail')} Usar Outlook</button>` : ''}<button class="btn ghost" data-act="bulkStudies">${I('file')} Subir estudios</button></div></div>`
+    : !s.ready ? `<p class="bk-msg">${mBack(p, 'sinconfig')}</p>`
+    : `<div class="gm-see" role="group" aria-labelledby="gmSeeT"><span class="lb" id="gmSeeT">Lo que vas a ver en ${P.company}</span>
+      <ol>${P.see.map(t => `<li>${t}</li>`).join('')}</ol></div>
+    <button class="btn big wide" data-act="mailConnect" data-p="${p}">${I('mail')} ${s.expired ? `Volver a conectar ${L}` : `Conectar ${L}`}</button>`}
     ${p === 'gmail' ? `<p class="note">El uso que hace Mimitos de la información recibida de las API de Google cumple la <a href="${LIMITED_USE}" target="_blank" rel="noopener">Política de Datos del Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado. Más detalle en <a href="/privacidad" target="_blank" rel="noopener">Privacidad</a>.</p>` : `<p class="note">Más detalle en <a href="/privacidad" target="_blank" rel="noopener">Privacidad</a>.</p>`}
   </section>`;
 }
@@ -2194,7 +2211,7 @@ function gmailAccount() {
     if (s.connected) return `<div class="card gm-acc">
       <div class="gm-acc-h">${bubble('mail', p === 'gmail' ? 'viaje' : 'cuida')}<span class="what"><b>${L} · ${esc(s.address || 'conectado')}</b><small>${last}${s.queue?.length ? ` · ${s.queue.length} en cola` : ''}</small></span></div>
       <div class="gm-acts"><button class="btn sm" data-act="mailOpen" data-p="${p}" data-mode="new">Buscar de nuevo</button><button class="btn sm ghost" data-act="mailOff" data-p="${p}">Desconectar</button></div></div>`;
-    return `<div class="list"><button class="row link-row" data-act="mailOpen" data-p="${p}"${s.ready ? '' : ' disabled'}>${bubble('mail', p === 'gmail' ? 'viaje' : 'cuida')}<span class="what"><b>${s.expired ? `Volver a conectar ${L}` : `Conectar ${L}`}</b><small>${!s.ready ? 'Todavía no disponible' : s.expired ? (p === 'gmail' ? 'La conexión venció a los 7 días (Mimitos está en prueba con Google).' : 'La conexión venció o se quitó el permiso.') : p === 'gmail' ? 'Tu cuenta de Google' : 'Outlook, Hotmail, Live o Microsoft 365'}</small></span>${I('chevron')}</button></div>`;
+    return `<div class="list"><button class="row link-row" data-act="mailOpen" data-p="${p}"${s.ready ? '' : ' disabled'}>${bubble('mail', p === 'gmail' ? 'viaje' : 'cuida')}<span class="what"><b>${s.expired ? `Volver a conectar ${L}` : `Conectar ${L}`}</b><small>${!s.ready ? 'Todavía no disponible' : mFull(p) ? 'Completo por ahora: te avisamos cuando se libere' : s.expired ? 'La conexión venció o se quitó el permiso.' : p === 'gmail' ? 'Tu cuenta de Google' : 'Outlook, Hotmail, Live o Microsoft 365'}</small></span>${I('chevron')}</button></div>`;
   };
   return `<section class="sec"><h2>Tu mail</h2><div class="gm-accs">${MAILS.map(card).join('')}</div><p class="note">Solo lectura. Mimitos no manda ni modifica mails.</p></section>`;
 }

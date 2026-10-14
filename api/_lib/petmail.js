@@ -4,7 +4,8 @@
 
    Cada proveedor es un adaptador con: config, authUrl, exchange, refresh, revoke, list, candidate,
    find y download. Este módulo pone lo que es igual para todos:
-   - quién puede usarlo (MIMITOS_MAIL_ALLOW, o la vieja MIMITOS_GMAIL_ALLOW, más admin);
+   - quién puede usarlo: todos los compradores, salvo que MIMITOS_MAIL_ALLOW tenga una lista (más admin),
+     el interruptor MIMITOS_GMAIL_OPEN y el cupo de Gmail sin verificar (MIMITOS_GMAIL_CAP);
    - el refresh token CIFRADO con AES-256-GCM (MIMITOS_TOKEN_KEY), atado a la cuenta de Orbit;
    - el state anti-CSRF firmado con la sesión, guardado en KV, de un solo uso (con PKCE si el proveedor lo usa);
    - la consulta (términos veterinarios + nombres de mascotas y veterinarias del doc);
@@ -18,7 +19,7 @@
    para buscar el link al estudio (P.body: Gmail format=full / Graph body). No se guarda, no se loguea y no
    sale de la función de búsqueda o importación; del link se loguea solo el host. */
 import { createCipheriv, createDecipheriv, createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
-import { kvGet, kvSet, kvDel } from './kv.js';
+import { kvGet, kvSet, kvDel, kvSAdd, kvSIsMember, kvSCard } from './kv.js';
 import { isAdmin } from './admin.js';
 import { extractLinks, safeFetch, isLinkPart, reasonOf, hostOf } from './petlinks.js';
 
@@ -50,9 +51,50 @@ const PUBLIC_MAIL = /^(gmail|googlemail|hotmail|outlook|live|msn|yahoo|icloud|me
 
 const sKey = nonce => `orbit:petmstate:${nonce}`;
 
-/* ---------- quién puede usarlo ---------- */
-export const allowList = () => (process.env.MIMITOS_MAIL_ALLOW || process.env.MIMITOS_GMAIL_ALLOW || '').split(/[,;\n]+/).map(s => s.replace(/\s+/g, '').toLowerCase()).filter(Boolean);
-export const mailAllowed = email => Boolean(email) && (isAdmin(email) || allowList().includes(String(email).replace(/\s+/g, '').toLowerCase()));
+/* ---------- quién puede usarlo ----------
+   Variables (todas opcionales; cambiar una en Vercel pide "Redeploy" del mismo código, sin tocar código):
+   - MIMITOS_MAIL_ALLOW: vacía = todos los compradores (Gmail y Outlook). Con mails (separados por coma,
+     punto y coma o renglón) = solo esa lista, para los dos proveedores (modo prueba / preview).
+   - MIMITOS_GMAIL_OPEN: "0", "false", "no" u "off" cierra Gmail y vuelve a la lista: solo MIMITOS_GMAIL_ALLOW
+     y admin. Outlook no se toca. Vacía o cualquier otro valor = abierto.
+   - MIMITOS_GMAIL_CAP: cuántas cuentas de Orbit distintas pueden conectar Gmail mientras Google no verifique
+     la app (Google corta en 100 usuarios en toda la vida del proyecto y no se resetea). 90 por defecto.
+   Admin siempre entra y no cuenta para el cupo. */
+const norm = e => String(e || '').replace(/\s+/g, '').toLowerCase();
+const listOf = v => String(v || '').split(/[,;\n]+/).map(norm).filter(Boolean);
+export const allowList = () => listOf(process.env.MIMITOS_MAIL_ALLOW);
+export const gmailList = () => listOf(process.env.MIMITOS_GMAIL_ALLOW);
+export const gmailOpen = () => !/^(0|false|no|off)$/i.test(String(process.env.MIMITOS_GMAIL_OPEN || '').trim());
+export function mailAllowed(email, provider) {
+  if (!email) return false;
+  if (isAdmin(email)) return true;
+  const e = norm(email), list = allowList();
+  if (list.length) return list.includes(e);
+  if (provider === 'gmail' && !gmailOpen()) return gmailList().includes(e);
+  return true;
+}
+
+/* ---------- cupo de Gmail sin verificar ----------
+   Un SET con las cuentas de Orbit que conectaron Gmail alguna vez. No se saca a nadie al desconectar:
+   para Google ese usuario ya cuenta. Quien ya está adentro sigue andando aunque el cupo esté lleno. */
+export const GMAIL_USERS = 'orbit:petmail:gmail:users';
+export const GMAIL_WAIT = 'orbit:petmail:gmail:espera';
+export const gmailCap = () => { const n = Math.floor(Number(process.env.MIMITOS_GMAIL_CAP)); return Number.isFinite(n) && n >= 0 && String(process.env.MIMITOS_GMAIL_CAP || '').trim() !== '' ? n : 90; };
+const capped = P => P.id === 'gmail';
+/* ¿esta cuenta ya cuenta? Las conectadas antes de que existiera el SET se suman acá */
+async function counted(email, st) {
+  const e = norm(email);
+  if (await kvSIsMember(GMAIL_USERS, e)) return true;
+  if (st?.tok || st?.connectedAt) { await kvSAdd(GMAIL_USERS, e); return true; }
+  return false;
+}
+export async function capFull(P, email, st) {
+  if (!capped(P) || isAdmin(email)) return false;
+  if (await counted(email, st)) return false;
+  return (await kvSCard(GMAIL_USERS)) >= gmailCap();
+}
+export async function countUser(P, email) { if (capped(P) && !isAdmin(email)) await kvSAdd(GMAIL_USERS, norm(email)); }
+export async function saveInterest(email) { await kvSAdd(GMAIL_WAIT, norm(email)); }
 
 /* ---------- clave y cifrado del token: AES-256-GCM, la cuenta de Orbit va como dato asociado ---------- */
 export function tokenKey(raw = process.env.MIMITOS_TOKEN_KEY) {
@@ -444,12 +486,20 @@ const back = (res, to) => { res.setHeader('Location', '/mascotas#/' + to); retur
 export async function handleMail(P, req, res, ctx) {
   const q = req.query || {}, action = String(q[P.id]);
   const { email } = ctx;
-  const allowed = mailAllowed(email), cfg = P.config(req);
+  const allowed = mailAllowed(email, P.id), cfg = P.config(req);
   const nav = action === 'start' || action === 'callback';
   if (!allowed) return nav ? back(res, 'cuenta') : res.status(403).json({ error: P.id + '_no_habilitado', allowed: false });
   const st = await getState(P, email);
 
-  if (action === 'status') return res.status(200).json({ ...statusView(P, st, true, cfg.ready), senders: (await getSenders(email)).manual });
+  /* full: Gmail llegó al cupo de Google y esta cuenta todavía no lo había conectado nunca */
+  if (action === 'status') return res.status(200).json({ ...statusView(P, st, true, cfg.ready), full: await capFull(P, email, st), senders: (await getSenders(email)).manual });
+  /* "Gmail está completo por ahora": se guarda que la cuenta lo quería, para avisarle cuando se libere */
+  if (action === 'interest') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+    const full = await capFull(P, email, st);
+    if (full) await saveInterest(email);
+    return res.status(200).json({ ok: true, full });
+  }
   /* "¿De dónde te llegan los estudios?": nombres o mails que la persona agrega a mano (sirven para los dos proveedores) */
   if (action === 'senders') {
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
@@ -463,6 +513,7 @@ export async function handleMail(P, req, res, ctx) {
   if (!cfg.ready) return nav ? back(res, `${P.id}/sinconfig`) : res.status(503).json({ error: P.id + '_no_configurado' });
 
   if (action === 'start') {
+    if (await capFull(P, email, st)) { await saveInterest(email); return back(res, `${P.id}/completo`); }
     const range = RANGES[q.range] !== undefined ? String(q.range) : '12m';
     const { state, challenge } = await makeState(email, range, P.id);
     res.setHeader('Location', P.authUrl(cfg, state, challenge));
@@ -481,6 +532,7 @@ export async function handleMail(P, req, res, ctx) {
     if (st.address && next.address && st.address.toLowerCase() !== next.address.toLowerCase()) { next.imported = []; next.queue = []; next.lastSearch = ''; }
     if (st.range !== ok.range) next.lastSearch = '';
     await saveState(P, email, next);
+    await countUser(P, email);
     return back(res, `${P.id}/conectado`);
   }
 
