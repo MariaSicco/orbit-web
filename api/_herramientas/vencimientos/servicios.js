@@ -99,6 +99,31 @@ export const SERVICIOS = [
   S('vacunas', 'Vacunas de la mascota', 'Trámites', 12, { color: '#D9FF45', tipo: 'tramite' }),
 ];
 
+/* Ícono de cada cuenta: por servicio, y si no, por categoría. */
+const ICONO_SERVICIO = {
+  edenor: 'rayo', edesur: 'rayo', epec: 'rayo', edelap: 'rayo', luz: 'rayo',
+  metrogas: 'llama', naturgy: 'llama', camuzzi: 'llama', ecogas: 'llama', gas: 'llama', garrafa: 'llama', caldera: 'llama',
+  aysa: 'gota', absa: 'gota', agua: 'gota', tanque: 'gota',
+  internet: 'wifi', celular: 'celu', cable: 'tv',
+  netflix: 'play', disney: 'play', max: 'play', prime: 'play', paramount: 'play', crunchyroll: 'play', youtube: 'play',
+  spotify: 'nota', icloud: 'nube', 'google-one': 'nube', chatgpt: 'chispa', m365: 'doc', meli: 'chispa',
+  gimnasio: 'pesa', colegio: 'gorro', patente: 'auto', 'seguro-auto': 'auto', cochera: 'auto', peaje: 'auto', vtv: 'auto', licencia: 'auto', cedula: 'auto',
+  prepaga: 'escudo', 'seguro-vida': 'escudo', 'seguro-hogar': 'casa', alquiler: 'casa', expensas: 'casa', hipoteca: 'casa', limpieza: 'casa',
+};
+const ICONO_CATEGORIA = { Servicios: 'rayo', Impuestos: 'edificio', Vivienda: 'casa', Auto: 'auto', 'Salud y seguros': 'escudo', Tarjetas: 'tarjeta',
+  Conectividad: 'wifi', Suscripciones: 'play', 'Trámites': 'doc', Otros: 'punto' };
+export function iconoDe(c) {
+  if (c.preset && ICONO_SERVICIO[c.preset]) return ICONO_SERVICIO[c.preset];
+  const n = String(c.nombre || '').toLowerCase();
+  if (/tarjeta|visa|master|amex/.test(n)) return 'tarjeta';
+  if (/expensa|alquiler|consorcio/.test(n)) return 'casa';
+  if (/universidad|facultad|colegio|escuela|palermo|uba|curso/.test(n)) return 'gorro';
+  if (/luz|electric/.test(n)) return 'rayo';
+  if (/agua/.test(n)) return 'gota';
+  if (/gas/.test(n)) return 'llama';
+  return ICONO_CATEGORIA[c.categoria] || 'punto';
+}
+
 /* Los que aparecen primero en el primer uso: lo que casi toda casa paga. */
 export const PRIMER_USO = ['edenor', 'edesur', 'metrogas', 'naturgy', 'aysa', 'abl', 'expensas', 'alquiler', 'internet', 'celular', 'prepaga', 'seguro-auto', 'patente', 'vtv', 'netflix', 'spotify', 'disney', 'monotributo'];
 

@@ -1,7 +1,7 @@
 /* Vencimientos de la Casa (ob-021) · interfaz. Las cuentas están en calculos.js.
    Los datos viven solo en este dispositivo (localStorage). */
 import * as V from './calculos.js';
-import { SERVICIOS, CATEGORIAS, PRIMER_USO, PRECIOS, servicio, monograma, tintaSobre } from './servicios.js';
+import { SERVICIOS, CATEGORIAS, PRIMER_USO, PRECIOS, servicio, monograma, tintaSobre, iconoDe } from './servicios.js';
 import { datosEjemplo } from './ejemplo.js';
 import { propuestaDesde, cuentaQueCoincide } from './factura.js';
 import { cuentasDesdeMails } from './correo-lector.js';
@@ -40,9 +40,12 @@ const ui = { vista: 'inicio', mes: V.mesDe(hoy), mesCal: V.mesDe(hoy), dia: hoy,
   onb: { paso: 1, sel: new Set() }, borrarArmado: null };
 
 /* ── piezas ── */
+/* Ícono del servicio sobre su color; si no hay ícono propio, las iniciales. */
 function avatar(c, extra = '') {
   const color = c.color || servicio(c.preset)?.color || '#0D0D0E';
-  return `<span class="av ${extra}" style="--c:${esc(color)};--t:${tintaSobre(color)}" aria-hidden="true">${esc(monograma(c.nombre))}</span>`;
+  const ic = iconoDe(c);
+  const dentro = ic && ic !== 'punto' ? `<svg><use href="#c-${ic}"/></svg>` : esc(monograma(c.nombre));
+  return `<span class="av ${extra}" style="--c:${esc(color)};--t:${tintaSobre(color)}" aria-hidden="true">${dentro}</span>`;
 }
 function textoEstado(o) {
   const c = o.cuenta;
@@ -55,18 +58,20 @@ function textoEstado(o) {
     case 'pagado': t = c.tipo === 'tramite' ? `Hecho ${o.pago?.fecha ? V.fechaCorta(o.pago.fecha) : ''}` : `Pagado ${o.pago?.fecha ? V.fechaCorta(o.pago.fecha) : ''}`; break;
     case 'debitado': t = V.difDias(o.vence, hoy) <= 2 ? `Se debitó ${V.cuandoEs(o.vence, hoy)} · revisá tu cuenta` : `Débito automático · ${V.fechaCorta(o.vence)}`; break;
     case 'salteado': t = 'Este período no vino'; break;
-    default: t = `${cap(V.fechaCorta(o.vence))} · ${V.cuandoEs(o.vence, hoy)}${deb ? ' · débito' : ''}`;
+    default: {
+      const n = V.difDias(hoy, o.vence);
+      t = n <= 14 ? `${cap(V.fechaCorta(o.vence))} · ${V.cuandoEs(o.vence, hoy)}` : `${cap(V.fechaCorta(o.vence))} de ${V.nombreMes(V.mesDe(o.vence))}`;
+    }
   }
   if (o.cuota) t += ` · cuota ${o.cuota}/${c.cuotas}`;
   if (o.ajusta && !o.resuelto) t += ' · se ajusta';
-  if (o.aConfirmar) t += ' · fecha a confirmar';
   return t.trim();
 }
 function montoFila(o) {
   if (o.cuenta.tipo === 'tramite') return '<span class="fila-monto"><small>Trámite</small></span>';
   if (o.monto == null) return '<span class="fila-monto"><small>Sin monto</small></span>';
-  if (o.cuenta.enTarjeta) return `<span class="fila-monto"><span class="aprox">${o.origen === 'estimado' ? '≈ ' : ''}</span>${plata(o.monto, o.moneda)}<small>en la tarjeta</small></span>`;
-  if (o.origen === 'estimado') return `<span class="fila-monto"><span class="aprox">≈</span> ${plata(o.monto, o.moneda)}<small>estimado</small></span>`;
+  if (o.cuenta.enTarjeta) return `<span class="fila-monto"><span class="aprox">${o.origen === 'estimado' ? '≈ ' : ''}</span>${plata(o.monto, o.moneda)}</span>`;
+  if (o.origen === 'estimado') return `<span class="fila-monto"><span class="aprox">≈</span> ${plata(o.monto, o.moneda)}</span>`;
   return `<span class="fila-monto">${plata(o.monto, o.moneda)}${o.origen === 'factura' && !o.resuelto ? '<small>factura</small>' : ''}</span>`;
 }
 function fila(o) {
@@ -76,7 +81,7 @@ function fila(o) {
   return `<li class="fila est-${o.estado}${res ? ' res' : ''}">
     <button type="button" class="fila-main" data-acc="ver" data-id="${esc(o.id)}">
       ${avatar(o.cuenta)}
-      <span class="fila-txt"><b>${nombre}</b><small>${esc(textoEstado(o))}</small></span>
+      <span class="fila-txt"><b>${nombre}</b><small>${esc(textoEstado(o))}</small>${etiquetas(o)}</span>
       ${montoFila(o)}
     </button>
     <button type="button" class="tick" data-acc="${o.estado === 'debitado' ? 'ver' : 'tick'}" data-id="${esc(o.id)}" aria-label="${accTick}" aria-pressed="${res}"><span><svg><use href="#i-check"/></svg></span></button>
@@ -87,71 +92,122 @@ const grupo = (titulo, ocs, clase = '', derecha = '') => !ocs.length ? '' : `
   <ul class="lista">${ocs.map(fila).join('')}</ul></div>`;
 const sumaARS = ocs => ocs.reduce((s, o) => s + (o.moneda === 'ARS' && o.monto != null ? o.monto : 0), 0);
 
-/* ── vista: este mes ── */
+/* ── vista: lo que viene ──
+   Ventana corrida (no el mes calendario): lo vencido, hoy y los próximos 45 días.
+   El número grande es lo que hay que pagar en los próximos 30 días; lo que va en una
+   tarjeta no se suma aparte (ya está en el total de la tarjeta). */
+const ILUS_LISTO = `<svg class="ilus" viewBox="0 0 160 120" aria-hidden="true"><circle cx="80" cy="62" r="46" fill="var(--ok)"/><path d="M58 64l14 14 30-32" fill="none" stroke="#0D0D0E" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="26" cy="30" r="5" fill="var(--azul)"/><circle cx="138" cy="24" r="4" fill="var(--mal)"/><circle cx="142" cy="92" r="6" fill="var(--azul)"/><circle cx="18" cy="96" r="3.5" fill="#0D0D0E"/></svg>`;
+const ILUS_CASA = `<svg class="ilus" viewBox="0 0 220 150" aria-hidden="true"><rect x="0" y="128" width="220" height="3" rx="1.5" fill="currentColor" opacity=".15"/><path d="M40 128V70l50-40 50 40v58z" fill="#F2EFE8" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M30 76l60-50 60 50" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="78" y="96" width="24" height="32" rx="3" fill="var(--azul)"/><rect x="55" y="84" width="16" height="16" rx="2" fill="var(--ok)" stroke="currentColor" stroke-width="2.5"/><rect x="109" y="84" width="16" height="16" rx="2" fill="var(--ok)" stroke="currentColor" stroke-width="2.5"/><g transform="translate(148 40)"><rect width="56" height="52" rx="8" fill="#fff" stroke="currentColor" stroke-width="3"/><path d="M0 16h56" stroke="currentColor" stroke-width="3"/><path d="M14 0v10M42 0v10" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="18" cy="30" r="4" fill="var(--mal)"/><circle cx="32" cy="30" r="4" fill="currentColor" opacity=".25"/><circle cx="18" cy="42" r="4" fill="currentColor" opacity=".25"/><circle cx="32" cy="42" r="4" fill="var(--azul)"/></g><g transform="translate(14 22)"><path d="M14 30V18a10 10 0 0 1 20 0v12l4 5H10z" fill="var(--ok)" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M20 39h8" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></g></svg>`;
+
+function etiquetas(o) {
+  const c = o.cuenta, t = [];
+  if (o.resuelto) return '';
+  if (c.enTarjeta) t.push(['tarjeta', 'Va en la tarjeta']);
+  else if (c.debito) t.push(['auto', 'Se debita solo']);
+  if (o.origen === 'estimado' && !c.enTarjeta) t.push(['est', 'Monto estimado']);
+  if (o.aConfirmar) t.push(['est', 'Fecha a confirmar']);
+  if (o.monto == null && c.tipo !== 'tramite') t.push(['falta', 'Sin monto · tocá para cargarlo']);
+  if (o.segundo && (o.estado === 'segundo')) t.push(['mal', 'Con recargo']);
+  return t.length ? `<span class="tags">${t.map(([k, x]) => `<span class="tag tag-${k}">${x}</span>`).join('')}</span>` : '';
+}
+function marcarFuente(k) {
+  d = { ...d, fuentes: { ...(d.fuentes || {}), [k]: hoy } };
+  try { localStorage.setItem(CLAVE, JSON.stringify(d)); } catch {}
+}
+function completaTuCasa() {
+  const tiene = re => d.cuentas.some(c => re.test(`${c.preset || ''} ${c.nombre} ${c.categoria}`.toLowerCase()));
+  const pasos = [
+    { ok: tiene(/tarjetas/), ic: 'tarjeta', t: 'Subí el resumen de tu tarjeta', s: 'Trae suscripciones y débitos con su monto.', acc: 'resumen' },
+    { ok: !!d.fuentes?.mail, ic: 'sobre', t: 'Buscá tus facturas en el mail', s: 'Luz, gas, agua, celular: con fecha y monto.', acc: 'correo' },
+    { ok: tiene(/expensa|alquiler|hipoteca/), ic: 'casa', t: 'Sumá expensas o alquiler', s: 'Casi nunca llegan por mail: cargalo en un toque.', acc: 'elegir', s2: 'expensas' },
+    { ok: !!d.fuentes?.ics, ic: 'campana', t: 'Que te avise el celular', s: 'Sumá todo al calendario, con aviso antes.', acc: 'ics' },
+  ];
+  const hechos = pasos.filter(p => p.ok).length;
+  if (hechos === pasos.length) return '';
+  return `<div class="completa">
+    <div class="completa-cab"><div><span class="mono">Completá tu casa</span><b>${hechos} de ${pasos.length} listos</b></div>
+      <span class="anillo" style="--p:${hechos / pasos.length}" aria-hidden="true"></span></div>
+    <ol>${pasos.map(p => `<li class="${p.ok ? 'ok' : ''}">
+      <button type="button" data-acc="${p.ok ? '' : p.acc}" ${p.s2 ? `data-s="${p.s2}"` : ''} ${p.ok ? 'disabled' : ''}>
+        <span class="paso-ic">${p.ok ? '<svg><use href="#i-check"/></svg>' : `<svg><use href="#${p.ic === 'sobre' || p.ic === 'campana' ? 'i-' : 'c-'}${p.ic}"/></svg>`}</span>
+        <span class="paso-tx"><b>${p.t}</b><small>${p.ok ? 'Listo' : p.s}</small></span>
+        ${p.ok ? '' : '<svg class="flecha"><use href="#i-der"/></svg>'}
+      </button></li>`).join('')}</ol>
+  </div>`;
+}
+
 function vistaInicio() {
   const el = $id('v-inicio');
   if (!d.cuentas.length) { el.classList.remove('lleno'); el.innerHTML = primerUso(); return; }
   el.classList.add('lleno');
-  const actual = V.mesDe(hoy);
-  const esActual = ui.mes === actual;
-  const r = V.resumenMes(d, ui.mes, hoy);
-  const previos = esActual ? V.atrasados(d, hoy).filter(o => V.mesDe(o.vence) < actual) : [];
-  const pend = r.ars.pendiente;
+  const fin = V.sumarDias(hoy, 44);
+  const atras = V.atrasados(d, hoy);
+  const ventana = V.ocurrenciasEntre(d, hoy, fin, hoy);
+  const abiertos = [...atras, ...ventana.filter(o => !o.resuelto)];
+  const en30 = abiertos.filter(o => V.difDias(hoy, o.vence) <= 30 && !o.cuenta.enTarjeta);
+  const total30 = sumaARS(en30);
+  const sinMonto = en30.filter(o => o.monto == null && o.cuenta.tipo !== 'tramite').length;
+  const usd30 = en30.reduce((a, o) => a + (o.moneda === 'USD' && o.monto ? o.monto : 0), 0);
+  const r = V.resumenMes(d, V.mesDe(hoy), hoy);
   const pct = r.ars.total ? Math.round(r.ars.pagado / r.ars.total * 100) : 0;
-  const [a, m] = ui.mes.split('-');
-  const tituloMes = `${V.nombreMes(ui.mes)}${a !== actual.slice(0, 4) ? ` <span class="it">${a}</span>` : ''}`;
-  const etiqueta = ui.mes < actual ? 'Quedó sin pagar' : 'Te falta pagar';
-  const limite = V.sumarMesesMes(actual, 12);
+  const prox = abiertos.find(o => !o.cuenta.enTarjeta) || abiertos[0] || null;
+  const hoyTxt = `Hoy, ${['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'][V.diaSemana(hoy)]} ${V.fechaLarga(hoy)}`;
 
   let html = `<div class="col-a">
+  <div class="vt vt-inicio"><div><h1 id="t-inicio">Lo que <span class="it">viene</span></h1><p>${hoyTxt}</p></div></div>
   <div class="mes">
-    <div class="mes-nav">
-      <button class="ic" type="button" data-acc="mes" data-d="-1" aria-label="Mes anterior"><svg><use href="#i-izq"/></svg></button>
-      <h1 id="t-inicio">${tituloMes}${esActual ? '' : ''}</h1>
-      <button class="ic" type="button" data-acc="mes" data-d="1" aria-label="Mes siguiente" ${ui.mes >= limite ? 'disabled' : ''}><svg><use href="#i-der"/></svg></button>
+    <span class="mono etq">Próximos 30 días</span>
+    <p class="grande${!en30.length ? ' cero' : ''}">${!en30.length ? 'Nada' : total30 ? plata(total30) : `${en30.length} por pagar`}</p>
+    <p class="sub">${en30.length ? `${en30.length} vencimiento${en30.length > 1 ? 's' : ''}${sinMonto ? ` · ${sinMonto} todavía sin monto` : ''}` : 'No vence nada en los próximos 30 días.'}${usd30 ? ` · y ${plata(usd30, 'USD')}` : ''}</p>
+    <div class="mes-pie">
+      <div class="barra" role="progressbar" aria-label="Pagado de ${V.nombreMes(V.mesDe(hoy))}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
+      <span class="mono">${cap(V.nombreMes(V.mesDe(hoy)))}: ${r.ars.total ? `pagaste ${plata(r.ars.pagado)} de ${plata(r.ars.total)}` : 'sin montos cargados'}</span>
     </div>
-    <span class="mono etq">${etiqueta}${esActual ? ' este mes' : ''}</span>
-    <p class="grande${pend === 0 && r.ars.total ? ' cero' : ''}">${!r.ars.total ? (r.cantPendientes ? `${r.cantPendientes} por pagar` : 'Nada') : pend === 0 ? 'Nada' : plata(pend)}</p>
-    <p class="sub">${r.ars.total ? `de <b>${plata(r.ars.total)}</b> en ${(n => `${n} vencimiento${n === 1 ? '' : 's'}`)(r.ocurrencias.filter(o => o.estado !== 'salteado').length)} · pagaste <b>${plata(r.ars.pagado)}</b>` : 'Sin montos cargados para este mes.'}</p>
-    <div class="barra" role="progressbar" aria-label="Pagado del mes" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div>
-    <div class="pie"><span class="mono">${pct}% pagado</span><span class="mono">${r.cantPendientes ? `${r.cantPendientes} pendiente${r.cantPendientes > 1 ? 's' : ''}` : 'Todo al día'}</span></div>
-    ${r.usd.total ? `<p class="usd">En dólares: falta <b>${plata(r.usd.pendiente, 'USD')}</b> de ${plata(r.usd.total, 'USD')}</p>` : ''}
-    ${r.ars.estimados ? `<p class="sub" style="margin-top:10px">≈ ${r.ars.estimados === 1 ? 'Un monto es estimado' : `${r.ars.estimados} montos son estimados`}: se ajustan cuando marcás pagado.</p>` : ''}
   </div>`;
-  if (previos.length) {
-    html += `<div class="aviso mal"><svg><use href="#i-alerta"/></svg><p><b>${previos.length === 1 ? 'Quedó 1 vencimiento' : `Quedaron ${previos.length} vencimientos`} sin pagar de meses anteriores</b>${sumaARS(previos) ? ` (${plata(sumaARS(previos))})` : ''}. ${previos.length === 1 ? 'Está' : 'Están'} arriba de todo.</p></div>`;
+  if (prox) {
+    const c = prox.cuenta;
+    const vencido = prox.estado === 'vencido' || prox.estado === 'segundo';
+    html += `<div class="spot${vencido ? ' spot-mal' : ''}">
+      <span class="mono">${vencido ? 'Vencido' : 'Lo próximo'}</span>
+      <div class="spot-fila">${avatar(c, 'av-xl')}
+        <div class="spot-tx"><b>${esc(c.nombre)}</b><small>${esc(textoEstado(prox))}</small>${etiquetas(prox)}</div>
+        <div class="spot-monto">${prox.monto != null ? `${prox.origen === 'estimado' ? '<span class="aprox">≈</span> ' : ''}${plata(prox.monto, prox.moneda)}` : '<small>Sin monto</small>'}</div>
+      </div>
+      <div class="acciones dos"><button type="button" class="bt prim" data-acc="tick" data-id="${esc(prox.id)}"><svg><use href="#i-check"/></svg> ${c.tipo === 'tramite' ? 'Ya lo hice' : 'Ya lo pagué'}</button><button type="button" class="bt sec" data-acc="ver" data-id="${esc(prox.id)}">Ver detalle</button></div>
+    </div>`;
   }
-  if (d.ejemplo) {
-    html += `<div class="aviso info"><p><b>Estás viendo un ejemplo.</b> Probá marcar pagado, mirá el calendario y los números.</p><button class="btn-txt" type="button" data-acc="salir-ejemplo">Empezar con lo mío</button></div>`;
-  } else if (necesitaRespaldo()) {
-    html += `<div class="aviso info"><svg><use href="#i-candado"/></svg><p>Tus datos viven solo en este dispositivo. Guardá una copia por si cambiás de celular.</p><button class="btn-txt" type="button" data-acc="respaldo">Descargar</button></div>`;
-  }
+  if (d.ejemplo) html += `<div class="aviso info"><p><b>Estás viendo un ejemplo.</b> Probá marcar pagado, mirá el calendario y los números.</p><button class="btn-txt" type="button" data-acc="salir-ejemplo">Empezar con lo mío</button></div>`;
+  else if (necesitaRespaldo()) html += `<div class="aviso info"><svg><use href="#i-candado"/></svg><p>Tus datos viven solo en este dispositivo. Guardá una copia por si cambiás de celular.</p><button class="btn-txt" type="button" data-acc="respaldo">Descargar</button></div>`;
   if (!almacenOK) html += `<div class="aviso mal"><svg><use href="#i-alerta"/></svg><p>Este navegador no deja guardar datos (¿modo incógnito?). Lo que cargues se pierde al cerrar.</p></div>`;
+  if (!d.ejemplo) html += completaTuCasa();
   html += `</div><div class="col-b">`;
 
-  const ocs = r.ocurrencias;
-  const res = ocs.filter(o => o.resuelto);
-  if (esActual) {
-    const venc = [...previos, ...ocs.filter(o => o.estado === 'vencido' || o.estado === 'segundo')];
-    const hoyL = ocs.filter(o => o.estado === 'hoy');
-    const sem = ocs.filter(o => o.estado === 'proximo');
-    const despues = ocs.filter(o => o.estado === 'pendiente');
-    html += grupo('Vencido', venc, 'vencido', sumaARS(venc) ? plata(sumaARS(venc)) : '');
-    html += grupo('Hoy', hoyL, '', sumaARS(hoyL) ? plata(sumaARS(hoyL)) : '');
-    html += grupo('Esta semana', sem, '', sumaARS(sem) ? plata(sumaARS(sem)) : '');
-    html += grupo('Más adelante', despues, '', sumaARS(despues) ? plata(sumaARS(despues)) : '');
-    if (!venc.length && !hoyL.length && !sem.length && !despues.length) {
-      html += `<div class="vacio" style="padding-top:12px"><p class="display">Todo <span class="it">pago.</span></p><p class="lead">No te queda nada por pagar este mes. El próximo vencimiento está en el mes que viene.</p></div>`;
-    }
-  } else {
-    const pen = ocs.filter(o => !o.resuelto);
-    html += grupo(ui.mes < actual ? 'Sin pagar' : 'Por pagar', pen, ui.mes < actual ? 'vencido' : '', sumaARS(pen) ? plata(sumaARS(pen)) : '');
-    if (!ocs.length) html += `<div class="vacio"><p class="lead">No hay vencimientos en ${V.nombreMes(ui.mes)}.</p></div>`;
+  /* línea de tiempo */
+  const resto = abiertos.filter(o => o !== prox);
+  const dias = o => V.difDias(hoy, o.vence);
+  const grupos = [
+    ['Vencido', resto.filter(o => o.vence < hoy), 'vencido'],
+    ['Hoy', resto.filter(o => dias(o) === 0), ''],
+    ['Esta semana', resto.filter(o => dias(o) >= 1 && dias(o) <= 7), ''],
+    ['La semana que viene', resto.filter(o => dias(o) >= 8 && dias(o) <= 14), ''],
+    ['Más adelante', resto.filter(o => dias(o) >= 15), ''],
+  ];
+  for (const [t, ocs, cl] of grupos) html += grupo(t, ocs, cl, sumaARS(ocs.filter(o => !o.cuenta.enTarjeta)) ? plata(sumaARS(ocs.filter(o => !o.cuenta.enTarjeta))) : '');
+  if (!abiertos.length) html += `<div class="vacio vacio-ilus">${ILUS_LISTO}<p class="display">Todo <span class="it">al día.</span></p><p class="lead">No tenés nada pendiente en los próximos 45 días.</p></div>`;
+
+  /* por categoría, próximos 30 días */
+  const porCat = {};
+  for (const o of en30) if (o.monto != null && o.moneda === 'ARS') (porCat[o.cuenta.categoria || 'Otros'] ||= { n: 0, m: 0, c: o.cuenta }).m += o.monto;
+  const cats = Object.entries(porCat).sort((a, b) => b[1].m - a[1].m);
+  if (cats.length > 1) html += `<div class="grupo"><h2><span class="mono">En qué se va · 30 días</span></h2><div class="cat-strip">${cats.map(([k, v]) =>
+    `<div class="cat-chip">${avatar({ nombre: k, categoria: k, color: k === 'Tarjetas' ? '#3047FF' : '#0D0D0E' }, 'av-s')}<span><small>${esc(k)}</small><b>${plata(v.m)}</b></span></div>`).join('')}</div></div>`;
+
+  const resueltos = ventana.filter(o => o.resuelto).concat(V.ocurrenciasEntre(d, V.sumarDias(hoy, -14), V.sumarDias(hoy, -1), hoy).filter(o => o.resuelto));
+  if (resueltos.length) {
+    if (ui.resueltos) html += grupo('Ya resuelto', resueltos, '', '');
+    else html += `<div class="grupo"><button type="button" class="mas-res" data-acc="ver-resueltos"><svg><use href="#i-check"/></svg> Ya resolviste ${resueltos.length} en estos días <svg><use href="#i-der"/></svg></button></div>`;
   }
-  if (res.length) {
-    if (ui.resueltos || !esActual) html += grupo('Resuelto', res, '', plata(sumaARS(res)));
-    else html += `<div class="grupo"><button type="button" class="mas-res" data-acc="ver-resueltos">Ver ${res.length} resuelto${res.length > 1 ? 's' : ''} (${plata(sumaARS(res))}) <svg><use href="#i-der"/></svg></button></div>`;
-  }
+  html += `<div class="grupo"><button type="button" class="mas-res" data-acc="ir" data-v="calendario"><svg><use href="#i-cal"/></svg> Ver mes por mes en el calendario</button></div>`;
   html += '</div>';
   el.innerHTML = html;
 }
@@ -169,6 +225,7 @@ function primerUso() {
     const chips = PRIMER_USO.map(servicio).filter(Boolean).map(s =>
       `<button type="button" class="vchip" data-acc="onb-sel" data-s="${s.id}" aria-pressed="${o.sel.has(s.id)}">${esc(s.nombre)}</button>`).join('');
     return `<div class="vacio">
+      ${ILUS_CASA}
       <h1 class="display" id="t-inicio">Todo lo que <span class="it">vence,</span> en un lugar.</h1>
       <p class="lead">Luz, gas, ABL, expensas, la VTV. Te avisa antes y te dice cuánto te falta pagar este mes.</p>
     </div>
@@ -747,6 +804,7 @@ async function buscarCorreo(proveedor) {
     abrir('No se pudo buscar', `<p class="nota">${esc(e.message || 'No pudimos revisar el mail.')}</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="correo">Probar de nuevo</button><button type="button" class="bt sec ancho" data-acc="leer">Sacarle una foto a una factura</button></div>`);
     return;
   }
+  marcarFuente('mail');
   encontrados = cuentasDesdeMails(mails, hoy);
   mostrarEncontrados(`Revisamos ${mails.length} mails.`, `Revisamos ${mails.length} mails y no encontramos facturas con fecha de vencimiento. Puede que te lleguen a otro mail o en papel.`);
 }
@@ -849,6 +907,7 @@ function descargarICS(cuentaId = null) {
   const c = cuentaId && d.cuentas.find(x => x.id === cuentaId);
   const slug = c ? c.nombre.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') : 'todo';
   bajar(`vencimientos-${slug}.ics`, texto, 'text/calendar;charset=utf-8');
+  if (!cuentaId) { marcarFuente('ics'); render(); }
   toast(`${eventos} vencimiento${eventos > 1 ? 's' : ''} listos para tu calendario. Abrí el archivo para sumarlos.`, [], 6000);
 }
 function descargarRespaldo() {
@@ -940,6 +999,7 @@ document.addEventListener('click', e => {
     case 'ver': verOcurrencia(b.dataset.id); break;
     case 'tick': tick(b.dataset.id, b); break;
     case 'ver-resueltos': ui.resueltos = true; render(); break;
+    case 'ir': irA(b.dataset.v); break;
     case 'cuenta': verCuenta(b.dataset.c); break;
     case 'editar': { const c = d.cuentas.find(x => x.id === b.dataset.c); if (c) abrirForm(c, false); break; }
     case 'borrar': {

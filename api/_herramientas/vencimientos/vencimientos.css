@@ -145,6 +145,63 @@ main{max-width:760px;margin:0 auto;padding:4px 16px 24px;outline:none}
 
 .diag{white-space:pre-wrap;word-break:break-all;font-family:var(--mono);font-size:11.5px;background:#fff;border:1px solid var(--linea);border-radius:10px;padding:10px;margin:0 0 12px}
 
+/* ── inicio: lo que viene ── */
+.vt-inicio{margin-top:6px}
+.vt-inicio h1{font-size:clamp(34px,9vw,48px)}
+.av svg{width:22px;height:22px;stroke:currentColor;stroke-width:1.9}
+.av-xl{width:56px;height:56px;border-radius:16px}
+.av-xl svg{width:28px;height:28px}
+.av-s{width:34px;height:34px;border-radius:10px}
+.av-s svg{width:18px;height:18px}
+.mes-pie{display:grid;gap:8px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(242,239,232,.14)}
+.mes-pie .barra{margin:0}
+.mes-pie .mono{color:rgba(242,239,232,.62);font-size:10.5px}
+.spot{background:var(--papel);border-radius:22px;box-shadow:var(--sombra);padding:16px;margin-top:12px;border:1.5px solid var(--azul)}
+.spot.spot-mal{border-color:var(--mal)}
+.spot>.mono{color:var(--azul);font-weight:500}
+.spot.spot-mal>.mono{color:var(--malT)}
+.spot-fila{display:flex;gap:14px;align-items:center;margin:10px 0 14px}
+.spot-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.spot-tx b{font-size:19px;font-weight:700;letter-spacing:-.02em;line-height:1.15}
+.spot-tx small{color:var(--suave);font-size:13.5px}
+.spot-monto{font-family:var(--mono);font-size:17px;font-weight:500;font-variant-numeric:tabular-nums;text-align:right;flex:none}
+.spot-monto .aprox{color:var(--suave)}
+.spot .bt{min-height:48px;font-size:15px}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:4px}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;line-height:1;padding:5px 8px;border-radius:99px;background:var(--fondo);color:var(--suave);white-space:nowrap}
+.tag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;opacity:.8}
+.tag-auto{background:#E9ECFF;color:#2A3BCC}
+.tag-tarjeta{background:#EDEAE2;color:#4A4842}
+.tag-est{background:#FFF4CC;color:#7A5A00}
+.tag-falta{background:#FFE2DA;color:#8F2412}
+.tag-mal{background:var(--mal);color:#fff}
+.fila-main{align-items:flex-start}
+.fila-main .av{margin-top:2px}
+.fila-monto{align-self:center}
+.completa{background:var(--papel);border-radius:22px;box-shadow:var(--sombra);padding:16px;margin-top:12px}
+.completa-cab{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.completa-cab b{display:block;font-size:17px;font-weight:700;margin-top:3px}
+.anillo{--p:0;width:42px;height:42px;border-radius:50%;flex:none;background:conic-gradient(var(--azul) calc(var(--p) * 360deg),var(--linea) 0);-webkit-mask:radial-gradient(circle,transparent 13px,#000 14px);mask:radial-gradient(circle,transparent 13px,#000 14px)}
+.completa ol{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.completa li button{width:100%;display:flex;align-items:center;gap:12px;padding:10px;border-radius:14px;text-align:left;min-height:58px;transition:background .2s}
+.completa li button:hover{background:var(--fondo)}
+.completa li.ok button{opacity:.6;cursor:default}
+.paso-ic{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;flex:none;background:var(--fondo);color:var(--tinta)}
+.paso-ic svg{width:20px;height:20px}
+.completa li.ok .paso-ic{background:var(--ok)}
+.paso-tx{flex:1;min-width:0}
+.paso-tx b{display:block;font-size:14.5px;font-weight:600}
+.paso-tx small{display:block;font-size:12.5px;color:var(--suave);margin-top:1px}
+.completa li.ok .paso-tx b{text-decoration:line-through;text-decoration-thickness:1.5px}
+.flecha{width:18px;height:18px;color:var(--suave);flex:none}
+.cat-strip{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.cat-chip{display:flex;align-items:center;gap:10px;background:var(--papel);border-radius:14px;padding:10px;box-shadow:var(--sombra)}
+.cat-chip small{display:block;font-size:11.5px;color:var(--suave)}
+.cat-chip b{display:block;font-family:var(--mono);font-size:13.5px;font-weight:500}
+.vc .ilus{width:min(220px,70%);height:auto;stroke:none;margin:0 auto 14px;display:block;color:var(--tinta)}
+.vc .vacio-ilus .ilus{width:140px}
+.mas-res svg{width:18px;height:18px}
+
 /* ── botones ── */
 .bt{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:52px;padding:14px 20px;border-radius:14px;font-weight:600;font-size:16px;transition:transform .25s var(--ease),background .2s,opacity .2s;text-decoration:none}
 .bt:active{transform:scale(.98)}
