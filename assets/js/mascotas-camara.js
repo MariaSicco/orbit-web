@@ -150,7 +150,7 @@ async function ping() {
   const tok = store.get()?.token; if (!tok || !S.started) return;
   {
     try {
-      const r = await api('ping', { method: 'POST', token: tok }); if (r.status === 401) return revoked();
+      const r = await api('ping', { method: 'POST', token: tok, body: { listen: S.listen } }); if (r.status === 401) return revoked();
       /* la cambiaron desde "Me fui": se aplica acá */
       if (r.d.sens && r.d.sens !== S.sens) { S.sens = r.d.sens; document.querySelectorAll('input[name=sens]').forEach(x => { x.checked = x.value === S.sens; }); listen(); }
       flushQueue(); paint();
@@ -167,7 +167,7 @@ async function listen() {
     S.listen = 'cargando'; paint();
     const sens = S.sens;
     const h = await fn({ sensitivity: sens, onEvent: onSound, onLevel: l => { S.level = l; meter(); },
-      onState: s => { S.listen = s.state || 'escuchando'; S.listenMsg = s.message || ''; paint(); } });
+      onState: s => { S.listen = s.state || 'escuchando'; S.listenMsg = s.message || ''; paint(); listenChanged(); } });
     if (!S.started) { try { h.stop?.(); } catch {} return; }
     S.audio = h; S.audioSens = sens;
     S.listen = 'escuchando'; paint();
@@ -184,6 +184,13 @@ function bindSens() {
     const t = store.get()?.token; if (t) api('csens', { method: 'POST', token: t, body: { sens: r.value } }).catch(() => {});
     if (S.started && S.audioSens !== S.sens) listen();
   }));
+}
+/* la escucha cambió (pausa por pantalla bloqueada, error): se avisa a la app en un ping, como mucho uno cada 15 s.
+   Mientras le hablan, la pausa es a propósito: no se reporta */
+let lastSent = '', listenTimer = null;
+function listenChanged() {
+  clearTimeout(listenTimer);
+  listenTimer = setTimeout(() => { if (S.started && !S.talking && S.listen !== lastSent) { lastSent = S.listen; ping(); } }, 15000);
 }
 function onTalk(t) {
   clearTimeout(S.talkTimer);

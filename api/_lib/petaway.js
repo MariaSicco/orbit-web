@@ -130,7 +130,8 @@ export async function revokeCamera(email, camId) {
 /* lo que ve la dueña en Cuenta → Cámaras (nunca el hash) */
 export const SENS = ['baja', 'media', 'alta'];
 const sensOf = c => SENS.includes(c?.sens) ? c.sens : 'media';
-export const publicCam = c => ({ camId: c.camId, petId: c.petId, name: c.name, at: c.at, seen: c.seen || c.at, sens: sensOf(c) });
+export const LISTEN = ['escuchando', 'pausado', 'error', 'cargando', 'detenido', 'off'];
+export const publicCam = c => ({ camId: c.camId, petId: c.petId, name: c.name, at: c.at, seen: c.seen || c.at, sens: sensOf(c), listen: LISTEN.includes(c.listen) ? c.listen : '' });
 /* sensibilidad de la detección (la elige la persona en la cámara o en "Me fui"; "media" por defecto) */
 export async function setCamSens(email, camId, sens) {
   if (!SENS.includes(sens)) return false;
@@ -364,7 +365,7 @@ export async function eventsOf(email, since = 0) {
    Sin sesión (celu cámara):
    POST ?cam=redeem {code, label}            → { token, camId, pet }   (tope por IP: 10 por hora)
    GET  ?cam=me      (Bearer token)          → { camId, name, pet, away }
-   POST ?cam=ping    (Bearer token)          → { ok, sens }            (cada 5 min; 1 lectura + 1 escritura de "visto")
+   POST ?cam=ping    (Bearer token) {listen?} → { ok, sens }           (cada 5 min y al cambiar la escucha; 1 lectura + 1 escritura)
    POST ?cam=unpair  (Bearer token)          → { ok }            (el celu cámara se desvincula solo)
    POST ?cam=csens   (Bearer token) {sens}   → { ok }            (sensibilidad elegida en la cámara)
    POST ?cam=event   (Bearer token) {type, start, dur, conf} → { ok, merged, notify }  (solo el evento: el audio nunca viaja)
@@ -408,7 +409,13 @@ export async function handleCam(req, res, deps = {}) {
     const touch = async () => { if (me && now - Date.parse(me.seen || 0) > 4 * 60e3) { me.seen = new Date(now).toISOString(); await kvSet(camListKey(cam.email), cams); } };
     if (act === 'me') { await touch(); return res.status(200).json({ camId: cam.camId, name: me?.name || '', pet, away, sens: sensOf(me) }); }
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
-    if (act === 'ping') { await touch(); return res.status(200).json({ ok: true, sens: sensOf(me) }); }
+    if (act === 'ping') {
+      /* el estado de la escucha viaja en el ping: si cambió, se escribe aunque no hayan pasado 4 min */
+      const b = await readBody(req); const L = LISTEN.includes(b?.listen) ? b.listen : null;
+      if (me && L && me.listen !== L) { me.listen = L; me.seen = new Date(now).toISOString(); await kvSet(camListKey(cam.email), cams); }
+      else await touch();
+      return res.status(200).json({ ok: true, sens: sensOf(me) });
+    }
     if (act === 'csens') { const b = await readBody(req); return (await setCamSens(cam.email, cam.camId, b.sens)) ? res.status(200).json({ ok: true, sens: b.sens }) : res.status(400).json({ error: 'invalid' }); }
     /* "Desvincular este celu" desde la cámara misma */
     if (act === 'unpair') { await revokeCamera(cam.email, cam.camId); return res.status(200).json({ ok: true }); }

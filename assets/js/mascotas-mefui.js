@@ -32,10 +32,70 @@ function lastWalk(p) {
   const t = (p.log || []).filter(l => l.kind === 'paseo').map(l => Date.parse(l.at)).filter(Number.isFinite).sort((a, b) => b - a)[0];
   return t || null;
 }
+/* "Aika está sola hace 1 h 34 min" / "Aika y Toto están solos hace 2 h" */
+function estaSola(pets, ms) {
+  const names = pets.map(p => p.name).filter(Boolean);
+  if (!names.length) return `Saliste hace ${R.dur(ms)}`;
+  const who = names.length === 1 ? names[0] : names.slice(0, -1).join(', ') + ' y ' + names[names.length - 1];
+  const adj = names.length === 1 ? sola(pets[0]) : pets.every(p => p.sex === 'h') ? 'solas' : 'solos';
+  return `${who} ${names.length === 1 ? 'está' : 'están'} ${adj} hace ${R.dur(ms)}`;
+}
 function clockHtml() {
   const a = D().away, pets = awayPets(), ms = R.elapsed(a);
   const p = pets.length === 1 ? pets[0] : null, w = p && lastWalk(p);
-  return `<b>${esc(R.soloText(pets.length ? pets : D().pets, ms))}</b>${w ? ` <span class="mf-sep" aria-hidden="true">·</span> <span>última salida hace ${esc(R.dur(Date.now() - w))}</span>` : ''}`;
+  return `<b>${esc(estaSola(pets.length ? pets : D().pets, ms))}</b>${w ? ` <span class="mf-sep" aria-hidden="true">·</span> <span>última salida hace ${esc(R.dur(Date.now() - w))}</span>` : ''}`;
+}
+
+/* ---------- "Me fui" que interpreta: el estado en frases ----------
+   Checklist, sonidos (de los eventos que ya trae la línea de tiempo) y la cámara (por el último "sigo acá" que guarda
+   el ping cada 5 min: no hay consultas nuevas a KV). */
+const NOUN = { ladrido: ['período de ladridos', 'períodos de ladridos'], aullido: ['período de aullidos', 'períodos de aullidos'], maullido: ['período de maullidos', 'períodos de maullidos'] };
+const minsTxt = ms => { const m = Math.max(1, Math.round(ms / 60e3)); return `${m} ${m === 1 ? 'minuto' : 'minutos'}`; };
+const evEnd = e => Date.parse(e.start) + e.dur * 1000;
+function checkLine(a) {
+  const done = R.CHECKS.filter(([k]) => a.check[k]), miss = R.CHECKS.filter(([k]) => !a.check[k]);
+  if (!done.length) return null;
+  if (!miss.length) return { ic: 'check', tone: 'ok', text: 'Checklist completo' };
+  return { ic: 'alert', tone: 'warn', text: `Checklist: no marcaste ${miss.map(([, l]) => l.toLowerCase()).join(', ')}` };
+}
+function soundLine(since) {
+  const cams = st.cams || [];
+  if (!cams.length || st.events == null) return null;
+  const evs = st.events.filter(e => evEnd(e) >= since);
+  const quiet = (from) => `Sin ladridos ni maullidos en los últimos ${minsTxt(Date.now() - from)}`;
+  if (!evs.length) return { ic: 'check', tone: 'ok', text: since > Date.now() - 864e5 && D().away.on ? quiet(since).replace(/en los últimos .*/, 'desde que saliste') : quiet(since) };
+  const last = evs[evs.length - 1];
+  const ago = Date.now() - evEnd(last);
+  const lastTxt = evText(last);
+  /* lo último fue hace rato: se dice primero que está tranquila */
+  if (ago > 10 * 60e3) return { ic: 'check', tone: 'ok', text: `${quiet(evEnd(last))}. Lo último: ${lastTxt.charAt(0).toLowerCase() + lastTxt.slice(1)}` };
+  return { ic: ICON[last.type] || 'bell', tone: 'warn', text: lastTxt };
+}
+function camLine() {
+  const cams = st.cams || [];
+  if (!cams.length) return null;
+  const on = cams.filter(c => c.online);
+  if (on.length) {
+    const paused = on.every(c => c.listen === 'pausado'), err = on.every(c => c.listen === 'error');
+    return { ic: 'camera', tone: paused || err ? 'warn' : 'ok', text: `Cámara activa · ${err ? 'no está escuchando' : paused ? 'en pausa (pantalla bloqueada o en segundo plano)' : 'escuchando'}${cams.length > 1 ? ` (${on.map(c => c.name).join(', ')})` : ''}` };
+  }
+  const seen = Math.max(...cams.map(c => Date.parse(c.seen) || 0));
+  return { ic: 'alert', tone: 'warn', text: seen ? `Cámara sin conexión desde las ${hm(seen)}` : 'Cámara sin conexión' };
+}
+function statusHtml() {
+  const a = D().away; if (!a.on) return '';
+  const since = Date.parse(a.since);
+  const lines = [checkLine(a), soundLine(since), camLine()].filter(Boolean);
+  if (!lines.length) return '';
+  return `<ul class="mf-lines">${lines.map(l => `<li class="t-${l.tone}">${I(l.ic)}<span>${esc(l.text)}</span></li>`).join('')}</ul>`;
+}
+/* "Se detectaron 3 períodos de ladridos, 7 minutos en total" (+ posibles gemidos o llanto) */
+function summaryText(evs) {
+  if (!evs.length) return '';
+  const by = {}; for (const e of evs) { const k = NOUN[e.type] ? e.type : 'posible'; (by[k] = by[k] || []).push(e); }
+  const parts = Object.entries(by).filter(([k]) => k !== 'posible').map(([k, l]) => `${l.length} ${NOUN[k][l.length === 1 ? 0 : 1]}, ${minsTxt(l.reduce((t, e) => t + e.dur * 1000, 0))} en total`);
+  const pos = by.posible ? `${by.posible.length === 1 ? 'Hubo 1 posible gemido o llanto' : `Hubo ${by.posible.length} posibles gemidos o llantos`} (son los menos seguros: mirá la línea de tiempo).` : '';
+  return (parts.length ? `Se ${parts.length === 1 && by[Object.keys(by).find(k => k !== 'posible')].length === 1 ? 'detectó' : 'detectaron'} ${parts.join('; ')}.` : '') + (pos ? (parts.length ? ' ' : '') + pos : '');
 }
 const alertLine = () => { const h = D().awaySet.alertH; return h ? `Te avisamos si pasa de ${h} h${D().awaySet.sitter && D().awaySet.sitterMail ? ', a vos y a quien la cuida' : ''}.` : 'Sin aviso: solo contamos el tiempo.'; };
 
@@ -48,11 +108,12 @@ function homeCard() {
     const who = one ? `se queda ${esc(one.name)} ${sola(one)}` : 'se quedan solas tus mascotas';
     return `<button class="mf-start span2" data-mf="leave">${bubbleI('home')}<span class="what"><b>Me fui</b><small>Contamos cuánto tiempo ${who}${D().awaySet.alertH ? ` y te avisamos si pasa de ${D().awaySet.alertH} h` : ''}.</small></span>${I('chevron')}</button>`;
   }
-  const cams = (st.cams || []).filter(c => c.online);
+  if ((st.cams || []).length && st.tried !== a.since) { st.tried = a.since; refreshAway(); }
   return `<section class="mf-card span2" aria-labelledby="h-mf">
     <div class="mf-top"><span class="mf-dot" aria-hidden="true"></span><h2 id="h-mf" class="eyebrow">Me fui · en curso</h2></div>
     <p class="mf-clock" data-away-clock>${clockHtml()}</p>
-    <small class="dim">Saliste a las ${hm(Date.parse(a.since))}. ${esc(alertLine())}${cams.length ? ` Cámara activa: ${esc(cams.map(c => c.name).join(', '))}.` : ''}</small>
+    ${statusHtml()}
+    <small class="dim">Saliste a las ${hm(Date.parse(a.since))}. ${esc(alertLine())}</small>
     <div class="btns"><button class="btn" data-mf="back">${I('check')} Volví</button><button class="btn ghost" data-mf="open">Ver detalle</button></div>
   </section>`;
 }
@@ -93,7 +154,7 @@ async function comeBack() {
   D().awayLog.push(entry); D().awayLog = D().awayLog.slice(-R.MAX_LOG);
   D().away = R.blankAway();
   A().changed();
-  const head = R.soloText(pets, now - Date.parse(prev.since)).replace(' lleva ', ' estuvo ').replace(' llevan ', ' estuvieron ');
+  const head = R.soloText(pets, now - Date.parse(prev.since)).replace(' lleva ', ' estuvo ').replace(' llevan ', ' estuvieron ') + '.';
   A().panel('Volviste', `<p class="mf-big">${esc(head)}</p><p class="dim">De ${hm(Date.parse(prev.since))} a ${hm(now)}.</p>
     <div id="mfSum" aria-live="polite"><p class="dim">Buscando lo que detectó la cámara…</p></div>
     <div class="d-acts"><button class="btn wide" data-mfp="ok">Listo</button><button class="btn ghost wide" data-mfp="undo">Me equivoqué, sigo afuera</button></div>`);
@@ -105,7 +166,7 @@ async function comeBack() {
   const evs = await loadEvents(Date.parse(prev.since), true);
   const box = $('#mfSum'); if (!box) return;
   if (!evs) { box.innerHTML = (st.cams || []).length ? '<p class="dim">No pudimos traer lo de la cámara. Lo ves en "Me fui".</p>' : ''; return; }
-  box.innerHTML = evs.length ? `<h3 class="mf-h3">Lo que detectó la cámara</h3>${timelineHtml(evs)}` : (st.cams || []).length ? '<p class="dim">La cámara no detectó ladridos, maullidos ni llanto.</p>' : '';
+  box.innerHTML = evs.length ? `<p class="mf-sum">${esc(summaryText(evs))}</p><h3 class="mf-h3">Línea de tiempo</h3>${timelineHtml(evs)}` : (st.cams || []).length ? '<p class="mf-sum">La cámara no detectó ladridos, maullidos ni llanto.</p>' : '';
 }
 
 /* ---------- datos del servidor: cámaras y eventos ---------- */
@@ -162,8 +223,8 @@ function render(p) {
     <div><span class="eyebrow">Me fui</span><h1 class="h-xl">${a.on ? 'Estás afuera' : 'Cuando salgas'}</h1></div>
     ${a.on ? `<section class="mf-card" aria-labelledby="h-mf2"><div class="mf-top"><span class="mf-dot" aria-hidden="true"></span><h2 id="h-mf2" class="eyebrow">En curso</h2></div>
       <p class="mf-clock" data-away-clock>${clockHtml()}</p>
+      ${statusHtml()}
       <small class="dim">Saliste a las ${hm(Date.parse(a.since))}. ${esc(alertLine())}</small>
-      ${Object.values(a.check).some(Boolean) ? `<p class="mf-checks">${R.CHECKS.filter(([k]) => a.check[k]).map(([, l]) => `<span class="badge ok">${esc(l)}</span>`).join(' ')}</p>` : ''}
       <button class="btn big wide" data-mf="back">${I('check')} Volví</button></section>`
     : `<section class="card"><p>Tocá "Me fui" cuando salgas: contamos cuánto tiempo queda ${D().pets.length === 1 ? sola(D().pets[0]) : 'sola'} y te avisamos si pasa del tiempo que elijas.</p><button class="btn big wide" data-mf="leave">${I('home')} Me fui</button></section>`}
     <div class="cols"><div class="col">
@@ -449,9 +510,19 @@ setInterval(() => {
   if (A()?.mode !== 'full' || !A().mefui || !D().away?.on) return;
   document.querySelectorAll('[data-away-clock]').forEach(el => { el.innerHTML = clockHtml(); });
 }, 30e3);
-/* con la pantalla de "Me fui" abierta y una salida en curso, la línea de tiempo se refresca cada minuto */
+/* trae cámaras y eventos de la salida en curso y vuelve a dibujar si cambió algo */
+let refreshing = false;
+async function refreshAway() {
+  if (refreshing) return; refreshing = true;
+  try {
+    const since = D().away.on ? Date.parse(D().away.since) : Date.now() - 864e5;
+    await Promise.all([loadCams(true), loadEvents(since, true)]);
+    if (!document.querySelector('dialog[open]') && ['inicio', 'mefui'].includes(A().route.name)) A().render();
+  } finally { refreshing = false; }
+}
+/* con Inicio o "Me fui" abiertos y una salida en curso, el estado se refresca cada minuto (solo si hay cámaras) */
 setInterval(async () => {
-  if (A()?.mode !== 'full' || !A().mefui || A().route.name !== 'mefui' || document.hidden || !(st.cams || []).length) return;
+  if (A()?.mode !== 'full' || !A().mefui || !['mefui', 'inicio'].includes(A().route.name) || document.hidden || !(st.cams || []).length || (A().route.name === 'inicio' && !D().away.on)) return;
   const since = D().away.on ? Date.parse(D().away.since) : Date.now() - 864e5;
   const sig = () => JSON.stringify([(st.events || []).map(e => e.id + e.dur), (st.cams || []).map(c => c.camId + c.online)]);
   const before = sig();

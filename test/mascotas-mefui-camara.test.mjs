@@ -154,3 +154,12 @@ test('textos: gemido y llanto van como "posible"', () => {
   assert.equal(W.eventText({ type: 'llanto', dur: 30, start }, 'America/Argentina/Buenos_Aires', 'Feliza'), 'Feliza: posible llanto de 30 segundos a las 15:20');
   assert.equal(W.eventText({ type: 'gemido', dur: 120, start }, 'America/Argentina/Buenos_Aires', ''), 'Posible gemido de 2 minutos a las 15:20');
 });
+
+test('estado de la escucha: viaja en el ping y la dueña lo ve en la lista (sin consultas nuevas)', async () => {
+  process.env.MIMITOS_MEFUI = '1'; process.env.MIMITOS_MEFUI_ALLOW = 'escucha@x.com';
+  const cam = await paired('escucha@x.com');
+  assert.equal((await call('POST', { cam: 'ping' }, { listen: 'pausado' }, { token: cam.token })).code, 200);
+  assert.equal((await call('GET', { cam: 'list' }, null, { email: 'escucha@x.com' })).body.cams[0].listen, 'pausado');
+  await call('POST', { cam: 'ping' }, { listen: 'cualquiera' }, { token: cam.token });
+  assert.equal((await call('GET', { cam: 'list' }, null, { email: 'escucha@x.com' })).body.cams[0].listen, 'pausado', 'un valor raro no se guarda');
+});
