@@ -1208,6 +1208,47 @@ function view() {
 }
 let afterFns = [];
 const after = fn => afterFns.push(fn);
+/* listas de sugerencias propias (raza, vacuna, problema, cirugía…): el <datalist> nativo casi no se ve en el celu
+   (en iPhone no abre lista). Cualquier input con list="…" pasa a mostrar debajo hasta 8 opciones que coinciden,
+   sin importar tildes; se elige con un toque o con flechas y Enter. El texto libre sigue valiendo. */
+const sgFold = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+function sgBox(inp) {
+  let box = inp.parentElement.querySelector(':scope > .sg-list');
+  if (!box) {
+    box = document.createElement('ul'); box.className = 'sg-list'; box.id = inp.id + '_sg'; box.setAttribute('role', 'listbox'); box.hidden = true;
+    inp.insertAdjacentElement('afterend', box);
+    inp.setAttribute('role', 'combobox'); inp.setAttribute('aria-autocomplete', 'list'); inp.setAttribute('aria-controls', box.id); inp.setAttribute('aria-expanded', 'false');
+  }
+  return box;
+}
+function sgShow(inp) {
+  const dl = document.getElementById(inp.dataset.sl); if (!dl) return;
+  const q = sgFold(inp.value.trim()), all = [...dl.options].map(o => o.value).filter(Boolean);
+  const hits = (q ? all.filter(v => sgFold(v).includes(q)).sort((a, b) => sgFold(a).indexOf(q) - sgFold(b).indexOf(q)) : all).filter(v => sgFold(v) !== q).slice(0, 8);
+  const box = sgBox(inp); box.hidden = !hits.length; inp.setAttribute('aria-expanded', String(!box.hidden)); inp.removeAttribute('aria-activedescendant');
+  box.innerHTML = hits.map((v, i) => `<li role="option" id="${box.id}_${i}" data-sg="${esc(v)}">${esc(v)}</li>`).join('');
+}
+function sgHide(inp) { const box = inp?.parentElement?.querySelector(':scope > .sg-list'); if (box) box.hidden = true; inp?.setAttribute('aria-expanded', 'false'); }
+function sgPick(inp, v) { inp.value = v; sgHide(inp); inp.dispatchEvent(new Event('input', { bubbles: true })); inp.dispatchEvent(new Event('change', { bubbles: true })); }
+document.addEventListener('focusin', e => {
+  const inp = e.target; if (!(inp instanceof HTMLInputElement)) return;
+  if (inp.getAttribute('list')) { inp.dataset.sl = inp.getAttribute('list'); inp.removeAttribute('list'); }
+  if (inp.dataset.sl) sgShow(inp);
+});
+document.addEventListener('input', e => { if (e.target.dataset?.sl && e.isTrusted) sgShow(e.target); });
+document.addEventListener('focusout', e => { const inp = e.target; if (inp?.dataset?.sl) setTimeout(() => { if (document.activeElement !== inp) sgHide(inp); }, 150); });
+document.addEventListener('pointerdown', e => {
+  const li = e.target.closest?.('.sg-list [data-sg]'); if (!li) return;
+  e.preventDefault(); const inp = li.parentElement.previousElementSibling; if (inp?.dataset?.sl) sgPick(inp, li.dataset.sg);
+});
+document.addEventListener('keydown', e => {
+  const inp = e.target; if (!inp?.dataset?.sl) return;
+  const box = inp.parentElement.querySelector(':scope > .sg-list'); if (!box || box.hidden) return;
+  const items = [...box.children], cur = items.findIndex(x => x.id === inp.getAttribute('aria-activedescendant'));
+  if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); const n = (cur + (e.key === 'ArrowDown' ? 1 : -1) + items.length) % items.length; items.forEach((x, i) => x.classList.toggle('on', i === n)); inp.setAttribute('aria-activedescendant', items[n].id); }
+  else if (e.key === 'Enter' && cur >= 0) { e.preventDefault(); sgPick(inp, items[cur].dataset.sg); }
+  else if (e.key === 'Escape') { e.stopPropagation(); sgHide(inp); }
+});
 function afterRender() { const f = afterFns; afterFns = []; f.forEach(fn => fn()); }
 
 function skeleton() {

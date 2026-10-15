@@ -1573,3 +1573,7 @@ body[data-first="steps"] .top{background:var(--bg)}
 @keyframes spl-sway{0%,100%{transform:rotate(0)}50%{transform:rotate(-4deg) translateY(-4px)}}
 @keyframes spl-up{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
 @media(prefers-reduced-motion:reduce){.splash-logo,.splash-hi,.splash-word,.splash-sub,.splash-go{animation:none}}
+/* v39: sugerencias propias debajo del campo (reemplazan al datalist, que en el celu no se ve) */
+.sg-list{list-style:none;margin:6px 0 0;padding:4px;background:var(--card);border:1px solid var(--line2);border-radius:14px;box-shadow:0 12px 28px -14px rgba(31,26,23,.35);max-height:264px;overflow:auto}
+.sg-list li{min-height:44px;display:flex;align-items:center;padding:0 12px;border-radius:10px;cursor:pointer;font-size:16px}
+.sg-list li:hover,.sg-list li.on{background:var(--sunk)}
