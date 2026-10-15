@@ -33,5 +33,7 @@ export default async function handler(req, res) {
   try { datos = await readFile(join(BASE, slug, archivo)); }
   catch { return noEncontrado(res); }
   res.setHeader('Content-Type', tipoDe(archivo));
+  /* el service worker controla /herramientas/<slug> (sin barra final), un nivel más arriba que su archivo */
+  if (archivo === 'sw.js') res.setHeader('Service-Worker-Allowed', `/herramientas/${slug}`);
   return res.status(200).send(datos);
 }

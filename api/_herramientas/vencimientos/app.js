@@ -90,6 +90,7 @@ function guardar(nuevo) {
   render();
   if (hoja.open && ui.catAbierta && $id('hoja-cuerpo').querySelector('.cat-hoja-cab, .lista')) abrirCategoria(ui.catAbierta);
   if (casa) programarSync();
+  programarAvisos();
 }
 
 /* ── casa compartida: sincronización con Orbit (solo si se activó) ──
@@ -212,6 +213,100 @@ async function compartirInvitacion() {
   if (!invitacion) return;
   try { await navigator.share({ title: `Sumate a ${invitacion.nombre || 'la casa'}`, text: invitacion.texto.replace(` Entrá acá: ${invitacion.link}`, ''), url: invitacion.link }); }
   catch (e) { if (e?.name !== 'AbortError') toast('No se pudo abrir. Usá WhatsApp o copiá el link.'); }
+}
+
+/* ── notificaciones en el celular (push) ──
+   El permiso se pide solo al tocar "Activar". Al servidor va lo mínimo: nombre de cada cuenta,
+   fecha, casa y si es trámite o débito, de los próximos 45 días de todas las casas. Sin montos. */
+const PUSH = 'orbit:vencimientos:push';
+const API_AVISOS = '/api/vencimientos-avisos';
+const pushActivo = () => { try { return localStorage.getItem(PUSH) === '1'; } catch { return false; } };
+const marcarPush = on => { try { on ? localStorage.setItem(PUSH, '1') : localStorage.removeItem(PUSH); } catch {} const i = document.querySelector('#b-cal-ics i'); if (i) i.hidden = !on; };
+const soportaPush = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+const esIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+const instalada = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+let pedidoInstalar = null;
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; });
+const b64aBytes = b64 => { const p = '='.repeat((4 - (b64.length % 4)) % 4); const raw = atob((b64 + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
+async function apiAvisos(metodo, cuerpo) {
+  const r = await fetch(API_AVISOS, { method: metodo, credentials: 'same-origin', headers: cuerpo ? { 'Content-Type': 'application/json' } : {}, body: cuerpo ? JSON.stringify(cuerpo) : undefined });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok || !j.ok) throw new Error(j.error || 'No pudimos hablar con Orbit. Probá en un rato.');
+  return j;
+}
+function itemsAvisos() {
+  const varias = indice.casas.length > 1;
+  const out = [];
+  for (const e of indice.casas) {
+    const doc = e.id === indice.activa ? d : conCategorias(cargar(e.id));
+    if (doc.ejemplo) continue;
+    const casaN = varias ? nombreCasaDe(doc, e.id) : '';
+    for (const o of V.ocurrenciasEntre(doc, hoy, V.sumarDias(hoy, 45), hoy)) {
+      if (o.resuelto || o.cuenta.enTarjeta) continue;
+      out.push({ n: o.cuenta.nombre, v: o.segundo && o.estado === 'segundo' ? o.segundo : o.vence, ...(casaN ? { c: casaN } : {}),
+        ...(o.cuenta.tipo === 'tramite' ? { t: 'tramite' } : o.cuenta.debito ? { t: 'debito' } : {}) });
+    }
+  }
+  return out.sort((a, b) => a.v.localeCompare(b.v)).slice(0, 150);
+}
+const cargaAvisos = () => ({ items: itemsAvisos(), dias: d.config.avisos || [3, 0] });
+function abrirAvisos(mensaje = '') {
+  const on = pushActivo();
+  const pasoInstalar = instalada() ? '' : `<div class="carga-paso"><span class="carga-n">1</span><div><b>Agregá la app al inicio del celular</b>
+    ${pedidoInstalar ? `<button type="button" class="bt sec" data-acc="instalar" style="margin:8px 0"><svg><use href="#i-bajar"/></svg> Agregar al inicio</button>` : ''}
+    <small><b>iPhone</b> (iOS 16.4 o más): abrí esta página en <b>Safari</b>, tocá <b>Compartir</b> y después <b>Agregar a inicio</b>. Abrila desde ese ícono.</small>
+    <small><b>Android</b>: en Chrome, tocá el menú <b>⋮</b> y después <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.</small>
+    <small>En iPhone, la app del inicio guarda sus datos aparte de Safari: si ya cargaste cosas acá, descargá tu copia (Ajustes → Tu copia) y restaurala en la app.</small></div></div>`;
+  let accion;
+  if (!soportaPush()) accion = `<p class="nota">${esIOS() && !instalada() ? 'En iPhone, primero agregala al inicio (paso 1) y abrila desde ahí.' : 'Este navegador no puede recibir notificaciones. Usá el calendario de abajo.'}</p>`;
+  else if (Notification.permission === 'denied') accion = `<p class="nota">Bloqueaste las notificaciones para este sitio. Habilitalas desde los ajustes del navegador o del celular.</p>`;
+  else if (on) accion = `<p class="ok-linea"><svg><use href="#i-check"/></svg> Notificaciones activadas en este dispositivo.</p><button type="button" class="bt sec ancho" data-acc="push-probar" style="margin-bottom:8px">Mandarme una de prueba</button><button type="button" class="btn-txt" data-acc="push-off">Desactivarlas y borrar mis datos de avisos del servidor</button>`;
+  else accion = `<button type="button" class="bt prim ancho" data-acc="push-on"><svg><use href="#i-campana"/></svg> Activar notificaciones</button>`;
+  const dias = (d.config.avisos || [3, 0]).map(n => n === 0 ? 'el mismo día' : n === 1 ? '1 día antes' : `${n} días antes`).join(' y ');
+  abrir('Avisos', `
+    <p class="lead-s" style="margin-top:0">Te avisamos <b>${dias}</b> de cada vencimiento${indice.casas.length > 1 ? ', de todas tus casas' : ''}. Los días se cambian en Ajustes.</p>
+    <h3 class="avisos-t">En el celular</h3>
+    ${pasoInstalar}
+    <div class="carga-paso${on ? ' listo' : ''}"><span class="carga-n">${instalada() ? '1' : '2'}</span><div><b>Activá las notificaciones</b>${accion}
+      ${mensaje ? `<p class="nota" role="alert">${esc(mensaje)}</p>` : ''}
+      <small>Para avisarte guardamos el permiso de tu celular y, de cada cuenta, el nombre, la fecha y la casa. Nada de montos. Se borra al desactivar.</small></div></div>
+    <h3 class="avisos-t">En tu calendario</h3>
+    <p class="leyenda" style="margin-top:0">Si preferís, sumá todos los vencimientos al calendario del celular (Google o Apple), con aviso antes.</p>
+    <div class="acciones"><button type="button" class="bt sec ancho" data-acc="ics"><svg><use href="#i-cal"/></svg> Sumar todo al calendario</button></div>`);
+}
+async function activarPush() {
+  try {
+    const permiso = await Notification.requestPermission();
+    if (permiso !== 'granted') return abrirAvisos('Sin el permiso no podemos avisarte. Te queda el calendario.');
+    const { publicKey } = await apiAvisos('GET');
+    await navigator.serviceWorker.register('sw.js', { scope: '/herramientas/vencimientos' });
+    const reg = await navigator.serviceWorker.ready;
+    const sub = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64aBytes(publicKey) });
+    const c = cargaAvisos();
+    await apiAvisos('POST', { accion: 'activar', sub: sub.toJSON(), ...c });
+    marcarPush(true); ultimoAvisos = JSON.stringify(c);
+    abrirAvisos(); toast('Listo: te vamos a avisar en este celular.');
+  } catch (e) { abrirAvisos(e?.message || 'No pudimos activar las notificaciones.'); }
+}
+async function desactivarPush() {
+  try {
+    const reg = await navigator.serviceWorker?.getRegistration('/herramientas/vencimientos');
+    const sub = await reg?.pushManager.getSubscription();
+    await sub?.unsubscribe();
+    await apiAvisos('DELETE', {});
+    marcarPush(false); abrirAvisos(); toast('Notificaciones desactivadas y datos borrados del servidor.');
+  } catch (e) { abrirAvisos(e?.message || 'No pudimos desactivarlas. Probá de nuevo.'); }
+}
+/* si cambia lo que vence (pagaste, cargaste algo, pasó el día), se manda de nuevo */
+let ultimoAvisos = null, avisosT = null;
+function programarAvisos() {
+  if (!pushActivo()) return;
+  clearTimeout(avisosT);
+  avisosT = setTimeout(() => {
+    const c = JSON.stringify(cargaAvisos());
+    if (c === ultimoAvisos) return;
+    apiAvisos('POST', { accion: 'sincronizar', ...JSON.parse(c) }).then(j => { ultimoAvisos = c; if (!j.activo) marcarPush(false); }).catch(() => {});
+  }, 1500);
 }
 
 /* ── tus casas ── */
@@ -1592,6 +1687,10 @@ function abrirAjustes() {
     ${indice.casas.length > 1 ? `<button type="button" class="bt peligro ancho" data-acc="casa-borrar" ${casa ? 'disabled' : ''}>${ui.borrarArmado === 'casa-borrar' ? '¿Seguro? Se borra todo lo de esta casa' : `Borrar ${esc(nombreCasaDe(d))} de este teléfono`}</button>` : ''}</div>
     ${indice.casas.length > 1 && casa ? '<p class="leyenda">Para borrarla, primero dejá de compartirla.</p>' : ''}
   </div>
+  <div class="ajustes-sec"><h3>Notificaciones en el celular</h3>
+    <p class="leyenda" style="margin-top:0">${pushActivo() ? 'Activadas en este dispositivo.' : 'Con la app agregada al inicio, te avisa antes de cada vencimiento, de todas tus casas.'}</p>
+    <div class="acciones"><button type="button" class="bt ${pushActivo() ? 'sec' : 'prim'} ancho" data-acc="avisos"><svg><use href="#i-campana"/></svg> ${pushActivo() ? 'Ver las notificaciones' : 'Activar notificaciones'}</button></div>
+  </div>
   <div class="ajustes-sec"><h3>Avisos en el calendario del celular</h3>
     <form data-form="avisos">
       <fieldset class="campo"><legend>Avisarme</legend><div class="seg">
@@ -1600,7 +1699,7 @@ function abrirAjustes() {
       <label class="campo"><span>A las</span><select name="hora">${horas.map(h => `<option ${h === (d.config.hora || '09:00') ? 'selected' : ''}>${h}</option>`).join('')}</select></label>
       <button type="submit" class="bt sec ancho">Guardar avisos</button>
     </form>
-    <p class="leyenda">Después de cambiarlos, volvé a sumar el calendario. En iPhone los avisos llegan solos; en Google Calendar, revisá las notificaciones del evento.</p>
+    <p class="leyenda">Los mismos días valen para las notificaciones. Después de cambiarlos, volvé a sumar el calendario. En iPhone los avisos llegan solos; en Google Calendar, revisá las notificaciones del evento.</p>
     <div class="acciones" style="margin-top:12px"><button type="button" class="bt prim ancho" data-acc="ics"><svg><use href="#i-campana"/></svg> Sumar todo al calendario</button></div>
   </div>
   <div class="ajustes-sec"><h3>Tu mail y tus tarjetas</h3>
@@ -1686,6 +1785,11 @@ document.addEventListener('click', e => {
     case 'casa-invitar': invitarACasa(); break;
     case 'invitar-compartir': compartirInvitacion(); break;
     case 'casas': ui.borrarArmado = null; abrirCasas(); break;
+    case 'avisos': abrirAvisos(); break;
+    case 'push-on': activarPush(); break;
+    case 'push-off': desactivarPush(); break;
+    case 'push-probar': apiAvisos('POST', { accion: 'probar' }).then(j => toast(j.enviados ? 'Listo, te llega en unos segundos.' : 'No pudimos mandarla a este celular. Desactivá y activá de nuevo.'), e => toast(e.message)); break;
+    case 'instalar': if (pedidoInstalar) { pedidoInstalar.prompt(); pedidoInstalar.userChoice.catch(() => {}).then(() => { pedidoInstalar = null; abrirAvisos(); }); } break;
     case 'radar': abrirRadar(Number(b.dataset.i)); break;
     case 'radar-todo': abrirRadarTodo(); break;
     case 'radar-fugas': abrirFugas(); break;
@@ -1933,7 +2037,7 @@ $id('f-respaldo').addEventListener('change', async e => {
 document.querySelectorAll('.tabs [data-tab]').forEach(b => b.addEventListener('click', () => irA(b.dataset.tab)));
 $id('b-agregar').addEventListener('click', () => { abrirAgregar(); setTimeout(() => $id('buscar-serv')?.focus(), 60); });
 $id('b-ajustes').addEventListener('click', abrirAjustes);
-$id('b-cal-ics').addEventListener('click', () => descargarICS());
+$id('b-cal-ics').addEventListener('click', () => abrirAvisos());
 function irA(v) {
   ui.vista = v;
   try { history.replaceState(null, '', `#${v}`); } catch {}
@@ -1984,7 +2088,7 @@ const PASOS = [
   ['.tiles', 'Tus gastos, por categoría', 'Cada cuadradito suma lo de los próximos 30 días. Tocalo y ves el detalle: qué vence, cuándo y cuánto.'],
   ['.completa', 'Completá tu casa', 'Seguí estos pasos para tener todo: resumen, mail, expensas y avisos.'],
   ['#b-agregar', 'Sumá una cuenta', 'Con una foto de la factura, el resumen de la tarjeta, tu mail o a mano.'],
-  ['#b-cal-ics', 'Que te avise el celular', 'Bajá todos los vencimientos a tu calendario, con aviso antes.'],
+  ['#b-cal-ics', 'Que te avise el celular', 'Activá las notificaciones o sumá todo a tu calendario, con aviso antes.'],
   ['.tabs [data-tab=numeros]', 'Mirá los números', 'Cuánto se va por año, por categoría y cuánto subió cada servicio.'],
 ];
 let paso = -1, pasosVivos = [], ubicarPaso = null;
@@ -2128,6 +2232,8 @@ document.addEventListener('visibilitychange', () => {
   }
 }
 guardarIndice();
+marcarPush(pushActivo());
+programarAvisos();
 cargarCasa();
 mostrarEntradaSiCorresponde();
 pintarMarca();

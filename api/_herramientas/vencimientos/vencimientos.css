@@ -594,7 +594,7 @@ details.mas[open] summary::after{transform:rotate(45deg)}
 .carga-paso.listo{border-color:var(--azul)}
 .carga-n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--fondo);font:600 13px var(--mono)}
 .carga-paso.listo .carga-n{background:var(--azul);color:#F2EFE8}
-.carga-paso b{display:block;font-size:15px}.carga-paso small{display:block;color:var(--suave);font-size:12.5px;margin:3px 0 10px;overflow-wrap:anywhere}
+.carga-paso > div > b{display:block;font-size:15px}.carga-paso small{display:block;color:var(--suave);font-size:12.5px;margin:3px 0 10px;overflow-wrap:anywhere}
 .carga-prov{flex-wrap:wrap}.carga-prov label.off{opacity:.45}
 
 /* ── nota de servicios y lo que falta ── */
@@ -608,3 +608,10 @@ details.mas[open] summary::after{transform:rotate(45deg)}
 .faltan-si input{width:20px;height:20px;accent-color:var(--azul)}
 
 .invita-link{padding:12px 14px;border-radius:12px;background:var(--fondo);font:13px/1.4 var(--mono);overflow-wrap:anywhere;margin:6px 0 12px}
+
+/* ── avisos ── */
+.ic-avisos{position:relative}
+.ic-avisos i{position:absolute;top:9px;right:9px;width:8px;height:8px;border-radius:50%;background:#3CC488;box-shadow:0 0 0 2px var(--fondo)}
+.avisos-t{font-size:12px;font-family:var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--suave);margin:18px 0 6px}
+.ok-linea{display:flex;align-items:center;gap:8px;font-weight:600;margin:8px 0}.ok-linea svg{width:18px;height:18px;fill:none;stroke:#3CC488;stroke-width:2}
+.carga-paso small+small{margin-top:6px}
