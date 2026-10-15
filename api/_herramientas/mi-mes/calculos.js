@@ -1755,3 +1755,40 @@ export function cambiosDesde(foto, datos, { minimo = 100_000 } = {}) {
   return out;
 }
 const capitalizar = t => t.charAt(0).toUpperCase() + t.slice(1);
+
+/* ═══════════════ (9) ¿Cómo me conviene pagar esta compra? ═══════════════
+   Para UNA compra que la persona ya decidió evaluar: efectivo (con descuento
+   opcional) y cada tarjeta propia en N cuotas. Costo total en plata de hoy,
+   meses afectados, efecto en "te quedan libres", tope (crédito disponible) y
+   efecto en el día difícil. No ordena por "oportunidad" ni sugiere comprar. */
+export function comoPagar(datos, { precio, descuentoEfectivo = 0, cuotas = 1, inflacion, rendimiento }, hoy) {
+  hoy = aFecha(hoy);
+  if (!Number.isSafeInteger(precio) || precio <= 0) return null;
+  const mes = hoy.slice(0, 7);
+  const contado = Math.round(precio * (1 - descuentoEfectivo / 100));
+  const base = proyeccionSaldo(datos, hoy);
+  const libresSin = m => resumenMes(datos, m).libres;
+  const out = [];
+  /* efectivo o débito: sale hoy */
+  {
+    const conGasto = { ...datos, gastos: [...(datos.gastos || []), { id: '__pago', nombre: 'Esta compra', categoria: 'Otros', monto: contado, repite: false, desde: mes, dia: Number(hoy.slice(8)) }] };
+    const pr = base ? proyeccionSaldo(conGasto, hoy) : null;
+    out.push({ id: 'efectivo', nombre: 'Efectivo o débito', cuotas: 1, total: contado, costoHoy: contado, meses: [{ mes, monto: contado, libres: libresSin(mes) - contado }],
+      estimado: false, alcanza: base ? base.inicial >= contado : null, faltaDificil: pr ? pr.falta : null });
+  }
+  /* cada tarjeta propia en N cuotas */
+  for (const t of datos.tarjetas || []) {
+    const ciclo = cicloTarjeta(datos, t.id, hoy);
+    const primerMes = primerMesDeCompra(datos, t.id, hoy);
+    const c = cuotasOContado({ precioCuotas: precio, cuotas, inflacion, rendimiento, precioContado: contado });
+    const partes = repartirCuotas(precio, cuotas);
+    const disp = disponibleTarjeta(datos, t.id, hoy);
+    const conCuota = { ...datos, cuotas: [...(datos.cuotas || []), { id: '__pago', descripcion: 'Esta compra', total: precio, moneda: 'ARS', cantidad: cuotas, tarjetaId: t.id, primerMes, origen: 'manual' }] };
+    const pr = base ? proyeccionSaldo(conCuota, hoy) : null;
+    out.push({ id: t.id, nombre: t.nombre, cuotas, total: precio, costoHoy: c.vp, cuota: partes[0],
+      meses: partes.map((p, i) => { const m = sumarMeses(primerMes, i); return { mes: m, monto: p, libres: libresSin(m) - p }; }),
+      estimado: !ciclo || ciclo.origen === 'manual', alcanza: disp ? disp.disponible >= precio : null, disponible: disp?.disponible ?? null,
+      faltaDificil: pr ? pr.falta : null });
+  }
+  return { contado, precio, sinComprar: { libres: libresSin(mes), faltaDificil: base ? base.falta : null }, opciones: out };
+}

@@ -11,6 +11,7 @@ export const FLAGS = {
   finDeCuota: true,       // 3 · lo que se libera va a la meta
   /* tanda 11: se encienden de a una cuando pasan la QA */
   diaDificil: false,      // (4) saldo de hoy y día por día
+  comoPagar: false,       // (9) ¿cómo me conviene pagar esta compra?
   queCambio: false,       // (3) qué cambió en tu mes desde la última vez
   gastoEstimado: false,   // (5) gasto fijo estimado hasta que aparece, con monto real y "lo di de baja"
   dondeRinde: false,      // B4 · "Dónde puede rendir tu plata": APAGADO hasta el OK legal de Majo

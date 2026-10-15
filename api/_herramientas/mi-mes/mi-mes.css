@@ -633,3 +633,14 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 .mm-cambio-l{display:flex;justify-content:space-between;gap:10px;width:100%;min-height:44px;align-items:center;border-top:1px solid var(--linea);text-align:left}
 .mm-cambio-l span{color:var(--tinta2)}
 .mm-cambio-l:hover span{color:var(--azul);text-decoration:underline;text-underline-offset:3px}
+
+/* ════════ (9) Cómo pagar ════════ */
+.mm-cp-lista{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:8px}
+.mm-cp-op{padding:12px 14px;border-radius:var(--r2);border:1px solid var(--linea)}
+.mm-cp-op.no{border-color:#F2C5BA}
+.mm-cp-cab{display:flex;justify-content:space-between;gap:8px;align-items:center}
+.mm-cp-cab .mm-tag{margin:0}
+.mm-cp-num{margin:4px 0;font-size:18px;font-weight:700;letter-spacing:-.02em}
+.mm-cp-num span{display:block;font-size:13px;font-weight:500;color:var(--tinta2);letter-spacing:0}
+.mm-cp-op .mm-fuente{margin:0}
+.neg{color:var(--neg)}

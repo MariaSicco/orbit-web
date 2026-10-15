@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -1627,6 +1627,25 @@ function pintarContado(cargarSupuestos = false) {
     <div><dt>De contado</dt><dd>${esc($(c.contado))}</dd></div><div><dt>${c.diferencia > 0 ? 'Las cuotas te salen más caras por' : 'Las cuotas te ahorran'}</dt><dd>${esc($(Math.abs(c.diferencia)))}</dd></div></dl>
     <p class="mm-fuente">La cuenta: llevamos cada cuota a plata de hoy con ${esc(cual)}, la más alta de las dos: tener la plata hoy vale por lo menos eso. ${esc($(c.vp))} − ${esc($(c.contado))} = ${c.diferencia >= 0 ? '' : '−'}${esc($(Math.abs(c.diferencia)))}.</p>
     <button type="button" class="mm-btn sec" data-simular-desde-contado>${ic('simular')} Ver cómo queda mi mes</button>`;
+  pintarComoPagar({ precio, n, desc, pi, r });
+}
+/* (9) con qué pagarla: efectivo y cada tarjeta propia, con el impacto completo */
+function pintarComoPagar({ precio, n, desc, pi, r }) {
+  const el = $id('cp-res');
+  if (!F.comoPagar || !datos.tarjetas.length) { el.hidden = true; return; }
+  el.hidden = false;
+  const cp = precio ? comoPagar(datos, { precio, descuentoEfectivo: desc, cuotas: n, inflacion: pi, rendimiento: r }, HOY_ISO) : null;
+  if (!cp) { el.innerHTML = `<h2 class="mm-h2" id="cp-t">¿Con qué la pagarías?</h2><p class="mm-vacio">Cargá el precio y comparamos efectivo y cada una de tus tarjetas.</p>`; return; }
+  const rango = ms => ms.length === 1 ? capital(nombreMes(ms[0].mes)) : `${capital(nombreMes(ms[0].mes, { corto: true }))} a ${nombreMes(ms[ms.length - 1].mes, { corto: true })}`;
+  el.innerHTML = `<h2 class="mm-h2" id="cp-t">¿Con qué la pagarías?</h2>
+    <p class="mm-meta-txt">Si no la comprás, este mes te quedan libres ${esc($(cp.sinComprar.libres))}${cp.sinComprar.faltaDificil ? ` y el día difícil ya te deja ${esc($(cp.sinComprar.faltaDificil))} abajo` : ''}.</p>
+    <ul class="mm-cp-lista">${cp.opciones.map(o => `<li class="mm-cp-op${o.alcanza === false ? ' no' : ''}">
+      <div class="mm-cp-cab"><b>${esc(o.nombre)}</b>${o.estimado ? '<span class="mm-tag ext">Cierre estimado</span>' : ''}</div>
+      <p class="mm-cp-num">${o.cuotas > 1 && o.id !== 'efectivo' ? `${o.cuotas} cuotas de ${esc($(o.cuota))}` : `Un pago de ${esc($(o.total))}`}<span>${esc($(o.costoHoy))} en plata de hoy</span></p>
+      <p class="mm-fuente">${esc(rango(o.meses))}: te quedan libres ${esc($(o.meses[0].libres))}${o.meses.length > 1 ? ` el primer mes` : ''}.
+        ${o.alcanza === false ? `<b class="neg">${o.id === 'efectivo' ? 'Tu saldo no alcanza.' : `Tu disponible (${esc($(o.disponible))}) no alcanza.`}</b>` : o.alcanza === null && o.id !== 'efectivo' ? 'Sin límite cargado: no sabemos si alcanza.' : ''}
+        ${o.faltaDificil !== null ? (o.faltaDificil > (cp.sinComprar.faltaDificil || 0) ? `<b class="neg">Con tu saldo, algún día faltarían ${esc($(o.faltaDificil))}.</b>` : 'No cambia tu día difícil.') : ''}</p></li>`).join('')}</ul>
+    <p class="mm-letra">Comparación orientativa para una compra que ya estás pensando, no una recomendación de comprar. Cuotas sin interés; si tu tarjeta cobra interés, poné el precio final en cuotas.</p>`;
 }
 $id('cc-form').addEventListener('input', e => {
   if (e.target.id === 'cc-inf' || e.target.id === 'cc-ren') {
