@@ -277,3 +277,27 @@ test('cursor: no se puede cambiar la consulta desde el navegador', async () => {
   const forged = Buffer.from(JSON.stringify({ q: 'in:anywhere', page: '' })).toString('base64url') + '.' + sig;
   assert.equal(G.readCursor(forged, EMAIL), null);
 });
+
+test('si Gmail rechaza la consulta nueva (400), busca una vez con la de antes y no falla', async () => {
+  await purchase(EMAIL);
+  await kvSet(`orbit:pets:${EMAIL}`, { ...doc, rev: 3 });
+  const go = await call('GET', { gmail: 'start', range: '3y' });
+  const state = new URL(go.headers.location).searchParams.get('state');
+  await call('GET', { gmail: 'callback', code: 'buen-code', state });
+  const inner = globalThis.fetch; let rejected = 0, legacy = 0;
+  globalThis.fetch = async (url, opts) => {
+    const u = String(url);
+    if (/gmail\/v1\/users\/me\/messages\?/.test(u)) {
+      const q = new URL(u).searchParams.get('q') || '';
+      if (q.includes('category:')) { rejected++; return new Response(JSON.stringify({ error: { status: 'INVALID_ARGUMENT', message: 'Invalid query' } }), { status: 400, headers: { 'Content-Type': 'application/json' } }); }
+      legacy++;
+    }
+    return inner(url, opts);
+  };
+  try {
+    const s = await call('POST', { gmail: 'search' }, { mode: 'all' });
+    assert.equal(s.code, 200, JSON.stringify(s.body));
+    assert.equal(rejected, 1); assert.ok(legacy >= 1);
+    assert.ok(s.body.candidates.length > 0);
+  } finally { globalThis.fetch = inner; }
+});

@@ -478,7 +478,16 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
   const rel = relContext(doc, await getSenders(email));
   const out = extra => ({ candidates: candidates.sort((a, b) => b.score - a.score), noFile, ...extra });
   for (;;) {
-    const list = await P.list(at, cur);
+    let list;
+    try { list = await P.list(at, cur); }
+    catch (e) {
+      /* la consulta nueva (15/10) no la aceptó el proveedor: una vez, con la de antes, que ya andaba */
+      if (cur.page || cur.legacy || !P.legacyQuery || !['mail_consulta', 'mail_error'].includes(e.code)) throw e;
+      console.warn('mimitos mail: consulta nueva rechazada, uso la de antes', P.id, e.code);
+      cur.legacy = 1; cur.f = 0;
+      cur.q = P.legacyQuery(doc, { range: st.range, after: cur.mode === 'new' && st.lastSearch ? Date.parse(st.lastSearch) - 864e5 : 0, senders: await getSenders(email) }, t0);
+      list = await P.list(at, cur);
+    }
     const items = list.items || [];
     for (let i = cur.skip; i < items.length;) {
       if (now() - t0 > TIME_BUDGET_MS) return out({ cursor: signCursor({ ...cur, skip: i }, email), more: null, scanned: cur.scanned, done: false });
@@ -711,7 +720,7 @@ export async function handleMail(P, req, res, ctx) {
     return res.status(400).json({ error: 'invalid' });
   } catch (e) {
     /* lo inesperado se registra sin URLs (pueden traer tokens) */
-    if (!e.code) console.warn('mimitos mail:', P.id, action, String(e.name || 'Error'), String(e.message || '').replace(/https?:\/\/\S+/g, '<url>').slice(0, 120));
+    if (!e.code || /error$/.test(e.code)) console.warn('mimitos mail:', P.id, action, e.code || '-', String(e.name || 'Error'), String(e.message || '').replace(/https?:\/\/\S+/g, '<url>').slice(0, 120));
     /* los códigos llevan el nombre del proveedor (gmail_vencido, outlook_vencido…) */
     return res.status(e.status || 502).json({ error: String(e.code || 'mail_error').replace(/^mail_/, P.id + '_'), ...(e.extra || {}) });
   }

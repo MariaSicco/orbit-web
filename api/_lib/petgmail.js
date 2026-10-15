@@ -75,6 +75,17 @@ export function buildQuery(doc, { range = '12m', after = 0, senders } = {}) {
   return q;
 }
 
+/* la consulta de antes del 15/10 (más amplia y sin categorías): respaldo si Gmail rechaza la nueva */
+export function buildQueryLegacy(doc, { range = '12m', after = 0, senders } = {}) {
+  const P = M.queryParts(doc, senders);
+  const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`), froms = P.froms.map(f => `from:${f}`);
+  const when = after ? `after:${Math.floor(after / 1000)}` : (RANGES[range] ?? RANGES['12m']);
+  const make = () => `(${[...P.vet.map(qt), ...names, ...known, ...froms].join(' OR ')}) (has:attachment OR subject:(${[...SUBJECT_VET, ...names].join(' OR ')})${froms.length ? ' OR ' + froms.join(' OR ') : ''})${when ? ' ' + when : ''}`;
+  let q = make();
+  while (q.length > 1500 && (known.length || names.length > (doc?.pets?.length || 0) || froms.length)) { if (known.length) known.pop(); else if (names.length > (doc?.pets?.length || 0)) names.pop(); else froms.pop(); q = make(); }
+  return q;
+}
+
 /* ---------- adjuntos de un mail (acá solo la estructura; el cuerpo lo pide body(), más abajo) ---------- */
 const PF = 'partId,mimeType,filename,body(attachmentId,size)';
 /* labelIds: la categoría de Gmail (Promociones, Social) es un metadato, como los encabezados; no es el cuerpo */
@@ -119,7 +130,12 @@ async function gget(path, at) {
   if (r.status === 401) throw fail('mail_vencido', 401);
   if (r.status === 429 || (r.status === 403 && /rate|quota|limit/i.test(await r.clone().text().catch(() => '')))) throw fail('mail_limite', 429);
   if (r.status === 404) throw fail('mail_no_encontrado', 404);
-  if (!r.ok) throw fail('mail_error', 502);
+  if (!r.ok) {
+    /* el motivo de Google (sin la URL ni la consulta, que lleva nombres) para poder diagnosticar */
+    const why = await r.clone().json().then(d => `${d.error?.status || ''} ${d.error?.message || ''}`).catch(() => '');
+    console.warn('gmail api:', r.status, path.split('?')[0].replace(/\/messages\/[A-Za-z0-9]+/, '/messages/<id>'), String(why).replace(/https?:\/\/\S+/g, '<url>').slice(0, 200));
+    throw fail(r.status === 400 ? 'mail_consulta' : 'mail_error', r.status === 400 ? 400 : 502);
+  }
   return r.json();
 }
 /* el texto del mail, SOLO para buscar el link a un estudio en mails que ya parecen veterinarios; no se guarda */
@@ -148,6 +164,7 @@ export const gmail = {
   validId: m => /^[A-Za-z0-9]{6,40}$/.test(m),
   validPart: p => /^[0-9.]{1,20}$/.test(p),
   query: (doc, opts) => buildQuery(doc, opts),
+  legacyQuery: (doc, opts) => buildQueryLegacy(doc, opts),
   /* PKCE S256: el verifier se guarda con el state (petmail.makeState) y vuelve en el canje */
   authUrl: (cfg, state, challenge) => AUTH_URL + '?' + form({
     client_id: cfg.clientId, redirect_uri: cfg.redirect, response_type: 'code', scope: SCOPE,

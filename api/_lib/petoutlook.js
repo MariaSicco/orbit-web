@@ -43,6 +43,15 @@ export function buildKql(doc, since, senders) {
   while (k.length > 1400 && (known.length || froms.length || att.length > ATT.length)) { if (known.length) known.pop(); else if (att.length > ATT.length) att.pop(); else froms.pop(); k = make(); }
   return k;
 }
+/* la consulta de antes del 15/10 (sin attachment:): respaldo si Graph rechaza la nueva */
+export function buildKqlLegacy(doc, since, senders) {
+  const P = M.queryParts(doc, senders);
+  const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`), froms = P.froms.map(f => `from:${f}`);
+  const make = () => `(${[...P.vet.map(t => /\s/.test(t) ? `"${t}"` : t), ...names, ...known, ...froms].join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
+  let k = make();
+  while (k.length > 1400 && (known.length || froms.length)) { if (known.length) known.pop(); else froms.pop(); k = make(); }
+  return k;
+}
 /* $search="…": las comillas y barras de adentro van escapadas */
 export const searchParam = kql => '"' + kql.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
 const SELECT = 'id,subject,from,receivedDateTime,hasAttachments,webLink';
@@ -60,6 +69,10 @@ async function graph(url, at, { raw = false } = {}) {
   if (r.status === 401) throw fail('mail_vencido', 401);
   if (r.status === 429 || r.status === 503) throw fail('mail_limite', 429);
   if (r.status === 404) throw fail('mail_no_encontrado', 404);
+  if (!r.ok) {
+    const why = await r.clone().json().then(d => `${d.error?.code || ''} ${d.error?.message || ''}`).catch(() => '');
+    console.warn('outlook api:', r.status, url.split('?')[0].replace(/https:\/\/[^/]+/, '').replace(/\/messages\/[^/]+/, '/messages/<id>'), String(why).replace(/https?:\/\/\S+/g, '<url>').slice(0, 200));
+  }
   if (r.status === 400) throw fail('mail_consulta', 400);
   if (!r.ok) throw fail('mail_error', 502);
   return raw ? Buffer.from(await r.arrayBuffer()) : r.json();
@@ -80,6 +93,7 @@ export const outlook = {
   validId: okId,
   validPart: okId,
   query: (doc, opts, now) => { const since = M.sinceOf(opts, now); return { kql: buildKql(doc, since, opts.senders), since }; },
+  legacyQuery: (doc, opts, now) => { const since = M.sinceOf(opts, now); return { kql: buildKqlLegacy(doc, since, opts.senders), since }; },
   authUrl: (cfg, state, challenge) => LOGIN + '/authorize?' + form({
     client_id: cfg.clientId, response_type: 'code', redirect_uri: cfg.redirect, response_mode: 'query',
     scope: SCOPES.join(' '), state, prompt: 'select_account', code_challenge: challenge, code_challenge_method: 'S256',

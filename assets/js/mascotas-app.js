@@ -2597,7 +2597,11 @@ async function mailSearch(p, mode, more, range) {
     if (!gm.more) mstat[p].lastSearch = new Date().toISOString();
   } catch (e) {
     if (/_vencido$/.test(e.code || '')) { mstat[p].connected = false; mstat[p].expired = true; gm = { p, phase: 'intro', back: mErr(p, e.code) }; }
-    else { gm.phase = 'error'; gm.err = mErr(p, e.code) || `No pudimos buscar en tu ${PROV[p].label}. Revisá la conexión y probá de nuevo.`; }
+    else {
+      /* el código chico al final sirve para diagnosticar ("gmail_error", "outlook_consulta" o "app" si falló la pantalla) */
+      if (!e.code) console.error('mimitos mail', e);
+      gm.phase = 'error'; gm.err = mErr(p, e.code) || `No pudimos buscar en tu ${PROV[p].label}. Revisá la conexión y probá de nuevo. (Código: ${String(e.code || 'app').slice(0, 40)})`;
+    }
   }
   if (route.name === p) render();
 }
