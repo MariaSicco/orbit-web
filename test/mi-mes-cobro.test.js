@@ -92,6 +92,7 @@ test('cobro push: solo la fecha que vence antes de cobrar, sin montos; aviso 5 d
   const d = base({
     ingresos: [sueldo({ tipo: 'del1al5' })],
     tarjetas: [{ id: 't1', nombre: 'Visa Galicia 1234', red: 'Visa', banco: 'Galicia', ultimos4: '1234', color: 'azul', diaCierre: 24, diaVence: 3 }],
+    cuotas: [{ id: 'c1', descripcion: 'Tele', total: 1_200_00, cantidad: 12, tarjetaId: 't1', primerMes: '2026-06', moneda: 'ARS' }],
   });
   const sin = M.datosParaAvisos(d, '2026-10-28');
   assert.equal('antesCobro' in sin[0], false);   // con el interruptor apagado no viaja
