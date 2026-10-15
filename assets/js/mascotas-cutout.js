@@ -1,20 +1,24 @@
-/* Mimitos · recorte de la mascota en el navegador (gratis, sin servidor). v3
+/* Mimitos · recorte de la mascota en el navegador (gratis, sin servidor). v4
    Cómo recorta (todo se baja recién cuando alguien sube una foto):
    1. DeepLabV3 de MediaPipe (Apache-2.0, 2,8 MB) dice DÓNDE está el perro o el gato (clases de Pascal VOC)
       y dónde hay una persona (para no recortar los brazos de quien lo tiene alzado).
-   2. U²-Netp (Apache-2.0, 4,6 MB, servido desde /assets/models) da la SILUETA fina del sujeto principal,
-      con onnxruntime-web (MIT) desde jsDelivr.
-   3. Se cruzan las dos, se queda con la mancha más grande y se refinan los bordes con un guided filter
-      sobre la foto original (pelo, orejas, patas), con un feather suave de ~2 px.
-   4. Se recorta al rectángulo de la mascota con margen.
+   2. U²-Netp (Apache-2.0, 4,6 MB, servido desde /assets/models) da la SILUETA fina. v4: corre dos veces, sobre
+      la foto entera y sobre el rectángulo de la mascota (más resolución donde importa: pelo, orejas, patas).
+   3. Se cruzan, se queda SOLO con la mancha más grande (sin islas sueltas) y se tapan los agujeritos.
+   4. Bordes: guided filter con radio según el tamaño de la mascota y más ancho donde hay pelo (textura),
+      feather suave y "decontaminación": el color del borde se recalcula restando el fondo estimado, así no
+      queda el halo verde del pasto o gris del sillón.
+   5. Control de calidad: si la máscara cubre menos del 8 % o más del 92 % de la foto, si el borde es muy
+      ruidoso o si quedó partida, no se entrega un recorte feo: se devuelve un recorte redondo y prolijo
+      centrado en la mascota (fallback: 'round').
    "Tocá a tu mascota" (MagicTouch de MediaPipe, ~6,2 MB) queda como respaldo, con el mismo refinamiento.
-   Expone window.MZCUT = { auto, touch, round, warm }. */
+   Expone window.MZCUT = { auto, touch, round, warm, quality }. */
 const V = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1';
 const ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
 const M_AUTO = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite';
 const M_TOUCH = 'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite';
 const M_SAL = new URL('../models/u2netp.onnx', import.meta.url).href;
-const OUT = 800, WORK = 1024, SAL = 256;
+const OUT = 800, WORK = 1024, SAL = 320;
 let lib = null, files = null, seg = null, inter = null, ort = null, sal = null;
 
 async function base() {
@@ -116,12 +120,32 @@ function only(m, w, h, lab, keep) {
   for (let i = 0; i < w * h; i++) out[i] = allow[i] ? m[i] : 0;
   return { mask: out, area };
 }
-/* se queda con la mancha más grande (y las que tengan al menos 25 % de su tamaño, por si una pata quedó separada) */
+/* se queda solo con la mancha más grande (las islas sueltas eran pasto, almohadones o sombras) */
 function largest(m, w, h, th = .5) {
   const { lab, sizes } = label(m, w, h, th);
-  if (sizes.length < 2) return { mask: null, area: 0 };
-  let big = 0; for (let k = 1; k < sizes.length; k++) if (sizes[k] > big) big = sizes[k];
-  return only(m, w, h, lab, sizes.map((s, k) => k > 0 && s >= big * .25));
+  if (sizes.length < 2) return { mask: null, area: 0, rest: 0 };
+  let big = 0, k0 = 0, tot = 0; for (let k = 1; k < sizes.length; k++) { tot += sizes[k]; if (sizes[k] > big) { big = sizes[k]; k0 = k; } }
+  const r = only(m, w, h, lab, sizes.map((s, k) => k === k0));
+  return { ...r, rest: tot ? (tot - big) / tot : 0 };
+}
+/* tapa los agujeros chicos dentro de la mascota (manchas de fondo que no tocan el borde y miden < 0,6 % de ella) */
+function fillHoles(m, w, h, area) {
+  const inv = new Float32Array(w * h); for (let i = 0; i < w * h; i++) inv[i] = m[i] > .5 ? 0 : 1;
+  const { lab, sizes } = label(inv, w, h), edge = new Uint8Array(sizes.length);
+  for (let x = 0; x < w; x++) { edge[lab[x]] = 1; edge[lab[(h - 1) * w + x]] = 1; }
+  for (let y = 0; y < h; y++) { edge[lab[y * w]] = 1; edge[lab[y * w + w - 1]] = 1; }
+  const out = Float32Array.from(m);
+  for (let i = 0; i < w * h; i++) { const k = lab[i]; if (k && !edge[k] && sizes[k] < area * .006) out[i] = 1; }
+  return out;
+}
+/* rectángulo de lo que supera th, con margen pad (proporción del lado mayor) */
+function bboxOf(m, w, h, th = .5, pad = .12) {
+  let x0 = w, y0 = h, x1 = -1, y1 = -1;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (m[y * w + x] > th) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  if (x1 < 0) return null;
+  const p = Math.round(Math.max(x1 - x0, y1 - y0) * pad);
+  x0 = Math.max(0, x0 - p); y0 = Math.max(0, y0 - p); x1 = Math.min(w - 1, x1 + p); y1 = Math.min(h - 1, y1 + p);
+  return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
 }
 /* guided filter a color (He et al.), rápido: los coeficientes se calculan a la mitad del tamaño.
    Hace que el borde de la máscara siga los bordes reales de la foto: pelo, orejas, bigotes. */
@@ -156,45 +180,110 @@ function guided(rgba, p, w, h, r, eps) {
   }
   return q;
 }
-/* refinamiento: mancha más grande + guided filter + corte de la bruma. Devuelve la máscara final o null */
-function refine(c, m, opts = {}) {
+/* desvío local de la luminancia (radio r): alto en pelo y pasto, bajo en paredes y almohadones lisos */
+function texture(rgba, w, h, r) {
+  const L = new Float32Array(w * h), L2 = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) { const v = (rgba[i * 4] * .299 + rgba[i * 4 + 1] * .587 + rgba[i * 4 + 2] * .114) / 255; L[i] = v; L2[i] = v * v; }
+  const m = box(L, w, h, r), m2 = box(L2, w, h, r), o = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) o[i] = Math.sqrt(Math.max(0, m2[i] - m[i] * m[i]));
+  return o;
+}
+/* refinamiento: mancha más grande + agujeros + guided filter de radio adaptativo + corte de la bruma.
+   Devuelve { alpha, bb, stats } o null */
+function refine(c, m, opts = {}, pet = null) {
   const w = c.width, h = c.height;
   const big = largest(m, w, h);
   if (!big.mask || big.area < w * h * .02) return null;
-  if (opts.guided === false) return big.mask;
+  const solid = fillHoles(big.mask, w, h, big.area), bb = bboxOf(solid, w, h, .5, 0);
+  if (opts.guided === false) return { alpha: solid, bb, stats: stats(solid, w, h, big.rest, pet) };
   const rgba = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
-  const r = Math.max(4, Math.round(Math.max(w, h) / (opts.rdiv || 110)));
-  const q = guided(rgba, big.mask, w, h, r, opts.eps || 1e-3);
+  /* radio según el tamaño de la mascota (no de la foto): de 3 a 14 px a 1024 */
+  const r = Math.max(3, Math.min(14, Math.round(Math.max(bb.w, bb.h) / (opts.rdiv || 90))));
+  const eps = opts.eps || 1e-3;
+  const q1 = guided(rgba, solid, w, h, r, eps), q2 = guided(rgba, solid, w, h, r * 2, eps * .5), tx = texture(rgba, w, h, r);
   /* solo cerca de la mascota (el filtro no puede inventar manchas lejos) */
-  const zone = grow(big.mask, w, h, r * 2, .3);
-  for (let i = 0; i < q.length; i++) q[i] = zone[i] ? Math.max(0, Math.min(1, (q[i] - .06) / .86)) : 0;
-  return q;
-}
-/* arma el PNG/WebP con transparencia a partir de la máscara final (del tamaño de c) */
-function compose(c, alpha, opts = {}) {
-  const w = c.width, h = c.height;
-  const m = document.createElement('canvas'); m.width = w; m.height = h;
-  const mc = m.getContext('2d'), md = mc.createImageData(w, h);
-  let x0 = w, y0 = h, x1 = 0, y1 = 0, on = 0;
-  for (let i = 0; i < w * h; i++) {
-    const a = alpha[i];
-    md.data[i * 4 + 3] = Math.round(a * 255);
-    if (a > .5) { on++; const x = i % w, y = (i / w) | 0; if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+  const zone = grow(solid, w, h, r * 2, .3), q = new Float32Array(w * h);
+  for (let i = 0; i < q.length; i++) {
+    if (!zone[i]) continue;
+    const t = Math.min(1, tx[i] / .12), v = q1[i] * (1 - t) + q2[i] * t;
+    q[i] = Math.max(0, Math.min(1, (v - .06) / .86));
   }
-  if (on < w * h * .02) return null;
+  /* lo que el filtro dejó suelto afuera (manchitas de pasto) también se va */
+  const fin = largest(q, w, h, .35).mask || q;
+  return { alpha: fin, bb, stats: stats(fin, w, h, big.rest, pet) };
+}
+/* cobertura, ruido del borde (perímetro / raíz del área: un círculo da ~3,5; una mascota prolija, 6 a 14) y cuánto quedó afuera */
+function stats(a, w, h, rest = 0, pet = null) {
+  let area = 0, per = 0, fuzz = 0, onPet = 0;
+  const pts = [];
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const i = y * w + x;
+    if (a[i] > .12 && a[i] < .88) fuzz++;
+    if (a[i] <= .5) continue; area++; if (pet && pet[i] > .3) onPet++;
+    if (x === 0 || y === 0 || x === w - 1 || y === h - 1 || a[i - 1] <= .5 || a[i + 1] <= .5 || a[i - w] <= .5 || a[i + w] <= .5) { per++; pts.push([x, y]); }
+  }
+  /* fuzz: cuánto borde quedó a medias (bruma); pet: cuánto del recorte ve DeepLab como perro o gato */
+  /* solid: área / área de la envolvente convexa. Una mascota prolija da 0,7 a 0,9; con manchas en punta, menos */
+  const hull = convex(pts); let ha = 0; for (let k = 0; k < hull.length; k++) { const [x1, y1] = hull[k], [x2, y2] = hull[(k + 1) % hull.length]; ha += x1 * y2 - x2 * y1; }
+  return { solid: ha ? Math.min(1, area / Math.abs(ha / 2)) : 0, cover: area / (w * h), noise: area ? per / Math.sqrt(area) : 99, rest, fuzz: area ? fuzz / area : 1, pet: pet && area ? onPet / area : 1 };
+}
+function convex(p) {
+  if (p.length < 3) return p;
+  p.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cr = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]), lo = [], up = [];
+  for (const q of p) { while (lo.length > 1 && cr(lo.at(-2), lo.at(-1), q) <= 0) lo.pop(); lo.push(q); }
+  for (let i = p.length - 1; i >= 0; i--) { const q = p[i]; while (up.length > 1 && cr(up.at(-2), up.at(-1), q) <= 0) up.pop(); up.push(q); }
+  return lo.slice(0, -1).concat(up.slice(0, -1));
+}
+/* ¿vale la pena el recorte? Si no, mejor redondo y prolijo que recortado feo */
+const NOISE_MAX = 24, REST_MAX = .35, FUZZ_MAX = .3, PET_MIN = .45, SOLID_MIN = .62;
+const quality = st => !st ? 'none' : st.cover < .08 || st.cover > .92 ? 'cover' : st.noise > NOISE_MAX ? 'noise' : st.rest > REST_MAX ? 'pieces' : st.fuzz > FUZZ_MAX ? 'fuzz' : st.pet < PET_MIN ? 'shape' : st.solid < SOLID_MIN ? 'spiky' : 'ok';
+/* arma el WebP/PNG con transparencia: feather suave y color del borde sin el fondo pegado (decontaminación) */
+function compose(c, res) {
+  const w = c.width, h = c.height, src = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
+  const a0 = res.alpha, a = box(a0, w, h, 1);
+  /* fondo y frente promedio alrededor de cada píxel (solo donde está claro qué es cada cosa) */
+  const R = Math.max(6, Math.round(Math.max(res.bb.w, res.bb.h) / 40));
+  const bw = new Float32Array(w * h), fw = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) { bw[i] = a0[i] < .05 ? 1 : 0; fw[i] = a0[i] > .95 ? 1 : 0; }
+  const ch = k => { const o = new Float32Array(w * h); for (let i = 0; i < w * h; i++) o[i] = src[i * 4 + k]; return o; };
+  const mul = (x, y) => { const o = new Float32Array(w * h); for (let i = 0; i < w * h; i++) o[i] = x[i] * y[i]; return o; };
+  const sb = box(bw, w, h, R), sf = box(fw, w, h, R), C = [ch(0), ch(1), ch(2)];
+  const B = C.map(x => box(mul(x, bw), w, h, R)), F = C.map(x => box(mul(x, fw), w, h, R));
+  const m = document.createElement('canvas'); m.width = w; m.height = h;
+  const mc = m.getContext('2d'), md = mc.createImageData(w, h), d = md.data;
+  for (let i = 0; i < w * h; i++) {
+    const al = a[i] < .02 ? 0 : a[i] > .98 ? 1 : a[i]; d[i * 4 + 3] = Math.round(al * 255);
+    for (let k = 0; k < 3; k++) {
+      let v = src[i * 4 + k];
+      if (al > 0 && al < 1 && sb[i] > .02) {
+        const bg = B[k][i] / sb[i], fgm = sf[i] > .02 ? F[k][i] / sf[i] : v;
+        const est = (v - (1 - al) * bg) / Math.max(al, .15);
+        /* con poca opacidad la cuenta es inestable: se acerca al color del pelo de al lado */
+        v = al < .35 ? fgm + (est - fgm) * (al / .35) : est;
+      }
+      d[i * 4 + k] = v < 0 ? 0 : v > 255 ? 255 : v;
+    }
+  }
   mc.putImageData(md, 0, 0);
-  /* feather: el borde se suaviza ~2 px a la escala final */
-  const f = opts.feather ?? Math.max(.8, Math.max(w, h) / OUT);
-  const soft = document.createElement('canvas'); soft.width = w; soft.height = h;
-  const sc = soft.getContext('2d'); sc.filter = `blur(${f}px)`; sc.drawImage(m, 0, 0); sc.filter = 'none';
-  sc.globalCompositeOperation = 'source-in'; sc.drawImage(c, 0, 0, w, h);
   /* recorte ajustado al rectángulo de la mascota, con 4 % de margen */
-  const pad = Math.round(Math.max(x1 - x0, y1 - y0) * .04);
-  x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad); x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
-  const bw = x1 - x0 + 1, bh = y1 - y0 + 1, s = Math.min(1, OUT / Math.max(bw, bh));
-  const o = document.createElement('canvas'); o.width = Math.round(bw * s); o.height = Math.round(bh * s);
-  o.getContext('2d').drawImage(soft, x0, y0, bw, bh, 0, 0, o.width, o.height);
+  const bb = res.bb, pad = Math.round(Math.max(bb.w, bb.h) * .04);
+  const x0 = Math.max(0, bb.x - pad), y0 = Math.max(0, bb.y - pad), x1 = Math.min(w - 1, bb.x + bb.w - 1 + pad), y1 = Math.min(h - 1, bb.y + bb.h - 1 + pad);
+  const cw = x1 - x0 + 1, chh = y1 - y0 + 1, s = Math.min(1, OUT / Math.max(cw, chh));
+  const o = document.createElement('canvas'); o.width = Math.round(cw * s); o.height = Math.round(chh * s);
+  const oc = o.getContext('2d'); oc.imageSmoothingQuality = 'high'; oc.drawImage(m, x0, y0, cw, chh, 0, 0, o.width, o.height);
   return encode(o);
+}
+/* recorte redondo y prolijo centrado en la mascota (o en la foto, sin rectángulo) */
+function roundAt(img, bb, sc = 1) {
+  const W = img.naturalWidth || img.width, H = img.naturalHeight || img.height;
+  const cx = bb ? (bb.x + bb.w / 2) / sc : W / 2, cy = bb ? (bb.y + bb.h / 2) / sc : H / 2;
+  let d = bb ? Math.max(bb.w, bb.h) / sc * 1.08 : Math.min(W, H); d = Math.min(d, W, H);
+  const x = Math.max(0, Math.min(W - d, cx - d / 2)), y = Math.max(0, Math.min(H - d, cy - d / 2)), n = Math.round(Math.min(OUT, d));
+  const c = document.createElement('canvas'); c.width = c.height = n; const g = c.getContext('2d');
+  g.beginPath(); g.arc(n / 2, n / 2, n / 2, 0, Math.PI * 2); g.clip(); g.imageSmoothingQuality = 'high';
+  g.drawImage(img, x, y, d, d, 0, 0, n, n);
+  return encode(c);
 }
 /* WebP con transparencia si el navegador lo sabe hacer; si no, PNG. Si pesa mucho, se achica. */
 function encode(c) {
@@ -219,10 +308,10 @@ async function pets(c) {
     const mw = r.confidenceMasks[0].width, mh = r.confidenceMasks[0].height, pet = new Float32Array(mw * mh);
     for (const k of want) { const a = r.confidenceMasks[k].getAsFloat32Array(); for (let i = 0; i < a.length; i++) pet[i] = Math.max(pet[i], a[i]); }
     const per = person >= 0 ? Float32Array.from(r.confidenceMasks[person].getAsFloat32Array()) : new Float32Array(mw * mh);
-    const cat = r.categoryMask.getAsUint8Array(), count = {}; let hit = 0;
-    for (let i = 0; i < cat.length; i++) if (want.includes(cat[i])) { hit++; count[cat[i]] = (count[cat[i]] || 0) + 1; }
+    const cat = r.categoryMask.getAsUint8Array(), count = {}; let hit = 0, ph = 0;
+    for (let i = 0; i < cat.length; i++) { if (cat[i] === person) ph++; if (want.includes(cat[i])) { hit++; count[cat[i]] = (count[cat[i]] || 0) + 1; } }
     const best = Object.keys(count).sort((a, b) => count[b] - count[a])[0];
-    out = { pet: resize(pet, mw, mh, c.width, c.height), person: resize(per, mw, mh, c.width, c.height), hit: hit / cat.length, label: best != null ? labels[best] : '' };
+    out = { pet: resize(pet, mw, mh, c.width, c.height), person: resize(per, mw, mh, c.width, c.height), hit: hit / cat.length, personHit: ph / cat.length, label: best != null ? labels[best] : '' };
     r.close?.(); ok();
   }));
   return out;
@@ -245,6 +334,21 @@ async function saliency(c, L = SAL) {
   for (const r in res) res[r].dispose?.();
   return resize(m, sw, sh, c.width, c.height);
 }
+/* U²-Netp sobre el rectángulo de la mascota: más resolución donde importa. Fuera del rectángulo queda la pasada entera */
+async function saliencyBoth(c, petMask, L = SAL) {
+  const full = await saliency(c, L), bb = bboxOf(petMask, c.width, c.height, .3, .18);
+  if (!bb || bb.w * bb.h > c.width * c.height * .8) return full;
+  const t = document.createElement('canvas'); t.width = bb.w; t.height = bb.h;
+  t.getContext('2d', { willReadFrequently: true }).drawImage(c, bb.x, bb.y, bb.w, bb.h, 0, 0, bb.w, bb.h);
+  const crop = await saliency(t, L), out = Float32Array.from(full);
+  /* en los 6 px del borde del rectángulo se mezcla con la pasada entera, para que no quede un corte recto */
+  const e = 6;
+  for (let y = 0; y < bb.h; y++) for (let x = 0; x < bb.w; x++) {
+    const k = Math.min(1, Math.min(x, y, bb.w - 1 - x, bb.h - 1 - y) / e), i = (y + bb.y) * c.width + x + bb.x;
+    out[i] = crop[y * bb.w + x] * k + full[i] * (1 - k);
+  }
+  return out;
+}
 /* cruza las dos. U²-Netp manda en la forma; DeepLab decide cuál de sus manchas es la mascota:
    - nada lejos del perro o gato que ve DeepLab;
    - se borra lo que DeepLab ve como persona, pero solo fuera de la zona de la mascota (la cara y el torso
@@ -265,22 +369,36 @@ function fuse(c, p, s) {
   return keep.some(Boolean) ? only(m, w, h, lab, keep).mask : p.pet;
 }
 
-/* recorte automático: devuelve { found, png, label, ms, loadMs }.
-   opts.mode es solo para comparar en pruebas: 'fusion' (el de la app), 'deeplab', 'u2netp' o 'legacy' (el de antes) */
+/* brazos y manos de quien la alza: fuera del corazón de la mascota, lo que DeepLab ve como persona se va
+   (salvo que DeepLab vea mucha más persona que mascota: perros negros) */
+function trimPerson(c, p, m) {
+  const w = c.width, h = c.height, n = w * h; let petA = 0, perA = 0;
+  for (let i = 0; i < n; i++) { if (p.pet[i] > .5) petA++; if (p.person[i] > .5) perA++; }
+  if (!perA || petA < perA * .25) return m;
+  const core = grow(p.pet, w, h, Math.round(Math.max(w, h) * .01), .5), o = Float32Array.from(m);
+  for (let i = 0; i < n; i++) if (p.person[i] > .6 && p.pet[i] < .25 && !core[i]) o[i] = 0;
+  return o;
+}
+/* recorte automático: devuelve { found, png, label, ms, loadMs, fallback, quality }.
+   fallback: 'round' cuando la máscara salió pobre y se entrega el recorte redondo en su lugar.
+   opts.mode es solo para comparar en pruebas: 'fusion' (el de la app), 'deeplab', 'u2netp' o 'legacy' */
 async function auto(dataUrl, opts = {}) {
   const mode = opts.mode || 'fusion', start = t0();
   await Promise.all([autoSeg(), mode === 'fusion' || mode === 'u2netp' ? salSeg() : null]);
-  const loadMs = Math.round(t0() - start), img = await loadImg(dataUrl), c = canvasOf(img);
-  const p = await pets(c), done = o => ({ ...o, ms: Math.round(t0() - start), loadMs, hit: Math.round(p.hit * 1000) / 10 });
-  if (p.hit < (mode === 'fusion' ? .004 : .02) && mode !== 'u2netp') return done({ found: false });
-  let png = null;
-  if (mode === 'legacy') png = compose(c, p.pet.map(v => Math.max(0, Math.min(1, (v - .35) / .3))), { feather: 1.2 });
-  else {
-    const m = mode === 'deeplab' ? p.pet : mode === 'u2netp' ? await saliency(c, opts.sal) : fuse(c, p, await saliency(c, opts.sal));
-    const q = refine(c, m, opts);
-    if (q) png = compose(c, q);
+  const loadMs = Math.round(t0() - start), img = await loadImg(dataUrl), c = canvasOf(img), sc = c.width / img.naturalWidth;
+  const p = await pets(c), done = o => ({ ...o, ms: Math.round(t0() - start), loadMs, hit: Math.round(p.hit * 1000) / 10, personHit: Math.round(p.personHit * 1000) / 10 });
+  if (p.hit < (mode === 'fusion' ? .004 : .02) && mode !== 'u2netp') return done(opts.noFallback ? { found: false } : { found: true, png: roundAt(img, null), fallback: 'round', quality: 'none' });
+  const m = mode === 'deeplab' || mode === 'legacy' ? p.pet : mode === 'u2netp' ? await saliency(c, opts.sal) : fuse(c, p, await saliencyBoth(c, p.pet, opts.sal));
+  const res = refine(c, trimPerson(c, p, m), opts, mode === 'u2netp' ? null : p.pet);
+  /* DeepLab ve casi tanta "persona" como mascota: típico de perros negros (la cabeza sale como persona).
+     El recorte no es confiable: mejor redondo */
+  /* y si hay una persona y el recorte se lleva bastante de ella (brazos, cara), también */
+  const qa = mode === 'fusion' && p.personHit > p.hit * .75 ? 'ambiguous' : mode === 'fusion' && p.personHit > .08 && res?.stats.pet < .85 ? 'person' : quality(res?.stats);
+  if (qa !== 'ok') {
+    if (opts.noFallback) return done({ found: false, quality: qa, stats: res?.stats });
+    return done({ found: true, png: roundAt(img, bboxOf(p.pet, c.width, c.height, .3, .1), sc), fallback: 'round', quality: qa, stats: res?.stats, label: p.label });
   }
-  return done(png ? { found: true, png, label: p.label } : { found: false });
+  return done({ found: true, png: compose(c, res), label: p.label, quality: qa, stats: res.stats });
 }
 /* "tocá a tu mascota": x e y van de 0 a 1 sobre la foto */
 async function touch(dataUrl, x, y) {
@@ -292,17 +410,11 @@ async function touch(dataUrl, x, y) {
     if (k) m = resize(Float32Array.from(k.getAsFloat32Array()), k.width, k.height, c.width, c.height);
     r.close?.(); ok();
   }));
-  const q = m && refine(c, m), png = q ? compose(c, q) : null;
-  return { found: Boolean(png), png, ms: Math.round(t0() - start) };
+  const res = m && refine(c, m), qa = quality(res?.stats);
+  return { found: qa === 'ok', png: qa === 'ok' ? compose(c, res) : null, quality: qa, ms: Math.round(t0() - start) };
 }
 /* plan C: recorte redondo y centrado */
-async function round(dataUrl) {
-  const img = await loadImg(dataUrl), s = Math.min(img.naturalWidth, img.naturalHeight), n = Math.min(OUT, s);
-  const c = document.createElement('canvas'); c.width = c.height = n; const x = c.getContext('2d');
-  x.beginPath(); x.arc(n / 2, n / 2, n / 2, 0, Math.PI * 2); x.clip();
-  x.drawImage(img, (img.naturalWidth - s) / 2, (img.naturalHeight - s) / 2, s, s, 0, 0, n, n);
-  return encode(c);
-}
+async function round(dataUrl) { return roundAt(await loadImg(dataUrl), null); }
 /* se puede llamar apenas la persona toca "Elegir foto", para ganar tiempo */
 const warm = () => Promise.all([autoSeg(), salSeg()]).catch(() => {});
-window.MZCUT = { auto, touch, round, warm };
+window.MZCUT = { auto, touch, round, warm, quality };
