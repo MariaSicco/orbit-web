@@ -192,6 +192,9 @@
   "functions": {
     "api/herramienta.js": {
       "includeFiles": "api/_herramientas/**"
+    },
+    "api/mascotas.js": {
+      "maxDuration": 30
     }
   }
 }

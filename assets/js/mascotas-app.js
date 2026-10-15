@@ -1071,6 +1071,8 @@ const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
    Cada una vive en su archivo (assets/js/mascotas-f-<nombre>.js y assets/css/mascotas-f-<nombre>.css) y solo se baja
    si está prendida. Para probarlas en local o en un preview de Vercel: /mascotas?funciones=salud,vete (queda en ese
    navegador); ?funciones=no las apaga. En producción no hay override. Para que salgan para todos: poner en true acá. */
+/* versión de cada archivo de función: subila cuando cambie, así el celu no se queda con la vieja */
+const FEATV = { salud: 2, restaurar: 1, avisosAlta: 1, vete: 2 };
 const FEATURES = { salud: true, restaurar: false, avisosAlta: false, vete: true };
 /* el override (?funciones= y lo guardado en este navegador) solo vale en local y en los previews de Vercel:
    en producción se ignora y se borra, así nadie prende algo que salió apagado por no pasar el QA */
@@ -1088,8 +1090,8 @@ const FEAT = window.MZFEAT = { on: FEATURES, routes: {}, bare: BARE, actions: {}
 const featHook = (name, ...a) => (FEAT.hooks[name] || []).map(fn => fn(...a) || '').join('');
 const featList = (name, ...a) => (FEAT.hooks[name] || []).flatMap(fn => fn(...a) || []);
 for (const k in FEATURES) if (FEATURES[k]) {
-  const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = `/assets/css/mascotas-f-${k}.css?v=1`; document.head.appendChild(l);
-  const sc = document.createElement('script'); sc.src = `/assets/js/mascotas-f-${k}.js?v=1`; sc.onload = () => { if (mode === 'full') render(); }; document.body.appendChild(sc);
+  const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = `/assets/css/mascotas-f-${k}.css?v=${FEATV[k] || 1}`; document.head.appendChild(l);
+  const sc = document.createElement('script'); sc.src = `/assets/js/mascotas-f-${k}.js?v=${FEATV[k] || 1}`; sc.onload = () => { if (mode === 'full') render(); }; document.body.appendChild(sc);
 }
 const nav = $('#nav'), topBar = $('.top');
 function parseHash() { const [name = 'inicio', arg = ''] = location.hash.replace(/^#\/?/, '').split('/'); return { name: name || 'inicio', arg: decodeURIComponent(arg) }; }

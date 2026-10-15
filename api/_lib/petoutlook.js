@@ -64,13 +64,16 @@ async function tokenCall(params) {
   return { ok: r.ok, status: r.status, d };
 }
 /* ids inmutables: así un mail que se mueve de carpeta conserva su id (y el dedupe sigue andando) */
-async function graph(url, at, { raw = false } = {}) {
+const wait = ms => new Promise(ok => setTimeout(ok, ms));
+async function graph(url, at, { raw = false } = {}, retried = false) {
   const r = await fetch(url.startsWith('https://') ? url : GRAPH + url, { headers: { Authorization: `Bearer ${at}`, Prefer: 'IdType="ImmutableId"' } });
+  /* 429/503: una vez más, después de lo que pida Microsoft (Retry-After), hasta 3 s */
+  if (!retried && (r.status === 429 || r.status === 503)) { await wait(Math.min(3000, Math.max(500, (Number(r.headers.get('retry-after')) || 1) * 1000))); return graph(url, at, { raw }, true); }
   if (r.status === 401) throw fail('mail_vencido', 401);
   if (r.status === 429 || r.status === 503) throw fail('mail_limite', 429);
   if (r.status === 404) throw fail('mail_no_encontrado', 404);
   if (!r.ok) {
-    const why = await r.clone().json().then(d => `${d.error?.code || ''} ${d.error?.message || ''}`).catch(() => '');
+    const why = await r.clone().json().then(d => `${d.error?.code || ''} ${d.error?.innerError?.code || ''}`).catch(() => '');
     console.warn('outlook api:', r.status, url.split('?')[0].replace(/https:\/\/[^/]+/, '').replace(/\/messages\/[^/]+/, '/messages/<id>'), String(why).replace(/https?:\/\/\S+/g, '<url>').slice(0, 200));
   }
   if (r.status === 400) throw fail('mail_consulta', 400);
@@ -87,6 +90,8 @@ const metaOf = a => ({ part: String(a.id), name: String(a.name || '').trim().sli
 const fromOf = f => { const e = f?.emailAddress || {}; return [e.name, e.address ? `<${e.address}>` : ''].filter(Boolean).join(' ').slice(0, 120); };
 
 export const outlook = {
+  /* Outlook acepta 4 pedidos simultáneos por casilla: con 3 queda margen */
+  parallel: 3,
   id: 'outlook', label: 'Outlook', revokes: false, consentUrl: 'https://account.live.com/consent/Manage',
   key: email => `orbit:petoutlook:${String(email).toLowerCase()}`,
   config: outlookConfig,
@@ -112,7 +117,7 @@ export const outlook = {
   /* Microsoft rota el refresh token en cada uso: el motor guarda el nuevo */
   async refresh(cfg, refresh) {
     const { ok, d } = await tokenCall({ client_id: cfg.clientId, client_secret: cfg.secret, refresh_token: refresh, grant_type: 'refresh_token', scope: SCOPES.join(' ') });
-    if (!ok) { if (['invalid_grant', 'interaction_required', 'consent_required'].includes(d.error)) return { expired: true }; throw fail('mail_error', 502); }
+    if (!ok) { if (['invalid_grant', 'interaction_required', 'consent_required'].includes(d.error)) return { expired: true }; console.warn('outlook refresh:', d.error || '-'); throw fail('mail_error', 502); }
     return { access: d.access_token, refresh: d.refresh_token || '' };
   },
   async revoke() { return false; },

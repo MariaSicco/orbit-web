@@ -125,14 +125,18 @@ async function tokenCall(params) {
   const d = await r.json().catch(() => ({}));
   return { ok: r.ok, status: r.status, d };
 }
-async function gget(path, at) {
+const wait = ms => new Promise(ok => setTimeout(ok, ms));
+const retryMs = r => Math.min(3000, Math.max(500, (Number(r.headers.get('retry-after')) || 1) * 1000));
+async function gget(path, at, retried = false) {
   const r = await fetch(GM + path, { headers: { Authorization: `Bearer ${at}` } });
+  /* un 429 (o 403 por cuota) se reintenta una vez después de lo que pida Google, hasta 3 s */
+  if (!retried && (r.status === 429 || (r.status === 403 && /rate|quota|limit/i.test(await r.clone().text().catch(() => ''))))) { await wait(retryMs(r)); return gget(path, at, true); }
   if (r.status === 401) throw fail('mail_vencido', 401);
   if (r.status === 429 || (r.status === 403 && /rate|quota|limit/i.test(await r.clone().text().catch(() => '')))) throw fail('mail_limite', 429);
   if (r.status === 404) throw fail('mail_no_encontrado', 404);
   if (!r.ok) {
     /* el motivo de Google (sin la URL ni la consulta, que lleva nombres) para poder diagnosticar */
-    const why = await r.clone().json().then(d => `${d.error?.status || ''} ${d.error?.message || ''}`).catch(() => '');
+    const why = await r.clone().json().then(d => `${d.error?.status || ''} ${(d.error?.errors || []).map(x => x.reason).join(',')}`).catch(() => '');
     console.warn('gmail api:', r.status, path.split('?')[0].replace(/\/messages\/[A-Za-z0-9]+/, '/messages/<id>'), String(why).replace(/https?:\/\/\S+/g, '<url>').slice(0, 200));
     throw fail(r.status === 400 ? 'mail_consulta' : 'mail_error', r.status === 400 ? 400 : 502);
   }
@@ -158,6 +162,8 @@ const getMsg = (id, at) => gget(`/messages/${encodeURIComponent(id)}?format=full
 const revokeToken = token => fetch(REVOKE_URL, { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form({ token }) });
 
 export const gmail = {
+  /* pedidos simultáneos por búsqueda: Gmail corta con 429 si se juntan muchos */
+  parallel: 5,
   id: 'gmail', label: 'Gmail', revokes: true, consentUrl: 'https://myaccount.google.com/permissions',
   key: email => `orbit:petgmail:${String(email).toLowerCase()}`,
   config: gmailConfig,
@@ -183,7 +189,7 @@ export const gmail = {
   },
   async refresh(cfg, refresh) {
     const { ok, d } = await tokenCall({ client_id: cfg.clientId, client_secret: cfg.secret, refresh_token: refresh, grant_type: 'refresh_token' });
-    if (!ok) { if (d.error === 'invalid_grant') return { expired: true }; throw fail('mail_error', 502); }
+    if (!ok) { if (d.error === 'invalid_grant') return { expired: true }; console.warn('gmail refresh:', d.error || '-'); throw fail('mail_error', 502); }
     return { access: d.access_token };
   },
   async revoke(cfg, refresh) { const r = await revokeToken(refresh); return r.ok || r.status === 400; },   // 400 = ya estaba revocado

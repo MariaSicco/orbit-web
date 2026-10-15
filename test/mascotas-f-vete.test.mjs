@@ -29,8 +29,9 @@ test('la hoja trae vacunas (con la vencida marcada), antiparasitarios, peso, rem
   const { F } = load(true);
   const p = { id: 'a', name: 'Aika', species: 'perro', sex: 'h', breed: 'Mestiza', birth: '2021-03-10', allergies: 'Penicilina', chronic: '', neutered: 'si', chip: '',
     records: [{ id: 'r1', type: 'vacuna', name: 'Séxtuple', date: D(-380), next: D(-15) }, { id: 'r2', type: 'desparasitacion', name: 'Pipeta', scope: 'externa', date: D(-35), next: D(25) }],
-    weights: [{ date: D(-90), kg: 8.7 }, { date: D(-10), kg: 9 }], meds: [], log: [], conditions: [{ id: 'c', name: 'Otitis', status: 'controlada' }], symptoms: [] };
+    weights: [{ date: D(-90), kg: 8.7 }, { date: D(-10), kg: 9 }], meds: [], log: [], conditions: [{ id: 'c', name: 'Otitis', status: 'controlada', since: '2026-01' }], symptoms: [] };
   const h = F.routes.vete(p);
-  for (const s of ['Séxtuple', 'vencida', 'Externo', 'Pipeta', '9 kg', 'Otitis', 'Controlado', 'Alergias:', 'Penicilina', 'castrado/a', 'no reemplaza al veterinario']) assert.ok(h.includes(s), s);
+  for (const s of ['Séxtuple', 'vencida', 'Externo', 'Pipeta', '9 kg', 'Otitis', 'Controlado', 'Alergias:', 'Penicilina', 'castrada', 'desde ene 2026', 'no reemplaza al veterinario']) assert.ok(h.includes(s), s);
+  assert.ok(!h.includes('castrado/a') && !h.includes('2026-01'), 'sexo y fecha formateados');
   assert.match(h, /Interno<\/b><span>Sin dato/);
 });

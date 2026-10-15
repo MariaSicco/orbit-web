@@ -493,7 +493,7 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
       if (now() - t0 > TIME_BUDGET_MS) return out({ cursor: signCursor({ ...cur, skip: i }, email), more: null, scanned: cur.scanned, done: false });
       /* tope de 200 por búsqueda: se puede seguir con "Buscar más" */
       if (cur.scanned >= MAX_MESSAGES) return out({ cursor: null, more: signCursor({ ...cur, skip: i, scanned: 0 }, email), scanned: cur.scanned, done: true });
-      const n = Math.min(PARALLEL, items.length - i, MAX_MESSAGES - cur.scanned);
+      const n = Math.min(P.parallel || PARALLEL, items.length - i, MAX_MESSAGES - cur.scanned);
       const got = await Promise.all(items.slice(i, i + n).map(async it => {
         const c = await P.candidate(at, it, doc, cur);
         if (!c) return null;

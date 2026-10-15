@@ -7,12 +7,13 @@ const A = window.MZAPP, Z = window.MZ, F = window.MZFEAT;
 if (!A || !Z || !F || !F.on.salud) return;
 const { esc, fmt } = Z, I = Z.icon, $ = s => document.querySelector(s);
 const ST = [['activa', 'Lo tiene'], ['controlada', 'Controlado'], ['resuelta', 'Ya pasó']];
+const sinceTxt = s => { s = String(s || ''); const m = s.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?$/); if (!m) return s; const d = new Date(+m[1], +m[2] - 1, +(m[3] || 1)); return m[3] ? d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : d.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }); };
 const n1 = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 function render(p) {
   const common = (Z.CONDITIONS[p.species] || Z.CONDITIONS.otra).filter(n => !p.conditions.some(c => n1(c.name) === n1(n)));
   const meds = p.meds.filter(m => Z.medState(m, p.log).state !== 'ended');
   const row = c => `<div class="cond" role="group" aria-label="${esc(c.name)}">
-      <button type="button" class="cond-n" data-act="editCond" data-id="${c.id}"><b>${esc(c.name)}</b>${c.since || c.notes ? `<small>${esc([c.since ? 'desde ' + c.since : '', c.notes].filter(Boolean).join(' · '))}</small>` : ''}</button>
+      <button type="button" class="cond-n" data-act="editCond" data-id="${c.id}"><b>${esc(c.name)}</b>${c.since || c.notes ? `<small>${esc([c.since ? 'desde ' + sinceTxt(c.since) : '', c.notes].filter(Boolean).join(' · '))}</small>` : ''}</button>
       <div class="chips">${ST.map(([k, l]) => `<button type="button" class="chip" data-act="condSet" data-id="${c.id}" data-st="${k}" aria-pressed="${c.status === k}">${l}</button>`).join('')}</div></div>`;
   const list = [...p.conditions].sort((a, b) => (a.status === 'resuelta') - (b.status === 'resuelta'));
   return `${A.backTo(p)}

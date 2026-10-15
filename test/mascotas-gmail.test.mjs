@@ -301,3 +301,19 @@ test('si Gmail rechaza la consulta nueva (400), busca una vez con la de antes y 
     assert.ok(s.body.candidates.length > 0);
   } finally { globalThis.fetch = inner; }
 });
+
+test('un 429 de Gmail se reintenta una vez y la búsqueda sigue', async () => {
+  await purchase(EMAIL);
+  await kvSet(`orbit:pets:${EMAIL}`, { ...doc, rev: 3 });
+  const go = await call('GET', { gmail: 'start', range: '3y' });
+  await call('GET', { gmail: 'callback', code: 'buen-code', state: new URL(go.headers.location).searchParams.get('state') });
+  const inner = globalThis.fetch; let first = true;
+  globalThis.fetch = async (url, opts) => {
+    if (first && /gmail\/v1\/users\/me\/messages\?/.test(String(url))) { first = false; return new Response('{}', { status: 429, headers: { 'Retry-After': '0' } }); }
+    return inner(url, opts);
+  };
+  try {
+    const s = await call('POST', { gmail: 'search' }, { mode: 'all' });
+    assert.equal(s.code, 200, JSON.stringify(s.body)); assert.equal(first, false); assert.ok(s.body.candidates.length > 0);
+  } finally { globalThis.fetch = inner; }
+});

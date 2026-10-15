@@ -7,6 +7,7 @@ const A = window.MZAPP, Z = window.MZ, F = window.MZFEAT;
 if (!A || !Z || !F || !F.on.vete) return;
 const { esc, iso } = Z, I = Z.icon;
 const ST = { activa: 'Lo tiene', controlada: 'Controlado', resuelta: 'Ya pasó' };
+const sinceTxt = s => { s = String(s || ''); const m = s.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?$/); if (!m) return s; const d = new Date(+m[1], +m[2] - 1, +(m[3] || 1)); return m[3] ? d.toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) : d.toLocaleDateString('es-AR', { month: 'short', year: 'numeric' }); };
 const n1 = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
 function sheet(p) {
   const dd = A.dd, up = Z.upcoming(p);
@@ -20,14 +21,14 @@ function sheet(p) {
   const sex = p.sex === 'h' ? 'hembra' : p.sex === 'm' ? 'macho' : '';
   const li = (k, v) => `<li><b>${k}</b><span>${v}</span></li>`;
   return `<article class="vete" aria-label="Resumen de ${esc(p.name)} para el veterinario">
-    <header class="vete-h">${A.avatar(p, 'big')}<div><h2>${esc(p.name)}</h2><p>${esc([Z.species(p), p.breed, sex, p.birth ? `${Z.age(p.birth)} (${dd(p.birth)})` : '', p.neutered === 'si' ? 'castrado/a' : p.neutered === 'no' ? 'sin castrar' : ''].filter(Boolean).join(' · '))}</p>${p.chip ? `<p class="num">Microchip ${esc(p.chip)}</p>` : ''}</div></header>
+    <header class="vete-h">${A.avatar(p, 'big')}<div><h2>${esc(p.name)}</h2><p>${esc([Z.species(p), p.breed, sex, p.birth ? `${Z.age(p.birth)} (${dd(p.birth)})` : '', p.neutered === 'si' ? (p.sex === 'h' ? 'castrada' : p.sex === 'm' ? 'castrado' : 'castrado/a') : p.neutered === 'no' ? (p.sex === 'h' ? 'no castrada' : p.sex === 'm' ? 'no castrado' : 'sin castrar') : ''].filter(Boolean).join(' · '))}</p>${p.chip ? `<p class="num">Microchip ${esc(p.chip)}</p>` : ''}</div></header>
     ${p.allergies ? `<p class="vete-alert">${I('alert')}<span><b>Alergias:</b> ${esc(p.allergies)}</span></p>` : ''}
     <div class="vete-g">
       <section><h3>Vacunas</h3>${names.length ? `<ul>${names.map(n => { const r = lastOf(n); return li(esc(n), dd(r.date) + due(r)); }).join('')}</ul>` : '<p class="dim">Sin vacunas cargadas.</p>'}</section>
       <section><h3>Antiparasitarios</h3><ul>${[['Interno', inter], ['Externo', exter]].map(([k, r]) => li(k, r ? `${esc(r.name)} · ${dd(r.date)}${due(r)}` : 'Sin dato')).join('')}</ul></section>
       <section><h3>Peso</h3>${wl ? `<p class="vete-big num">${A.kg(wl.kg)}</p><p class="dim">${dd(wl.date)}${w6 && w6 !== wl ? ` · ${wl.kg - w6.kg >= 0 ? '+' : ''}${String(Math.round((wl.kg - w6.kg) * 10) / 10).replace('.', ',')} kg desde ${dd(w6.date)}` : ''}</p>` : '<p class="dim">Sin peso cargado.</p>'}</section>
       <section><h3>Remedios</h3>${meds.length || p.chronic ? `<ul>${meds.map(m => li(esc(m.name), `${esc(m.dose || '')}${m.dose ? ' · ' : ''}cada ${m.every} h`)).join('')}${p.chronic ? li('De siempre', esc(p.chronic)) : ''}</ul>` : '<p class="dim">Ninguno.</p>'}</section>
-      <section><h3>Problemas de salud</h3>${p.conditions.length ? `<ul>${p.conditions.map(c => li(esc(c.name), `${ST[c.status] || ''}${c.since ? ' · desde ' + esc(c.since) : ''}`)).join('')}</ul>` : '<p class="dim">Ninguno cargado.</p>'}</section>
+      <section><h3>Problemas de salud</h3>${p.conditions.length ? `<ul>${p.conditions.map(c => li(esc(c.name), `${ST[c.status] || ''}${c.since ? ' · desde ' + esc(sinceTxt(c.since)) : ''}`)).join('')}</ul>` : '<p class="dim">Ninguno cargado.</p>'}</section>
       <section class="vete-wide"><h3>Algo pasó (últimos 30 días)</h3>${eps.length ? `<ul>${eps.slice(0, 6).map(g => li(`${esc(Z.epTitle(g.last))}${g.n > 1 ? ` · ${g.n} veces` : ''}`, `${dd(g.last.date)}${g.sevs.length ? ' · ' + esc(g.sevs.join(', ')) : ''}${g.notes.length ? ' · ' + esc(g.notes.join(' · ')) : ''}`)).join('')}</ul>` : '<p class="dim">Nada anotado.</p>'}</section>
     </div>
     <p class="vete-f">Mimitos by Orbit · ${dd(iso(Z.today()))} · Datos cargados por la familia. Mimitos es un organizador: no reemplaza al veterinario.</p>
