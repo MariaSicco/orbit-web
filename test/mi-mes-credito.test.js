@@ -36,8 +36,10 @@ test('noviembre: manda la tabla del banco y la compra nueva se suma aparte', () 
   const nov = M.resumenMes(d, '2026-11');
   assert.deepEqual(nov.delBanco.map(x => x.monto), [$(120_000)]);
   assert.equal(nov.totNuevas, $(30_000));
-  assert.equal(nov.totTarjetas, $(150_000));
-  assert.equal(nov.totAnteriores, $(120_000));
+  // + percepción estimada por los US$ 55 de octubre pagados en pesos: 55 × 2.000 × 30 % = 33.000
+  assert.deepEqual(nov.percepciones.map(p => [p.monto, p.estimado]), [[$(33_000), true]]);
+  assert.equal(nov.totTarjetas, $(150_000) + $(33_000));
+  assert.equal(nov.totAnteriores, $(120_000) + $(33_000));
   assert.equal(nov.dentroDeResumen.length, 1, 'la cuota detectada no se cuenta dos veces');
 });
 test('crédito por tarjeta: resumen sin vencer + cuotas que vienen (tabla) + compras nuevas', () => {
@@ -46,7 +48,8 @@ test('crédito por tarjeta: resumen sin vencer + cuotas que vienen (tabla) + com
   assert.equal(c.resumen, $(507_130) + $(110_000), 'US$ 55 a 2.000');
   assert.equal(c.futuras, $(120_000) * 3 + $(960_000), 'nov, dic, ene y "a partir de"');
   assert.equal(c.nuevas, 0);
-  assert.equal(c.total, c.resumen + c.futuras);
+  assert.equal(c.percepcion, $(33_000), 'percepción estimada del resumen siguiente');
+  assert.equal(c.total, c.resumen + c.futuras + c.percepcion);
   // vencido el resumen, el saldo ya no se debe (se pagó) y las cuotas que vienen siguen
   assert.equal(M.creditoTarjeta(d, tarjeta, '2026-10-20').resumen, 0);
   const otra = M.creditoTarjeta(d, 'otra', '2026-10-05');
@@ -82,7 +85,7 @@ test('alerta principal: mes a mes, cuando lo que vence supera la plata líquida,
   const b = M.alertasCredito(d, '2026-10-05', 6);
   const nov = b.find(x => x.mes === '2026-11');
   assert.equal(nov.nivel, 'aviso');
-  assert.deepEqual([nov.anteriores, nov.nuevas], [$(120_000), $(30_000) + $(700_000)]);
+  assert.deepEqual([nov.anteriores, nov.nuevas], [$(120_000) + $(33_000), $(30_000) + $(700_000)]);
   assert.match(nov.texto, /viene de antes .* compras nuevas/);
   assert.deepEqual(M.mesesCreditoSupera(d, '2026-10-05'), ['2026-10', '2026-11', '2026-12']);
   d.alertasVistas = ['credito:2026-11'];
@@ -197,4 +200,66 @@ test('gastos de un solo mes y aguinaldo', () => {
   assert.equal(d.gastos[0].categoria, 'Patente');
   assert.equal(M.resumenMes(d, '2027-03').totGastos, 100);
   assert.equal(M.resumenMes(d, '2027-04').totGastos, 0);
+});
+
+/* ── tanda 8 (QA) ── */
+test('[QA 4] dólares sin doble conteo: el saldo en US$ al oficial y la percepción una sola vez, estimada hasta que llega la real', () => {
+  const E = M.validarLectura(JSON.parse(readFileSync(new URL('./fixtures/mi-mes/dolares-rg5617.json', import.meta.url), 'utf8'))).lectura;
+  let k = 0;
+  const r = M.importarResumen(M.datosVacios(), E, { nuevoId: () => `q${k++}` });
+  const d = r.datos;                                                   // tipo de cambio por defecto: oficial
+  assert.equal(M.cambioDe(d, 'USD').valor, $(1_535));
+  assert.match(M.cambioDe(d, 'USD').fuente, /oficial/i);
+  const oct = M.resumenMes(d, '2026-10');
+  assert.equal(oct.totTarjetas, $(507_130) + $(55) * 1_535, 'octubre: el total en pesos (que ya trae su percepción) + US$ 55 al oficial, sin otro 30 %');
+  const nov = M.resumenMes(d, '2026-11');
+  assert.equal(nov.percepciones[0].monto, Math.round($(55) * 1_535 * 0.3), 'noviembre: la percepción de esos US$, una vez y marcada estimada');
+  // llega el resumen de noviembre con la percepción real: la estimada desaparece
+  const sig = structuredClone(E);
+  sig.vencimiento = '2026-11-11'; sig.cuotasAVencer = []; sig.totales = { ARS: $(30_000) };
+  sig.consumos = []; sig.pagosYCreditos = []; sig.saldoAnterior = {}; sig.cargos = [{ fecha: null, concepto: 'DB.RG 5617 30%', monto: $(30_000), moneda: 'ARS', tipo: 'percepcion' }];
+  const r2 = M.importarResumen(d, sig, { tarjetaId: r.tarjetaId, nuevoId: () => `z${k++}` });
+  const nov2 = M.resumenMes(r2.datos, '2026-11');
+  assert.deepEqual(nov2.percepciones, []);
+  assert.equal(nov2.totTarjetas, $(30_000), 'solo la real');
+});
+test('[QA 4] compra nueva en dólares: cuenta con la percepción (todavía no se cobró en ningún resumen)', () => {
+  const { d } = persona();
+  d.cuotas.push({ id: 'usd', descripcion: 'App', total: $(100), moneda: 'USD', cantidad: 1, tarjetaId: 'otra', primerMes: '2026-12', fecha: '2026-10-10', origen: 'manual' });
+  const c = M.resumenMes(d, '2026-12').cuotas.find(x => x.id === 'usd');
+  assert.equal(c.monto, $(100) * 2_000 * 1.3);
+});
+test('[QA 5] una sola cuenta: Inicio, escalera, tope y "se te liberan" coinciden mes a mes (con tabla del banco y compras nuevas)', () => {
+  const { d, tarjeta } = persona();
+  d.cuotas.push({ id: 'n2', descripcion: 'Bici', total: $(250_040), moneda: 'ARS', cantidad: 2, tarjetaId: tarjeta, primerMes: '2026-12', fecha: '2026-11-02', origen: 'manual' });
+  const e = M.escalera(d, '2026-10', 8);
+  for (const f of e.filas) {
+    const r = M.resumenMes(d, f.mes);
+    assert.equal(f.total, r.totTarjetas, `escalera = Inicio en ${f.mes}`);
+    assert.equal(M.limiteDelMes(d, f.mes).cuotas, r.totTarjetas, `tope = Inicio en ${f.mes}`);
+    assert.equal(Object.values(f.porTarjeta).reduce((a, b) => a + b, 0), f.total, `por tarjeta suma el total en ${f.mes}`);
+  }
+  const dic = e.filas.find(f => f.mes === '2026-12');
+  assert.equal(dic.porTarjeta[tarjeta], $(120_000) + $(125_020), 'tabla del banco + la compra nueva de esa tarjeta');
+  assert.deepEqual(e.diferencias, [], 'la compra nueva no aparece como "falta cargar"');
+  const lib = M.liberaciones(d, '2026-10', 8);
+  for (const l of lib) {
+    const prev = M.resumenMes(d, M.sumarMeses(l.mes, -1)).totTarjetas;
+    assert.equal(l.libera, prev - M.resumenMes(d, l.mes).totTarjetas, `se te liberan = baja del Inicio en ${l.mes}`);
+  }
+});
+test('[QA 7] al servidor de avisos va un alias: nunca el banco ni los últimos 4', () => {
+  const todas = [{ id: 'a', red: 'Visa' }, { id: 'b', red: 'Visa' }, { id: 'c', red: 'Mastercard' }, { id: 'd', red: 'Otra' }];
+  assert.deepEqual(todas.map(t => M.aliasTarjeta(t, todas)), ['Tarjeta Visa 1', 'Tarjeta Visa 2', 'Tarjeta Mastercard 1', 'Tarjeta 1']);
+  assert.deepEqual(M.limpiarTarjetasAvisos([{ id: 'x', nombre: 'Galicia Visa ···4821', vencimiento: '2026-11-10' }]).map(t => t.nombre), ['Galicia Visa']);
+});
+test('[QA 6] el resumen de ejemplo solo en el archivo local; sin red o con error, falla y nada para guardar', () => {
+  assert.deepEqual(M.decidirLectura({ local: true }), { usar: 'ejemplo', modo: 'local' });
+  assert.equal(M.decidirLectura({ errorRed: true }).usar, 'falla');
+  assert.match(M.decidirLectura({ errorRed: true }).mensaje, /revisá tu conexión/);
+  assert.equal(M.decidirLectura({ status: 404, json: null }).usar, 'falla', 'un 404 sin JSON no es modo prueba');
+  assert.equal(M.decidirLectura({ status: 501, json: null }).usar, 'falla');
+  assert.deepEqual(M.decidirLectura({ status: 504, json: { ok: false, error: 'tardó' } }), { usar: 'falla', mensaje: 'tardó' });
+  assert.deepEqual(M.decidirLectura({ status: 200, json: { ok: true, modo: 'prueba' } }), { usar: 'servidor', modo: 'prueba' });
+  assert.deepEqual(M.decidirLectura({ status: 200, json: { ok: true, modo: 'real' } }), { usar: 'servidor', modo: 'real' });
 });

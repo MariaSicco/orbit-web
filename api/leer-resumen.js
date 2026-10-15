@@ -41,7 +41,7 @@ async function leerCuerpo(req, max) {
 
 const responder = (res, code, cuerpo) => { res.setHeader('Cache-Control', 'no-store'); return res.status(code).json(cuerpo); };
 
-const ESTADO_ERROR = { timeout: 504, limite: 503, api: 502, rechazo: 422, invalida: 422 };
+const ESTADO_ERROR = { timeout: 504, tiempo: 504, limite: 503, api: 502, rechazo: 422, invalida: 422 };
 
 export default async function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') { res.setHeader('Allow', 'GET, POST'); return responder(res, 405, { ok: false, error: 'Usá POST con el PDF.' }); }

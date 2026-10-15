@@ -181,3 +181,25 @@ test('esquema: como mucho 16 campos con unión (límite de la API) y el JSON se 
   assert.ok(n <= 16, `hay ${n} campos con unión`);
   assert.equal(lector.soloJson('```json\n{"a":1}\n```'), '{"a":1}');
 });
+test('claude: presupuesto de tiempo — sin 25 s por delante no reintenta y avisa "cargalo a mano"', () => conKey(async () => {
+  let ahora = 0;
+  lector.__usarReloj(() => ahora);
+  try {
+    // el primer intento tarda 35 s y devuelve algo que no sirve: quedan 20 s, no alcanza para reintentar
+    const c = { pedidos: [], beta: { messages: { create: async (p, o) => { c.pedidos.push(o); ahora += 35_000; return respuestaClaude('{roto'); } } } };
+    lector.__usarCliente(c);
+    const r = await leerReal();
+    assert.deepEqual([r.code, r.body.motivo], [504, 'tiempo']);
+    assert.match(r.body.error, /cargalo a mano/);
+    assert.equal(c.pedidos.length, 1, 'no hubo reintento');
+    assert.ok(c.pedidos[0].timeout <= 52_000, 'el primer intento ya tiene tope');
+    // si el primero tarda 10 s, sí reintenta, con el tiempo que queda como tope
+    ahora = 0;
+    const d = { pedidos: [], beta: { messages: { create: async (p, o) => { d.pedidos.push(o); ahora += 10_000; return d.pedidos.length === 1 ? respuestaClaude('{roto') : respuestaClaude(resumenEjemplo()); } } } };
+    lector.__usarCliente(d);
+    const r2 = await leerReal();
+    assert.equal(r2.code, 200);
+    assert.equal(d.pedidos.length, 2);
+    assert.ok(d.pedidos[1].timeout <= 55_000 - 10_000 - 3_000, 'el reintento usa lo que queda');
+  } finally { lector.__usarReloj(null); }
+}));

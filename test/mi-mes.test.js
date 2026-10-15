@@ -251,7 +251,8 @@ test('importar: crea la tarjeta, guarda el resumen y suma las cuotas detectadas'
   assert.equal(nov.dentroDeResumen.length, 1);
   // el mes siguiente sigue la cuota 4/6 (la 3/6 estaba en el resumen de noviembre)
   const dic = resumenMes(d, '2026-12');
-  assert.deepEqual([dic.totResumenes, dic.totCuotas, dic.cuotas[0].numero], [0, $(100_000), 4]);
+  // + percepción estimada por los US$ 30,50 de noviembre: 30,5 × 2.000 × 30 % = 18.300
+  assert.deepEqual([dic.totResumenes, dic.totCuotas, dic.cuotas[0].numero], [0, $(100_000) + $(18_300), 4]);
 });
 test('importar: el resumen del mes siguiente no duplica la cuota ni la tarjeta', () => {
   const { lectura } = M.validarLectura(lecturaEjemplo());
@@ -284,7 +285,7 @@ test('tarjeta: total del mes, gasto por rubro y disponible del límite (con USD)
   d.tarjetas[0].limite = $(2_000_000);
   // usado desde octubre: cuotas 2/6 a 6/6 de 100.000 + consumos en un pago 50.000 + US$ 30,50
   const disp = M.disponibleTarjeta(d, r.tarjetaId, '2026-10');
-  assert.equal(disp.usado, $(500_000) + $(50_000) + $(61_000));
+  assert.equal(disp.usado, $(311_000) + $(300_000) + $(18_300), 'resumen + cuotas dic a feb + percepción estimada');
   assert.equal(disp.disponible, $(2_000_000) - disp.usado);
 });
 test('rubros: la corrección del usuario gana para ese comercio, aunque cambie el número', () => {
@@ -372,9 +373,10 @@ test('alertas: antes del cierre nada; cerrado avisa a qué resumen va lo nuevo, 
   assert.match(a.find(x => x.tipo === 'cierre').texto, /resumen de diciembre 2026/);
   const usd = a.find(x => x.tipo === 'dolares');
   assert.equal(usd.usd, 3_050);
-  // US$ 30,50 × (1.950 − 1.950/1,3) = 30,5 × 450 = 13.725
-  assert.equal(usd.ahorro, $(13_725));
-  assert.match(usd.texto, /dólares propios antes del 10 nov/);
+  // la percepción que te ahorrás: US$ 30,50 × 1.950 (oficial) × 30 % = 17.842,50
+  assert.equal(usd.ahorro, 1_784_250);
+  assert.match(usd.texto, /Si pagás estos US\$ en pesos, en el próximo resumen te cobran ~\$ 17\.843 de percepción/);
+  assert.match(usd.texto, /dólares propios antes del 10 nov, no/);
 });
 test('alertas: vence en N días desde 5 antes, fuerte el día anterior y el mismo día, nada después', () => {
   const { datos } = conResumen();
@@ -440,7 +442,7 @@ test('simulador: muestra libres antes y después sin tocar los datos, y la alert
   assert.equal(s[3].supera, M.limiteDelMes(d, '2027-02').supera, 'sin la compra, el mes queda como estaba');
   assert.equal(JSON.stringify(d), copia, 'no modifica los datos');
   const usd = M.simularCompra(d, { total: $(100), cantidad: 1, primerMes: '2026-11', moneda: 'USD' }, '2026-11', 1);
-  assert.equal(usd[0].nueva, $(200_000));
+  assert.equal(usd[0].nueva, $(260_000), 'compra nueva en US$: oficial + percepción del 30 %');
 });
 
 /* ── entrega: la herramienta pasa por el control de compra ── */

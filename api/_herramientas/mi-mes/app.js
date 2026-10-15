@@ -5,10 +5,10 @@ import {
   formatoPesos as $, formatoMoneda as fm, leerMonto, cambioDe, aPesos,
   repartirCuotas, ultimoMes, numeroDeCuota, resumenMes, tarjetaEnMes, totalResumen,
   gastoPorRubro, disponibleTarjeta, rubroPara, normalizarComercio,
-  validarLectura, importarResumen, datosVacios, migrar,
+  validarLectura, importarResumen, datosVacios, migrar, decidirLectura,
   escalera, limiteDelMes, alertasTarjetas, cicloTarjeta, eventosTarjeta, generarICS, diasEntre,
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
-  cargosDelResumen, proximaLiberacion, GASTOS_UN_MES, mesAguinaldo,
+  cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -147,6 +147,7 @@ function pintarInicio(animar = false) {
         extra: x.faltaCambio.length ? ' <span class="mm-tag">Falta tipo de cambio</span>' : '' });
     }),
     ...r.delBanco.map(x => item({ ir: x.tarjetaId, icono: 'escalera', titulo: `Cuotas de ${x.tarjeta}`, meta: 'Según la tabla "cuotas a vencer" del banco', monto: '−' + $(x.monto) })),
+    ...r.percepciones.map(x => item({ ir: x.tarjetaId, icono: 'dolar', titulo: `Percepción 30 % · ${x.tarjeta}`, meta: 'Estimada: si pagaste en pesos los US$ del resumen anterior. Si los pagaste con dólares propios, no va', monto: '−' + $(x.monto), extra: ' <span class="mm-tag ext">Estimado</span>' })),
     ...r.cuotas.map(c => item({ tipo: 'cuota', id: c.id, icono: 'cuota', titulo: c.descripcion || 'Compra en cuotas',
       meta: `${c.tarjeta} · ${c.cantidad > 1 ? `cuota ${c.numero}/${c.cantidad}` : 'un pago'}`, monto: '−' + $(c.monto),
       sub: c.moneda !== 'ARS' ? fm(c.original, c.moneda) : '',
@@ -201,11 +202,19 @@ function pintarContraste(r, cred) {
     </div>
     <div class="mm-cx-deuda">
       <div><p class="mm-item-meta">Debés en total en tarjetas</p><p class="mm-cx-total">${esc($(cred.total))}</p></div>
-      <dl><div><dt>Resumen por pagar</dt><dd>${esc($(cred.resumen))}</dd></div><div><dt>Cuotas que vienen</dt><dd>${esc($(cred.futuras))}</dd></div><div><dt>Compras nuevas</dt><dd>${esc($(cred.nuevas))}</dd></div></dl>
+      <dl><div><dt>Resumen por pagar</dt><dd>${esc($(cred.resumen))}</dd></div><div><dt>Cuotas que vienen</dt><dd>${esc($(cred.futuras + cred.percepcion))}</dd></div><div><dt>Compras nuevas</dt><dd>${esc($(cred.nuevas))}</dd></div></dl>
+      ${cred.percepcion ? `<p class="mm-fuente" style="margin:0">"Cuotas que vienen" incluye ${esc($(cred.percepcion))} de percepción estimada por saldos en dólares.</p>` : ''}
     </div>
     ${!datos.tarjetas.length ? `<button type="button" class="mm-btn" data-agregar-tarjeta>${ic('subir')} Agregá tu tarjeta: subí el último resumen</button>` : `<button type="button" class="mm-link" data-nuevo="cuota">¿Compraste algo que todavía no está en el resumen?</button>`}`;
 }
 
+/* Si el resumen tiene saldo en otra moneda: lo que cobra de percepción el siguiente si se paga en pesos */
+function lineaPercepcion(res) {
+  const p = percepcionEstimada(res, datos);
+  if (!p) return '';
+  const ext = Object.entries(res.totales || {}).filter(([m, v]) => m !== 'ARS' && v > 0).map(([m, v]) => fm(v, m)).join(' y ');
+  return `<p class="mm-cargos-linea">Si pagás ${esc(ext)} en pesos, en el próximo resumen te cobran <b>~${esc($(p))}</b> de percepción (si los pagás con dólares propios, no). La sumamos al mes siguiente como estimado.</p>`;
+}
 /* "Este resumen te cobró $ X de intereses y cargos" (las devoluciones restan) */
 function lineaCargos(res) {
   const c = cargosDelResumen(res, datos);
@@ -256,6 +265,7 @@ function pintarUna() {
       <div class="mm-chips-mon">${Object.entries(tot.porMoneda).map(([m, v]) => `<span class="mm-mon">${esc(fm(v, m))}</span>`).join('')}</div>
       ${tot.faltaCambio.length ? `<p class="mm-err">Falta el tipo de cambio de ${tot.faltaCambio.map(m => MONEDAS[m].nombre).join(' y ')}: no está sumado. <button type="button" class="mm-link" data-cambio>Cargarlo</button></p>` : ''}
       ${lineaCargos(res)}
+      ${lineaPercepcion(res)}
       <dl class="mm-datos">
         <div><dt>Vence</dt><dd>${esc(fechaCorta(res.vencimiento) || '—')}</dd></div>
         <div><dt>Cierre</dt><dd>${esc(fechaCorta(res.cierre) || '—')}</dd></div>
@@ -271,7 +281,7 @@ function pintarUna() {
   const dispHTML = `<section class="mm-panel mm-disp" aria-labelledby="u-disp"><div class="mm-seccion-top"><h2 id="u-disp">Lo que debés en esta tarjeta</h2></div>
       <p class="mm-total-num" style="font-size:32px">${esc($(cr.total))}</p>
       <dl class="mm-datos"><div><dt>Resumen por pagar</dt><dd>${esc($(cr.resumen))}</dd></div><div><dt>Cuotas que vienen</dt><dd>${esc($(cr.futuras))}</dd></div>
-        <div><dt>Compras nuevas</dt><dd>${esc($(cr.nuevas))}</dd></div><div><dt>${disp ? 'Crédito disponible' : 'Límite'}</dt><dd>${disp ? esc($(Math.max(0, disp.disponible))) : '—'}</dd></div></dl>
+        <div><dt>Compras nuevas</dt><dd>${esc($(cr.nuevas))}</dd></div>${cr.percepcion ? `<div><dt>Percepción estimada</dt><dd>${esc($(cr.percepcion))}</dd></div>` : ''}<div><dt>${disp ? 'Crédito disponible' : 'Límite'}</dt><dd>${disp ? esc($(Math.max(0, disp.disponible))) : '—'}</dd></div></dl>
       ${disp ? `<div class="mm-barra" role="img" aria-label="${esc(`Usás ${$(disp.usado)} de ${$(disp.limite)}`)}"><i style="width:${Math.min(100, (disp.usado / disp.limite) * 100)}%"></i></div>
         <p class="mm-fuente" style="margin:8px 0 10px">Límite ${esc($(disp.limite))} menos lo que debés (con lo que es en otra moneda pasado a pesos).${disp.disponible < 0 ? ' <b style="color:var(--neg)">Estás por encima del límite.</b>' : ''}</p>`
         : `<p class="mm-vacio">El límite sale del resumen. <button type="button" class="mm-link" data-importar="${esc(t.id)}">Subí el último</button> o <button type="button" class="mm-link" data-editar-tarjeta="${esc(t.id)}">cargalo a mano</button>.</p>`}
@@ -430,6 +440,7 @@ function pintarRevisar() {
             <div><dt>Cuenta en</dt><dd>${esc(capital(nombreMes(mesCuenta)))}</dd></div>
           </dl>
           ${lineaCargos({ cargos: l.cargos })}
+          ${lineaPercepcion({ totales: l.totales })}
           <div class="mm-seccion-top"><h2 style="font-size:16px">Total a pagar, por moneda</h2></div>
           ${totalesHTML}
           <p class="mm-fuente" style="margin:6px 0 10px">El total a pagar sale del resumen: es lo que se descuenta de "te quedan libres" en ${esc(nombreMes(mesCuenta))}. Si no coincide con tu PDF, corregilo.</p>
@@ -528,9 +539,9 @@ function abrirSubir(tarjetaId = null, { agregar = false } = {}) {
 let modoLectura = LOCAL ? 'prueba' : null;
 if (!LOCAL) {
   fetch('/api/leer-resumen', { credentials: 'same-origin' })
-    .then(r => (r.ok ? r.json() : { modo: r.status === 404 || r.status === 501 ? 'prueba' : null }))
+    .then(r => (r.ok ? r.json() : { modo: null }))
     .then(j => { modoLectura = j?.modo || null; })
-    .catch(() => { modoLectura = 'prueba'; });
+    .catch(() => { modoLectura = null; });   // sin red no hay "modo prueba": solo lo dice el servidor
 }
 $id('dlg-subir').querySelector('form').addEventListener('submit', e => {
   e.preventDefault();
@@ -545,25 +556,19 @@ $id('archivo').addEventListener('change', async e => {
   if (!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name)) return mostrarFalla('Ese archivo no es un PDF. Subí el resumen tal como lo descargás del banco.');
   $id('cargando').hidden = false;
   try {
-    let json, modo;
-    if (LOCAL) {
-      await new Promise(r => setTimeout(r, 600));
-      json = { ok: true, lectura: resumenEjemplo() }; modo = 'local';
-    } else {
-      let res;
+    let json = null, errorRed = false, status = 0;
+    if (LOCAL) await new Promise(r => setTimeout(r, 600));
+    else {
       try {
-        res = await fetch('/api/leer-resumen', { method: 'POST', body: f, credentials: 'same-origin', headers: { 'Content-Type': 'application/octet-stream' } });
-      } catch {
-        res = null;
-      }
-      /* sin servidor (archivo suelto o hosting estático): datos de ejemplo, avisando */
-      if (!res || res.status === 404 || res.status === 501) { json = { ok: true, lectura: resumenEjemplo() }; modo = 'local'; }
-      else {
-        json = await res.json().catch(() => ({ ok: false, error: 'La lectura falló. Probá de nuevo en un rato o cargalo a mano.' }));
-        modo = json.modo === 'prueba' ? 'prueba' : 'real';
-        if (!res.ok || !json.ok) return mostrarFalla(json.error || 'La lectura falló. Probá de nuevo en un rato o cargalo a mano.');
-      }
+        const res = await fetch('/api/leer-resumen', { method: 'POST', body: f, credentials: 'same-origin', headers: { 'Content-Type': 'application/octet-stream' } });
+        status = res.status;
+        json = await res.json().catch(() => null);
+      } catch { errorRed = true; }
     }
+    const d = decidirLectura({ local: LOCAL, errorRed, status, json });
+    if (d.usar === 'falla') return mostrarFalla(d.mensaje);
+    if (d.usar === 'ejemplo') json = { ok: true, lectura: resumenEjemplo() };
+    const modo = d.modo;
     const v = validarLectura(json.lectura);
     if (!v.ok) return mostrarFalla(`No encontramos datos clave: ${v.errores.join(' ')} Preferimos que lo cargues a mano antes que inventar montos.`);
     pendiente = { estado: v.lectura.confianza === 'alta' ? 'ok' : 'dudosa', lectura: v.lectura, modo,
@@ -737,8 +742,8 @@ function previewCuota() {
   else if (cs[0] === cs[1]) txt = `${n} cuotas de ${fm(cs[1], m, { centavos: true })} · ${corto(primer)} → ${corto(fin)}`;
   else txt = `1ª de ${fm(cs[0], m, { centavos: true })} y ${n - 1} de ${fm(cs[1], m, { centavos: true })} · ${corto(primer)} → ${corto(fin)}`;
   if (m !== 'ARS') {
-    const ars = aPesos(cs[cs.length - 1], m, datos);
-    txt += ars === null ? ' · falta el tipo de cambio' : ` · ≈ ${$(ars)} por cuota al cambio de hoy`;
+    const ars = aPesos(cs[cs.length - 1], m, datos, { percepcion: true });
+    txt += ars === null ? ' · falta el tipo de cambio' : ` · ≈ ${$(ars)} por cuota (oficial + 30 % de percepción)`;
   }
   const k = numeroDeCuota({ primerMes: primer, cantidad: n }, HOY);
   if (k > 1) txt += ` · este mes pagás la ${k}/${n}`;
@@ -1366,7 +1371,7 @@ function pintarPush(mensaje = '') {
     ${instalar}
     <section class="mm-push-sec"><h3>${instalada() ? '' : '2. '}Activá los avisos</h3>${accion}
       ${mensaje ? `<p class="mm-err" role="alert">${esc(mensaje)}</p>` : ''}
-      <p class="mm-fuente"><b>Qué guardamos para avisarte:</b> el permiso de tu celular y, por tarjeta, el nombre, las fechas de cierre y vencimiento y si tiene dólares (sí o no). Nada de montos ni consumos. Queda atado a tu cuenta de Orbit y se borra al desactivar.</p></section>
+      <p class="mm-fuente"><b>Qué guardamos para avisarte:</b> el permiso de tu celular y, por tarjeta, un alias (por ejemplo "Tarjeta Visa 1", sin banco ni números), las fechas de cierre y vencimiento y si tiene dólares (sí o no); además, los meses en que lo que vence supera tu plata líquida. Nada de montos ni consumos. Queda atado a tu cuenta de Orbit y se borra al desactivar.</p></section>
     <section class="mm-push-sec"><h3>Sin avisos en el celular</h3><p class="mm-fuente">Igual ves los avisos dentro de la app, y en cada tarjeta podés tocar <b>Agregar al calendario</b> para que te suene desde el calendario del teléfono.</p></section>`;
 }
 async function activarPush() {

@@ -56,18 +56,20 @@ export const MONEDAS = {
 export const esMoneda = m => typeof m === 'string' && Object.hasOwn(MONEDAS, m);
 
 /* Tipo de cambio por defecto: pesos (en centavos) por 1 unidad de la moneda.
-   Es el "dólar tarjeta": oficial + 30 % de percepción de Ganancias
-   (RG 5617; el impuesto PAÍS venció el 22/12/2024). Se muestra siempre con
-   su fuente y su fecha, y la persona lo puede cambiar. */
+   Es el OFICIAL (vendedor): a eso se convierte el saldo en dólares de un
+   resumen si se paga con pesos. La percepción del 30 % (RG 5617) no va acá:
+   el banco la cobra como cargo en pesos en el resumen siguiente, y la app la
+   proyecta aparte, marcada "estimado", hasta que llega ese resumen.
+   Se muestra siempre con su fuente y su fecha, y la persona lo puede cambiar. */
 export const CAMBIO_DEFECTO = {
   USD: {
-    valor: 200200, fecha: '2026-10-10',
-    fuente: 'Dólar tarjeta: oficial Banco Nación $ 1.535 + 30 % de percepción de Ganancias (El Cronista)',
+    valor: 153500, fecha: '2026-10-10',
+    fuente: 'Dólar oficial Banco Nación (venta) $ 1.535 (El Cronista)',
     url: 'https://www.cronista.com/finanzas-mercados/dolar-hoy-a-cuanto-cotiza-el-oficial-en-los-bancos-de-la-city-este-sabado-10-de-octubre/',
   },
   EUR: {
-    valor: 221125, fecha: '2026-10-11',
-    fuente: 'Euro tarjeta estimado: euro oficial $ 1.700,96 + 30 % de percepción de Ganancias (cotizacion-dolar.com.ar)',
+    valor: 170096, fecha: '2026-10-11',
+    fuente: 'Euro oficial $ 1.700,96 (cotizacion-dolar.com.ar)',
     url: 'https://www.cotizacion-dolar.com.ar/euro-hoy.php',
   },
 };
@@ -148,11 +150,25 @@ export function cambioDe(datos, moneda) {
   return CAMBIO_DEFECTO[moneda] || null;
 }
 /* Monto en su moneda → centavos de peso, o null si no hay tipo de cambio. */
-export function aPesos(centavos, moneda, datos) {
+/* Con `percepcion: true` suma el 30 % de la RG 5617: es lo que termina
+   costando en pesos una compra NUEVA en moneda extranjera (todavía no tiene la
+   percepción cobrada en ningún resumen). */
+export function aPesos(centavos, moneda, datos, { percepcion = false } = {}) {
   if (moneda === 'ARS' || !moneda) return centavos;
   const c = cambioDe(datos, moneda);
   if (!c) return null;
-  return Math.round((centavos * c.valor) / 100);
+  return Math.round((centavos * c.valor * (percepcion ? 1 + PERCEPCION_RG5617 : 1)) / 100);
+}
+export const PERCEPCION_RG5617 = 0.30;
+/* Percepción que el resumen siguiente va a cobrar en pesos si el saldo en
+   moneda extranjera de este resumen se paga con pesos (al oficial). */
+export function percepcionEstimada(resumen, datos) {
+  let base = 0;
+  for (const [m, v] of Object.entries(resumen?.totales || {})) {
+    if (m === 'ARS' || v <= 0) continue;
+    base += aPesos(v, m, datos) ?? 0;
+  }
+  return Math.round(base * PERCEPCION_RG5617);
 }
 
 /* ── cuotas ── */
@@ -239,20 +255,28 @@ export function resumenMes(datos, mes) {
     if (!n) continue;
     const moneda = c.moneda || 'ARS';
     const original = repartirCuotas(c.total, c.cantidad)[n - 1];
-    const item = { ...c, moneda, numero: n, original, monto: aPesos(original, moneda, d), nueva: c.origen === 'manual',
+    const item = { ...c, moneda, numero: n, original, monto: aPesos(original, moneda, d, { percepcion: c.origen === 'manual' }), nueva: c.origen === 'manual',
       tarjeta: tarjetas.get(c.tarjetaId)?.nombre || 'Sin tarjeta', ultima: n === c.cantidad };
     if (conResumen.has(c.tarjetaId) || (cubiertas.has(c.tarjetaId) && !item.nueva)) dentroDeResumen.push(item);
     else if (item.monto === null) sinCambio.push(item);
     else cuotas.push(item);
   }
+  /* percepción estimada: el resumen del mes anterior tenía saldo en otra
+     moneda y todavía no se importó el resumen de este mes, que la trae real */
+  const percepciones = [];
+  for (const r0 of (d.resumenes || []).filter(x => x.mes === sumarMeses(mes, -1))) {
+    if (conResumen.has(r0.tarjetaId)) continue;
+    const p = percepcionEstimada(r0, d);
+    if (p > 0) percepciones.push({ tarjetaId: r0.tarjetaId, tarjeta: tarjetas.get(r0.tarjetaId)?.nombre || 'Tarjeta', monto: p, estimado: true });
+  }
   const suma = xs => xs.reduce((s, x) => s + x.monto, 0);
   const totIngresos = suma(ingresos);
   const totGastos = suma(gastos);
-  const totCuotas = suma(cuotas) + suma(delBanco);
+  const totCuotas = suma(cuotas) + suma(delBanco) + suma(percepciones);
   const totResumenes = suma(resumenes);
   const totNuevas = suma(cuotas.filter(c => c.nueva));
   return {
-    mes, ingresos, gastos, cuotas, delBanco, resumenes, dentroDeResumen, sinCambio,
+    mes, ingresos, gastos, cuotas, delBanco, percepciones, resumenes, dentroDeResumen, sinCambio,
     totIngresos, totGastos, totCuotas, totResumenes,
     totTarjetas: totCuotas + totResumenes,
     /* plata líquida = lo que hay para pagar tarjetas; crédito que vence = lo que hay que pagar */
@@ -300,6 +324,8 @@ export function creditoTarjeta(datos, tarjetaId, hoy) {
   /* desde qué mes de pago cuentan las cuotas que vienen */
   const desde = r ? (difMeses(mesHoy, sumarMeses(r.mes, 1)) >= 0 ? sumarMeses(r.mes, 1) : mesHoy) : mesHoy;
   let futuras = 0, nuevas = 0;
+  /* percepción que cobra el resumen siguiente por el saldo en otra moneda (estimada) */
+  const percepcion = r && difMeses(mesHoy, sumarMeses(r.mes, 1)) >= 0 ? percepcionEstimada(r, datos) : 0;
   const tb = r?.cuotasAVencer?.length ? tablaCuotasAVencer(datos)[tarjetaId] : null;
   if (tb) {
     for (const [m, v] of Object.entries(tb.meses)) if (difMeses(desde, m) >= 0) futuras += v;
@@ -311,15 +337,16 @@ export function creditoTarjeta(datos, tarjetaId, hoy) {
     repartirCuotas(c.total, c.cantidad).forEach((p, i) => {
       const m = sumarMeses(c.primerMes, i);
       if (difMeses(desde, m) < 0) return;
-      if (nueva) nuevas += pesos(p, c.moneda); else futuras += pesos(p, c.moneda);
+      if (nueva) { const a = aPesos(p, c.moneda || 'ARS', datos, { percepcion: true }); if (a === null) faltaCambio.add(c.moneda); else nuevas += a; }
+      else futuras += pesos(p, c.moneda);
     });
   }
-  return { resumen, futuras, nuevas, total: resumen + futuras + nuevas, faltaCambio: [...faltaCambio], resumenMes: r?.mes || null };
+  return { resumen, futuras, nuevas, percepcion, total: resumen + futuras + nuevas + percepcion, faltaCambio: [...faltaCambio], resumenMes: r?.mes || null };
 }
 export function creditoTotal(datos, hoy) {
   const porTarjeta = (datos?.tarjetas || []).map(t => ({ tarjetaId: t.id, ...creditoTarjeta(datos, t.id, hoy) }));
   const sum = k => porTarjeta.reduce((a, x) => a + x[k], 0);
-  return { porTarjeta, resumen: sum('resumen'), futuras: sum('futuras'), nuevas: sum('nuevas'), total: sum('total') };
+  return { porTarjeta, resumen: sum('resumen'), futuras: sum('futuras'), nuevas: sum('nuevas'), percepcion: sum('percepcion'), total: sum('total') };
 }
 /* Crédito disponible = límite − lo que se debe en esa tarjeta. */
 export function disponibleTarjeta(datos, tarjetaId, hoy) {
@@ -753,28 +780,19 @@ export function escalera(datos, desde, meses = 12) {
   const diferencias = [];
   const filas = Array.from({ length: meses }, (_, k) => {
     const mes = sumarMeses(desde, k);
-    const propio = {};
-    const sinCambio = new Set();
-    for (const c of datos?.cuotas || []) {
-      const n = numeroDeCuota(c, mes);
-      if (!n) continue;
-      const ars = aPesos(repartirCuotas(c.total, c.cantidad)[n - 1], c.moneda || 'ARS', datos);
-      if (ars === null) { sinCambio.add(c.moneda); continue; }
-      propio[c.tarjetaId] = (propio[c.tarjetaId] || 0) + ars;
+    const c = comprometidoMes(datos, mes);
+    /* cruce: tabla del banco contra lo que la app proyecta de las cuotas de antes */
+    for (const tId of c.delBanco) {
+      const banco = tabla[tId].meses[mes];
+      let propio = 0;
+      for (const q of datos?.cuotas || []) {
+        if (q.tarjetaId !== tId || q.origen === 'manual') continue;
+        const n = numeroDeCuota(q, mes);
+        if (n) propio += aPesos(repartirCuotas(q.total, q.cantidad)[n - 1], q.moneda || 'ARS', datos) ?? 0;
+      }
+      if (Math.abs(banco - propio) > Math.max(10_000, Math.round(banco * 0.01))) diferencias.push({ mes, tarjetaId: tId, banco, propio });
     }
-    const porTarjeta = { ...propio };
-    const delBanco = [];
-    for (const [tId, tb] of Object.entries(tabla)) {
-      if (!(mes in tb.meses)) continue;
-      const banco = tb.meses[mes];
-      const p = propio[tId] || 0;
-      if (Math.abs(banco - p) > Math.max(10_000, Math.round(banco * 0.01))) diferencias.push({ mes, tarjetaId: tId, banco, propio: p });
-      porTarjeta[tId] = banco;
-      delBanco.push(tId);
-    }
-    for (const t of Object.keys(porTarjeta)) if (!porTarjeta[t]) delete porTarjeta[t];
-    const total = Object.values(porTarjeta).reduce((a, b) => a + b, 0);
-    return { mes, porTarjeta, total, delBanco, sinCambio: [...sinCambio], ...limiteDelMes(datos, mes, total) };
+    return { mes, ...c, ...limiteDelMes(datos, mes, c.total) };
   });
   /* si el banco dice que quedan cuotas "a partir de" un mes, no estás libre antes */
   let mesLibre = mesLibreDeCuotas(datos, desde);
@@ -783,6 +801,20 @@ export function escalera(datos, desde, meses = 12) {
     for (const [m, v] of Object.entries(tb.meses)) if (v > 0 && difMeses(mesLibre, m) >= 0) mesLibre = sumarMeses(m, 1);
   }
   return { filas, mesLibre, diferencias };
+}
+/* Lo comprometido en tarjetas en un mes, por tarjeta: UNA sola cuenta para
+   el Inicio, la escalera, el tope, "se te liberan" y las alertas. Sale de
+   resumenMes: resumen del mes, o tabla del banco + compras nuevas, o la
+   proyección de cuotas, más la percepción estimada. */
+export function comprometidoMes(datos, mes) {
+  const r = resumenMes(datos, mes);
+  const porTarjeta = {};
+  const sumar = (id, v) => { if (v) porTarjeta[id] = (porTarjeta[id] || 0) + v; };
+  for (const x of r.resumenes) sumar(x.tarjetaId, x.monto);
+  for (const x of r.delBanco) sumar(x.tarjetaId, x.monto);
+  for (const x of r.cuotas) sumar(x.tarjetaId, x.monto);
+  for (const x of r.percepciones) sumar(x.tarjetaId, x.monto);
+  return { porTarjeta, total: r.totTarjetas, delBanco: r.delBanco.map(x => x.tarjetaId), sinCambio: [...new Set(r.sinCambio.map(c => c.moneda))] };
 }
 /* Primer mes, desde `desde`, a partir del cual no queda ninguna cuota. */
 export function mesLibreDeCuotas(datos, desde) {
@@ -798,7 +830,7 @@ export function mesLibreDeCuotas(datos, desde) {
 export function limiteDelMes(datos, mes, cuotasDelMes = null) {
   const pct = datos?.limiteCuotas || LIMITE_DEFECTO;
   const ingresos = resumenMes(datos, mes).totIngresos;
-  const cuotas = cuotasDelMes ?? escalera(datos, mes, 1).filas[0].total;
+  const cuotas = cuotasDelMes ?? resumenMes(datos, mes).totTarjetas;
   const tope = Math.round((ingresos * pct) / 100);
   return { pct, ingresos, tope, cuotas, supera: cuotas > 0 && cuotas > tope, usado: ingresos ? cuotas / ingresos : null };
 }
@@ -842,7 +874,7 @@ export function cicloTarjeta(datos, tarjetaId, hoy) {
 /* ── alertas de tarjeta ── (cierre, vencimiento próximo y dólares)
    Cada alerta tiene un id por ciclo: descartarla oculta solo esa. */
 export const DIAS_AVISO_VENCE = 5;
-export const PERCEPCION = 0.30;
+export const PERCEPCION = PERCEPCION_RG5617;
 export function alertasTarjetas(datos, hoy) {
   const out = [];
   const vistas = new Set(datos?.alertasVistas || []);
@@ -871,20 +903,17 @@ export function alertasTarjetas(datos, hoy) {
       const ahorro = ahorroPagandoEnDolares(usd, datos);
       out.push({ id: `dolares:${t.id}:${vencimiento}`, tipo: 'dolares', tarjetaId: t.id, nivel: 'info', fecha: vencimiento, usd, ahorro,
         titulo: `Tenés ${formatoMoneda(usd, 'USD')} en ${t.nombre}`,
-        texto: `Si pagás ese saldo con dólares propios antes del ${fechaCorta(vencimiento)}, no te cobran la percepción del 30 % (unos ${formatoPesos(ahorro)} de diferencia, aproximado).` });
+        texto: `Si pagás estos US$ en pesos, en el próximo resumen te cobran ~${formatoPesos(ahorro)} de percepción. Si los pagás con dólares propios antes del ${fechaCorta(vencimiento)}, no.` });
     }
   }
   const orden = { fuerte: 0, aviso: 1, info: 2 };
   return out.filter(a => !vistas.has(a.id)).sort((a, b) => orden[a.nivel] - orden[b.nivel] || diasEntre(b.fecha, a.fecha));
 }
-/* Diferencia aproximada entre pagar US$ X en pesos (dólar tarjeta) y con
-   dólares propios: el 30 % de percepción sobre el oficial. El oficial se
-   estima como dólar tarjeta / 1,30. */
+/* Percepción que te ahorrás si pagás esos US$ con dólares propios: el 30 %
+   sobre el oficial (aproximado). */
 export function ahorroPagandoEnDolares(usdCentavos, datos) {
-  const c = cambioDe(datos, 'USD');
-  if (!c) return 0;
-  const oficial = c.valor / (1 + PERCEPCION);
-  return Math.round((usdCentavos * (c.valor - oficial)) / 100);
+  const a = aPesos(usdCentavos, 'USD', datos);
+  return a === null ? 0 : Math.round(a * PERCEPCION_RG5617);
 }
 
 /* ── calendario (.ics) ── cierre, vencimiento y recordatorio de dólares,
@@ -968,7 +997,7 @@ export function simularCompra(datos, compra, desde, meses = 12) {
     const mes = sumarMeses(desde, k);
     const antes = resumenMes(datos, mes).libres;
     const n = numeroDeCuota({ primerMes: compra.primerMes, cantidad: compra.cantidad }, mes);
-    const nueva = n ? aPesos(partes[n - 1], moneda, datos) : 0;
+    const nueva = n ? aPesos(partes[n - 1], moneda, datos, { percepcion: moneda !== 'ARS' }) : 0;
     const lim = limiteDelMes(conCompra, mes);
     return { mes, antes, nueva, despues: nueva === null ? null : antes - nueva, cuota: n || null, supera: lim.supera, limite: lim };
   });
@@ -984,19 +1013,28 @@ export function datosParaAvisos(datos, hoy) {
     const r = ciclo?.resumen;
     const dolares = Boolean(r && ((r.totales?.USD || 0) > 0 || (r.consumos || []).some(c => c.moneda === 'USD')));
     return {
-      id: String(t.id).slice(0, 60), nombre: String(t.nombre).slice(0, 40),
+      id: String(t.id).slice(0, 60), nombre: aliasTarjeta(t, datos.tarjetas),
       cierre: ciclo?.cierre || null, vencimiento: ciclo?.vencimiento || null, dolares,
       ...(r?.proximoCierre && r?.proximoVencimiento ? { proximoCierre: r.proximoCierre, proximoVencimiento: r.proximoVencimiento } : {}),
       ...(t.diaCierre && t.diaVence ? { diaCierre: t.diaCierre, diaVence: t.diaVence } : {}),
     };
   }).filter(t => t.vencimiento || t.diaCierre);
 }
+/* Alias sin datos identificables para el servidor: "Tarjeta Visa 1".
+   Nunca el banco ni los últimos 4. */
+export function aliasTarjeta(t, todas = []) {
+  const red = t.red && t.red !== 'Otra' ? t.red : '';
+  const mismas = todas.filter(x => (x.red && x.red !== 'Otra' ? x.red : '') === red);
+  const n = Math.max(1, mismas.findIndex(x => x.id === t.id) + 1);
+  return ['Tarjeta', red, String(n)].filter(Boolean).join(' ');
+}
 /* Del lado del servidor: deja pasar solo esos campos, aunque manden más. */
 export function limpiarTarjetasAvisos(lista) {
   const out = [];
   for (const t of Array.isArray(lista) ? lista.slice(0, 12) : []) {
     const id = typeof t?.id === 'string' ? t.id.slice(0, 60) : '';
-    const nombre = typeof t?.nombre === 'string' ? t.nombre.trim().slice(0, 40) : '';
+    /* defensa: sin números de 4 o más cifras (finales de tarjeta) */
+    const nombre = typeof t?.nombre === 'string' ? t.nombre.replace(/\d{4,}/g, '').replace(/[·.\s]+$/, '').replace(/\s+/g, ' ').trim().slice(0, 40) : '';
     if (!id || !nombre) continue;
     const x = { id, nombre, cierre: esFecha(t.cierre) ? t.cierre : null, vencimiento: esFecha(t.vencimiento) ? t.vencimiento : null, dolares: t.dolares === true };
     if (esFecha(t.proximoCierre) && esFecha(t.proximoVencimiento)) { x.proximoCierre = t.proximoCierre; x.proximoVencimiento = t.proximoVencimiento; }
@@ -1065,3 +1103,15 @@ export function liberaciones(datos, desde, meses = 18) {
 }
 /* La próxima liberación a partir de un mes (incluido el mes siguiente). */
 export const proximaLiberacion = (datos, mes, meses = 18) => liberaciones(datos, sumarMeses(mes, 1), meses)[0] || null;
+
+/* ── de dónde sale una lectura ──
+   El ejemplo SOLO cuando la app corre como archivo local. Fuera de eso, el
+   modo prueba existe solo si el servidor responde modo:"prueba"; sin red o
+   con una respuesta rara, falla clara y nada para guardar. */
+export const SIN_RED = 'No pudimos leer el resumen: revisá tu conexión y probá de nuevo, o cargalo a mano.';
+export function decidirLectura({ local = false, errorRed = false, status = 0, json = null } = {}) {
+  if (local) return { usar: 'ejemplo', modo: 'local' };
+  if (errorRed || !json || typeof json !== 'object') return { usar: 'falla', mensaje: SIN_RED };
+  if (status < 200 || status >= 300 || !json.ok) return { usar: 'falla', mensaje: json.error || SIN_RED };
+  return { usar: 'servidor', modo: json.modo === 'prueba' ? 'prueba' : 'real' };
+}

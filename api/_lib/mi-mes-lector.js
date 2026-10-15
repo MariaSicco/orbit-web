@@ -17,7 +17,15 @@ export const MODELO = process.env.MI_MES_MODELO || 'claude-opus-5-5';
 /* Transcribir un resumen no necesita pensar mucho; la suma se controla por
    código. Se sube con MI_MES_ESFUERZO (low | medium | high). */
 export const ESFUERZO = ['low', 'medium', 'high'].includes(process.env.MI_MES_ESFUERZO) ? process.env.MI_MES_ESFUERZO : 'low';
-export const TIMEOUT_MS = 50_000;          // la función tiene maxDuration 60 s
+export const TIMEOUT_MS = 50_000;          // tope de un intento
+/* Presupuesto total de la lectura: la función tiene maxDuration 60 s. El
+   reintento solo se hace si quedan al menos 25 s; si no, se corta con un
+   error claro ("cargalo a mano") antes de que Vercel corte sin respuesta. */
+export const PRESUPUESTO_MS = 55_000;
+export const MIN_REINTENTO_MS = 25_000;
+let reloj = () => Date.now();
+/* Para las pruebas: un reloj falso. */
+export function __usarReloj(f) { reloj = f || (() => Date.now()); }
 const FALLBACK = process.env.MI_MES_FALLBACK !== 'no';
 
 export const hayKey = () => Boolean(process.env.ANTHROPIC_API_KEY);
@@ -125,7 +133,14 @@ export async function leerResumenConClaude(pdf) {
   ];
   let ultimoError = null;
   const usos = [];
+  const t0 = reloj();
   for (let intento = 1; intento <= 2; intento++) {
+    const restante = PRESUPUESTO_MS - (reloj() - t0);
+    if (intento > 1 && restante < MIN_REINTENTO_MS) {
+      const e = new ErrorLectura('No pudimos leer bien este resumen a tiempo. No guardamos nada: cargalo a mano o probá de nuevo.', 'tiempo');
+      e.uso = sumarUsos(usos);
+      throw e;
+    }
     const pedido = {
       model: MODELO,
       max_tokens: 16000,
@@ -140,7 +155,7 @@ export async function leerResumenConClaude(pdf) {
     };
     let r;
     try {
-      r = await claude().beta.messages.create(pedido, { timeout: TIMEOUT_MS });
+      r = await claude().beta.messages.create(pedido, { timeout: Math.max(5_000, Math.min(TIMEOUT_MS, restante - 3_000)) });
     } catch (e) {
       console.warn(JSON.stringify({ evento: 'leer-resumen', error: e?.status ?? e?.name ?? 'desconocido' }));
       if (e instanceof Anthropic.APIConnectionTimeoutError) throw new ErrorLectura('La lectura tardó demasiado. Probá de nuevo o cargalo a mano.', 'timeout');

@@ -83,7 +83,8 @@ test('cuotas a vencer: el mes de la tabla es el del cierre; se paga con el venci
 test('escalera: usa la tabla del banco para esos meses y la cruza con la proyección propia', () => {
   const coherente = importar('dolares-rg5617');
   const e1 = M.escalera(coherente.datos, '2026-11', 4);
-  assert.deepEqual(e1.filas.map(f => f.total / 100), [120_000, 120_000, 120_000, 120_000]);
+  // noviembre suma la percepción estimada de los US$ 55 de octubre al oficial por defecto: 55 × 1.535 × 30 % = 25.327,50
+  assert.deepEqual(e1.filas.map(f => f.total / 100), [120_000 + 25_327.5, 120_000, 120_000, 120_000]);
   assert.deepEqual(e1.filas.map(f => f.delBanco.length > 0), [true, true, true, false]);
   assert.deepEqual(e1.diferencias, [], 'la tabla y la proyección coinciden');
   assert.equal(e1.mesLibre, '2027-10', 'cuota 1/12 de septiembre: la última se paga en septiembre 2027');
@@ -101,8 +102,9 @@ test('alertas y push: cuando vence el resumen, siguen con el próximo cierre y v
   const p = M.datosParaAvisos(r.datos, '2026-08-25');
   assert.deepEqual([p[0].proximoCierre, p[0].proximoVencimiento], ['2026-09-24', '2026-10-06']);
   const limpias = M.limpiarTarjetasAvisos(p);
-  assert.equal(M.avisosPushDeHoy(limpias, '2026-09-24')[0].title, 'Cerró el resumen de tu Banco Inventado Uno Visa');
-  assert.equal(M.avisosPushDeHoy(limpias, '2026-10-05')[0].title, 'Tu Banco Inventado Uno Visa vence mañana');
+  assert.equal(M.avisosPushDeHoy(limpias, '2026-09-24')[0].title, 'Cerró el resumen de tu Tarjeta Visa 1');
+  assert.equal(M.avisosPushDeHoy(limpias, '2026-10-05')[0].title, 'Tu Tarjeta Visa 1 vence mañana');
+  assert.doesNotMatch(JSON.stringify(limpias), /Banco|Inventado|1111/, 'ni banco ni últimos 4');
   assert.doesNotMatch(JSON.stringify(limpias), /215340|900000/, 'sin montos');
 });
 test('migrar: los resúmenes guardados conservan cargos, pagos, adicionales y la tabla', () => {

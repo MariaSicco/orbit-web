@@ -74,7 +74,7 @@ test('lo que sale del dispositivo: nombre, fechas y dólares sí/no, sin montos 
     { id: 'r', tarjetaId: 't1', mes: '2026-11', cierre: '2026-10-29', vencimiento: '2026-11-10', totales: { ARS: 41_238_050, USD: 5_619 },
       consumos: [{ fecha: '2026-10-02', comercio: 'SUPER', monto: 10_000, moneda: 'ARS', rubro: 'Supermercado', cuota: null }] }] });
   const p = M.datosParaAvisos(d, '2026-10-20');
-  assert.deepEqual(p, [{ id: 't1', nombre: 'Visa', cierre: '2026-10-29', vencimiento: '2026-11-10', dolares: true }]);
+  assert.deepEqual(p, [{ id: 't1', nombre: 'Tarjeta 1', cierre: '2026-10-29', vencimiento: '2026-11-10', dolares: true }], 'alias, sin el nombre real');
   assert.doesNotMatch(JSON.stringify(p), /41238050|5619|SUPER|1234|Banco X|99999/);
   const sucio = [{ ...TARJETAS[0], monto: 412_380, consumos: [{ comercio: 'X', monto: 1 }], ultimos4: '4821', totales: { ARS: 1 } }];
   assert.deepEqual(Object.keys(M.limpiarTarjetasAvisos(sucio)[0]).sort(), ['cierre', 'dolares', 'id', 'nombre', 'vencimiento']);
