@@ -9,6 +9,8 @@ export const FLAGS = {
   mesEn30: true,          // 1 · Inicio "tu mes en 30 segundos"
   preguntas: true,        // 2 · "preguntame solo lo que cambia mi mes"
   finDeCuota: true,       // 3 · lo que se libera va a la meta
+  /* tanda 11: se encienden de a una cuando pasan la QA */
+  diaDificil: false,      // (4) saldo de hoy y día por día
   dondeRinde: false,      // B4 · "Dónde puede rendir tu plata": APAGADO hasta el OK legal de Majo
 };
 export function flagsActivos(search = '') {

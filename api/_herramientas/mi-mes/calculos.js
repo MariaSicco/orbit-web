@@ -611,7 +611,7 @@ export function conciliarCompras(datos, tarjetaId, lectura) {
 /* ── esquema y migración ── */
 export const LIMITE_DEFECTO = 30;
 export const datosVacios = () => ({ v: ESQUEMA, ingresos: [], gastos: [], cuotas: [], tarjetas: [], resumenes: [], cambio: {}, rubrosComercio: {},
-  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [], concilia: [], confirmados: {}, preguntasLuego: [] });
+  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [], concilia: [], confirmados: {}, preguntasLuego: [], cuentas: [] });
 
 const entero = x => Number.isSafeInteger(x) && x > 0;
 const dia = x => Number.isInteger(x) && x >= 1 && x <= 31;
@@ -725,6 +725,9 @@ export function migrar(crudo) {
   out.confirmados = {};
   for (const [m, ids] of Object.entries(crudo.confirmados && typeof crudo.confirmados === 'object' ? crudo.confirmados : {}))
     if (esMes(m) && Array.isArray(ids)) out.confirmados[m] = ids.filter(i => typeof i === 'string').slice(0, 100);
+  /* tanda 11: saldos de cuentas (día difícil) */
+  out.cuentas = (Array.isArray(crudo.cuentas) ? crudo.cuentas : []).filter(c => c && Number.isSafeInteger(c.saldo) && esFecha(c.fecha)).slice(0, 10)
+    .map(c => ({ id: String(c.id || c.nombre), nombre: texto(c.nombre, 40) || 'Cuenta', saldo: c.saldo, fecha: c.fecha }));
   out.preguntasLuego = (Array.isArray(crudo.preguntasLuego) ? crudo.preguntasLuego : []).filter(x => typeof x === 'string').slice(-100);
   out.consejosVistos = (Array.isArray(crudo.consejosVistos) ? crudo.consejosVistos : []).filter(x => typeof x === 'string').slice(-100);
   return out;
@@ -1433,7 +1436,7 @@ export const GASTOS_QUE_VARIAN = ['Servicios', 'Expensas'];
 export const DIAS_COPIA_VIEJA = 30;
 export const DIAS_CAMBIO_VIEJO = 7;
 export const VARIACION_CAMBIO = 0.05;     // supuesto: el dólar se pudo mover un 5 %
-export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true } = {}) {
+export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true, diaDificil = false } = {}) {
   hoy = aFecha(hoy);
   const mes = hoy.slice(0, 7), sig = sumarMeses(mes, 1);
   const r = resumenMes(datos, mes), r2 = resumenMes(datos, sig);
@@ -1498,6 +1501,23 @@ export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true } 
     out.push({ id: `cambio:${cam.fecha || 'sin'}`, tipo: 'cambio', impacto: Math.round(exp * VARIACION_CAMBIO),
       titulo: `El dólar que usamos es del ${fechaCorta(cam.fecha) || 'sin fecha'}.`, porque: `Tenés ${formatoPesos(exp)} en dólares entre este mes y el que viene: un 5 % de diferencia mueve ${formatoPesos(Math.round(exp * VARIACION_CAMBIO))}.`, accion: 'Actualizar' });
   }
+  /* 8. día difícil: saldo de hoy (opcional) y el día en que falta plata */
+  if (diaDificil) {
+    const cuentas = datos?.cuentas || [];
+    const antes = venceAntesDeCobrar(datos, hoy);
+    const pagos = antes ? antes.total : r.totTarjetas;
+    if (!cuentas.length) {
+      out.push({ id: `saldo:${mes}`, tipo: 'saldo', impacto: pagos,
+        titulo: '¿Cuánto tenés hoy en tu cuenta?', porque: 'Es opcional. Con ese dato vemos si algún día del mes te falta plata para los pagos, aunque el mes cierre bien.', accion: 'Cargar saldo' });
+    } else {
+      const pr = proyeccionSaldo(datos, hoy);
+      if (pr?.falta) out.push({ id: `dificil:${pr.minimo.fecha}`, tipo: 'dificil', impacto: pr.falta + pagos, urgente: true,
+        titulo: pr.mensaje, porque: pr.supuestos.join(' '), accion: 'Ver día por día' });
+      const vieja = cuentas.find(c => diasEntre(c.fecha, hoy) > DIAS_DATO_VIEJO);
+      if (vieja) out.push({ id: `saldo:${vieja.fecha}`, tipo: 'saldo', impacto: Math.min(pagos, Math.abs(vieja.saldo) + pagos),
+        titulo: `¿Tu saldo sigue en ${formatoPesos(cuentas.reduce((a, c) => a + c.saldo, 0))}?`, porque: `Lo cargaste el ${fechaCorta(vieja.fecha)}.`, accion: 'Actualizar saldo' });
+    }
+  }
   /* 7. copia vieja (no mueve plata: va al final) */
   const hayDatos = (datos?.ingresos || []).length + (datos?.cuotas || []).length + (datos?.resumenes || []).length > 0;
   if (hayDatos && (!esFecha(ultimaCopia) || diasEntre(ultimaCopia, hoy) > DIAS_COPIA_VIEJA)) {
@@ -1560,4 +1580,52 @@ export function aporteSugerido(meta, hoy) {
   const mes = aFecha(hoy).slice(0, 7);
   const lib = (meta.libera || []).filter(x => difMeses(x.mes, mes) >= 0).reduce((a, x) => a + x.monto, 0);
   return lib ? { monto: Math.min(lib, e.falta), deLibera: true } : { monto: Math.min(e.porMes, e.falta), deLibera: false };
+}
+
+
+/* ═══════════════ (4) El día difícil ═══════════════
+   Con lo que tenés hoy en tus cuentas, proyecta el saldo día por día:
+   + cobros, − vencimientos de tarjetas (lo comprometido de ese mes) y
+   − gastos fijos con día. Supuestos a la vista: lo que ya venció se
+   considera pagado y los gastos sin día no se ubican en el calendario. */
+export const CUENTAS_COMUNES = ['Cuenta sueldo', 'Caja de ahorro', 'Billetera', 'Efectivo'];
+const redondeoMil = c => Math.round(c / 100_000) * 100_000;
+export function proyeccionSaldo(datos, hoy) {
+  hoy = aFecha(hoy);
+  const cuentas = datos?.cuentas || [];
+  if (!cuentas.length) return null;
+  const mes = hoy.slice(0, 7);
+  const cobro = proximoCobro(datos, hoy);
+  const finMes = fechaConDia(mes, 31);
+  const hasta = cobro && diasEntre(finMes, cobro.fecha) > 0 ? cobro.fecha : finMes;
+  const meses = [];
+  for (let m = mes; difMeses(m, hasta.slice(0, 7)) >= 0; m = sumarMeses(m, 1)) meses.push(m);
+  const eventos = meses.flatMap(m => lineaDelMes(datos, m))
+    .filter(e => e.tipo !== 'cierre' && diasEntre(hoy, e.fecha) >= 0 && diasEntre(e.fecha, hasta) >= 0 && e.monto > 0);
+  const inicial = cuentas.reduce((a, c) => a + c.saldo, 0);
+  const dias = [];
+  let saldo = inicial, minimo = { fecha: hoy, saldo: inicial };
+  for (let f = hoy; diasEntre(f, hasta) >= 0; f = sumarDias(f, 1)) {
+    const del = eventos.filter(e => e.fecha === f).sort((a, b) => (a.tipo === 'cobro' ? -1 : 1) - (b.tipo === 'cobro' ? -1 : 1));
+    for (const e of del) saldo += e.tipo === 'cobro' ? e.monto : -e.monto;
+    dias.push({ fecha: f, saldo, eventos: del });
+    if (saldo < minimo.saldo) minimo = { fecha: f, saldo };
+  }
+  const finDeMes = dias.filter(d => d.fecha.startsWith(mes)).pop()?.saldo ?? saldo;
+  const sinDia = (datos.gastos || []).filter(g => !g.dia && activoEn(g, mes)).reduce((a, g) => a + g.monto, 0);
+  const viejas = cuentas.filter(c => diasEntre(c.fecha, hoy) > 3);
+  const supuestos = [
+    `Partimos de ${formatoPesos(inicial)} en ${cuentas.length === 1 ? cuentas[0].nombre.toLowerCase() : `${cuentas.length} cuentas`}${viejas.length ? ` (cargado el ${fechaCorta(viejas[0].fecha)})` : ''}.`,
+    'Lo que ya venció lo tomamos como pagado.',
+    'Las tarjetas se pagan completas el día que vencen.',
+    ...(sinDia ? [`Los gastos fijos sin día (${formatoPesos(sinDia)}) no están en el calendario: cargales el día para sumarlos.`] : []),
+  ];
+  const falta = minimo.saldo < 0 ? redondeoMil(-minimo.saldo) || -minimo.saldo : 0;
+  let mensaje;
+  const dia = f => `${Number(f.slice(8))}${f.slice(0, 7) === mes ? '' : ` de ${NOMBRES[Number(f.slice(5, 7)) - 1].toLowerCase()}`}`;
+  const cobroTxt = cobro && diasEntre(minimo.fecha, cobro.fecha) > 0 ? `; cobrás el ${dia(cobro.fecha)}` : '';
+  if (!falta) mensaje = `Con lo que tenés, llegás a ${cobro ? `tu cobro del ${dia(cobro.fecha)}` : 'fin de mes'} sin quedar en rojo.`;
+  else if (finDeMes >= 0) mensaje = `El mes termina positivo, pero el ${dia(minimo.fecha)} faltarán unos ${formatoPesos(falta)}${cobroTxt}.`;
+  else mensaje = `El ${dia(minimo.fecha)} faltarán unos ${formatoPesos(falta)}${cobroTxt}.`;
+  return { inicial, dias, minimo, falta, finDeMes, hasta, cobro, mensaje, supuestos, eventos };
 }

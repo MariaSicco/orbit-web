@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -129,6 +129,7 @@ function pintarInicio(animar = false) {
   pintarCobroLinea();
   pintarConsejo();
   pintarCobro();
+  pintarDificil();
   pintarMeta();
   pintarReto();
   pintarAlertas();
@@ -206,7 +207,7 @@ function itemsRevisar(lim) {
   }
   const fuertes = alertas.filter(a => nivelVisual(a) === 'fuerte');
   const suaves = alertas.filter(a => nivelVisual(a) !== 'fuerte');
-  const p = F.preguntas ? preguntas(datos, HOY_ISO, { ultimaCopia: ultimaCopia(), diaDeCobro: F.diaDeCobro }) : { ahora: [], masTarde: [], alDia: true };
+  const p = F.preguntas ? preguntas(datos, HOY_ISO, { ultimaCopia: ultimaCopia(), diaDeCobro: F.diaDeCobro, diaDificil: F.diaDificil }) : { ahora: [], masTarde: [], alDia: true };
   const tope = lim?.supera ? [{ clase: 'tope', lim }] : [];
   return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
     masTarde: p.masTarde };
@@ -220,6 +221,8 @@ function preguntaHTML(q) {
     cobro: `<button type="button" class="mm-btn chico" data-editar="ingreso" data-id="${esc(q.ingresoId)}" data-foco-cobro>Elegir el día</button>`,
     cambio: `<button type="button" class="mm-btn chico" data-cambio>Actualizar</button>`,
     copia: `<button type="button" class="mm-btn chico" data-exportar>Guardar copia</button>`,
+    saldo: `<button type="button" class="mm-btn chico" data-saldo>${esc(q.accion)}</button>`,
+    dificil: `<button type="button" class="mm-btn chico" data-ver-dificil>Ver día por día</button>`,
   }[q.tipo] || '';
   return `<details class="mm-fila-alerta pregunta">
     <summary><span class="mm-fa-ic">${ic(q.tipo === 'resumen' ? 'subir' : q.tipo === 'cobro' ? 'calendario' : q.tipo === 'cambio' ? 'dolar' : 'alerta')}</span><span class="mm-fa-txt">${esc(q.titulo)}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
@@ -251,6 +254,68 @@ function pintarMesEn30(lim) {
     ${lista.length > 3 ? `<button type="button" class="mm-link mm-revisa-mas" data-revisa-mas aria-expanded="${revisaAbierta}">${revisaAbierta ? 'Ver menos' : `Ver ${lista.length - 3} más`}</button>` : ''}
     ${masTarde.length ? `<details class="mm-luego"><summary>Más tarde (${masTarde.length})</summary><p class="mm-fuente">Mueven menos del 1 % de tus ingresos, no mueven plata o los dejaste para después.</p><div class="mm-revisa-lista">${masTarde.map(preguntaHTML).join('')}</div></details>` : ''}`;
 }
+
+/* ════════ (4) DÍA DIFÍCIL ════════ */
+function pintarDificil() {
+  const el = $id('dificil');
+  if (!F.diaDificil || mes !== HOY || !datos.ingresos.length) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const p = proyeccionSaldo(datos, HOY_ISO);
+  if (!p) {
+    el.innerHTML = `<div class="mm-seccion-top"><h2 id="t-dificil" tabindex="-1">Tu saldo día por día</h2></div>
+      <p class="mm-meta-txt">Opcional: con lo que tenés hoy en tu cuenta te avisamos si algún día del mes falta plata para los pagos, aunque el mes cierre bien.</p>
+      <div class="mm-meta-acc"><button type="button" class="mm-btn sec" data-saldo>¿Cuánto tenés hoy?</button></div>`;
+    return;
+  }
+  const clave = p.dias.filter(d => d.eventos.length || d.fecha === p.minimo.fecha);
+  el.innerHTML = `<div class="mm-seccion-top"><h2 id="t-dificil" tabindex="-1">Tu saldo día por día</h2><button type="button" class="mm-link" data-saldo>Actualizar saldo</button></div>
+    <p class="mm-dificil-msg ${p.falta ? 'falta' : 'ok'}">${esc(p.mensaje)}</p>
+    <ol class="mm-lm-lista">${clave.map(d => `<li class="mm-lm-fila${d.fecha === p.minimo.fecha && p.falta ? ' antes' : ''}">
+      <span class="mm-lm-dia">${esc(d.fecha === HOY_ISO ? 'Hoy' : fechaCorta(d.fecha))}</span>
+      <span class="mm-lm-txt"><b>${d.eventos.length ? esc(d.eventos.map(e => `${e.tipo === 'cobro' ? 'Cobrás' : 'Pagás'} ${e.tipo === 'cobro' ? e.nombre.toLowerCase() : e.nombre}`).join(' · ')) : 'Tu saldo'}</b>${d.saldo < 0 ? '<small>Falta plata</small>' : ''}</span>
+      <span class="mm-lm-monto${d.saldo < 0 ? ' neg' : ''}">${esc($(d.saldo))}</span></li>`).join('')}</ol>
+    <details class="mm-supuestos"><summary>Supuestos de esta cuenta</summary><ul>${p.supuestos.map(x => `<li>${esc(x)}</li>`).join('')}</ul></details>`;
+}
+const dsa = $id('dlg-saldo');
+function filaSaldo(c, i) {
+  const nombre = c?.nombre || CUENTAS_COMUNES[i] || 'Otra';
+  const ops = CUENTAS_COMUNES.includes(nombre) ? CUENTAS_COMUNES : [nombre, ...CUENTAS_COMUNES];
+  return `<fieldset class="mm-campo mm-saldo-fila" data-fila="${i}"><legend>Cuenta ${i + 1}</legend>
+    <div class="mm-chips">${ops.map(n => `<label class="mm-chip"><input type="radio" name="sa-n-${i}" value="${esc(n)}"${n === nombre ? ' checked' : ''}><span>${esc(n)}</span></label>`).join('')}</div>
+    <label class="mm-sr" for="sa-m-${i}">Saldo de la cuenta ${i + 1}, en pesos</label>
+    <input id="sa-m-${i}" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Saldo en pesos" value="${c ? esc(sinSimbolo(c.saldo, 'ARS')) : ''}" aria-describedby="sa-m-${i}-err"><p class="mm-err" id="sa-m-${i}-err"></p></fieldset>`;
+}
+function abrirSaldo() {
+  const cs = datos.cuentas.length ? datos.cuentas : [null];
+  $id('sa-filas').innerHTML = cs.map(filaSaldo).join('');
+  $id('sa-borrar').hidden = !datos.cuentas.length;
+  if (datos.cuentas.length) armarBorrar($id('sa-borrar'), 'Borrar saldos', () => { datos.cuentas = []; guardar(); pintarTodo(); cerrar(dsa); avisar('Saldos borrados'); });
+  abrir(dsa, $id('sa-m-0'));
+}
+dsa.addEventListener('click', e => {
+  if (!e.target.closest('[data-saldo-otra]')) return;
+  const n = $id('sa-filas').children.length;
+  if (n >= 6) return;
+  $id('sa-filas').insertAdjacentHTML('beforeend', filaSaldo(null, n));
+  $id(`sa-m-${n}`).focus();
+});
+dsa.querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const cuentas = [];
+  let mal = null;
+  for (const f of $id('sa-filas').querySelectorAll('[data-fila]')) {
+    const i = f.dataset.fila, inp = $id(`sa-m-${i}`);
+    if (!inp.value.trim()) continue;
+    const neg = /^\s*[-−]/.test(inp.value);
+    const v = leerMonto(inp.value.replace(/^\s*[-−]/, ''));
+    if (v === null) { mal ||= error(inp, `sa-m-${i}-err`, 'Revisá el monto (los centavos van con coma).'); continue; }
+    const nombre = f.querySelector(`[name="sa-n-${i}"]:checked`)?.value || 'Cuenta';
+    cuentas.push({ id: `${nombre}-${i}`, nombre, saldo: neg ? -v : v, fecha: HOY_ISO });
+  }
+  if (mal) return mal.focus();
+  datos.cuentas = cuentas; guardar(); pintarTodo(); cerrar(dsa);
+  avisar(cuentas.length ? 'Saldo guardado' : 'Sin saldos');
+});
 
 /* ════════ DÍA DE COBRO ════════ */
 function pintarCobroLinea() {
@@ -1801,6 +1866,8 @@ document.addEventListener('click', e => {
   if (t.closest('[data-franja]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-franja]')?.focus(); }
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
+  if (t.closest('[data-saldo]')) return abrirSaldo();
+  if (t.closest('[data-ver-dificil]')) { $id('dificil').scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); return $id('t-dificil')?.focus?.(); }
   const pl = t.closest('[data-pregunta-luego]');
   if (pl) { datos.preguntasLuego = [...datos.preguntasLuego, pl.dataset.preguntaLuego].slice(-100); guardar(); pintarInicio(); return avisar('Queda para más tarde'); }
   const po = t.closest('[data-pregunta-ok]');

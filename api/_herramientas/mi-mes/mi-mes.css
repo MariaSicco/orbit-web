@@ -616,3 +616,14 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 .mm-luego{margin:4px 0}
 .mm-luego>summary{min-height:44px;display:flex;align-items:center;font-size:13px;color:var(--tinta2);cursor:pointer}
 .mm-btn.chico{min-height:44px;padding:0 16px;font-size:14px}
+
+/* ════════ (4) Día difícil ════════ */
+.mm-dificil-msg{margin:2px 0 10px;padding:10px 12px;border-radius:12px;font-weight:600;line-height:1.4}
+.mm-dificil-msg.falta{background:var(--neg-suave);color:var(--neg)}
+.mm-dificil-msg.ok{background:var(--azul-suave);color:var(--tinta)}
+.mm-lm-monto.neg{color:var(--neg)}
+.mm-supuestos{margin:0 0 10px}
+.mm-supuestos summary{min-height:44px;display:flex;align-items:center;color:var(--azul);font-weight:600;font-size:14px;cursor:pointer}
+.mm-supuestos ul{margin:0;padding-left:18px;color:var(--tinta2);font-size:14px;line-height:1.5}
+.mm-saldo-fila{margin-bottom:12px}
+.mm-saldo-fila .mm-grande{margin-top:8px}

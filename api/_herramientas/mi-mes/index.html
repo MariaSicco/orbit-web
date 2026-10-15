@@ -104,6 +104,7 @@
 
       <section class="mm-consejo" id="consejo" aria-label="Consejo" aria-live="polite" hidden></section>
       <section class="mm-panel mm-cobro" id="cobro" aria-labelledby="t-cobro" hidden></section>
+      <section class="mm-panel mm-dificil" id="dificil" aria-labelledby="t-dificil" hidden></section>
       <section class="mm-panel mm-meta" id="meta" aria-labelledby="t-meta" hidden></section>
       <section class="mm-panel mm-reto" id="reto" aria-labelledby="t-reto" hidden></section>
 
@@ -360,6 +361,17 @@
     <p class="mm-err" id="t-dias-err"></p>
     <div class="mm-campo"><label for="t-limite">Límite de compra en pesos <span class="opc">(opcional)</span></label><input id="t-limite" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 2.500.000" aria-describedby="t-limite-err"><p class="mm-ayuda">Si lo cargás, te mostramos cuánto te queda disponible.</p><p class="mm-err" id="t-limite-err"></p></div>
     <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="t-borrar" hidden>Borrar tarjeta</button><button type="submit" class="mm-btn">Guardar tarjeta</button></div>
+  </form>
+</dialog>
+
+<!-- ── Saldo de hoy (día difícil) ── -->
+<dialog class="mm-dlg" id="dlg-saldo" aria-labelledby="dsa-tit">
+  <form class="mm-form" novalidate>
+    <div class="mm-dlg-top"><h2 id="dsa-tit">¿Cuánto tenés hoy?</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <p class="mm-ayuda">Es opcional y queda solo en este dispositivo. Mirá el saldo en la app de tu banco o billetera.</p>
+    <div id="sa-filas"></div>
+    <button type="button" class="mm-link" data-saldo-otra>+ Otra cuenta</button>
+    <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="sa-borrar" hidden>Borrar saldos</button><button type="submit" class="mm-btn">Guardar</button></div>
   </form>
 </dialog>
 
