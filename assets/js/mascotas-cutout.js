@@ -18,7 +18,7 @@ const ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.20.1/dist/';
 const M_AUTO = 'https://storage.googleapis.com/mediapipe-models/image_segmenter/deeplab_v3/float32/1/deeplab_v3.tflite';
 const M_TOUCH = 'https://storage.googleapis.com/mediapipe-models/interactive_segmenter/magic_touch/float32/1/magic_touch.tflite';
 const M_SAL = new URL('../models/u2netp.onnx', import.meta.url).href;
-const OUT = 800, WORK = 1024, SAL = 320;
+const OUT = 800, WORK = 1024, SAL = 256;
 let lib = null, files = null, seg = null, inter = null, ort = null, sal = null;
 
 async function base() {
@@ -192,8 +192,15 @@ function texture(rgba, w, h, r) {
    Devuelve { alpha, bb, stats } o null */
 function refine(c, m, opts = {}, pet = null) {
   const w = c.width, h = c.height;
-  const big = largest(m, w, h);
-  if (!big.mask || big.area < w * h * .02) return null;
+  const big0 = largest(m, w, h);
+  if (!big0.mask || big0.area < w * h * .02) return null;
+  /* apertura por reconstrucción: se erosiona, se queda el cuerpo y se vuelve a crecer.
+     Corta los puentes finos (un palito, una línea de pasto) que pegaban manchas sueltas como la pelota */
+  const bb0 = bboxOf(big0.mask, w, h, .5, 0), k = Math.max(3, Math.round(Math.max(bb0.w, bb0.h) / 70));
+  const er = shrinkMask(big0.mask, w, h, k), core = largest(er, w, h);
+  const keep = core.mask ? grow(core.mask, w, h, k + 1, .5) : null;
+  const opened = keep ? big0.mask.map((v, i) => keep[i] ? v : 0) : big0.mask;
+  const big = largest(opened, w, h); if (!big.mask) return null; big.rest = Math.max(big.rest, big0.rest);
   const solid = fillHoles(big.mask, w, h, big.area), bb = bboxOf(solid, w, h, .5, 0);
   if (opts.guided === false) return { alpha: solid, bb, stats: stats(solid, w, h, big.rest, pet) };
   const rgba = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
@@ -201,16 +208,54 @@ function refine(c, m, opts = {}, pet = null) {
   const r = Math.max(3, Math.min(14, Math.round(Math.max(bb.w, bb.h) / (opts.rdiv || 90))));
   const eps = opts.eps || 1e-3;
   const q1 = guided(rgba, solid, w, h, r, eps), q2 = guided(rgba, solid, w, h, r * 2, eps * .5), tx = texture(rgba, w, h, r);
-  /* solo cerca de la mascota (el filtro no puede inventar manchas lejos) */
-  const zone = grow(solid, w, h, r * 2, .3), q = new Float32Array(w * h);
+  /* solo pegado al cuerpo: la bruma (alfa a medias) más allá de r px del borde firme se corta */
+  const firm = grow(solid, w, h, r, .5), zone = grow(solid, w, h, r * 2, .3), q = new Float32Array(w * h);
+  let haze = 0;
   for (let i = 0; i < q.length; i++) {
     if (!zone[i]) continue;
-    const t = Math.min(1, tx[i] / .12), v = q1[i] * (1 - t) + q2[i] * t;
-    q[i] = Math.max(0, Math.min(1, (v - .06) / .86));
+    const t = Math.min(1, tx[i] / .12), v = Math.max(0, Math.min(1, (q1[i] * (1 - t) + q2[i] * t - .1) / .8));
+    if (!firm[i]) { if (v > .05) haze++; q[i] = v > .6 ? v : 0; } else q[i] = v;
   }
   /* lo que el filtro dejó suelto afuera (manchitas de pasto) también se va */
   const fin = largest(q, w, h, .35).mask || q;
-  return { alpha: fin, bb, stats: stats(fin, w, h, big.rest, pet) };
+  edgeFade(fin, w, h, bb, opts.fade);
+  const st = stats(fin, w, h, big.rest, pet); st.haze = haze / Math.max(1, big.area); st.contrast = edgeContrast(rgba, solid, w, h, r);
+  return { alpha: fin, bb, stats: st };
+}
+/* contraste en el borde: diferencia de luminancia entre el pelo y el fondo de al lado (0 a 1).
+   Con poca luz y fondo oscuro da bajo: ahí el corte no es confiable */
+function edgeContrast(rgba, m, w, h, r) {
+  const L = new Float32Array(w * h), fw = new Float32Array(w * h), bw = new Float32Array(w * h);
+  for (let i = 0; i < w * h; i++) { L[i] = (rgba[i * 4] * .299 + rgba[i * 4 + 1] * .587 + rgba[i * 4 + 2] * .114) / 255; fw[i] = m[i] > .5 ? 1 : 0; bw[i] = 1 - fw[i]; }
+  const R = r * 2, sf = box(fw, w, h, R), sb = box(bw, w, h, R), lf = box(L.map((v, i) => v * fw[i]), w, h, R), lb = box(L.map((v, i) => v * bw[i]), w, h, R);
+  let s = 0, n = 0;
+  for (let i = 0; i < w * h; i++) if (sf[i] > .3 && sb[i] > .3) { s += Math.abs(lf[i] / sf[i] - lb[i] / sb[i]); n++; }
+  return n ? s / n : 1;
+}
+/* erosiona una máscara binaria r píxeles */
+function shrinkMask(m, w, h, r) {
+  const inv = new Float32Array(m.length); for (let i = 0; i < m.length; i++) inv[i] = m[i] > .5 ? 0 : 1;
+  const g = grow(inv, w, h, r, .5), o = new Float32Array(m.length); for (let i = 0; i < m.length; i++) o[i] = g[i] ? 0 : 1; return o;
+}
+/* donde la mascota toca el borde de la foto (cola, patas, el cuerpo contra la cama), el corte recto se ve como un
+   rectángulo con dientes: se funde en un degradé de ~32 px (a la escala final de 800) hacia ese costado */
+function edgeFade(a, w, h, bb, px) {
+  const f = Math.max(8, Math.round((px || 40) * Math.max(bb.w, bb.h) / OUT)), sides = [];
+  const touch = (n, get) => { let c = 0; for (let k = 0; k < n; k++) if (get(k) > .5) c++; return c > n * .02 || c > 12; };
+  if (touch(h, y => a[y * w])) sides.push('l'); if (touch(h, y => a[y * w + w - 1])) sides.push('r');
+  if (touch(w, x => a[x])) sides.push('t'); if (touch(w, x => a[(h - 1) * w + x])) sides.push('b');
+  /* apoyada en una superficie (cama, sillón, pasto): si la base es ancha, la parte de abajo se funde hacia abajo */
+  let y1 = -1; for (let y = h - 1; y >= 0 && y1 < 0; y--) for (let x = 0; x < w; x++) if (a[y * w + x] > .5) { y1 = y; break; }
+  if (!sides.includes('b') && y1 > 0) {
+    let base = 0; const yb = Math.max(0, y1 - Math.round(bb.h * .04)); for (let x = 0; x < w; x++) if (a[yb * w + x] > .5) base++;
+    if (base > bb.w * .3) { const fb = Math.round(bb.h * .07); for (let y = y1 - fb; y <= y1 + 2; y++) if (y >= 0 && y < h) { const k = Math.max(0, (y1 + 2 - y) / (fb + 2)); for (let x = 0; x < w; x++) a[y * w + x] *= k * k * (3 - 2 * k); } }
+  }
+  if (!sides.length) return;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    let k = 1;
+    for (const s of sides) { const d = s === 'l' ? x : s === 'r' ? w - 1 - x : s === 't' ? y : h - 1 - y; if (d < f) k = Math.min(k, d / f); }
+    if (k < 1) a[y * w + x] *= k * k * (3 - 2 * k);
+  }
 }
 /* cobertura, ruido del borde (perímetro / raíz del área: un círculo da ~3,5; una mascota prolija, 6 a 14) y cuánto quedó afuera */
 function stats(a, w, h, rest = 0, pet = null) {
@@ -236,8 +281,8 @@ function convex(p) {
   return lo.slice(0, -1).concat(up.slice(0, -1));
 }
 /* ¿vale la pena el recorte? Si no, mejor redondo y prolijo que recortado feo */
-const NOISE_MAX = 24, REST_MAX = .35, FUZZ_MAX = .3, PET_MIN = .45, SOLID_MIN = .62;
-const quality = st => !st ? 'none' : st.cover < .08 || st.cover > .92 ? 'cover' : st.noise > NOISE_MAX ? 'noise' : st.rest > REST_MAX ? 'pieces' : st.fuzz > FUZZ_MAX ? 'fuzz' : st.pet < PET_MIN ? 'shape' : st.solid < SOLID_MIN ? 'spiky' : 'ok';
+const NOISE_MAX = 24, REST_MAX = .35, FUZZ_MAX = .3, PET_MIN = .45, SOLID_MIN = .62, HAZE_MAX = .06, CONTRAST_MIN = .07;
+const quality = st => !st ? 'none' : st.cover < .08 || st.cover > .92 ? 'cover' : st.noise > NOISE_MAX ? 'noise' : st.rest > REST_MAX ? 'pieces' : st.fuzz > FUZZ_MAX ? 'fuzz' : st.pet < PET_MIN ? 'shape' : st.solid < SOLID_MIN ? 'spiky' : st.haze > HAZE_MAX ? 'haze' : st.contrast < CONTRAST_MIN ? 'lowlight' : 'ok';
 /* arma el WebP/PNG con transparencia: feather suave y color del borde sin el fondo pegado (decontaminación) */
 function compose(c, res) {
   const w = c.width, h = c.height, src = c.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, w, h).data;
@@ -336,8 +381,11 @@ async function saliency(c, L = SAL) {
 }
 /* U²-Netp sobre el rectángulo de la mascota: más resolución donde importa. Fuera del rectángulo queda la pasada entera */
 async function saliencyBoth(c, petMask, L = SAL) {
-  const full = await saliency(c, L), bb = bboxOf(petMask, c.width, c.height, .3, .18);
-  if (!bb || bb.w * bb.h > c.width * c.height * .8) return full;
+  /* si el rectángulo es casi toda la foto, la segunda pasada no suma detalle y se ahorra (celus lentos).
+     Si no, la pasada entera solo cuenta fuera del rectángulo: va a 256 px; la del rectángulo, a L (256 px) */
+  const bb = bboxOf(petMask, c.width, c.height, .3, .18);
+  if (!bb || Math.max(c.width, c.height) / Math.max(bb.w, bb.h) < 1.4) return saliency(c, L);
+  const full = await saliency(c, 256);
   const t = document.createElement('canvas'); t.width = bb.w; t.height = bb.h;
   t.getContext('2d', { willReadFrequently: true }).drawImage(c, bb.x, bb.y, bb.w, bb.h, 0, 0, bb.w, bb.h);
   const crop = await saliency(t, L), out = Float32Array.from(full);
