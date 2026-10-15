@@ -59,7 +59,8 @@ function fakeGoogle() {
       let m = /^\/messages\/([^/]+)$/.exec(p);
       if (m) {
         assert.equal(u.searchParams.get('format'), 'full');
-        assert.ok(u.searchParams.get('fields').startsWith('id,threadId,internalDate,payload('), 'pide solo la estructura, no el cuerpo');
+        assert.ok(u.searchParams.get('fields').startsWith('id,threadId,internalDate,labelIds,payload('), 'pide solo la estructura y las etiquetas, no el cuerpo');
+        assert.ok(!/snippet|body\/data|raw/.test(u.searchParams.get('fields')), 'ni el snippet ni el texto');
         /* como Gmail: el attachmentId cambia en cada lectura */
         g.attachVersion++;
         const msg = JSON.parse(JSON.stringify(g.mails[m[1]]));
@@ -86,10 +87,16 @@ const doc = { pets: [
 /* ---------- unidades ---------- */
 test('query: señales veterinarias (con y sin acento) + nombres de mascotas y veterinarias del doc + rango; nada genérico', () => {
   const q = G.buildQuery(doc, { range: '3y' });
-  assert.ok(q.startsWith('(veterinaria OR veterinario'));
-  for (const t of ['vet', 'mascota', 'antirrábica', 'antirrabica', 'desparasitación', 'desparasitacion', '"Feliza"', '"Toto"', '"veterinaria san roque"', '"dra. paz"', '"diagnovet"', 'has:attachment OR subject:(']) assert.ok(q.includes(t), t);
-  /* los genéricos no van a la consulta: solo ordenan */
-  for (const t of [' informe ', ' estudio ', ' resultado ', ' receta ', ' laboratorio ']) assert.ok(!q.includes(t), t);
+  assert.ok(q.startsWith('(((veterinaria OR veterinario'));
+  for (const t of ['vet', 'mascota', 'antirrábica', 'antirrabica', 'desparasitación', 'desparasitacion', '"Feliza"', '"Toto"', '"veterinaria san roque"', '"dra. paz"', '"diagnovet"', 'filename:pdf OR filename:jpg', 'subject:(']) assert.ok(q.includes(t), t);
+  /* Promociones y Social afuera, salvo los remitentes conocidos (la veterinaria de la ficha entra esté donde esté) */
+  assert.ok(q.includes(') -category:promotions -category:social) OR from:"veterinaria san roque"'), q);
+  /* los genéricos no alcanzan para traer un mail: solo van dentro de subject:(…), junto a la señal veterinaria o el nombre */
+  const who = q.slice(0, q.indexOf('-category:promotions'));
+  for (const t of [' informe ', ' estudio ', ' resultado ', ' receta ', ' laboratorio ']) assert.ok(!who.includes(t), t);
+  assert.ok(!q.includes(' laboratorio '));
+  /* sin adjuntos en general: solo PDF y fotos (un .ics o un .docx no traen el mail) */
+  assert.ok(!q.includes('has:attachment'));
   assert.ok(q.endsWith(' newer_than:3y'));
   assert.ok(G.buildQuery(doc, { range: '12m' }).endsWith(' newer_than:1y'));
   assert.ok(!/newer_than|after:/.test(G.buildQuery(doc, { range: 'all' })));

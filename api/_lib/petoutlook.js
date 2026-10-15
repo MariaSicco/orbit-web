@@ -29,12 +29,18 @@ export function outlookConfig(req) {
 const ymd = ms => new Date(ms).toISOString().slice(0, 10);
 /* señal veterinaria, nombres de mascotas, veterinarias y remitentes conocidos (con y sin acento); el resto lo decide el puntaje.
    Sin exigir adjunto: los mails veterinarios sin archivo se listan aparte para abrirlos en Outlook. */
+/* KQL de Graph (https://learn.microsoft.com/graph/search-query-parameter): sin propiedad busca en from, subject y
+   body; "attachment:" busca en el NOMBRE de los adjuntos (así entra "Fwd: Informe" con "Informe_Laboratorio_Veterinario.pdf").
+   No hay categorías de Promociones como en Gmail ni se puede combinar $search con $filter en mensajes: las promos y
+   los silenciados los saca el puntaje (List-Unsubscribe viene en internetMessageHeaders). */
+const ATT = ['veterinaria', 'veterinario', 'vet', 'canino', 'felino', 'antirrabica', 'hemograma'];
 export function buildKql(doc, since, senders) {
   const P = M.queryParts(doc, senders);
   const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`), froms = P.froms.map(f => `from:${f}`);
-  const make = () => `(${[...P.vet.map(t => /\s/.test(t) ? `"${t}"` : t), ...names, ...known, ...froms].join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
+  const att = [...ATT, ...(P.petNames || [])].map(t => `attachment:${/\s/.test(t) ? `"${t}"` : t}`);
+  const make = () => `(${[...P.vet.map(t => /\s/.test(t) ? `"${t}"` : t), ...names, ...known, ...froms, ...att].join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
   let k = make();
-  while (k.length > 1400 && (known.length || froms.length)) { if (known.length) known.pop(); else froms.pop(); k = make(); }
+  while (k.length > 1400 && (known.length || froms.length || att.length > ATT.length)) { if (known.length) known.pop(); else if (att.length > ATT.length) att.pop(); else froms.pop(); k = make(); }
   return k;
 }
 /* $search="…": las comillas y barras de adentro van escapadas */

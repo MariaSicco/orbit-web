@@ -9,7 +9,7 @@
    Además cuenta cuántos cuerpos se leerían (solo mails mostrados sin adjunto) y simula "No es de la mascota":
    silencia el remitente de cada falso positivo y vuelve a medir.
 
-   Uso: node scripts/mimitos-mail-eval.mjs [--json] [--errores] [--acentos]
+   Uso: node scripts/mimitos-mail-eval.mjs [--set control] [--json] [--errores] [--acentos]
    --acentos: simula un proveedor que ignora tildes (por defecto se supone que NO las ignora, el peor caso). */
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
@@ -18,8 +18,10 @@ const here = fileURLToPath(new URL('.', import.meta.url));
 const M = await import('../api/_lib/petmail.js');
 const G = await import('../api/_lib/petgmail.js');
 const O = await import('../api/_lib/petoutlook.js');
-const SET = JSON.parse(readFileSync(here + '../test/fixtures/mail-eval.json', 'utf8'));
-const args = new Set(process.argv.slice(2));
+const argv = process.argv.slice(2), args = new Set(argv);
+/* --set control: el set de control (escrito después de ajustar, para medir cuánto generaliza) */
+const which = argv[argv.indexOf('--set') + 1];
+const SET = JSON.parse(readFileSync(here + `../test/fixtures/${args.has('--set') && which === 'control' ? 'mail-eval-control' : 'mail-eval'}.json`, 'utf8'));
 const FOLD_ACCENTS = args.has('--acentos');
 
 /* ---------- el mail como lo ve cada adaptador ---------- */
@@ -32,7 +34,8 @@ function candidateFor(mail, provider) {
   const files = seen.filter(f => M.fileOk(f));
   if (provider === 'outlook' && (mail.files || []).some(f => !f.inline) && !files.length) return null;
   return { m: mail.id, from: mail.from, to: mail.to || SET.account.to, subject: mail.subject, files,
-    labels: provider === 'gmail' ? (mail.labels || []) : [], unsub: Boolean(mail.unsub), link: 'https://mail.example/' + mail.id };
+    /* Outlook: hoy no se piden categorías ni internetMessageHeaders (pendiente de probar con una casilla real) */
+    labels: provider === 'gmail' ? (mail.labels || []) : [], unsub: provider === 'gmail' && Boolean(mail.unsub), link: 'https://mail.example/' + mail.id };
 }
 const judgeFn = M.judge || ((c, rel) => { const r = M.relevance(c, rel); return { ...r, show: r.pass ? (c.files.length ? 'file' : 'nofile') : '' }; });
 
@@ -61,10 +64,23 @@ function tokenize(q) {
   }
   return out;
 }
-function parse(q) {
+/* Gmail: el OR liga más fuerte que el AND implícito ("a b OR c" = a (b OR c)). KQL: AND antes que OR. */
+function parse(q, dialect = 'kql') {
   const t = tokenize(q); let p = 0;
   const peek = () => t[p];
-  function orE(field) { const xs = [andE(field)]; while (peek()?.w === 'OR') { p++; xs.push(andE(field)); } return xs.length === 1 ? xs[0] : { or: xs }; }
+  function orE(field) {
+    if (dialect === 'gmail') return gAnd(field);
+    const xs = [andE(field)]; while (peek()?.w === 'OR') { p++; xs.push(andE(field)); } return xs.length === 1 ? xs[0] : { or: xs };
+  }
+  function gAnd(field) {
+    const xs = [];
+    while (p < t.length && peek() !== ')') {
+      const ors = [unary(field)];
+      while (peek()?.w === 'OR') { p++; ors.push(unary(field)); }
+      xs.push(ors.length === 1 ? ors[0] : { or: ors });
+    }
+    return xs.length === 1 ? xs[0] : { and: xs };
+  }
   function andE(field) {
     const xs = [];
     while (p < t.length && peek() !== ')' && peek()?.w !== 'OR') { if (peek()?.w === 'AND') { p++; continue; } xs.push(unary(field)); }
@@ -121,8 +137,8 @@ function hit(node, mail, dialect) {
     default: return phraseIn([from, mail.subject, mail.snippet].join(' '), `${f} ${v}`);
   }
 }
-export const gmailMatches = (q, mail) => hit(parse(q), mail, 'gmail');
-export const kqlMatches = (kql, mail) => hit(parse(kql), mail, 'kql');
+export const gmailMatches = (q, mail) => hit(parse(q, 'gmail'), mail, 'gmail');
+export const kqlMatches = (kql, mail) => hit(parse(kql, 'kql'), mail, 'kql');
 
 /* ---------- correr ---------- */
 function run(senders) {
@@ -182,7 +198,9 @@ const A = report('sin silenciados', base);
 const fpFrom = base.rows.filter(x => !x.mail.expected && x.gmail.e2e).map(x => x.mail.from);
 let B = null;
 if (M.muteKey) {
-  const muted = [...new Set(fpFrom.map(f => M.muteKey(f)).filter(Boolean))];
+  /* como en la app: a un remitente conocido no se lo puede silenciar */
+  const rel0 = M.relContext(SET.doc, SET.senders);
+  const muted = [...new Set(fpFrom.filter(f => !(M.knownOf && M.knownOf(f, rel0))).map(f => M.muteKey(f)).filter(Boolean))];
   B = report('después de "No es de la mascota" en cada falso positivo', run({ ...SET.senders, muted }));
   B.silenciados = muted;
 }

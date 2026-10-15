@@ -36,16 +36,53 @@ export const RANGES = { '12m': 365, '3y': 3 * 365, all: 0 };   // días hacia at
 /* Relevancia. Un mail solo entra si tiene (a) una señal veterinaria, (b) un remitente conocido o
    (c) un remitente que la persona agregó a mano. Los términos genéricos (análisis, informe, resultado,
    receta…) suman puntos para ordenar, pero nunca alcanzan solos: así un "certificado de laboratorio
-   de IA" no se cuela. No suponemos que el proveedor ignore acentos: van las dos variantes. */
+   de IA" no se cuela. No suponemos que el proveedor ignore acentos: van las dos variantes.
+   Lo que se mide (set etiquetado en test/fixtures/mail-eval.json, script scripts/mimitos-mail-eval.mjs) manda:
+   cada cambio de términos o pesos se corre contra ese set antes de subirlo. */
 export const VET_TERMS = ['veterinaria', 'veterinario', 'veterinarias', 'veterinarios', 'veterinary', 'vet', 'clínica veterinaria', 'clinica veterinaria', 'mascota', 'mascotas',
   'canino', 'canina', 'felino', 'felina', 'perro', 'perra', 'gato', 'gata', 'cachorro', 'cachorra', 'antirrábica', 'antirrabica', 'vacuna', 'vacunas',
   'vacunación', 'vacunacion', 'desparasitación', 'desparasitacion', 'desparasitante', 'antiparasitario', 'zoonosis'];
+/* solo para el puntaje (no van a la consulta, para no traer más ruido): plurales y diminutivos */
+const VET_EXTRA = ['caninos', 'caninas', 'felinos', 'felinas', 'perros', 'perras', 'gatos', 'gatas', 'cachorros', 'perrito', 'perrita', 'gatito', 'gatita', 'antirrabicas', 'antirrábicas', 'especie'];
+/* "vacuna" también es de personas (antigripal, calendario del bebé): sola no alcanza */
+const VET_WEAK = ['vacuna', 'vacunas', 'vacunación', 'vacunacion'];
 export const BREEDS = ['caniche', 'labrador', 'golden', 'bulldog', 'beagle', 'boxer', 'ovejero', 'pastor alemán', 'pastor aleman', 'dogo', 'yorkshire', 'schnauzer',
   'chihuahua', 'salchicha', 'border collie', 'pitbull', 'rottweiler', 'mestizo', 'mestiza', 'siamés', 'siames', 'persa', 'maine coon', 'bengalí', 'bengali'];
 export const GENERIC = ['laboratorio', 'análisis', 'analisis', 'hemograma', 'ecografía', 'ecografia', 'radiografía', 'radiografia', 'estudio', 'estudios',
   'resultado', 'resultados', 'receta', 'informe', 'orina', 'bioquímica', 'bioquimica', 'placa', 'perfil'];
+/* términos clínicos: suman como lo genérico y le dan contexto al nombre de la mascota */
+const CLINICAL = [...GENERIC, 'bioquímico', 'bioquimico', 'urianálisis', 'urianalisis', 'coproparasitológico', 'coproparasitologico', 'copro', 'citología', 'citologia',
+  'histopatológico', 'histopatologico', 'serología', 'serologia', 'cultivo', 'raspaje', 'ecocardiograma', 'electrocardiograma', 'ecg', 'tomografía', 'tomografia', 'eco', 'rx',
+  'placas', 'imágenes', 'imagenes', 'consulta', 'historia clínica', 'historia clinica', 'alta', 'indicaciones', 'tratamiento', 'cirugía', 'cirugia', 'quirúrgico', 'quirurgico',
+  'prequirúrgico', 'prequirurgico', 'prequirúrgicas', 'prequirurgicas', 'castración', 'castracion', 'carnet', 'libreta', 'orden', 'protocolo', 'test', 'fiv', 'felv', 'leishmania'];
+/* sin adjunto, el mail se muestra (y se lee el cuerpo para buscar el link) solo si anuncia un resultado */
+const RESULTISH = ['resultado', 'resultados', 'estudio', 'estudios', 'informe', 'informes', 'disponible', 'disponibles', 'análisis', 'analisis', 'protocolo', 'hemograma',
+  'radiografía', 'radiografia', 'ecografía', 'ecografia', 'imágenes', 'imagenes', 'placas', 'receta'];
+const NO_DOC = ['turno', 'turnos', 'recordatorio', 'recordá', 'recorda', 'confirmación', 'confirmacion', 'horarios'];
+/* lo que dice que el adjunto es un documento clínico: sin esto, una factura o un recibo no entra aunque venga de la veterinaria */
+const DOC = [...RESULTISH, 'receta', 'indicaciones', 'certificado', 'constancia', 'libreta', 'historia clínica', 'historia clinica', 'presupuesto', 'orden'];
+/* el remitente es un lugar de salud: le da contexto al nombre de la mascota ("Simón" que manda "Clínica San Martín") */
+const PLACE = ['clínica', 'clinica', 'laboratorio', 'hospital', 'centro médico', 'centro medico', 'consultorio'];
 export const BASE_TERMS = VET_TERMS;   // lo que va a la consulta del proveedor (sin genéricos)
-const NEGATIVE = ['certificado', 'curso', 'diploma', 'webinar', 'factura', 'newsletter', 'suscripción', 'suscripcion', 'inscripción', 'inscripcion', 'descuento', 'promo', 'oferta', 'cupón', 'cupon'];
+/* señales en contra, por familia (cada una con su peso). "certificado" no resta si el asunto es veterinario
+   o nombra a la mascota (certificado de vacunación antirrábica, CVI de SENASA) */
+const NEG = {
+  plata: { w: 4, t: ['factura', 'recibo', 'comprobante', 'pago', 'pedido', 'compra', 'compraste', 'cotización', 'cotizacion', 'liquidación', 'liquidacion', 'reserva', 'envío', 'envio',
+    'catálogo', 'catalogo', 'descuento', 'descuentos', 'off', 'oferta', 'ofertas', 'promo', 'promoción', 'promocion', 'cupón', 'cupon', 'gratis', 'gratuita', 'gratuitas', 'gratuito', 'sorteo',
+    'asegurá', 'asegura', 'seguro', 'póliza', 'poliza', 'suscripción', 'suscripcion', 'newsletter', 'boletín', 'boletin', 'postulate', 'empleo', 'búsqueda laboral', 'guardería', 'guarderia', 'paseos', 'peluquería', 'peluqueria',
+    'shop', 'petshop', 'tienda', 'campaña', 'campana', 'lanzamiento', 'encuesta'] },
+  formacion: { w: 3, t: ['certificado', 'curso', 'diploma', 'diplomatura', 'webinar', 'congreso', 'jornada', 'inscripción', 'inscripcion', 'programa', 'examen', 'trabajo práctico', 'trabajo practico',
+    'tp', 'facu', 'artículos', 'articulos', 'capacitación', 'capacitacion'] },
+  personas: { w: 5, t: ['obra social', 'prepaga', 'afiliado', 'afiliada', 'osde', 'swiss medical', 'galeno', 'medifé', 'medife', 'ioma', 'pami', 'dni', 'médico solicitante', 'medico solicitante',
+    'pediatría', 'pediatria', 'pediátrico', 'pediatrico', 'antigripal', 'covid', 'odontología', 'odontologia', 'dental', 'sanatorio', 'clínica médica', 'clinica medica', 'mamaria', 'ginecología', 'ginecologia'] },
+  social: { w: 3, t: ['te mencionó', 'te menciono', 'comentario', 'publicación', 'publicacion', 'seguidores', 'me gusta', 'te etiquetó', 'te etiqueto',
+    'feliz', 'cumple', 'cumpleaños', 'cumpleanos', 'saludo', 'saludos', 'ganó', 'gano', 'ganador', 'ganadora', 'invitó', 'invito', 'evento'] },
+};
+/* estas familias, sin nada en el asunto que diga "documento clínico", dejan el mail afuera aunque venga de la veterinaria */
+const VETO = ['plata', 'social', 'formacion'];
+/* logos, firmas y banners: no son estudios aunque pesen más de MIN_IMG */
+const DECOR = /(^|[^a-z])(logo|logos|firma|signature|banner|header|footer|icon|icono|facebook|instagram|twitter|linkedin|whatsapp-icon)([^a-z]|$)/;
+const NOT_VET_WORD = new Set(['velvet', 'corvette', 'duvet', 'rivet', 'civet', 'brevet', 'vette']);
 /* casillas públicas: su dominio no identifica a nadie, así que ahí solo vale la dirección exacta */
 const PUBLIC_MAIL = /^(gmail|googlemail|hotmail|outlook|live|msn|yahoo|icloud|me|aol|proton|protonmail)\./;
 
@@ -185,63 +222,156 @@ export const cleanSender = v => {
   if (/^@?[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(t)) return t.replace(/^@/, '');         // dominio
   return term(v);                                                                   // nombre ("Panda")
 };
+/* manual: escritos a mano · learned: remitentes de lo que importó · muted: "No es de la mascota".
+   De los silenciados se guarda solo la dirección (nunca asunto ni cuerpo), como de los aprendidos. */
 export async function getSenders(email) {
   const s = (await kvGet(sendersKey(email))) || {};
-  return { manual: Array.isArray(s.manual) ? s.manual.slice(0, 20) : [], learned: Array.isArray(s.learned) ? s.learned.slice(-50) : [] };
+  return { manual: Array.isArray(s.manual) ? s.manual.slice(0, 20) : [], learned: Array.isArray(s.learned) ? s.learned.slice(-50) : [], muted: Array.isArray(s.muted) ? s.muted.slice(-100) : [] };
 }
-export async function saveSenders(email, s) { await kvSet(sendersKey(email), { manual: s.manual.slice(0, 20), learned: s.learned.slice(-50) }); }
+export async function saveSenders(email, s) { await kvSet(sendersKey(email), { manual: s.manual.slice(0, 20), learned: s.learned.slice(-50), muted: (s.muted || []).slice(-100) }); }
 const domainOf = from => { const d = addrOf(from).split('@')[1] || ''; return PUBLIC_MAIL.test(d) ? '' : d; };
 const addrOf = from => { const m = /<([^>]+)>/.exec(String(from || '')); return (m ? m[1] : String(from || '')).trim().toLowerCase(); };
+const okAddr = a => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a);
+/* qué se guarda al tocar "No es de la mascota": la dirección exacta, no el dominio. Así una promo de la
+   veterinaria no silencia los resultados que la misma veterinaria manda desde otra casilla */
+export const muteKey = from => { const a = addrOf(from); return okAddr(a) ? a.slice(0, 120) : ''; };
 export async function learnSender(email, from) {
-  const a = addrOf(from); if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a)) return;
-  const s = await getSenders(email); if (s.learned.includes(a)) return;
-  s.learned.push(a); await saveSenders(email, s);
+  const a = addrOf(from); if (!okAddr(a)) return;
+  const s = await getSenders(email);
+  if (s.learned.includes(a) && !s.muted.includes(a)) return;
+  if (!s.learned.includes(a)) s.learned.push(a);
+  s.muted = s.muted.filter(x => x !== a);   // si lo importó, no estaba bien silenciado
+  await saveSenders(email, s);
+}
+/* un remitente conocido (la veterinaria de la ficha, uno aprendido o agregado a mano) no se silencia: se perderían
+   sus estudios. Se devuelve { known: true } y la app explica que alcanza con no elegir ese mail */
+export async function muteSender(email, from, doc) {
+  const a = muteKey(from); if (!a) return null;
+  const s = await getSenders(email);
+  if (knownOf(from, relContext(doc, s))) return { ...s, known: true };
+  if (!s.muted.includes(a)) s.muted.push(a);
+  s.learned = s.learned.filter(x => x !== a);
+  await saveSenders(email, s);
+  return s;
+}
+export async function unmuteSender(email, v) {
+  const a = String(v || '').trim().toLowerCase();
+  const s = await getSenders(email);
+  s.muted = s.muted.filter(x => x !== a);
+  await saveSenders(email, s);
+  return s;
 }
 /* todo lo que identifica a "su" veterinaria: nombres cargados en el doc, remitentes aprendidos y los escritos a mano */
 export function relContext(doc, senders = { manual: [], learned: [] }) {
   const known = [];
-  const add = (v, manual) => {
+  const add = (v, manual, learned) => {
     const c = cleanSender(v); if (!c || c.length < 3 || /^sin nombre$/i.test(c)) return;
     const t = c.includes('@') ? 'email' : /^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(c) ? 'domain' : 'name';
-    if (!known.some(k => k.t === t && k.v === (t === 'name' ? fold(c) : c))) known.push({ t, v: t === 'name' ? fold(c) : c, manual: Boolean(manual) });
+    if (!known.some(k => k.t === t && k.v === (t === 'name' ? fold(c) : c))) known.push({ t, v: t === 'name' ? fold(c) : c, manual: Boolean(manual), learned: Boolean(learned) });
   };
   for (const p of doc?.pets || []) {
-    for (const v of [p.vet?.name, p.vet?.er, ...(p.records || []).map(r => r.vet), ...(p.visits || []).map(v => v.vet), ...(p.studies || []).map(x => x.lab)]) add(v, false);
+    for (const v of [p.vet?.name, p.vet?.er, ...(p.records || []).map(r => r.vet), ...(p.visits || []).map(v => v.vet), ...(p.studies || []).map(x => x.lab)]) add(v, false, false);
   }
-  for (const v of senders.learned || []) add(v, false);
-  for (const v of senders.manual || []) add(v, true);
+  for (const v of senders.learned || []) add(v, false, true);
+  for (const v of senders.manual || []) add(v, true, false);
   const pets = [...new Set((doc?.pets || []).map(p => fold(term(p.name))).filter(n => n.length >= 3 && n !== 'sin nombre'))];
   const breeds = [...new Set([...BREEDS, ...(doc?.pets || []).map(p => p.breed)].map(b => fold(term(b))).filter(b => b.length >= 4))];
-  return { pets, breeds, known, vet: [...new Set(VET_TERMS.map(fold))] };
+  /* nombre del tutor (de la ficha): "paciente BENITEZ" sin la mascota es un estudio de la persona */
+  const owner = [...new Set((doc?.pets || []).flatMap(p => fold(term(p.contact?.name)).split(' ')).filter(w => w.length >= 4))];
+  const muted = [...new Set((senders.muted || []).map(x => String(x).toLowerCase()))];
+  return { pets, breeds, known, owner, muted, vet: [...new Set(VET_TERMS.map(fold))], vetExtra: [...new Set(VET_EXTRA.map(fold))] };
 }
-/* ¿cuánto se parece a un mail veterinario? Solo asunto, remitente y nombres de archivo; nunca el cuerpo */
+/* ¿cuánto se parece a un mail veterinario? Solo remitente, asunto, nombres de archivo y lo que el proveedor ya
+   da como metadato (categoría de Gmail, encabezado List-Unsubscribe); nunca el cuerpo.
+   Pesos por campo: remitente conocido o aprendido > asunto > nombre del adjunto > nombre del remitente.
+   El nombre de la mascota cuenta solo con contexto veterinario o clínico, o si lo manda un remitente conocido:
+   "Luna te mandó fotos del cumple" no entra. */
 const has = (hay, w) => w && new RegExp(`(^|[^a-z0-9])${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}([^a-z0-9]|$)`).test(hay);
-export function relevance(c, rel) {
-  const subj = fold(c.subject), from = fold(c.from), files = fold((c.files || []).map(f => f.name.replace(/[-_.]+/g, ' ')).join(' '));
-  const text = `${subj} ${from} ${files}`;
-  const addr = addrOf(c.from), domain = addr.split('@')[1] || '';
-  const vetHits = rel.vet.filter(w => has(text, w)).length + rel.breeds.filter(w => has(text, w)).length;
-  const pet = rel.pets.some(n => has(text, n));
-  const knownHit = rel.known.find(k => k.t === 'email' ? addr === k.v
-    : k.t === 'domain' ? !PUBLIC_MAIL.test(domain) && (domain === k.v || domain.endsWith('.' + k.v))
-    : k.v.length >= 4 && has(from, k.v));
-  const knownInText = !knownHit && rel.known.some(k => k.t === 'name' && k.v.length >= 4 && has(`${subj} ${files}`, k.v));
-  const generic = GENERIC.filter(w => has(text, fold(w))).length;
-  const negative = NEGATIVE.filter(w => has(text, fold(w))).length;
-  let score = (vetHits ? 3 + Math.min(vetHits - 1, 2) : 0) + (pet ? 4 : 0) + (knownHit ? 5 : 0) + (knownInText ? 2 : 0) + Math.min(generic, 2) - 2 * negative;
-  const why = [vetHits && 'veterinario', pet && 'mascota', knownHit && (knownHit.manual ? 'agregado' : 'conocido')].filter(Boolean);
-  return { score, why, pass: Boolean(vetHits || pet || knownHit || knownInText) && score >= 3 };
+const count = (hay, list) => list.filter(w => has(hay, fold(w))).length;
+const nameOf = from => { const m = /^\s*"?([^"<]*?)"?\s*</.exec(String(from || '')); return m ? m[1] : ''; };
+/* el remitente suena a veterinaria: "Rx Vet", "Cardiovet", "@labvetsur…", "@fvet.uba.ar", "@fcv.unlp.edu.ar" */
+const vetish = w => !NOT_VET_WORD.has(w) && (/^vet/.test(w) || /vet$/.test(w) || w === 'fcv');
+function vetSender(name, domain) {
+  const words = fold(name).split(/[^a-z0-9]+/).filter(Boolean);
+  const labels = !domain || PUBLIC_MAIL.test(domain) ? [] : domain.split('.').slice(0, -1).flatMap(l => l.split('-'));
+  return words.some(vetish) || labels.some(l => vetish(l) || (/vet/.test(l) && !NOT_VET_WORD.has(l)));
 }
-/* para la consulta del proveedor: términos veterinarios, nombres y remitentes conocidos */
+/* ¿es un remitente conocido? (mail o dominio aprendido o agregado, o el nombre de la veterinaria de la ficha) */
+export function knownOf(from, rel) {
+  const addr = addrOf(from), domain = addr.split('@')[1] || '';
+  return rel.known.find(k => k.t === 'email' ? addr === k.v
+    : k.t === 'domain' ? !PUBLIC_MAIL.test(domain) && (domain === k.v || domain.endsWith('.' + k.v))
+    : k.v.length >= 4 && has(fold(from), k.v)) || null;
+}
+const WEAK = VET_WEAK.map(s => String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase());
+export function judge(c, rel) {
+  const subj = fold(c.subject), name = fold(nameOf(c.from)), files = fold((c.files || []).map(f => f.name.replace(/[-_.]+/g, ' ')).join(' '));
+  const addr = addrOf(c.from), domain = addr.split('@')[1] || '';
+  const sf = `${subj} ${files}`;
+  const knownHit = knownOf(c.from, rel);
+  /* silenciado ("No es de la mascota"): afuera, salvo que sea un remitente conocido (ahí manda conocido) */
+  if (!knownHit && (rel.muted || []).includes(addr)) return { score: -10, why: ['silenciado'], minus: ['silenciado'], pass: false, show: '' };
+  const knownInText = !knownHit && rel.known.some(k => k.t === 'name' && k.v.length >= 4 && has(sf, k.v));
+  const trusted = Boolean(knownHit && (knownHit.manual || knownHit.learned));
+  const vetAll = [...rel.vet.filter(w => !WEAK.includes(w)), ...(rel.vetExtra || []), ...rel.breeds];
+  const vetSubj = count(subj, vetAll), vetFile = count(files, vetAll), weak = count(sf, WEAK);
+  const vetFrom = vetSender(nameOf(c.from), domain) || count(name, vetAll) > 0;
+  const clinical = count(sf, CLINICAL);
+  /* "Luna Martínez" mandando "Luna te mandó fotos": el nombre de la mascota es el de la persona */
+  const homonym = rel.pets.some(n => name.split(' ')[0] === n);
+  const petSeen = !homonym && rel.pets.some(n => has(sf, n));
+  const vetAny = Boolean(vetSubj + vetFile || vetFrom);
+  const petOk = petSeen && Boolean(vetAny || knownHit || knownInText || clinical || weak || count(name, PLACE));
+  let score = 0;
+  if (knownHit) score += trusted ? 6 : 5;
+  if (knownInText) score += 2;
+  if (vetSubj) score += 4 + Math.min(vetSubj - 1, 2);
+  else if (vetFile) score += 2;
+  if (vetFrom) score += 3;
+  if (weak) score += 2;
+  if (petOk) score += 3;
+  score += Math.min(clinical, 2);
+  /* en contra: por familia, con tope de dos palabras por familia */
+  const text = `${subj} ${files} ${name}`, minus = [];
+  let neg = 0;
+  for (const [k, f] of Object.entries(NEG)) {
+    let n = count(text, f.t);
+    /* "certificado de vacunación antirrábica - Luna" sí; "curso de adiestramiento canino - certificado" no */
+    if (k === 'formacion' && n === 1 && has(text, 'certificado') && (vetSubj || petSeen)) n = 0;
+    if (n > 0) { neg += f.w * Math.min(n, 2); minus.push(k); }
+  }
+  /* "paciente BENITEZ CARLA" sin la mascota ni nada veterinario en el asunto: es de la persona */
+  const ownerHits = (rel.owner || []).filter(w => has(subj, w)).length;
+  if (ownerHits && !petSeen && !vetSubj) { const d = has(subj, 'paciente') ? 5 : ownerHits >= 2 ? 3 : 0; if (d) { neg += d; minus.push('persona'); } }
+  /* Promociones o Social de Gmail y listas con desuscripción: restan, salvo remitente conocido */
+  if (!knownHit && (c.labels || []).some(l => l === 'CATEGORY_PROMOTIONS' || l === 'CATEGORY_SOCIAL')) { neg += 3; minus.push('promociones'); }
+  if (!knownHit && c.unsub) { neg += 2; minus.push('lista'); }
+  score -= neg;
+  const why = [vetAny && 'veterinario', petOk && 'mascota', knownHit && (knownHit.manual ? 'agregado' : 'conocido')].filter(Boolean);
+  const signal = vetAny || petOk || knownHit || knownInText || (weak && (clinical || petSeen));
+  const pass = Boolean(signal) && score >= 3;
+  /* plata (factura, recibo, pedido…), saludos o cursos sin nada en el asunto que diga que es un documento clínico:
+     afuera, aunque venga de la veterinaria. Sin adjunto: solo si anuncia un resultado y no es un turno o un
+     recordatorio; recién ahí se lee el cuerpo para buscar el link */
+  const veto = VETO.some(k => minus.includes(k)) && !count(subj, DOC);
+  const show = !pass || veto ? '' : (c.files || []).length ? 'file' : (count(subj, RESULTISH) && !count(subj, NO_DOC) ? 'nofile' : '');
+  return { score, why, minus, pass: Boolean(show), show };
+}
+/* compatibilidad: relevance() es judge() */
+export const relevance = judge;
+/* para la consulta del proveedor: términos veterinarios, nombres, remitentes conocidos y silenciados */
 export function queryParts(doc, senders) {
   const rel = relContext(doc, senders);
-  const names = [...new Set([...(doc?.pets || []).map(p => term(p.name)), ...(doc?.pets || []).map(p => term(p.breed))].filter(n => n.length >= 3 && !/^sin nombre$/i.test(n)))];
+  const ok = n => n.length >= 3 && !/^sin nombre$/i.test(n);
+  const petNames = [...new Set((doc?.pets || []).map(p => term(p.name)).filter(ok))];
+  const names = [...new Set([...petNames, ...(doc?.pets || []).map(p => term(p.breed)).filter(ok)])];
   /* nombres de veterinarias tal como están escritos y sin acento (no suponemos que el proveedor los ignore) */
   const raw = [];
   for (const p of doc?.pets || []) raw.push(p.vet?.name, p.vet?.er, ...(p.records || []).map(r => r.vet), ...(p.visits || []).map(v => v.vet), ...(p.studies || []).map(x => x.lab));
   raw.push(...(senders?.manual || []));
   const knownNames = [...new Set(raw.map(cleanSender).filter(c => c && c.length >= 3 && !c.includes('@') && !/^[a-z0-9-]+(\.[a-z0-9-]+)+$/.test(c) && !/^sin nombre$/i.test(c)).flatMap(c => [c, fold(c)]).map(c => c.toLowerCase()))];
-  return { vet: VET_TERMS, names, froms: rel.known.filter(k => k.t !== 'name').map(k => k.v), knownNames };
+  const muted = rel.muted.filter(a => !knownOf(`<${a}>`, rel));
+  return { vet: VET_TERMS, names, petNames, froms: rel.known.filter(k => k.t !== 'name').map(k => k.v), knownNames, muted };
 }
 
 /* desde cuándo buscar: "buscar de nuevo" usa la última búsqueda (con un día de margen; lo repetido lo filtra el dedupe) */
@@ -267,7 +397,13 @@ export const typeOf = (mime, name) => {
 export const readable = t => /^(image\/(jpeg|png|webp)|application\/pdf)$/.test(t);
 /* ¿vale la pena ofrecerlo? PDF o foto real, con nombre, que entra en el tope */
 export function fileOk({ name, type, size }) {
-  return Boolean(name && type && size <= MAX_FILE && !(type.startsWith('image/') && size < MIN_IMG));
+  if (!name || !type || size > MAX_FILE) return false;
+  if (type.startsWith('image/')) {
+    const n = fold(name).replace(/\.[a-z0-9]+$/, '').replace(/[-_.]+/g, ' ');
+    /* logos, firmas, banners y las "image001.png" de la firma de Outlook */
+    if (size < MIN_IMG || DECOR.test(n) || (/^image\s?0\d\d$/.test(n) && size < 100 * 1024)) return false;
+  }
+  return true;
 }
 /* clave de dedupe: legible si es corta (Gmail), con hash si el proveedor usa ids largos (Outlook) */
 export const dedupeKey = (m, part) => { const k = `${m}:${part}`; return k.length <= 64 ? k : 'h:' + createHash('sha256').update(k).digest('hex').slice(0, 32); };
@@ -352,11 +488,11 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
       const got = await Promise.all(items.slice(i, i + n).map(async it => {
         const c = await P.candidate(at, it, doc, cur);
         if (!c) return null;
-        const r = relevance(c, rel);
-        if (!r.pass) return null;
-        /* solo los mails que ya parecen veterinarios y no traen el estudio adjunto: se lee el cuerpo para buscar
-           el link al estudio (muchos laboratorios mandan un link). El cuerpo no se guarda ni sale de esta función */
-        if (!c.files.length && P.body) {
+        const r = judge(c, rel);
+        if (!r.show) return null;
+        /* solo los mails que ya parecen veterinarios, no traen el estudio adjunto y anuncian un resultado: se lee el
+           cuerpo para buscar el link al estudio (muchos laboratorios mandan un link). No se guarda ni sale de acá */
+        if (r.show === 'nofile' && P.body) {
           const b = await P.body(at, c.m).catch(e => { if (e.code === 'mail_vencido' || e.code === 'mail_limite') throw e; return null; });
           if (b) c.links = extractLinks(b, { senderDomain: domainOf(c.from) });
         }

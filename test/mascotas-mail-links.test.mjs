@@ -105,7 +105,9 @@ const MAILS = {
     { partId: '0', mimeType: 'text/plain', filename: '', body: { size: 100, data: b64u('Resultados en el link') } },
     { partId: '1', mimeType: 'text/html', filename: '', body: { size: 900, data: b64u(MAIL_HTML) } },
   ] } },
-  nolink01: { id: 'nolink01', threadId: 'thnolin1', internalDate: String(Date.parse('2026-09-01')), payload: { headers: [H('Subject', 'Veterinaria Panda: recordatorio de turno'), H('From', 'Veterinaria Panda <turnos@vetpanda.com.ar>')], mimeType: 'text/html', body: { size: 300, data: b64u('<p>Te esperamos el sábado.</p><a href="https://vetpanda.com.ar/turnos">Mis turnos</a>') } } },
+  nolink01: { id: 'nolink01', threadId: 'thnolin1', internalDate: String(Date.parse('2026-09-01')), payload: { headers: [H('Subject', 'Veterinaria Panda: los estudios de Aika ya están disponibles'), H('From', 'Veterinaria Panda <turnos@vetpanda.com.ar>')], mimeType: 'text/html', body: { size: 300, data: b64u('<p>Pasá a retirarlos por la clínica.</p><a href="https://vetpanda.com.ar/turnos">Mis turnos</a>') } } },
+  /* veterinario pero sin documento (un recordatorio de turno): no se muestra y su cuerpo no se lee */
+  turno001: { id: 'turno001', threadId: 'thturno1', internalDate: String(Date.parse('2026-08-01')), payload: { headers: [H('Subject', 'Veterinaria Panda: recordatorio de turno'), H('From', 'Veterinaria Panda <turnos@vetpanda.com.ar>')], mimeType: 'text/html', body: { size: 300, data: b64u('<p>Te esperamos el sábado.</p><a href="https://vetpanda.com.ar/turnos">Mis turnos</a>') } } },
 };
 const calls = [];
 globalThis.fetch = async (url, init = {}) => {
@@ -141,6 +143,7 @@ test('un mail veterinario con el estudio como link aparece como candidato y el P
   assert.deepEqual(c.files.map(f => [f.type, f.name]).sort(), [['link', 'Estudio por link · drive.google.com'], ['link', 'Estudio por link · resultados.labpanda.com.ar']]);
   assert.deepEqual(s.body.noFile.map(x => x.m), ['nolink01'], 'sin link de estudio: queda en "abrilo en Gmail"');
   assert.ok(calls.some(x => x.includes('/messages/link0001?format=full&fields=payload')), 'leyó el cuerpo solo para buscar links');
+  assert.ok(!calls.some(x => x.includes('/messages/turno001?format=full&fields=payload')), 'el recordatorio de turno no anuncia un estudio: su cuerpo no se lee');
   /* el cuerpo no se guardó en ningún lado */
   assert.ok(!JSON.stringify(await kvGet(`orbit:petgmail:${EMAIL}`)).includes('Descargar informe'));
 

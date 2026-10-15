@@ -36,9 +36,13 @@ test('"Resultados de Aika - Laboratorio Veterinario X" con un PDF entra ADENTRO'
 
 test('remitente conocido sin palabras veterinarias entra ADENTRO (aprendido, agregado a mano o cargado en el doc)', () => {
   const plain = { subject: 'Su informe', files: [pdf('informe-2026.pdf')] };
-  assert.equal(judge({ ...plain, from: 'Resultados <resultados@vetsur.com.ar>' }).pass, false, 'sin conocerlo, no entra');
-  assert.equal(judge({ ...plain, from: 'Resultados <resultados@vetsur.com.ar>' }, { manual: [], learned: ['resultados@vetsur.com.ar'] }).pass, true, 'aprendido de una importación');
-  assert.equal(judge({ ...plain, from: 'Otro <otro@vetsur.com.ar>' }, { manual: ['vetsur.com.ar'], learned: [] }).pass, true, 'dominio agregado a mano');
+  assert.equal(judge({ ...plain, from: 'Resultados <resultados@labsur.com.ar>' }).pass, false, 'sin conocerlo, no entra');
+  assert.equal(judge({ ...plain, from: 'Resultados <resultados@labsur.com.ar>' }, { manual: [], learned: ['resultados@labsur.com.ar'] }).pass, true, 'aprendido de una importación');
+  assert.equal(judge({ ...plain, from: 'Otro <otro@labsur.com.ar>' }, { manual: ['labsur.com.ar'], learned: [] }).pass, true, 'dominio agregado a mano');
+  /* un dominio que suena a veterinaria ya es señal: @vetsur…, @fvet.uba.ar, @fcv.unlp.edu.ar */
+  assert.equal(judge({ ...plain, from: 'Resultados <resultados@vetsur.com.ar>' }).pass, true, 'dominio veterinario');
+  assert.equal(judge({ ...plain, from: 'Informes <informes@fcv.unlp.edu.ar>' }).pass, true, 'facultad de veterinaria');
+  assert.equal(judge({ ...plain, from: 'Velvet Store <hola@velvet.com>' }).pass, false, 'velvet no es vet');
   assert.equal(judge({ ...plain, from: 'Panda Turnos <turnos@pandaturnos.com>' }, { manual: ['Panda'], learned: [] }).pass, true, 'nombre agregado a mano');
   assert.equal(judge({ ...plain, from: 'Diagnovet <informes@diagnovet.com.ar>' }).pass, true, 'laboratorio ya cargado en el doc');
 });
@@ -105,7 +109,8 @@ test('búsqueda real: UdeSA afuera, Aika adentro, el remitente agregado a mano a
   const s = await call('POST', { gmail: 'search' }, { mode: 'all' });
   assert.equal(s.code, 200, JSON.stringify(s.body));
   assert.ok(lastQ.includes('from:resultados@vetsur.com.ar'), 'el remitente agregado va a la consulta');
-  assert.deepEqual(s.body.candidates.map(c => c.m), ['aika0001', 'known001'], 'UdeSA afuera; lo más probable primero');
+  /* el remitente agregado a mano pesa más que el asunto (pesos por campo) */
+  assert.deepEqual(s.body.candidates.map(c => c.m), ['known001', 'aika0001'], 'UdeSA afuera; ordenados por puntaje');
   assert.deepEqual(s.body.noFile.map(x => [x.m, x.link]), [['link0001', 'https://mail.google.com/mail/u/0/#all/thlink01']]);
 
   const rm = await call('POST', { gmail: 'senders' }, { remove: 'resultados@vetsur.com.ar' });

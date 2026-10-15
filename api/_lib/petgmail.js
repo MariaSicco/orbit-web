@@ -43,25 +43,42 @@ export function gmailConfig(req) {
 }
 
 /* ---------- consulta de Gmail ---------- */
-/* (señal veterinaria | nombre de mascota | veterinaria o remitente conocido) y además
-   (adjunto | asunto veterinario | remitente conocido): así también aparecen los mails sin adjunto
-   (laboratorios que mandan un link) para listarlos aparte. El resto lo decide el puntaje. */
+/* QUIÉN: (señal veterinaria | nombre de mascota | veterinaria conocida) fuera de Promociones y Social,
+          o un remitente conocido (aprendido, agregado a mano o la veterinaria de la ficha) esté donde esté;
+   QUÉ:   un PDF o una foto adjunta | un asunto veterinario o que anuncia un estudio | un remitente conocido.
+          Así también aparecen los mails sin adjunto (laboratorios que mandan un link) para listarlos aparte;
+   y nunca los remitentes que la persona marcó "No es de la mascota". El resto lo decide el puntaje.
+   Todo va entre paréntesis: en Gmail el OR liga más fuerte que el AND implícito. Con y sin tilde. */
 const qt = t => /\s/.test(t) ? `"${t}"` : t;
 const SUBJECT_VET = ['veterinaria', 'veterinario', 'vet', 'mascota', 'canino', 'canina', 'felino', 'felina', 'antirrábica', 'antirrabica', 'vacuna', 'desparasitación', 'desparasitacion'];
+const SUBJECT_DOC = ['resultado', 'resultados', 'estudio', 'estudios', 'informe', 'análisis', 'analisis', 'hemograma', 'ecografía', 'ecografia', 'radiografía', 'radiografia', 'receta', 'protocolo'];
+export const FILE_TYPES = ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'webp'];
+export const MAX_QUERY = 1500;
 export function buildQuery(doc, { range = '12m', after = 0, senders } = {}) {
   const P = M.queryParts(doc, senders);
-  const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`), froms = P.froms.map(f => `from:${f}`);
+  const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`);
+  const froms = P.froms.map(f => `from:${f}`), muted = (P.muted || []).map(f => `-from:${f}`);
+  const pets = P.petNames?.length ?? (doc?.pets?.length || 0);
   const when = after ? `after:${Math.floor(after / 1000)}` : (RANGES[range] ?? RANGES['12m']);
-  const make = () => `(${[...P.vet.map(qt), ...names, ...known, ...froms].join(' OR ')}) (has:attachment OR subject:(${[...SUBJECT_VET, ...names].join(' OR ')})${froms.length ? ' OR ' + froms.join(' OR ') : ''})${when ? ' ' + when : ''}`;
+  const make = () => {
+    const trusted = [...froms, ...known.map(k => `from:${k}`)];
+    const who = `((${[...P.vet.map(qt), ...names, ...known].join(' OR ')}) -category:promotions -category:social)`;
+    const what = `(${[...FILE_TYPES.map(t => `filename:${t}`), `subject:(${[...SUBJECT_VET, ...SUBJECT_DOC, ...names].join(' OR ')})`, ...froms].join(' OR ')})`;
+    return [trusted.length ? `(${who} OR ${trusted.join(' OR ')})` : who, what, when, ...muted].filter(Boolean).join(' ');
+  };
   let q = make();
-  /* Gmail corta consultas muy largas: si se pasa, saca nombres de veterinarias, después razas y remitentes */
-  while (q.length > 1500 && (known.length || names.length > (doc?.pets?.length || 0) || froms.length)) { if (known.length) known.pop(); else if (names.length > (doc?.pets?.length || 0)) names.pop(); else froms.pop(); q = make(); }
+  /* Gmail corta consultas muy largas: si se pasa, saca silenciados, nombres de veterinarias, razas y remitentes */
+  while (q.length > MAX_QUERY && (muted.length || known.length || names.length > pets || froms.length)) {
+    if (muted.length) muted.shift(); else if (known.length) known.pop(); else if (names.length > pets) names.pop(); else froms.pop();
+    q = make();
+  }
   return q;
 }
 
 /* ---------- adjuntos de un mail (acá solo la estructura; el cuerpo lo pide body(), más abajo) ---------- */
 const PF = 'partId,mimeType,filename,body(attachmentId,size)';
-export const MSG_FIELDS = `id,threadId,internalDate,payload(headers,${PF},parts(${PF},parts(${PF},parts(${PF},parts(${PF})))))`;
+/* labelIds: la categoría de Gmail (Promociones, Social) es un metadato, como los encabezados; no es el cuerpo */
+export const MSG_FIELDS = `id,threadId,internalDate,labelIds,payload(headers,${PF},parts(${PF},parts(${PF},parts(${PF},parts(${PF})))))`;
 export function partsOf(payload) {
   const out = [];
   const walk = (p, depth) => {
@@ -85,7 +102,9 @@ export function candidateOf(msg, imported = new Set()) {
 /* el mail como lo usa el motor (también sin adjuntos, con el link para abrirlo en Gmail) */
 export function messageOf(msg) {
   const ms = Number(msg.internalDate) || Date.parse(header(msg.payload?.headers, 'date')) || 0;
-  return { m: msg.id, date: ms ? new Date(ms).toISOString() : '', from: header(msg.payload?.headers, 'from').slice(0, 120), subject: header(msg.payload?.headers, 'subject').slice(0, 160), files: partsOf(msg.payload),
+  const h = msg.payload?.headers;
+  return { m: msg.id, date: ms ? new Date(ms).toISOString() : '', from: header(h, 'from').slice(0, 120), subject: header(h, 'subject').slice(0, 160), files: partsOf(msg.payload),
+    labels: (msg.labelIds || []).filter(l => /^CATEGORY_[A-Z]+$/.test(l)), unsub: Boolean(header(h, 'list-unsubscribe')),
     link: /^[A-Za-z0-9]{6,40}$/.test(msg.threadId || '') ? `https://mail.google.com/mail/u/0/#all/${msg.threadId}` : '' };
 }
 
