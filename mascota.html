@@ -9,7 +9,7 @@
 <link rel="icon" href="/favicon-32.png">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
-<link rel="stylesheet" href="/assets/css/mascotas.css?v=41">
+<link rel="stylesheet" href="/assets/css/mascotas.css?v=42">
 <link rel="stylesheet" href="/assets/css/mascotas-hoy.css?v=4">
 </head>
 <body>
@@ -80,6 +80,7 @@ function ficha(p, updatedAt, owner) {
       <div class="qh-txt"><p class="hello">${p.lost ? 'Me están buscando' : '¡Hola! Me llamo'}</p><h1>${esc(p.name)}</h1>
       ${p.temper ? `<div class="pills"><span class="pill">${esc(p.temper)}</span></div>` : ''}
       ${extra.length ? `<div class="qr-photos">${extra.map(u => `<img src="${esc(u)}" alt="Otra foto de ${esc(p.name)}" loading="lazy">`).join('')}</div>` : ''}</div></section>
+    <section class="qr-here${p.lost ? ' lost' : ''}" id="hereBox" aria-live="polite">${hereHtml()}</section>
     ${p.urgent ? `<section class="banner qr-urgent" role="note">${bubble('alert', 'perdida')}<span><b>Importante</b>${esc(p.urgent)}</span></section>` : ''}
     <section class="card qr-contact">
       <h2>¿${p.lost ? 'Me viste' : 'Me encontraste'}? Avisale a mi familia</h2>
@@ -87,12 +88,8 @@ function ficha(p, updatedAt, owner) {
         : `<p class="dim">Su familia no dejó un teléfono a la vista. Usá el aviso de abajo: le llega al instante.</p>`}
     </section>
     <section class="card qr-form" id="found" aria-labelledby="hFound">
-      <h2 id="hFound">Avisale dónde ${ella} encontraste</h2>
-      <p class="dim">Todo es opcional. Le llega solo a su familia, en el celu y por mail.</p>
-      <div class="qr-loc" id="locBox">
-        <button class="btn soft wide" type="button" id="locBtn">${I('pin')} Compartir mi ubicación</button>
-        <small class="dim">Te la pedimos solo si tocás el botón. La podés quitar antes de mandar.</small>
-      </div>
+      <h2 id="hFound">¿Querés dejarle algo más? <span class="opt">(opcional)</span></h2>
+      <p class="dim">Tu nombre, tu teléfono o un mensaje. Le llega solo a su familia, en el celu y por mail.</p>
       <div class="f"><label for="fName">Tu nombre <span class="opt">(opcional)</span></label><input id="fName" maxlength="60" autocomplete="name"></div>
       <div class="f"><label for="fPhone">Tu teléfono <span class="opt">(opcional)</span></label><input id="fPhone" type="tel" maxlength="40" autocomplete="tel" inputmode="tel"></div>
       <div class="f"><label for="fMsg">Mensaje <span class="opt">(opcional)</span></label><textarea id="fMsg" maxlength="500" rows="3" placeholder="La tengo conmigo en casa. Está bien."></textarea></div>
@@ -101,33 +98,64 @@ function ficha(p, updatedAt, owner) {
       <button class="btn big wide" type="button" id="fSend">Avisar a su familia</button>
     </section>
     ${facts.length ? `<section class="sec"><h2>Para reconocer${ella === 'lo' ? 'lo' : 'la'}</h2><div class="facts">${facts.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div></section>` : ''}
-    <p class="note">Esta ficha muestra solo lo necesario para que ${esc(p.name)} vuelva a casa. Cuando la abrís, su familia recibe un aviso con la hora y la ciudad aproximada de tu conexión. Lo que mandes se guarda 90 días en el registro de su familia. <a href="/privacidad#mimitos">Privacidad</a>. Mimitos by Orbit.</p>`;
+    <p class="note">Esta ficha muestra solo lo necesario para que ${esc(p.name)} vuelva a casa. Cuando la abrís, su familia recibe un aviso con la hora y una zona aproximada según tu conexión (no es tu ubicación: esa la mandás solo si tocás el botón). Lo que mandes se guarda 90 días en el registro de su familia. <a href="/privacidad#mimitos">Privacidad</a>. Mimitos by Orbit.</p>`;
   wireFound();
 }
-function locView() {
-  const box = document.getElementById('locBox');
-  if (here) box.innerHTML = `<div class="banner ok-b">${bubble('pin', 'salud')}<span style="flex:1"><b>Ubicación lista</b>${here.acc ? `Con un margen de unos ${here.acc < 1000 ? here.acc + ' m' : Math.round(here.acc / 100) / 10 + ' km'}.` : ''}</span><button class="btn ghost sm" type="button" id="locOff">Quitar</button></div>`;
-  else box.innerHTML = `<button class="btn soft wide" type="button" id="locBtn">${I('pin')} Compartir mi ubicación</button><small class="dim">Te la pedimos solo si tocás el botón. La podés quitar antes de mandar.</small>`;
-  wireFound();
+/* "Avisale a su familia dónde estás": un toque pide la ubicación y la manda al instante.
+   hereSt: '' (listo para tocar) · 'buscando' · 'enviando' · 'ok' · 'texto' (sin permiso: escribir dónde) · 'texto-ok' */
+let hereSt = '';
+function hereHtml() {
+  const p = F, ella = p.sex === 'm' ? 'lo' : 'la';
+  const label = p.lost ? `Si ${ella} encontraste, tocá acá: su familia ${ella} está buscando` : 'Avisale a su familia dónde estás';
+  if (hereSt === 'ok') return `<div class="banner ok-b qr-here-ok">${bubble('check', 'salud')}<span><b>Listo: su familia ya sabe dónde estás</b>${here?.acc ? `Con una precisión de unos ${here.acc < 1000 ? here.acc + ' m' : Math.round(here.acc / 100) / 10 + ' km'}. ` : ''}Si podés, llamala o dejale tu teléfono abajo.</span></div>`;
+  if (hereSt === 'texto-ok') return `<div class="banner ok-b qr-here-ok">${bubble('check', 'salud')}<span><b>Listo, ya le avisamos a su familia</b>Si podés, llamala o dejale tu teléfono abajo.</span></div>`;
+  if (hereSt === 'texto') return `<div class="qr-here-txt"><p><b>No pudimos usar tu ubicación.</b> Escribí dónde estás y se lo mandamos.</p>
+      <div class="f"><label for="hPlace">Dirección o referencia</label><input id="hPlace" maxlength="160" autocomplete="street-address" placeholder="Junín y 3 de Abril, frente a la plaza"></div>
+      <p class="err-msg" id="hErr" role="alert" hidden></p>
+      <button class="btn big wide" type="button" id="hSend">Mandar dónde estoy</button>
+      <button class="link" type="button" id="hRetry">Probar de nuevo con la ubicación</button></div>`;
+  const busy = hereSt === 'buscando' ? 'Buscando dónde estás…' : hereSt === 'enviando' ? 'Avisando a su familia…' : '';
+  return `<button class="btn big wide qr-here-btn" type="button" id="hereBtn"${busy ? ' disabled aria-busy="true"' : ''}><span aria-hidden="true">📍</span> ${busy || label}</button>
+    <small class="dim">Te pedimos la ubicación solo si tocás el botón, y le llega solo a su familia.</small>`;
 }
+function hereView(st) { hereSt = st; const box = document.getElementById('hereBox'); if (box) box.innerHTML = hereHtml(); wireFound(); if (st === 'texto') document.getElementById('hPlace')?.focus(); }
+async function postFound(body) {
+  const r = await fetch(`/api/mascotas?s=${token}&found=1`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+  if (r.status === 429) throw new Error('limite');
+  if (!r.ok) throw new Error('x');
+}
+const failMsg = e => e.message === 'limite' ? 'Ya se mandaron varios avisos desde esta conexión. Probá en un rato o usá los botones para llamar.' : 'No se pudo mandar. Revisá la conexión y probá de nuevo.';
+const trap = () => (document.getElementById('fWeb')?.value || '').trim();
 function wireFound() {
-  const lb = document.getElementById('locBtn'), lo = document.getElementById('locOff'), send = document.getElementById('fSend');
-  if (lb) lb.onclick = () => {
-    if (!navigator.geolocation) return toast('Este navegador no comparte la ubicación. Contalo en el mensaje.');
-    lb.disabled = true; lb.textContent = 'Buscando tu ubicación…';
+  const hb = document.getElementById('hereBtn'), hs = document.getElementById('hSend'), hr = document.getElementById('hRetry'), send = document.getElementById('fSend');
+  if (hb) hb.onclick = () => {
+    if (!navigator.geolocation) return hereView('texto');
+    hereView('buscando');
     navigator.geolocation.getCurrentPosition(
-      pos => { here = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round(pos.coords.accuracy || 0) }; locView(); },
-      err => { here = null; locView(); toast(err.code === 1 ? 'No diste permiso. Podés contar dónde está en el mensaje.' : 'No pudimos ubicarte. Contalo en el mensaje.'); },
+      async pos => {
+        here = { lat: pos.coords.latitude, lng: pos.coords.longitude, acc: Math.round(pos.coords.accuracy || 0) };
+        hereView('enviando');
+        try { await postFound({ loc: here, website: trap() }); hereView('ok'); }
+        catch (e) { hereView(''); toast(failMsg(e)); }
+      },
+      err => { here = null; hereView('texto'); if (err.code !== 1) toast('No pudimos ubicarte. Escribí dónde estás.'); },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
   };
-  if (lo) lo.onclick = () => { here = null; locView(); };
+  if (hr) hr.onclick = () => hereView('');
+  if (hs) hs.onclick = async () => {
+    const v = (document.getElementById('hPlace')?.value || '').trim(), err = document.getElementById('hErr');
+    if (!v) { err.hidden = false; err.textContent = 'Escribí una dirección, una esquina o algo que ayude a ubicarte.'; return; }
+    hs.disabled = true; hs.textContent = 'Avisando…';
+    try { await postFound({ place: v, website: trap() }); hereView('texto-ok'); }
+    catch (e) { hs.disabled = false; hs.textContent = 'Mandar dónde estoy'; err.hidden = false; err.textContent = failMsg(e); }
+  };
   if (send) send.onclick = sendFound;
 }
 async function sendFound() {
   const v = id => (document.getElementById(id)?.value || '').trim();
   const body = { loc: here, name: v('fName'), phone: v('fPhone'), msg: v('fMsg'), website: v('fWeb') };
   const err = document.getElementById('fErr'), btn = document.getElementById('fSend');
-  if (!here && !body.name && !body.phone && !body.msg) { err.hidden = false; err.textContent = 'Compartí tu ubicación, dejá un teléfono o escribí un mensaje.'; return; }
+  if (!body.name && !body.phone && !body.msg) { err.hidden = false; err.textContent = 'Dejá tu nombre, un teléfono o un mensaje.'; return; }
   err.hidden = true; btn.disabled = true; btn.textContent = 'Avisando…';
   try {
     const r = await fetch(`/api/mascotas?s=${token}&found=1`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
@@ -136,7 +164,7 @@ async function sendFound() {
     document.getElementById('found').innerHTML = `<div class="qr-done">${bubble('check', 'salud')}<h2>¡Gracias! Ya le avisamos a su familia</h2><p class="dim">${body.phone ? 'Si pueden, te van a llamar o escribir al número que dejaste.' : 'Si no dejaste un teléfono, usá los botones de arriba para hablar con su familia.'}</p></div>`;
   } catch (e) {
     btn.disabled = false; btn.textContent = 'Avisar a su familia';
-    err.hidden = false; err.textContent = e.message === 'limite' ? 'Ya se mandaron varios avisos desde esta conexión. Probá de nuevo en un rato o usá los botones de arriba.' : 'No se pudo mandar. Revisá la conexión y probá de nuevo.';
+    err.hidden = false; err.textContent = failMsg(e);
   }
 }
 

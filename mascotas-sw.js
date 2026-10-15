@@ -16,6 +16,8 @@ self.addEventListener('push', e => {
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   const url = new URL((e.notification.data && e.notification.data.url) || '/mascotas', self.location.origin).href;
+  /* el aviso con la ubicación exacta abre Google Maps directo (solo ese destino externo) */
+  if (/^https:\/\/www\.google\.com\/maps\?q=-?[\d.]+,-?[\d.]+$/.test(url)) { e.waitUntil(self.clients.openWindow(url)); return; }
   e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(list => {
     for (const c of list) if (c.url.startsWith(self.location.origin + '/mascotas') && 'focus' in c) {
       /* la app ya está abierta: le pasamos a dónde ir (#/renovar/...) y la traemos al frente */

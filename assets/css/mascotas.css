@@ -1503,3 +1503,15 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 .ag-links{display:flex;flex-wrap:wrap;gap:0 18px}
 .ag-links .link{min-height:44px;display:inline-flex;align-items:center;gap:6px}
 .ag-links .link[disabled]{opacity:.45;cursor:default}
+/* ficha del QR: "Avisale a su familia dónde estás" es lo primero, grande, debajo de la foto y el nombre */
+.qr-here{display:flex;flex-direction:column;gap:8px}
+.btn.qr-here-btn{min-height:68px;font-size:18px;line-height:1.25;padding:14px 18px;white-space:normal;text-align:center;gap:10px}
+.qr-here-btn>span[aria-hidden]{font-size:22px}
+.qr-here.lost .btn.qr-here-btn{background:var(--late);color:#fff}
+.qr-here small{text-align:center}
+.qr-here-ok{align-items:flex-start;font-size:14.5px;line-height:1.45}
+.qr-here-ok b{display:block;font-size:16px}
+.qr-here-txt{display:flex;flex-direction:column;gap:10px;background:var(--card);border-radius:var(--r);padding:16px;box-shadow:var(--sh1)}
+.qr-here-txt p{margin:0}
+.qr-here-txt .link{align-self:center;min-height:44px}
+.qr-form h2 .opt{font:400 14px var(--f);color:var(--ink2)}

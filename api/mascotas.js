@@ -349,6 +349,11 @@ async function canNotify(kind, token) {
   return kvSetNX(`orbit:petqrping:${kind}:${token}`, 1, NOTIFY_EVERY);
 }
 const placeOf = w => [w.city, w.region].filter(Boolean).join(', ');
+/* la ciudad por IP sale de la conexión (las operadoras móviles salen por Buenos Aires): siempre como zona aproximada */
+export const zoneText = w => placeOf(w) ? `Zona aproximada según la conexión: ${placeOf(w)} (puede no ser exacta)` : '';
+export const mapUrl = loc => `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
+export const accText = acc => !acc ? '' : acc < 1000 ? `precisión de unos ${acc} m` : `precisión de unos ${Math.round(acc / 100) / 10} km`;
+export const exactText = loc => `📍 Ubicación exacta${loc.acc ? ` (${accText(loc.acc)})` : ''}: ${mapUrl(loc)}`;
 const hm = d => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }).format(d);
 
 /* ---------- lectura de estudios con IA ----------
@@ -400,7 +405,7 @@ async function scanAlert(email, pet, token, req) {
   if (n.off.qr) return;
   const place = placeOf(w);
   const title = `Escanearon el QR de ${pet.name}`;
-  const body = `${place ? `Cerca de ${place} (aproximado por la conexión)` : 'Sin ubicación'}, ${hm(new Date())}. ` + (pet.lost?.on ? 'Está en modo perdida: si te escriben, te avisamos.' : 'Si no fuiste vos, puede que alguien la haya encontrado.');
+  const body = `${place ? zoneText(w) : 'Sin ubicación'}, ${hm(new Date())}. ` + (pet.lost?.on ? 'Está en modo perdida: si te escriben, te avisamos.' : 'Si no fuiste vos, puede que alguien la haya encontrado.');
   await pushTo(n, { title, body, url: '/mascotas#/inicio', tag: `scan-${pet.id}` });
   if (n.mail) await mailNotice(email, { title, body }).catch(() => {});
 }
@@ -411,24 +416,28 @@ async function foundReport(email, pet, token, req, b) {
   const lat = Number(b.loc?.lat), lng = Number(b.loc?.lng), acc = Number(b.loc?.acc);
   const loc = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 && (lat || lng)
     ? { lat: Math.round(lat * 1e5) / 1e5, lng: Math.round(lng * 1e5) / 1e5, acc: Number.isFinite(acc) && acc > 0 ? Math.min(Math.round(acc), 50000) : null } : null;
-  const name = str(b.name, 60), phone = str(b.phone, 40).replace(/[^\d+()\- ]/g, '').trim(), msg = str(b.msg, 500);
-  if (!loc && !phone && !msg && !name) return { error: 'vacio', status: 400 };
+  const name = str(b.name, 60), phone = str(b.phone, 40).replace(/[^\d+()\- ]/g, '').trim(), msg = str(b.msg, 500), place = str(b.place, 160);
+  if (!loc && !phone && !msg && !name && !place) return { error: 'vacio', status: 400 };
   const hour = new Date().toISOString().slice(0, 13), dayk = hour.slice(0, 10);
   const kIp = `orbit:petqrmsg:ip:${ipHash(req)}:${hour}`, kQr = `orbit:petqrmsg:qr:${token}:${dayk}`;
   const nIp = await kvIncrBy(kIp, 1, 3600), nQr = await kvIncrBy(kQr, 1, 86400);
   if (nIp > MSGS_PER_HOUR_IP || nQr > MSGS_PER_DAY_QR) return { error: 'limite', status: 429 };
   const w = where(req);
-  await addScan(email, { petId: pet.id, kind: 'msg', ...w, loc, name, phone, msg });
-  if (!(await canNotify('msg', token))) return { ok: true };
+  await addScan(email, { petId: pet.id, kind: 'msg', ...w, loc, name, phone, msg, place });
+  /* el tope de 1 aviso cada 10 min es para los escaneos repetidos: un aviso con datos nuevos (la ubicación exacta
+     después del escaneo, un teléfono, un mensaje) llega siempre. Solo se frena el mismo contenido repetido. */
+  const same = createHash('sha256').update(JSON.stringify([loc && [Math.round(loc.lat * 1e3), Math.round(loc.lng * 1e3)], phone, msg, place, name])).digest('hex').slice(0, 16);
+  if (!(await kvSetNX(`orbit:petqrmsgseen:${token}:${same}`, 1, NOTIFY_EVERY))) return { ok: true };
   const n = await getNotify(email);
   if (n.off.qr) return { ok: true };
   const who = name || 'Alguien';
-  const title = `${who} te avisó por ${pet.name}`;
-  const parts = [loc ? 'Compartió su ubicación' : (placeOf(w) ? `Cerca de ${placeOf(w)} (aproximado)` : ''), phone ? `Tel.: ${phone}` : '', msg ? `"${msg.slice(0, 120)}"` : ''].filter(Boolean);
-  const body = parts.join('. ') + '. Abrí Mimitos para ver el detalle.';
-  await pushTo(n, { title, body, url: '/mascotas#/inicio', tag: `found-${pet.id}` });
-  if (n.mail) await mailNotice(email, { title, body: `${hm(new Date())}. ${body}`, map: loc ? `https://www.google.com/maps?q=${loc.lat},${loc.lng}` : '', phone }).catch(() => {});
-  return { ok: true };
+  const title = loc ? `📍 ${who} compartió dónde está ${pet.name}` : `${who} te avisó por ${pet.name}`;
+  const parts = [loc ? exactText(loc) : '', place ? `Dónde: "${place}"` : '', !loc && !place ? zoneText(w) : '', phone ? `Tel.: ${phone}` : '', msg ? `"${msg.slice(0, 120)}"` : ''].filter(Boolean);
+  const body = parts.join('. ') + '.';
+  /* con ubicación, tocar el aviso abre el mapa */
+  await pushTo(n, { title, body, url: loc ? mapUrl(loc) : '/mascotas#/inicio', tag: `found-${pet.id}-${same}` });
+  if (n.mail) await mailNotice(email, { title, body: `${hm(new Date())}. ${body}`, map: loc ? mapUrl(loc) : '', phone }).catch(() => {});
+  return { ok: true, notified: true };
 }
 const bump = doc => { doc.rev = (doc.rev || 0) + 1; doc.updatedAt = new Date().toISOString(); return doc; };
 

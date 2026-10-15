@@ -1468,11 +1468,16 @@ function sitterLog(p) {
   const medName = id => p.meds.find(m => m.id === id)?.name || 'Remedio';
   return `<section class="sec"><h2>Lo que anotó ${esc(quienCuida(p))}</h2><div class="list">${list.map(l => { const k = KL[l.kind] || KL.nota; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? 'Le dio ' + esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by)}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div>${all.length > list.length ? `<button class="btn ghost sm" data-act="slogAll" style="align-self:flex-start">Ver todo (${all.length})</button>` : ''}</section>`;
 }
+/* QR: la ciudad por IP es solo una zona aproximada (las operadoras móviles salen por Buenos Aires);
+   la ubicación exacta es la que comparte quien escanea, con link a Google Maps y su precisión */
+const zoneTxt = x => { const pl = [x.city, x.region].filter(Boolean).join(', '); return pl ? `Zona aproximada según la conexión: ${pl} (puede no ser exacta)` : ''; };
+const accTxt = acc => !acc ? '' : acc < 1000 ? `precisión de unos ${acc} m` : `precisión de unos ${String(Math.round(acc / 100) / 10).replace('.', ',')} km`;
+const mapsUrl = loc => `https://www.google.com/maps?q=${loc.lat},${loc.lng}`;
 function scanBanner(p) {
   const last = scans.filter(x => x.petId === p.id).pop();
   if (!last || Date.now() - Date.parse(last.at) > 7 * 864e5) return '';
   const t = last.kind === 'msg' ? `${last.name ? esc(last.name) : 'Alguien'} te avisó por ${esc(p.name)}` : `Escanearon el QR de ${esc(p.name)}`;
-  const sub = last.kind === 'msg' ? [last.loc ? 'compartió su ubicación' : '', last.phone ? 'dejó su teléfono' : '', last.msg ? 'te dejó un mensaje' : ''].filter(Boolean).join(', ') : (last.city ? 'cerca de ' + esc(last.city) : '');
+  const sub = last.kind === 'msg' ? [last.loc ? '📍 ubicación exacta' : last.place ? 'te dijo dónde está' : '', last.phone ? 'dejó su teléfono' : '', last.msg ? 'te dejó un mensaje' : ''].filter(Boolean).join(', ') : esc(zoneTxt(last));
   return `<button class="banner scanned" data-act="share"><span class="pulse" aria-hidden="true"></span><span style="flex:1;text-align:left"><b>${t}</b>${esc(Z.fmtWhen(new Date(last.at)))}${sub ? ' · ' + sub : ''}</span>${I('chevron')}</button>`;
 }
 /* registro de escaneos del QR: quién avisó, desde dónde y cuándo */
@@ -1480,11 +1485,10 @@ function scanLog(p) {
   const list = scans.filter(x => x.petId === p.id).slice().reverse();
   if (!list.length) return `<section class="sec"><h2>Registro de escaneos</h2><p class="dim">Todavía nadie escaneó el QR. Cuando pase, te avisamos y queda anotado acá.</p></section>`;
   const telx = v => String(v || '').replace(/[^\d+]/g, '');
-  const place = x => [x.city, x.region].filter(Boolean).join(', ');
   return `<section class="sec scanlog"><h2>Registro de escaneos</h2><div class="list">${list.slice(0, 30).map(x => x.kind === 'msg'
-    ? `<div class="row">${bubble('pin', 'perdida')}<span class="what"><b>${x.name ? esc(x.name) + ' te avisó' : 'Te dejaron un aviso'}</b><small>${esc(Z.fmtWhen(new Date(x.at)))}${x.loc ? ' · con su ubicación' : place(x) ? ' · cerca de ' + esc(place(x)) + ' (aprox.)' : ''}${x.phone ? ' · ' + esc(x.phone) : ''}</small>${x.msg ? `<p class="msg">${esc(x.msg)}</p>` : ''}
-        <span class="acts">${x.loc ? `<a class="btn sm" href="https://www.google.com/maps?q=${x.loc.lat},${x.loc.lng}" target="_blank" rel="noopener">${I('pin')} Ver en el mapa</a>` : ''}${x.phone ? `<a class="btn ghost sm" href="tel:${esc(telx(x.phone))}">${I('phone')} Llamar</a><a class="btn ghost sm" href="https://wa.me/${esc(telx(x.phone).replace(/^\+/, ''))}?text=${encodeURIComponent(`Hola, soy la familia de ${p.name}. Gracias por avisar.`)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}</span></span></div>`
-    : `<div class="row">${bubble('qr', 'viaje')}<span class="what"><b>Escanearon el QR</b><small>${esc(Z.fmtWhen(new Date(x.at)))}${place(x) ? ' · cerca de ' + esc(place(x)) + ' (aproximado por la conexión)' : ' · sin ubicación'}</small></span></div>`).join('')}</div>
+    ? `<div class="row">${bubble('pin', 'perdida')}<span class="what"><b>${x.name ? esc(x.name) + ' te avisó' : 'Te dejaron un aviso'}</b><small>${esc(Z.fmtWhen(new Date(x.at)))}${x.phone ? ' · ' + esc(x.phone) : ''}</small>${x.loc ? `<p class="msg loc"><b>📍 Ubicación exacta</b>${x.loc.acc ? ' · ' + esc(accTxt(x.loc.acc)) : ''}</p>` : x.place ? `<p class="msg"><b>Dónde:</b> ${esc(x.place)}</p>` : zoneTxt(x) ? `<small class="dim">${esc(zoneTxt(x))}</small>` : ''}${x.msg ? `<p class="msg">${esc(x.msg)}</p>` : ''}
+        <span class="acts">${x.loc ? `<a class="btn sm" href="${esc(mapsUrl(x.loc))}" target="_blank" rel="noopener">${I('pin')} Ver en Google Maps</a>` : ''}${x.phone ? `<a class="btn ghost sm" href="tel:${esc(telx(x.phone))}">${I('phone')} Llamar</a><a class="btn ghost sm" href="https://wa.me/${esc(telx(x.phone).replace(/^\+/, ''))}?text=${encodeURIComponent(`Hola, soy la familia de ${p.name}. Gracias por avisar.`)}" target="_blank" rel="noopener">WhatsApp</a>` : ''}</span></span></div>`
+    : `<div class="row">${bubble('qr', 'viaje')}<span class="what"><b>Escanearon el QR</b><small>${esc(Z.fmtWhen(new Date(x.at)))} · ${esc(zoneTxt(x) || 'sin ubicación')}</small></span></div>`).join('')}</div>
     <button class="link danger" id="scanClear" type="button">Borrar el registro de ${esc(p.name)}</button></section>`;
 }
 
@@ -2964,7 +2968,7 @@ function sharePanel(p) {
       <div class="linkbox"><input readonly value="${esc(url)}" aria-label="Link de la ficha"><button class="btn sm" id="cp" type="button">Copiar</button></div>
       <div class="btns"><a class="btn sm" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`Ficha de ${p.name}: ${url}`)}">WhatsApp</a><button class="btn ghost sm" id="tag" type="button">QR para la chapita</button><a class="btn ghost sm" href="${esc(url)}" target="_blank" rel="noopener">Ver ficha</a></div>
       <p class="note">"QR para la chapita" baja una imagen con el QR y el nombre. Imprimila en papel autoadhesivo o llevala a cualquier grabado.</p>
-      <p class="note">Cuando alguien lo escanea te avisamos al momento (celu y mail, según tengas activado) con la hora y la ciudad aproximada. Si quien ${la(p)} encontró comparte su ubicación o te deja un mensaje, también te llega.</p>
+      <p class="note">Cuando alguien lo escanea te avisamos al momento (celu y mail, según tengas activado) con la hora y una zona aproximada según su conexión, que puede no ser exacta. Si quien ${la(p)} encontró toca "Avisale a su familia dónde estás", te llega un segundo aviso con la ubicación exacta y el link a Google Maps.</p>
       ${contact}${urgent}${scanLog(p)}<button class="link danger" id="off" type="button">Apagar link</button>`);
     const c = qrCanvas(url); if (c) $('#qrBox').appendChild(c); else $('#qrBox').textContent = 'No se pudo dibujar el QR. Usá el link.';
     copyBtn('#cp', url);
