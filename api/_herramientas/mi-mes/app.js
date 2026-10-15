@@ -28,7 +28,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t19';
+const VERSION = '2026-10-15.t20';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -1399,12 +1399,15 @@ function pintarIA() {
     : iaInfo.pausa ? `La lectura automática está en pausa hasta el ${iaInfo.pausa}: cargalo a mano.` : '';
   p.hidden = !msg; p.textContent = msg;
 }
-if (!LOCAL) {
-  fetch(F.subiLoQueTengas ? '/api/mi-mes-leer' : '/api/leer-resumen', { credentials: 'same-origin' })
+/* GET liviano de estado: al abrir la app y cada vez que se entra a "Subí lo que tengas" (QA t19 · 1) */
+function refrescarIA() {
+  if (LOCAL) return;
+  fetch(F.subiLoQueTengas ? '/api/mi-mes-leer' : '/api/leer-resumen', { credentials: 'same-origin', cache: 'no-store' })
     .then(r => (r.ok ? r.json() : { modo: null }))
     .then(j => { modoLectura = j?.modo || null; iaInfo = { iaHasta: j?.iaHasta || null, iaVencida: !!j?.iaVencida, pausa: j?.pausa || null }; pintarIA(); })
     .catch(() => { modoLectura = null; });   // sin red no hay "modo prueba": solo lo dice el servidor
 }
+refrescarIA();
 $id('dlg-subir').querySelector('form').addEventListener('submit', e => {
   e.preventDefault();
   $id('archivo').value = '';
@@ -1485,7 +1488,7 @@ function verVista(v, { foco = true } = {}) {
   if (v === 'simular') pintarSimular(true);
   if (v === 'rinde') pintarRinde();
   if (v === 'devolver') pintarDevolver();
-  if (v === 'subir') pintarSubir();
+  if (v === 'subir') { pintarSubir(); refrescarIA(); }
   if (v === 'leido') pintarLeido();
   try { history.replaceState(null, '', v === 'inicio' ? location.pathname : `#${v}`); } catch {}
   window.scrollTo({ top: 0, behavior: 'instant' });

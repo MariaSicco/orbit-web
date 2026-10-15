@@ -64,6 +64,12 @@ export default async function handler(req, res) {
 
   /* tope diario por persona (para controlar el costo cuando se lea de verdad) */
   /* QA t14 · 1: contador atómico compartido con /api/mi-mes-leer (día y mes); acá el tope del día es 15 */
+  /* QA t19 · 1 y baja: si la lectura está en pausa por el techo del mes, se avisa ANTES de contar el archivo */
+  if (hayKey()) {
+    let hasta = null;
+    try { hasta = await enPausa(); } catch { return responder(res, 503, { ok: false, motivo: 'kv', error: 'No pudimos revisar el tope de lecturas. Probá en un rato o cargalo a mano.' }); }
+    if (hasta) return responder(res, 503, { ok: false, motivo: 'pausa', error: mensajePausa(hasta) });
+  }
   const cuenta = await contarLectura(acc.email, { topeDia: TOPE_DIA, huella: huellaServidor(buf) });
   if (!cuenta.ok) return responder(res, 429, { ok: false, motivo: 'tope', error: cuenta.motivo === 'mes'
     ? 'Llegaste al máximo de lecturas de este mes. El mes que viene podés seguir, o cargá este resumen a mano.'
@@ -73,8 +79,11 @@ export default async function handler(req, res) {
     console.log(JSON.stringify({ evento: 'leer-resumen', modo: 'prueba', bytes: buf.length, paginas }));
     return responder(res, 200, { ok: true, modo: 'prueba', lectura: resumenEjemplo() });
   }
-  const reserva = await reservar('resumen');
-  if (!reserva.ok) return responder(res, 503, { ok: false, motivo: 'pausa', error: mensajePausa(reserva.hasta) });
+  let reserva;
+  try { reserva = await reservar('resumen'); } catch { return responder(res, 503, { ok: false, motivo: 'kv', error: 'No pudimos revisar el tope de lecturas. Probá en un rato o cargalo a mano.' }); }
+  if (!reserva.ok) return responder(res, 503, reserva.ocupado
+    ? { ok: false, motivo: 'ocupado', error: 'Hay muchas lecturas en este momento. Probá en unos minutos.' }
+    : { ok: false, motivo: 'pausa', error: mensajePausa(reserva.hasta) });
   const t0 = Date.now();
   try {
     const r = await leerResumenConClaude(buf);

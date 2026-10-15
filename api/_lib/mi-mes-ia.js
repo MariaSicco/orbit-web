@@ -50,26 +50,49 @@ export function hastaPausa(now = Date.now()) {
   return `1/${m === 12 ? 1 : m + 1}`;
 }
 export const mensajePausa = hasta => `La lectura automática está en pausa hasta el ${hasta}: cargalo a mano.`;
-export async function enPausa(now = Date.now()) { return (await gastadoMicro(now)) >= budgetUsd() * 1e6 ? hastaPausa(now) : null; }
-
-/* Reserva lo máximo que puede costar ese paso. { ok, clave, micro } o { ok: false, hasta } */
-export async function reservar(paso, now = Date.now()) {
-  const clave = claveGasto(now), cap = Math.round(budgetUsd() * 1e6), micro = reservaMaxima(paso);
-  const despues = await kvIncrBy(clave, micro, TTL);
-  if (despues > cap) {
-    await kvIncrBy(clave, -micro).catch(() => {});
-    console.error(`[mi-mes] IA EN PAUSA: se llegó al tope del mes (USD ${budgetUsd()}, MI_MES_AI_BUDGET_USD). Gastado estimado: USD ${((despues - micro) / 1e6).toFixed(2)}.`);
-    await avisoTope(100, despues - micro, now);
-    return { ok: false, hasta: hastaPausa(now) };
+/* QA t19 · 1: lo en curso (reservas) va aparte del gasto real, así un pico de
+   lecturas en paralelo no pausa el mes. La pausa es una marca compartida por
+   mes: se activa cuando lo que queda del techo no alcanza para la reserva
+   máxima del lector MÁS caro (o al llegar al 100 %), y desde ahí se pausan
+   todos los tipos juntos. El mail del 100 % sale una sola vez, al marcarla. */
+export const claveReservado = (now = Date.now()) => `orbit:mi-mes:ia:reservado:${mesAR(now)}`;
+export const clavePausa = (now = Date.now()) => `orbit:mi-mes:ia:pausa:${mesAR(now)}`;
+export async function reservadoMicro(now = Date.now()) { return Number(await kvGet(claveReservado(now))) || 0; }
+const MAS_CARO = () => Math.max(...Object.keys(MAXIMOS).map(reservaMaxima));
+let avisar = (...a) => avisoTope(...a);
+export function __usarAviso(f) { avisar = f || ((...a) => avisoTope(...a)); }
+async function marcarPausa(now, gastado) {
+  if (await kvSetNX(clavePausa(now), { gastado, at: new Date(now).toISOString() }, TTL)) {
+    console.error(`[mi-mes] IA EN PAUSA hasta el ${hastaPausa(now)}: el techo del mes (USD ${budgetUsd()}, MI_MES_AI_BUDGET_USD) no alcanza para otra lectura. Gastado: USD ${(gastado / 1e6).toFixed(2)}.`);
+    await avisar(100, gastado, now);
   }
-  return { ok: true, clave, micro, paso };
 }
-/* Ajusta la reserva al costo real (tokens que devolvió la API). */
-export async function ajustar(r, { modelo, entrada, salida }, now = Date.now()) {
+export async function enPausa(now = Date.now()) {
+  if (await kvGet(clavePausa(now))) return hastaPausa(now);
+  const g = await gastadoMicro(now);
+  if (g + MAS_CARO() > budgetUsd() * 1e6) { await marcarPausa(now, g); return hastaPausa(now); }
+  return null;
+}
+
+/* Reserva lo máximo que puede costar ese paso. { ok, ... }, { ok: false, hasta } (pausa) o { ok: false, ocupado: true } */
+export async function reservar(paso, now = Date.now()) {
+  const hasta = await enPausa(now);
+  if (hasta) return { ok: false, hasta };
+  const cap = Math.round(budgetUsd() * 1e6), micro = reservaMaxima(paso), clave = claveReservado(now);
+  const g = await gastadoMicro(now);
+  const enCurso = await kvIncrBy(clave, micro, 3600);
+  if (g + enCurso > cap) { await kvIncrBy(clave, -micro).catch(() => {}); return { ok: false, ocupado: true }; }
+  return { ok: true, clave, claveGasto: claveGasto(now), micro, paso, now };
+}
+/* Ajusta al costo real (tokens que devolvió la API): sale de "en curso" y entra al gasto.
+   Sin tokens (se cortó por tiempo y la llamada pudo seguir): se cuenta la reserva entera, por prudencia. */
+export async function ajustar(r, { modelo, entrada, salida } = {}, now = r?.now ?? Date.now()) {
   if (!r?.ok) return null;
-  const real = costoMicro(modelo || MAXIMOS[r.paso]?.[0], entrada, salida);
-  const total = await kvIncrBy(r.clave, real - r.micro).catch(() => null);
-  if (total != null && total >= budgetUsd() * 1e6 * 0.8) await avisoTope(80, total, now);
+  const real = entrada == null && salida == null ? r.micro : costoMicro(modelo || MAXIMOS[r.paso]?.[0], entrada, salida);
+  await kvIncrBy(r.clave, -r.micro).catch(() => {});
+  const total = await kvIncrBy(r.claveGasto, real, TTL).catch(() => null);
+  if (total != null && total >= budgetUsd() * 1e6 * 0.8) await avisar(80, total, now);
+  if (total != null && total + MAS_CARO() > budgetUsd() * 1e6) await marcarPausa(now, total);
   return real;
 }
 /* Sin cobro (no hubo respuesta de la API): la reserva vuelve. */
@@ -109,6 +132,9 @@ export async function avisoTope(nivel, gastado, now = Date.now()) {
 
 /* ── vencimiento: 12 meses desde la compra de ob-019 ── */
 export const MESES_IA = 12;
+/* QA t19 · 2: la fecha de primer uso (solo si la compra no tiene fecha; el checkout siempre la guarda)
+   vence a los 13 meses: alcanza para contar los 12 meses, con un mes de margen. */
+export const TTL_DESDE_S = 13 * 31 * 86400;
 const sumarMesesISO = (t, n) => { const d = new Date(t); const dia = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n); d.setUTCDate(Math.min(dia, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate())); return d.getTime(); };
 export async function vigenciaIA(acc, compras = [], now = Date.now()) {
   if (acc?.admin) return { hasta: null, vencida: false };
@@ -118,7 +144,7 @@ export async function vigenciaIA(acc, compras = [], now = Date.now()) {
     const clave = `orbit:mi-mes:ia:desde:${String(acc?.email || '').toLowerCase()}`;
     const guardado = Number(await kvGet(clave));
     if (Number.isFinite(guardado) && guardado > 0) desde = guardado;
-    else { desde = now; await kvSet(clave, now).catch(() => {}); }
+    else { desde = now; await kvSet(clave, now, TTL_DESDE_S).catch(() => {}); }
   }
   const hastaMs = sumarMesesISO(desde, MESES_IA);
   return { hasta: new Date(hastaMs).toISOString().slice(0, 10), vencida: now >= hastaMs };

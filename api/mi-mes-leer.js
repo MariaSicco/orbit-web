@@ -107,6 +107,12 @@ export default async function handler(req, res) {
   const paginas = tipo === 'pdf' ? contarPaginas(buf) : 1;
   if (paginas > MAX_PAGINAS_DOC) return responder(res, 413, { ok: false, motivo: 'paginas', error: `El PDF tiene más de ${MAX_PAGINAS_DOC} páginas. Subí un documento por vez.` });
 
+  /* QA t19 · 1 y baja: si la lectura está en pausa por el techo del mes, se avisa ANTES de contar el archivo */
+  if (hayKey()) {
+    let hasta = null;
+    try { hasta = await enPausa(); } catch { return responder(res, 503, { ok: false, motivo: 'kv', error: 'No pudimos revisar el tope de lecturas. Probá en un rato o cargalo a mano.' }); }
+    if (hasta) return responder(res, 503, { ok: false, motivo: 'pausa', error: mensajePausa(hasta) });
+  }
   const cuenta = await contarLectura(acc.email, { huella: huellaServidor(buf) });
   if (!cuenta.ok) return responder(res, 429, { ok: false, motivo: 'tope', error: cuenta.motivo === 'mes'
     ? `Llegaste a ${TOPE_MES_DOCS} archivos este mes. El mes que viene podés seguir, o cargalo a mano.`
@@ -124,8 +130,11 @@ export default async function handler(req, res) {
     return responder(res, 200, { ok: true, modo: 'prueba', tipo: c.tipo, siguiente: ['resumen', 'factura'].includes(c.tipo), lectura: c });
   }
   /* techo global de IA de Mi Mes: se reserva lo máximo antes de llamar a Claude */
-  const reserva = await reservar(paso);
-  if (!reserva.ok) return responder(res, 503, { ok: false, motivo: 'pausa', error: mensajePausa(reserva.hasta) });
+  let reserva;
+  try { reserva = await reservar(paso); } catch { return responder(res, 503, { ok: false, motivo: 'kv', error: 'No pudimos revisar el tope de lecturas. Probá en un rato o cargalo a mano.' }); }
+  if (!reserva.ok) return responder(res, 503, reserva.ocupado
+    ? { ok: false, motivo: 'ocupado', error: 'Hay muchas lecturas en este momento. Probá en unos minutos.' }
+    : { ok: false, motivo: 'pausa', error: mensajePausa(reserva.hasta) });
   const t0 = Date.now();
   const resto = () => presupuesto - (Date.now() - t0);
   try {
@@ -150,7 +159,8 @@ export default async function handler(req, res) {
     const t = e instanceof ErrorLectura || e?.tipo ? e.tipo : 'api';
     /* con tokens usados se cobra lo real; si se pasó de tiempo la llamada sigue corriendo: queda la reserva; si no hubo respuesta, vuelve */
     if (e?.uso && (e.uso.entrada || e.uso.salida)) await ajustar(reserva, { entrada: e.uso.entrada, salida: e.uso.salida });
-    else if (t !== 'tiempo') await devolver(reserva);
+    else if (t === 'tiempo') await ajustar(reserva);   // la llamada pudo seguir: se cuenta la reserva entera
+    else await devolver(reserva);
     console.warn(JSON.stringify({ evento: 'mi-mes-leer', paso, modo: 'real', modelo: pedido ? undefined : MODELO_CLASIFICAR, resultado: t,
       entrada: e?.uso?.entrada ?? 0, salida: e?.uso?.salida ?? 0, bytes: buf.length, paginas, ms: Date.now() - t0 }));
     return responder(res, ESTADO_ERROR[t] || 502, { ok: false, modo: 'real', motivo: t, error: e?.message || 'No pudimos leer el archivo ahora. Cargalo a mano.' });

@@ -26,9 +26,10 @@ test('[IA] reserva antes, ajuste al costo real después; si no se cobró, vuelve
   const now = Date.UTC(2026, 9, 15, 15);
   const r = await IA.reservar('resumen', now);
   assert.equal(r.ok, true);
-  assert.equal(await IA.gastadoMicro(now), IA.reservaMaxima('resumen'));
+  assert.equal(await IA.reservadoMicro(now), IA.reservaMaxima('resumen'), 'lo en curso va aparte del gasto real');
   await IA.ajustar(r, { modelo: 'claude-opus-5-5', entrada: 13_000, salida: 4_000 }, now);
   assert.equal(await IA.gastadoMicro(now), 132_000);
+  assert.equal(await IA.reservadoMicro(now), 0);
   const r2 = await IA.reservar('factura', now);
   await IA.devolver(r2);
   assert.equal(await IA.gastadoMicro(now), 132_000);
@@ -46,6 +47,9 @@ test('[IA] al 100 % se pausa hasta el mes siguiente, con el mensaje para la app;
   assert.match(m80.subject, /Mi Mes.*80/);
   // sin mail configurado no explota y no manda
   assert.deepEqual(await IA.avisoTope(80, 25e6, now), { enviado: false, nivel: 80 });
+  /* limpieza: este mes es el real; los tests de los endpoints arrancan sin pausa */
+  const { kvDel } = await import('../api/_lib/kv.js');
+  await kvDel(IA.claveGasto(now)); await kvDel(IA.clavePausa(now));
 });
 test('[IA] vence a los 12 meses de la compra; admin no vence; sin fecha, desde el primer uso', async () => {
   const now = Date.UTC(2026, 9, 15);
@@ -90,6 +94,7 @@ test('[IA] endpoint real: con el techo lleno no llama a Claude y dice "en pausa 
     assert.match(r.body.error, /^La lectura automática está en pausa hasta el 1\/\d+: cargalo a mano\.$/);
     // con lugar en el techo: lee y ajusta al costo real (10 + 10 tokens de Haiku)
     await kvSet(IA.claveGasto(), 0);
+    const { kvDel } = await import('../api/_lib/kv.js'); await kvDel(IA.clavePausa());
     const ok = await llamar(leer, req('nueva@orbit.test', Buffer.concat([PNG, Buffer.from('2')])));
     assert.equal(ok.code, 200);
     assert.equal(await kvGet(IA.claveGasto()), IA.costoMicro('claude-haiku-5-5', 10, 10));
@@ -105,4 +110,50 @@ test('[precio] ob-019 USD 19 / ARS 28.990 de lanzamiento, comprable, y en produc
   assert.match(src, /13\/11.*USD 24.*ARS 35\.990/);
   const prod = readFileSync(new URL('../assets/js/products.js', import.meta.url), 'utf8');
   assert.match(prod, /id: 'ob-019'[^]*?price: 19, ars: 28990/);
+});
+
+
+/* ── QA t19 · media 1: la pausa es total, se marca una vez y se ve ── */
+test('[QA t19 · 1] cerca del techo (no alcanza para el lector más caro) se pausan TODOS los tipos, juntos', async () => {
+  const now = Date.UTC(2026, 10, 10, 15);   // noviembre
+  const cap = 30e6, umbral = cap - IA.reservaMaxima('resumen');
+  await kvSet(IA.claveGasto(now), umbral + 1);   // ~USD 28,42
+  assert.equal(await IA.enPausa(now), '1/12', 'el aviso de la app ya dice pausa');
+  for (const paso of ['clasificar', 'factura', 'resumen']) {
+    const r = await IA.reservar(paso, now);
+    assert.deepEqual([r.ok, r.hasta], [false, '1/12'], paso);
+  }
+  assert.ok(await kvGet(IA.clavePausa(now)), 'marca compartida por mes');
+});
+test('[QA t19 · 1] muchas lecturas en paralelo no pausan el mes ni mandan el mail: si no hay lugar, "probá en unos minutos"', async () => {
+  const now = Date.UTC(2026, 11, 5, 15);   // diciembre
+  const rs = await Promise.all(Array.from({ length: 30 }, () => IA.reservar('resumen', now)));
+  assert.ok(rs.some(r => r.ok) && rs.some(r => r.ocupado), 'algunas esperan');
+  assert.equal(await kvGet(IA.clavePausa(now)), null, 'no se marcó la pausa');
+  assert.equal(await IA.enPausa(now), null);
+  for (const r of rs) await IA.devolver(r);
+  assert.equal(await IA.reservadoMicro(now), 0);
+});
+test('[QA t19 · 1] el mail del 100 % sale una sola vez, al marcar la pausa', async () => {
+  const now = Date.UTC(2027, 0, 5, 15);
+  let mails = 0;
+  IA.__usarAviso(async () => { mails++; return { enviado: true }; });
+  try {
+    await kvSet(IA.claveGasto(now), 29.5e6);
+    await IA.reservar('clasificar', now); await IA.reservar('resumen', now); await IA.enPausa(now);
+    assert.equal(mails, 1);
+  } finally { IA.__usarAviso(null); }
+});
+test('[QA t19 · 2] la fecha de primer uso vence a los 13 meses', async () => {
+  assert.equal(IA.TTL_DESDE_S, 13 * 31 * 86400);
+});
+test('[QA t19 · baja] en pausa, el archivo no cuenta en el tope de la persona', async () => {
+  process.env.ANTHROPIC_API_KEY = 'falsa';
+  const { hoyAR } = await import('../api/_lib/mi-mes-avisos.js');
+  try {
+    await kvSet(IA.clavePausa(), { gastado: 1 });
+    const r = await llamar(leer, req('nueva@orbit.test', Buffer.concat([PNG, Buffer.from('pausa')])));
+    assert.deepEqual([r.code, r.body.motivo], [503, 'pausa']);
+    assert.equal(await kvGet(`orbit:mi-mes:lecturas-dia:nueva@orbit.test:${hoyAR()}`) , 1, 'sigue en 1 (la lectura del test anterior)');
+  } finally { const { kvDel } = await import('../api/_lib/kv.js'); await kvDel(IA.clavePausa()); delete process.env.ANTHROPIC_API_KEY; }
 });
