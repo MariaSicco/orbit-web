@@ -67,23 +67,31 @@
   }
 
   /* ---------- WhatsApp ----------
-     Devuelve los dígitos para wa.me (549 + característica + número) si el teléfono parece un celular argentino; si no, ''.
-     - Internacional de Google: "+54 9 11 2345-6789" (el 9 marca el celular).
-     - Nacional con 15: "011 15-2345-6789", "(0351) 15 123-4567", "2944 15 12-3456".
-     Un fijo ("011 4567-8901") o un número de otro país no van a WhatsApp: queda "Llamar". */
-  function waPhone(phone) {
+     waTarget(phone) → { n, mobile } con los dígitos para wa.me, o null si no es un número argentino usable.
+     - Celular (mobile: true): 54 9 + característica + número, sin 0 ni 15.
+       Internacional de Google "+54 9 379 412-3456"; nacional con 15 "0379 15-412-3456", "011 15-2345-6789".
+     - Fijo o no se puede saber (mobile: false): 54 + característica sin 0 + número (10 dígitos en total).
+       "0379 442-1234", "+54 379 442-1234", "011 4567-8901". Muchas veterinarias tienen el fijo en Google y atienden
+       por WhatsApp Business desde ese número: se ofrece "Probar por WhatsApp" y, si no lo tiene, avisa WhatsApp.
+     - Otro país, sin característica o con dígitos de más/menos: null (queda solo "Llamar").
+     waPhone(phone) sigue devolviendo solo celulares (o ''). */
+  function waTarget(phone) {
     let d = String(phone || '').replace(/[^\d+]/g, '');
     const intl = d.startsWith('+') || d.startsWith('00');
     d = d.replace(/^\+|^00/, '');
-    if (intl && !d.startsWith('54')) return '';
-    if (d.startsWith('54')) {
+    if (intl && !d.startsWith('54')) return null;
+    if (d.startsWith('54') && (intl || d.length >= 12)) {
       d = d.slice(2);
-      if (d.startsWith('9') && d.length === 11) return '549' + d.slice(1);
+      if (d.startsWith('9') && d.length === 11) return { n: '549' + d.slice(1), mobile: true };
       if (d.startsWith('0')) d = d.slice(1);
     } else if (d.startsWith('0')) d = d.slice(1);
-    if (d.length === 12) for (const a of [2, 3, 4]) if (d.slice(a, a + 2) === '15') return '549' + d.slice(0, a) + d.slice(a + 2);
-    return '';
+    /* las características argentinas arrancan con 11, 2 o 3 */
+    const area = x => /^(11|[23])/.test(x);
+    if (d.length === 12) for (const a of [2, 3, 4]) if (d.slice(a, a + 2) === '15' && area(d)) return { n: '549' + d.slice(0, a) + d.slice(a + 2), mobile: true };
+    if (d.length === 10 && area(d)) return { n: '54' + d, mobile: false };
+    return null;
   }
+  const waPhone = phone => { const t = waTarget(phone); return t && t.mobile ? t.n : ''; };
   const speciesWord = p => p?.species === 'perro' ? 'perro' : p?.species === 'gato' ? 'gato' : String(p?.speciesOther || '').trim().toLowerCase() || 'mascota';
   /* motivo precargado desde una fecha vencida o próxima: "la Antirrábica — vencida el 2 de octubre" */
   function reasonFrom(r, today) {
@@ -97,8 +105,8 @@
     const why = String(reason || '').trim();
     return `Hola, quería pedir un turno para ${pet?.name || 'mi mascota'} (${speciesWord(pet)}).${why ? ` Le toca ${why}.` : ''} ¿Tienen disponibilidad?`;
   }
-  const waLink = (phone, text) => { const n = waPhone(phone); return n ? `https://wa.me/${n}?text=${encodeURIComponent(text)}` : ''; };
+  const waLink = (phone, text) => { const t = waTarget(phone); return t ? `https://wa.me/${t.n}?text=${encodeURIComponent(text)}` : ''; };
   const telLink = phone => { const d = String(phone || '').replace(/[^\d+]/g, ''); return d.length >= 6 ? 'tel:' + d : ''; };
 
-  g.MZTURNOS = { SEND_HOUR, okDate, okTime, localNow, reminders, upcoming, toLog, notice, dayLong, dayShort, hhmm, waPhone, waMessage, waLink, telLink, reasonFrom, speciesWord, addDays };
+  g.MZTURNOS = { SEND_HOUR, okDate, okTime, localNow, reminders, upcoming, toLog, notice, dayLong, dayShort, hhmm, waTarget, waPhone, waMessage, waLink, telLink, reasonFrom, speciesWord, addDays };
 })(typeof window !== 'undefined' ? window : globalThis);

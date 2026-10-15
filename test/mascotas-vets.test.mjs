@@ -202,7 +202,7 @@ test('caché: el servidor guarda solo place IDs (nada de nombres, teléfonos ni 
 });
 
 /* ---------- WhatsApp ---------- */
-test('WhatsApp: solo celulares argentinos van a wa.me; el mensaje lleva nombre, especie y motivo', () => {
+test('WhatsApp: waPhone sigue siendo solo celulares; el mensaje lleva nombre, especie y motivo', () => {
   assert.equal(T.waPhone('+54 9 11 2345-6789'), '5491123456789');
   assert.equal(T.waPhone('011 15-2345-6789'), '5491123456789');
   assert.equal(T.waPhone('(0351) 15 123-4567'), '5493511234567');
@@ -220,7 +220,8 @@ test('WhatsApp: solo celulares argentinos van a wa.me; el mensaje lleva nombre, 
   assert.equal(T.waMessage({ name: 'Michi', species: 'otra', speciesOther: 'Conejo' }, ''), 'Hola, quería pedir un turno para Michi (conejo). ¿Tienen disponibilidad?');
   const link = T.waLink('011 15-2345-6789', 'Hola ¿hay turno?');
   assert.equal(link, 'https://wa.me/5491123456789?text=Hola%20%C2%BFhay%20turno%3F');
-  assert.equal(T.waLink('011 4567-8901', 'x'), '');
+  assert.equal(T.waLink('011 4567-8901', 'x'), 'https://wa.me/541145678901?text=x', 'fijo: "Probar por WhatsApp"');
+  assert.equal(T.waLink('+598 99 123 456', 'x'), '');
 });
 
 /* ---------- turnos ---------- */

@@ -13,7 +13,10 @@
      desde "Cambiar". Si no hay permiso de GPS: queda el campo.
    - Los resultados de Google se muestran y quedan en memoria solo para cambiar de pestaña sin volver a pagar.
    - Mapa: Maps Embed API (gratis). Atribución "Google Maps" siempre visible debajo de la lista.
-   - "Pedir turno por WhatsApp" (si el teléfono parece celular argentino), "Llamar", "Cómo llegar",
+   - WhatsApp (contactBtns): si el teléfono es celular argentino, "Pedir turno por WhatsApp" como acción principal;
+     si es fijo o no se puede saber, "Llamar" primero y "Probar por WhatsApp" secundario (muchas veterinarias
+     atienden por WhatsApp Business desde el fijo de Google). Misma regla en "Mi veterinaria" y en los turnos.
+   - "Llamar", "Cómo llegar",
      "Guardar como mi veterinaria" (vetPlace + vet) y "Anotar turno" (doc.appointments). */
 (() => {
 'use strict';
@@ -26,6 +29,17 @@ const $ = s => document.querySelector(s);
 const KINDS = [['vet', 'Veterinarias', 'veterinaria'], ['er', 'Guardias 24 h', 'veterinaria guardia 24 horas'], ['pet', 'Pet shops', 'pet shop']];
 const kindWords = k => (KINDS.find(x => x[0] === k) || KINDS[0])[2];
 const mapsSearch = (k, area = '') => `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(kindWords(k) + (area ? ' ' + area : ''))}`;
+/* Botones de contacto con la regla de WhatsApp de arriba. waPhone: número para wa.me (el internacional de Google
+   si lo hay); telPhone: el que se marca. Devuelve { html, wa } (wa = hay link de WhatsApp, para el campo del mensaje). */
+function contactBtns({ waPhone, telPhone = waPhone, msg, label = 'Pedir turno por WhatsApp', wide = true, big = true, sm = false, id = '' }) {
+  const t = T.waTarget(waPhone), wa = t ? T.waLink(waPhone, msg) : '', tel = T.telLink(telPhone);
+  const w = (wide ? ' wide' : '') + (sm ? ' sm' : ''), b = big ? ' big' : '', idA = id ? ` id="${id}"` : '';
+  const callA = cls => tel ? `<a class="btn${cls}" href="${esc(tel)}" data-ct="tel">${I('phone')} Llamar</a>` : '';
+  const waA = (cls, txt, kind) => `<a class="btn${cls}"${idA} href="${esc(wa)}" target="_blank" rel="noopener noreferrer" data-ct="wa-${kind}">${I('chat')} ${txt}</a>`;
+  if (t && t.mobile) return { wa: true, html: waA(w + b, label, 'cel') + callA(' ghost' + w) };
+  const html = callA(w + b) + (wa ? waA(' ghost' + w, 'Probar por WhatsApp', 'fijo') + '<p class="note vx-wa-note">Si no tiene WhatsApp, te va a avisar la app.</p>' : '');
+  return { wa: Boolean(wa), html };
+}
 const directions = pl => `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent([pl.name, pl.address].filter(Boolean).join(', '))}${pl.placeId || pl.id ? `&destination_place_id=${encodeURIComponent(pl.placeId || pl.id)}` : ''}`;
 
 /* estado en memoria; la última ubicación elegida, además, en sessionStorage (ver saveLoc) */
@@ -212,16 +226,82 @@ function ctxOf(arg) {
 }
 function contextRec(p) { return st.ctx.recId ? (p.records || []).find(r => r.id === st.ctx.recId) || null : null; }
 
-function myVetCard(p) {
-  const v = p.vet || {};
-  if (!v.name || !(v.phone || p.vetPlace?.placeId)) return '';
-  const rec = contextRec(p), msg = T.waMessage(p, T.reasonFrom(rec, iso(Z.today())));
-  const wa = T.waLink(v.phone, msg), tel = T.telLink(v.phone);
-  const place = { name: v.name, address: v.address, placeId: p.vetPlace?.name === v.name ? p.vetPlace.placeId : '' };
-  return `<section class="card vx-mine" aria-labelledby="vxMine">
-    <div class="vx-mine-h"><span class="ib c-cuida">${I('steth')}</span><span><span class="eyebrow">Mi veterinaria</span><h2 id="vxMine">${esc(v.name)}</h2>${v.address ? `<small class="dim">${esc(v.address)}</small>` : ''}</span></div>
-    <div class="btns">${wa ? `<a class="btn" href="${esc(wa)}" target="_blank" rel="noopener noreferrer">${I('chat')} Pedir turno por WhatsApp</a>` : ''}${tel ? `<a class="btn ${wa ? 'ghost' : ''}" href="${esc(tel)}">${I('phone')} Llamar</a>` : ''}<a class="btn ghost" href="${esc(directions(place))}" target="_blank" rel="noopener noreferrer">${I('pin')} Cómo llegar</a><button type="button" class="btn ghost" data-vx="appt" data-src="mine">${I('cal')} Anotar turno</button></div>
+/* ---------- Mi veterinaria y Mi guardia 24 h ----------
+   La misma tarjeta en tres lugares, con "Cambiar" y "Quitar":
+   - 'home': Inicio, compacta (nombre en una línea y botones chicos: Pedir turno, Llamar, Cómo llegar).
+   - 'vets': arriba de todo en "Veterinarias cerca", antes de las pestañas y la lista (suma "Anotar turno").
+   - 'datos': en "Datos y veterinaria" de la mascota. */
+function mineList(p) {
+  const v = p.vet || {}, out = [];
+  if (v.name) out.push({ k: 'vet', eyebrow: 'Mi veterinaria', name: v.name, phone: v.phone || '', address: v.address || '', placeId: p.vetPlace?.name === v.name ? p.vetPlace.placeId : '' });
+  if (v.er) out.push({ k: 'er', eyebrow: 'Mi guardia 24 h', name: v.er, phone: v.erPhone || '', address: '', placeId: '' });
+  return out;
+}
+function mineCard(p, m, where) {
+  const home = where === 'home', id = `vxMine-${where}-${m.k}`;
+  const go = `<a class="btn ghost${home ? ' sm' : ''}" href="${esc(directions(m))}" target="_blank" rel="noopener noreferrer" data-ct="dir">${I('pin')} Cómo llegar</a>`;
+  let acts;
+  if (m.k === 'vet') {
+    const msg = T.waMessage(p, where === 'vets' ? T.reasonFrom(contextRec(p), iso(Z.today())) : '');
+    acts = contactBtns({ waPhone: m.phone, msg, label: home ? 'Pedir turno' : 'Pedir turno por WhatsApp', wide: false, big: false, sm: home }).html + go
+      + (where === 'vets' ? `<button type="button" class="btn ghost" data-vx="appt" data-src="mine">${I('cal')} Anotar turno</button>` : '');
+  } else {
+    const tel = T.telLink(m.phone);
+    acts = (tel ? `<a class="btn${home ? ' sm' : ''}" href="${esc(tel)}" data-ct="tel">${I('phone')} Llamar</a>` : '') + go;
+  }
+  const edit = `<span class="vx-mine-ed"><button type="button" class="link" data-vx="mineChange" data-k="${m.k}" data-pet="${esc(p.id)}" aria-describedby="${id}">Cambiar</button><button type="button" class="link" data-vx="mineDel" data-k="${m.k}" data-pet="${esc(p.id)}" aria-describedby="${id}">Quitar</button></span>`;
+  const ic = m.k === 'vet' ? ['steth', 'c-cuida'] : ['alert', 'c-perdida'];
+  if (home) return mineHome(p, m, id, edit);
+  return `<section class="card vx-mine" data-mine="${m.k}" aria-labelledby="${id}">
+    <div class="vx-mine-h"><span class="ib ${ic[1]}">${I(ic[0])}</span><span class="vx-mine-t"><span class="eyebrow">${m.eyebrow}</span><h2 id="${id}">${esc(m.name)}</h2>${m.address ? `<small class="dim">${esc(m.address)}</small>` : ''}</span>${edit}</div>
+    <div class="btns">${acts}</div>
   </section>`;
+}
+/* Inicio: chica. Línea 1: qué es y nombre, con Cambiar y Quitar. Línea 2: la acción (Pedir turno / Probar por
+   WhatsApp, o Llamar en la guardia) y los íconos de Llamar y Cómo llegar. La aclaración del fijo va para lectores de
+   pantalla acá; visible en "Veterinarias cerca" y en Datos. */
+function mineHome(p, m, id, edit) {
+  const tel = T.telLink(m.phone), t = m.k === 'vet' ? T.waTarget(m.phone) : null;
+  const dir = `<a class="ibtn" href="${esc(directions(m))}" target="_blank" rel="noopener noreferrer" data-ct="dir" aria-label="Cómo llegar a ${esc(m.name)}">${I('pin')}</a>`;
+  let main = '', icons = dir;
+  if (t) {
+    const wa = T.waLink(m.phone, T.waMessage(p, ''));
+    main = t.mobile ? `<a class="btn sm" href="${esc(wa)}" target="_blank" rel="noopener noreferrer" data-ct="wa-cel">${I('chat')} Pedir turno</a>`
+      : `<a class="btn sm ghost" href="${esc(wa)}" target="_blank" rel="noopener noreferrer" data-ct="wa-fijo" aria-describedby="${id}-n">${I('chat')} Probar por WhatsApp</a><span class="sr" id="${id}-n">Si no tiene WhatsApp, te va a avisar la app.</span>`;
+    if (tel) icons = `<a class="ibtn" href="${esc(tel)}" data-ct="tel" aria-label="Llamar a ${esc(m.name)}">${I('phone')}</a>` + icons;
+  } else if (tel) main = `<a class="btn sm${m.k === 'er' ? '' : ' ghost'}" href="${esc(tel)}" data-ct="tel">${I('phone')} Llamar</a>`;
+  return `<section class="card vx-mine vx-mine-home span2" data-mine="${m.k}" aria-labelledby="${id}">
+    <div class="vx-mine-h"><span class="vx-mine-t"><span class="eyebrow">${m.eyebrow}</span><b id="${id}">${esc(m.name)}</b></span>${edit}</div>
+    <div class="vx-mine-row">${main}${icons}</div>
+  </section>`;
+}
+function mineCards(p, where = 'vets') {
+  if (!p) return '';
+  /* en "Veterinarias cerca" va la de la pestaña: en Guardias 24 h, la guardia; en las otras, la veterinaria */
+  let list = mineList(p);
+  if (where === 'vets') list = list.filter(m => m.k === (st.kind === 'er' ? 'er' : 'vet'));
+  return list.map(m => mineCard(p, m, where)).join('');
+}
+function changeMine(p, k) {
+  st.kind = k === 'er' ? 'er' : 'vet'; st.sel = null;
+  const r = A().route?.name;
+  if (r === 'vets') { if (searched()) search(); else A().render(); return focusArea(); }
+  st.from = ['agenda', 'libreta'].includes(r) ? r : 'inicio';
+  A().go('vets', p.id);
+}
+function dropMine(p, k) {
+  const old = { vet: { ...(p.vet || {}) }, vetPlace: p.vetPlace ? { ...p.vetPlace } : undefined };
+  const name = k === 'er' ? old.vet.er : old.vet.name;
+  if (k === 'er') p.vet = { ...p.vet, er: '', erPhone: '' };
+  else { p.vet = { ...p.vet, name: '', phone: '', address: '' }; p.vetPlace = undefined; }
+  A().changed(); A().render();
+  A().toast(`Sacamos ${name} como ${k === 'er' ? 'guardia' : 'veterinaria'} de ${p.name}.`, { label: 'Deshacer', fn: () => { p.vet = old.vet; p.vetPlace = old.vetPlace; A().changed(); A().render(); } });
+}
+/* "Ver" del aviso al guardar: a Inicio, con la tarjeta a la vista */
+function showMine(p, k) {
+  A().dPanel?.close?.();
+  A().go('inicio');
+  setTimeout(() => { const el = document.querySelector(`[data-mine="${k}"]`); if (el) { el.scrollIntoView?.({ block: 'center' }); el.setAttribute('tabindex', '-1'); el.focus?.({ preventScroll: true }); } }, 60);
 }
 
 function mapFrame(list) {
@@ -309,7 +389,7 @@ function render(p, arg) {
     <div class="lib-top"><div><span class="eyebrow">Pedir turno · ${esc(pet.name)}</span><h1 class="h-xl">Veterinarias cerca</h1></div>
 </div>
     ${rec ? `<div class="banner vx-why">${'<span class="ib c-salud">' + I('syringe') + '</span>'}<span><b>${esc(Z.TYPE[rec.type] || 'Fecha')}: ${esc(rec.name)}</b><small class="dim">${esc(Cap(T.reasonFrom(rec, iso(Z.today()))))}. Lo sumamos al mensaje.</small></span></div>` : ''}
-    ${myVetCard(pet)}
+    ${mineCards(pet, 'vets')}
     ${tabs}
     ${loc}
     ${main}
@@ -334,15 +414,14 @@ function placeSheet(p, pl) {
   const rec = contextRec(p), today = iso(Z.today());
   const reason = T.reasonFrom(rec, today);
   const phone = pl.intl || pl.phone;
-  const msg = T.waMessage(p, reason), wa = T.waLink(phone, msg), tel = T.telLink(pl.phone || pl.intl);
+  const msg = T.waMessage(p, reason), ct = contactBtns({ waPhone: phone, telPhone: pl.phone || pl.intl, msg, id: 'vxWa' }), wa = ct.wa;
   const asEr = st.kind === 'er';
   const saved = asEr ? p.vet?.er === pl.name : p.vetPlace?.placeId === pl.id;
   const dl = [['Dirección', esc(pl.address)], ['Distancia', distTxt(pl.m)], ['Ahora', pl.open == null ? '' : pl.open ? 'Abierto' : 'Cerrado'], ['Opiniones en Google', pl.rating != null ? `${pl.rating.toFixed(1).replace('.', ',')} de 5${pl.ratings ? ` (${pl.ratings.toLocaleString('es-AR')})` : ''}` : ''], ['Teléfono', esc(pl.phone || pl.intl)]].filter(r => r[1]);
   A().panel(pl.name, `<dl class="dl">${dl.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
     ${wa ? `<div class="f vx-msg"><label for="vxMsg">Mensaje para WhatsApp</label><textarea id="vxMsg" maxlength="500" rows="4">${esc(msg)}</textarea><small>Editalo como quieras antes de mandarlo.</small></div>` : ''}
     <div class="d-acts">
-      ${wa ? `<a class="btn wide big" id="vxWa" href="${esc(wa)}" target="_blank" rel="noopener noreferrer">${I('chat')} Pedir turno por WhatsApp</a>` : ''}
-      ${tel ? `<a class="btn wide ${wa ? 'ghost' : 'big'}" href="${esc(tel)}">${I('phone')} Llamar</a>` : '<p class="note">Google no tiene su teléfono. Probá con "Cómo llegar" o buscalo en Google Maps.</p>'}
+      ${ct.html || '<p class="note">Google no tiene su teléfono. Probá con "Cómo llegar" o buscalo en Google Maps.</p>'}
       <a class="btn ghost wide" href="${esc(pl.maps ? directions(pl) : directions(pl))}" target="_blank" rel="noopener noreferrer">${I('pin')} Cómo llegar</a>
       <button type="button" class="btn ghost wide" data-vp="save"${saved ? ' disabled' : ''}>${I('heart')} ${saved ? (asEr ? 'Es tu guardia' : 'Es tu veterinaria') : asEr ? 'Guardar como mi guardia 24 h' : `Guardar como mi veterinaria`}</button>
       <button type="button" class="btn soft wide" data-vp="appt">${I('cal')} Anotar turno</button>
@@ -361,10 +440,11 @@ function placeSheet(p, pl) {
         p.vet = { ...p.vet, name: pl.name.slice(0, 80), phone: (pl.phone || pl.intl || '').slice(0, 40), address: (pl.address || '').slice(0, 120) };
         A().changed();
         b.disabled = true; b.innerHTML = `${I('heart')} Es tu veterinaria`;
-        return A().toast(`${pl.name} quedó como la veterinaria de ${p.name}.`, { label: 'Deshacer', fn: () => { p.vet = old.vet; p.vetPlace = old.vetPlace; A().changed(); } });
+        A().render();
+        return A().toast(`Listo, ${pl.name} es tu veterinaria. La vas a ver en Inicio y en la ficha de ${p.name}.`, { label: 'Ver', fn: () => showMine(p, 'vet') });
       }
-      A().changed(); b.disabled = true; b.innerHTML = `${I('heart')} Es tu guardia`;
-      return A().toast(`${pl.name} quedó como la guardia de ${p.name}.`);
+      A().changed(); b.disabled = true; b.innerHTML = `${I('heart')} Es tu guardia`; A().render();
+      return A().toast(`Listo, ${pl.name} es tu guardia 24 h. La vas a ver en Inicio y en la ficha de ${p.name}.`, { label: 'Ver', fn: () => showMine(p, 'er') });
     }
     if (b.dataset.vp === 'appt') { A().dPanel.close(); apptForm(p, null, { place: { name: pl.name, phone: pl.phone || pl.intl || '', address: pl.address || '', placeId: pl.id }, rec }); }
   };
@@ -406,13 +486,12 @@ function apptForm(p, a, preset = {}) {
 function apptPanel(a) {
   const p = A().petById(a.petId); if (!p) return;
   const now = T.localNow(), past = T.toLog([{ ...a, logged: false }], now).length > 0;
-  const wa = T.waLink(a.place.phone, T.waMessage(p, a.reason)), tel = T.telLink(a.place.phone);
+  const ct = contactBtns({ waPhone: a.place.phone, msg: T.waMessage(p, a.reason), label: 'Escribir por WhatsApp', big: false });
   const dl = [['Cuándo', `${Cap(T.dayLong(a.date))}${a.time ? ', ' + T.hhmm(a.time) : ''}`], ['Dónde', esc(a.place.name)], ['Dirección', esc(a.place.address)], ['Teléfono', esc(a.place.phone)], ['Motivo', esc(a.reason)]].filter(r => r[1]);
   A().panel(`Turno de ${p.name}`, `<dl class="dl">${dl.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>
     <div class="d-acts">
       ${past && !a.logged ? `<button type="button" class="btn big wide" data-vp="log">${I('steth')} Cargá lo que le hicieron</button>` : ''}
-      ${!past && wa ? `<a class="btn wide" href="${esc(wa)}" target="_blank" rel="noopener noreferrer">${I('chat')} Escribir por WhatsApp</a>` : ''}
-      ${!past && tel ? `<a class="btn ghost wide" href="${esc(tel)}">${I('phone')} Llamar</a>` : ''}
+      ${!past ? ct.html : ''}
       ${!past && (a.place.name || a.place.address) ? `<a class="btn ghost wide" href="${esc(directions(a.place))}" target="_blank" rel="noopener noreferrer">${I('pin')} Cómo llegar</a>` : ''}
       ${!past ? `<button type="button" class="btn ghost wide" data-vp="ics">${I('cal')} Agregar al calendario</button>` : ''}
       <button type="button" class="btn ghost wide" data-vp="edit">${I('edit')} Editar o borrar</button>
@@ -467,10 +546,9 @@ async function start(p, rec, from = 'inicio') {
   const arg = p.id + (rec ? '|' + rec.id : '');
   const v = p.vet || {};
   if (v.name && v.phone) {
-    const msg = T.waMessage(p, T.reasonFrom(rec, iso(Z.today()))), wa = T.waLink(v.phone, msg), tel = T.telLink(v.phone);
+    const msg = T.waMessage(p, T.reasonFrom(rec, iso(Z.today()))), ct = contactBtns({ waPhone: v.phone, msg });
     A().panel(`Pedir turno en ${v.name}`, `<p class="dim">${esc(msg)}</p><div class="d-acts">
-      ${wa ? `<a class="btn big wide" href="${esc(wa)}" target="_blank" rel="noopener noreferrer">${I('chat')} Pedir turno por WhatsApp</a>` : ''}
-      ${tel ? `<a class="btn wide ${wa ? 'ghost' : 'big'}" href="${esc(tel)}">${I('phone')} Llamar</a>` : ''}
+      ${ct.html}
       <button type="button" class="btn ghost wide" data-vp="appt">${I('cal')} Anotar turno</button>
       <button type="button" class="btn ghost wide" data-vp="other">${I('search')} Buscar otra veterinaria</button></div>`);
     $('#pBody').onclick = e => {
@@ -504,6 +582,8 @@ document.addEventListener('click', e => {
     case 'apptIcs': { const a = find(); const p = a && A().petById(a.petId); return a && A().calendar([apptEvent(a)], `${p.name} turno`); }
     case 'apptLog': { const a = find(); return a && logAppt(a); }
     case 'apptSkip': { const a = find(); if (!a) return; a.logged = true; A().changed(); return A().toast('Listo.', { label: 'Deshacer', fn: () => { a.logged = false; A().changed(); } }); }
+    case 'mineChange': { const p = A().petById(b.dataset.pet) || A().curPet(); return p && changeMine(p, b.dataset.k); }
+    case 'mineDel': { const p = A().petById(b.dataset.pet) || A().curPet(); return p && dropMine(p, b.dataset.k); }
     case 'newAppt': { const p = A().curPet(); return p && apptForm(p, null, {}); }
   }
 });
@@ -556,5 +636,5 @@ document.addEventListener('keydown', e => {
   closeEdit();
 });
 
-window.MZVETS = { render, start, agendaItems, agendaRow, homeItems, events, apptForm, state: st };
+window.MZVETS = { render, start, mineCards, agendaItems, agendaRow, homeItems, events, apptForm, state: st };
 })();

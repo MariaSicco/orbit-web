@@ -1294,6 +1294,7 @@ function renderInicio(p) {
       ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
       ${scanBanner(p)}
       ${hoyBox(p)}
+      ${window.MZVETS ? window.MZVETS.mineCards(p, 'home') : ''}
       ${notify && !notify.devices && !notify.mail ? `<button class="banner nudge span2" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span style="flex:1"><b>Que no se te pase ninguna fecha</b><small class="dim">Activá los avisos en el celu o por mail.</small></span>${I('chevron')}</button>` : ''}
       ${next.length ? `<section class="sec card2 span2" aria-labelledby="h-next">
         <div class="sec-h"><h2 id="h-next">Hoy y estos días</h2><button class="link" data-act="go" data-to="agenda">Agenda ${I('next')}</button></div>
@@ -2893,9 +2894,9 @@ function renderDatos(p) {
     <section class="sec"><div class="sec-h"><h2>Sus datos</h2><button class="link" data-act="editPet">${I('edit')} Editar</button></div>
       ${facts.length ? `<div class="facts">${facts.map(([k, v]) => `<div><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div>` : `<div class="empty dash"><p>Raza, color, microchip y señas ayudan a reconocerla si se pierde.</p></div>`}</section>
     <section class="sec"><div class="sec-h"><h2>Veterinaria y guardia</h2><button class="link" data-act="vet">${p.vet.name || p.vet.er ? `${I('edit')} Editar` : ''}</button></div>
-      ${p.vet.name || p.vet.er ? `<div class="list">
+      ${p.vet.name || p.vet.er ? (window.MZVETS ? `<div class="vx-mine-list">${window.MZVETS.mineCards(p, 'datos')}</div>` : `<div class="list">
         ${p.vet.name ? `<div class="row">${bubble('heart', 'salud')}<span class="what"><b>${esc(p.vet.name)}</b><small>${esc(p.vet.address || 'Su veterinaria')}</small></span>${p.vet.phone ? call(p.vet.phone) : '<span></span>'}</div>` : ''}
-        ${p.vet.er ? `<div class="row">${bubble('alert', 'perdida')}<span class="what"><b>${esc(p.vet.er)}</b><small>Guardia 24 horas</small></span>${p.vet.erPhone ? call(p.vet.erPhone) : '<span></span>'}</div>` : ''}</div>`
+        ${p.vet.er ? `<div class="row">${bubble('alert', 'perdida')}<span class="what"><b>${esc(p.vet.er)}</b><small>Guardia 24 horas</small></span>${p.vet.erPhone ? call(p.vet.erPhone) : '<span></span>'}</div>` : ''}</div>`)
       : `<div class="empty dash"><p>Cargá tu veterinaria y una guardia 24 horas. En una urgencia no hay tiempo de buscar.</p><button class="btn sm soft" data-act="vet">Cargar veterinaria</button></div>`}</section>
     ${p.notes ? `<section class="sec"><h2>Notas privadas</h2><div class="card"><p style="white-space:pre-wrap">${esc(p.notes)}</p></div></section>` : ''}`;
 }
