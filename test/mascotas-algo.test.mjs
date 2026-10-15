@@ -183,3 +183,36 @@ test('PDF: "Episodios recientes" trae los últimos 60 días agrupados, con notas
   assert.deepEqual(r[1].notes, [], '"Otro" usa la nota como título, no la repite');
   assert.equal(r[1].last.res, 'paso');
 });
+
+/* ---------- Preguntale a Mimitos ---------- */
+const A = await import('../api/_lib/petask.js');
+test('Preguntale: los episodios entran citables, con su sección "Algo pasó → Vómito · ayer 22:10" y las veces en 72 h', () => {
+  const pet = { id: 'luna0001', name: 'Luna', species: 'perro', records: [], weights: [{ date: '2026-09-20', kg: 10 }, { date: '2026-10-12', kg: 9.4 }],
+    food: { brand: 'Marca X', bags: [{ date: '2026-10-01', kg: 3, brand: 'Marca Nueva' }] },
+    symptoms: [ep('ep1aaa', '2026-10-13T22:10', 'vomito', { sev: 'fuerte', text: 'Con pasto', media: [{ ref: mine(1), type: 'image/jpeg' }, { ref: mine(2), type: 'video/mp4' }] }),
+      ep('ep2aaa', '2026-10-14T08:00', 'vomito', { res: 'mejor' }), { id: 'old1aa', date: '2026-10-02', text: 'Se rasca' }] };
+  const now = new Date('2026-10-14T23:00:00Z');
+  const ctx = A.buildContext({ pets: [pet] }, { question: '¿Cuándo vomitó?', petId: pet.id, tz: 'America/Argentina/Buenos_Aires', now });
+  const id1 = Object.keys(ctx.refs).find(k => ctx.refs[k].itemId === 'ep1aaa'), id2 = Object.keys(ctx.refs).find(k => ctx.refs[k].itemId === 'ep2aaa');
+  assert.equal(ctx.refs[id1].source, 'Algo pasó → Vómito · ayer 22:10');
+  assert.equal(ctx.refs[id1].area, 'Algo pasó');
+  assert.equal(ctx.refs[id1].section, 'sym', 'el chip abre el detalle del episodio');
+  const line = ctx.text.split('\n').find(l => l.includes(`[r:${id1}]`));
+  assert.match(line, /^2026-10-13 \[r:\w+\] \(Algo pasó\) Algo pasó: Vómito a las 22:10 · intensidad fuerte · nota "Con pasto" · 1 foto\(s\) · 1 video\(s\)$/);
+  const line2 = ctx.text.split('\n').find(l => l.includes(`[r:${id2}]`));
+  assert.match(line2, /es la 2\.ª vez en 72 h \(desde 2026-10-13\) · al día siguiente: está mejor/);
+  assert.ok(ctx.text.includes('(Historial) Síntoma o nota: "Se rasca"'), 'las notas viejas siguen como antes');
+  assert.ok(A.ASK_SYSTEM.includes('Algo pasó → "Según lo que anotaste en Algo pasó"'));
+  const r = A.resolveCitations(`Vomitó anoche [r:${id1}] y hoy [r:${id2}].`, ctx.refs);
+  assert.deepEqual(r.citations.map(c => c.source), ['Algo pasó → Vómito · ayer 22:10', 'Algo pasó → Vómito · hoy 08:00']);
+});
+
+test('Preguntale: una pregunta cruzada sobre un episodio trae lo registrado ±30 días (peso, alimento) a la línea de tiempo', () => {
+  const pet = { id: 'luna0001', name: 'Luna', species: 'perro', records: [], weights: [{ date: '2026-09-20', kg: 10 }, { date: '2026-10-12', kg: 9.4 }],
+    expenses: Array.from({ length: 400 }, (_, i) => ({ id: 'g' + i, date: '2025-0' + (1 + (i % 8)) + '-1' + (i % 9), cat: 'otros', amount: 1000 + i, note: 'Algo bastante largo para ocupar lugar en el contexto ' + i })),
+    symptoms: [ep('ep1aaa', '2026-10-13T22:10', 'diarrea'), ep('ep9aaa', '2026-06-01T10:00', 'tos')] };
+  const ctx = A.buildContext({ pets: [pet] }, { question: '¿Qué más registré alrededor de la diarrea?', petId: pet.id, tz: 'America/Argentina/Buenos_Aires', now: new Date('2026-10-14T23:00:00Z'), maxChars: 3000 });
+  assert.match(ctx.text, /PREGUNTA CRUZADA: se incluyó todo lo registrado entre 2026-09-13 y 2026-11-12/);
+  assert.match(ctx.text, /\(Algo pasó\) Algo pasó: Diarrea a las 22:10/);
+  assert.match(ctx.text, /2026-10-12 \[r:\w+\] \(Peso\)/, 'el peso de esas semanas entra aunque falte lugar');
+});
