@@ -134,3 +134,26 @@ test('meta sugerida: lo que dice la sugerencia coincide con lo que después mues
   const e = M.estadoMeta({ objetivo: s.objetivo, fecha: s.fecha, aportes: [] }, '2026-10-15');
   assert.deepEqual([e.meses, e.porMes], [6, s.porMes]);
 });
+
+test('fin de cuota: sin meta propone armar una; con meta, sumarla; asignado se recuerda', () => {
+  const d = base({ ingresos: [ing], tarjetas: [tarjeta],
+    cuotas: [{ id: 'c', descripcion: 'Heladera', total: 9_000_000, cantidad: 3, tarjetaId: 't1', primerMes: '2026-10', moneda: 'ARS' }] });
+  const a = M.destinoLiberacion(d, '2026-10-15');
+  assert.deepEqual([a.accion, a.lib.mes, a.lib.libera], ['crear', '2027-01', 3_000_000]);
+  const d2 = M.asignarLiberacion(d, '2026-10-15');
+  assert.deepEqual([d2.meta.nombre, d2.meta.objetivo, d2.meta.libera], ['Colchón', 18_000_000, [{ mes: '2027-01', monto: 3_000_000 }]]);
+  assert.equal(d.meta, undefined, 'no toca los datos originales');
+  const b = M.destinoLiberacion(d2, '2026-10-15');
+  assert.equal(b.asignado, true);
+  assert.match(b.texto, /Desde enero, los \$ 30\.000 que se liberan van a tu meta Colchón/);
+  assert.equal(M.asignarLiberacion(d2, '2026-10-15'), d2, 'no asigna dos veces');
+  // con una meta propia
+  const d3 = { ...d, meta: { nombre: 'Vacaciones', objetivo: 50_000_000, fecha: '2027-06', aportes: [] } };
+  assert.match(M.destinoLiberacion(d3, '2026-10-15').texto, /¿Los sumás a tu meta Vacaciones\?/);
+  // "Separé $ X": antes de enero, el ritmo de la meta; desde enero, lo que se liberó
+  const m = M.asignarLiberacion(d3, '2026-10-15').meta;
+  assert.deepEqual(M.aporteSugerido(m, '2026-11-01'), { monto: Math.ceil(50_000_000 / 7 / 100) * 100, deLibera: false });
+  assert.deepEqual(M.aporteSugerido(m, '2027-01-05'), { monto: 3_000_000, deLibera: true });
+  // migrar conserva el destino
+  assert.deepEqual(M.migrar({ v: 4, meta: m }).meta.libera, [{ mes: '2027-01', monto: 3_000_000 }]);
+});

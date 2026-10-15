@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -305,10 +305,16 @@ function pintarConsejo() {
   if (!lista.length && !vics.length) { el.hidden = true; el.innerHTML = ''; return; }
   el.hidden = false;
   consejoIdx = lista.length ? consejoIdx % lista.length : 0;
-  const c = lista[consejoIdx];
+  let c = lista[consejoIdx];
   const v = vics[0];
   const acc = [];
-  if (c && ['libera', 'diez'].includes(c.tipo) && F.metas && !datos.meta) acc.push('<button type="button" class="mm-link" data-meta-nueva>Armar una meta</button>');
+  /* fin de cuota: lo que se libera, con destino */
+  const dl = F.finDeCuota && c?.tipo === 'libera' ? destinoLiberacion(datos, HOY_ISO) : null;
+  if (dl) {
+    c = { ...c, texto: dl.texto };
+    if (!dl.asignado) acc.push(`<button type="button" class="mm-btn chico" data-libera-destino>${dl.accion === 'sumar' ? 'Sumalo a tu meta' : 'Armá una meta con esto'}</button>`);
+  }
+  if (c && ['libera', 'diez'].includes(c.tipo) && F.metas && !datos.meta && !dl) acc.push('<button type="button" class="mm-link" data-meta-nueva>Armar una meta</button>');
   if (c && c.tipo === 'diez' && F.dondeRinde) acc.push('<button type="button" class="mm-link" data-ir="rinde">Dónde puede rendir</button>');
   if (c && ['intereses', 'negativo'].includes(c.tipo)) acc.push('<button type="button" class="mm-link" data-ir="escalera">Ver mes a mes</button>');
   if (lista.length > 1) acc.push('<button type="button" class="mm-link" data-consejo-sig>Otro consejo</button>');
@@ -333,6 +339,7 @@ function pintarMeta() {
     return;
   }
   const m = datos.meta, e = estadoMeta(m, HOY_ISO);
+  const sug = F.finDeCuota ? (aporteSugerido(m, HOY_ISO) || { monto: e.porMes, deLibera: false }) : { monto: e.porMes, deLibera: false };
   const pct = Math.round(e.avance * 100);
   el.innerHTML = `<div class="mm-seccion-top"><h2 id="t-meta">${esc(m.nombre)}</h2><button type="button" class="mm-link" data-meta-editar>Editar</button></div>
     ${e.victoria ? `<p class="mm-victoria solo"><span>${esc(e.victoria)}</span></p>` : ''}
@@ -340,7 +347,7 @@ function pintarMeta() {
     <div class="mm-meta-barra" role="progressbar" aria-label="Avance de tu meta" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-valuetext="${pct} %"><i style="width:${pct}%"></i></div>
     <p class="mm-meta-txt">${e.llegaste ? `Llegaste. Si querés, armá la próxima.` : `Para ${esc(nombreMes(m.fecha))}: ${esc($(e.porMes))} por mes ${e.meses === 1 ? 'este mes' : `durante ${e.meses} meses`}.`}</p>
     <div class="mm-meta-acc">${e.llegaste ? '<button type="button" class="mm-btn sec" data-meta-nueva>Armar otra meta</button>'
-      : `<button type="button" class="mm-btn sec" data-aporte="${e.porMes}">Separé ${esc($(e.porMes))}</button><button type="button" class="mm-link" data-aporte-otro>Otro monto</button>`}${linkRinde}</div>`;
+      : `<button type="button" class="mm-btn sec" data-aporte="${sug.monto}">Separé ${esc($(sug.monto))}${sug.deLibera ? ' (lo que se liberó)' : ''}</button><button type="button" class="mm-link" data-aporte-otro>Otro monto</button>`}${linkRinde}</div>`;
 }
 
 function pintarReto() {
@@ -1454,7 +1461,8 @@ function pintarEscalera() {
   $id('esc-libre').innerHTML = !datos.cuotas.length
     ? `<p class="mm-vacio"><b>No tenés cuotas cargadas.</b> Cuando cargues una compra en cuotas o subas un resumen, acá ves mes a mes cuánto está comprometido.</p><button type="button" class="mm-btn" data-nuevo="cuota">Cargar una cuota</button>`
     : `<p class="mm-item-meta">Quedás libre de cuotas en</p><p class="mm-total-num">${esc(capital(nombreMes(e.mesLibre)))}</p>
-       ${(() => { const l = proximaLiberacion(datos, HOY); return l ? `<p class="mm-libera-esc">En ${esc(nombreMes(l.mes))} se te liberan <b>${esc($(l.libera))}</b> por mes.</p>` : ''; })()}
+       ${(() => { const l = proximaLiberacion(datos, HOY); if (!l) return ''; const dl = F.finDeCuota ? destinoLiberacion(datos, HOY_ISO) : null;
+         return `<p class="mm-libera-esc">${dl ? esc(dl.texto) : `En ${esc(nombreMes(l.mes))} se te liberan <b>${esc($(l.libera))}</b> por mes.`}</p>${dl && !dl.asignado ? `<button type="button" class="mm-btn chico" data-libera-destino>${dl.accion === 'sumar' ? 'Sumalo a tu meta' : 'Armá una meta con esto'}</button>` : ''}`; })()}
        <p class="${pasados ? 'mm-err' : 'mm-fuente'}">${pasados ? `${pasados === 1 ? 'Un mes pasa' : `${pasados} meses pasan`} tu tope de ${datos.limiteCuotas} % de los ingresos.` : `Ningún mes pasa tu tope de ${datos.limiteCuotas} % de los ingresos.`}</p>`;
   $id('tope-pct').value = datos.limiteCuotas;
   $id('esc-leyenda').innerHTML = usadas.map(t => `<span><i class="${esc(t.color)}"></i>${esc(t.nombre)}</span>`).join('') + (filas.some(f => f.tope) ? '<span><i class="tope"></i>Tu tope</span>' : '');
@@ -1807,6 +1815,11 @@ document.addEventListener('click', e => {
     guardar(); pintarTodo(); return avisar(cq.dataset.conciliaQ === 'si' ? 'Listo: queda la del resumen' : 'Listo: quedan las dos');
   }
   if (t.closest('[data-revisa-mas]')) { revisaAbierta = !revisaAbierta; pintarInicio(); return $id('revisa').querySelector('[data-revisa-mas]')?.focus(); }
+  if (t.closest('[data-libera-destino]')) {
+    const tenia = !!datos.meta;
+    datos = asignarLiberacion(datos, HOY_ISO); guardar(); pintarTodo();
+    return avisar(tenia ? `Listo: va a tu meta ${datos.meta.nombre}` : 'Meta armada con lo que se libera. La podés editar');
+  }
   if (t.closest('[data-consejo-sig]')) { consejoIdx++; pintarConsejo(); return $id('consejo').querySelector('[data-consejo-sig]')?.focus(); }
   const oc = t.closest('[data-consejo-ocultar]');
   if (oc) { datos.consejosVistos = [...datos.consejosVistos, oc.dataset.consejoOcultar].slice(-100); guardar(); pintarConsejo(); return avisar('Listo, no lo mostramos más'); }

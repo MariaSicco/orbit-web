@@ -710,7 +710,8 @@ export function migrar(crudo) {
   const m = crudo.meta;
   if (m && typeof m === 'object' && entero(m.objetivo) && esMes(m.fecha)) {
     out.meta = { nombre: texto(m.nombre, 40) || 'Mi meta', objetivo: m.objetivo, fecha: m.fecha,
-      aportes: (Array.isArray(m.aportes) ? m.aportes : []).filter(a => esFecha(a?.fecha) && Number.isSafeInteger(a?.monto)).slice(-200).map(a => ({ fecha: a.fecha, monto: a.monto })) };
+      aportes: (Array.isArray(m.aportes) ? m.aportes : []).filter(a => esFecha(a?.fecha) && Number.isSafeInteger(a?.monto)).slice(-200).map(a => ({ fecha: a.fecha, monto: a.monto })),
+      libera: (Array.isArray(m.libera) ? m.libera : []).filter(x => esMes(x?.mes) && Number.isSafeInteger(x?.monto) && x.monto > 0).slice(-24).map(x => ({ mes: x.mes, monto: x.monto })) };
   }
   const retos = crudo.retos && typeof crudo.retos === 'object' ? crudo.retos : {};
   for (const [mesR, r] of Object.entries(retos)) {
@@ -1522,4 +1523,41 @@ export function proximosPagos(datos, hoy, n = 3) {
     .sort((a, b) => diasEntre(b.fecha, a.fecha))
     .slice(0, n)
     .map(e => ({ ...e, dias: diasEntre(hoy, e.fecha) }));
+}
+
+
+/* ═══════════════ El fin de una cuota como decisión útil ═══════════════
+   Lo que se libera va a un destino: con meta, "sumalo a tu meta"; sin meta,
+   armar una con un toque. Una vez asignado, se recuerda y se propone separar
+   ese monto desde el mes en que se libera. */
+export function destinoLiberacion(datos, hoy) {
+  const mes = aFecha(hoy).slice(0, 7);
+  const lib = proximaLiberacion(datos, mes);
+  if (!lib || difMeses(mes, lib.mes) > 3) return null;
+  const meta = datos?.meta && !estadoMeta(datos.meta, hoy).llegaste ? datos.meta : null;
+  const asignado = !!meta?.libera?.some(x => x.mes === lib.mes);
+  const cuando = nombreMes(lib.mes).split(' ')[0];
+  return {
+    lib, meta: meta?.nombre || null, accion: meta ? 'sumar' : 'crear', asignado,
+    texto: asignado ? `Desde ${cuando}, los ${formatoPesos(lib.libera)} que se liberan van a tu meta ${meta.nombre}.`
+      : meta ? `En ${cuando} se te liberan ${formatoPesos(lib.libera)} por mes. ¿Los sumás a tu meta ${meta.nombre}?`
+      : `En ${cuando} se te liberan ${formatoPesos(lib.libera)} por mes. Si los separás 6 meses, juntás ${formatoPesos(lib.libera * 6)}.`,
+  };
+}
+/* Asigna lo que se libera a la meta (o arma una con eso). Devuelve datos nuevos. */
+export function asignarLiberacion(datos, hoy) {
+  const d = destinoLiberacion(datos, hoy);
+  if (!d || d.asignado) return datos;
+  const out = structuredClone(datos);
+  if (d.accion === 'crear') out.meta = { nombre: 'Colchón', objetivo: Math.round(d.lib.libera * 6 / 100_000) * 100_000 || d.lib.libera * 6, fecha: sumarMeses(d.lib.mes, 5), aportes: [], libera: [] };
+  out.meta.libera = [...(out.meta.libera || []), { mes: d.lib.mes, monto: d.lib.libera }];
+  return out;
+}
+/* Cuánto proponer en "Separé $ X": lo que se liberó para la meta (desde ese mes) o el ritmo de la meta. */
+export function aporteSugerido(meta, hoy) {
+  const e = estadoMeta(meta, hoy);
+  if (!e || e.llegaste) return null;
+  const mes = aFecha(hoy).slice(0, 7);
+  const lib = (meta.libera || []).filter(x => difMeses(x.mes, mes) >= 0).reduce((a, x) => a + x.monto, 0);
+  return lib ? { monto: Math.min(lib, e.falta), deLibera: true } : { monto: Math.min(e.porMes, e.falta), deLibera: false };
 }
