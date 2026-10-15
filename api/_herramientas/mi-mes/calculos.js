@@ -686,7 +686,7 @@ export function migrar(crudo) {
   }
   for (const [m, c] of Object.entries(crudo.cambio && typeof crudo.cambio === 'object' ? crudo.cambio : {})) {
     if (esMoneda(m) && m !== 'ARS' && entero(c?.valor)) {
-      out.cambio[m] = { valor: c.valor, fuente: texto(c.fuente, 160) || 'Lo cargaste vos', fecha: esFecha(c.fecha) ? c.fecha : '', ...(c.url ? { url: String(c.url).slice(0, 300) } : {}) };
+      out.cambio[m] = { valor: c.valor, fuente: texto(c.fuente, 160) || 'Lo cargaste vos', fecha: esFecha(c.fecha) ? c.fecha : '', ...(/^https:\/\//.test(String(c.url || '')) ? { url: String(c.url).slice(0, 300) } : {}) };
     }
   }
   for (const [k, v] of Object.entries(crudo.rubrosComercio && typeof crudo.rubrosComercio === 'object' ? crudo.rubrosComercio : {})) {

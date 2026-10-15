@@ -79,7 +79,8 @@ test('leer-resumen: con compra responde el ejemplo en modo prueba, con el esquem
 });
 test('leer-resumen: tope de lecturas por día', async () => {
   const { kvSet } = await import('../api/_lib/kv.js');
-  const dia = new Date().toISOString().slice(0, 10);
+  const { hoyAR } = await import('../api/_lib/mi-mes-avisos.js');
+  const dia = hoyAR();
   await kvSet(`orbit:mi-mes:lecturas:admin@orbit.test:${dia}`, api.TOPE_DIA);
   const r = await llamar(pedido('admin@orbit.test', PDF()));
   assert.deepEqual([r.code, r.body.motivo], [429, 'tope']);

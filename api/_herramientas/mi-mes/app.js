@@ -106,7 +106,9 @@ function pintarInicio(animar = false) {
   $id('mes-sig').disabled = difMeses(HOY, mes) >= ADELANTE;
 
   const num = $id('libres');
-  num.textContent = sinNada ? '$ —' : $(r.libres);
+  /* que se pueda restar a ojo: el número es la resta de los montos redondeados que se ven */
+  const redondo = c => Math.round(c / 100) * 100;
+  num.textContent = sinNada ? '$ —' : $(redondo(r.totIngresos) - redondo(r.totGastos) - redondo(r.totTarjetas));
   num.style.setProperty('--n', Math.max(8, num.textContent.length));
   const libera = proximaLiberacion(datos, mes);
   const frase = libera ? `En ${nombreMes(libera.mes)} se te liberan ${$(libera.libera)} de cuotas por mes.` : '';
@@ -162,8 +164,8 @@ function pintarInicio(animar = false) {
   $id('movs').innerHTML = sinNada
     ? `<p class="mm-vacio"><b>Empezá por tu sueldo.</b> Después sumá tus gastos fijos y tus cuotas (o subí el resumen de tu tarjeta) y arriba ves cuánto te queda libre este mes y los que vienen.</p>`
     : grupo('Ingresos', '+' + $(r.totIngresos), ing, datos.ingresos.length ? 'Sin ingresos este mes.' : '<b>Cargá tu sueldo</b> o lo que cobres todos los meses.') +
-      grupo('Gastos fijos', '−' + $(r.totGastos), gas, datos.gastos.length ? 'Sin gastos fijos este mes.' : 'Alquiler, expensas, servicios, suscripciones: lo que pagás sí o sí.') +
-      grupo('Tarjetas y cuotas', '−' + $(r.totTarjetas), tar, datos.cuotas.length || datos.resumenes.length ? 'Sin cuotas ni resúmenes este mes.' : 'Cargá una compra en cuotas o subí el resumen de tu tarjeta.', dentro);
+      grupo('Gastos fijos', (r.totGastos ? '−' : '') + $(r.totGastos), gas, datos.gastos.length ? 'Sin gastos fijos este mes.' : 'Alquiler, expensas, servicios, suscripciones: lo que pagás sí o sí.') +
+      grupo('Tarjetas y cuotas', (r.totTarjetas ? '−' : '') + $(r.totTarjetas), tar, datos.cuotas.length || datos.resumenes.length ? 'Sin cuotas ni resúmenes este mes.' : 'Cargá una compra en cuotas o subí el resumen de tu tarjeta.', dentro);
 
   /* moneda extranjera */
   const faltan = [...new Set([...r.sinCambio.map(c => c.moneda), ...r.resumenes.flatMap(x => x.faltaCambio)])];
@@ -179,7 +181,7 @@ function pintarInicio(animar = false) {
 function fuenteHTML(c) {
   if (!c) return '';
   const f = c.fecha ? ` · ${fechaCorta(c.fecha)} ${c.fecha.slice(0, 4)}` : '';
-  return c.url ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.fuente)}</a>${esc(f)}` : `${esc(c.fuente)}${esc(f)}`;
+  return /^https:\/\//.test(c.url || '') ? `<a href="${esc(c.url)}" target="_blank" rel="noopener">${esc(c.fuente)}</a>${esc(f)}` : `${esc(c.fuente)}${esc(f)}`;
 }
 
 /* plata líquida vs. crédito: con qué pagás y lo que gastaste con crédito */
@@ -1246,7 +1248,9 @@ $id('archivo-copia').addEventListener('change', async e => {
     if (json?.app !== 'mi-mes-by-orbit' || !json.datos) throw new Error('formato');
     copiaPendiente = migrar(json.datos);
     const d = copiaPendiente;
-    $id('dm-txt').textContent = `Copia del ${json.exportado ? new Date(json.exportado).toLocaleDateString('es-AR') : 'archivo'}: ${d.ingresos.length} ingresos, ${d.gastos.length} gastos fijos, ${d.cuotas.length} cuotas, ${d.tarjetas.length} tarjetas y ${d.resumenes.length} resúmenes.`;
+    if (!d.ingresos.length && !d.gastos.length && !d.cuotas.length && !d.tarjetas.length && !d.resumenes.length) { copiaPendiente = null; return avisar('Esa copia está vacía: no hay nada para importar.'); }
+    const pl = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+    $id('dm-txt').textContent = `Copia del ${json.exportado ? new Date(json.exportado).toLocaleDateString('es-AR') : 'archivo'}: ${pl(d.ingresos.length, 'ingreso', 'ingresos')}, ${pl(d.gastos.length, 'gasto fijo', 'gastos fijos')}, ${pl(d.cuotas.length, 'cuota', 'cuotas')}, ${pl(d.tarjetas.length, 'tarjeta', 'tarjetas')} y ${pl(d.resumenes.length, 'resumen', 'resúmenes')}. Antes de reemplazar guardamos un respaldo de lo que tenés ahora en este dispositivo.`;
     abrir($id('dlg-importar'), $id('dlg-importar').querySelector('[type="submit"]'));
   } catch {
     avisar('Ese archivo no es una copia de Mi Mes by Orbit.');
@@ -1255,6 +1259,7 @@ $id('archivo-copia').addEventListener('change', async e => {
 $id('dlg-importar').querySelector('form').addEventListener('submit', e => {
   e.preventDefault();
   if (!copiaPendiente) return;
+  try { localStorage.setItem(`${CLAVE}:respaldo`, JSON.stringify({ guardado: new Date().toISOString(), datos })); } catch {}
   datos = copiaPendiente; copiaPendiente = null; tarjetaVista = null;
   guardar(); cerrar($id('dlg-importar')); pintarTodo(); avisar('Copia importada');
 });
@@ -1351,7 +1356,7 @@ const registroSW = () => navigator.serviceWorker.register('sw.js', { scope: '/he
 function pintarPush(mensaje = '') {
   const on = pushActivo();
   const instalar = instalada() ? '' : `<section class="mm-push-sec"><h3>1. Agregala al inicio del celular</h3>
-    ${pedidoInstalar ? `<button type="button" class="mm-btn sec" data-instalar>${ic('bajar')} Instalar Mi Mes</button>` : ''}
+    ${pedidoInstalar ? `<button type="button" class="mm-btn sec" data-instalar>${ic('bajar')} Instalar Mi Mes by Orbit</button>` : ''}
     <p><b>iPhone</b> (iOS 16.4 o más): abrí esta página en Safari, tocá <b>Compartir</b> y después <b>Agregar a inicio</b>. Los avisos en iPhone funcionan solo desde la app agregada al inicio.</p>
     <p><b>Android</b>: en Chrome, tocá el menú <b>⋮</b> y después <b>Instalar app</b> o <b>Agregar a pantalla principal</b>.</p>
     <p class="mm-fuente">En iPhone, la app del inicio guarda sus datos aparte de Safari: si ya cargaste cosas acá, exportá tu copia (en "Lo cargado") e importala en la app.</p></section>`;

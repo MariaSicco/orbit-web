@@ -263,3 +263,14 @@ test('[QA 6] el resumen de ejemplo solo en el archivo local; sin red o con error
   assert.deepEqual(M.decidirLectura({ status: 200, json: { ok: true, modo: 'prueba' } }), { usar: 'servidor', modo: 'prueba' });
   assert.deepEqual(M.decidirLectura({ status: 200, json: { ok: true, modo: 'real' } }), { usar: 'servidor', modo: 'real' });
 });
+test('[QA 14] la fuente del tipo de cambio solo acepta links https', () => {
+  const d = M.migrar({ cambio: { USD: { valor: 150_000, fuente: 'x', url: 'javascript:alert(1)' }, EUR: { valor: 170_000, fuente: 'y', url: 'https://ejemplo.test' } } });
+  assert.equal(d.cambio.USD.url, undefined);
+  assert.equal(d.cambio.EUR.url, 'https://ejemplo.test');
+});
+test('[QA 20] manifest: nombre completo e íconos any y maskable por separado', () => {
+  const m = JSON.parse(readFileSync(new URL('../api/_herramientas/mi-mes/manifest.webmanifest', import.meta.url), 'utf8'));
+  assert.equal(m.name, 'Mi Mes by Orbit');
+  assert.ok(m.icons.every(i => i.purpose === 'any' || i.purpose === 'maskable'));
+  assert.ok(m.icons.some(i => i.purpose === 'maskable'));
+});

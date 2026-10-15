@@ -13,6 +13,7 @@ import { requireHerramienta } from './_lib/herramienta-acceso.js';
 import { kvGet, kvSet } from './_lib/kv.js';
 import { resumenEjemplo } from './_herramientas/mi-mes/ejemplo.js';
 import { hayKey, leerResumenConClaude, ErrorLectura, MODELO } from './_lib/mi-mes-lector.js';
+import { hoyAR } from './_lib/mi-mes-avisos.js';
 
 export const PRODUCTO = 'ob-019';
 export const MAX_BYTES = 4 * 1024 * 1024;   // Vercel corta el cuerpo en 4,5 MB
@@ -58,7 +59,7 @@ export default async function handler(req, res) {
   if (paginas > MAX_PAGINAS) return responder(res, 413, { ok: false, motivo: 'paginas', error: `El resumen tiene más de ${MAX_PAGINAS} páginas. Subí solo el de una tarjeta.` });
 
   /* tope diario por persona (para controlar el costo cuando se lea de verdad) */
-  const dia = new Date().toISOString().slice(0, 10);
+  const dia = hoyAR();                       // medianoche de Argentina, no UTC
   const clave = `orbit:mi-mes:lecturas:${acc.email}:${dia}`;
   let usadas = 0;
   try { usadas = Number(await kvGet(clave)) || 0; } catch { usadas = 0; }

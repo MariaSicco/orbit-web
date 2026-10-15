@@ -505,3 +505,7 @@ fieldset.mm-campo>legend{margin-bottom:8px}
 .mm-saldo .mm-tope{color:var(--tinta);font-weight:500}
 .mm-saldo .mm-tope .ic{color:var(--tinta2)}
 .mm-saldo .mm-tope u{color:var(--azul)}
+
+/* foco visible sobre el azul del saldo (WCAG 2.4.7) */
+.mm-saldo :focus-visible{outline:3px solid #fff;outline-offset:2px}
+.mm-franja.fuerte:focus-visible{outline-color:var(--k)}

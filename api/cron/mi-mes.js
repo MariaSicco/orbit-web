@@ -8,6 +8,8 @@ import { avisosPushDeHoy, limpiarTarjetasAvisos } from '../_herramientas/mi-mes/
 
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET;
+  /* en producción sin CRON_SECRET no corre: el user-agent se puede falsificar */
+  if (!secret && process.env.VERCEL_ENV === 'production') return res.status(401).json({ error: 'falta CRON_SECRET' });
   const ok = secret ? req.headers.authorization === `Bearer ${secret}` : /vercel-cron/i.test(req.headers['user-agent'] || '');
   if (!ok) return res.status(401).json({ error: 'unauthorized' });
 

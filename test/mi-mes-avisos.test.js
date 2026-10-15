@@ -135,3 +135,12 @@ test('API: desactivar borra todo lo de la cuenta en el servidor', async () => {
   assert.equal(await kvGet(lib.claveAvisos('compro@orbit.test')), null);
   assert.equal(lib.hoyAR(new Date('2026-11-01T02:30:00Z')), '2026-10-31', 'la fecha es la de Argentina');
 });
+test('[QA 12] en producción el cron no corre sin CRON_SECRET, aunque digan ser vercel-cron', async () => {
+  delete process.env.CRON_SECRET;
+  process.env.VERCEL_ENV = 'production';
+  try {
+    const res = respuesta();
+    await cron({ headers: { 'user-agent': 'vercel-cron/1.0' }, query: {} }, res);
+    assert.equal(res.code, 401);
+  } finally { delete process.env.VERCEL_ENV; }
+});
