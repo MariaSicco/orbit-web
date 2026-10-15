@@ -740,6 +740,10 @@ export function migrar(crudo) {
     const ok = Object.entries(x).filter(([id, v]) => out.gastos.some(g => g.id === id) && Number.isSafeInteger(v) && v >= 0);
     if (ok.length) out.reales[m] = Object.fromEntries(ok);
   }
+  /* (3) foto de la proyección y cambios desde la última vez */
+  if (crudo.fotoBase && typeof crudo.fotoBase === 'object' && crudo.fotoBase.meses && typeof crudo.fotoBase.meses === 'object') out.fotoBase = crudo.fotoBase;
+  out.cambios = (Array.isArray(crudo.cambios) ? crudo.cambios : []).filter(c => typeof c?.motivo === 'string' && typeof c?.fecha === 'string').slice(-20)
+    .map(c => ({ motivo: texto(c.motivo, 80), fecha: c.fecha.slice(0, 25) }));
   out.preguntasLuego = (Array.isArray(crudo.preguntasLuego) ? crudo.preguntasLuego : []).filter(x => typeof x === 'string').slice(-100);
   out.consejosVistos = (Array.isArray(crudo.consejosVistos) ? crudo.consejosVistos : []).filter(x => typeof x === 'string').slice(-100);
   return out;
@@ -1680,3 +1684,74 @@ export function darDeBajaGasto(datos, gastoId, mes) {
   const desde = sumarMeses(hasta, 1);
   return { datos: d, texto: `${g.nombre} deja de contar desde ${nombreMes(desde)}: te quedan libres ${formatoPesos(g.monto)} más por mes.` };
 }
+
+
+/* ═══════════════ (3) Qué cambió en tu mes desde la última vez ═══════════════
+   Una foto de la proyección por mes: cada línea con su origen. El diff se
+   calcula siempre contra el estado actual, así que si una importación se
+   corrige o se borra, el resultado se recalcula solo. */
+export function fotoProyeccion(datos, desde, meses = 3) {
+  const out = { desde, meses: {} };
+  for (let k = 0; k < meses; k++) {
+    const m = sumarMeses(desde, k);
+    const r = resumenMes(datos, m);
+    const it = {};
+    const poner = (key, tipo, nombre, monto, ref) => { if (monto) it[key] = { tipo, nombre, monto, ref }; };
+    for (const i of r.ingresos) poner(`ingreso:${i.id}`, 'ingreso', i.nombre, i.monto, { editar: 'ingreso', id: i.id });
+    for (const g of r.gastos) poner(`gasto:${g.id}`, g.real !== null && g.real !== undefined ? 'gastoReal' : 'gasto', g.nombre, g.monto, { editar: 'gasto', id: g.id });
+    for (const x of r.resumenes) poner(`resumen:${x.id}`, 'resumen', x.tarjeta, x.monto, { tarjeta: x.tarjetaId });
+    for (const x of r.delBanco) poner(`banco:${x.tarjetaId}`, 'banco', x.tarjeta, x.monto, { tarjeta: x.tarjetaId });
+    for (const x of r.percepciones) poner(`percep:${x.tarjetaId}`, 'percepcion', x.tarjeta, x.monto, { tarjeta: x.tarjetaId });
+    for (const c of r.cuotas) poner(`cuota:${c.id}`, c.nueva ? 'compraNueva' : 'cuota', c.descripcion || 'Compra en cuotas', c.monto, { editar: 'cuota', id: c.id });
+    out.meses[m] = { items: it, libres: r.libres };
+  }
+  return out;
+}
+const DE = {
+  ingreso: (n, nuevo) => nuevo ? `de un ingreso nuevo (${n})` : `de ${n}`,
+  gasto: (n, nuevo) => nuevo ? `de un gasto fijo nuevo (${n})` : `de ${n}`,
+  gastoReal: n => `de ${n} (monto real)`,
+  resumen: (n, nuevo) => nuevo ? `del resumen de ${n}` : `del resumen de ${n}`,
+  banco: n => `de la tabla de cuotas de ${n}`,
+  percepcion: n => `de la percepción estimada de ${n}`,
+  cuota: (n, nuevo) => nuevo ? `de una cuota nueva (${n})` : `de la cuota de ${n}`,
+  compraNueva: (n, nuevo) => nuevo ? `de una compra nueva (${n})` : `de la compra ${n}`,
+};
+export function cambiosDesde(foto, datos, { minimo = 100_000 } = {}) {
+  if (!foto?.meses) return [];
+  const ahora = fotoProyeccion(datos, foto.desde, Object.keys(foto.meses).length);
+  const out = [];
+  for (const [m, a] of Object.entries(foto.meses)) {
+    const b = ahora.meses[m];
+    if (!b) continue;
+    const keys = new Set([...Object.keys(a.items), ...Object.keys(b.items)]);
+    const lineas = [];
+    for (const k of keys) {
+      const x = a.items[k], y = b.items[k];
+      const dif = (y?.monto || 0) - (x?.monto || 0);
+      if (!dif) continue;
+      const base = y || x;
+      const nuevo = !x, quitado = !y;
+      lineas.push({ key: k, tipo: base.tipo, nombre: base.nombre, ref: base.ref, antes: x?.monto || 0, ahora: y?.monto || 0, dif, nuevo, quitado,
+        ingreso: base.tipo === 'ingreso' });
+    }
+    if (!lineas.length) continue;
+    lineas.sort((p, q) => Math.abs(q.dif) - Math.abs(p.dif));
+    const comp = lineas.filter(l => !l.ingreso).reduce((s2, l) => s2 + l.dif, 0);
+    const ing = lineas.filter(l => l.ingreso).reduce((s2, l) => s2 + l.dif, 0);
+    const deltaLibres = b.libres - a.libres;
+    if (Math.abs(comp) < minimo && Math.abs(ing) < minimo) continue;
+    const partes = lineas.filter(l => !l.ingreso).map(l => {
+      const txt = (DE[l.tipo] || DE.gasto)(l.nombre, l.nuevo);
+      return l.quitado ? `${formatoPesos(-l.dif)} menos ${txt.replace(/^de una? [^(]*\((.*)\)$/, 'de $1')}` + (l.tipo === 'cuota' || l.tipo === 'compraNueva' ? ' (ahora está en el resumen o terminó)' : '')
+        : `${formatoPesos(Math.abs(l.dif))}${l.dif < 0 ? ' menos' : ''} ${txt}`;
+    });
+    const unir = xs => xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join(', ')} y ${xs[xs.length - 1]}`;
+    const cab = capitalizar(nombreMes(m).split(' ')[0]);
+    let texto2 = comp ? `${cab} tiene ${formatoPesos(Math.abs(comp))} ${comp > 0 ? 'más' : 'menos'} comprometidos: ${unir(partes)}.` : `${cab}:`;
+    if (ing) texto2 += ` ${comp ? 'Y' : ''} ${formatoPesos(Math.abs(ing))} ${ing > 0 ? 'más' : 'menos'} de ingresos.`.replace(/\s+/g, ' ');
+    out.push({ mes: m, comprometido: comp, ingresos: ing, deltaLibres, lineas, texto: texto2.trim() });
+  }
+  return out;
+}
+const capitalizar = t => t.charAt(0).toUpperCase() + t.slice(1);

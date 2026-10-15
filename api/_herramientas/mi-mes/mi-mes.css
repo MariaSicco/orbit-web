@@ -627,3 +627,9 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 .mm-supuestos ul{margin:0;padding-left:18px;color:var(--tinta2);font-size:14px;line-height:1.5}
 .mm-saldo-fila{margin-bottom:12px}
 .mm-saldo-fila .mm-grande{margin-top:8px}
+
+/* ════════ (3) Qué cambió ════════ */
+.mm-cambio-lista{list-style:none;margin:0 0 6px;padding:0}
+.mm-cambio-l{display:flex;justify-content:space-between;gap:10px;width:100%;min-height:44px;align-items:center;border-top:1px solid var(--linea);text-align:left}
+.mm-cambio-l span{color:var(--tinta2)}
+.mm-cambio-l:hover span{color:var(--azul);text-decoration:underline;text-underline-offset:3px}

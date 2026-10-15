@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -211,7 +211,9 @@ function itemsRevisar(lim) {
   const suaves = alertas.filter(a => nivelVisual(a) !== 'fuerte');
   const p = F.preguntas ? preguntas(datos, HOY_ISO, { ultimaCopia: ultimaCopia(), diaDeCobro: F.diaDeCobro, diaDificil: F.diaDificil, gastoEstimado: F.gastoEstimado }) : { ahora: [], masTarde: [], alDia: true };
   const tope = lim?.supera ? [{ clase: 'tope', lim }] : [];
-  return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
+  const cm = F.queCambio && datos.fotoBase ? cambiosDesde(datos.fotoBase, datos) : [];
+  const cambios = cm.length ? [{ clase: 'cambio', meses: cm }] : [];   // una sola fila, con todos los meses adentro
+  return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...cambios, ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
     masTarde: p.masTarde };
 }
 function preguntaHTML(q) {
@@ -234,6 +236,20 @@ function preguntaHTML(q) {
 }
 function filaRevisar(x) {
   if (x.clase === 'pregunta') return preguntaHTML(x.q);
+  if (x.clase === 'cambio') {
+    const top = x.meses.slice().sort((p, q) => Math.abs(q.comprometido) - Math.abs(p.comprometido))[0];
+    const mesTxt = nombreMes(top.mes).split(' ')[0];
+    const corto = top.comprometido ? `Cambió tu mes: ${mesTxt}, ${$(Math.abs(top.comprometido))} ${top.comprometido > 0 ? 'más' : 'menos'} comprometidos` : `Cambió tu mes: ${mesTxt}, ingresos`;
+    const bloque = c => `<p>${esc(c.texto)}</p><ul class="mm-cambio-lista">${c.lineas.map(l => {
+      const attrs = l.ref?.editar ? `data-editar="${esc(l.ref.editar)}" data-id="${esc(l.ref.id)}"` : l.ref?.tarjeta ? `data-ir-tarjeta="${esc(l.ref.tarjeta)}"` : '';
+      return `<li><button type="button" class="mm-cambio-l" ${attrs}><span>${esc(l.nombre)}${l.nuevo ? ' · nuevo' : l.quitado ? ' · ya no está' : ''}</span><b>${l.dif > 0 ? '+' : '−'}${esc($(Math.abs(l.dif)))}</b></button></li>`;
+    }).join('')}</ul>`;
+    const motivos = (datos.cambios || []).slice(-3).map(m => m.motivo);
+    return `<details class="mm-fila-alerta pregunta"><summary><span class="mm-fa-ic">${ic('escalera')}</span><span class="mm-fa-txt">${esc(corto)}${x.meses.length > 1 ? ` (+${x.meses.length - 1})` : ''}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
+      <div class="mm-fa-det">${x.meses.map(bloque).join('')}
+      ${motivos.length ? `<p class="mm-fuente">Desde la última vez: ${esc(motivos.join(' · ').toLowerCase())}.</p>` : ''}
+      <div class="mm-fa-acc"><button type="button" class="mm-link" data-cambios-visto>Entendido</button></div></div></details>`;
+  }
   if (x.clase === 'tope') return `<details class="mm-fila-alerta suave"><summary><span class="mm-fa-ic">${ic('escalera')}</span><span class="mm-fa-txt">Las cuotas son el ${Math.round(x.lim.usado * 100)} % de tus ingresos</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
     <div class="mm-fa-det"><p>Tu tope es ${x.lim.pct} %. Lo podés cambiar en la escalera.</p><div class="mm-fa-acc"><button type="button" class="mm-link" data-ir="escalera">Ver escalera</button></div></div></details>`;
   return alertaHTML(x.a, { descartable: true });
@@ -258,6 +274,16 @@ function pintarMesEn30(lim) {
     ${masTarde.length ? `<details class="mm-luego"><summary>Más tarde (${masTarde.length})</summary><p class="mm-fuente">Mueven menos del 1 % de tus ingresos, no mueven plata o los dejaste para después.</p><div class="mm-revisa-lista">${masTarde.map(preguntaHTML).join('')}</div></details>` : ''}`;
 }
 
+/* ════════ (3) QUÉ CAMBIÓ ════════
+   La foto base es la proyección la última vez que dijiste "Entendido" (o la
+   primera vez que abriste con esto encendido). Cada cambio importante queda
+   anotado con su motivo; el diff se calcula siempre contra el estado actual. */
+function registrarCambio(motivo) {
+  if (!F.queCambio) return;
+  datos.fotoBase ||= fotoProyeccion(datos, HOY);
+  datos.cambios = [...(datos.cambios || []), { motivo, fecha: new Date().toISOString().slice(0, 16) }].slice(-20);
+}
+
 /* ════════ (5) GASTO ESTIMADO ════════ */
 const dr = $id('dlg-real');
 let realDe = null;
@@ -275,7 +301,7 @@ dr.querySelector('form').addEventListener('submit', e => {
   const v = leerMonto($id('r-monto').value);
   if (v === null) { error($id('r-monto'), 'r-monto-err', 'Escribí el monto, por ejemplo 72.000.').focus(); return; }
   const r = confirmarGasto(datos, realDe, HOY, v);
-  datos = r.datos; guardar(); pintarTodo(); cerrar(dr); avisar(r.texto);
+  datos = r.datos; registrarCambio('Cargaste un monto real'); guardar(); pintarTodo(); cerrar(dr); avisar(r.texto);
 });
 
 /* ════════ (4) DÍA DIFÍCIL ════════ */
@@ -882,6 +908,7 @@ function guardarRevisado() {
   const r = importarResumen(datos, l, { tarjetaId: destino, nuevoId });
   datos = r.datos;
   datos.rubrosComercio = memoria;
+  registrarCambio(`Importaste el resumen de ${tarjetaDe(r.tarjetaId)?.nombre || 'tu tarjeta'}`);
   guardar();
   pendiente = null; tarjetaDestino = null;
   mes = r.mes;
@@ -1203,6 +1230,7 @@ dc.querySelector('form').addEventListener('submit', e => {
   if (editCuota) datos.cuotas = datos.cuotas.map(x => (x.id === editCuota ? cuota : x));
   else datos.cuotas.push(cuota);
   guardar(); pintarTodo(); cerrar(dc);
+  registrarCambio(editCuota ? 'Editaste una compra' : 'Cargaste una compra nueva'); guardar();
   avisar(editCuota ? 'Actualizado' : 'Compra nueva cargada: cuenta en lo que debés hasta que llegue el resumen');
 });
 
@@ -1272,6 +1300,7 @@ di.querySelector('form').addEventListener('submit', e => {
   if (editIngreso) datos.ingresos = datos.ingresos.map(i => (i.id === editIngreso ? x : i));
   else datos.ingresos.push(x);
   guardar(); pintarTodo(); cerrar(di);
+  registrarCambio(editIngreso ? 'Editaste un ingreso' : 'Cargaste un ingreso'); guardar();
   avisar(editIngreso ? 'Ingreso actualizado' : 'Ingreso cargado');
 });
 
@@ -1890,11 +1919,12 @@ document.addEventListener('click', e => {
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
   const gok = t.closest('[data-gasto-ok]');
-  if (gok) { const r = confirmarGasto(datos, gok.dataset.gastoOk, HOY); datos = r.datos; guardar(); pintarTodo(); return avisar(r.texto); }
+  if (gok) { const r = confirmarGasto(datos, gok.dataset.gastoOk, HOY); datos = r.datos; registrarCambio('Confirmaste un gasto'); guardar(); pintarTodo(); return avisar(r.texto); }
   const gre = t.closest('[data-gasto-real]');
   if (gre) return abrirReal(gre.dataset.gastoReal);
   const gba = t.closest('[data-gasto-baja]');
   if (gba) { const r = darDeBajaGasto(datos, gba.dataset.gastoBaja, HOY); datos = r.datos; guardar(); pintarTodo(); return avisar(r.texto); }
+  if (t.closest('[data-cambios-visto]')) { datos.fotoBase = fotoProyeccion(datos, HOY); datos.cambios = []; guardar(); pintarInicio(); return avisar('Listo: tomamos esto como punto de partida'); }
   if (t.closest('[data-saldo]')) return abrirSaldo();
   if (t.closest('[data-ver-dificil]')) { $id('dificil').scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); return $id('t-dificil')?.focus?.(); }
   const pl = t.closest('[data-pregunta-luego]');
@@ -1949,6 +1979,7 @@ else {
   catch { puedeGuardar = false; $id('sin-storage').hidden = false; }
 }
 if (LOCAL) $id('modo-local').hidden = false;
+if (F.queCambio && !datos.fotoBase && puedeGuardar) { datos.fotoBase = fotoProyeccion(datos, HOY); guardar(); }
 pintarTodo();
 const inicial = location.hash.slice(1);
 if (['tarjetas', 'cargado', 'escalera', 'contado', 'simular', ...(F.dondeRinde ? ['rinde'] : [])].includes(inicial)) verVista(inicial, { foco: false });
