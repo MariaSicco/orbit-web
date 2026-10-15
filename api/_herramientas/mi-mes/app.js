@@ -10,8 +10,10 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
+  COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
+import { flagsActivos } from './flags.js';
 
 const CLAVE = 'orbit:mi-mes';
 const ATRAS = 6, ADELANTE = 60;          // meses que se pueden mirar
@@ -19,6 +21,8 @@ const MAX_PDF = 4 * 1024 * 1024;
 const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
+/* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
+const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
 /* ── datos en el dispositivo ── */
 let puedeGuardar = true;
@@ -120,6 +124,8 @@ function pintarInicio(animar = false) {
   const lim = limiteDelMes(datos, mes);
   $id('tope').hidden = !lim.supera;
   $id('tope').innerHTML = lim.supera ? `${ic('alerta')} Las cuotas de este mes ${lim.ingresos ? `son el ${Math.round(lim.usado * 100)} % de tus ingresos` : 'no tienen ingresos que las cubran'}: tu tope es ${lim.pct} %. <u>Ver escalera</u>` : '';
+  pintarCobroLinea();
+  pintarCobro();
   pintarAlertas();
   const cred = creditoTotal(datos, HOY_ISO);
   $id('s-ing').textContent = $(r.totIngresos);
@@ -178,6 +184,48 @@ function pintarInicio(animar = false) {
 
   if (animar) { const h = $id('hero'); h.classList.remove('mm-entra'); void h.offsetWidth; h.classList.add('mm-entra'); }
 }
+/* ════════ DÍA DE COBRO ════════ */
+function pintarCobroLinea() {
+  const el = $id('cobro-linea');
+  const v = F.diaDeCobro && mes === HOY ? venceAntesDeCobrar(datos, HOY_ISO) : null;
+  el.hidden = !v;
+  if (!v) { el.textContent = ''; return; }
+  el.textContent = `${textoCobroEn(v.cobro.dias)}${v.cobro.dias > 0 ? ` · hasta entonces ${v.items.length ? `vencen ${$(v.total)}` : 'no vence nada'}` : ''}`;
+}
+const TIPO_EV = { cobro: 'Cobrás', vence: 'Vence', cierre: 'Cierra', gasto: 'Vence' };
+function pintarCobro() {
+  const el = $id('cobro');
+  if (!F.diaDeCobro || !datos.ingresos.length) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const conDia = datos.ingresos.filter(i => cobroValido(i.cobro));
+  if (!conDia.length) {
+    const principal = datos.ingresos.slice().sort((a, b) => b.monto - a.monto)[0];
+    el.innerHTML = `<div class="mm-seccion-top"><h2 id="t-cobro">¿Qué día cobrás?</h2></div>
+      <p class="mm-cobro-vacio">Con ese dato te mostramos qué vence antes de que cobres y cuánto necesitás hasta ese día.</p>
+      <button type="button" class="mm-btn sec" data-editar="ingreso" data-id="${esc(principal.id)}" data-foco-cobro>Elegir el día</button>`;
+    return;
+  }
+  /* este mes: de hoy a tu cobro; otros meses: el mes entero */
+  const esHoy = mes === HOY;
+  const v = esHoy ? lineaHastaCobrar(datos, HOY_ISO) : null;
+  const ev = v ? v.eventos : lineaDelMes(datos, mes).map(e => ({ ...e, antes: false }));
+  const desde = v ? v.desde : `${mes}-01`;
+  const hasta = v ? v.hasta : `${mes}-${String(new Date(Date.UTC(+mes.slice(0, 4), +mes.slice(5, 7), 0)).getUTCDate()).padStart(2, '0')}`;
+  const largo = Math.max(1, diasEntre(desde, hasta));
+  const pos = f => `${Math.min(100, Math.max(0, (diasEntre(desde, f) / largo) * 100))}%`;
+  const marcas = ev.map(e => `<i class="mm-lm-marca ${e.tipo === 'cobro' ? 'cobro' : e.antes ? 'antes' : e.tipo}" style="left:${pos(e.fecha)}"></i>`).join('');
+  const filas = ev.map(e => `<li class="mm-lm-fila ${e.tipo}${e.antes ? ' antes' : ''}">
+      <span class="mm-lm-dia">${esc(fechaCorta(e.fecha))}</span>
+      <span class="mm-lm-txt"><b>${esc(TIPO_EV[e.tipo])} ${e.tipo === 'cobro' ? esc(e.nombre.toLowerCase()) : esc(e.nombre)}</b>${e.antes ? '<small>Antes de que cobres</small>' : ''}</span>
+      ${e.monto != null && e.tipo !== 'cierre' ? `<span class="mm-lm-monto">${e.tipo === 'cobro' ? '+' : '−'}${esc($(e.monto))}</span>` : '<span></span>'}</li>`).join('');
+  const cab = v ? `<p class="mm-cobro-en"><b>${esc(textoCobroEn(v.cobro.dias))}</b>${v.cobro.dias > 0 ? `<span>${v.items.length ? `Hasta entonces vencen <b>${esc($(v.total))}</b>` : 'Hasta entonces no vence nada cargado'}</span>` : ''}</p>` : '';
+  const ejes = `<span class="mm-lm-ext">${esc(v ? 'Hoy' : fechaCorta(desde))}</span><span class="mm-lm-ext der">${esc(fechaCorta(hasta))}</span>`;
+  el.innerHTML = `<div class="mm-seccion-top"><h2 id="t-cobro">${v ? 'De hoy a tu cobro' : 'Tu mes, día por día'}</h2></div>${cab}
+    <div class="mm-lm" role="img" aria-label="${esc(ev.length ? ev.map(e => `${fechaCorta(e.fecha)}: ${TIPO_EV[e.tipo].toLowerCase()} ${e.nombre}${e.antes ? ', antes de que cobres' : ''}`).join('; ') : 'Sin cobros ni vencimientos con fecha')}"><span class="mm-lm-eje"></span>${marcas}${ejes}</div>
+    <ol class="mm-lm-lista">${filas || '<li class="mm-vacio">No hay cobros ni vencimientos con fecha.</li>'}</ol>
+    <p class="mm-fuente">Días hábiles aproximados: de lunes a viernes, sin feriados. Si cobrás en un rango, tomamos el último día.</p>`;
+}
+
 function fuenteHTML(c) {
   if (!c) return '';
   const f = c.fecha ? ` · ${fechaCorta(c.fecha)} ${c.fecha.slice(0, 4)}` : '';
@@ -813,6 +861,12 @@ function abrirIngreso(id = null) {
   const tipo = x ? (TIPOS_INGRESO.includes(x.nombre) ? x.nombre : 'Otro') : (datos.ingresos.some(i => i.nombre === 'Sueldo') ? 'Extra' : 'Sueldo');
   $id('i-tipos').innerHTML = TIPOS_INGRESO.map(t => `<label class="mm-chip"><input type="radio" name="i-tipo" value="${esc(t)}"${t === tipo ? ' checked' : ''}><span>${esc(t)}</span></label>`).join('');
   nombreIngresoPrevio = x?.nombre || '';
+  $id('i-cobro-wrap').hidden = !F.diaDeCobro;
+  const cobro = cobroValido(x?.cobro);
+  $id('i-cobros').innerHTML = [{ tipo: '', texto: 'No sé' }, ...COBROS].map(c => `<label class="mm-chip"><input type="radio" name="i-cobro" value="${c.tipo}"${(cobro?.tipo || '') === c.tipo ? ' checked' : ''}><span>${esc(c.texto)}</span></label>`).join('');
+  $id('i-dia').innerHTML = Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}">${k + 1}</option>`).join('');
+  $id('i-dia').value = String(cobro?.dia || 15);
+  $id('i-dia-wrap').hidden = cobro?.tipo !== 'dia';
   $id('i-repite').checked = x ? x.repite : true;
   const desde = x ? x.desde : mes;
   opcionesMes($id('i-desde'), difMeses(desde, sumarMeses(HOY, -12)) > 0 ? desde : sumarMeses(HOY, -12), sumarMeses(HOY, ADELANTE), desde);
@@ -843,6 +897,7 @@ for (const p of ['i', 'g']) $id(`${p}-meses`).addEventListener('change', e => { 
 $id('i-repite').addEventListener('change', () => etiquetaDesde('i'));
 const TIPOS_INGRESO = ['Sueldo', 'Extra', 'Aguinaldo', 'Alquiler que cobro', 'Otro'];
 let nombreIngresoPrevio = '';
+$id('i-cobros').addEventListener('change', e => { $id('i-dia-wrap').hidden = e.target.value !== 'dia'; });
 $id('i-tipos').addEventListener('change', e => {
   if (e.target.value === 'Aguinaldo') { $id('i-repite').checked = false; $id('i-desde').value = mesAguinaldo(HOY); etiquetaDesde('i'); }
 });
@@ -853,8 +908,11 @@ di.querySelector('form').addEventListener('submit', e => {
   const primero = !datos.ingresos.length;
   const tipoElegido = di.querySelector('[name="i-tipo"]:checked')?.value || (primero ? 'Sueldo' : 'Otro');
   const nombre = tipoElegido === 'Otro' ? (nombreIngresoPrevio && !TIPOS_INGRESO.includes(nombreIngresoPrevio) ? nombreIngresoPrevio : 'Otro ingreso') : tipoElegido;
+  const tipoCobro = di.querySelector('[name="i-cobro"]:checked')?.value || '';
+  const previo = editIngreso ? datos.ingresos.find(i => i.id === editIngreso) : null;
+  const cobro = F.diaDeCobro ? cobroValido(tipoCobro === 'dia' ? { tipo: 'dia', dia: Number($id('i-dia').value) } : { tipo: tipoCobro }) : cobroValido(previo?.cobro);
   const x = { id: editIngreso || nuevoId(), nombre,
-    monto, repite: $id('i-repite').checked, desde: $id('i-desde').value };
+    monto, repite: $id('i-repite').checked, desde: $id('i-desde').value, ...(cobro ? { cobro } : {}) };
   if (editIngreso) datos.ingresos = datos.ingresos.map(i => (i.id === editIngreso ? x : i));
   else datos.ingresos.push(x);
   guardar(); pintarTodo(); cerrar(di);
@@ -893,6 +951,9 @@ function abrirGasto(id = null) {
   $id('g-monto').value = x ? sinSimbolo(x.monto, 'ARS') : '';
   nombreGastoPrevio = x && x.nombre !== x.categoria ? { nombre: x.nombre, categoria: x.categoria } : null;
   $id('g-repite').checked = x ? x.repite : true;
+  $id('g-dia-wrap').hidden = !F.diaDeCobro;
+  $id('g-dia').innerHTML = '<option value="">Sin día</option>' + Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}">El ${k + 1}</option>`).join('');
+  $id('g-dia').value = x?.dia ? String(x.dia) : '';
   const desde = x ? x.desde : mes;
   opcionesMes($id('g-desde'), difMeses(desde, sumarMeses(HOY, -12)) > 0 ? desde : sumarMeses(HOY, -12), sumarMeses(HOY, ADELANTE), desde);
   opcionesHasta(desde, x?.hasta);
@@ -917,6 +978,8 @@ dg.querySelector('form').addEventListener('submit', e => {
   const hasta = repite ? $id('g-hasta').value : '';
   const x = { id: editGasto || nuevoId(), nombre: unMesElegido && unMesElegido.categoria === catElegida ? unMesElegido.nombre : nombreGastoPrevio && nombreGastoPrevio.categoria === catElegida ? nombreGastoPrevio.nombre : catElegida,
     categoria: catElegida, monto, repite, desde: $id('g-desde').value, ...(hasta ? { hasta } : {}) };
+  const diaG = F.diaDeCobro ? Number($id('g-dia').value) : (datos.gastos.find(g => g.id === editGasto)?.dia || 0);
+  if (diaG >= 1 && diaG <= 31) x.dia = diaG;
   if (editGasto) datos.gastos = datos.gastos.map(g => (g.id === editGasto ? x : g));
   else datos.gastos.push(x);
   guardar(); pintarTodo(); cerrar(dg);
@@ -1060,8 +1123,10 @@ function alertaCorta(a) {
   const t = tarjetaDe(a.tarjetaId);
   const n = t?.nombre || 'tu tarjeta';
   if (a.tipo === 'credito') return `${capital(nombreMes(a.mes).split(' ')[0])}: debés más de lo que tenés`;
+  if (a.tipo === 'vence' && a.antesCobro && a.dias > 1) return `Vence antes de cobrar: ${n}`;
   if (a.tipo === 'vence') return `${a.dias === 0 ? 'Vence hoy' : a.dias === 1 ? 'Vence mañana' : `Vence en ${a.dias} días`}: ${n}`;
   if (a.tipo === 'cierre') return `Cerró ${n}`;
+  if (a.tipo === 'antesCobro') return `Vence antes de cobrar: ${n}`;
   if (a.tipo === 'dolares') return `${fm(a.usd, 'USD')} en ${n}`;
   return a.titulo;
 }
@@ -1083,6 +1148,12 @@ function alertaHTML(a, { descartable = false } = {}) {
 }
 function pintarAlertas() {
   const as = [...alertasCredito(datos, HOY_ISO), ...alertasTarjetas(datos, HOY_ISO)];
+  /* "vence antes de que cobres": si ya hay un aviso de vencimiento de esa tarjeta, se suma a ese (uno solo por tarjeta) */
+  for (const c of F.diaDeCobro ? alertasCobro(datos, HOY_ISO) : []) {
+    const v = as.find(a => a.tipo === 'vence' && a.tarjetaId === c.tarjetaId && a.fecha === c.fecha);
+    if (v) { v.antesCobro = true; v.texto = `${v.texto} Vence antes de que cobres: ${c.texto}`; }
+    else as.push(c);
+  }
   const caja = $id('alertas');
   caja.hidden = !as.length;
   if (!as.length) { caja.innerHTML = ''; return; }
@@ -1407,7 +1478,7 @@ async function desactivarPush() {
 /* si cambian las fechas, se mandan de nuevo (solo si los avisos están activos) */
 let ultimoSync = null, syncT = null;
 /* lo que va al servidor: fechas de las tarjetas y los meses en que el crédito supera lo líquido. Sin montos. */
-const cargaAvisos = () => ({ tarjetas: datosParaAvisos(datos, HOY_ISO), credito: mesesCreditoSupera(datos, HOY_ISO) });
+const cargaAvisos = () => ({ tarjetas: datosParaAvisos(datos, HOY_ISO, { cobro: F.diaDeCobro }), credito: mesesCreditoSupera(datos, HOY_ISO) });
 function programarSync() {
   if (!pushActivo() || LOCAL) return;
   clearTimeout(syncT);
@@ -1430,7 +1501,11 @@ document.addEventListener('click', e => {
   const n = t.closest('[data-nuevo]');
   if (n) return ABRIR[n.dataset.nuevo]?.(null, n.dataset.tarjeta || (vista === 'tarjeta' ? tarjetaVista : null));
   const ed = t.closest('[data-editar]');
-  if (ed) return ABRIR[ed.dataset.editar]?.(ed.dataset.id);
+  if (ed) {
+    ABRIR[ed.dataset.editar]?.(ed.dataset.id);
+    if (ed.hasAttribute('data-foco-cobro')) setTimeout(() => { const c = $id('i-cobros').querySelector('input:checked') || $id('i-cobros').querySelector('input'); c?.focus(); c?.scrollIntoView({ block: 'center' }); }, 60);
+    return;
+  }
   const ir = t.closest('[data-ir-tarjeta]');
   if (ir) { tarjetaVista = ir.dataset.irTarjeta; return verVista('tarjeta'); }
   const v = t.closest('[data-ir]');

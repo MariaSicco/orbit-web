@@ -79,6 +79,7 @@
         <p class="mm-num" id="libres">$ 0</p>
         <p class="mm-pasas" id="pasas" hidden></p>
         <p class="mm-libera" id="libera" hidden></p>
+        <p class="mm-cobro-linea" id="cobro-linea" hidden></p>
         <button type="button" class="mm-tope" id="tope" data-ir="escalera" hidden></button>
         <dl class="mm-saldo-pie" id="saldo-pie">
           <div><dt>Ingresos</dt><dd id="s-ing">$ 0</dd></div>
@@ -97,6 +98,11 @@
         <button type="button" class="mm-acceso" data-ir="simular"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-simular"/></svg></span><span>¿Y si compro?</span></button>
         <button type="button" class="mm-acceso" data-ir="contado"><span class="mm-acceso-ic"><svg class="ic"><use href="#i-balanza"/></svg></span><span>¿Cuotas o contado?</span></button>
       </nav>
+
+      <section class="mm-consejo" id="consejo" aria-label="Consejo" aria-live="polite" hidden></section>
+      <section class="mm-panel mm-cobro" id="cobro" aria-labelledby="t-cobro" hidden></section>
+      <section class="mm-panel mm-meta" id="meta" aria-labelledby="t-meta" hidden></section>
+      <section class="mm-panel mm-reto" id="reto" aria-labelledby="t-reto" hidden></section>
 
       <section class="mm-panel mm-contraste" id="contraste" aria-labelledby="t-contraste"></section>
 
@@ -295,6 +301,9 @@
     <div class="mm-dlg-top"><h2 id="di-tit">Nuevo ingreso</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
     <div class="mm-campo"><label for="i-monto">Monto en pesos</label><input id="i-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 1.200.000" aria-describedby="i-monto-err" required><p class="mm-err" id="i-monto-err"></p></div>
     <fieldset class="mm-campo"><legend>Qué es</legend><div class="mm-chips" id="i-tipos"></div></fieldset>
+    <fieldset class="mm-campo" id="i-cobro-wrap" hidden><legend>¿Qué día cobrás? <span class="opc">(opcional)</span></legend><div class="mm-chips" id="i-cobros"></div>
+      <div class="mm-campo mm-dia-otro" id="i-dia-wrap" hidden><label for="i-dia">Día del mes</label><select id="i-dia"></select></div>
+      <p class="mm-ayuda">Los días hábiles son aproximados: contamos de lunes a viernes, sin feriados.</p></fieldset>
     <label class="mm-check"><input type="checkbox" id="i-repite" checked> <span>Se repite todos los meses</span></label>
     <fieldset class="mm-campo mm-meses" id="i-meses-wrap" hidden><legend>¿En qué mes?</legend><div class="mm-chips" id="i-meses"></div></fieldset>
     <div class="mm-campo" id="i-desde-wrap"><label for="i-desde" id="i-desde-lbl">Desde</label><select id="i-desde"></select></div>
@@ -310,6 +319,7 @@
     <fieldset class="mm-campo"><legend>De un solo mes</legend><div class="mm-chips" id="g-unmes"></div></fieldset>
     <div class="mm-campo"><label for="g-monto" id="g-monto-lbl">Monto por mes, en pesos</label><input id="g-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 450.000" aria-describedby="g-monto-err" required><p class="mm-err" id="g-monto-err"></p></div>
     <label class="mm-check"><input type="checkbox" id="g-repite" checked> <span>Se repite todos los meses</span></label>
+    <div class="mm-campo" id="g-dia-wrap" hidden><label for="g-dia">¿Qué día vence? <span class="opc">(opcional)</span></label><select id="g-dia"></select><p class="mm-ayuda">Con el día te avisamos si vence antes de que cobres.</p></div>
     <fieldset class="mm-campo mm-meses" id="g-meses-wrap" hidden><legend>¿En qué mes?</legend><div class="mm-chips" id="g-meses"></div></fieldset>
     <div class="mm-fila">
       <div class="mm-campo" id="g-desde-wrap"><label for="g-desde" id="g-desde-lbl">Desde</label><select id="g-desde"></select></div>

@@ -154,7 +154,7 @@ test('migrar v1 → v2: limpia lo inválido, suma moneda, red y color, y deja la
       { id: 'e', total: 300, cantidad: 0, tarjetaId: 't1', primerMes: '2026-11' }],
   });
   assert.equal(d.v, M.ESQUEMA);
-  assert.equal(M.ESQUEMA, 3);
+  assert.equal(M.ESQUEMA, 4);
   assert.deepEqual([d.limiteCuotas, d.alertasVistas, d.supuestos], [30, [], {}]);
   assert.deepEqual(d.tarjetas, [{ id: 't1', nombre: 'Visa', red: 'Otra', banco: '', ultimos4: '', color: 'azul' }]);
   assert.deepEqual(d.ingresos.map(i => [i.id, i.nombre]), [['a', 'Ingreso']]);

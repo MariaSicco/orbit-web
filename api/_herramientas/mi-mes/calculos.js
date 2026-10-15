@@ -20,7 +20,7 @@
    - Te quedan libres = ingresos − gastos fijos − cuotas − resúmenes del mes.
      Puede ser negativo. */
 
-export const ESQUEMA = 3;
+export const ESQUEMA = 4;
 
 export const CATEGORIAS = [
   'Alquiler', 'Expensas', 'Servicios', 'Suscripciones', 'Seguros',
@@ -608,7 +608,7 @@ export function conciliarCompras(datos, tarjetaId, lectura) {
 /* ── esquema y migración ── */
 export const LIMITE_DEFECTO = 30;
 export const datosVacios = () => ({ v: ESQUEMA, ingresos: [], gastos: [], cuotas: [], tarjetas: [], resumenes: [], cambio: {}, rubrosComercio: {},
-  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {} });
+  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [] });
 
 const entero = x => Number.isSafeInteger(x) && x > 0;
 const dia = x => Number.isInteger(x) && x >= 1 && x <= 31;
@@ -643,13 +643,15 @@ export function migrar(crudo) {
   for (const i of Array.isArray(crudo.ingresos) ? crudo.ingresos : []) {
     if (!i?.id || !entero(i.monto) || !esMes(i.desde)) continue;
     out.ingresos.push({ id: String(i.id), nombre: texto(i.nombre) || 'Ingreso', monto: i.monto,
-      repite: !!i.repite, desde: i.desde, ...(i.repite && esMes(i.hasta) ? { hasta: i.hasta } : {}) });
+      repite: !!i.repite, desde: i.desde, ...(i.repite && esMes(i.hasta) ? { hasta: i.hasta } : {}),
+      ...(cobroValido(i.cobro) ? { cobro: cobroValido(i.cobro) } : {}) });
   }
   for (const g of Array.isArray(crudo.gastos) ? crudo.gastos : []) {
     if (!g?.id || !entero(g.monto) || !esMes(g.desde)) continue;
     const categoria = CATEGORIAS.includes(g.categoria) ? g.categoria : 'Otros';
     out.gastos.push({ id: String(g.id), nombre: texto(g.nombre) || categoria, categoria, monto: g.monto,
-      repite: !!g.repite, desde: g.desde, ...(g.repite && esMes(g.hasta) ? { hasta: g.hasta } : {}) });
+      repite: !!g.repite, desde: g.desde, ...(g.repite && esMes(g.hasta) ? { hasta: g.hasta } : {}),
+      ...(dia(g.dia) ? { dia: g.dia } : {}) });
   }
   for (const c of Array.isArray(crudo.cuotas) ? crudo.cuotas : []) {
     if (!c?.id || !entero(c.total) || !entero(c.cantidad) || c.cantidad > 72 || !esMes(c.primerMes)) continue;
@@ -700,6 +702,17 @@ export function migrar(crudo) {
     const v = Number(sup[k]?.valor);
     if (Number.isFinite(v) && v >= 0 && v < 100) out.supuestos[k] = { valor: v, fecha: esFecha(sup[k].fecha) ? sup[k].fecha : '' };
   }
+  /* v3 → v4: día de cobro, día de vencimiento de gastos, meta, retos y consejos vistos */
+  const m = crudo.meta;
+  if (m && typeof m === 'object' && entero(m.objetivo) && esMes(m.fecha)) {
+    out.meta = { nombre: texto(m.nombre, 40) || 'Mi meta', objetivo: m.objetivo, fecha: m.fecha,
+      aportes: (Array.isArray(m.aportes) ? m.aportes : []).filter(a => esFecha(a?.fecha) && Number.isSafeInteger(a?.monto)).slice(-200).map(a => ({ fecha: a.fecha, monto: a.monto })) };
+  }
+  const retos = crudo.retos && typeof crudo.retos === 'object' ? crudo.retos : {};
+  for (const [mesR, r] of Object.entries(retos)) {
+    if (esMes(mesR) && RETOS.some(x => x.id === r?.id)) out.retos[mesR] = { id: r.id, estado: ['aceptado', 'hecho', 'esta-vez-no'].includes(r.estado) ? r.estado : 'aceptado' };
+  }
+  out.consejosVistos = (Array.isArray(crudo.consejosVistos) ? crudo.consejosVistos : []).filter(x => typeof x === 'string').slice(-100);
   return out;
 }
 
@@ -1007,8 +1020,12 @@ export function simularCompra(datos, compra, desde, meses = 12) {
    Por tarjeta: id, nombre, cierre, vencimiento, si tiene dólares (sí/no) y
    los días cargados a mano (para que el servidor siga el ciclo siguiente).
    Nunca montos, consumos, banco ni números de tarjeta. */
-export function datosParaAvisos(datos, hoy) {
+export function datosParaAvisos(datos, hoy, { cobro = false } = {}) {
+  /* con el día de cobro encendido: la fecha de vencimiento que cae antes de
+     cobrar (solo la fecha, ni montos ni el día de cobro) */
+  const antes = cobro ? venceAntesDeCobrar(datos, hoy) : null;
   return (datos?.tarjetas || []).slice(0, 12).map(t => {
+    const ac = antes?.items.find(x => x.tipo === 'tarjeta' && x.id === t.id);
     const ciclo = cicloTarjeta(datos, t.id, hoy);
     const r = ciclo?.resumen;
     const dolares = Boolean(r && ((r.totales?.USD || 0) > 0 || (r.consumos || []).some(c => c.moneda === 'USD')));
@@ -1017,6 +1034,7 @@ export function datosParaAvisos(datos, hoy) {
       cierre: ciclo?.cierre || null, vencimiento: ciclo?.vencimiento || null, dolares,
       ...(r?.proximoCierre && r?.proximoVencimiento ? { proximoCierre: r.proximoCierre, proximoVencimiento: r.proximoVencimiento } : {}),
       ...(t.diaCierre && t.diaVence ? { diaCierre: t.diaCierre, diaVence: t.diaVence } : {}),
+      ...(ac ? { antesCobro: ac.fecha } : {}),
     };
   }).filter(t => t.vencimiento || t.diaCierre);
 }
@@ -1038,6 +1056,7 @@ export function limpiarTarjetasAvisos(lista) {
     if (!id || !nombre) continue;
     const x = { id, nombre, cierre: esFecha(t.cierre) ? t.cierre : null, vencimiento: esFecha(t.vencimiento) ? t.vencimiento : null, dolares: t.dolares === true };
     if (esFecha(t.proximoCierre) && esFecha(t.proximoVencimiento)) { x.proximoCierre = t.proximoCierre; x.proximoVencimiento = t.proximoVencimiento; }
+    if (esFecha(t.antesCobro)) x.antesCobro = t.antesCobro;
     if (Number.isInteger(t.diaCierre) && Number.isInteger(t.diaVence) && t.diaCierre >= 1 && t.diaCierre <= 31 && t.diaVence >= 1 && t.diaVence <= 31) {
       x.diaCierre = t.diaCierre; x.diaVence = t.diaVence;
     }
@@ -1068,6 +1087,10 @@ export function avisosPushDeHoy(tarjetas, hoy, credito = []) {
     if (d === 3 || d === 1 || d === 0) {
       const cuando = d === 0 ? 'vence hoy' : d === 1 ? 'vence mañana' : 'vence en 3 días';
       out.push({ tag: `mm:vence:${t.id}:${vencimiento}:${d}`, title: `Tu ${t.nombre} ${cuando}`, body: 'Abrí Mi Mes para ver el total y agendar el pago.' });
+    }
+    if (t.antesCobro === vencimiento && d === 5) {
+      out.push({ tag: `mm:antescobro:${t.id}:${vencimiento}`, title: `Vence antes de que cobres: ${t.nombre}`,
+        body: `Vence el ${fechaCorta(vencimiento)}, antes de tu día de cobro. Abrí Mi Mes para ver cuánto necesitás.` });
     }
     if (dolares && d === 5) {
       out.push({ tag: `mm:dolares:${t.id}:${vencimiento}`, title: `Tu ${t.nombre} tiene consumos en dólares`,
@@ -1114,4 +1137,213 @@ export function decidirLectura({ local = false, errorRed = false, status = 0, js
   if (errorRed || !json || typeof json !== 'object') return { usar: 'falla', mensaje: SIN_RED };
   if (status < 200 || status >= 300 || !json.ok) return { usar: 'falla', mensaje: json.error || SIN_RED };
   return { usar: 'servidor', modo: json.modo === 'prueba' ? 'prueba' : 'real' };
+}
+
+
+/* ═══════════════ Día de cobro ═══════════════
+   Días hábiles APROXIMADOS: lunes a viernes, sin feriados (no hay un
+   calendario de feriados en la app; la fecha real puede correrse). */
+export const COBROS = [
+  { tipo: 'del1al5', texto: 'Del 1 al 5' }, { tipo: 'del5al10', texto: 'Del 5 al 10' },
+  { tipo: 'ultimoHabil', texto: 'Último día hábil' }, { tipo: 'quintoHabil', texto: 'Quinto día hábil' },
+  { tipo: 'dia', texto: 'Otro día' },
+];
+export function cobroValido(c) {
+  if (!c || typeof c !== 'object' || !COBROS.some(x => x.tipo === c.tipo)) return null;
+  if (c.tipo === 'dia') return Number.isInteger(c.dia) && c.dia >= 1 && c.dia <= 31 ? { tipo: 'dia', dia: c.dia } : null;
+  return { tipo: c.tipo };
+}
+const esHabil = f => { const d = new Date(aUTC(f)).getUTCDay(); return d !== 0 && d !== 6; };
+export function quintoHabil(mes) {
+  let n = 0;
+  for (let d = 1; d <= diasDelMes(mes); d++) { const f = fechaConDia(mes, d); if (esHabil(f) && ++n === 5) return f; }
+  return fechaConDia(mes, diasDelMes(mes));
+}
+export function ultimoHabil(mes) {
+  for (let d = diasDelMes(mes); d >= 1; d--) { const f = fechaConDia(mes, d); if (esHabil(f)) return f; }
+  return fechaConDia(mes, diasDelMes(mes));
+}
+/* Día de cobro de un ingreso en un mes. Para los rangos se toma el último día
+   del rango: es lo prudente (la plata está seguro para esa fecha). */
+export function fechaDeCobro(ingreso, mes) {
+  const c = cobroValido(ingreso?.cobro);
+  if (!c) return null;
+  if (c.tipo === 'del1al5') return fechaConDia(mes, 5);
+  if (c.tipo === 'del5al10') return fechaConDia(mes, 10);
+  if (c.tipo === 'ultimoHabil') return ultimoHabil(mes);
+  if (c.tipo === 'quintoHabil') return quintoHabil(mes);
+  return fechaConDia(mes, c.dia);
+}
+/* El próximo cobro (hoy incluido) del ingreso principal (el más grande que
+   tiene día de cobro y está activo). */
+export function proximoCobro(datos, hoy) {
+  hoy = aFecha(hoy);
+  const mesHoy = hoy.slice(0, 7);
+  let mejor = null;
+  for (const i of datos?.ingresos || []) {
+    if (!cobroValido(i.cobro)) continue;
+    for (const m of [mesHoy, sumarMeses(mesHoy, 1)]) {
+      if (!activoEn(i, m)) continue;
+      const f = fechaDeCobro(i, m);
+      if (diasEntre(hoy, f) < 0) continue;
+      if (!mejor || i.monto > mejor.ingreso.monto || (i.monto === mejor.ingreso.monto && diasEntre(f, mejor.fecha) > 0)) mejor = { ingreso: i, fecha: f, dias: diasEntre(hoy, f) };
+      break;
+    }
+  }
+  return mejor;
+}
+/* Lo que vence entre hoy y el próximo cobro (sin incluir el día de cobro):
+   resúmenes y cuotas de tarjetas (con su vencimiento) y gastos fijos con día. */
+export function venceAntesDeCobrar(datos, hoy) {
+  hoy = aFecha(hoy);
+  const cobro = proximoCobro(datos, hoy);
+  if (!cobro) return null;
+  const items = [];
+  for (const t of datos?.tarjetas || []) {
+    const ciclo = cicloTarjeta(datos, t.id, hoy);
+    if (!ciclo || diasEntre(hoy, ciclo.vencimiento) < 0 || diasEntre(ciclo.vencimiento, cobro.fecha) <= 0) continue;
+    const monto = comprometidoMes(datos, ciclo.vencimiento.slice(0, 7)).porTarjeta[t.id] || 0;
+    items.push({ tipo: 'tarjeta', id: t.id, nombre: t.nombre, fecha: ciclo.vencimiento, monto });
+  }
+  for (const m of [hoy.slice(0, 7), cobro.fecha.slice(0, 7)].filter((x, i, a) => a.indexOf(x) === i)) {
+    for (const g of datos?.gastos || []) {
+      if (!g.dia || !activoEn(g, m)) continue;
+      const f = fechaConDia(m, g.dia);
+      if (diasEntre(hoy, f) < 0 || diasEntre(f, cobro.fecha) <= 0) continue;
+      items.push({ tipo: 'gasto', id: g.id, nombre: g.nombre, fecha: f, monto: g.monto });
+    }
+  }
+  items.sort((a, b) => diasEntre(b.fecha, a.fecha));
+  return { cobro, items, total: items.reduce((a, x) => a + x.monto, 0) };
+}
+/* Línea de tiempo del mes: cobros, cierres y vencimientos, por fecha. */
+export function lineaDelMes(datos, mes) {
+  const ev = [];
+  for (const i of datos?.ingresos || []) {
+    if (!activoEn(i, mes)) continue;
+    const f = fechaDeCobro(i, mes);
+    if (f) ev.push({ tipo: 'cobro', id: i.id, fecha: f, nombre: i.nombre, monto: i.monto });
+  }
+  for (const t of datos?.tarjetas || []) {
+    /* recorre los ciclos que tocan el mes (el que vence y el que cierra) */
+    const vistos = new Set();
+    let desde = `${mes}-01`;
+    for (let k = 0; k < 3 && desde.startsWith(mes); k++) {
+      const c = cicloTarjeta(datos, t.id, desde);
+      if (!c?.vencimiento) break;
+      if (c.vencimiento.startsWith(mes) && !vistos.has('v' + c.vencimiento)) {
+        vistos.add('v' + c.vencimiento);
+        ev.push({ tipo: 'vence', id: t.id, fecha: c.vencimiento, nombre: t.nombre, monto: comprometidoMes(datos, mes).porTarjeta[t.id] || 0 });
+      }
+      if (c.cierre?.startsWith(mes) && !vistos.has('c' + c.cierre)) { vistos.add('c' + c.cierre); ev.push({ tipo: 'cierre', id: t.id, fecha: c.cierre, nombre: t.nombre }); }
+      desde = sumarDias(c.vencimiento, 1);
+    }
+  }
+  for (const g of datos?.gastos || []) if (g.dia && activoEn(g, mes)) ev.push({ tipo: 'gasto', id: g.id, fecha: fechaConDia(mes, g.dia), nombre: g.nombre, monto: g.monto });
+  return ev.sort((a, b) => diasEntre(b.fecha, a.fecha) || (a.tipo === 'cobro' ? -1 : 1));
+}
+/* De hoy al próximo cobro (incluido): lo que viene, en orden. */
+export function lineaHastaCobrar(datos, hoy) {
+  hoy = aFecha(hoy);
+  const v = venceAntesDeCobrar(datos, hoy);
+  if (!v) return null;
+  const meses = [];
+  for (let m = hoy.slice(0, 7); difMeses(m, v.cobro.fecha.slice(0, 7)) >= 0; m = sumarMeses(m, 1)) meses.push(m);
+  const antes = new Set(v.items.map(x => `${x.tipo === 'tarjeta' ? 'vence' : 'gasto'}:${x.id}:${x.fecha}`));
+  const ev = meses.flatMap(m => lineaDelMes(datos, m))
+    .filter(e => diasEntre(hoy, e.fecha) >= 0 && diasEntre(e.fecha, v.cobro.fecha) >= 0)
+    .filter(e => e.tipo !== 'cobro' || e.fecha === v.cobro.fecha)
+    .map(e => ({ ...e, antes: antes.has(`${e.tipo}:${e.id}:${e.fecha}`) }));
+  return { ...v, eventos: ev, desde: hoy, hasta: v.cobro.fecha };
+}
+export const textoCobroEn = d => (d === 0 ? 'Cobrás hoy' : d === 1 ? 'Cobrás mañana' : `Cobrás en ${d} días`);
+/* Alertas "vence antes de que cobres", una por tarjeta y ciclo (descartables). */
+export function alertasCobro(datos, hoy) {
+  const v = venceAntesDeCobrar(datos, hoy);
+  if (!v) return [];
+  const vistas = new Set(datos?.alertasVistas || []);
+  return v.items.filter(x => x.tipo === 'tarjeta').map(x => ({
+    id: `antescobro:${x.id}:${x.fecha}`, tipo: 'antesCobro', tarjetaId: x.id, nivel: 'aviso', fecha: x.fecha, dias: diasEntre(aFecha(hoy), x.fecha),
+    titulo: `Tu ${x.nombre} vence el ${fechaCorta(x.fecha)} y cobrás el ${fechaCorta(v.cobro.fecha)}: vence antes de que cobres`,
+    texto: `Para ese pago necesitás ${formatoPesos(x.monto)} antes de cobrar. ${textoCobroEn(v.cobro.dias)}.`,
+  })).filter(a => !vistas.has(a.id));
+}
+
+/* ═══════════════ Hacer rendir la plata ═══════════════
+   Todo se calcula en el dispositivo. Se informa y se propone; nunca
+   "deberías" ni recomendación de productos. */
+
+/* Un mensaje por vez, en orden de prioridad (2.1 del informe). */
+export function consejos(datos, hoy) {
+  hoy = aFecha(hoy);
+  const mes = hoy.slice(0, 7);
+  const out = [];
+  const vistos = new Set(datos?.consejosVistos || []);
+  const ultimo = (datos?.resumenes || []).slice().sort((a, b) => difMeses(a.mes, b.mes)).pop();
+  if (ultimo) {
+    const c = cargosDelResumen(ultimo, datos);
+    if (c.ars > 0) out.push({ id: `intereses:${ultimo.mes}`, tipo: 'intereses',
+      texto: `En el último resumen pagaste ${formatoPesos(c.ars)} en intereses y cargos de tarjeta. Pagando el total, ese número baja a cero.` });
+  }
+  const r = resumenMes(datos, mes);
+  const lib = proximaLiberacion(datos, mes);
+  if (r.libres < 0 && lib) out.push({ id: `negativo:${mes}`, tipo: 'negativo',
+    texto: `Este mes faltan ${formatoPesos(-r.libres)}. En ${nombreMes(lib.mes)} se te liberan ${formatoPesos(lib.libera)} de cuotas por mes.` });
+  if (lib && difMeses(mes, lib.mes) <= 3) out.push({ id: `libera:${lib.mes}`, tipo: 'libera',
+    texto: `En ${nombreMes(lib.mes)} se te liberan ${formatoPesos(lib.libera)} por mes de cuotas. ¿Los separás?`, libera: lib });
+  const anual = (datos?.gastos || []).filter(g => !g.repite && difMeses(mes, g.desde) >= 1 && difMeses(mes, g.desde) <= 6)
+    .sort((a, b) => difMeses(b.desde, a.desde))[0];
+  if (anual) {
+    const meses = difMeses(mes, anual.desde);
+    out.push({ id: `anual:${anual.id}`, tipo: 'anual',
+      texto: `En ${nombreMes(anual.desde)} viene ${anual.nombre.toLowerCase()} (${formatoPesos(anual.monto)}). Separando ${formatoPesos(Math.ceil(anual.monto / meses / 100) * 100)} por mes desde hoy, llegás.` });
+  }
+  if (r.libres > 0) {
+    const diez = Math.round(r.libres * 0.10 / 100) * 100;
+    const cobro = proximoCobro(datos, hoy);
+    out.push({ id: `diez:${mes}`, tipo: 'diez',
+      texto: `Te quedan libres ${formatoPesos(r.libres)}. Si separás el 10 % (${formatoPesos(diez)}) ${cobro ? `el ${fechaCorta(cobro.fecha)}, cuando cobrás` : 'el día que cobrás'}, en 6 meses tenés ${formatoPesos(diez * 6)} de colchón.` });
+  }
+  const subs = (datos?.gastos || []).filter(g => g.categoria === 'Suscripciones' && activoEn(g, mes));
+  const subsResumen = (ultimo?.consumos || []).filter(c => c.rubro === 'Suscripciones');
+  const nSubs = subs.length + subsResumen.length;
+  if (nSubs >= 2) {
+    const total = subs.reduce((a, g) => a + g.monto, 0) + subsResumen.reduce((a, c) => a + (aPesos(c.monto, c.moneda, datos) ?? 0), 0);
+    out.push({ id: `subs:${mes}`, tipo: 'suscripciones', texto: `Tenés ${nSubs} suscripciones por ${formatoPesos(total)} al mes. ¿Las usás todas?` });
+  }
+  return out.filter(c => !vistos.has(c.id));
+}
+
+/* ── metas: una a la vez ── */
+export const METAS_SUGERIDAS = ['Colchón', 'Patente y seguro', 'Vacaciones', 'Otra'];
+export function estadoMeta(meta, hoy) {
+  if (!meta) return null;
+  hoy = aFecha(hoy);
+  const separado = (meta.aportes || []).reduce((a, x) => a + x.monto, 0);
+  const falta = Math.max(0, meta.objetivo - separado);
+  const meses = Math.max(1, difMeses(hoy.slice(0, 7), meta.fecha));
+  const porMes = Math.ceil(falta / meses / 100) * 100;
+  const avance = Math.min(1, separado / meta.objetivo);
+  const victoria = avance >= 1 ? 'Llegaste a tu meta.' : avance >= 0.5 ? 'Llegaste a la mitad de tu meta.' : avance >= 0.25 ? 'Ya separaste un cuarto de tu meta.' : '';
+  return { separado, falta, meses, porMes, avance, victoria, llegaste: avance >= 1 };
+}
+/* Meta sugerida con lo que se libera: separar esa cuota durante 6 meses. */
+export function metaSugerida(datos, hoy) {
+  const lib = proximaLiberacion(datos, aFecha(hoy).slice(0, 7));
+  if (!lib) return null;
+  return { nombre: 'Colchón', objetivo: lib.libera * 6, fecha: sumarMeses(lib.mes, 5), desde: lib };
+}
+
+/* ── retos de un mes: sin rachas ni culpa ── */
+export const RETOS = [
+  { id: 'sin-cuotas', titulo: 'Un mes sin cuotas nuevas', texto: 'Este mes no sumás compras en cuotas. Si pasa, no pasa nada.' },
+  { id: 'baja-suscripcion', titulo: 'Bajá una suscripción', texto: 'Elegí una que no estés usando y dala de baja.' },
+  { id: 'pagar-total', titulo: 'Pagá el total de una tarjeta', texto: 'Pagando el total, ese resumen no te cobra intereses.' },
+  { id: 'separar-5', titulo: 'Separá el 5 % el día que cobrás', texto: 'Un poco, apenas cobrás, antes de que se vaya.' },
+];
+/* El reto del mes (si hay) y una sugerencia si no eligió ninguno. */
+export function retoDelMes(datos, mes) {
+  const r = datos?.retos?.[mes];
+  if (r) return { ...RETOS.find(x => x.id === r.id), estado: r.estado };
+  return null;
 }

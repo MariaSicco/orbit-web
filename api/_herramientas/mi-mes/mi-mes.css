@@ -509,3 +509,31 @@ fieldset.mm-campo>legend{margin-bottom:8px}
 /* foco visible sobre el azul del saldo (WCAG 2.4.7) */
 .mm-saldo :focus-visible{outline:3px solid #fff;outline-offset:2px}
 .mm-franja.fuerte:focus-visible{outline-color:var(--k)}
+
+/* ════════ Día de cobro ════════ */
+.mm-cobro-linea{margin:8px 0 0;font-size:14px;font-weight:600;color:#fff;opacity:.95}
+.mm-dia-otro{margin-top:10px;max-width:180px}
+.mm-cobro .mm-btn{margin:4px 0 12px}
+.mm-cobro-vacio{margin:0 0 8px;color:var(--tinta2)}
+.mm-cobro-en{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:0 0 14px}
+.mm-cobro-en>b{font-size:24px;font-weight:800;letter-spacing:-.03em}
+.mm-cobro-en span{color:var(--tinta2);font-size:15px}
+.mm-cobro-en span b{color:var(--tinta)}
+.mm-lm{position:relative;height:46px;margin:0 8px 6px}
+.mm-lm-eje{position:absolute;left:0;right:0;top:16px;height:2px;border-radius:2px;background:var(--linea)}
+.mm-lm-marca{position:absolute;top:11px;width:12px;height:12px;margin-left:-6px;border-radius:50%;background:var(--tinta3);border:2px solid var(--papel)}
+.mm-lm-marca.cobro{width:16px;height:16px;top:9px;margin-left:-8px;background:var(--azul)}
+.mm-lm-marca.antes{background:var(--neg)}
+.mm-lm-marca.cierre{background:var(--papel);border-color:var(--tinta3)}
+.mm-lm-ext{position:absolute;left:0;top:28px;font-family:var(--mono);font-size:11px;color:var(--tinta2);text-transform:uppercase;letter-spacing:.04em}
+.mm-lm-ext.der{left:auto;right:0}
+.mm-lm-lista{list-style:none;margin:0 0 8px;padding:0}
+.mm-lm-fila{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:48px;border-top:1px solid var(--linea);padding:6px 0}
+.mm-lm-fila:first-child{border-top:0}
+.mm-lm-dia{font-family:var(--mono,ui-monospace,monospace);font-size:13px;color:var(--tinta2);text-transform:uppercase}
+.mm-lm-txt{display:flex;flex-direction:column;min-width:0}
+.mm-lm-txt b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mm-lm-txt small{color:var(--neg);font-weight:600;font-size:12.5px}
+.mm-lm-monto{font-weight:700;white-space:nowrap}
+.mm-lm-fila.cobro .mm-lm-monto{color:var(--azul)}
+.mm-lm-fila.cobro .mm-lm-dia{color:var(--azul);font-weight:700}
