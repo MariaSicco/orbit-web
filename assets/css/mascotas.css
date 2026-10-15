@@ -1524,3 +1524,8 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 @media(min-width:1024px){
   .top>.tnav-box{justify-content:safe center}
 }
+
+/* v34: logo nuevo (pastel 2 · Rosa). Isotipo un poco más grande para que se lea la "m" con orejas; nombre en vino como el logo */
+.brand svg{width:30px;height:30px}
+.brand b{color:#6B1A35}
+.pp-k svg,.mark svg{border-radius:4px}
