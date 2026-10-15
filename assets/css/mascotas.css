@@ -1549,3 +1549,10 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 .rs-list li::before{content:'';position:absolute;left:2px;top:.45em;width:8px;height:8px;border-radius:50%;background:var(--late)}
 .rs-keep li::before{background:var(--ok)}
 #rsYes{margin-top:8px}
+/* v36: en compu la barra mide 1320 px pero hay pantallas más anchas (Cuenta): el contenido asomaba a los costados al
+   bajar. El fondo de la barra ahora va de punta a punta (la sombra del mismo color, recortada a la altura de la barra) */
+@media(min-width:1024px){body[data-shell="app"] .top{box-shadow:0 0 0 100vmax var(--bg);clip-path:inset(0 -100vmax)}}
+/* y el contenido de la barra alineado con el de la página (main.wide llega a 1640 px con 48 px de margen) */
+@media(min-width:1024px){body[data-shell="app"] .top{max-width:1640px;padding-left:48px;padding-right:48px}}
+/* el avatar de escritorio: .desk-only lo pasa a flex y la inicial quedaba corrida a la izquierda */
+@media(min-width:1024px){.me.desk-only{justify-content:center;align-items:center}}
