@@ -23,7 +23,7 @@
 export const ESQUEMA = 4;
 
 export const CATEGORIAS = [
-  'Alquiler', 'Expensas', 'Servicios', 'Suscripciones', 'Seguros',
+  'Alquiler', 'Expensas', 'Servicios', 'Luz', 'Gas', 'Agua', 'Internet', 'Celular', 'Suscripciones', 'Seguros',
   'Transporte', 'Educación', 'Salud', 'Patente', 'Vacaciones', 'Otros',
 ];
 /* Gastos de un solo mes (no se repiten): el chip pone nombre y categoría. */
@@ -255,7 +255,10 @@ export function resumenMes(datos, mes) {
   const reales = d.reales?.[mes] || {};
   const gastosTodos = (d.gastos || []).filter(g => activoEn(g, mes)).map(g => {
     const real = Number.isSafeInteger(reales[g.id]) ? reales[g.id] : null;
-    return { ...g, estimado: g.monto, monto: real ?? g.monto, real, confirmado: real !== null || conf.has(g.id), diferencia: real !== null ? real - g.monto : 0 };
+    /* t17 · 4: bonificación con plazo: desde el mes de fin se proyecta el precio lleno, como estimado */
+    const sube = g.sube && esMes(g.sube.desde) && difMeses(g.sube.desde, mes) >= 0 ? g.sube.monto : null;
+    const base = sube ?? g.monto;
+    return { ...g, ...(sube ? { subaEstimada: true } : {}), estimado: base, monto: real ?? base, real, confirmado: real !== null || conf.has(g.id), diferencia: real !== null ? real - g.monto : 0 };
   });
   const resumenes = (d.resumenes || []).filter(r => r.mes === mes).map(r => {
     const t = totalResumen(r, d);
@@ -731,7 +734,8 @@ export function migrar(crudo) {
       ...(typeof g.tarjetaId === 'string' && out.tarjetas.some(t => t.id === g.tarjetaId) ? { tarjetaId: g.tarjetaId } : {}),
       ...(g.sinTarjeta === true ? { sinTarjeta: true } : {}),
       ...(g.repite && Number.isInteger(g.frecuencia) && g.frecuencia > 1 && g.frecuencia <= 12 ? { frecuencia: g.frecuencia } : {}),
-      ...(docValido(g.doc) ? { doc: docValido(g.doc) } : {}) });
+      ...(docValido(g.doc) ? { doc: docValido(g.doc) } : {}),
+      ...(g.sube && esMes(g.sube.desde) && entero(g.sube.monto) ? { sube: { desde: g.sube.desde, monto: g.sube.monto } } : {}) });
   }
   for (const c of Array.isArray(crudo.cuotas) ? crudo.cuotas : []) {
     if (!c?.id || !entero(c.total) || !entero(c.cantidad) || c.cantidad > 72 || !esMes(c.primerMes)) continue;
@@ -1571,7 +1575,7 @@ export function fichaCompra(datos, cuotaId, hoy) {
    Lista las dudas y pendientes y las ordena por cuánto pueden mover "te
    quedan libres" de este mes o del que viene. Lo que mueve menos del 1 % de
    los ingresos (o no mueve plata) va a "más tarde". */
-export const GASTOS_QUE_VARIAN = ['Servicios', 'Expensas'];
+export const GASTOS_QUE_VARIAN = ['Servicios', 'Expensas', 'Luz', 'Gas', 'Agua'];
 export const DIAS_COPIA_VIEJA = 30;
 export const DIAS_CAMBIO_VIEJO = 7;
 export const VARIACION_CAMBIO = 0.05;     // supuesto: el dólar se pudo mover un 5 %

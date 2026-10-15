@@ -28,7 +28,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t16';
+const VERSION = '2026-10-15.t17';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -164,7 +164,7 @@ function pintarInicio(animar = false) {
     meta: `${g.dentro ? `Con ${g.tarjeta}: ya está adentro del resumen` : `Con ${g.tarjeta}: se paga con la tarjeta`}${g.inferida ? ' (lo vimos en el resumen)' : ''}`, monto: g.dentro ? '' : '−' + $(g.monto) }));
   const gas = r.gastos.map(g => item({ tipo: 'gasto', id: g.id, icono: 'gasto', titulo: g.nombre,
     meta: `${g.nombre === g.categoria ? '' : g.categoria + ' · '}${F.gastoEstimado && g.real !== null ? `estimado ${$(g.estimado)}` : textoRepite(g)}`, monto: '−' + $(g.monto),
-    extra: F.gastoEstimado && !g.confirmado ? ' <span class="mm-tag ext">Estimado</span>' : '' }));
+    extra: (F.gastoEstimado && !g.confirmado ? ' <span class="mm-tag ext">Estimado</span>' : '') + (g.subaEstimada ? ' <span class="mm-tag ext">Sin descuento · estimado</span>' : '') }));
   const tar = [
     ...r.resumenes.map(x => {
       const ext = listaMonedas(x.porMoneda);
@@ -483,11 +483,16 @@ async function leerUno(x, tipoForzado = null) {
       tipo ||= c.tipo;
       j = tipo === 'resumen' ? { lectura: resumenEjemplo() } : tipo === 'factura' ? { propuesta: facturaDeEjemplo(x.nombre, HOY_ISO) } : { lectura: c };
     } else {
+      let j1 = null;
       if (!tipo) {
-        j = await postDoc(blob, modoLectura === 'prueba' ? `?nombre=${encodeURIComponent(x.nombre.slice(0, 80))}` : '');
+        j = j1 = await postDoc(blob, modoLectura === 'prueba' ? `?nombre=${encodeURIComponent(x.nombre.slice(0, 80))}` : '');
         tipo = j.tipo;
       }
-      if (tipo === 'resumen' || tipo === 'factura') j = await postDoc(blob, `?tipo=${tipo}`);
+      if (tipo === 'resumen' || tipo === 'factura') {
+        j = await postDoc(blob, `?tipo=${tipo}`);
+        /* t17: la empresa (para "Luz (Edenor)") y la bonificación con plazo que vio la clasificación */
+        if (tipo === 'factura' && j.propuesta) j.propuesta = { ...j.propuesta, empresa: j.lectura?.empresa || '', ...(j1?.lectura?.factura ? { promo: j1.lectura.factura } : {}) };
+      }
     }
     x.tipo = tipo;
     if (tipo === 'otro') { x.estado = 'otro'; return; }
@@ -539,6 +544,11 @@ function pintarLeido() {
       <label class="mm-check"><input type="checkbox" data-it-incluir ${it.descartado || ['viejo', 'igual'].includes(it.accion) ? '' : 'checked'} ${['viejo', 'igual'].includes(it.accion) ? 'disabled' : ''}><span class="mm-sr">Incluir ${esc(it.titulo)}</span></label>
       <span class="mm-leido-txt"><b>${esc(it.titulo)}</b><small>${esc(it.detalle || '')}</small>
         <span class="mm-tag ${it.accion === 'nuevo' ? '' : 'ext'}">${esc(ACCION_TXT[it.accion] || '')}${it.accion === 'actualizar' && it.antes != null ? ` ${$(it.antes)} → ${$(it.monto)}` : ''}</span>
+        ${it.aviso ? `<span class="mm-fuente">${esc(it.aviso)}</span>` : ''}
+        ${it.nota ? `<span class="mm-fuente">${esc(it.nota)}</span>` : ''}
+        ${it.pideCobro && !it.descartado ? `<fieldset class="mm-campo mm-leido-cobro"><legend>¿Qué día te depositan el sueldo?</legend><div class="mm-chips">${COBROS.map(c => `<label class="mm-chip"><input type="radio" name="cobro-${esc(it.id)}" value="${c.tipo}" data-it-cobro${it.ingreso.cobro?.tipo === c.tipo ? ' checked' : ''}><span>${esc(c.texto)}</span></label>`).join('')}</div>
+          <label class="mm-sr" for="dia-${esc(it.id)}">Día del mes</label><select id="dia-${esc(it.id)}" data-it-dia ${it.ingreso.cobro?.tipo === 'dia' ? '' : 'hidden'}>${Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}"${it.ingreso.cobro?.dia === k + 1 ? ' selected' : ''}>${k + 1}</option>`).join('')}</select>
+          <span class="mm-fuente">El recibo no trae la fecha de depósito. Si no sabés, seguí: te lo preguntamos después.</span></fieldset>` : ''}
         ${it.pregunta ? `<label class="mm-check mm-reemplaza"><input type="checkbox" data-it-reemplaza ${it.accion === 'actualizar' || it.separar ? 'checked' : ''}> <span>${esc(it.pregunta)}</span></label>` : ''}
         ${it.grupo === 'tarjetas' && it.confiable === false ? '<span class="mm-tag">Leído con dudas: revisá el total</span>' : ''}
         ${it.grupo === 'compras' ? `<label class="mm-sr" for="tj-${esc(it.id)}">Tarjeta</label><select id="tj-${esc(it.id)}" data-it-tarjeta>${datos.tarjetas.length ? datos.tarjetas.map(t => `<option value="${esc(t.id)}"${t.id === it.compra.tarjetaId ? ' selected' : ''}>${esc(t.nombre)}</option>`).join('') : `<option value="">${itemsLeido.some(i => i.grupo === 'tarjetas') ? 'La del resumen que subiste' : 'Primero agregá la tarjeta'}</option>`}</select>` : ''}</span>
@@ -558,6 +568,13 @@ $id('leido').addEventListener('change', e => {
   const li = e.target.closest('[data-it]');
   const it = li && itemsLeido.find(i => i.id === li.dataset.it);
   if (!it) return;
+  if (e.target.matches('[data-it-cobro]')) {
+    const t = e.target.value;
+    it.ingreso.cobro = cobroValido(t === 'dia' ? { tipo: 'dia', dia: Number(li.querySelector('[data-it-dia]').value) } : { tipo: t });
+    li.querySelector('[data-it-dia]').hidden = t !== 'dia';
+    return;
+  }
+  if (e.target.matches('[data-it-dia]')) { it.ingreso.cobro = cobroValido({ tipo: 'dia', dia: Number(e.target.value) }); return; }
   if (e.target.matches('[data-it-incluir]')) { it.descartado = !e.target.checked; li.classList.toggle('fuera', it.descartado); }
   if (e.target.matches('[data-it-reemplaza]') && (it.separar || it._separar)) {
     /* QA t15 · 2: sí (por defecto) lo separa del "Servicios" genérico; no, lo suma aparte */

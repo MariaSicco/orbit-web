@@ -40,7 +40,7 @@ test('recibo → ingreso Sueldo con su día de cobro; aguinaldo de un solo mes',
 test('factura (lector de Vencimientos) → gasto fijo con monto, día, frecuencia y categoría', () => {
   const p = F.propuestaDesde(fx('doc-factura-gas'), '2026-10-15');
   const [it] = D.itemsDeFactura(p, base(), { archivo: 'f' });
-  assert.deepEqual(it.gasto, { nombre: 'Metrogas', categoria: 'Servicios', monto: $(38_450), repite: true, desde: '2026-10', frecuencia: 2, dia: 20, doc: { fecha: '2026-10-20' } });
+  assert.deepEqual(it.gasto, { nombre: 'Gas (Metrogas)', categoria: 'Gas', monto: $(38_450), repite: true, desde: '2026-10', frecuencia: 2, dia: 20, doc: { fecha: '2026-10-20' } });
   const d = D.aplicarItems(base(), [it], { nuevoId, hoy: '2026-10-15' }).datos;
   // bimestral: octubre sí, noviembre no, diciembre sí
   assert.deepEqual(['2026-10', '2026-11', '2026-12'].map(m => M.resumenMes(d, m).totGastos), [$(38_450), 0, $(38_450)]);
@@ -75,7 +75,7 @@ test('duplicados: la misma factura actualiza el gasto (y qué cambió lo explica
   assert.deepEqual([it.accion, it.antes, it.monto], ['actualizar', $(38_450), $(41_000)]);
   const d2 = D.aplicarItems(d1, [it], { nuevoId, hoy: '2026-10-15' }).datos;
   assert.equal(d2.gastos.length, 1, 'no duplica');
-  assert.match(M.cambiosDesde(foto, d2)[0].texto, /\$ 2\.550 de Metrogas/);
+  assert.match(M.cambiosDesde(foto, d2)[0].texto, /\$ 2\.550 de Gas \(Metrogas\)/);
   const r = D.validarClasificacion(fx('doc-recibo')).lectura.recibo;
   const d3 = D.aplicarItems(base(), D.itemsDeRecibo(r, base(), { archivo: 'a' }), { nuevoId, hoy: '2026-10-15' }).datos;
   const [otra] = D.itemsDeRecibo(r, d3, { archivo: 'a2' });
@@ -167,14 +167,14 @@ test('[etapa 1] 3 facturas de Edenor → 1 gasto fijo con el monto de la más nu
   const items = D.consolidar(lecturas, base(), '2026-10-15');
   const vivos = items.filter(i => i.accion !== 'viejo');
   assert.equal(vivos.length, 1);
-  assert.deepEqual([vivos[0].titulo, vivos[0].monto, vivos[0].estimado, vivos[0].promedio], ['Edenor', $(44_000), true, 4_066_667]);
+  assert.deepEqual([vivos[0].titulo, vivos[0].monto, vivos[0].estimado, vivos[0].promedio], ['Luz (Edenor)', $(44_000), true, 4_066_667]);
   assert.match(vivos[0].detalle, /estimado de 3 facturas anteriores/);
   assert.equal(items.filter(i => i.accion === 'viejo').length, 2);
   const d = D.aplicarItems(base(), items, { nuevoId, hoy: '2026-10-15' }).datos;
   assert.equal(d.gastos.length, 1);
   assert.deepEqual(d.gastos[0].doc, { fecha: '2026-09-18', estimado: true });
   assert.equal(M.resumenMes(d, '2026-10').totGastos, $(44_000), 'cuenta en el mes actual como estimado');
-  assert.deepEqual(D.estimadosViejos(d, '2026-10-15').map(x => x.nombre), ['Edenor']);
+  assert.deepEqual(D.estimadosViejos(d, '2026-10-15').map(x => x.nombre), ['Luz (Edenor)']);
 });
 test('[etapa 1] la misma suscripción en 2 resúmenes → 1 gasto con esa tarjeta, contado una sola vez', () => {
   const nf = m => ({ fecha: m, comercio: 'NETFLIX.COM', monto: 9_000, moneda: 'ARS', rubro: 'Suscripciones', cuota: null, tarjeta: null });
@@ -369,4 +369,59 @@ test('[QA t15 · 2] "Servicios" genérico + Edenor: se separa (sí por defecto) 
   assert.equal(r.datos.gastos.some(g => g.id === 'sv'), false);
   assert.match(r.n.avisos.join(' '), /Servicios quedaba en \$ 0/);
   assert.equal(M.resumenMes(r.datos, '2026-10').totGastos, $(47_831));
+});
+
+/* ── tanda 17: ajustes de la prueba real (datos inventados con la misma forma) ── */
+const factura = (servicio, empresa, vence, monto, extra = {}) => ({ ...F.propuestaDesde({ empresa, servicio, categoria: 'Luz, gas y agua', periodo: { desde: null, hasta: null },
+  vencimientos: [{ fecha: vence, monto }], moneda: 'ARS', frecuencia: 1, cuota: null, debitoAutomatico: false, proximoVencimiento: null, confianza: 'alta', dudas: [], avisos: [] }, '2026-10-15'), empresa, ...extra });
+test('[t17 · 1] categoría por empresa: Edenor → Luz "Luz (Edenor)"; Claro, Personal y Movistar → Celular', () => {
+  const [l] = D.itemsDeFactura(factura('edenor', 'Edenor', '2026-10-23', 39_732.81), base(), { archivo: 'e', hoy: '2026-10-15' });
+  assert.deepEqual([l.gasto.categoria, l.gasto.nombre], ['Luz', 'Luz (Edenor)']);
+  for (const emp of ['Claro', 'Personal', 'Movistar']) {
+    const [c] = D.itemsDeFactura(factura('celular', emp, '2026-10-22', 26_995.5), base(), { archivo: emp, hoy: '2026-10-15' });
+    assert.deepEqual([c.gasto.categoria, c.gasto.nombre], ['Celular', `Celular (${emp})`], emp);
+  }
+  assert.ok(M.CATEGORIAS.includes('Luz') && M.CATEGORIAS.includes('Celular') && M.CATEGORIAS.includes('Gas'));
+  // la detección de duplicados sigue andando: con "Luz (Edenor)" cargado, otra factura de Edenor lo actualiza
+  const d = D.aplicarItems(base(), [l], { nuevoId, hoy: '2026-10-15' }).datos;
+  const [l2] = D.itemsDeFactura(factura('edenor', 'Edenor', '2026-11-23', 41_000), d, { archivo: 'e2', hoy: '2026-10-15' });
+  assert.equal(l2.accion, 'actualizar');
+  // y la separación de "Servicios" también
+  const s = base(); s.gastos.push({ id: 'sv', nombre: 'Servicios', categoria: 'Servicios', monto: $(117_000), repite: true, desde: '2026-01' });
+  assert.match(D.itemsDeFactura(factura('edenor', 'Edenor', '2026-10-23', 39_732.81), s, { archivo: 'e3', hoy: '2026-10-15' })[0].pregunta, /incluye la luz/);
+});
+test('[t17 · 2] recibo sin fecha de pago de haberes: se pregunta el día de cobro ahí mismo; el prompt no usa aportes ni firma', () => {
+  const [it] = D.itemsDeRecibo({ neto: $(1_734_298), moneda: 'ARS', fechaPago: null, periodo: '2026-06', clase: 'mensual' }, base(), { archivo: 'r' });
+  assert.equal(it.pideCobro, true);
+  assert.equal(it.ingreso.cobro, undefined);
+  assert.equal(it.ingreso.desde, '2026-07');
+  assert.match(D.SISTEMA_CLASIFICAR, /haberes/);
+  assert.match(D.SISTEMA_CLASIFICAR, /NO la de pago de aportes ni la de firma/);
+  // si no contesta, el motor de preguntas lo pide después
+  const d = D.aplicarItems(base(), [it], { nuevoId, hoy: '2026-10-15' }).datos;
+  assert.ok(M.preguntas(d, '2026-10-15').ahora.concat(M.preguntas(d, '2026-10-15').masTarde).some(q => q.tipo === 'cobro'));
+});
+test('[t17 · 3] documento viejo (más de 2 meses): línea suave para subir el último', () => {
+  const [it] = D.itemsDeFactura({ ...factura('expensas', 'Consorcio', '2025-11-10', 114_259.19), preset: 'expensas', nombre: 'Expensas' }, base(), { archivo: 'x', hoy: '2026-10-15' });
+  assert.equal(it.estimado, true);
+  assert.equal(it.nota, 'Es de noviembre de 2025: cuando tengas la última, subila para que el monto esté al día.');
+  const [nuevo] = D.itemsDeFactura(factura('edenor', 'Edenor', '2026-09-23', 39_732.81), base(), { archivo: 'y', hoy: '2026-10-15' });
+  assert.equal(nuevo.nota, undefined, 'de hace 1 mes, sin línea');
+});
+test('[t17 · 4] bonificación con plazo: se guarda el precio lleno, se avisa y desde el mes de fin se proyecta como estimado', () => {
+  const v = D.validarClasificacion({ tipo: 'factura', recibo: null, captura: null, confianza: 'alta', avisos: [],
+    factura: { precioLleno: 59_990, descuento: { porcentaje: 55, meses: 6 }, finDescuento: '2027-02' } });
+  assert.deepEqual(v.lectura.factura, { precioLleno: $(59_990), descuento: { porcentaje: 55, meses: 6 }, finDescuento: '2027-02' });
+  const p = { ...factura('celular', 'Claro', '2026-10-22', 26_995.5), promo: v.lectura.factura };
+  const [it] = D.itemsDeFactura(p, base(), { archivo: 'c', hoy: '2026-10-15' });
+  assert.equal(it.aviso, 'Tu celular tiene 55 % de descuento por 6 meses: cuando termine, pasa a unos $ 59.990.');
+  assert.deepEqual(it.gasto.sube, { desde: '2027-02', monto: $(59_990) });
+  const d = D.aplicarItems(base(), [it], { nuevoId, hoy: '2026-10-15' }).datos;
+  assert.deepEqual(['2026-10', '2027-01', '2027-02'].map(m => M.resumenMes(d, m).totGastos), [$(26_995.5), $(26_995.5), $(59_990)]);
+  assert.equal(M.resumenMes(d, '2027-02').gastos[0].subaEstimada, true);
+  assert.deepEqual(M.migrar(d).gastos[0].sube, { desde: '2027-02', monto: $(59_990) });
+  // sin mes de fin: solo el aviso
+  const [sin] = D.itemsDeFactura({ ...p, promo: { ...v.lectura.factura, finDescuento: null } }, base(), { archivo: 'c2', hoy: '2026-10-15' });
+  assert.equal(sin.gasto.sube, undefined);
+  assert.match(sin.aviso, /55 % de descuento por 6 meses/);
 });
