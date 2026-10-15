@@ -1,0 +1,10 @@
+{
+ "_nota": "Recibo de sueldo INVENTADO tal como podría devolverlo Claude, con datos de más que la app tiene que descartar.",
+ "tipo": "recibo",
+ "recibo": { "neto": 1450320.55, "moneda": "ARS", "fechaPago": "2026-10-05", "periodo": "2026-09", "clase": "mensual",
+   "cuil": "20-12345678-9", "empleador": "EMPRESA INVENTADA SA", "legajo": "4521", "bruto": 1980000 },
+ "captura": null,
+ "cuil": "20-12345678-9",
+ "confianza": "alta",
+ "avisos": ["Neto leído del pie del recibo. Legajo 4521 CUIL 20123456789"]
+}

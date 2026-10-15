@@ -64,6 +64,9 @@
     },
     "api/leer-resumen.js": {
       "maxDuration": 60
+    },
+    "api/mi-mes-leer.js": {
+      "maxDuration": 60
     }
   }
 }

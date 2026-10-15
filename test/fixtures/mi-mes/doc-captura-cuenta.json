@@ -1,0 +1,12 @@
+{
+ "_nota": "Captura INVENTADA del homebanking: movimientos de una caja de ahorro.",
+ "tipo": "captura",
+ "recibo": null,
+ "captura": { "origen": "cuenta", "saldo": 412300.5, "movimientos": [
+   { "fecha": "2026-10-05", "descripcion": "ACREDITACION HABERES", "monto": 1450320.55, "moneda": "ARS", "tipo": "ingreso", "cuota": null },
+   { "fecha": "2026-10-06", "descripcion": "TRANSF A CTA PROPIA CBU 0170000000000000000001", "monto": 300000, "moneda": "ARS", "tipo": "transferencia_propia", "cuota": null },
+   { "fecha": "2026-10-07", "descripcion": "DEBITO VISA", "monto": 250000, "moneda": "ARS", "tipo": "pago_tarjeta", "cuota": null }
+ ] },
+ "confianza": "alta",
+ "avisos": []
+}

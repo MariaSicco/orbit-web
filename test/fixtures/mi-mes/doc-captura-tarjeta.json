@@ -1,0 +1,12 @@
+{
+ "_nota": "Captura INVENTADA de la app de una tarjeta.",
+ "tipo": "captura",
+ "recibo": null,
+ "captura": { "origen": "tarjeta", "saldo": null, "movimientos": [
+   { "fecha": "2026-10-12", "descripcion": "FARMACIA INVENTADA SUC 12", "monto": 32500, "moneda": "ARS", "tipo": "consumo", "cuota": null },
+   { "fecha": "2026-10-13", "descripcion": "ZAPATILLERIA INVENTADA Op 0012345678", "monto": 45000, "moneda": "ARS", "tipo": "consumo", "cuota": { "n": 1, "de": 3 } },
+   { "fecha": "2026-10-14", "descripcion": "SU PAGO EN PESOS", "monto": 120000, "moneda": "ARS", "tipo": "pago_tarjeta", "cuota": null }
+ ] },
+ "confianza": "alta",
+ "avisos": []
+}
