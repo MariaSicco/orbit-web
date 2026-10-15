@@ -1,0 +1,7 @@
+/* Mimitos · F1 "Salud": cada problema con sus 3 estados (usa los estilos de la app) */
+.conds{display:flex;flex-direction:column;gap:8px}
+.cond{display:flex;flex-direction:column;gap:8px;padding:12px 14px;background:var(--card);border-radius:var(--r-s)}
+.cond-n{align-self:flex-start;display:flex;flex-direction:column;justify-content:center;min-height:44px;padding:0;border:0;background:none;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.cond-n b{font-weight:700;font-size:15.5px;line-height:1.3}
+.cond-n small{color:var(--ink2);font-size:13.5px}
+.chip svg.i{width:16px;height:16px;vertical-align:-3px}
