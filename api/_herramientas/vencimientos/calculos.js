@@ -486,5 +486,6 @@ export function fusionar(local, remoto) {
     }
     return out;
   };
-  return { ...b, ...a, cuentas, pagos: mezclar('pagos'), facturas: mezclar('facturas'), salteos: mezclar('salteos'), borradas, config: { ...b.config, ...a.config } };
+  const saldos = [...new Map([...(b.saldos || []), ...(a.saldos || [])].map(x => [x.id, x])).values()];
+  return { ...b, ...a, cuentas, pagos: mezclar('pagos'), facturas: mezclar('facturas'), salteos: mezclar('salteos'), borradas, saldos, config: { ...b.config, ...a.config } };
 }

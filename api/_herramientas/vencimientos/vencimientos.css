@@ -559,3 +559,32 @@ details.mas[open] summary::after{transform:rotate(45deg)}
 .casa-iconos input:focus-visible+span{outline:2px solid var(--azul);outline-offset:2px}
 .casa-nueva{display:grid;gap:12px}
 .vacio-casa{display:flex;justify-content:center}
+
+/* ── radar ── */
+.grupo h2 .btn-txt{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;min-height:auto;padding:0}
+.radar-cab{display:grid;grid-template-columns:40px 1fr;gap:12px;align-items:start;padding:14px;border-radius:16px;background:var(--fondo);border-left:4px solid var(--tono,var(--linea));margin-bottom:12px}
+.radar-cab b{display:block;font-size:17px;line-height:1.2}.radar-cab p{margin:4px 0 0;font-size:14px;color:var(--suave)}
+.radar-lista{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.radar-fila{width:100%;display:grid;grid-template-columns:34px 1fr 16px;gap:12px;align-items:center;text-align:left;padding:12px;border-radius:14px;border:1px solid var(--linea);border-left:4px solid var(--tono,var(--linea));background:transparent;color:inherit;font:inherit;cursor:pointer}
+.radar-fila b{display:block;font-size:14.5px}.radar-fila small{display:block;font-size:12.5px;color:var(--suave);margin-top:2px}
+.radar-fila .flecha{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;opacity:.5}
+/* ── lo que cuesta la casa ── */
+.costo{margin-bottom:12px}
+.costo-gr{display:grid;grid-template-columns:1.3fr 1fr;gap:16px}
+.costo-gr .mono{display:block;color:var(--suave);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+.costo-gr b{display:block;font-size:clamp(19px,4.6vw,28px);font-weight:800;letter-spacing:-.03em;margin:6px 0;font-variant-numeric:tabular-nums}
+.costo-gr small{display:block;font-size:12.5px;color:var(--suave)}
+.conf i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;background:var(--linea);vertical-align:1px}
+.conf-alta i{background:#3CC488}.conf-media i{background:#E9B949}.conf-baja i,.conf-sin-datos i{background:var(--mal)}
+@media (max-width:520px){.costo-gr{grid-template-columns:1fr}}
+/* ── cuentas claras ── */
+.reparto-bt{width:100%;text-align:left}
+.mes-nav{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;text-align:center;margin-bottom:10px}
+.reparto-personas{list-style:none;margin:0 0 12px;padding:0;display:grid;gap:6px}
+.reparto-personas li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding:10px 12px;border:1px solid var(--linea);border-radius:12px;font-size:14px}
+.reparto-personas li .dim{grid-column:1/-1;font-size:12.5px}
+.reparto-det{list-style:none;margin:8px 0 0;padding:0;font-size:13.5px}
+.reparto-det li{display:grid;grid-template-columns:1fr auto auto;gap:10px;padding:6px 0;border-bottom:1px solid var(--linea)}
+.reparto-pcts{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+.reparto-form{display:grid;gap:10px;margin:14px 0}
+.reparto-personas{margin-top:12px}

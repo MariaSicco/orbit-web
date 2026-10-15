@@ -7,6 +7,11 @@ import { propuestaDesde, cuentaQueCoincide } from './factura.js';
 import { cuentasDesdeMails } from './correo-lector.js';
 import { configCorreo, buscarEnGmail, buscarEnOutlook, mailsDemo } from './correo.js';
 import { cuentasDesdeResumen, nombreDesdeComercio } from './resumen-tarjeta.js';
+import * as R from './radar.js';
+import * as P from './reparto.js';
+
+/* Interruptores de lo que entra para el 19/10: si algo no queda firme en QA, se apaga acá. */
+const FUNCIONES = { radar: true, costoCasa: true, reparto: true };
 
 const CLAVE = 'orbit:vencimientos:v1';
 const $id = id => document.getElementById(id);
@@ -39,6 +44,15 @@ function nombreCasaDe(doc, id = indice.activa) {
   const i = indice.casas.findIndex(c => c.id === id);
   return i <= 0 ? 'Mi casa' : `Casa ${i + 1}`;
 }
+
+/* Resúmenes de tarjeta leídos (para el radar). Viven aparte del documento de la casa:
+   nunca viajan a la casa compartida. */
+const claveResumenes = (id = indice.activa) => `${claveDe(id)}:resumenes`;
+function cargarResumenes(id) { try { return JSON.parse(localStorage.getItem(claveResumenes(id))) || []; } catch { return []; } }
+function guardarResumenes(l) { try { localStorage.setItem(claveResumenes(), JSON.stringify(l)); } catch {} }
+const claveVistos = () => `${claveDe(indice.activa)}:radar-visto`;
+function avisosVistos() { try { return new Set(JSON.parse(localStorage.getItem(claveVistos())) || []); } catch { return new Set(); } }
+function marcarVistoAviso(k) { const v = avisosVistos(); v.add(k); try { localStorage.setItem(claveVistos(), JSON.stringify([...v].slice(-200))); } catch {} }
 
 /* ── estado ── */
 let almacenOK = true;
@@ -175,6 +189,7 @@ function seccionCasa() {
   return `<div class="ajustes-sec" id="sec-casa"><h3>Casa compartida</h3>
     <ul class="miembros">${casa.miembros.map(m => `<li>${avatar({ nombre: m.nombre, color: m.dueno ? '#3047FF' : '#0D0D0E' })}<span><b>${esc(m.nombre)}${casa.yo?.email === m.email ? ' (vos)' : ''}</b><small>${m.dueno ? 'Creó la casa' : `Se sumó el ${V.fechaLarga(String(m.desde).slice(0, 10))}`}</small></span>
       ${casa.soyDueno && !m.dueno ? `<button type="button" class="btn-txt" data-acc="casa-quitar" data-e="${esc(m.email)}">${ui.borrarArmado === m.email ? '¿Seguro?' : 'Quitar'}</button>` : ''}</li>`).join('')}</ul>
+    ${formReparto()}
     <div class="acciones"><button type="button" class="bt prim ancho" data-acc="casa-invitar"><svg><use href="#i-mas"/></svg> Invitar a alguien</button>
     <button type="button" class="bt peligro ancho" data-acc="casa-salir">${ui.borrarArmado === 'casa' ? '¿Seguro? Tocá de nuevo' : casa.soyDueno ? 'Dejar de compartir' : 'Salir de esta casa'}</button></div>
     <p class="leyenda">${casa.soyDueno ? 'Si dejás de compartir, cada persona se queda con su copia en el teléfono.' : 'Si salís, te quedás con una copia en este teléfono.'}</p></div>`;
@@ -191,11 +206,13 @@ async function invitarACasa() {
 
 /* ── tus casas ── */
 function resumenCasa(doc) {
+  const k = FUNCIONES.costoCasa ? R.costoCasa(doc, hoy) : null;
   const en30 = [...V.atrasados(doc, hoy), ...V.ocurrenciasEntre(doc, hoy, V.sumarDias(hoy, 30), hoy).filter(o => !o.resuelto)].filter(o => !o.cuenta.enTarjeta);
-  return { n: en30.length, total: sumaARS(en30), vencidos: en30.filter(o => o.estado === 'vencido' || o.estado === 'segundo').length };
+  return { n: en30.length, total: sumaARS(en30), vencidos: en30.filter(o => o.estado === 'vencido' || o.estado === 'segundo').length, anual: k?.anual || 0 };
 }
 function abrirCasas(conForm = false) {
   const filas = indice.casas.map(e => { const doc = e.id === indice.activa ? d : conCategorias(cargar(e.id)); return { e, doc, r: resumenCasa(doc) }; });
+  const anual = filas.reduce((a, f) => a + f.r.anual, 0);
   const total = filas.reduce((a, f) => a + f.r.total, 0), n = filas.reduce((a, f) => a + f.r.n, 0), venc = filas.reduce((a, f) => a + f.r.vencidos, 0);
   const form = `<form data-form="casa-nueva" class="casa-nueva" id="casa-nueva">
       <label class="campo"><span>¿Cómo le decís?</span><input type="text" name="nombre" required maxlength="30" placeholder="Ej: La quinta, Depto de Mar del Plata" autocomplete="off"></label>
@@ -203,10 +220,10 @@ function abrirCasas(conForm = false) {
       <button type="submit" class="bt prim ancho">Crear la casa</button>
       <p class="leyenda">Cada casa tiene sus propias cuentas, avisos y números. Podés compartir cada una con gente distinta: la quinta con la familia, el depto con quien vive ahí.</p></form>`;
   abrir('Tus casas', `
-    ${filas.length > 1 ? `<div class="casas-total"><span class="mono">Todas juntas · próximos 30 días</span><b>${n ? (total ? plata(total) : `${n} por pagar`) : 'Nada'}</b><small>${n ? `${n} pago${n > 1 ? 's' : ''} entre ${filas.length} casas` : 'No vence nada en ninguna casa.'}${venc ? ` · <em>${venc} vencido${venc > 1 ? 's' : ''}</em>` : ''}</small></div>` : ''}
+    ${filas.length > 1 ? `<div class="casas-total"><span class="mono">Todas juntas · próximos 30 días</span><b>${n ? (total ? plata(total) : `${n} por pagar`) : 'Nada'}</b><small>${n ? `${n} pago${n > 1 ? 's' : ''} entre ${filas.length} casas` : 'No vence nada en ninguna casa.'}${venc ? ` · <em>${venc} vencido${venc > 1 ? 's' : ''}</em>` : ''}${anual ? `<br>Mantenerlas todas: ${plata(anual)} por año` : ''}</small></div>` : ''}
     <ul class="casas-lista">${filas.map(f => { const act = f.e.id === indice.activa; return `<li><button type="button" class="casa-fila${act ? ' activa' : ''}" data-acc="casa-ir" data-id="${esc(f.e.id)}"${act ? ' aria-current="true"' : ''}>
       <span class="casa-ic"><svg><use href="#${iconoCasa(f.doc)}"/></svg></span>
-      <span class="casa-txt"><b>${esc(nombreCasaDe(f.doc, f.e.id))}</b><small>${f.r.n ? `${f.r.n} por pagar en 30 días` : f.doc.cuentas.length ? 'Nada en los próximos 30 días' : 'Todavía vacía'}${f.r.vencidos ? ` · ${f.r.vencidos} vencido${f.r.vencidos > 1 ? 's' : ''}` : ''}${f.e.compartida ? ' · Compartida' : ''}</small></span>
+      <span class="casa-txt"><b>${esc(nombreCasaDe(f.doc, f.e.id))}</b><small>${f.r.n ? `${f.r.n} por pagar en 30 días` : f.doc.cuentas.length ? 'Nada en los próximos 30 días' : 'Todavía vacía'}${f.r.vencidos ? ` · ${f.r.vencidos} vencido${f.r.vencidos > 1 ? 's' : ''}` : ''}${f.e.compartida ? ' · Compartida' : ''}${f.r.anual ? `<br>${plata(f.r.anual)} por año` : ''}</small></span>
       <span class="casa-monto">${f.r.total ? plata(f.r.total) : act ? '<i class="mono">Abierta</i>' : ''}</span></button></li>`; }).join('')}</ul>
     ${indice.casas.length >= MAX_CASAS ? `<p class="leyenda">Llegaste al máximo de ${MAX_CASAS} casas.</p>` : conForm ? form
       : `<button type="button" class="bt sec ancho" data-acc="casa-agregar"><svg><use href="#i-mas"/></svg> Agregar otra casa</button>
@@ -245,7 +262,7 @@ function borrarCasa() {
   if (indice.casas.length < 2 || casa) return;
   const id = indice.activa, nombre = nombreCasaDe(d);
   indice.casas = indice.casas.filter(c => c.id !== id);
-  try { localStorage.removeItem(claveDe(id)); } catch {}
+  try { localStorage.removeItem(claveDe(id)); localStorage.removeItem(claveResumenes(id)); } catch {}
   cambiarCasa(indice.casas[0].id, false);
   toast(`Borramos ${nombre} de este teléfono.`);
 }
@@ -435,9 +452,12 @@ function abrirCategoria(cat) {
 }
 
 /* ── para tener en cuenta (tarjetas que se deslizan) ── */
+let ultimoRadar = [];
 function tarjetasInsight() {
-  const ins = V.insights(d, hoy);
-  if (!ins.length) return '';
+  const ins = V.insights(d, hoy).filter(i => !FUNCIONES.radar || i.tipo !== 'suba');
+  const vistos = avisosVistos();
+  ultimoRadar = FUNCIONES.radar ? R.radar(d, cargarResumenes(), hoy).filter(r => !vistos.has(R.claveAviso(r))) : [];
+  if (!ins.length && !ultimoRadar.length) return '';
   const c = id => d.cuentas.find(x => x.id === id);
   const card = i => {
     switch (i.tipo) {
@@ -448,10 +468,121 @@ function tarjetasInsight() {
       case 'sinmonto': return { ic: 'c-doc', tono: 'neutro', t: i.cantidad > 1 ? `Faltan ${i.cantidad} montos` : `Falta el monto de ${esc(i.nombre)}`, p: 'Cargalo y el total te queda exacto. Podés sacarle una foto a la factura.', acc: `data-acc="ver" data-id="${esc(i.cuentaId)}|${esc(i.clave)}"`, cta: 'Cargar' };
     }
   };
-  return `<div class="grupo"><h2><span class="mono">Para tener en cuenta</span></h2><div class="insights">${ins.map(card).filter(Boolean).map(x => `
+  const cards = [...ultimoRadar.map((r, n) => ({ ...tarjetaRadar(r), acc: `data-acc="radar" data-i="${n}"`, cta: 'Qué hago' })), ...ins.map(card).filter(Boolean)].slice(0, 6);
+  const titulo = ultimoRadar.length ? `Radar · ${ultimoRadar.length === 1 ? '1 cosa para mirar' : `${ultimoRadar.length} cosas para mirar`}` : 'Para tener en cuenta';
+  return `<div class="grupo"><h2><span class="mono">${titulo}</span>${ultimoRadar.length > 1 ? '<button type="button" class="mono btn-txt" data-acc="radar-todo">Ver todo</button>' : ''}</h2><div class="insights">${cards.map(x => `
     <div class="ins ins-${x.tono}"><span class="ins-ic"><svg><use href="#${x.ic}"/></svg></span><b>${x.t}</b><p>${x.p}</p>${x.cta ? `<button type="button" class="btn-txt" ${x.acc}>${x.cta}</button>` : ''}</div>`).join('')}</div></div>`;
 }
 
+/* ── radar: fugas y cobros raros ── */
+function tarjetaRadar(r) {
+  const m = (v, mon = r.moneda) => plata(v, mon);
+  switch (r.tipo) {
+    case 'repetido': return { ic: 'i-alerta', tono: 'mal', t: `Te cobraron dos veces ${esc(r.nombre)}`, p: `${m(r.monto)} repetido en tu ${esc(r.tarjeta)}${r.fechas.length ? ` (${r.fechas.map(f => V.fechaLarga(f)).join(' y ')})` : ''}.` };
+    case 'subio': return { ic: 'c-chispa', tono: 'mal', t: `${esc(r.nombre)} te cobró ${Math.round(r.pct * 100)} % más`, p: `De ${m(r.desde)} a ${m(r.hasta)}: son ${m(r.anio)} más por año.` };
+    case 'nuevo': return { ic: 'c-tarjeta', tono: 'azul', t: `Cobro nuevo: ${esc(r.nombre)}`, p: `${m(r.monto)} en tu ${esc(r.tarjeta)}. ¿Lo reconocés?` };
+    case 'dolares': return { ic: 'c-tarjeta', tono: 'azul', t: `${m(r.monto, 'USD')} en dólares`, p: `En tu ${esc(r.tarjeta)}. Pagalos con dólares propios${r.vence ? ` antes del ${V.fechaLarga(r.vence)}` : ''} y evitás la percepción.` };
+    case 'suba': return { ic: 'c-chispa', tono: 'mal', t: `${esc(r.nombre)} subió ${Math.round(r.pct * 100)} %`, p: `De ${m(r.desde)} a ${m(r.hasta)} contra la factura anterior.` };
+    case 'fugas': return { ic: 'c-play', tono: 'neutro', t: `Se te van ${plata(r.mes)} por mes en suscripciones`, p: `Son ${plata(r.anio)} por año${r.anioUSD ? ` y ${plata(r.anioUSD, 'USD')}` : ''}, en ${r.cantidad} servicios. ¿Usás todos?` };
+  }
+  return { ic: 'c-punto', tono: 'neutro', t: '', p: '' };
+}
+const textoReclamo = r => `Hola. En el resumen de mi tarjeta ${r.tarjeta}${r.vence ? ` (vencimiento ${V.fechaLarga(r.vence)})` : ''} figura ${r.tipo === 'repetido' ? 'dos veces' : ''} un consumo de ${r.nombre} por ${plata(r.monto, r.moneda)}${r.fechas?.length ? ` (${r.fechas.map(f => V.fechaLarga(f)).join(' y ')})` : ''}. ${r.tipo === 'repetido' ? 'Uno de los dos no corresponde.' : 'No reconozco este consumo.'} Quiero cuestionarlo y que se revierta. Gracias.`;
+function abrirRadar(n) {
+  const r = ultimoRadar[n];
+  if (!r) return;
+  const x = tarjetaRadar(r);
+  let cuerpo = '', acc = '';
+  switch (r.tipo) {
+    case 'repetido':
+    case 'nuevo':
+      cuerpo = r.tipo === 'repetido'
+        ? `<p>Puede ser un error del comercio o del procesador de pagos. Si no hiciste dos compras, <b>reclamalo al banco</b>: tenés 30 días desde que te llega el resumen para cuestionar un consumo (Ley 25.065 de tarjetas de crédito).</p>`
+        : `<p>Apareció en este resumen y no estaba en el anterior. Si es algo que contrataste, sumalo a tus cuentas así te avisa todos los meses. <b>Si no lo reconocés</b>, reclamalo al banco: tenés 30 días desde que te llega el resumen.</p>`;
+      acc = `${r.tipo === 'nuevo' ? `<button type="button" class="bt prim ancho" data-acc="radar-sumar" data-i="${n}"><svg><use href="#i-mas"/></svg> Es mío: sumarlo a mis cuentas</button>` : ''}
+        <button type="button" class="bt ${r.tipo === 'nuevo' ? 'sec' : 'prim'} ancho" data-acc="copiar" data-t="${esc(textoReclamo(r))}">Copiar el texto del reclamo</button>`;
+      break;
+    case 'subio':
+      cuerpo = `<p>Si no lo usás tanto, es buen momento para revisar el plan o darlo de baja. Las empresas que venden por internet tienen que tener un <b>botón de baja</b> visible en su web.</p>`;
+      acc = `${r.cuentaId && d.cuentas.find(c => c.id === r.cuentaId)?.monto !== r.hasta ? `<button type="button" class="bt prim ancho" data-acc="radar-actualizar" data-i="${n}">Actualizar ${esc(r.nombre)} a ${plata(r.hasta, r.moneda)}</button>` : ''}<button type="button" class="bt sec ancho" data-acc="radar-fugas">Ver todas tus suscripciones</button>`;
+      break;
+    case 'dolares':
+      cuerpo = `<p>Lo que se paga en pesos de un consumo en dólares lleva la percepción a cuenta de Ganancias. Si tenés dólares propios, pagá ese saldo en dólares desde el home banking <b>antes del vencimiento</b> y no se aplica.</p><p class="leyenda">No es asesoramiento impositivo: si tenés dudas, consultalo con tu contador o tu banco.</p>`;
+      break;
+    case 'suba':
+      cuerpo = `<p>Revisá si cambió el consumo o la tarifa. Si te parece un error, la factura tiene el teléfono y la web de reclamos de la empresa.</p>`;
+      acc = `<button type="button" class="bt sec ancho" data-acc="cuenta" data-c="${esc(r.cuentaId)}">Ver la historia de ${esc(r.nombre)}</button>`;
+      break;
+    case 'fugas': return abrirFugas();
+  }
+  abrir('Radar', `<div class="radar-cab ins-${x.tono}"><span class="ins-ic"><svg><use href="#${x.ic}"/></svg></span><div><b>${x.t}</b><p>${x.p}</p></div></div>${cuerpo}<div class="acciones">${acc}<button type="button" class="bt sec ancho" data-acc="radar-visto" data-i="${n}"><svg><use href="#i-check"/></svg> Listo, ya lo vi</button></div>`);
+}
+function abrirRadarTodo() {
+  abrir('Radar de tu casa', `<p class="leyenda" style="margin-top:0">Lo que se sale de lo normal en tus facturas y en los resúmenes de tarjeta que subiste. Tocá cada uno para ver qué hacer.</p>
+    <ul class="radar-lista">${ultimoRadar.map((r, n) => { const x = tarjetaRadar(r); return `<li><button type="button" class="radar-fila ins-${x.tono}" data-acc="radar" data-i="${n}"><span class="ins-ic"><svg><use href="#${x.ic}"/></svg></span><span><b>${x.t}</b><small>${x.p}</small></span><svg class="flecha"><use href="#i-der"/></svg></button></li>`; }).join('')}</ul>
+    ${cargarResumenes().length ? '' : '<p class="leyenda">Subí el resumen de tu tarjeta todos los meses y el radar también te avisa de cobros repetidos, nuevos o que subieron.</p><div class="acciones"><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subir un resumen</button></div>'}`);
+}
+function abrirFugas() {
+  const f = R.fugas(d, hoy);
+  abrir('Tus suscripciones', `<div class="casas-total"><span class="mono">Por año</span><b>${plata(f.anio)}</b><small>${plata(f.mes)} por mes${f.anioUSD ? ` · además ${plata(f.anioUSD, 'USD')} por año en dólares` : ''}</small></div>
+    <ul class="lista">${f.subs.map(x => `<li class="fila"><button type="button" class="fila-main" data-acc="cuenta" data-c="${esc(x.id)}">${avatar(x.cuenta)}<span class="fila-txt"><b>${esc(x.nombre)}</b><small>${plata(x.mes, x.moneda)} por mes</small></span><span class="fila-monto">${plata(x.anio, x.moneda)}<br><small class="dim">por año</small></span></button></li>`).join('')}</ul>
+    <p class="leyenda">Dar de baja una de ${plata(1000000)} por mes te ahorra ${plata(12000000)} por año. Las empresas que venden por internet tienen que tener un botón de baja visible.</p>`);
+}
+function sumarDesdeRadar(n) {
+  const r = ultimoRadar[n];
+  if (!r) return;
+  const proximo = r.vence ? V.sumarMeses(r.vence, 1) : V.sumarMeses(hoy, 1);
+  guardar(V.guardarCuenta(d, { id: V.nuevoId(), nombre: r.nombre, categoria: 'Apps y trabajo', frecuencia: 1, primerVto: proximo, monto: r.monto, moneda: r.moneda === 'USD' ? 'USD' : undefined, debito: true, enTarjeta: r.tarjeta }));
+  cerrar();
+  toast(`Listo: ${r.nombre} quedó en tus cuentas.`);
+}
+
+/* ── lo que cuesta esta casa ── */
+const TXT_CONFIANZA = { alta: 'Estimación firme: sale de montos reales.', media: 'Estimación aproximada: algunas cuentas todavía no tienen historia.', baja: 'Estimación gruesa: faltan montos reales. Mejora a medida que marcás pagos.', 'sin datos': 'Todavía no hay montos para estimar.' };
+function panelCosto() {
+  if (!FUNCIONES.costoCasa) return '';
+  const k = R.costoCasa(d, hoy);
+  if (!k.total && !k.anual) return '';
+  const rango = k.min !== k.max ? `${plata(k.min)} – ${plata(k.max)}` : plata(k.total);
+  return `<div class="panel costo"><h2 class="mono">Lo que cuesta ${esc(nombreCasaDe(d))}</h2>
+    <div class="costo-gr"><div><span class="mono">${cap(V.nombreMes(k.ym))}, entre</span><b>${rango}</b><small class="conf conf-${k.confianza.replace(' ', '-')}"><i></i>${TXT_CONFIANZA[k.confianza]}</small></div>
+    <div><span class="mono">Mantenerla, por día</span><b>${plata(k.porDia)}</b><small>${plata(k.anual)} por año${k.sinMonto ? ` · ${k.sinMonto} sin monto` : ''}</small></div></div></div>`;
+}
+
+/* ── cuentas claras: reparto en la casa compartida ── */
+const nombresCasa = () => (casa?.miembros || []).map(m => m.nombre);
+function tarjetaReparto() {
+  if (!FUNCIONES.reparto || !casa || casa.miembros.length < 2) return '';
+  const r = P.reparto(d, V.mesDe(hoy), nombresCasa(), hoy);
+  if (!r.total && !r.transferencias.length) return '';
+  const yo = casa.yo?.nombre;
+  const linea = !r.transferencias.length ? 'Están a mano este mes.'
+    : r.transferencias.map(t => t.de === yo ? `Le debés ${plata(t.monto)} a ${esc(t.a)}` : t.a === yo ? `${esc(t.de)} te debe ${plata(t.monto)}` : `${esc(t.de)} le debe ${plata(t.monto)} a ${esc(t.a)}`).join(' · ');
+  return `<button type="button" class="aviso info aviso-bt reparto-bt" data-acc="reparto"><svg><use href="#i-numeros"/></svg><p><b>Cuentas claras · ${V.nombreMes(V.mesDe(hoy))}</b><br>${linea}</p><svg class="flecha"><use href="#i-der"/></svg></button>`;
+}
+function abrirReparto(ym = V.mesDe(hoy)) {
+  if (!casa) return;
+  const r = P.reparto(d, ym, nombresCasa(), hoy);
+  const modo = d.config.reparto?.modo === 'porcentajes' ? 'Por porcentajes' : 'Partes iguales';
+  abrir('Cuentas claras', `
+    <div class="mes-nav"><button type="button" class="ic" data-acc="reparto-mes" data-m="${V.sumarMesesMes(ym, -1)}" aria-label="Mes anterior"><svg><use href="#i-izq"/></svg></button><b>${cap(V.nombreMes(ym))}</b>${ym < V.mesDe(hoy) ? `<button type="button" class="ic" data-acc="reparto-mes" data-m="${V.sumarMesesMes(ym, 1)}" aria-label="Mes siguiente"><svg><use href="#i-der"/></svg></button>` : '<span></span>'}</div>
+    <div class="casas-total"><span class="mono">Pagado entre todos · ${modo}</span><b>${plata(r.total)}</b><small>${r.transferencias.length ? r.transferencias.map(t => `${esc(t.de)} → ${esc(t.a)}: ${plata(t.monto)}`).join(' · ') : 'Están a mano.'}</small></div>
+    ${r.transferencias.length ? `<div class="acciones">${r.transferencias.map(t => `<button type="button" class="bt prim ancho" data-acc="saldar" data-m="${ym}" data-de="${esc(t.de)}" data-a="${esc(t.a)}" data-v="${t.monto}">${esc(t.de)} ya le pasó ${plata(t.monto)} a ${esc(t.a)}</button>`).join('')}</div>` : ''}
+    <ul class="reparto-personas">${r.personas.map(x => `<li><b>${esc(x.nombre)}</b><span>Puso ${plata(x.pagado)}</span><span class="dim">Le tocaba ${plata(x.leTocaba)} (${Math.round(x.parte * 100)} %)</span></li>`).join('')}</ul>
+    ${r.detalle.length ? `<details class="mas"><summary>Qué pagó cada uno</summary><ul class="reparto-det">${r.detalle.map(x => `<li><span>${esc(x.nombre)}</span><span>${esc(x.por)}</span><span>${plata(x.monto)}</span></li>`).join('')}</ul></details>` : ''}
+    ${r.sinQuienCant ? `<p class="leyenda">${r.sinQuienCant === 1 ? 'Un pago no tiene' : `${r.sinQuienCant} pagos no tienen`} quién lo pagó (${plata(r.sinQuien)}): débitos automáticos o marcados antes de compartir la casa. No entran en la cuenta.</p>` : ''}
+    <p class="leyenda">Cómo dividen se cambia en Ajustes → Casa compartida.</p>`);
+}
+function formReparto() {
+  if (!FUNCIONES.reparto || !casa || casa.miembros.length < 2) return '';
+  const rp = d.config.reparto || {}, por = rp.modo === 'porcentajes';
+  const pct = P.partesDe(d, nombresCasa());
+  return `<form data-form="reparto" class="reparto-form"><fieldset class="campo"><legend>¿Cómo dividen los gastos?</legend><div class="seg">
+      <label><input type="radio" name="modo" value="iguales" ${por ? '' : 'checked'}><span>Partes iguales</span></label>
+      <label><input type="radio" name="modo" value="porcentajes" ${por ? 'checked' : ''}><span>Por porcentajes</span></label></div></fieldset>
+    <div class="reparto-pcts">${nombresCasa().map(n => `<label class="campo"><span>${esc(n)}</span><input type="number" inputmode="numeric" min="0" max="100" name="p:${esc(n)}" value="${Math.round(pct[n] * 100)}"><small>%</small></label>`).join('')}</div>
+    <button type="submit" class="bt sec ancho">Guardar cómo dividen</button><p class="leyenda">Por ejemplo, 60 y 40 si uno gana más. La cuenta usa quién marcó cada pago.</p></form>`;
+}
 /* ── festejo: mes al día ── */
 /* Datos del cierre: cuentas pagadas, recargos evitados (pagadas antes del 1.er vencimiento) y total. */
 function cierreDelMes(ym) {
@@ -576,6 +707,7 @@ function vistaInicio() {
       <div class="acciones dos"><button type="button" class="bt prim" data-acc="tick" data-id="${esc(prox.id)}"><svg><use href="#i-check"/></svg> ${c.tipo === 'tramite' ? 'Ya lo hice' : 'Ya lo pagué'}</button><button type="button" class="bt sec" data-acc="ver" data-id="${esc(prox.id)}">Ver detalle</button></div>
     </div>`;
   }
+  html += tarjetaReparto();
   html += tarjetasInsight();
   if (d.ejemplo) html += `<div class="aviso info"><p><b>Estás viendo un ejemplo.</b> Probá marcar pagado, mirá el calendario y los números.</p><button class="btn-txt" type="button" data-acc="salir-ejemplo">Empezar con lo mío</button></div>`;
   else if (necesitaRespaldo()) html += `<div class="aviso info"><svg><use href="#i-candado"/></svg><p>Tus datos viven solo en este dispositivo. Guardá una copia por si cambiás de celular.</p><button class="btn-txt" type="button" data-acc="respaldo">Descargar</button></div>`;
@@ -822,6 +954,7 @@ function vistaNumeros() {
   const totCat = p.categorias.reduce((s, x) => s + x[1], 0) || 1;
   el.innerHTML = `
   <div class="vt"><div><h1 id="t-numeros">Los <span class="it">números</span></h1><p>Próximos 12 meses, con los últimos montos que conocés.</p></div></div>
+  ${panelCosto()}
   <div class="kpis">
     <div class="kpi neg"><span class="mono">En 12 meses</span><b>${plata(p.total)}</b><small>proyectado</small></div>
     <div class="kpi"><span class="mono">Por mes</span><b>${plata(p.promedio)}</b><small>en promedio</small></div>
@@ -1286,6 +1419,7 @@ async function leerResumen(file) {
     return;
   }
   encontrados = cuentasDesdeResumen(j.lectura, hoy);
+  if (j.modo !== 'prueba') guardarResumenes(R.sumarResumen(cargarResumenes(), j.lectura, hoy));
   const t = j.lectura?.tarjeta || {};
   const de = [t.red, t.banco].filter(Boolean).join(' ') || 'tu tarjeta';
   mostrarEncontrados(`${j.modo === 'prueba' ? 'Modo prueba: es un resumen de ejemplo, no el tuyo. ' : ''}Leímos el resumen de ${de}.${j.confiable === false ? ' Algunos montos no cerraron: revisalos.' : ''}`,
@@ -1425,6 +1559,25 @@ document.addEventListener('click', e => {
     case 'compartir': compartirMes(); break;
     case 'casa-invitar': invitarACasa(); break;
     case 'casas': ui.borrarArmado = null; abrirCasas(); break;
+    case 'radar': abrirRadar(Number(b.dataset.i)); break;
+    case 'radar-todo': abrirRadarTodo(); break;
+    case 'radar-fugas': abrirFugas(); break;
+    case 'radar-sumar': sumarDesdeRadar(Number(b.dataset.i)); break;
+    case 'radar-visto': { const r = ultimoRadar[Number(b.dataset.i)]; if (r) marcarVistoAviso(R.claveAviso(r)); cerrar(); render(); toast('Listo. Si cambia algo, te volvemos a avisar.'); break; }
+    case 'radar-actualizar': {
+      const r = ultimoRadar[Number(b.dataset.i)], c = r && d.cuentas.find(x => x.id === r.cuentaId);
+      if (c) { guardar(V.guardarCuenta(d, { ...c, monto: r.hasta })); marcarVistoAviso(R.claveAviso(r)); cerrar(); render(); toast(`${c.nombre} actualizada a ${plata(r.hasta, r.moneda)}.`); }
+      break;
+    }
+    case 'copiar': navigator.clipboard?.writeText(b.dataset.t).then(() => toast('Copiado. Pegalo en el chat o el mail del banco.'), () => toast('No pudimos copiar.')); break;
+    case 'reparto': abrirReparto(); break;
+    case 'reparto-mes': abrirReparto(b.dataset.m); break;
+    case 'saldar': {
+      guardar(P.saldar(d, { mes: b.dataset.m, de: b.dataset.de, a: b.dataset.a, monto: Number(b.dataset.v), fecha: hoy }));
+      abrirReparto(b.dataset.m);
+      toast('Anotado. Quedaron a mano.');
+      break;
+    }
     case 'casa-agregar': abrirCasas(true); break;
     case 'casa-ir': cambiarCasa(b.dataset.id); break;
     case 'casa-borrar': {
@@ -1581,6 +1734,13 @@ document.addEventListener('submit', e => {
     guardarDesdeMail(form);
   } else if (tipo === 'lectura') {
     guardarLectura(form);
+  } else if (tipo === 'reparto') {
+    const f = new FormData(form);
+    const modo = f.get('modo') === 'porcentajes' ? 'porcentajes' : 'iguales';
+    const partes = Object.fromEntries(nombresCasa().map(n => [n, Math.max(0, Number(f.get(`p:${n}`)) || 0)]));
+    if (modo === 'porcentajes' && !Object.values(partes).some(v => v > 0)) { toast('Poné al menos un porcentaje.'); return; }
+    guardar({ ...d, config: { ...d.config, reparto: { modo, partes } } });
+    toast(modo === 'iguales' ? 'Listo: dividen en partes iguales.' : 'Listo: dividen por porcentajes.');
   } else if (tipo === 'casa-nueva') {
     crearCasa(form);
   } else if (tipo === 'casa-crear') {
