@@ -1301,15 +1301,44 @@ export function decidirLectura({ local = false, errorRed = false, status = 0, js
 /* ═══════════════ Día de cobro ═══════════════
    Días hábiles APROXIMADOS: lunes a viernes, sin feriados (no hay un
    calendario de feriados en la app; la fecha real puede correrse). */
+/* Día de cobro como RANGO (tanda 17): un inicio (día fijo, quinto o último día
+   hábil) más "hasta +N días hábiles" (0 a 5). Los atajos "del 1 al 5" y "del 5
+   al 10" son rangos de calendario. Un día fijo es un rango de un solo día. */
 export const COBROS = [
   { tipo: 'del1al5', texto: 'Del 1 al 5' }, { tipo: 'del5al10', texto: 'Del 5 al 10' },
-  { tipo: 'ultimoHabil', texto: 'Último día hábil' }, { tipo: 'quintoHabil', texto: 'Quinto día hábil' },
-  { tipo: 'dia', texto: 'Otro día' },
+  { tipo: 'quintoHabil', texto: 'Quinto día hábil' }, { tipo: 'ultimoHabil', texto: 'Último día hábil' },
+  { tipo: 'dia', texto: 'Un día fijo' },
 ];
+export const MAS_HABILES = [0, 1, 2, 3, 4, 5];
 export function cobroValido(c) {
   if (!c || typeof c !== 'object' || !COBROS.some(x => x.tipo === c.tipo)) return null;
-  if (c.tipo === 'dia') return Number.isInteger(c.dia) && c.dia >= 1 && c.dia <= 31 ? { tipo: 'dia', dia: c.dia } : null;
-  return { tipo: c.tipo };
+  const mas = c.mas === undefined || c.mas === 0 ? 0 : Number.isInteger(c.mas) && c.mas >= 1 && c.mas <= 5 ? c.mas : -1;
+  if (mas < 0) return null;
+  if (['del1al5', 'del5al10'].includes(c.tipo)) return { tipo: c.tipo };
+  if (c.tipo === 'dia') return Number.isInteger(c.dia) && c.dia >= 1 && c.dia <= 31 ? { tipo: 'dia', dia: c.dia, ...(mas ? { mas } : {}) } : null;
+  return { tipo: c.tipo, ...(mas ? { mas } : {}) };
+}
+export function sumarHabiles(f, n) {
+  let x = f;
+  for (let k = 0; k < n;) { x = sumarDias(x, 1); if (esHabil(x)) k++; }
+  return x;
+}
+/* { desde, hasta } del cobro en un mes (hasta puede caer en el mes siguiente). */
+export function rangoDeCobro(ingreso, mes) {
+  const c = cobroValido(ingreso?.cobro);
+  if (!c) return null;
+  if (c.tipo === 'del1al5') return { desde: fechaConDia(mes, 1), hasta: fechaConDia(mes, 5) };
+  if (c.tipo === 'del5al10') return { desde: fechaConDia(mes, 5), hasta: fechaConDia(mes, 10) };
+  const desde = c.tipo === 'ultimoHabil' ? ultimoHabil(mes) : c.tipo === 'quintoHabil' ? quintoHabil(mes) : fechaConDia(mes, c.dia);
+  return { desde, hasta: sumarHabiles(desde, c.mas || 0) };
+}
+const diaTxt = (f, ref) => `${Number(f.slice(8))}${ref && f.slice(0, 7) !== ref.slice(0, 7) ? ` de ${NOMBRES[Number(f.slice(5, 7)) - 1]}` : ''}`;
+/* "Cobrás entre el 4 y el 7" (o "el 30 de octubre y el 4 de noviembre"); "Cobrás el 5" si es un solo día. */
+export function textoRangoCobro(p) {
+  if (!p) return '';
+  if (!p.desde || p.desde === p.fecha) return `Cobrás el ${Number(p.fecha.slice(8))}`;
+  const cruza = p.desde.slice(0, 7) !== p.fecha.slice(0, 7);
+  return `Cobrás entre el ${cruza ? `${Number(p.desde.slice(8))} de ${NOMBRES[Number(p.desde.slice(5, 7)) - 1]}` : Number(p.desde.slice(8))} y el ${cruza ? `${Number(p.fecha.slice(8))} de ${NOMBRES[Number(p.fecha.slice(5, 7)) - 1]}` : Number(p.fecha.slice(8))}`;
 }
 const esHabil = f => { const d = new Date(aUTC(f)).getUTCDay(); return d !== 0 && d !== 6; };
 export function quintoHabil(mes) {
@@ -1324,13 +1353,7 @@ export function ultimoHabil(mes) {
 /* Día de cobro de un ingreso en un mes. Para los rangos se toma el último día
    del rango: es lo prudente (la plata está seguro para esa fecha). */
 export function fechaDeCobro(ingreso, mes) {
-  const c = cobroValido(ingreso?.cobro);
-  if (!c) return null;
-  if (c.tipo === 'del1al5') return fechaConDia(mes, 5);
-  if (c.tipo === 'del5al10') return fechaConDia(mes, 10);
-  if (c.tipo === 'ultimoHabil') return ultimoHabil(mes);
-  if (c.tipo === 'quintoHabil') return quintoHabil(mes);
-  return fechaConDia(mes, c.dia);
+  return rangoDeCobro(ingreso, mes)?.hasta || null;
 }
 /* El próximo cobro (hoy incluido) del ingreso principal (el más grande que
    tiene día de cobro y está activo). */
@@ -1344,7 +1367,7 @@ export function proximoCobro(datos, hoy) {
       if (!activoEn(i, m)) continue;
       const f = fechaDeCobro(i, m);
       if (diasEntre(hoy, f) < 0) continue;
-      if (!mejor || i.monto > mejor.ingreso.monto || (i.monto === mejor.ingreso.monto && diasEntre(f, mejor.fecha) > 0)) mejor = { ingreso: i, fecha: f, dias: diasEntre(hoy, f) };
+      if (!mejor || i.monto > mejor.ingreso.monto || (i.monto === mejor.ingreso.monto && diasEntre(f, mejor.fecha) > 0)) mejor = { ingreso: i, fecha: f, desde: rangoDeCobro(i, m).desde, dias: diasEntre(hoy, f) };
       break;
     }
   }
@@ -1421,11 +1444,16 @@ export function alertasCobro(datos, hoy) {
   const v = venceAntesDeCobrar(datos, hoy);
   if (!v) return [];
   const vistas = new Set(datos?.alertasVistas || []);
-  return v.items.filter(x => x.tipo === 'tarjeta').map(x => ({
-    id: `antescobro:${x.id}:${x.fecha}`, tipo: 'antesCobro', tarjetaId: x.id, nivel: 'aviso', fecha: x.fecha, dias: diasEntre(aFecha(hoy), x.fecha),
-    titulo: `Tu ${x.nombre} vence el ${fechaCorta(x.fecha)} y cobrás el ${fechaCorta(v.cobro.fecha)}: vence antes de que cobres`,
+  const rango = v.cobro.desde && v.cobro.desde !== v.cobro.fecha;
+  const entre = rango ? textoRangoCobro(v.cobro).replace(/^Cobrás /, '') : '';
+  return v.items.filter(x => x.tipo === 'tarjeta').map(x => {
+    const enRango = rango && diasEntre(v.cobro.desde, x.fecha) >= 0;
+    return {
+    id: `antescobro:${x.id}:${x.fecha}`, tipo: 'antesCobro', tarjetaId: x.id, nivel: 'aviso', fecha: x.fecha, dias: diasEntre(aFecha(hoy), x.fecha), ...(enRango ? { enRango: true } : {}),
+    titulo: rango ? `Tu ${x.nombre} vence el ${diaTxt(x.fecha, v.cobro.fecha)} y cobrás ${entre}: ${enRango ? 'puede que todavía no hayas cobrado' : 'vence antes de que cobres'}`
+      : `Tu ${x.nombre} vence el ${fechaCorta(x.fecha)} y cobrás el ${fechaCorta(v.cobro.fecha)}: vence antes de que cobres`,
     texto: `Para ese pago necesitás ${formatoPesos(x.monto)} antes de cobrar. ${textoCobroEn(v.cobro.dias)}.`,
-  })).filter(a => !vistas.has(a.id));
+  }; }).filter(a => !vistas.has(a.id));
 }
 
 /* ═══════════════ Hacer rendir la plata ═══════════════

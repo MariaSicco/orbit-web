@@ -1,6 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import * as M from '../api/_herramientas/mi-mes/calculos.js';
+import { readFileSync } from 'node:fs';
 
 const base = (extra = {}) => ({ ...M.datosVacios(), ...extra });
 const sueldo = (cobro, monto = 100_000_000) => ({ id: 'i1', nombre: 'Sueldo', monto, repite: true, desde: '2026-01', cobro });
@@ -57,7 +58,7 @@ test('cobro: "vence antes de que cobres" con tarjeta y gasto fijo con día', () 
   // la alerta nombra la tarjeta y las dos fechas
   const a = M.alertasCobro(d, '2026-10-28');
   assert.equal(a.length, 1);
-  assert.match(a[0].titulo, /Visa vence el 3 nov y cobrás el 5 nov: vence antes de que cobres/);
+  assert.match(a[0].titulo, /Visa vence el 3 y cobrás entre el 1 y el 5: puede que todavía no hayas cobrado/);   // del 1 al 5 es un rango (tanda 17)
   assert.match(a[0].texto, /Cobrás en 8 días/);
   // descartada: no vuelve en ese ciclo
   assert.equal(M.alertasCobro({ ...d, alertasVistas: [a[0].id] }, '2026-10-28').length, 0);
@@ -119,4 +120,58 @@ test('cobro: de hoy al cobro cruza el mes y marca lo que vence antes', () => {
   assert.equal(l.hasta, '2026-11-06');
   assert.deepEqual(l.eventos.map(e => [e.tipo, e.fecha, e.antes]), [
     ['vence', '2026-10-20', true], ['gasto', '2026-11-01', true], ['cobro', '2026-11-06', false]]);
+});
+
+/* ── tanda 17 · día de cobro como RANGO ── */
+const conRango = (cobro, diaVence) => base({
+  ingresos: [sueldo(cobro)],
+  tarjetas: [{ id: 't1', nombre: 'Visa', red: 'Visa', banco: '', ultimos4: '', color: 'azul', diaCierre: 24, diaVence }],
+  cuotas: [{ id: 'c1', descripcion: 'Tele', total: 1_200_00, cantidad: 12, tarjetaId: 't1', primerMes: '2026-06', moneda: 'ARS' }],
+});
+test('[rango] "cobro entre el 4 y el 7": las cuentas usan el último día del rango', () => {
+  const c = M.cobroValido({ tipo: 'dia', dia: 4, mas: 3 });
+  assert.deepEqual(c, { tipo: 'dia', dia: 4, mas: 3 });
+  // nov-2026: 4 mié → +3 hábiles = lun 9
+  assert.deepEqual(M.rangoDeCobro(sueldo(c), '2026-11'), { desde: '2026-11-04', hasta: '2026-11-09' });
+  assert.equal(M.fechaDeCobro(sueldo(c), '2026-11'), '2026-11-09');
+  assert.equal(M.textoRangoCobro(M.proximoCobro(conRango(c, 2), '2026-10-28')), 'Cobrás entre el 4 y el 9');
+  // un día fijo sigue siendo un rango de un solo día
+  assert.deepEqual(M.rangoDeCobro(sueldo({ tipo: 'dia', dia: 12 }), '2026-11'), { desde: '2026-11-12', hasta: '2026-11-12' });
+  assert.equal(M.cobroValido({ tipo: 'dia', dia: 4, mas: 9 }), null, 'hasta +5 días hábiles');
+});
+test('[rango] vencimiento ANTES del rango: vence antes de que cobres', () => {
+  const a = M.alertasCobro(conRango({ tipo: 'dia', dia: 4, mas: 3 }, 2), '2026-10-28');
+  assert.equal(a.length, 1);
+  assert.equal(a[0].titulo, 'Tu Visa vence el 2 y cobrás entre el 4 y el 9: vence antes de que cobres');
+});
+test('[rango] vencimiento DENTRO del rango: riesgo, no certeza', () => {
+  const a = M.alertasCobro(conRango({ tipo: 'dia', dia: 4, mas: 3 }, 5), '2026-10-28');
+  assert.equal(a[0].titulo, 'Tu Visa vence el 5 y cobrás entre el 4 y el 9: puede que todavía no hayas cobrado');
+  assert.equal(a[0].enRango, true);
+});
+test('[rango] vencimiento DESPUÉS del rango: nada', () => {
+  assert.deepEqual(M.alertasCobro(conRango({ tipo: 'dia', dia: 4, mas: 3 }, 10), '2026-10-28'), []);
+});
+test('[rango] que cruza fin de mes: último día hábil +3 → cae en el mes siguiente', () => {
+  // oct-2026: último hábil vie 30 → +3 hábiles = mié 4 de noviembre
+  assert.deepEqual(M.rangoDeCobro(sueldo({ tipo: 'ultimoHabil', mas: 3 }), '2026-10'), { desde: '2026-10-30', hasta: '2026-11-04' });
+  const p = M.proximoCobro(base({ ingresos: [sueldo({ tipo: 'ultimoHabil', mas: 3 })] }), '2026-10-29');
+  assert.deepEqual([p.desde, p.fecha], ['2026-10-30', '2026-11-04']);
+  assert.equal(M.textoRangoCobro(p), 'Cobrás entre el 30 de octubre y el 4 de noviembre');
+  // los atajos precargan el rango
+  assert.deepEqual(M.rangoDeCobro(sueldo({ tipo: 'del1al5' }), '2026-11'), { desde: '2026-11-01', hasta: '2026-11-05' });
+  // migrar conserva el rango
+  assert.deepEqual(M.migrar({ v: 4, ingresos: [sueldo({ tipo: 'quintoHabil', mas: 2 })] }).ingresos[0].cobro, { tipo: 'quintoHabil', mas: 2 });
+});
+test('[rango] en el recibo leído la revisión ofrece el rango (inicio + hasta +N días hábiles)', () => {
+  assert.deepEqual(M.MAS_HABILES, [0, 1, 2, 3, 4, 5]);
+  const src = readFileSync(new URL('../api/_herramientas/mi-mes/app.js', import.meta.url), 'utf8');
+  assert.match(src, /data-it-mas/);
+  assert.match(src, /Cobro entre el/);
+});
+test('[rango] index.html sin ids repetidos (un <symbol id="i-mas"> tapaba los chips)', () => {
+  const html = readFileSync(new URL('../api/_herramientas/mi-mes/index.html', import.meta.url), 'utf8');
+  const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]);
+  const rep = ids.filter((x, i) => ids.indexOf(x) !== i);
+  assert.deepEqual(rep, []);
 });

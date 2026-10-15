@@ -11,7 +11,7 @@ import {
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
   asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, SIN_RED, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, tarjetaDeGasto, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
-  COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
+  MAS_HABILES, rangoDeCobro, textoRangoCobro, COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
 import { flagsActivos } from './flags.js';
@@ -548,6 +548,8 @@ function pintarLeido() {
         ${it.nota ? `<span class="mm-fuente">${esc(it.nota)}</span>` : ''}
         ${it.pideCobro && !it.descartado ? `<fieldset class="mm-campo mm-leido-cobro"><legend>¿Qué día te depositan el sueldo?</legend><div class="mm-chips">${COBROS.map(c => `<label class="mm-chip"><input type="radio" name="cobro-${esc(it.id)}" value="${c.tipo}" data-it-cobro${it.ingreso.cobro?.tipo === c.tipo ? ' checked' : ''}><span>${esc(c.texto)}</span></label>`).join('')}</div>
           <label class="mm-sr" for="dia-${esc(it.id)}">Día del mes</label><select id="dia-${esc(it.id)}" data-it-dia ${it.ingreso.cobro?.tipo === 'dia' ? '' : 'hidden'}>${Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}"${it.ingreso.cobro?.dia === k + 1 ? ' selected' : ''}>${k + 1}</option>`).join('')}</select>
+          ${['dia', 'quintoHabil', 'ultimoHabil'].includes(it.ingreso.cobro?.tipo) ? `<div class="mm-chips" role="radiogroup" aria-label="Hasta cuándo puede llegar">${MAS_HABILES.map(n => `<label class="mm-chip"><input type="radio" name="mas-${esc(it.id)}" value="${n}" data-it-mas${(it.ingreso.cobro.mas || 0) === n ? ' checked' : ''}><span>${esc(masTxt(n))}</span></label>`).join('')}</div>` : ''}
+          ${it.ingreso.cobro ? `<span class="mm-fuente">${esc((() => { return textoCobroForm(rangoDeCobro({ cobro: it.ingreso.cobro }, HOY)); })())}</span>` : ''}
           <span class="mm-fuente">El recibo no trae la fecha de depósito. Si no sabés, seguí: te lo preguntamos después.</span></fieldset>` : ''}
         ${it.pregunta ? `<label class="mm-check mm-reemplaza"><input type="checkbox" data-it-reemplaza ${it.accion === 'actualizar' || it.separar ? 'checked' : ''}> <span>${esc(it.pregunta)}</span></label>` : ''}
         ${it.grupo === 'tarjetas' && it.confiable === false ? '<span class="mm-tag">Leído con dudas: revisá el total</span>' : ''}
@@ -571,10 +573,10 @@ $id('leido').addEventListener('change', e => {
   if (e.target.matches('[data-it-cobro]')) {
     const t = e.target.value;
     it.ingreso.cobro = cobroValido(t === 'dia' ? { tipo: 'dia', dia: Number(li.querySelector('[data-it-dia]').value) } : { tipo: t });
-    li.querySelector('[data-it-dia]').hidden = t !== 'dia';
-    return;
+    return pintarLeido();
   }
-  if (e.target.matches('[data-it-dia]')) { it.ingreso.cobro = cobroValido({ tipo: 'dia', dia: Number(e.target.value) }); return; }
+  if (e.target.matches('[data-it-dia]')) { it.ingreso.cobro = cobroValido({ tipo: 'dia', dia: Number(e.target.value), mas: it.ingreso.cobro?.mas || 0 }); return pintarLeido(); }
+  if (e.target.matches('[data-it-mas]')) { it.ingreso.cobro = cobroValido({ ...it.ingreso.cobro, mas: Number(e.target.value) }); return pintarLeido(); }
   if (e.target.matches('[data-it-incluir]')) { it.descartado = !e.target.checked; li.classList.toggle('fuera', it.descartado); }
   if (e.target.matches('[data-it-reemplaza]') && (it.separar || it._separar)) {
     /* QA t15 · 2: sí (por defecto) lo separa del "Servicios" genérico; no, lo suma aparte */
@@ -783,7 +785,10 @@ function pintarCobroLinea() {
   const v = F.diaDeCobro && mes === HOY ? venceAntesDeCobrar(datos, HOY_ISO) : null;
   el.hidden = !v;
   if (!v) { el.textContent = ''; return; }
-  el.textContent = `${textoCobroEn(v.cobro.dias)}${v.cobro.dias > 0 ? ` · hasta entonces ${v.items.length ? `vencen ${$(v.total)}` : 'no vence nada'}` : ''}`;
+  const rango = v.cobro.desde && v.cobro.desde !== v.cobro.fecha;
+  el.textContent = rango
+    ? `${textoRangoCobro(v.cobro)} · hasta el ${Number(v.cobro.fecha.slice(8))} ${v.items.length ? `vencen ${$(v.total)}` : 'no vence nada'}`
+    : `${textoCobroEn(v.cobro.dias)}${v.cobro.dias > 0 ? ` · hasta entonces ${v.items.length ? `vencen ${$(v.total)}` : 'no vence nada'}` : ''}`;
 }
 const TIPO_EV = { cobro: 'Cobrás', vence: 'Vence', cierre: 'Cierra', gasto: 'Vence' };
 function pintarCobro() {
@@ -908,7 +913,7 @@ function abrirMeta(editar = false) {
   $id('m-objetivo').value = m ? sinSimbolo(m.objetivo, 'ARS') : s ? sinSimbolo(s.objetivo, 'ARS') : '';
   metaFecha = m?.fecha || s?.fecha || sumarMeses(HOY, 6);
   pintarFechasMeta();
-  $id('dm-tit').textContent = m ? 'Editar tu meta' : 'Tu meta';
+  $id('dmeta-tit').textContent = m ? 'Editar tu meta' : 'Tu meta';
   $id('m-borrar').hidden = !m;
   if (m) armarBorrar($id('m-borrar'), 'Borrar meta', () => { delete datos.meta; guardar(); pintarTodo(); cerrar(dm); avisar('Meta borrada'); });
   calcMeta();
@@ -1748,6 +1753,7 @@ function abrirIngreso(id = null) {
   $id('i-dia').innerHTML = Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}">${k + 1}</option>`).join('');
   $id('i-dia').value = String(cobro?.dia || 15);
   $id('i-dia-wrap').hidden = cobro?.tipo !== 'dia';
+  pintarMasCobro(cobro?.mas || 0);
   $id('i-repite').checked = x ? x.repite : true;
   const desde = x ? x.desde : mes;
   opcionesMes($id('i-desde'), difMeses(desde, sumarMeses(HOY, -12)) > 0 ? desde : sumarMeses(HOY, -12), sumarMeses(HOY, ADELANTE), desde);
@@ -1778,7 +1784,27 @@ for (const p of ['i', 'g']) $id(`${p}-meses`).addEventListener('change', e => { 
 $id('i-repite').addEventListener('change', () => etiquetaDesde('i'));
 const TIPOS_INGRESO = ['Sueldo', 'Extra', 'Aguinaldo', 'Alquiler que cobro', 'Otro'];
 let nombreIngresoPrevio = '';
-$id('i-cobros').addEventListener('change', e => { $id('i-dia-wrap').hidden = e.target.value !== 'dia'; });
+/* tanda 17: el cobro como rango: inicio (chips) + "hasta +N días hábiles" */
+/* texto que ve la persona: "Cobro entre el 4 y el 9" (o "Cobro el 5" si es un solo día) */
+const textoCobroForm = r => textoRangoCobro({ desde: r.desde, fecha: r.hasta }).replace(/^Cobrás/, 'Cobro');
+const masTxt = n => (n ? `+${n} día${n === 1 ? '' : 's'} hábil${n === 1 ? '' : 'es'}` : 'Ese día');
+function cobroDelForm() {
+  const t = di.querySelector('[name="i-cobro"]:checked')?.value || '';
+  const mas = Number(di.querySelector('[name="i-mas"]:checked')?.value || 0);
+  return t ? cobroValido(t === 'dia' ? { tipo: 'dia', dia: Number($id('i-dia').value), mas } : { tipo: t, mas }) : null;
+}
+function pintarMasCobro(mas = 0) {
+  const t = di.querySelector('[name="i-cobro"]:checked')?.value || '';
+  const conMas = ['dia', 'quintoHabil', 'ultimoHabil'].includes(t);
+  $id('i-cobro-mas-wrap').hidden = !conMas;
+  $id('i-cobro-mas').innerHTML = MAS_HABILES.map(n => `<label class="mm-chip"><input type="radio" name="i-mas" value="${n}"${n === mas ? ' checked' : ''}><span>${esc(masTxt(n))}</span></label>`).join('');
+  const c = cobroDelForm();
+  const r = c ? rangoDeCobro({ cobro: c }, HOY) : null;
+  $id('i-cobro-txt').textContent = r ? `${textoCobroForm(r)} (este mes). Usamos el último día para las cuentas.` : 'Los días hábiles son aproximados: contamos de lunes a viernes, sin feriados.';
+}
+$id('i-cobros').addEventListener('change', e => { $id('i-dia-wrap').hidden = e.target.value !== 'dia'; pintarMasCobro(0); });
+$id('i-dia').addEventListener('change', () => pintarMasCobro(Number(di.querySelector('[name="i-mas"]:checked')?.value || 0)));
+$id('i-cobro-mas').addEventListener('change', () => pintarMasCobro(Number(di.querySelector('[name="i-mas"]:checked')?.value || 0)));
 $id('i-tipos').addEventListener('change', e => {
   if (e.target.value === 'Aguinaldo') { $id('i-repite').checked = false; $id('i-desde').value = mesAguinaldo(HOY); etiquetaDesde('i'); }
 });
@@ -1791,7 +1817,7 @@ di.querySelector('form').addEventListener('submit', e => {
   const nombre = tipoElegido === 'Otro' ? (nombreIngresoPrevio && !TIPOS_INGRESO.includes(nombreIngresoPrevio) ? nombreIngresoPrevio : 'Otro ingreso') : tipoElegido;
   const tipoCobro = di.querySelector('[name="i-cobro"]:checked')?.value || '';
   const previo = editIngreso ? datos.ingresos.find(i => i.id === editIngreso) : null;
-  const cobro = F.diaDeCobro ? cobroValido(tipoCobro === 'dia' ? { tipo: 'dia', dia: Number($id('i-dia').value) } : { tipo: tipoCobro }) : cobroValido(previo?.cobro);
+  const cobro = F.diaDeCobro ? (tipoCobro ? cobroDelForm() : null) : cobroValido(previo?.cobro);
   const x = { id: editIngreso || nuevoId(), nombre,
     monto, repite: $id('i-repite').checked, desde: $id('i-desde').value, ...(cobro ? { cobro } : {}) };
   if (editIngreso) datos.ingresos = datos.ingresos.map(i => (i.id === editIngreso ? x : i));
