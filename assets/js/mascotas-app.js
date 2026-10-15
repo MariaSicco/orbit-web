@@ -25,6 +25,8 @@ let aiq = null, renewAsked = false;
 let sitterLinks = {};
 /* "Me fui" y Cámara Mimitos (mascotas-mefui.js): solo si el servidor la habilita para esta cuenta (MIMITOS_MEFUI) */
 let mefui = false;
+/* "Empezar de cero" (herramienta de prueba): el servidor dice si esta cuenta la puede usar (fuera de producción o admin) */
+let resetOk = false;
 /* Conectar tu mail: estado de cada proveedor (undefined mientras carga, null si la cuenta no está habilitada) y la búsqueda en curso */
 const mstat = { gmail: undefined, outlook: undefined };
 let gm = null, msenders = [], mmuted = [];
@@ -2104,8 +2106,47 @@ function renderCuenta() {
       </section>
       ${mefui && window.MZAWAY ? window.MZAWAY.cuentaSection() : ''}
       ${gmailAccount()}
+      ${resetOk ? resetSection() : ''}
       <button class="btn ghost wide" data-act="logout">${I('logout')} Cerrar sesión</button>
     </div></div>`;
+}
+/* ---------- "Empezar de cero" (solo pruebas: fuera de producción o cuenta administradora) ---------- */
+const resetSection = () => `<section class="sec"><h2>Zona de prueba</h2><div class="list">${featHook('cuentaPrueba')}<button class="row link-row" data-act="resetAsk">${bubble('trash', 'perdida')}<span class="what"><b>Borrar todo y empezar de cero</b><small>Para volver a probar Mimitos desde el alta. Tu compra queda.</small></span>${I('chevron')}</button></div></section>`;
+function resetPanel() {
+  const li = t => `<li>${t}</li>`;
+  panel('¿Borrar todo y empezar de cero?', `<p class="dim">Es una herramienta para probar. Lo que se borra no se puede recuperar.</p>
+    <div class="rs-cols"><div><h3 class="rs-h">Se borra</h3><ul class="rs-list rs-del">${['Tus mascotas, su libreta, historial y gastos', 'Fotos, estudios y videos', 'Turnos, veterinarias guardadas y tu zona', 'Los links del QR y del cuidador (dejan de andar)', 'El registro de escaneos del QR', 'Las cámaras de Me fui y la salida en curso', 'Gmail y Outlook conectados y sus remitentes', 'Los avisos programados'].map(li).join('')}</ul></div>
+    <div><h3 class="rs-h">Queda</h3><ul class="rs-list rs-keep">${['Tu compra y tu cuenta de Orbit', 'Lo que ya usaste de las funciones inteligentes, de Veterinarias cerca y el cupo de Gmail', 'Los avisos en este celu: siguen andando cuando vuelvas a cargar'].map(li).join('')}</ul></div></div>
+    <div class="f"><label for="rsWord">Para confirmar, escribí <b>BORRAR</b></label><input id="rsWord" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" aria-describedby="rsErr"></div>
+    <p class="err-msg" id="rsErr" role="alert" hidden></p>
+    <button class="btn big wide orange" id="rsYes" disabled>${I('trash')} Borrar todo</button><button class="btn ghost wide" id="rsNo">Cancelar</button>`);
+  const inp = $('#rsWord'), yes = $('#rsYes'), err = $('#rsErr');
+  const ok = () => inp.value.trim().toUpperCase() === 'BORRAR';
+  inp.oninput = () => { yes.disabled = !ok(); err.hidden = true; };
+  inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); if (ok()) yes.click(); } };
+  $('#rsNo').onclick = () => dPanel.close();
+  setTimeout(() => inp.focus(), 50);
+  yes.onclick = async () => {
+    if (!ok()) return;
+    yes.disabled = true; yes.textContent = 'Borrando…';
+    /* lo que estaba por guardarse ya no se guarda: si no, volvería a escribir lo que se acaba de borrar */
+    clearTimeout(saveTimer); saveTimer = null; pending = false;
+    while (saving) await new Promise(r => setTimeout(r, 100));
+    dirty = false;
+    let r = null, d = {};
+    try { r = await fetch('/api/mascotas?reset=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: inp.value.trim() }) }); d = await r.json().catch(() => ({})); } catch {}
+    if (!r || !r.ok || !d.doc) {
+      err.textContent = !r ? 'No hay conexión. Probá de nuevo.' : r.status === 429 ? `Ya lo usaste ${d.limit || 3} veces hoy. Probá mañana.` : r.status === 403 ? 'Esto anda solo en la versión de prueba.' : r.status === 400 ? 'Escribí BORRAR para confirmar.' : 'No se pudo borrar. Probá de nuevo.';
+      err.hidden = false; yes.innerHTML = `${I('trash')} Borrar todo`; yes.disabled = !ok(); return;
+    }
+    adopt(d.doc); scans = []; sitterLinks = {}; curId = ''; store.set('pet', '');
+    for (const k in hoyCache) delete hoyCache[k];
+    ask.turns = []; ask.error = null; ask.pending = ''; askStore.clear(); gm = null;
+    (FEAT.hooks.afterReset || []).forEach(fn => fn());
+    setSave(''); dPanel.close(); loadMail();
+    startOnboard();
+    toast('Listo, Mimitos quedó vacía. Empezá por tu mascota.');
+  };
 }
 /* Cuenta → Tu compra: hasta cuándo están incluidas las funciones inteligentes */
 function aiCard() {
@@ -3500,6 +3541,7 @@ document.addEventListener('click', e => {
     case 'lost': return lostPanel(cur);
     case 'suggest': return suggestPanel(cur);
     case 'export': return exportCopy();
+    case 'resetAsk': return resetOk ? resetPanel() : null;
     case 'logout': return logout();
     case 'aOn': return enablePush();
     case 'aOff': return disablePush();
@@ -3517,7 +3559,7 @@ async function boot() {
   let d = null, st = 0;
   try { const r = await fetch('/api/mascotas', { credentials: 'same-origin' }); st = r.status; d = await r.json().catch(() => null); } catch { st = 0; }
   if (st === 200 && d && d.doc) {
-    mode = 'full'; purchase = d.purchase || null; me.email = d.email || ''; aiq = d.ai || null; renewAsked = Boolean(d.renew); sitterLinks = d.sitterLinks && typeof d.sitterLinks === 'object' ? d.sitterLinks : {}; mailAllowed = d.mail && typeof d.mail === 'object' ? Boolean(d.mail.allowed) : null; mefui = Boolean(d.mefui);
+    mode = 'full'; purchase = d.purchase || null; me.email = d.email || ''; aiq = d.ai || null; renewAsked = Boolean(d.renew); sitterLinks = d.sitterLinks && typeof d.sitterLinks === 'object' ? d.sitterLinks : {}; mailAllowed = d.mail && typeof d.mail === 'object' ? Boolean(d.mail.allowed) : null; mefui = Boolean(d.mefui); resetOk = Boolean(d.reset);
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
     fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => {

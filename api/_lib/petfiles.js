@@ -124,3 +124,23 @@ export async function sweepAll(getDoc, now = Date.now()) {
   }
   return removed;
 }
+
+/* "Empezar de cero" (herramienta de prueba, api/_lib/petreset.js): todo lo que la cuenta tiene anotado
+   (en uso, en la papelera o recién subido) se borra ahora, sin esperar la gracia. Lo que Blob no deja
+   borrar en el momento queda en la papelera con fecha vieja y lo termina el cron (sweepAll). */
+export async function purgeAll(email, { destroyFn = destroy } = {}) {
+  const u = await getUsage(email);
+  const trash = (await kvGet(trashKey(email))) || {};
+  const pending = (await kvGet(pendingKey(email))) || {};
+  const refs = new Set([...Object.keys(u.items), ...Object.keys(trash), ...Object.keys(pending)]);
+  const left = {};
+  let removed = 0;
+  for (const ref of refs) {
+    try { await destroyFn(ref); removed++; delete u.items[ref]; }
+    catch { left[ref] = 1; }
+  }
+  if (Object.keys(left).length) await kvSet(trashKey(email), left); else await kvDel(trashKey(email));
+  if (Object.keys(u.items).length) await kvSet(usageKey(email), { items: u.items }); else await kvDel(usageKey(email));
+  await kvDel(pendingKey(email));
+  return { removed, left: Object.keys(left).length };
+}

@@ -228,6 +228,8 @@ export async function getSenders(email) {
   const s = (await kvGet(sendersKey(email))) || {};
   return { manual: Array.isArray(s.manual) ? s.manual.slice(0, 20) : [], learned: Array.isArray(s.learned) ? s.learned.slice(-50) : [], muted: Array.isArray(s.muted) ? s.muted.slice(-100) : [] };
 }
+/* "Empezar de cero" (api/_lib/petreset.js): borra los remitentes escritos a mano, aprendidos y silenciados */
+export async function clearSenders(email) { await kvDel(sendersKey(email)); }
 export async function saveSenders(email, s) { await kvSet(sendersKey(email), { manual: s.manual.slice(0, 20), learned: s.learned.slice(-50), muted: (s.muted || []).slice(-100) }); }
 const domainOf = from => { const d = addrOf(from).split('@')[1] || ''; return PUBLIC_MAIL.test(d) ? '' : d; };
 const addrOf = from => { const m = /<([^>]+)>/.exec(String(from || '')); return (m ? m[1] : String(from || '')).trim().toLowerCase(); };

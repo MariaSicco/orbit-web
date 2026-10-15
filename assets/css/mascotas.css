@@ -1540,3 +1540,12 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 /* en Inicio, el saludo cede lugar (con "…") antes que los botones; en 360–380 px los botones se juntan un poco */
 .hi{min-width:0;flex:0 1 auto}.hi span{min-width:0;overflow:hidden}.hi small,.hi b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:380px){.top{gap:6px;padding-left:12px;padding-right:12px}.top-acts{gap:4px}.mf-pill{padding-left:10px;padding-right:10px}}
+/* Cuenta → "Empezar de cero" (solo pruebas): qué se borra y qué queda */
+.rs-cols{display:grid;gap:14px;margin:14px 0 18px}
+@media(min-width:620px){.rs-cols{grid-template-columns:1fr 1fr}}
+.rs-h{font-size:14px;font-weight:700;margin:0 0 6px}
+.rs-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;font-size:14.5px;line-height:1.35;color:var(--ink2)}
+.rs-list li{position:relative;padding-left:18px}
+.rs-list li::before{content:'';position:absolute;left:2px;top:.45em;width:8px;height:8px;border-radius:50%;background:var(--late)}
+.rs-keep li::before{background:var(--ok)}
+#rsYes{margin-top:8px}

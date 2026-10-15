@@ -30,6 +30,8 @@
                                 (api/_lib/petmail.js + adaptadores): busca estudios en el mail y los importa por el mismo motor de ?studyscan
 
    POST ?scanclear=1 {petId?} → borra el registro de escaneos del QR (de una mascota o todo)
+   POST ?reset=1 {confirm:'BORRAR'} → "Empezar de cero" (prueba): borra todo lo de Mimitos de la cuenta salvo compra,
+                                contadores y push. Solo fuera de producción o admin (api/_lib/petreset.js); si no, 403
    POST ?gmail=disconnect / ?outlook=disconnect → anda con sesión aunque no haya compra ni configuración:
                                 borra lo guardado y revoca si se puede
 
@@ -60,6 +62,7 @@ import { handlePlaces } from './_lib/petplaces.js';
 import { cleanAppointments, cleanPlace, syncApptIndex } from './_lib/petturnos.js';
 import { cleanAway, syncAwayIndex, handleCam, mefuiAllowed } from './_lib/petaway.js';
 import * as HOY from './_lib/pethoy.js';
+import { handleReset, resetAllowed } from './_lib/petreset.js';
 import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos, todayAR } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
@@ -656,10 +659,13 @@ export default async function handler(req, res) {
     const renew = ai?.expired ? await renewInterest(s.email).catch(() => false) : false;
     const paused = await aiPaused().catch(() => false);
     /* mail.allowed: la app no consulta ?gmail=status ni ?outlook=status si la cuenta no está habilitada (sin 403 en la consola) */
-    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans, ai: ai ? { ...ai, paused } : ai, renew, sitterLinks, mail: { allowed: mailAllowed(s.email) }, mefui: mefuiAllowed(s.email) });
+    return res.status(200).json({ access: 'full', purchase, email: s.email, doc, scans, ai: ai ? { ...ai, paused } : ai, renew, sitterLinks, mail: { allowed: mailAllowed(s.email) }, mefui: mefuiAllowed(s.email), reset: resetAllowed(s.email) });
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
   const body = await readBody(req);
+
+  /* "Empezar de cero" (herramienta de prueba): solo fuera de producción o para admin; si no, 403 */
+  if (q.reset) return handleReset(req, res, { email: s.email, body });
 
   /* "Avisame cuando pueda renovar": solo guarda el interés; todavía no hay checkout de renovación */
   if (q.renew) {
