@@ -1067,6 +1067,24 @@ const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['ag
 const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
 const TAB_OF = { hoy: 'inicio', historial: 'inicio', vets: 'inicio', antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta', mefui: 'inicio' };
 const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
+/* ---------- funciones nuevas, detrás de un interruptor (todas apagadas por defecto) ----------
+   Cada una vive en su archivo (assets/js/mascotas-f-<nombre>.js y assets/css/mascotas-f-<nombre>.css) y solo se baja
+   si está prendida. Para probarlas sin desplegar: /mascotas?funciones=salud,vete (queda en este navegador);
+   ?funciones=no las apaga. Para que salgan para todos: poner en true acá. */
+const FEATURES = { salud: false, restaurar: false, avisosAlta: false, vete: false };
+try {
+  const q = new URLSearchParams(location.search).get('funciones');
+  if (q != null) localStorage.setItem('mimitos:funciones', q === 'no' ? '' : q);
+  for (const k of (localStorage.getItem('mimitos:funciones') || '').split(',')) if (k in FEATURES) FEATURES[k] = true;
+} catch {}
+/* lo que cada función engancha: rutas, rutas sin barra, acciones (data-act) y ganchos con nombre */
+const FEAT = window.MZFEAT = { on: FEATURES, routes: {}, bare: BARE, actions: {}, hooks: {} };
+const featHook = (name, ...a) => (FEAT.hooks[name] || []).map(fn => fn(...a) || '').join('');
+const featList = (name, ...a) => (FEAT.hooks[name] || []).flatMap(fn => fn(...a) || []);
+for (const k in FEATURES) if (FEATURES[k]) {
+  const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = `/assets/css/mascotas-f-${k}.css?v=1`; document.head.appendChild(l);
+  const sc = document.createElement('script'); sc.src = `/assets/js/mascotas-f-${k}.js?v=1`; sc.onload = () => { if (mode === 'full') render(); }; document.body.appendChild(sc);
+}
 const nav = $('#nav'), topBar = $('.top');
 function parseHash() { const [name = 'inicio', arg = ''] = location.hash.replace(/^#\/?/, '').split('/'); return { name: name || 'inicio', arg: decodeURIComponent(arg) }; }
 function go(name, arg) { const h = '#/' + name + (arg ? '/' + encodeURIComponent(arg) : ''); if (location.hash === h) render(); else location.hash = h; }
@@ -1151,6 +1169,7 @@ function view() {
   if (route.name === 'preguntar') return renderAsk();
   if (!doc.pets.length && route.name !== 'cuenta' && route.name !== 'avisos') return renderFirst();
   const p = curPet(); if (p && p.id !== curId) curId = p.id;
+  if (FEAT.routes[route.name]) return FEAT.routes[route.name](p);
   switch (route.name) {
     case 'libreta': return renderLibreta(p);
     case 'pdf': return renderPdf(p);
@@ -1295,8 +1314,9 @@ function renderInicio(p) {
   const salud = [sm.active.length ? `Problemas: ${sm.active.map(c => c.name).join(', ')}` : '', p.allergies ? `Alergias: ${p.allergies}` : ''].filter(Boolean).join(' · ');
   const vacc = { ok: ['Al día', 'ok'], sug: ['Sin confirmar', 'none'], late: [`Vencida: ${sm.vaccLate.map(x => x.r.name).join(', ')}`, 'late'], none: ['Sin cargar', 'none'] }[sm.vacc];
   const anti = { ok: ['Al día', 'ok'], sug: ['Sin confirmar', 'none'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
-  const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', esc(Cap(quienCuida(p)).replace(/^Quien/, 'Quién')), 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', salud ? esc(salud) : 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
+  const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', esc(Cap(quienCuida(p)).replace(/^Quien/, 'Quién')), 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', featHook('antecedentesLabel') || 'Antecedentes', salud ? esc(salud) : 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
   quick.unshift(['vets', 'pin', 'cuida', 'Veterinarias cerca', 'Pedir turno, guardias 24 h y pet shops']);
+  quick.push(...featList('inicioQuick', p));
   return `<div class="dash">
     <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
     <div class="dash-r">
@@ -1812,7 +1832,7 @@ function renderLibreta(p) {
   return `${doc.pets.length > 1 ? switcher(p) : ''}
     <div class="lib-top">
       <div><span class="eyebrow">Libreta sanitaria</span><h1>La libreta de ${esc(p.name)}</h1></div>
-      <div class="lib-tools"><button class="btn sm ghost" data-act="add">${I('plus')} Cargar</button><button class="btn sm" data-act="go" data-to="pdf">${I('print')} PDF</button></div>
+      <div class="lib-tools">${featHook('libretaTools', p)}<button class="btn sm ghost" data-act="add">${I('plus')} Cargar</button><button class="btn sm" data-act="go" data-to="pdf">${I('print')} PDF</button></div>
     </div>
     <div class="lib-bar">
       <div class="chips scroll" role="group" aria-label="Secciones de la libreta" id="libSecs">${LIB_SECS.map(([k, l]) => `<button class="chip" data-act="lsec" data-sec="${k}" aria-pressed="false">${l}</button>`).join('')}</div>
@@ -2069,7 +2089,7 @@ function renderCuenta() {
       <section class="sec"><h2>Ajustes</h2>
         <div class="list">
           <button class="row link-row" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span class="what"><b>Centro de avisos</b><small>${nOn ? 'Activados' + (notify.devices ? ` en ${notify.devices} ${notify.devices === 1 ? 'dispositivo' : 'dispositivos'}` : '') + (notify.mail ? (notify.devices ? ' y por mail' : ' por mail') : '') : 'Apagados: activalos para no perderte fechas'}</small></span>${I('chevron')}</button>
-          <button class="row link-row" data-act="export">${bubble('download', 'viaje')}<span class="what"><b>Exportar copia de tus datos</b><small>Un archivo con todo lo que cargaste, para guardarlo en tu compu o en Drive. Todavía no se puede volver a cargar en la app.</small></span>${I('chevron')}</button>
+          <button class="row link-row" data-act="export">${bubble('download', 'viaje')}<span class="what"><b>Exportar copia de tus datos</b><small>${featHook('exportSub') || 'Un archivo con todo lo que cargaste, para guardarlo en tu compu o en Drive. Todavía no se puede volver a cargar en la app.'}</small></span>${I('chevron')}</button>${featHook('cuentaAjustes')}
           <a class="row link-row" href="/privacidad" target="_blank" rel="noopener">${bubble('shield', 'salud')}<span class="what"><b>Privacidad</b><small>Tus datos viven en tu cuenta. El QR solo muestra lo necesario para que te la devuelvan.</small></span>${I('chevron')}</a>
           <a class="row link-row" href="/terminos" target="_blank" rel="noopener">${bubble('doc', 'med')}<span class="what"><b>Términos y condiciones</b><small>Licencia y soporte</small></span>${I('chevron')}</a>
         </div>
@@ -2297,6 +2317,7 @@ async function obFinish(scanFiles) {
   const nx = Z.upcoming(p)[0];
   /* lo que se promete es "te avisamos antes de cada dosis": si los avisos están apagados, el alta termina ofreciéndolos */
   const avOff = !(notify && (notify.devices || notify.mail));
+  if ((FEAT.hooks.afterOnboard || []).some(fn => fn(p, nx, avOff))) return;
   const when = nx ? fmt(nx.r.next || nx.r.date, { day: 'numeric', month: 'short' }) : '';
   toast(`Listo, ${p.name} ya está en Mimitos.${nx ? ` Próxima: ${nx.r.name}, ${when}.` : ''}${avOff && nx ? ' ¿Te avisamos antes?' : ''}`, avOff ? goAvisos : undefined);
 }
@@ -3443,6 +3464,7 @@ document.addEventListener('click', e => {
     case 'renew': { const r = p?.records.find(x => x.id === b.dataset.rec); return r ? renewSheet(p, r) : null; }
     case 'icsRec': { const r = p.records.find(x => x.id === b.dataset.rec); return calendar([Z.recordEvent(p, r)], `${p.name} ${r.name}`); }
     case 'icsFood': return calendar([Z.foodEvent(p, p.food)], `${p.name} alimento`);
+    default: if (FEAT.actions[b.dataset.act]) return FEAT.actions[b.dataset.act](b, p, cur); return;
     case 'icsAll': return calendar(doc.pets.flatMap(q => [...Z.upcoming(q).filter(x => x.s.days >= 0).map(x => Z.recordEvent(q, x.r)), Z.foodEvent(q, q.food), ...q.meds.filter(m => m.start && Z.medState(m, q.log).state !== 'ended').map(m => Z.medEvent(q, m))]).concat(window.MZVETS?.events(doc) || []), 'Mimitos fechas');
   }
 });
@@ -3479,7 +3501,9 @@ try {
   navigator.serviceWorker?.startMessages?.();
 } catch {}
 /* puente para los módulos aparte (mascotas-vets.js: Veterinarias cerca y turnos) */
-window.MZAPP = { get doc() { return doc; }, get mefui() { return mefui; }, get mode() { return mode; }, get notify() { return notify; }, get route() { return route; }, dPanel, curPet, petById, changed, render, go, panel, toast, openForm, calendar, visitForm };
+window.MZAPP = { get doc() { return doc; }, get mefui() { return mefui; }, get mode() { return mode; }, get notify() { return notify; }, get route() { return route; }, get pushHere() { return pushHere; }, get curId() { return curId; }, set curId(v) { curId = v; }, me, dPanel, curPet, petById, changed, render, go, panel, toast, openForm, calendar, visitForm,
+  /* para las funciones con interruptor (mascotas-f-*.js) */
+  store, avatar, bubble, medRow, uid, norm, drop, la, Cap, kg, dd, after, backTo, notifyPost, enablePush, isIOS, standalone, pushSupported, conditionForm, surgeryForm, medForm, petForm, exportCopy, normRec: r => normRec(r) };
 route = parseHash();
 render();
 boot();
