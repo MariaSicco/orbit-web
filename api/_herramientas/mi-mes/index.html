@@ -342,6 +342,7 @@
     <fieldset class="mm-campo"><legend>De un solo mes</legend><div class="mm-chips" id="g-unmes"></div></fieldset>
     <div class="mm-campo"><label for="g-monto" id="g-monto-lbl">Monto por mes, en pesos</label><input id="g-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 450.000" aria-describedby="g-monto-err" required><p class="mm-err" id="g-monto-err"></p></div>
     <label class="mm-check"><input type="checkbox" id="g-repite" checked> <span>Se repite todos los meses</span></label>
+    <fieldset class="mm-campo" id="g-tj-wrap" hidden><legend>¿Se debita de una tarjeta?</legend><div class="mm-chips" id="g-tj"></div></fieldset>
     <div class="mm-campo" id="g-dia-wrap" hidden><label for="g-dia">¿Qué día vence? <span class="opc">(opcional)</span></label><select id="g-dia"></select><p class="mm-ayuda">Con el día te avisamos si vence antes de que cobres.</p></div>
     <fieldset class="mm-campo mm-meses" id="g-meses-wrap" hidden><legend>¿En qué mes?</legend><div class="mm-chips" id="g-meses"></div></fieldset>
     <div class="mm-fila">
@@ -416,6 +417,15 @@
     <div class="mm-campo"><label for="p-monto">Monto que pagaste, en pesos</label><input id="p-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" aria-describedby="p-monto-err" required><p class="mm-err" id="p-monto-err"></p></div>
     <p class="mm-ayuda">Lo que quedó sin pagar lo sumamos al mes que viene con intereses estimados.</p>
     <div class="mm-dlg-pie"><button type="submit" class="mm-btn">Guardar</button></div>
+  </form>
+</dialog>
+
+<!-- ── Cambiar o dejar una tarjeta ── -->
+<dialog class="mm-dlg" id="dlg-cambiotj" aria-labelledby="dct-tit">
+  <form class="mm-form" novalidate>
+    <div class="mm-dlg-top"><h2 id="dct-tit">Cambiar o dejar esta tarjeta</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <div id="ct-cuerpo"></div>
+    <div class="mm-dlg-pie"><button type="submit" class="mm-btn">Guardar el cambio</button></div>
   </form>
 </dialog>
 

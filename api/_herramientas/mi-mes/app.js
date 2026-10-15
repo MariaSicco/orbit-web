@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  historiaCompra, vincularCredito, TIPOS_EVIDENCIA, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -306,6 +306,51 @@ $id('dlg-pago').querySelector('form').addEventListener('submit', e => {
   datos = registrarPagoResumen(datos, pagoDe, { estado: 'otro', monto: v }); guardar(); pintarTodo(); cerrar($id('dlg-pago'));
   const rr = datos.resumenes.find(x => x.id === pagoDe), f = rr ? financiacionEstimada(rr, datos) : null;
   avisar(f?.total ? `Pasan ${$(f.saldo)} al mes que viene, más ${$(f.interes)} de intereses estimados` : 'Listo, pagado');
+});
+
+/* ════════ (7) CAMBIAR O DEJAR UNA TARJETA ════════ */
+function cambioTarjetaHTML(t) {
+  const cs = (datos.cambiosTarjeta || []).filter(c => c.desde === t.id || c.hacia === t.id);
+  if (!cs.length && !t.baja) return '';
+  return cs.map(c => {
+    const v = verificarCambio(datos, c);
+    const de = tarjetaDe(c.desde)?.nombre, a = c.hacia ? tarjetaDe(c.hacia)?.nombre : null;
+    const hechos = new Set(c.checklist);
+    return `<section class="mm-panel mm-cambiotj" aria-label="Cambio de tarjeta">
+      <p class="mm-item-meta">${a ? `Cambio de ${esc(de)} a ${esc(a)}` : `Dejaste ${esc(de)}`} · ${esc(fechaAR(c.fecha))}</p>
+      ${v.texto ? `<p class="mm-meta-txt">${esc(v.texto)}</p>` : ''}
+      <ul class="mm-check-lista">${CHECKLIST_CAMBIO.map(k => `<li><label class="mm-check"><input type="checkbox" data-ct-check="${esc(c.id)}" value="${k.id}"${hechos.has(k.id) ? ' checked' : ''}> <span>${esc(k.texto)}</span></label></li>`).join('')}</ul>
+      <p class="mm-fuente">El historial de ${esc(de)} queda guardado.</p></section>`;
+  }).join('');
+}
+const dct = $id('dlg-cambiotj');
+let ctDesde = null;
+function abrirCambioTj(id) {
+  ctDesde = id;
+  const a = asistenteCambio(datos, id, HOY_ISO);
+  const otras = datos.tarjetas.filter(t => t.id !== id && !t.baja);
+  $id('ct-cuerpo').innerHTML = `
+    <fieldset class="mm-campo"><legend>¿Qué querés hacer?</legend><div class="mm-chips">${otras.map((t, i) => `<label class="mm-chip"><input type="radio" name="ct-hacia" value="${esc(t.id)}"${i === 0 ? ' checked' : ''}><span>Pasar a ${esc(t.nombre)}</span></label>`).join('')}
+      <label class="mm-chip"><input type="radio" name="ct-hacia" value=""${otras.length ? '' : ' checked'}><span>Dejarla</span></label></div></fieldset>
+    <fieldset class="mm-campo"><legend>Gastos fijos que se debitan de ${esc(a.tarjeta.nombre)}</legend>
+      ${a.gastos.length ? a.gastos.map(g => `<label class="mm-check"><input type="checkbox" name="ct-g" value="${esc(g.id)}" checked> <span>${esc(g.nombre)} · ${esc($(g.monto))}</span></label>`).join('') : '<p class="mm-fuente">No marcaste gastos fijos en esta tarjeta. Podés hacerlo en cada gasto: "¿Se debita de una tarjeta?".</p>'}</fieldset>
+    <div class="mm-campo"><p class="mm-item-meta">Cuotas que faltan</p>${a.cuotas.length ? `<p class="mm-meta-txt">${a.cuotas.map(c => `${esc(c.nombre)}: ${c.cuotas} cuota${c.cuotas === 1 ? '' : 's'} (${esc(fm(c.restan, c.moneda))})`).join(' · ')}. Siguen saliendo en esta tarjeta hasta ${esc(nombreMes(a.ultimaCuota))}.</p>` : '<p class="mm-fuente">No quedan cuotas.</p>'}</div>
+    ${a.devoluciones.length ? `<div class="mm-campo"><p class="mm-item-meta">Devoluciones esperadas</p><p class="mm-meta-txt">${a.devoluciones.map(d => `${esc(d.motivo)} (${esc($(d.monto))})`).join(' · ')}</p></div>` : ''}
+    <p class="mm-fuente">Después vas a tener una checklist en la tarjeta, y cuando subas el resumen de la nueva verificamos qué ya se cobró ahí.</p>`;
+  abrir(dct, dct.querySelector('[name="ct-hacia"]'));
+}
+dct.querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const hacia = dct.querySelector('[name="ct-hacia"]:checked')?.value || null;
+  const gastos = [...dct.querySelectorAll('[name="ct-g"]:checked')].map(i => i.value);
+  datos = aplicarCambio(datos, { desde: ctDesde, hacia, gastos, fecha: HOY_ISO }); guardar(); pintarTodo(); cerrar(dct);
+  avisar(hacia ? `Listo: ${gastos.length} gasto${gastos.length === 1 ? '' : 's'} pasan a ${tarjetaDe(hacia)?.nombre}` : 'Listo: la tarjeta queda como dada de baja, con su historial');
+});
+document.addEventListener('change', e => {
+  const c = e.target.closest?.('[data-ct-check]');
+  if (!c) return;
+  datos.cambiosTarjeta = datos.cambiosTarjeta.map(x => (x.id === c.dataset.ctCheck ? { ...x, checklist: c.checked ? [...new Set([...x.checklist, c.value])] : x.checklist.filter(k => k !== c.value) } : x));
+  guardar();
 });
 
 /* ════════ (6) TE TIENEN QUE DEVOLVER ════════ */
@@ -821,7 +866,9 @@ function pintarUna() {
       <div class="mm-acciones">
         <button type="button" class="mm-btn" data-importar="${esc(t.id)}">${ic('subir')} Subir resumen de esta tarjeta</button>
         <button type="button" class="mm-btn sec" data-editar-tarjeta="${esc(t.id)}">${ic('editar')} Editar</button>
+        ${F.cambioTarjeta && !t.baja ? `<button type="button" class="mm-link" data-cambiar-tj="${esc(t.id)}">Cambiar o dejar esta tarjeta</button>` : ''}
       </div>
+      ${F.cambioTarjeta ? cambioTarjetaHTML(t) : ''}
       ${fechasHTML}
       <section class="mm-panel" aria-label="Resumen del mes">${resumenHTML}</section>
       ${dispHTML}
@@ -1499,6 +1546,8 @@ function abrirGasto(id = null) {
   nombreGastoPrevio = x && x.nombre !== x.categoria ? { nombre: x.nombre, categoria: x.categoria } : null;
   $id('g-repite').checked = x ? x.repite : true;
   $id('g-dia-wrap').hidden = !F.diaDeCobro;
+  $id('g-tj-wrap').hidden = !F.cambioTarjeta || !datos.tarjetas.length;
+  $id('g-tj').innerHTML = [{ id: '', nombre: 'No, de la cuenta' }, ...datos.tarjetas.filter(t => !t.baja)].map(t => `<label class="mm-chip"><input type="radio" name="g-tj" value="${esc(t.id)}"${(x?.tarjetaId || '') === t.id ? ' checked' : ''}><span>${esc(t.nombre)}</span></label>`).join('');
   $id('g-dia').innerHTML = '<option value="">Sin día</option>' + Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}">El ${k + 1}</option>`).join('');
   $id('g-dia').value = x?.dia ? String(x.dia) : '';
   const desde = x ? x.desde : mes;
@@ -1525,6 +1574,9 @@ dg.querySelector('form').addEventListener('submit', e => {
   const hasta = repite ? $id('g-hasta').value : '';
   const x = { id: editGasto || nuevoId(), nombre: unMesElegido && unMesElegido.categoria === catElegida ? unMesElegido.nombre : nombreGastoPrevio && nombreGastoPrevio.categoria === catElegida ? nombreGastoPrevio.nombre : catElegida,
     categoria: catElegida, monto, repite, desde: $id('g-desde').value, ...(hasta ? { hasta } : {}) };
+  const previoG = datos.gastos.find(g => g.id === editGasto);
+  const tjG = F.cambioTarjeta ? (dg.querySelector('[name="g-tj"]:checked')?.value || '') : (previoG?.tarjetaId || '');
+  if (tjG) x.tarjetaId = tjG;
   const diaG = F.diaDeCobro ? Number($id('g-dia').value) : (datos.gastos.find(g => g.id === editGasto)?.dia || 0);
   if (diaG >= 1 && diaG <= 31) x.dia = diaG;
   if (editGasto) datos.gastos = datos.gastos.map(g => (g.id === editGasto ? x : g));
@@ -2099,6 +2151,8 @@ document.addEventListener('click', e => {
   if (t.closest('[data-franja]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-franja]')?.focus(); }
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
+  const ctj = t.closest('[data-cambiar-tj]');
+  if (ctj) return abrirCambioTj(ctj.dataset.cambiarTj);
   const vc = t.closest('[data-vincular]');
   if (vc) { datos = vincularCredito(datos, vc.dataset.vincular, vc.dataset.res, Number(vc.dataset.i)); guardar(); pintarFicha(datos.cuotas.find(x => x.id === vc.dataset.vincular)); return avisar('Listo: queda en la historia de la compra'); }
   const dd = t.closest('[data-dev-de]');

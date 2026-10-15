@@ -657,3 +657,8 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 .mm-dev-cab{display:flex;justify-content:space-between;gap:10px}
 .mm-dev .mm-fuente{margin:2px 0 4px}
 .mm-dev.vencido .mm-dev-cab b:last-child{color:var(--neg)}
+
+/* ════════ (7) Cambio de tarjeta ════════ */
+.mm-check-lista{list-style:none;margin:0 0 6px;padding:0}
+.mm-check-lista .mm-check{align-items:flex-start;min-height:44px;padding:6px 0}
+.mm-cambiotj .mm-meta-txt{color:var(--tinta)}

@@ -659,7 +659,7 @@ export function conciliarCompras(datos, tarjetaId, lectura) {
 /* ── esquema y migración ── */
 export const LIMITE_DEFECTO = 30;
 export const datosVacios = () => ({ v: ESQUEMA, ingresos: [], gastos: [], cuotas: [], tarjetas: [], resumenes: [], cambio: {}, rubrosComercio: {},
-  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [], concilia: [], confirmados: {}, reales: {}, preguntasLuego: [], cuentas: [], devolver: [] });
+  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [], concilia: [], confirmados: {}, reales: {}, preguntasLuego: [], cuentas: [], devolver: [], cambiosTarjeta: [] });
 
 const entero = x => Number.isSafeInteger(x) && x > 0;
 const dia = x => Number.isInteger(x) && x >= 1 && x <= 31;
@@ -688,7 +688,8 @@ export function migrar(crudo) {
       ...(entero(t.limiteFinanciacion) ? { limiteFinanciacion: t.limiteFinanciacion } : {}),
       ...(Array.isArray(t.adicionales) ? { adicionales: t.adicionales.filter(a => /^\d{4}$/.test(String(a))).map(String).slice(0, 6) } : {}),
       ...(dia(t.diaCierre) ? { diaCierre: t.diaCierre } : {}),
-      ...(dia(t.diaVence) ? { diaVence: t.diaVence } : {}) });
+      ...(dia(t.diaVence) ? { diaVence: t.diaVence } : {}),
+      ...(esFecha(t.baja) ? { baja: t.baja } : {}) });
   }
   const ids = new Set(out.tarjetas.map(t => t.id));
   for (const i of Array.isArray(crudo.ingresos) ? crudo.ingresos : []) {
@@ -702,7 +703,8 @@ export function migrar(crudo) {
     const categoria = CATEGORIAS.includes(g.categoria) ? g.categoria : 'Otros';
     out.gastos.push({ id: String(g.id), nombre: texto(g.nombre) || categoria, categoria, monto: g.monto,
       repite: !!g.repite, desde: g.desde, ...(g.repite && esMes(g.hasta) ? { hasta: g.hasta } : {}),
-      ...(dia(g.dia) ? { dia: g.dia } : {}) });
+      ...(dia(g.dia) ? { dia: g.dia } : {}),
+      ...(typeof g.tarjetaId === 'string' && out.tarjetas.some(t => t.id === g.tarjetaId) ? { tarjetaId: g.tarjetaId } : {}) });
   }
   for (const c of Array.isArray(crudo.cuotas) ? crudo.cuotas : []) {
     if (!c?.id || !entero(c.total) || !entero(c.cantidad) || c.cantidad > 72 || !esMes(c.primerMes)) continue;
@@ -792,6 +794,9 @@ export function migrar(crudo) {
   out.cambios = (Array.isArray(crudo.cambios) ? crudo.cambios : []).filter(c => typeof c?.motivo === 'string' && typeof c?.fecha === 'string').slice(-20)
     .map(c => ({ motivo: texto(c.motivo, 80), fecha: c.fecha.slice(0, 25) }));
   out.devolver = (Array.isArray(crudo.devolver) ? crudo.devolver : []).map(devolverValido).filter(Boolean).slice(-100);
+  out.cambiosTarjeta = (Array.isArray(crudo.cambiosTarjeta) ? crudo.cambiosTarjeta : []).filter(c => c && out.tarjetas.some(t => t.id === c.desde) && esFecha(c.fecha))
+    .slice(-10).map(c => ({ id: String(c.id), desde: c.desde, hacia: out.tarjetas.some(t => t.id === c.hacia) ? c.hacia : null, fecha: c.fecha,
+      gastos: (Array.isArray(c.gastos) ? c.gastos : []).filter(g => typeof g === 'string'), checklist: (Array.isArray(c.checklist) ? c.checklist : []).filter(x => typeof x === 'string') }));
   out.preguntasLuego = (Array.isArray(crudo.preguntasLuego) ? crudo.preguntasLuego : []).filter(x => typeof x === 'string').slice(-100);
   out.consejosVistos = (Array.isArray(crudo.consejosVistos) ? crudo.consejosVistos : []).filter(x => typeof x === 'string').slice(-100);
   return out;
@@ -2016,4 +2021,56 @@ export function vincularCredito(datos, cuotaId, resumenId, i) {
   const p = r?.pagosYCreditos?.[i];
   if (!p) return datos;
   return { ...datos, cuotas: datos.cuotas.map(c => (c.id === cuotaId ? { ...c, evidencias: [...(c.evidencias || []), { tipo: 'credito', origen: resumenId, i, fecha: p.fecha || null, monto: -p.monto, concepto: p.concepto }] } : c)) };
+}
+
+
+/* ═══════════════ (7) Cambiar o dejar una tarjeta ═══════════════
+   Lista lo que cuelga de la tarjeta (gastos fijos que se debitan ahí, cuotas
+   que faltan, devoluciones esperadas) y una checklist. Cuando llega el
+   resumen de la nueva, verifica qué ya se cobró ahí y qué sigue pendiente.
+   El historial de la tarjeta vieja se conserva. */
+export const CHECKLIST_CAMBIO = [
+  { id: 'debitos', texto: 'Pasá cada débito automático a la tarjeta nueva (en la web o app de cada servicio).' },
+  { id: 'cuotas', texto: 'Antes de pedir la baja, fijate que no queden cuotas: siguen saliendo en la tarjeta vieja hasta terminar.' },
+  { id: 'devoluciones', texto: 'Si esperás una devolución en la vieja, no la des de baja hasta que se acredite.' },
+  { id: 'baja', texto: 'Pedí la baja por escrito y guardá el número de gestión.' },
+  { id: 'ultimo', texto: 'Revisá el último resumen de la vieja: tiene que venir en cero.' },
+];
+export function asistenteCambio(datos, desdeId, hoy) {
+  hoy = aFecha(hoy);
+  const t = (datos.tarjetas || []).find(x => x.id === desdeId);
+  if (!t) return null;
+  const mes = hoy.slice(0, 7);
+  const gastos = (datos.gastos || []).filter(g => g.tarjetaId === desdeId && activoEn(g, mes));
+  const cuotas = (datos.cuotas || []).filter(c => c.tarjetaId === desdeId).map(c => ({ c, f: fichaCompra(datos, c.id, hoy) }))
+    .filter(x => x.f.restan > 0).map(x => ({ id: x.c.id, nombre: x.c.descripcion || 'Compra en cuotas', moneda: x.f.moneda, restan: x.f.restan, cuotas: x.f.obligaciones.filter(o => !o.pasada).length,
+      ultimoMes: x.f.obligaciones[x.f.obligaciones.length - 1].mes }));
+  const delaTarjeta = new Set((datos.cuotas || []).filter(c => c.tarjetaId === desdeId).map(c => c.id));
+  const devoluciones = bandejaDevolver(datos, hoy).pendientes.filter(x => x.cuotaId && delaTarjeta.has(x.cuotaId));
+  const ultimaCuota = cuotas.map(c => c.ultimoMes).sort((a, b) => difMeses(b, a))[0] || null;
+  return { tarjeta: t, gastos, cuotas, devoluciones, ultimaCuota, totalCuotas: cuotas.reduce((a, c) => a + (aPesos(c.restan, c.moneda, datos) ?? 0), 0), checklist: CHECKLIST_CAMBIO };
+}
+/* Mueve los gastos elegidos a la tarjeta nueva y deja registrado el cambio. */
+export function aplicarCambio(datos, { desde, hacia = null, gastos = [], fecha }) {
+  const d = structuredClone(datos);
+  d.cambiosTarjeta = [...(d.cambiosTarjeta || []), { id: `cambio-${desde}-${fecha}`, desde, hacia, fecha, gastos: [...gastos], checklist: [] }].slice(-10);
+  if (hacia) d.gastos = d.gastos.map(g => (gastos.includes(g.id) ? { ...g, tarjetaId: hacia } : g));
+  if (!hacia) d.tarjetas = d.tarjetas.map(t => (t.id === desde ? { ...t, baja: fecha } : t));
+  return d;
+}
+/* Verificación con los resúmenes posteriores al cambio. */
+export function verificarCambio(datos, cambio) {
+  const resDe = id => (datos.resumenes || []).filter(r => r.tarjetaId === id && esFecha(r.cierre || r.vencimiento) && diasEntre(cambio.fecha, r.cierre || r.vencimiento) >= 0);
+  const nuevos = cambio.hacia ? resDe(cambio.hacia) : [];
+  const viejos = resDe(cambio.desde);
+  const aparece = (rs, g) => rs.some(r => (r.consumos || []).some(c => mismoComercio(c.comercio, g.nombre)));
+  const items = cambio.gastos.map(id => (datos.gastos || []).find(g => g.id === id)).filter(Boolean).map(g => ({
+    gastoId: g.id, nombre: g.nombre,
+    estado: aparece(nuevos, g) ? 'nueva' : aparece(viejos, g) ? 'vieja' : 'pendiente',
+  }));
+  const partes = items.map(i => i.estado === 'nueva' ? `${i.nombre} ya se cobró en la nueva` : i.estado === 'vieja' ? `${i.nombre} se sigue cobrando en la vieja` : `${i.nombre} sigue pendiente`);
+  const unir = xs => xs.length <= 1 ? xs.join('') : `${xs.slice(0, -1).join('; ')}; ${xs[xs.length - 1]}`;
+  const texto2 = !nuevos.length && cambio.hacia ? 'Cuando subas el primer resumen de la tarjeta nueva, verificamos qué ya se cobró ahí.'
+    : partes.length ? `${unir(partes).charAt(0).toUpperCase()}${unir(partes).slice(1)}.` : '';
+  return { items, texto: texto2, listo: items.length > 0 && items.every(i => i.estado === 'nueva'), hayResumenNuevo: nuevos.length > 0 };
 }
