@@ -105,3 +105,17 @@ export async function buscarDocumentosEnMail(avance) {
   const cual = c.google && c.microsoft ? (window.confirm('¿Tu mail es de Gmail? Aceptar = Gmail · Cancelar = Outlook o Hotmail') ? 'google' : 'microsoft') : c.google ? 'google' : 'microsoft';
   return cual === 'google' ? buscarEnGmail(c.google, avance) : buscarEnOutlook(c.microsoft, avance);
 }
+
+/* Quitar el permiso (QA t14 · 4). Gmail se revoca solo al terminar cada búsqueda;
+   Microsoft guarda el consentimiento en la cuenta, así que se explica cómo quitarlo. */
+export const QUITAR_PERMISO = {
+  microsoft: {
+    personal: 'https://account.live.com/consent/Manage',
+    trabajo: 'https://myapps.microsoft.com',
+    texto: 'Cuenta personal (Outlook, Hotmail, Live): entrá a account.live.com/consent/Manage, buscá "Orbit" y tocá "Quitar estos permisos". Cuenta del trabajo o la facultad: entrá a myapps.microsoft.com, abrí el menú de "Orbit" y elegí "Administrar" → "Revocar permisos" (si no aparece, lo hace quien administra tu cuenta).',
+  },
+  google: {
+    url: 'https://myaccount.google.com/connections',
+    texto: 'Gmail: el acceso se revoca solo al terminar cada búsqueda. Si querés confirmarlo, entrá a myaccount.google.com/connections y quitá "Orbit".',
+  },
+};

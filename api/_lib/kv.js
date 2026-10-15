@@ -27,6 +27,19 @@ export async function kvSet(key, val, ttlSeconds) {
   if (ttlSeconds) args.push('EX', String(ttlSeconds));
   await cmd(...args);
 }
+/* Contador atómico (INCR): devuelve el valor nuevo. El TTL se pone la primera vez. */
+export async function kvIncr(key, ttlSeconds) {
+  if (!hasKV) {
+    const v = mem.get(key);
+    const vivo = v && (!v.exp || v.exp > Date.now());
+    const val = (vivo ? Number(v.val) || 0 : 0) + 1;
+    mem.set(key, { val, exp: vivo ? v.exp : (ttlSeconds ? Date.now() + ttlSeconds * 1000 : 0) });
+    return val;
+  }
+  const val = Number(await cmd('INCR', key));
+  if (val === 1 && ttlSeconds) await cmd('EXPIRE', key, String(ttlSeconds));
+  return val;
+}
 export async function kvDel(key) { if (!hasKV) { mem.delete(key); return; } await cmd('DEL', key); }
 
 /* Recorrido para los informes del panel: SCAN por patrón + lectura en tandas. */

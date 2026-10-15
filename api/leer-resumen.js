@@ -10,7 +10,7 @@
    Controles: compra de ob-019 (o admin), tamaño, que sea PDF, páginas y un
    tope de lecturas por persona por día. El log no lleva datos del resumen. */
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
-import { kvGet, kvSet } from './_lib/kv.js';
+import { contarLectura } from './mi-mes-leer.js';
 import { resumenEjemplo } from './_herramientas/mi-mes/ejemplo.js';
 import { hayKey, leerResumenConClaude, ErrorLectura, MODELO } from './_lib/mi-mes-lector.js';
 import { hoyAR } from './_lib/mi-mes-avisos.js';
@@ -59,12 +59,11 @@ export default async function handler(req, res) {
   if (paginas > MAX_PAGINAS) return responder(res, 413, { ok: false, motivo: 'paginas', error: `El resumen tiene más de ${MAX_PAGINAS} páginas. Subí solo el de una tarjeta.` });
 
   /* tope diario por persona (para controlar el costo cuando se lea de verdad) */
-  const dia = hoyAR();                       // medianoche de Argentina, no UTC
-  const clave = `orbit:mi-mes:lecturas:${acc.email}:${dia}`;
-  let usadas = 0;
-  try { usadas = Number(await kvGet(clave)) || 0; } catch { usadas = 0; }
-  if (usadas >= TOPE_DIA) return responder(res, 429, { ok: false, motivo: 'tope', error: `Llegaste a ${TOPE_DIA} lecturas por hoy. Mañana podés seguir, o cargá este resumen a mano.` });
-  try { await kvSet(clave, usadas + 1, 60 * 60 * 36); } catch { /* sin base no frenamos la lectura */ }
+  /* QA t14 · 1: contador atómico compartido con /api/mi-mes-leer (día y mes); acá el tope del día es 15 */
+  const cuenta = await contarLectura(acc.email, { topeDia: TOPE_DIA });
+  if (!cuenta.ok) return responder(res, 429, { ok: false, motivo: 'tope', error: cuenta.motivo === 'mes'
+    ? 'Llegaste al máximo de lecturas de este mes. El mes que viene podés seguir, o cargá este resumen a mano.'
+    : `Llegaste a ${TOPE_DIA} lecturas por hoy. Mañana podés seguir, o cargá este resumen a mano.` });
 
   if (!hayKey()) {
     console.log(JSON.stringify({ evento: 'leer-resumen', modo: 'prueba', bytes: buf.length, paginas }));

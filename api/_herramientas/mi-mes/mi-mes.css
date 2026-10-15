@@ -699,3 +699,4 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 .mm-leido-total{white-space:nowrap;padding-top:10px}
 .mm-fila-alerta.etapa summary .mm-fa-txt{font-weight:700}
 @media (prefers-reduced-motion:reduce){.mm-drop{transition:none}}
+.mm-reemplaza{align-items:flex-start;font-size:14px;gap:8px;margin:4px 0 0}

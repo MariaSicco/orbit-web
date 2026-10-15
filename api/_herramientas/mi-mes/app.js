@@ -28,7 +28,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t14';
+const VERSION = '2026-10-15.t15';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -431,6 +431,16 @@ function pintarSubir() {
   $id('ir-revisar').hidden = !listos || pendientes;
   $id('ir-revisar').textContent = `Revisar lo que leí (${listos})`;
   $id('conectar-mail').hidden = !F.conectarMail;
+  $id('quitar-permiso').hidden = !F.conectarMail;
+  if (F.conectarMail && !$id('quitar-permiso-txt').dataset.listo) {
+    $id('quitar-permiso-txt').dataset.listo = '1';
+    import('./correo-mi-mes.js').then(({ QUITAR_PERMISO: q }) => {
+      $id('quitar-permiso-txt').innerHTML = `<p class="mm-fuente">${esc(q.microsoft.texto)}</p>
+        <p><a class="mm-link" href="${q.microsoft.personal}" target="_blank" rel="noopener noreferrer">Quitar permiso de Microsoft (cuenta personal)</a></p>
+        <p><a class="mm-link" href="${q.microsoft.trabajo}" target="_blank" rel="noopener noreferrer">Quitar permiso de Microsoft (trabajo o facultad)</a></p>
+        <p class="mm-fuente">${esc(q.google.texto)}</p><p><a class="mm-link" href="${q.google.url}" target="_blank" rel="noopener noreferrer">Permisos de tu cuenta de Google</a></p>`;
+    }).catch(() => {});
+  }
 }
 async function prepararArchivo(f) {
   const heic = /heic|heif/i.test(f.type) || /\.(heic|heif)$/i.test(f.name);
@@ -446,8 +456,12 @@ async function prepararArchivo(f) {
   return await new Promise(ok => c.toBlob(b => ok(b), 'image/jpeg', 0.85));
 }
 async function postDoc(blob, query) {
-  const r = await fetch(`/api/mi-mes-leer${query}`, { method: 'POST', body: blob, credentials: 'same-origin', headers: { 'Content-Type': 'application/octet-stream' } });
+  let r;
+  try { r = await fetch(`/api/mi-mes-leer${query}`, { method: 'POST', body: blob, credentials: 'same-origin', headers: { 'Content-Type': 'application/octet-stream' } }); }
+  catch { throw new Error(SIN_RED); }
   const j = await r.json().catch(() => null);
+  /* QA t14 · 3: si se pasó de tiempo (aunque Vercel corte sin JSON), no es la conexión */
+  if (r.status === 504 && !j?.error) throw new Error('Tardó demasiado: probá de nuevo o cargalo a mano.');
   if (!r.ok || !j?.ok) throw new Error(j?.error || SIN_RED);
   return j;
 }
@@ -525,6 +539,7 @@ function pintarLeido() {
       <label class="mm-check"><input type="checkbox" data-it-incluir ${it.descartado || ['viejo', 'igual'].includes(it.accion) ? '' : 'checked'} ${['viejo', 'igual'].includes(it.accion) ? 'disabled' : ''}><span class="mm-sr">Incluir ${esc(it.titulo)}</span></label>
       <span class="mm-leido-txt"><b>${esc(it.titulo)}</b><small>${esc(it.detalle || '')}</small>
         <span class="mm-tag ${it.accion === 'nuevo' ? '' : 'ext'}">${esc(ACCION_TXT[it.accion] || '')}${it.accion === 'actualizar' && it.antes != null ? ` ${$(it.antes)} → ${$(it.monto)}` : ''}</span>
+        ${it.pregunta ? `<label class="mm-check mm-reemplaza"><input type="checkbox" data-it-reemplaza ${it.accion === 'actualizar' ? 'checked' : ''}> <span>${esc(it.pregunta)}</span></label>` : ''}
         ${it.grupo === 'tarjetas' && it.confiable === false ? '<span class="mm-tag">Leído con dudas: revisá el total</span>' : ''}
         ${it.grupo === 'compras' ? `<label class="mm-sr" for="tj-${esc(it.id)}">Tarjeta</label><select id="tj-${esc(it.id)}" data-it-tarjeta>${datos.tarjetas.length ? datos.tarjetas.map(t => `<option value="${esc(t.id)}"${t.id === it.compra.tarjetaId ? ' selected' : ''}>${esc(t.nombre)}</option>`).join('') : `<option value="">${itemsLeido.some(i => i.grupo === 'tarjetas') ? 'La del resumen que subiste' : 'Primero agregá la tarjeta'}</option>`}</select>` : ''}</span>
       ${editable ? `<span class="mm-leido-monto"><label class="mm-sr" for="m-${esc(it.id)}">Monto de ${esc(it.titulo)}</label><input id="m-${esc(it.id)}" type="text" inputmode="decimal" data-it-monto value="${esc(sinSimbolo(it.monto, 'ARS'))}"></span>` : `<b class="mm-leido-total">${esc($(it.monto || 0))}</b>`}
@@ -544,6 +559,13 @@ $id('leido').addEventListener('change', e => {
   const it = li && itemsLeido.find(i => i.id === li.dataset.it);
   if (!it) return;
   if (e.target.matches('[data-it-incluir]')) { it.descartado = !e.target.checked; li.classList.toggle('fuera', it.descartado); }
+  if (e.target.matches('[data-it-reemplaza]')) {
+    /* QA t14 · 2: sí (por defecto) actualiza el gasto que ya tenías; no, lo suma como uno nuevo */
+    if (!it._previo) it._previo = { previoId: it.previoId, antes: it.antes };
+    if (e.target.checked) { it.accion = 'actualizar'; it.previoId = it._previo.previoId; it.antes = it._previo.antes; }
+    else { it.accion = 'nuevo'; it.previoId = null; it.antes = null; }
+    return pintarLeido();
+  }
   if (e.target.matches('[data-it-tarjeta]')) { it.compra.tarjetaId = e.target.value || null; it.compra.primerMes = null; }
 });
 function guardarTodo() {
@@ -576,6 +598,7 @@ function guardarTodo() {
   mes = HOY;
   pintarTodo(); verVista('inicio');
   const n = r.n;
+  if (r.n.sinTarjeta) return avisar(`Guardado. ${r.n.sinTarjeta} compra${r.n.sinTarjeta === 1 ? '' : 's'} de la captura no se guardaron porque no elegiste la tarjeta: cargalas a mano.`);
   avisar(`Listo: ${[n.resumenes && `${n.resumenes} resumen${n.resumenes === 1 ? '' : 'es'}`, n.ingresos && `${n.ingresos} ingreso${n.ingresos === 1 ? '' : 's'}`, n.gastos && `${n.gastos} gasto${n.gastos === 1 ? '' : 's'} fijo${n.gastos === 1 ? '' : 's'}`, n.compras && `${n.compras} compra${n.compras === 1 ? '' : 's'}`, n.actualizados && `${n.actualizados} actualizado${n.actualizados === 1 ? '' : 's'}`].filter(Boolean).join(', ') || 'nada nuevo'}`);
 }
 /* ── conectar el mail (etapa 3; interruptor conectarMail) ── */

@@ -30,6 +30,7 @@ export const EJEMPLOS_DOC = [
 export const MAX_BYTES_DOC = 4 * 1024 * 1024;
 export const MAX_PAGINAS_DOC = 15;
 export const TOPE_DIA_DOCS = 25;
+export const TOPE_MES_DOCS = 60;          // techo mensual por persona (cada lectura cuenta); se cambia acá
 export const PARALELO_DOCS = 3;
 
 const NUM = { anyOf: [{ type: 'number' }, { type: 'null' }] };
@@ -79,7 +80,9 @@ export const limpiarTexto = (s, max = 60) => String(s || '').replace(/\b\d[\d\s.
 /* Un aviso para la persona, sin identificadores: se descarta entero si nombra
    uno (CUIL, legajo, empleador, CBU…) y se le sacan los números de 4 cifras o más. */
 const RE_IDENT = /cuil|cuit|dni|legajo|empleador|raz[oó]n social|cbu|cvu|alias|n[uú]mero de cuenta|nro\.? de cuenta|titular/i;
-export const avisoSeguro = a => (RE_IDENT.test(String(a || '')) ? '' : limpiarTexto(String(a || '').replace(/\d{4,}/g, ''), 160));
+/* QA t14 · baja 4: tampoco links ni frases que parezcan instrucciones */
+const RE_NO_AVISO = /https?:|www\.|ignor[aá]|instrucci|system prompt|respond[eé] con/i;
+export const avisoSeguro = a => (RE_IDENT.test(String(a || '')) || RE_NO_AVISO.test(String(a || '')) ? '' : limpiarTexto(String(a || '').replace(/\d{4,}/g, ''), 160));
 /* Lo que vuelve de la clasificación → objeto limpio (o errores). */
 export function validarClasificacion(j) {
   if (!j || typeof j !== 'object' || !TIPOS_DOC[j.tipo]) return { ok: false, errores: ['Falta el tipo de documento.'] };
@@ -123,12 +126,39 @@ export function categoriaDeFactura(p) {
 }
 
 const norm = s => normalizarComercio(s).toLowerCase().replace(/\s+/g, '');
-/* ¿Es un gasto que ya está cargado? Por nombre o por categoría única (alquiler, expensas). */
-export function gastoQueCoincide(gastos, nombre, categoria) {
+/* QA t14 · 2: de qué servicio es una factura o un gasto (empresa o nombre → tipo),
+   con las empresas de servicios.js de Vencimientos. */
+const TIPOS_SERVICIO = [
+  ['luz', /\b(luz|electricidad|energia|edenor|edesur|epec|edelap|edea|edes|epe|eden|emsa|edemsa|enersa|ensa)\b/],
+  ['gas', /\b(gas|metrogas|naturgy|camuzzi|ecogas|litoral gas|gasnor|gasnea|garrafa)\b/],
+  ['agua', /\b(agua|aysa|absa|aguas|obras sanitarias|osse)\b/],
+  ['internet', /\b(internet|wifi|fibra|fibertel|telecentro|personal flow|flow|iplan|starlink|claro hogar|movistar hogar)\b/],
+  ['celular', /\b(celular|movil|claro|personal|movistar|tuenti)\b/],
+  ['prepaga', /\b(prepaga|osde|swiss medical|galeno|medife|omint|sancor salud|obra social)\b/],
+  ['abl', /\b(abl|agip|alumbrado barrido)\b/],
+  ['patente', /\b(patente|automotor)\b/],
+  ['expensas', /\b(expensas|consorcio)\b/],
+  ['alquiler', /\b(alquiler)\b/],
+];
+const PRESET_TIPO = { edenor: 'luz', edesur: 'luz', epec: 'luz', edelap: 'luz', luz: 'luz', metrogas: 'gas', naturgy: 'gas', camuzzi: 'gas', ecogas: 'gas', gas: 'gas', garrafa: 'gas',
+  aysa: 'agua', absa: 'agua', agua: 'agua', internet: 'internet', celular: 'celular', prepaga: 'prepaga', abl: 'abl', patente: 'patente', expensas: 'expensas', alquiler: 'alquiler' };
+const NOMBRE_TIPO = { luz: 'Luz', gas: 'Gas', agua: 'Agua', internet: 'Internet', celular: 'Celular', prepaga: 'Prepaga', abl: 'ABL', patente: 'Patente', expensas: 'Expensas', alquiler: 'Alquiler' };
+export function tipoDeServicio(texto, preset = null) {
+  if (preset && PRESET_TIPO[preset]) return PRESET_TIPO[preset];
+  const t = normalizarComercio(texto).toLowerCase();
+  /* "personal" sola es celular, pero "personal flow" es internet: el orden de la tabla manda */
+  if (/\bpersonal\b/.test(t) && !/flow|hogar|internet/.test(t)) return /^personal$/.test(t) ? 'internet' : 'celular';
+  return TIPOS_SERVICIO.find(([, re]) => re.test(t))?.[0] || null;
+}
+/* ¿Es un gasto que ya está cargado? Por nombre, por tipo de servicio (Metrogas = Gas) o por categoría única (alquiler, expensas). */
+export function gastoQueCoincide(gastos, nombre, categoria, preset = null) {
   const n = norm(nombre);
-  return (gastos || []).find(g => n && (norm(g.nombre) === n || (norm(g.nombre).length >= 4 && (n.includes(norm(g.nombre)) || norm(g.nombre).includes(n)))))
-    || (['Alquiler', 'Expensas'].includes(categoria) ? (gastos || []).find(g => g.categoria === categoria) : null)
-    || null;
+  const porNombre = (gastos || []).find(g => n && (norm(g.nombre) === n || (norm(g.nombre).length >= 4 && (n.includes(norm(g.nombre)) || norm(g.nombre).includes(n)))));
+  if (porNombre) return porNombre;
+  const tipo = tipoDeServicio(nombre, preset);
+  const porTipo = tipo ? (gastos || []).find(g => tipoDeServicio(g.nombre) === tipo) : null;
+  if (porTipo) return Object.assign(Object.create(null), porTipo, { _porTipo: NOMBRE_TIPO[tipo] || porTipo.nombre });
+  return (['Alquiler', 'Expensas'].includes(categoria) ? (gastos || []).find(g => g.categoria === categoria) : null) || null;
 }
 
 /* ── cada lectura → ítems para "revisá lo que leí" ──
@@ -155,7 +185,7 @@ export function itemsDeFactura(p, datos, { archivo = '', hoy = null, cantidad = 
   const desde = p.vence ? p.vence.slice(0, 7) : null;
   const gasto = { nombre, categoria, monto: p.monto, repite: true, desde, ...(frecuencia > 1 ? { frecuencia } : {}),
     ...(p.vence ? { dia: Number(p.vence.slice(8)) } : {}) };
-  const previo = gastoQueCoincide(datos?.gastos, nombre, categoria);
+  const previo = gastoQueCoincide(datos?.gastos, nombre, categoria, p.preset);
   const fechaDoc = p.vence || null;
   /* de un mes anterior al actual: queda como estimado hasta que llegue la de este mes */
   const estimado = !!(hoy && fechaDoc && difMeses(fechaDoc.slice(0, 7), hoy.slice(0, 7)) > 0);
@@ -165,7 +195,9 @@ export function itemsDeFactura(p, datos, { archivo = '', hoy = null, cantidad = 
     detalle: [categoria, p.vence ? `vence el ${Number(p.vence.slice(8))}` : null, frecuencia > 1 ? `cada ${frecuencia} meses` : 'todos los meses',
       estimado ? `estimado de ${cantidad > 1 ? `${cantidad} facturas anteriores` : 'meses anteriores'}` : null].filter(Boolean).join(' · '),
     accion: masViejo ? 'viejo' : previo ? (previo.monto === p.monto && !previo.doc?.estimado ? 'igual' : 'actualizar') : 'nuevo', previoId: previo?.id || null, antes: previo?.monto ?? null,
-    gasto, falta: p.monto ? null : 'Falta el monto', avisos: p.avisos || [] }];
+    gasto, falta: p.monto ? null : 'Falta el monto', avisos: p.avisos || [],
+    /* cargado con otro nombre (Gas ↔ Metrogas): se pregunta, con sí por defecto */
+    ...(previo?._porTipo && !masViejo ? { pregunta: `¿Es tu gasto de ${previo.nombre}? Lo actualizamos con esta factura.`, previoNombre: previo.nombre } : {}) }];
 }
 /* Captura: de tarjeta → compras nuevas; de cuenta o billetera → solo el saldo de hoy.
    Las transferencias entre cuentas propias nunca son ingreso ni gasto. */
@@ -227,6 +259,7 @@ export function aplicarItems(datos, items, { nuevoId, hoy }) {
     }
     /* captura de tarjeta sin tarjeta elegida: si después de importar hay una sola, va a esa */
     if (it.grupo === 'compras' && !it.compra.tarjetaId && d.tarjetas.length === 1) it.compra.tarjetaId = d.tarjetas[0].id;
+    if (it.grupo === 'compras' && !it.compra.tarjetaId) { n.sinTarjeta = (n.sinTarjeta || 0) + 1; continue; }
     if (it.grupo === 'compras' && it.compra.tarjetaId) {
       d.cuotas.push({ id: nuevoId(), ...it.compra, primerMes: it.compra.primerMes || primerMesDeCompra(d, it.compra.tarjetaId, hoy) }); n.compras++;
     }

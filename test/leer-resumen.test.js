@@ -81,7 +81,7 @@ test('leer-resumen: tope de lecturas por día', async () => {
   const { kvSet } = await import('../api/_lib/kv.js');
   const { hoyAR } = await import('../api/_lib/mi-mes-avisos.js');
   const dia = hoyAR();
-  await kvSet(`orbit:mi-mes:lecturas:admin@orbit.test:${dia}`, api.TOPE_DIA);
+  await kvSet(`orbit:mi-mes:lecturas-dia:admin@orbit.test:${dia}`, api.TOPE_DIA);   // contador atómico compartido con mi-mes-leer
   const r = await llamar(pedido('admin@orbit.test', PDF()));
   assert.deepEqual([r.code, r.body.motivo], [429, 'tope']);
 });

@@ -13,14 +13,15 @@
    El archivo no se guarda. Los logs llevan tokens por tipo, nunca datos. */
 import { createHash } from 'node:crypto';
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
-import { kvGet, kvSet } from './_lib/kv.js';
+import { kvIncr } from './_lib/kv.js';
 import { hoyAR } from './_lib/mi-mes-avisos.js';
 import { hayKey, leerResumenConClaude, ErrorLectura } from './_lib/mi-mes-lector.js';
 import { leerFacturaConClaude } from './_lib/vencimientos-lector.js';
 import { lecturaEjemplo, propuestaDesde } from './_herramientas/vencimientos/factura.js';
 import { resumenEjemplo } from './_herramientas/mi-mes/ejemplo.js';
 import { clasificarConClaude, clasificarDeEjemplo, MODELO_CLASIFICAR } from './_lib/mi-mes-documentos.js';
-import { MAX_BYTES_DOC, MAX_PAGINAS_DOC, TOPE_DIA_DOCS } from './_herramientas/mi-mes/documentos.js';
+import { MAX_BYTES_DOC, MAX_PAGINAS_DOC, TOPE_DIA_DOCS, TOPE_MES_DOCS } from './_herramientas/mi-mes/documentos.js';
+export { TOPE_DIA_DOCS, TOPE_MES_DOCS };
 
 export const PRODUCTO = 'ob-019';
 
@@ -50,15 +51,28 @@ const responder = (res, code, cuerpo) => { res.setHeader('Cache-Control', 'no-st
 const ESTADO_ERROR = { timeout: 504, tiempo: 504, limite: 503, api: 502, rechazo: 422, invalida: 422 };
 const GRANDE = 'El archivo pesa más de 4 MB. Probá con una foto más chica o cargalo a mano.';
 
-/* Tope diario: lista de huellas del día. Un archivo nuevo cuenta; el mismo, no. */
-export async function contarArchivo(email, h, { tope = TOPE_DIA_DOCS, dia = hoyAR() } = {}) {
-  const clave = `orbit:mi-mes:docs:${email}:${dia}`;
-  let lista = [];
-  try { const v = await kvGet(clave); lista = Array.isArray(v) ? v : []; } catch { lista = []; }
-  if (lista.includes(h)) return { ok: true, usadas: lista.length };
-  if (lista.length >= tope) return { ok: false, usadas: lista.length };
-  try { await kvSet(clave, [...lista, h], 60 * 60 * 36); } catch { /* sin base no frenamos */ }
-  return { ok: true, usadas: lista.length + 1 };
+/* Topes (QA t14 · 1): contadores atómicos (INCR), uno por día y uno por mes,
+   por persona. CADA lectura suma, aunque sea el mismo archivo: la huella evita
+   releer del lado del navegador, pero acá cada llamada a Claude cuesta.
+   Los comparte /api/leer-resumen. */
+export async function contarLectura(email, { dia = hoyAR(), topeDia = TOPE_DIA_DOCS, topeMes = TOPE_MES_DOCS } = {}) {
+  let nd = 0, nm = 0;
+  try {
+    nm = await kvIncr(`orbit:mi-mes:lecturas-mes:${email}:${dia.slice(0, 7)}`, 60 * 60 * 24 * 40);
+    nd = await kvIncr(`orbit:mi-mes:lecturas-dia:${email}:${dia}`, 60 * 60 * 36);
+  } catch { return { ok: true, dia: 0, mes: 0 }; }   // sin base no frenamos la lectura
+  if (nm > topeMes) return { ok: false, motivo: 'mes', dia: nd, mes: nm };
+  if (nd > topeDia) return { ok: false, motivo: 'dia', dia: nd, mes: nm };
+  return { ok: true, dia: nd, mes: nm };
+}
+/* Presupuesto de tiempo alrededor de la lectura (la función tiene 60 s). */
+export const PRESUPUESTO_MS = 55_000;
+let presupuesto = PRESUPUESTO_MS;
+export function __usarPresupuesto(ms) { presupuesto = ms ?? PRESUPUESTO_MS; }
+const TARDO = 'Tardó demasiado: probá de nuevo o cargalo a mano.';
+function conTope(promesa, ms) {
+  let t;
+  return Promise.race([promesa.finally(() => clearTimeout(t)), new Promise((_, mal) => { t = setTimeout(() => mal(new ErrorLectura(TARDO, 'tiempo')), Math.max(1, ms)); })]);
 }
 
 export default async function handler(req, res) {
@@ -78,9 +92,10 @@ export default async function handler(req, res) {
   const paginas = tipo === 'pdf' ? contarPaginas(buf) : 1;
   if (paginas > MAX_PAGINAS_DOC) return responder(res, 413, { ok: false, motivo: 'paginas', error: `El PDF tiene más de ${MAX_PAGINAS_DOC} páginas. Subí un documento por vez.` });
 
-  const h = huellaServidor(buf);
-  const cuenta = await contarArchivo(acc.email, h);
-  if (!cuenta.ok) return responder(res, 429, { ok: false, motivo: 'tope', error: `Llegaste a ${TOPE_DIA_DOCS} archivos por hoy. Mañana podés seguir, o cargalo a mano.` });
+  const cuenta = await contarLectura(acc.email);
+  if (!cuenta.ok) return responder(res, 429, { ok: false, motivo: 'tope', error: cuenta.motivo === 'mes'
+    ? `Llegaste a ${TOPE_MES_DOCS} lecturas este mes. El mes que viene podés seguir, o cargalo a mano.`
+    : `Llegaste a ${TOPE_DIA_DOCS} lecturas por hoy. Mañana podés seguir, o cargalo a mano.` });
 
   const paso = pedido || 'clasificar';
   const log = extra => console.log(JSON.stringify({ evento: 'mi-mes-leer', paso, tipoArchivo: tipo, bytes: buf.length, paginas, ...extra }));
@@ -93,19 +108,20 @@ export default async function handler(req, res) {
     return responder(res, 200, { ok: true, modo: 'prueba', tipo: c.tipo, siguiente: ['resumen', 'factura'].includes(c.tipo), lectura: c });
   }
   const t0 = Date.now();
+  const resto = () => presupuesto - (Date.now() - t0);
   try {
     if (pedido === 'resumen') {
-      const r = await leerResumenConClaude(buf, tipo);
+      const r = await conTope(leerResumenConClaude(buf, tipo), resto());
       log({ modo: 'real', tipoDoc: 'resumen', modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida, ms: Date.now() - t0 });
       return responder(res, 200, { ok: true, modo: 'real', tipo: 'resumen', confiable: r.confiable, lectura: r.lectura });
     }
     if (pedido === 'factura') {
-      const r = await leerFacturaConClaude({ buf, tipo });
+      const r = await conTope(leerFacturaConClaude({ buf, tipo }), resto());
       log({ modo: 'real', tipoDoc: 'factura', modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida, ms: Date.now() - t0 });
       /* la propuesta (nombre, categoría, monto en centavos, vencimiento, frecuencia) se arma acá: el navegador de Mi Mes no carga los módulos de Vencimientos */
       return responder(res, 200, { ok: true, modo: 'real', tipo: 'factura', lectura: r.lectura, propuesta: propuestaDesde(r.lectura, hoyAR()) });
     }
-    const r = await clasificarConClaude({ buf, tipo });
+    const r = await conTope(clasificarConClaude({ buf, tipo }), resto());
     log({ modo: 'real', tipoDoc: r.lectura.tipo, modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida, ms: Date.now() - t0 });
     return responder(res, 200, { ok: true, modo: 'real', tipo: r.lectura.tipo, siguiente: ['resumen', 'factura'].includes(r.lectura.tipo), lectura: r.lectura });
   } catch (e) {
