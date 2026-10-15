@@ -591,5 +591,7 @@ function topIcon() {
   return `<a class="round mf-topic mf-pill${on ? ' is-on' : ''}${away ? ' is-away' : ''}" href="#/mefui" aria-label="${lbl}" title="${lbl}">${on || away ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}<span>${txt}</span></a>`;
 }
 const hasCamOn = () => (st.cams || []).some(c => c.online);
-window.MZAWAY = { homeCard, render, cuentaSection, loadCams, topIcon, hasCamOn, state: st };
+/* Inicio muestra la tarjeta solo si "Me fui" está en uso (salida en curso o cámaras emparejadas); si no, basta la píldora de arriba */
+const inUse = () => Boolean(D().away?.on || (st.cams || []).length);
+window.MZAWAY = { homeCard, render, cuentaSection, loadCams, topIcon, hasCamOn, inUse, state: st };
 })();

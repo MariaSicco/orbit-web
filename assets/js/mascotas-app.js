@@ -172,7 +172,7 @@ function cutFlow(file, pet) {
     const show = (html) => { body.innerHTML = html; };
     const actions = (cutPng, msg) => {
       result = cutPng;
-      show(`<div class="cut-prev" style="--bg:${bg}">${CLOUDS}<img src="${cutPng}" alt="Recorte de ${name}"></div>
+      show(`<div class="cut-prev" style="--bg:${bg}"><img src="${cutPng}" alt="Recorte de ${name}"></div>
         <p class="dim">${msg}</p>
         <button class="btn big wide" id="cutUse">Usar recorte</button>
         <button class="btn ghost wide" id="cutFull">Usar foto entera</button>
@@ -198,7 +198,7 @@ function cutFlow(file, pet) {
         catch { $('#cutMsg').textContent = 'Esto necesita conexión. Probá de nuevo o usá la foto entera.'; }
       };
     };
-    show(`<div class="cut-prev busy" style="--bg:${bg}">${CLOUDS}<img src="${full}" alt=""><span class="cut-spin" aria-hidden="true"></span></div>
+    show(`<div class="cut-prev busy" style="--bg:${bg}"><img src="${full}" alt=""><span class="cut-spin" aria-hidden="true"></span></div>
       <p class="dim" role="status">Recortando a ${name} del fondo… La primera vez tarda unos segundos.</p>
       <button class="btn ghost wide" id="cutFull0">Usar foto entera</button>`);
     $('#cutFull0').onclick = () => finish({ photo: full, photoFull: '' });
@@ -933,7 +933,7 @@ function followCard(p) {
 }
 function weekCard(p) {
   const gs = Z.lastWeek(p); if (!gs.length) return '';
-  return `<section class="sec card2 span2 al-week" aria-labelledby="h-week"><div class="sec-h"><h2 id="h-week">Últimos 7 días</h2><button class="link" data-act="algo">${I('plus')} Algo pasó</button></div>
+  return `<section class="sec card2 span2 al-week" aria-labelledby="h-week"><h2 id="h-week">Últimos 7 días</h2>
     <div class="list">${gs.slice(0, 3).map(g => { const s = g.last, again = Z.repeatText(Z.epRepeat(p, s)); return `<button type="button" class="row link-row" data-act="detail" data-kind="sym" data-id="${s.id}">${bubble(Z.ALGO_I[s.kind] || 'note', 'perdida')}<span class="what"><b>${esc(Z.epTitle(s))}${g.n > 1 ? ` · ${g.n} veces` : ''}</b><small>${esc([Z.epWhen(s), again, Z.SEV[s.sev] || '', Z.RES[s.res] || ''].filter(Boolean).join(' · '))}</small></span>${I('chevron')}</button>`; }).join('')}</div>${gs.length > 3 ? `<button class="btn ghost sm" data-act="histOf" data-f="sintoma" style="align-self:flex-start">Ver más (${gs.length - 3})</button>` : ''}</section>`;
 }
 function tripForm(p) {
@@ -1104,7 +1104,8 @@ function drawTop(bare) {
   const ini = (me.name || me.email || '?').trim().charAt(0).toUpperCase();
   const p = curPet(), onHome = route.name === 'inicio' && p;
   hi.hidden = !onHome;
-  hi.innerHTML = onHome ? `<a class="me" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a><span><small>${greet()}${me.name ? ',' : ''}</small><b>${me.name ? esc(me.name.split(' ')[0]) : 'Hola'}</b></span>` : '';
+  const wk = onHome ? weekCount(p) : 0;
+  hi.innerHTML = onHome ? `<span><b>${greet()}${me.name ? ', ' + esc(me.name.split(' ')[0]) : ''}</b><small>${wk ? `${wk} ${wk === 1 ? 'cosa' : 'cosas'} esta semana` : 'Todo al día'}</small></span>` : '';
   const tab = TAB_OF[route.name] || route.name;
   /* escritorio: barra liviana con las secciones, las mascotas y el + */
   /* "Me fui" es una sección más en escritorio (con punto verde si hay una cámara activa) */
@@ -1115,7 +1116,7 @@ function drawTop(bare) {
     ${doc.pets.length ? `<button type="button" class="btn sm ghost desk-only al-top" data-act="algo">${I('plus')} Algo pasó</button>` : ''}
     <button type="button" class="btn sm lime desk-only" data-act="add">${I('plus')} Cargar algo</button>`;
   $('#tnavBox').innerHTML = desk;
-  box.innerHTML = `${doc.pets.length ? `<button type="button" class="round ask-ic mob-only" data-act="askGo" aria-label="Preguntale a Mimitos">${ASK_IC.stars}</button>` : ''}${mf ? window.MZAWAY.topIcon().replace('class="round', 'class="round mob-only') : ''}<a class="round" href="#/avisos" aria-label="Avisos">${I('bell')}</a><a class="me${onHome ? ' desk-only' : ''}" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a>`;
+  box.innerHTML = `${doc.pets.length ? `<button type="button" class="round ask-ic mob-only" data-act="askGo" aria-label="Preguntale a Mimitos">${ASK_IC.stars}</button>` : ''}${mf ? window.MZAWAY.topIcon().replace('class="round', 'class="round mob-only') : ''}<a class="round" href="#/avisos" aria-label="Avisos">${I('bell')}</a><a class="me" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a>`;
 }
 const greet = () => { const h = new Date().getHours(); return h < 6 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'; };
 const HEART = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27.5c-6.3-4.2-11-8.3-11-13.4C5 10.6 7.7 8 10.9 8c2.2 0 4 1.1 5.1 2.9C17.1 9.1 18.9 8 21.1 8 24.3 8 27 10.6 27 14.1c0 5.1-4.7 9.2-11 13.4z" fill="#D9694A"/><circle cx="12" cy="16" r="1.5" fill="#1F1A17"/><circle cx="20" cy="16" r="1.5" fill="#1F1A17"/><path d="M14 19.6c1.1.9 2.9.9 4 0" fill="none" stroke="#1F1A17" stroke-width="1.5" stroke-linecap="round"/></svg>';
@@ -1129,6 +1130,8 @@ function render() {
   nav.hidden = bare;
   if (!bare) drawNav();
   document.body.dataset.route = bare ? '' : route.name;
+  const hp = !bare && route.name === 'inicio' ? curPet() : null;
+  document.body.dataset.hero = hp && (hp.photoFull || hp.photo) ? 'photo' : '';
   document.body.dataset.view = mode === 'full' ? route.name : '';
   applyHue(route.name === 'alta' && ob ? ob.pet : curPet());
   drawTop(bare);
@@ -1141,7 +1144,7 @@ function render() {
 }
 function view() {
   if (mode === 'loading') return skeleton();
-  if (mode === 'guest') { after(gateArt); return renderGate(); }
+  if (mode === 'guest') return renderGate();
   if (mode === 'nopurchase') return renderNoPurchase();
   if (mode === 'error') return renderError();
   if (route.name === 'alta') return renderOnboard();
@@ -1222,15 +1225,13 @@ function renderGate() {
       </div>
       <p class="note">Necesitás una cuenta de Orbit con el mail de la compra. Tus datos quedan en tu cuenta, no en el celu. En iPhone, para recibir los avisos en el celu, agregás Mimitos a la pantalla de inicio.</p>
     </div>
-    <div class="art" id="gateArt" aria-hidden="true"></div>
+    <div class="art" aria-hidden="true">${gateArt()}</div>
   </section>`;
 }
-/* ilustración de la bienvenida: se inserta el SVG en línea para que use Geist; si no carga, queda el espacio vacío */
-let gateSvg = '';
-async function gateArt() {
-  const box = $('#gateArt'); if (!box) return;
-  try { if (!gateSvg) { const r = await fetch('/assets/img/mimitos/bienvenida.svg?v=1'); if (r.ok) gateSvg = (await r.text()).replace(/<title>[^<]*<\/title>/, ''); } } catch {}
-  if (gateSvg && $('#gateArt')) $('#gateArt').innerHTML = CLOUDS + gateSvg;
+/* bienvenida: un pasaporte de ejemplo sobre su color, en vez de un dibujo (nada infantil) */
+function gateArt() {
+  const demo = { ...blankPet(), id: 'luna2022', name: 'Luna', species: 'perro', breed: 'Mestiza', birth: '2022-05-01', sex: 'h', hue: 'rosa' };
+  return `<div class="gate-pass" style="--hero:${hueOf(demo)[0]}">${passport(demo, true)}</div>`;
 }
 
 /* con sesión pero sin la compra de Mimitos */
@@ -1270,130 +1271,131 @@ function switcher(p) {
 }
 function petMeta(p) { return [Z.species(p), p.breed, Z.age(p.birth), p.weight ? kg(p.weight) : ''].filter(Boolean).join(' · '); }
 
-/* ---------- INICIO ---------- */
-function nextItems(p) {
-  const out = [];
-  for (const m of p.meds) { const s = Z.medState(m, p.log); if (s.state === 'due' || s.state === 'late') out.push({ order: s.state === 'late' ? -2 : -1, html: medRow(p, m) }); }
-  for (const x of Z.upcoming(p)) if (x.s.days <= 60) out.push({ kind: 'rec', order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(recIcon(x.r), 'salud')}<button class="what plain" data-act="detail" data-kind="rec" data-id="${x.r.id}"><b>${esc(x.r.name)}</b><small><span class="stt">${x.s.t}</span>${Z.isSug(x.r) ? ' · sugerida, confirmala con tu veterinario' : ''}</small></button><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.r.name)} al calendario">${I('cal')}</button></div>` });
-  const f = Z.food(p.food); if (f && f.left <= 5) out.push({ order: f.left, html: `<div class="row ${f.left < 0 ? 'st-late' : 'st-soon'}">${bubble('bowl', 'comida')}<span class="what"><b>Comprar alimento</b><small class="stt">${f.left < 0 ? 'Ya se terminó' : f.left === 0 ? 'Se termina hoy' : `Quedan ${f.left} días`}</small></span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button></div>` });
-  out.push(...(window.MZVETS?.homeItems(p) || []));
-  return out.sort((a, b) => a.order - b.order);
-}
+/* ---------- INICIO (premium): 6 bloques ----------
+   1. foto a sangre + hoja con las 4 tarjetas de estado (la única fuente del estado)
+   2. Esta semana: lo vencido que no está en las tarjetas, lo de hoy, los turnos, los remedios y el alimento
+   3. Algo pasó + últimos 7 días  4. Hoy con {mascota} (si tiene rutina)  5. Me fui (solo si está en uso)  6. Peso · Gastos */
 const recIcon = r => r.type === 'vacuna' ? 'syringe' : r.type === 'desparasitacion' ? 'drop' : r.type === 'control' ? 'steth' : 'note';
+const shortD = s => fmt(s, { day: 'numeric', month: 'short' }).replace('.', '');
+const agoD = s => s.days === -1 ? 'ayer' : `hace ${-s.days} d`;
 function medRow(p, m) {
   const s = Z.medState(m, p.log);
   const tx = { soon: ['st-ok', `Empieza ${Z.fmtWhen(s.next)}`], ok: ['st-done', s.next ? `Dada. Próxima: ${Z.fmtWhen(s.next)}` : 'Dada. Era la última toma'], due: ['st-soon', `Le toca ahora (${Z.fmtTime(s.due)})`], late: ['st-late', `Atrasada: tocaba ${Z.fmtWhen(s.due)}`], ended: ['', 'Tratamiento terminado'], nostart: ['', 'Falta la primera toma'] }[s.state];
   const can = s.state === 'due' || s.state === 'late';
-  return `<div class="row ${tx[0]}">${bubble('pill', 'med')}<button class="what plain" data-act="detail" data-kind="med" data-id="${m.id}"><b>${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}<span class="stt">${tx[1]}</span></small></button>${can ? `<button class="ibtn go" data-act="give" data-pet="${p.id}" data-med="${m.id}">Ya se la di</button>` : `<button class="ibtn" data-act="editMed" data-med="${m.id}" aria-label="Editar ${esc(m.name)}">${I('edit')}</button>`}</div>`;
+  return `<div class="row ${tx[0]}">${bubble('pill', 'med')}<button class="what plain" data-act="detail" data-kind="med" data-id="${m.id}"><b>${esc(m.name)}</b><small>${m.dose ? esc(m.dose) + ' · ' : ''}<span class="stt">${tx[1]}</span></small></button>${can ? `<button class="ibtn go renew" data-act="give" data-pet="${p.id}" data-med="${m.id}" aria-label="Ya se la di: ${esc(m.name)}">${I('check')}<span>Ya está</span></button>` : `<button class="ibtn" data-act="editMed" data-med="${m.id}" aria-label="Editar ${esc(m.name)}">${I('edit')}</button>`}</div>`;
 }
-function renderInicio(p) {
-  /* las vacunas y pipetas van en Próximos cuidados; acá quedan remedios y alimento */
-  const sm = Z.summary(p), next = nextItems(p).filter(x => x.kind !== 'rec').slice(0, 5);
-  const activeMeds = p.meds.filter(m => ['ok', 'soon'].includes(Z.medState(m, p.log).state));
-  const vacc = { ok: ['Al día', 'ok'], sug: ['Sin confirmar', 'none'], late: [`Vencida: ${sm.vaccLate.map(x => x.r.name).join(', ')}`, 'late'], none: ['Sin cargar', 'none'] }[sm.vacc];
-  const anti = { ok: ['Al día', 'ok'], sug: ['Sin confirmar', 'none'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
-  const recs = p.records.filter(r => r.date).length;
-  const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', esc(Cap(quienCuida(p)).replace(/^Quien/, 'Quién')), 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
-  quick.unshift(['vets', 'pin', 'cuida', 'Veterinarias cerca', 'Pedir turno, guardias 24 h y pet shops']);
-  return `<div class="dash">
-    <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
-    <div class="dash-r">
-      ${mefui && window.MZAWAY ? window.MZAWAY.homeCard(p) : ''}
-      ${askBtn('ask-home span2')}
-      <button type="button" class="algo-cta span2" data-act="algo">${I('plus')}<span><b>Algo pasó</b><small>Vómito, diarrea, picazón… anotalo en 2 toques</small></span></button>
-      ${followCard(p)}
-      ${weekCard(p)}
-      ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
-      ${scanBanner(p)}
-      ${hoyBox(p)}
-      ${window.MZVETS ? window.MZVETS.mineCards(p, 'home') : ''}
-      ${notify && !notify.devices && !notify.mail ? `<button class="banner nudge span2" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span style="flex:1"><b>Que no se te pase ninguna fecha</b><small class="dim">Activá los avisos en el celu o por mail.</small></span>${I('chevron')}</button>` : ''}
-      ${next.length ? `<section class="sec card2 span2" aria-labelledby="h-next">
-        <div class="sec-h"><h2 id="h-next">Hoy y estos días</h2><button class="link" data-act="go" data-to="agenda">Agenda ${I('next')}</button></div>
-        <div class="list">${next.map(x => x.html).join('')}</div>
-      </section>` : ''}
-      ${careCard(p)}
-      ${weightCard(p)}
-      ${spendCard(p)}
-      <section class="sec card2" aria-labelledby="h-health">
-        <h2 id="h-health">Salud: problemas, alergias y remedios</h2>
-        <div class="summary">
-          <button class="sum" data-act="go" data-to="antecedentes"><span>Problemas de salud</span><b>${sm.active.length ? esc(sm.active.map(c => c.name).join(', ')) : 'Ninguno cargado'}</b></button>
-          <button class="sum" data-act="go" data-to="antecedentes"><span>Alergias</span><b>${esc(p.allergies || 'Ninguna cargada')}</b></button>
-        </div>
-        ${activeMeds.length ? `<div class="list">${activeMeds.map(m => medRow(p, m)).join('')}</div>` : ''}
-      </section>
-      <button class="bookcard span2 c-${Z.tone(p)}" data-act="go" data-to="libreta"><span class="mini">${avatar(p)}</span><span><span class="eyebrow">Libreta sanitaria</span><b>La libreta de ${esc(p.name)}</b><small>${recs ? `${recs} ${recs === 1 ? 'registro' : 'registros'} entre vacunas, antiparasitarios y controles. Lista para imprimir.` : 'Se completa sola con lo que cargás: vacunas, desparasitaciones, controles y peso.'}</small><span class="go">Abrir libreta ${I('next')}</span></span></button>
-      ${sitterLog(p)}
-      <div class="span2">${historySection(p)}</div>
-      <section class="sec span2" aria-labelledby="h-more">
-        <h2 id="h-more">Accesos rápidos</h2>
-        <div class="list quick">${quick.map(([a, ic, c, t, d]) => { const [act, to] = a.split(':'); return `<button class="row link-row" data-act="${act}"${to ? ` data-to="${to}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}</div>
-      </section>
-    </div>
-  </div>`;
+/* las 4 tarjetas del hero: cada una se pinta según su estado (late coral, soon ámbar, ok lima, none gris, plain blanco)
+   y la primera fecha que ya se puede cerrar lleva el "✓ Ya está" */
+function heroCards(p, sm = Z.summary(p)) {
+  const up = Z.upcoming(p), first = t => up.find(x => x.r.type === t);
+  const card = (key, ic, label, x, base) => {
+    const o = { key, ic, label, rn: x && Z.renewable(x.r) ? x.r : null, ...base };
+    if (x && !o.value) {
+      const late = x.s.days < 0, sug = Z.isSug(x.r);
+      o.tone = late ? 'late' : sug ? 'none' : x.s.days <= 14 ? 'soon' : 'ok';
+      o.value = late ? (key === 'vac' ? 'Vencida' : 'Vencido') : sug ? 'Sin confirmar' : x.s.days === 0 ? 'Hoy' : x.s.days === 1 ? 'Mañana' : shortD(x.r.next);
+      o.sub = late ? `${key === 'vac' ? esc(sm.vaccLate.map(v => v.r.name).join(', ')) + ' · ' : ''}${agoD(x.s)}` : sug ? `Sugerida: ${shortD(x.r.next)}` : x.s.days <= 14 ? (x.s.days > 1 ? `En ${x.s.days} días` : esc(x.r.name)) : esc(x.r.name);
+    }
+    return o;
+  };
+  const vx = sm.vaccLate[0] || first('vacuna'), ax = first('desparasitacion'), cx = first('control');
+  const w = [...(p.weights || [])].sort((a, b) => a.date.localeCompare(b.date)), wl = w.at(-1), wp = w.at(-2);
+  const dif = wl && wp ? Math.round((wl.kg - wp.kg) * 10) / 10 : 0;
+  return [
+    card('vac', 'syringe', 'Vacunas', vx, vx ? {} : { tone: 'none', value: 'Sin cargar', sub: 'Cargá la última' }),
+    card('des', 'drop', 'Antiparasitario', ax, ax ? {} : sm.anti === 'unknown' ? { tone: 'none', value: 'Sin fecha', sub: `Último: ${shortD(sm.lastAnti.date)}` } : { tone: 'none', value: 'Sin cargar', sub: 'Pipeta o comprimido' }),
+    card('ctl', 'steth', 'Control', cx, cx ? {} : { tone: 'none', value: 'Sin turno', sub: 'Anotá el próximo' }),
+    { key: 'peso', ic: 'scale', label: 'Peso', tone: 'plain', value: p.weight ? kg(p.weight) : 'Sin cargar', sub: wl && wp ? `${dif > 0 ? '↑ +' : dif < 0 ? '↓ ' : '= '}${dif ? String(dif).replace('.', ',') + ' kg' : 'igual'} desde ${shortD(wp.date)}` : wl ? 'Primer registro' : 'Anotalo cada tanto', trend: dif },
+  ];
 }
-/* Inicio: foto grande de la mascota y la hoja que sube encima con su estado */
-const CLOUDS = `<svg class="clouds" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-20 250C60 170 140 300 230 210S360 120 430 170" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round" opacity=".7"/><path d="M-10 90C80 40 150 140 260 80S380 30 420 60" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round" opacity=".5"/><path d="M262 64a22 22 0 0 1 42-6 16 16 0 0 1 22 15H250a12 12 0 0 1 12-9z" fill="#fff" opacity=".85"/><path d="M24 168a18 18 0 0 1 34-5 13 13 0 0 1 18 12H14a10 10 0 0 1 10-7z" fill="#fff" opacity=".75"/></svg>`;
-let heroArt = '';
-async function loadHeroArt() {
-  const box = $('#heroArt'); if (!box) return;
-  try { if (!heroArt) { const r = await fetch('/assets/img/mimitos/sin-foto.svg?v=1'); if (r.ok) heroArt = await r.text(); } } catch {}
-  if (heroArt && $('#heroArt')) $('#heroArt').innerHTML = heroArt;
-}
-function petHero(p, sm, vacc, anti) {
-  const up = Z.upcoming(p), d = r => fmt(r.next, { day: 'numeric', month: 'short' }).replace('.', '');
-  const pip = up.find(x => x.r.type === 'desparasitacion'), ctl = up.find(x => x.r.type === 'control');
-  /* la primera fecha de cada tipo que ya se puede cerrar (vencida, hoy o en 14 días) lleva su "Ya se la di" */
-  const due = t => up.find(x => x.r.type === t && Z.renewable(x.r));
-  /* sub: "Sugerida: 14 nov" debajo de "Sin confirmar" (fecha del calendario sugerido, no una dosis cargada) */
-  const stat = (act, to, ic, c, k, v, late, rn, sub) => `<div class="pstat-w${rn ? ' has-rn' : ''}"><button class="pstat" data-act="${act}"${to}><span class="sic s-${c}">${I(ic)}</span><span><small>${k}</small><b${late ? ' class="late"' : sub ? ' class="unconf"' : ''}>${v}</b>${sub ? `<small class="ps-sub">${sub}</small>` : ''}</span></button>${rn ? doneBtn(p, rn.r, 'wide') : ''}</div>`;
-  const sexIc = p.sex === 'h' ? ['female', 'Hembra'] : p.sex === 'm' ? ['male', 'Macho'] : null;
-  const cut = Boolean(p.photo && p.photoFull);
-  if (!p.photo) after(loadHeroArt);
-  /* selector de mascotas sobre el color: cada una en su propio color */
-  const strip = `<nav class="pstrip" aria-label="Tus mascotas">${doc.pets.map(x => `<button class="pchip" data-act="pick" data-id="${x.id}" aria-current="${x.id === p.id}" aria-label="${esc(x.name)}">${avatar(x)}<span>${esc(x.name)}</span></button>`).join('')}<button class="pchip add" data-act="newPet" aria-label="Agregar mascota"><span class="av">${I('plus')}</span><span>Agregar</span></button></nav>`;
-  return `<section class="phero${p.photo ? (cut ? ' has-cut' : ' has-photo') : ''}" aria-label="${esc(p.name)}">
-    <div class="ph-stage">${CLOUDS}${strip}${p.photo ? `<img class="ph-img" src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">`
-      : `<div class="ph-art" id="heroArt" aria-hidden="true"></div><button class="ph-up" data-act="editPet">${I('camera')} Subí su foto</button>`}</div>
+const heroIds = p => new Set(heroCards(p).filter(c => c.rn).map(c => c.rn.id));
+const doneChip = (p, r) => `<button type="button" class="pst-done" data-act="renew" data-pet="${p.id}" data-rec="${r.id}" aria-label="${Z.renewLabel(r)}: ${esc(r.name || TYPE[r.type])} de ${esc(p.name)}">${I('check')}<span>Ya está</span></button>`;
+const CARD_ACT = { vac: ' data-act="libsec" data-sec="vac"', des: ' data-act="libsec" data-sec="des"', ctl: ' data-act="go" data-to="agenda"', peso: ' data-act="libsec" data-sec="peso"' };
+function petHero(p, sm) {
+  const img = p.photoFull || p.photo, meta = [p.breed || Z.species(p), Z.age(p.birth), p.weight ? kg(p.weight) : ''].filter(Boolean).join(' · ');
+  const strip = doc.pets.length > 1 ? `<nav class="pstrip" aria-label="Tus mascotas">${doc.pets.map(x => `<button class="pchip" data-act="pick" data-id="${x.id}" aria-current="${x.id === p.id}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}<button class="pchip add" data-act="newPet" aria-label="Agregar mascota"><span class="av">${I('plus')}</span></button></nav>` : '';
+  const cards = heroCards(p, sm);
+  return `<section class="phero${img ? ' has-photo' : ' no-photo'}" aria-labelledby="h-pet">
+    <div class="ph-stage">${img ? `<img class="ph-img" src="${esc(img)}" alt="Foto de ${esc(p.name)}">`
+      : `<span class="ph-ini" aria-hidden="true">${esc((p.name || '?').trim().charAt(0).toUpperCase())}</span><button class="ph-up" data-act="editPet">${I('camera')} Subí su foto</button>`}${strip}</div>
     <div class="psheet">
-      <span class="grab" aria-hidden="true"></span>
       <div class="ps-top">
-        <div class="ps-name"><h1>${esc(p.name)}</h1><p>${esc([p.breed || Z.species(p), Z.age(p.birth)].filter(Boolean).join(' · ')) || 'Completá sus datos'}</p></div>
-        <div class="ps-ic"><span class="round s-violeta" role="img" aria-label="${esc(Z.species(p))}">${Z.petIcon(p)}</span>${sexIc ? `<span class="round s-rosa" role="img" aria-label="${sexIc[1]}">${I(sexIc[0])}</span>` : ''}<button class="round" data-act="editPet" aria-label="Editar perfil de ${esc(p.name)}">${I('edit')}</button></div>
+        <div class="ps-name"><h1 id="h-pet">${esc(p.name)}</h1><p>${esc(meta) || 'Completá sus datos'}</p></div>
+        <div class="ps-ic"><button class="round" data-act="petMenu" aria-label="Más de ${esc(p.name)}: QR, quién ${la(p)} cuida, se perdió">${I('more')}</button><button class="round" data-act="editPet" aria-label="Editar perfil de ${esc(p.name)}">${I('edit')}</button></div>
       </div>
-      <div class="pstats">
-        ${stat('libsec', ' data-sec="vac"', 'syringe', 'rosa', 'Vacunas', esc(vacc[1] === 'late' ? 'Vencida' : vacc[0]), vacc[1] === 'late', due('vacuna'), sm.vacc === 'sug' && sm.vaccNext ? `Sugerida: ${d(sm.vaccNext.r).replace(" ", "\u00a0")}` : '')}
-        ${stat('libsec', ' data-sec="des"', 'drop', 'naranja', 'Antiparasitario', pip ? (pip.s.days < 0 ? 'Vencido' : sm.anti === 'sug' ? 'Sin confirmar' : d(pip.r)) : esc(anti[0]), pip ? pip.s.days < 0 : anti[1] === 'late', due('desparasitacion'), pip && pip.s.days >= 0 && sm.anti === 'sug' ? `Sugerida: ${d(pip.r).replace(" ", "\u00a0")}` : '')}
-        ${stat('go', ' data-to="agenda"', 'steth', 'violeta', 'Control', ctl ? d(ctl.r) : 'Sin turno', ctl && ctl.s.days < 0, due('control'))}
-        ${stat('libsec', ' data-sec="peso"', 'scale', 'verde', 'Peso', p.weight ? kg(p.weight) : 'Sin cargar', false)}
-      </div>
+      <div class="pstats">${cards.map(c => `<div class="pstat t-${c.tone}${c.rn ? ' has-rn' : ''}">
+        <button class="pst-b"${CARD_ACT[c.key]}><span class="pst-k">${I(c.ic)}${c.label}</span><b class="pst-v">${c.value}</b><small class="pst-s">${c.sub}</small></button>
+        ${c.rn ? doneChip(p, c.rn) : ''}</div>`).join('')}</div>
     </div>
   </section>`;
 }
-/* próximos cuidados con la cinta de fecha a la derecha */
-const RIB = { vacuna: 'r-azul', desparasitacion: 'r-rosa', control: 'r-naranja', otro: 'r-lila' };
-function careCard(p) {
-  const up = Z.upcoming(p).filter(x => x.s.days <= 180), list = up.slice(0, 2);
-  const when = x => x.s.days < 0 ? `Vencida hace ${-x.s.days} d` : x.s.days === 0 ? 'Hoy' : x.s.days === 1 ? 'Mañana' : `En ${x.s.days} días`;
-  return `<section class="sec card2 care-card" aria-labelledby="h-care"><h2 id="h-care">Próximos cuidados</h2>
-    ${list.length ? `<div class="care">${list.map(x => `<div class="care-item"><button class="care-row" data-act="detail" data-kind="rec" data-id="${x.r.id}">
-      <span class="sic s-${x.r.type === 'vacuna' ? 'violeta' : x.r.type === 'desparasitacion' ? 'rosa' : 'naranja'}">${I(recIcon(x.r))}</span>
-      <span class="what"><b>${esc(x.r.name)}</b><small>${esc(x.r.vet || x.r.lot || Z.TYPE[x.r.type] || '')}${Z.isSug(x.r) ? ' · sugerida' : ''}</small></span>
-      <span class="rib ${x.s.days < 0 ? 'r-late' : RIB[x.r.type] || 'r-lila'}"><b>${fmt(x.r.next, { day: 'numeric', month: 'short' }).replace('.', '')}</b><small>${when(x)}</small></span></button>${Z.renewable(x.r) ? `<div class="care-act">${doneBtn(p, x.r, 'wide')}</div>` : ''}</div>`).join('')}</div>`
-      : `<p class="dim">Cuando cargues una vacuna o una pipeta con su próxima fecha, aparece acá.</p>${p.records.some(r => r.next) ? '' : `<button class="btn sm soft" data-act="suggest" style="align-self:flex-start">${I('sparkle')} Armar el calendario sugerido</button>`}`}
-    <button class="btn ghost sm" data-act="go" data-to="agenda" style="align-self:flex-start">Ver más${up.length > 2 ? ` (${up.length - 2})` : ''}</button></section>`;
+/* ⋯ del hero: lo que antes eran accesos rápidos al fondo de Inicio */
+function petMenu(p) {
+  const opt = (act, ic, c, t, d, to = '') => `<button class="row link-row" data-pm="${act}"${to ? ` data-to="${to}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`;
+  panel(p.name, `<div class="list">
+    ${opt('share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`)}
+    ${opt('sitter', 'hand', 'cuida', Cap(quienCuida(p)).replace(/^Quien/, 'Quién'), 'Un link con todo para el cuidador')}
+    ${opt('lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer')}
+    ${window.MZVETS ? opt('vets', 'pin', 'cuida', 'Veterinarias cerca', 'Pedir turno, guardias 24 h y pet shops') : ''}
+  </div>`);
+  $('#pBody').onclick = e => {
+    const b = e.target.closest('[data-pm]'); if (!b) return;
+    /* se cierra el menú y la hoja nueva se abre en la vuelta siguiente (el "close" limpia el panel) */
+    const fn = { share: () => sharePanel(p), sitter: () => sitterPanel(p), lost: () => lostPanel(p), vets: () => { if (window.MZVETS) window.MZVETS.state.from = 'inicio'; go('vets', p.id); } }[b.dataset.pm];
+    dPanel.close(); setTimeout(fn, 0);
+  };
 }
-/* barras finas: la última, activa */
-const bars = (vals, tone) => { const mx = Math.max(...vals, 1); return `<div class="vbars ${tone}" aria-hidden="true">${vals.map((v, i) => `<i style="height:${Math.max(8, Math.round(v / mx * 100))}%"${i === vals.length - 1 ? ' class="on"' : ''}></i>`).join('')}</div>`; };
+/* F3 · Esta semana: una sola lista ordenada. Lo que ya tiene su tarjeta arriba no se repite */
+const WEEK_DAYS = 7, WEEK_MAX = 5;
+function weekItems(p) {
+  const out = [], skip = heroIds(p);
+  for (const m of p.meds) { const s = Z.medState(m, p.log); if (s.state === 'due' || s.state === 'late') out.push({ order: s.state === 'late' ? -999 : -998, html: medRow(p, m) }); }
+  for (const x of Z.upcoming(p)) if (x.s.days <= WEEK_DAYS && !skip.has(x.r.id)) out.push({ order: x.s.days, html: weekRec(p, x) });
+  const f = Z.food(p.food); if (f && f.left <= WEEK_DAYS) out.push({ order: f.left, html: `<div class="row ${f.left < 0 ? 'st-late' : 'st-soon'}">${dateChip(iso(f.end), f.left < 0 ? 'late' : 'soon')}<button class="what plain" data-act="go" data-to="gastos"><b>Comprar alimento</b><small class="stt">${f.left < 0 ? 'Ya se terminó la bolsa' : f.left === 0 ? 'Se termina hoy' : `Quedan ${f.left} ${f.left === 1 ? 'día' : 'días'}`}</small></button><button class="ibtn" data-act="newBag" data-pet="${p.id}" aria-label="Anotar la bolsa nueva de ${esc(p.name)}">${I('plus')}</button></div>` });
+  for (const v of window.MZVETS?.homeItems(p) || []) if (v.order <= WEEK_DAYS) out.push(v);
+  return out.sort((a, b) => a.order - b.order);
+}
+const dateChip = (ds, tone) => `<span class="ag-date t-${tone}"><b>${fmt(ds, { day: 'numeric' })}</b><small>${fmt(ds, { month: 'short' }).replace('.', '')}</small></span>`;
+function weekRec(p, x) {
+  const tone = x.s.days < 0 ? 'late' : 'soon';
+  return `<div class="row st-${tone}">${dateChip(x.r.next, tone)}<button class="what plain" data-act="detail" data-kind="rec" data-id="${x.r.id}"><b>${esc(x.r.name)}</b><small><span class="stt">${x.s.days < 0 ? `Venció ${agoD(x.s)}` : x.s.t}</span>${Z.isSug(x.r) ? ' · sugerida' : ''}</small></button>${Z.renewable(x.r) ? `<button type="button" class="ibtn go renew" data-act="renew" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="${Z.renewLabel(x.r)}: ${esc(x.r.name)}">${I('check')}<span>Ya está</span></button>` : `<button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.r.name)} al calendario">${I('cal')}</button>`}</div>`;
+}
+/* cuántas cosas tiene esta semana (tarjetas con "Ya está" + la lista): el saludo lo dice */
+const weekCount = p => heroCards(p).filter(c => c.rn).length + weekItems(p).length;
+function weekSection(p, items = weekItems(p)) {
+  const nx = Z.upcoming(p).find(x => x.s.days > WEEK_DAYS);
+  const avOff = notify && !notify.devices && !notify.mail;
+  return `<section class="sec card2 week" aria-labelledby="h-week7">
+    <div class="sec-h"><h2 id="h-week7">Esta semana${items.length ? ` <span class="count">${items.length}</span>` : ''}</h2><button class="link" data-act="go" data-to="agenda">Agenda ${I('next')}</button></div>
+    ${items.length ? `<div class="list">${items.slice(0, WEEK_MAX).map(x => x.html).join('')}</div>${items.length > WEEK_MAX ? `<button class="btn ghost sm" data-act="go" data-to="agenda" style="align-self:flex-start">Ver ${items.length - WEEK_MAX} más en la Agenda</button>` : ''}`
+      : `<p class="week-ok">${I('check')}<span><b>Nada pendiente estos días.</b>${nx ? ` Lo próximo: ${esc(nx.r.name)}, ${shortD(nx.r.next)}.` : p.records.some(r => r.next) ? '' : ' Armá su calendario y te avisamos.'}</span></p>${p.records.some(r => r.next) ? '' : `<button class="btn sm" data-act="suggest" style="align-self:flex-start">${I('sparkle')} Armar el calendario sugerido</button>`}`}
+    ${avOff ? `<button class="link" data-act="go" data-to="avisos" style="align-self:flex-start">${I('bell')} Activá los avisos</button>` : ''}
+  </section>`;
+}
+/* Algo pasó + últimos 7 días + "¿Sigue igual?": un solo bloque */
+function algoBlock(p) {
+  return `<section class="sec card2 algo-box" aria-labelledby="h-algo">
+    <div class="sec-h"><h2 id="h-algo">Algo pasó</h2>${Z.timeline(p).length ? `<button class="link" data-act="histOf" data-f="todo">Historial ${I('next')}</button>` : ''}</div>
+    <button type="button" class="algo-cta" data-act="algo">${I('plus')}<span><b>Anotar algo</b><small>Vómito, diarrea, picazón… en 2 toques</small></span></button>
+    ${followCard(p)}${weekCard(p)}
+  </section>`;
+}
+/* peso: los últimos 6 registros en una línea, con el valor y cuánto cambió */
 function weightCard(p) {
-  const w = [...(p.weights || [])].sort((a, b) => a.date.localeCompare(b.date)).slice(-10);
-  const last = w[w.length - 1], prev = w[w.length - 2], dif = last && prev ? Math.round((last.kg - prev.kg) * 10) / 10 : 0;
-  /* con datos, la tarjeta entera lleva al historial (Libreta › Peso) y "+ Cargar peso" queda encima */
-  return `<section class="sec card2 mini-stat w-card${last ? ' ms-tap' : ''}" aria-labelledby="h-w"><div class="ms-h"><h2 id="h-w">${last ? `<button type="button" class="ms-link" data-act="libsec" data-sec="peso" aria-label="Peso: ver el historial en la libreta">Peso</button>` : 'Peso'}</h2><span class="sic s-verde">${I('scale')}</span></div>
-    ${last ? `<p class="big-num">${kg(last.kg)}</p><small class="dim">${prev ? `${dif > 0 ? '+' : ''}${String(dif).replace('.', ',')} kg desde el ${fmt(prev.date, { day: 'numeric', month: 'short' })}` : 'Primer registro'}</small>${w.length > 1 ? bars(w.map(x => x.kg - Math.min(...w.map(y => y.kg)) * .8), 'violeta') : ''}<button class="link ms-add" data-act="newWeight">${I('plus')} Cargar peso</button>`
+  const w = [...(p.weights || [])].sort((a, b) => a.date.localeCompare(b.date)).slice(-6);
+  const last = w.at(-1), first = w[0], dif = last && w.length > 1 ? Math.round((last.kg - first.kg) * 10) / 10 : 0;
+  const months = last && w.length > 1 ? Math.max(1, Z.monthsBetween(first.date, last.date)) : 0;
+  return `<section class="sec card2 mini-stat w-card${last ? ' ms-tap' : ''}" aria-labelledby="h-w"><div class="ms-h"><h2 id="h-w">${last ? `<button type="button" class="ms-link" data-act="libsec" data-sec="peso" aria-label="Peso: ver el historial en la libreta">Peso</button>` : 'Peso'}</h2></div>
+    ${last ? `<p class="big-num">${kg(last.kg)}</p><small class="dim">${w.length > 1 ? `${dif > 0 ? '+' : ''}${String(dif).replace('.', ',')} kg en ${months} ${months === 1 ? 'mes' : 'meses'}` : 'Primer registro'}</small>${spark(w.map(x => x.kg))}<button class="link ms-add" data-act="newWeight">${I('plus')} Cargar peso</button>`
       : `<p class="dim">Cargá su peso cada tanto y ves cómo va.</p><button class="btn ghost sm" data-act="newWeight" style="align-self:flex-start">${I('plus')} Cargar peso</button>`}</section>`;
 }
+const spark = vals => {
+  if (vals.length < 2) return '';
+  const W = 160, H = 44, mn = Math.min(...vals), mx = Math.max(...vals), r = mx - mn || 1, x = i => 4 + i * (W - 8) / (vals.length - 1), y = v => H - 6 - (v - mn) / r * (H - 12);
+  return `<svg class="spark" viewBox="0 0 ${W} ${H}" aria-hidden="true"><polyline points="${vals.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ')}" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/><circle cx="${x(vals.length - 1).toFixed(1)}" cy="${y(vals.at(-1)).toFixed(1)}" r="3.5" fill="currentColor"/></svg>`;
+};
+/* gastos: 6 barras, el mes actual en negro */
+const bars = vals => { const mx = Math.max(...vals, 1); return `<div class="vbars" aria-hidden="true">${vals.map((v, i) => `<i style="height:${Math.max(6, Math.round(v / mx * 100))}%"${i === vals.length - 1 ? ' class="on"' : ''}></i>`).join('')}</div>`; };
 function spendCard(p) {
   const now = iso(Z.today()).slice(0, 7), months = [];
   for (let i = 5; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); months.push(iso(d).slice(0, 7)); }
@@ -1401,17 +1403,37 @@ function spendCard(p) {
   const vals = months.map(tot), has = vals.some(Boolean);
   /* misma regla que la pantalla Gastos: promedio de los 3 meses anteriores que tienen gastos; sin ninguno, no hay promedio */
   const prev3 = vals.slice(2, 5).filter(v => v > 0), avg = prev3.length ? prev3.reduce((a, b) => a + b, 0) / prev3.length : 0;
-  return `<section class="sec card2 mini-stat s-card${has ? ' ms-tap' : ''}" aria-labelledby="h-g"><div class="ms-h"><h2 id="h-g">${has ? `<button type="button" class="ms-link" data-act="gastosPet" data-id="${p.id}" aria-label="Gastos: ver el detalle">Gastos</button>` : 'Gastos'}</h2><span class="sic s-naranja">${I('wallet')}</span></div>
-    ${has ? `<p class="big-num">${Z.money(tot(now))}</p><small class="dim">${avg ? `Este mes. Promedio: ${Z.money(avg)}` : tot(now) ? 'Este mes. Primer mes con gastos' : 'Este mes'}</small>${bars(vals, 'naranja')}`
+  return `<section class="sec card2 mini-stat s-card${has ? ' ms-tap' : ''}" aria-labelledby="h-g"><div class="ms-h"><h2 id="h-g">${has ? `<button type="button" class="ms-link" data-act="gastosPet" data-id="${p.id}" aria-label="Gastos: ver el detalle">Gastos</button>` : 'Gastos'}</h2></div>
+    ${has ? `<p class="big-num">${Z.money(tot(now))}</p><small class="dim">${avg ? `Este mes. Promedio: ${Z.money(avg)}` : tot(now) ? 'Este mes. Primer mes con gastos' : 'Este mes'}</small>${bars(vals)}`
       : `<p class="dim">Anotá lo que gastás en ${esc(p.name)} y ves cuánto es por mes.</p><button class="btn ghost sm" data-act="newExp" style="align-self:flex-start">${I('plus')} Anotar un gasto</button>`}</section>`;
+}
+function renderInicio(p) {
+  const sm = Z.summary(p);
+  const mf = mefui && window.MZAWAY && (doc.away?.on || window.MZAWAY.inUse?.());
+  return `<div class="dash">
+    <div class="dash-l">${petHero(p, sm)}</div>
+    <div class="dash-r">
+      ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
+      ${scanBanner(p)}
+      ${weekSection(p)}
+      ${algoBlock(p)}
+      ${hoyBox(p)}
+      ${mf ? window.MZAWAY.homeCard(p) : ''}
+      <div class="ms-pair">${weightCard(p)}${spendCard(p)}</div>
+    </div>
+  </div>`;
 }
 /* ---------- "Hoy con {mascota}" (mascotas-hoy.js; el servidor marca y avisa si ya estaba hecho) ---------- */
 const hoyCache = {};
+/* Inicio: "Hoy con…" solo si tiene rutina para hoy, con lo que anotó quien la cuida abajo */
 function hoyBox(p) {
-  if (!window.MZHOYUI || mode !== 'full') return '';
+  const log = sitterLog(p);
+  if (!window.MZHOYUI || mode !== 'full') return log ? `<div class="card2 hoy-home" id="hoyBox">${log}</div>` : '';
   const c = hoyCache[p.id];
   if (!c || Date.now() - c.t > 30000) after(() => loadHoy(p.id));
-  return `<div class="span2" id="hoyBox">${window.MZHOYUI.compact(c?.data || null, p.name)}</div>`;
+  const has = c?.data?.items?.length;
+  if (!has && !log) return '<div id="hoyBox" hidden></div>';
+  return `<div class="card2 hoy-home" id="hoyBox">${has ? window.MZHOYUI.compact(c.data, p.name) : ''}${log}</div>`;
 }
 async function loadHoy(id) {
   if (hoyCache[id]?.loading) return;
@@ -1422,7 +1444,7 @@ async function loadHoy(id) {
     else hoyCache[id].loading = false;
   } catch { hoyCache[id].loading = false; }
   if (curPet()?.id === id && hoyCache[id].data) {
-    if (route.name === 'inicio') { const box = $('#hoyBox'); if (box) box.innerHTML = window.MZHOYUI.compact(hoyCache[id].data, curPet().name); }
+    if (route.name === 'inicio') { const box = $('#hoyBox'); if (box) box.outerHTML = hoyBox(curPet()); }
     if (route.name === 'hoy') render();
   }
 }
@@ -3438,6 +3460,7 @@ document.addEventListener('click', e => {
     case 'trip': return tripForm(cur);
     case 'vet': return vetForm(cur);
     case 'share': return sharePanel(cur);
+    case 'petMenu': return petMenu(cur);
     case 'sitter': return sitterPanel(cur);
     case 'rutina': return rutinaPanel(cur);
     case 'lost': return lostPanel(cur);

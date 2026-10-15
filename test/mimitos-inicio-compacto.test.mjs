@@ -50,18 +50,33 @@ test('Historial en Inicio: los últimos 3 con "Ver todo el historial"; filtros y
   assert.match(fn('historyList'), /data-act="hmore"/, 'el historial completo pagina de a 60');
 });
 
-test('topes en Inicio: Últimos 7 días 3, Próximos cuidados 2, Lo que anotó el cuidador 3, todos con "Ver más"', () => {
+test('topes en Inicio: Últimos 7 días 3, Esta semana 5, Lo que anotó el cuidador 3, todos con "Ver más"', () => {
   assert.match(fn('weekCard'), /gs\.slice\(0, 3\)/); assert.match(fn('weekCard'), /data-act="histOf" data-f="sintoma"/);
-  assert.match(fn('careCard'), /up\.slice\(0, 2\)/); assert.match(fn('careCard'), /Ver más/);
+  assert.match(js, /const WEEK_DAYS = 7, WEEK_MAX = 5;/);
+  assert.match(fn('weekSection'), /items\.slice\(0, WEEK_MAX\)/); assert.match(fn('weekSection'), /en la Agenda/);
   assert.match(fn('sitterLog'), /all\.slice\(ui\.slogAll \? -30 : -3\)/); assert.match(fn('sitterLog'), /data-act="slogAll"/);
   const mf = readFileSync(new URL('../assets/js/mascotas-mefui.js', import.meta.url), 'utf8');
   assert.match(mf, /st\.events\.slice\(-3\)/, '"Lo último que escuchó": 3');
 });
 
-test('CSS: en el celu Peso y Gastos lado a lado y accesos rápidos en grilla de 2; hojas con dvh', () => {
+test('Inicio premium: 6 bloques, el estado solo en las tarjetas del hero y nada infantil', () => {
+  const r = fn('renderInicio');
+  for (const b of ['petHero(', 'weekSection(', 'algoBlock(', 'hoyBox(', 'MZAWAY.homeCard(', 'weightCard(', 'spendCard(']) assert.ok(r.includes(b), b);
+  for (const gone of ['historySection(', 'bookcard', 'list quick', 'askBtn(', 'careCard(', 'h-health']) assert.ok(!r.includes(gone), gone);
+  assert.match(r, /MZAWAY\.inUse/, 'Me fui en Inicio solo si está en uso');
+  assert.match(fn('weekItems'), /heroIds\(p\)/, 'lo que tiene tarjeta arriba no se repite en Esta semana');
+  const h = fn('petHero');
+  assert.match(h, /p\.photoFull \|\| p\.photo/, 'la foto entera, a sangre');
+  assert.match(h, /ph-ini/); assert.match(h, /Subí su foto/);
+  assert.doesNotMatch(js, /CLOUDS|sin-foto\.svg|bienvenida\.svg/, 'sin nubes ni dibujos');
+  assert.match(fn('hoyBox'), /items\?\.length/, 'Hoy con… solo si hay rutina');
+  assert.match(fn('petMenu'), /sharePanel\(p\)/); assert.match(fn('petMenu'), /sitterPanel\(p\)/); assert.match(fn('petMenu'), /lostPanel\(p\)/);
+});
+
+test('CSS: Peso y Gastos lado a lado, tarjetas de estado por color y hojas con dvh', () => {
   const css = readFileSync(new URL('../assets/css/mascotas.css', import.meta.url), 'utf8');
-  assert.match(css, /\.dash-r>\.w-card,\.dash-r>\.s-card\{grid-column:auto/);
-  assert.match(css, /\.list\.quick\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.ms-pair\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  for (const t of ['late', 'soon', 'ok', 'none']) assert.match(css, new RegExp(`\\.pstat\\.t-${t}\\{--tc:`), t);
   assert.match(css, /max-height:94dvh/);
   assert.match(css, /\.two\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
