@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, tarjetaDeGasto, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -24,7 +24,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t12';
+const VERSION = '2026-10-15.t13';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -156,7 +156,7 @@ function pintarInicio(animar = false) {
   /* movimientos */
   const ing = r.ingresos.map(i => item({ tipo: 'ingreso', id: i.id, icono: 'ingreso', claseIc: 'ing', titulo: i.nombre, meta: textoRepite(i), monto: '+' + $(i.monto), montoClase: 'mas' }));
   const gasTj = (r.gastosTarjeta || []).map(g => item({ tipo: 'gasto', id: g.id, icono: 'tarjetas', titulo: g.nombre,
-    meta: g.dentro ? `Con ${g.tarjeta}: ya está adentro del resumen` : `Con ${g.tarjeta}: se paga con la tarjeta`, monto: g.dentro ? '' : '−' + $(g.monto) }));
+    meta: `${g.dentro ? `Con ${g.tarjeta}: ya está adentro del resumen` : `Con ${g.tarjeta}: se paga con la tarjeta`}${g.inferida ? ' (lo vimos en el resumen)' : ''}`, monto: g.dentro ? '' : '−' + $(g.monto) }));
   const gas = r.gastos.map(g => item({ tipo: 'gasto', id: g.id, icono: 'gasto', titulo: g.nombre,
     meta: `${g.nombre === g.categoria ? '' : g.categoria + ' · '}${F.gastoEstimado && g.real !== null ? `estimado ${$(g.estimado)}` : textoRepite(g)}`, monto: '−' + $(g.monto),
     extra: F.gastoEstimado && !g.confirmado ? ' <span class="mm-tag ext">Estimado</span>' : '' }));
@@ -235,7 +235,7 @@ function preguntaHTML(q) {
     saldo: () => `<button type="button" class="mm-btn chico" data-saldo>${esc(q.accion)}</button>`,
     estimados: () => `<button type="button" class="mm-btn chico" data-gastos-ok="${esc(q.gastoIds.join(','))}">${esc(q.accion)}</button><button type="button" class="mm-link" data-ir="cargado">Alguno cambió</button>`,
     estimado: () => `<button type="button" class="mm-btn chico" data-gasto-ok="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-gasto-real="${esc(q.gastoId)}">Fue otro monto</button><button type="button" class="mm-link" data-gasto-baja="${esc(q.gastoId)}">Lo di de baja</button>`,
-    gastoTarjeta: () => `<button type="button" class="mm-btn chico" data-gasto-tj="${esc(q.gastoId)}" data-tj="${esc(q.tarjetaId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-pregunta-luego="${esc(q.id)}">No, es otro</button>`,
+    gastoTarjeta: () => `<button type="button" class="mm-btn chico" data-gasto-tj="${esc(q.gastoId)}" data-tj="${esc(q.tarjetaId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-gasto-aparte="${esc(q.gastoId)}">No, se paga aparte</button>`,
     pagado: () => Object.entries(PAGOS_VENCIDO).map(([k, v], i) => `<button type="button" class="${i ? 'mm-link' : 'mm-btn chico'}" data-pago-res="${esc(q.resumenId)}" data-pago="${k}">${esc(v)}</button>`).join(''),
     dificil: () => `<button type="button" class="mm-btn chico" data-ver-dificil>Ver día por día</button>`,
   }[q.tipo]?.() || '';
@@ -1534,6 +1534,7 @@ di.querySelector('form').addEventListener('submit', e => {
 
 /* ── gasto fijo ── */
 const dg = $id('dlg-gasto');
+let gastoTjInferida = false;
 let editGasto = null, catElegida = CATEGORIAS[0], nombreGastoPrevio = null;
 function pintarCats() {
   $id('g-cats').innerHTML = CATEGORIAS.map(c => `<label class="mm-chip"><input type="radio" name="cat" value="${esc(c)}"${c === catElegida ? ' checked' : ''}><span>${esc(c)}</span></label>`).join('');
@@ -1566,7 +1567,9 @@ function abrirGasto(id = null) {
   $id('g-repite').checked = x ? x.repite : true;
   $id('g-dia-wrap').hidden = !F.diaDeCobro;
   $id('g-tj-wrap').hidden = !datos.tarjetas.length;   // QA v2 · 4: siempre, es lo que evita el doble conteo
-  $id('g-tj').innerHTML = [{ id: '', nombre: 'No, de la cuenta' }, ...datos.tarjetas.filter(t => !t.baja)].map(t => `<label class="mm-chip"><input type="radio" name="g-tj" value="${esc(t.id)}"${(x?.tarjetaId || '') === t.id ? ' checked' : ''}><span>${esc(t.nombre)}</span></label>`).join('');
+  const tjActual = x ? (tarjetaDeGasto(datos, x, HOY)?.id || '') : '';
+  gastoTjInferida = !!(x && !x.tarjetaId && tjActual);
+  $id('g-tj').innerHTML = [{ id: '', nombre: 'No, de la cuenta' }, ...datos.tarjetas.filter(t => !t.baja)].map(t => `<label class="mm-chip"><input type="radio" name="g-tj" value="${esc(t.id)}"${tjActual === t.id ? ' checked' : ''}><span>${esc(t.nombre)}</span></label>`).join('');
   $id('g-dia').innerHTML = '<option value="">Sin día</option>' + Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}">El ${k + 1}</option>`).join('');
   $id('g-dia').value = x?.dia ? String(x.dia) : '';
   const desde = x ? x.desde : mes;
@@ -1596,6 +1599,8 @@ dg.querySelector('form').addEventListener('submit', e => {
   const previoG = datos.gastos.find(g => g.id === editGasto);
   const tjG = datos.tarjetas.length ? (dg.querySelector('[name="g-tj"]:checked')?.value || '') : (previoG?.tarjetaId || '');
   if (tjG) x.tarjetaId = tjG;
+  /* QA v3 · 2: si había una tarjeta asumida (o ya dijo "aparte") y eligió "de la cuenta", queda aparte */
+  else if (previoG?.sinTarjeta || gastoTjInferida) x.sinTarjeta = true;
   const diaG = F.diaDeCobro ? Number($id('g-dia').value) : (datos.gastos.find(g => g.id === editGasto)?.dia || 0);
   if (diaG >= 1 && diaG <= 31) x.dia = diaG;
   if (editGasto) datos.gastos = datos.gastos.map(g => (g.id === editGasto ? x : g));
@@ -2195,7 +2200,9 @@ document.addEventListener('click', e => {
   if (dd) { cerrar(dc); return abrirDevolver(dd.dataset.devDe); }
   if (t.closest('[data-tna]')) return abrirTNA();
   const gtj = t.closest('[data-gasto-tj]');
-  if (gtj) { datos.gastos = datos.gastos.map(g => (g.id === gtj.dataset.gastoTj ? { ...g, tarjetaId: gtj.dataset.tj } : g)); guardar(); pintarTodo(); return avisar('Listo: lo contamos una sola vez, adentro de la tarjeta'); }
+  if (gtj) { datos.gastos = datos.gastos.map(g => { if (g.id !== gtj.dataset.gastoTj) return g; const { sinTarjeta, ...r } = g; return { ...r, tarjetaId: gtj.dataset.tj }; }); guardar(); pintarTodo(); return avisar('Listo: lo contamos una sola vez, adentro de la tarjeta'); }
+  const gap = t.closest('[data-gasto-aparte]');
+  if (gap) { datos.gastos = datos.gastos.map(g => { if (g.id !== gap.dataset.gastoAparte) return g; const { tarjetaId, ...r } = g; return { ...r, sinTarjeta: true }; }); guardar(); pintarTodo(); return avisar('Listo: lo contamos como gasto fijo aparte'); }
   const pg = t.closest('[data-pago-res]');
   if (pg) {
     if (pg.dataset.pago === 'otro') { pagoDe = pg.dataset.pagoRes; $id('p-monto').value = ''; return abrir($id('dlg-pago'), $id('p-monto')); }

@@ -122,8 +122,9 @@ test('[QA2 · 4] sin resumen importado, cuenta una vez como gasto de la tarjeta'
 });
 test('[QA2 · 4] sin marcar, el motor pregunta si va con la tarjeta (lo vio en el resumen) y el consejo no suma doble', () => {
   const d = conNetflix(null);
-  const q = M.preguntas(d, '2026-11-02').ahora.find(x => x.tipo === 'gastoTarjeta');
-  assert.equal(q.titulo, '¿Netflix se paga con Visa? Lo vimos en el resumen.');
+  const p = M.preguntas(d, '2026-11-02');
+  const q = [...p.ahora, ...p.masTarde].find(x => x.tipo === 'gastoTarjeta');
+  assert.equal(q.titulo, 'Netflix lo vimos en tu Visa: lo contamos ahí. ¿Está bien?', 'QA v3 · 2: ahora es confirmación');
   assert.equal(q.impacto, $(15_000));
   const c = M.consejos({ ...d, gastos: [...d.gastos, { id: 'sp', nombre: 'Spotify', categoria: 'Suscripciones', monto: $(5_000), repite: true, desde: '2026-01' }] }, '2026-11-02')
     .find(x => x.tipo === 'suscripciones');

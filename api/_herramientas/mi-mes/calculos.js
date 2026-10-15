@@ -264,9 +264,14 @@ export function resumenMes(datos, mes) {
   const conResumen = new Set(resumenes.map(r => r.tarjetaId));
   /* QA v2 · 4: un gasto fijo que se debita de una tarjeta no se resta aparte:
      si la tarjeta tiene resumen ese mes ya está adentro; si no, cuenta una vez como gasto de la tarjeta */
+  /* QA v3 · 2: si un resumen trae ese gasto (comercio + monto ±15 % o suscripción), se asume esa tarjeta hasta que la persona diga otra cosa */
+  const conTj = gastosTodos.map(g => {
+    const tj = tarjetaDeGasto(d, g, mes);
+    return tj ? { ...g, tarjetaId: tj.id, inferida: tj.inferida } : g;
+  });
   const deTarjeta = g => g.tarjetaId && tarjetas.has(g.tarjetaId);
-  const gastos = gastosTodos.filter(g => !deTarjeta(g));
-  const gastosTarjeta = gastosTodos.filter(deTarjeta).map(g => ({ ...g, tarjeta: tarjetas.get(g.tarjetaId).nombre, dentro: conResumen.has(g.tarjetaId) }));
+  const gastos = conTj.filter(g => !deTarjeta(g));
+  const gastosTarjeta = conTj.filter(deTarjeta).map(g => ({ ...g, tarjeta: tarjetas.get(g.tarjetaId).nombre, dentro: conResumen.has(g.tarjetaId) }));
   const gastosConTarjeta = gastosTarjeta.filter(g => !g.dentro);
   /* meses que cubre la tabla "cuotas a vencer" del banco: manda la tabla para
      las cuotas que vinieron de resúmenes; las compras nuevas se suman aparte */
@@ -720,7 +725,8 @@ export function migrar(crudo) {
     out.gastos.push({ id: String(g.id), nombre: texto(g.nombre) || categoria, categoria, monto: g.monto,
       repite: !!g.repite, desde: g.desde, ...(g.repite && esMes(g.hasta) ? { hasta: g.hasta } : {}),
       ...(dia(g.dia) ? { dia: g.dia } : {}),
-      ...(typeof g.tarjetaId === 'string' && out.tarjetas.some(t => t.id === g.tarjetaId) ? { tarjetaId: g.tarjetaId } : {}) });
+      ...(typeof g.tarjetaId === 'string' && out.tarjetas.some(t => t.id === g.tarjetaId) ? { tarjetaId: g.tarjetaId } : {}),
+      ...(g.sinTarjeta === true ? { sinTarjeta: true } : {}) });
   }
   for (const c of Array.isArray(crudo.cuotas) ? crudo.cuotas : []) {
     if (!c?.id || !entero(c.total) || !entero(c.cantidad) || c.cantidad > 72 || !esMes(c.primerMes)) continue;
@@ -1347,7 +1353,7 @@ export function venceAntesDeCobrar(datos, hoy) {
   }
   for (const m of [hoy.slice(0, 7), cobro.fecha.slice(0, 7)].filter((x, i, a) => a.indexOf(x) === i)) {
     for (const g of datos?.gastos || []) {
-      if (!g.dia || g.tarjetaId || !activoEn(g, m)) continue;
+      if (!g.dia || tarjetaDeGasto(datos, g, m) || !activoEn(g, m)) continue;
       const f = fechaConDia(m, g.dia);
       if (diasEntre(hoy, f) < 0 || diasEntre(f, cobro.fecha) <= 0) continue;
       items.push({ tipo: 'gasto', id: g.id, nombre: g.nombre, fecha: f, monto: g.monto });
@@ -1380,7 +1386,7 @@ export function lineaDelMes(datos, mes) {
       desde = sumarDias(c.vencimiento, 1);
     }
   }
-  for (const g of datos?.gastos || []) if (g.dia && !g.tarjetaId && activoEn(g, mes)) ev.push({ tipo: 'gasto', id: g.id, fecha: fechaConDia(mes, g.dia), nombre: g.nombre, monto: g.monto });
+  for (const g of datos?.gastos || []) if (g.dia && !tarjetaDeGasto(datos, g, mes) && activoEn(g, mes)) ev.push({ tipo: 'gasto', id: g.id, fecha: fechaConDia(mes, g.dia), nombre: g.nombre, monto: g.monto });
   return ev.sort((a, b) => diasEntre(b.fecha, a.fecha) || (a.tipo === 'cobro' ? -1 : 1));
 }
 /* De hoy al próximo cobro (incluido): lo que viene, en orden. */
@@ -1627,15 +1633,11 @@ export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true, d
     out.push({ id: `gasto:${g.id}:${mes}`, tipo: 'gasto', gastoId: g.id, impacto: g.monto,
       titulo: `¿${g.nombre} sigue en ${formatoPesos(g.monto)} este mes?`, porque: 'Suele cambiar de un mes a otro.', accion: `Sigue en ${formatoPesos(g.monto)}` });
   }
-  /* 4b. QA v2 · 4: gasto fijo sin tarjeta que aparece en un resumen → ¿se paga con esa tarjeta? */
-  for (const g of r.gastos) {
-    if (g.tarjetaId) continue;
-    const res = (datos.resumenes || []).filter(x => difMeses(x.mes, mes) <= 1 && difMeses(mes, x.mes) <= 1)
-      .find(x => (x.consumos || []).some(c => mismoComercio(c.comercio, g.nombre)));
-    const t = res && (datos.tarjetas || []).find(y => y.id === res.tarjetaId);
-    if (!t) continue;
-    out.push({ id: `gastotj:${g.id}`, tipo: 'gastoTarjeta', gastoId: g.id, tarjetaId: t.id, impacto: g.monto,
-      titulo: `¿${g.nombre} se paga con ${t.nombre}? Lo vimos en el resumen.`, porque: 'Si es así, lo contamos una sola vez: adentro de la tarjeta.', accion: `Sí, con ${t.nombre}` });
+  /* 4b. QA v3 · 2: el gasto que vimos en un resumen ya se cuenta adentro de la tarjeta; se pide confirmación */
+  for (const g of r.gastosTarjeta || []) {
+    if (!g.inferida) continue;
+    out.push({ id: `gastotj:${g.id}`, tipo: 'gastoTarjeta', gastoId: g.id, tarjetaId: g.tarjetaId, impacto: g.monto,
+      titulo: `${g.nombre} lo vimos en tu ${g.tarjeta}: lo contamos ahí. ¿Está bien?`, porque: 'Así no se resta dos veces. Si se paga aparte (débito o efectivo), decinos y lo contamos como gasto fijo.', accion: 'Sí, está bien' });
   }
   /* 5. ingreso principal sin día de cobro */
   if (diaDeCobro) {
@@ -2171,3 +2173,23 @@ export function verificarCambio(datos, cambio) {
 
 /* Rótulo de la TNA que se usó (QA v2 · 6). */
 export const textoTNA = f => `TNA ${String(f.tna).replace('.', ',')} % ${f.tnaDe === 'resumen' ? 'del resumen' : f.tnaDe === 'tuya' ? '(la que cargaste)' : '(supuesto: cada banco informa la suya en el resumen)'}`;
+
+
+/* QA v3 · 2: ¿de qué tarjeta se debita este gasto fijo? La marcada; si no hay
+   marca ni "se paga aparte", la del resumen que lo trae (comercio y, además,
+   monto ±15 % o categoría Suscripciones). */
+export function tarjetaDeGasto(datos, g, mes) {
+  if (g.tarjetaId && (datos?.tarjetas || []).some(t => t.id === g.tarjetaId)) return { id: g.tarjetaId, inferida: false };
+  if (g.sinTarjeta) return null;
+  for (const r of (datos?.resumenes || []).filter(x => difMeses(x.mes, mes) <= 6 && difMeses(mes, x.mes) <= 1).sort((a, b) => difMeses(a.mes, b.mes))) {
+    if (!(datos.tarjetas || []).some(t => t.id === r.tarjetaId)) continue;
+    const ok = (r.consumos || []).some(c => {
+      if (!mismoComercio(c.comercio, g.nombre)) return false;
+      if (g.categoria === 'Suscripciones') return true;
+      const m = aPesos(c.monto, c.moneda || 'ARS', datos);
+      return m !== null && Math.abs(m - g.monto) <= g.monto * 0.15;
+    });
+    if (ok) return { id: r.tarjetaId, inferida: true };
+  }
+  return null;
+}
