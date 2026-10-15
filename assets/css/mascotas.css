@@ -1515,3 +1515,11 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 .qr-here-txt p{margin:0}
 .qr-here-txt .link{align-self:center;min-height:44px}
 .qr-form h2 .opt{font:400 14px var(--f);color:var(--ink2)}
+
+/* Inicio: tarjetas Peso y Gastos tocables enteras (link estirado) con su acción chica encima */
+.mini-stat.ms-tap{position:relative;cursor:pointer}
+.ms-link{background:none;border:0;padding:0;font:inherit;color:inherit;cursor:pointer;text-align:left}
+.ms-link::after{content:'';position:absolute;inset:0;border-radius:inherit;z-index:0}
+.ms-link:focus-visible{outline:none}
+.mini-stat.ms-tap:has(.ms-link:focus-visible){outline:2px solid var(--ink);outline-offset:2px}
+.mini-stat .ms-add{position:relative;z-index:1;align-self:flex-start;min-height:44px}

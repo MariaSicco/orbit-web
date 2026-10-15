@@ -1316,16 +1316,14 @@ function renderInicio(p) {
       ${weightCard(p)}
       ${spendCard(p)}
       <section class="sec card2" aria-labelledby="h-health">
-        <h2 id="h-health">Antecedentes y remedios</h2>
+        <h2 id="h-health">Salud: problemas, alergias y remedios</h2>
         <div class="summary">
-          <button class="sum" data-act="libsec" data-sec="vac"><span>Vacunas</span><span class="badge ${vacc[1] === 'late' ? 'late' : vacc[1] === 'ok' ? 'ok' : 'none'}">${esc(vacc[0])}</span></button>
-          <button class="sum" data-act="libsec" data-sec="des"><span>Antiparasitario</span><span class="badge ${anti[1] === 'late' ? 'late' : anti[1] === 'ok' ? 'ok' : 'none'}">${esc(anti[0])}</span></button>
           <button class="sum" data-act="go" data-to="antecedentes"><span>Problemas de salud</span><b>${sm.active.length ? esc(sm.active.map(c => c.name).join(', ')) : 'Ninguno cargado'}</b></button>
           <button class="sum" data-act="go" data-to="antecedentes"><span>Alergias</span><b>${esc(p.allergies || 'Ninguna cargada')}</b></button>
         </div>
         ${activeMeds.length ? `<div class="list">${activeMeds.map(m => medRow(p, m)).join('')}</div>` : ''}
       </section>
-      <button class="bookcard span2 c-${Z.tone(p)}" data-act="go" data-to="libreta"><span class="mini">${avatar(p)}</span><span><span class="eyebrow">Libreta sanitaria</span><b>La libreta de ${esc(p.name)}</b><small>${recs ? `${recs} ${recs === 1 ? 'registro' : 'registros'} entre vacunas, desparasitaciones y controles. Lista para imprimir.` : 'Se completa sola con lo que cargás: vacunas, desparasitaciones, controles y peso.'}</small><span class="go">Abrir libreta ${I('next')}</span></span></button>
+      <button class="bookcard span2 c-${Z.tone(p)}" data-act="go" data-to="libreta"><span class="mini">${avatar(p)}</span><span><span class="eyebrow">Libreta sanitaria</span><b>La libreta de ${esc(p.name)}</b><small>${recs ? `${recs} ${recs === 1 ? 'registro' : 'registros'} entre vacunas, antiparasitarios y controles. Lista para imprimir.` : 'Se completa sola con lo que cargás: vacunas, desparasitaciones, controles y peso.'}</small><span class="go">Abrir libreta ${I('next')}</span></span></button>
       ${sitterLog(p)}
       <div class="span2">${historySection(p)}</div>
       <section class="sec span2" aria-labelledby="h-more">
@@ -1368,7 +1366,7 @@ function petHero(p, sm, vacc, anti) {
         ${stat('libsec', ' data-sec="vac"', 'syringe', 'rosa', 'Vacunas', esc(vacc[1] === 'late' ? 'Vencida' : vacc[0]), vacc[1] === 'late', due('vacuna'), sm.vacc === 'sug' && sm.vaccNext ? `Sugerida: ${d(sm.vaccNext.r).replace(" ", "\u00a0")}` : '')}
         ${stat('libsec', ' data-sec="des"', 'drop', 'naranja', 'Antiparasitario', pip ? (pip.s.days < 0 ? 'Vencido' : sm.anti === 'sug' ? 'Sin confirmar' : d(pip.r)) : esc(anti[0]), pip ? pip.s.days < 0 : anti[1] === 'late', due('desparasitacion'), pip && pip.s.days >= 0 && sm.anti === 'sug' ? `Sugerida: ${d(pip.r).replace(" ", "\u00a0")}` : '')}
         ${stat('go', ' data-to="agenda"', 'steth', 'violeta', 'Control', ctl ? d(ctl.r) : 'Sin turno', ctl && ctl.s.days < 0, due('control'))}
-        ${stat('go', ' data-to="datos"', 'scale', 'verde', 'Peso', p.weight ? kg(p.weight) : 'Sin cargar', false)}
+        ${stat('libsec', ' data-sec="peso"', 'scale', 'verde', 'Peso', p.weight ? kg(p.weight) : 'Sin cargar', false)}
       </div>
     </div>
   </section>`;
@@ -1391,8 +1389,9 @@ const bars = (vals, tone) => { const mx = Math.max(...vals, 1); return `<div cla
 function weightCard(p) {
   const w = [...(p.weights || [])].sort((a, b) => a.date.localeCompare(b.date)).slice(-10);
   const last = w[w.length - 1], prev = w[w.length - 2], dif = last && prev ? Math.round((last.kg - prev.kg) * 10) / 10 : 0;
-  return `<section class="sec card2 mini-stat w-card" aria-labelledby="h-w"><div class="ms-h"><h2 id="h-w">Peso</h2><span class="sic s-verde">${I('scale')}</span></div>
-    ${last ? `<p class="big-num">${kg(last.kg)}</p><small class="dim">${prev ? `${dif > 0 ? '+' : ''}${String(dif).replace('.', ',')} kg desde el ${fmt(prev.date, { day: 'numeric', month: 'short' })}` : 'Primer registro'}</small>${w.length > 1 ? bars(w.map(x => x.kg - Math.min(...w.map(y => y.kg)) * .8), 'violeta') : ''}`
+  /* con datos, la tarjeta entera lleva al historial (Libreta › Peso) y "+ Cargar peso" queda encima */
+  return `<section class="sec card2 mini-stat w-card${last ? ' ms-tap' : ''}" aria-labelledby="h-w"><div class="ms-h"><h2 id="h-w">${last ? `<button type="button" class="ms-link" data-act="libsec" data-sec="peso" aria-label="Peso: ver el historial en la libreta">Peso</button>` : 'Peso'}</h2><span class="sic s-verde">${I('scale')}</span></div>
+    ${last ? `<p class="big-num">${kg(last.kg)}</p><small class="dim">${prev ? `${dif > 0 ? '+' : ''}${String(dif).replace('.', ',')} kg desde el ${fmt(prev.date, { day: 'numeric', month: 'short' })}` : 'Primer registro'}</small>${w.length > 1 ? bars(w.map(x => x.kg - Math.min(...w.map(y => y.kg)) * .8), 'violeta') : ''}<button class="link ms-add" data-act="newWeight">${I('plus')} Cargar peso</button>`
       : `<p class="dim">Cargá su peso cada tanto y ves cómo va.</p><button class="btn ghost sm" data-act="newWeight" style="align-self:flex-start">${I('plus')} Cargar peso</button>`}</section>`;
 }
 function spendCard(p) {
@@ -1400,8 +1399,10 @@ function spendCard(p) {
   for (let i = 5; i >= 0; i--) { const d = new Date(); d.setDate(1); d.setMonth(d.getMonth() - i); months.push(iso(d).slice(0, 7)); }
   const tot = m => p.expenses.filter(x => x.date.startsWith(m)).reduce((a, x) => a + x.amount, 0);
   const vals = months.map(tot), has = vals.some(Boolean);
-  return `<section class="sec card2 mini-stat s-card" aria-labelledby="h-g"><div class="ms-h"><h2 id="h-g">Gastos</h2><span class="sic s-naranja">${I('wallet')}</span></div>
-    ${has ? `<p class="big-num">${Z.money(tot(now))}</p><small class="dim">Este mes. Promedio: ${Z.money(vals.reduce((a, b) => a + b, 0) / 6)}</small>${bars(vals, 'naranja')}`
+  /* misma regla que la pantalla Gastos: promedio de los 3 meses anteriores que tienen gastos; sin ninguno, no hay promedio */
+  const prev3 = vals.slice(2, 5).filter(v => v > 0), avg = prev3.length ? prev3.reduce((a, b) => a + b, 0) / prev3.length : 0;
+  return `<section class="sec card2 mini-stat s-card${has ? ' ms-tap' : ''}" aria-labelledby="h-g"><div class="ms-h"><h2 id="h-g">${has ? `<button type="button" class="ms-link" data-act="gastosPet" data-id="${p.id}" aria-label="Gastos: ver el detalle">Gastos</button>` : 'Gastos'}</h2><span class="sic s-naranja">${I('wallet')}</span></div>
+    ${has ? `<p class="big-num">${Z.money(tot(now))}</p><small class="dim">${avg ? `Este mes. Promedio: ${Z.money(avg)}` : tot(now) ? 'Este mes. Primer mes con gastos' : 'Este mes'}</small>${bars(vals, 'naranja')}`
       : `<p class="dim">Anotá lo que gastás en ${esc(p.name)} y ves cuánto es por mes.</p><button class="btn ghost sm" data-act="newExp" style="align-self:flex-start">${I('plus')} Anotar un gasto</button>`}</section>`;
 }
 /* ---------- "Hoy con {mascota}" (mascotas-hoy.js; el servidor marca y avisa si ya estaba hecho) ---------- */
@@ -3403,7 +3404,8 @@ document.addEventListener('click', e => {
     case 'histOf': ui.hist = { type: b.dataset.f, year: '', q: '' }; return go('historial');
     case 'slogAll': ui.slogAll = true; return render();
     case 'hmore': ui.hist.n = (ui.hist.n || 60) + 60; $('#histList').innerHTML = historyList(cur); return;
-    case 'libsec': ui.lib.jump = ui.lib.secFirst?.[b.dataset.sec] ?? ({ vac: 2, des: 3 }[b.dataset.sec] || 0); return go('libreta');
+    case 'libsec': return libGo(null, b.dataset.sec);
+    case 'gastosPet': ui.gastos.pet = b.dataset.id; ui.gastos.ym = iso(Z.today()).slice(0, 7); return go('gastos');
     case 'lsec': return bookGo(ui.lib.secFirst[b.dataset.sec]);
     case 'lprev': return bookGo(bookIdx - (matchMedia('(min-width:1024px)').matches ? 2 : 1));
     case 'lnext': return bookGo(bookIdx + (matchMedia('(min-width:1024px)').matches ? 2 : 1));
