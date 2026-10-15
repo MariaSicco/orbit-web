@@ -1533,3 +1533,10 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 .brand svg{width:30px;height:30px}
 .brand b{color:#6B1A35}
 .pp-k svg,.mark svg{border-radius:4px}
+
+/* v35: en el celu la barra de arriba no entraba fuera de Inicio (logo + nombre + 4 botones) y corría la página de costado.
+   Hasta 480 px queda solo el isotipo; el link sigue diciendo "Mimitos, inicio" para lectores de pantalla */
+@media(max-width:480px){.top .brand b,.top .brand .by{display:none}.top>.brand{min-width:0}}
+/* en Inicio, el saludo cede lugar (con "…") antes que los botones; en 360–380 px los botones se juntan un poco */
+.hi{min-width:0;flex:0 1 auto}.hi span{min-width:0;overflow:hidden}.hi small,.hi b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:380px){.top{gap:6px;padding-left:12px;padding-right:12px}.top-acts{gap:4px}.mf-pill{padding-left:10px;padding-right:10px}}

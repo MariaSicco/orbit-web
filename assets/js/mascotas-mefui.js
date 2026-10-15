@@ -254,6 +254,18 @@ function camsListHtml(withLive) {
   return `${cams.length ? `<div class="list">${rows}</div>` : ''}
     ${cams.length < (st.max || 4) ? `<button class="btn ${cams.length ? 'ghost' : ''} wide" data-mf="pair">${I('camera')} Convertir un celu viejo en cámara</button>` : `<p class="note">Llegaste al máximo de ${st.max || 4} cámaras. Desconectá una para sumar otra.</p>`}`;
 }
+/* lo primero de la pantalla: verla en vivo, a un toque (antes quedaba al final, después de la semana y los avisos) */
+function liveTopHtml() {
+  if (!(st.cams || []).length) return '';
+  const c = bestCam(), pet = A().petById(c.petId) || D().pets[0], others = st.cams.filter(x => x !== c && x.online);
+  return `<section class="mf-cam mf-live-top" aria-labelledby="h-mflive">
+    <div class="mf-cam-h"><span class="mf-cam-ic" aria-hidden="true">${I('camera')}</span><div><h2 id="h-mflive">Ver a ${esc(pet?.name || 'tu mascota')} en vivo</h2>
+      <p class="mf-cam-st ${c.online ? 'on' : 'off'}"><span class="mf-cam-dot" aria-hidden="true"></span>${esc(c.name)} · ${esc(camState(c))}</p></div></div>
+    <button class="btn big wide" data-mf="live" data-cam="${c.camId}">${I('camera')} Ver en vivo</button>
+    ${c.online ? '<p class="note">Adentro podés escucharla y hablarle.</p>' : '<p class="note">Para verla, en el celu de casa abrí la Cámara Mimitos y tocá "Prender cámara".</p>'}
+    ${others.length ? `<div class="mf-cam-more">${others.map(x => `<button class="link" data-mf="live" data-cam="${x.camId}">Ver ${esc(x.name)}</button>`).join('')}</div>` : ''}
+  </section>`;
+}
 function render(p) {
   const a = D().away;
   if (!st.cams) loadCams().then(() => { if (A().route.name === 'mefui' || A().route.name === 'cuenta') A().render(); });
@@ -265,6 +277,7 @@ function render(p) {
   return `<div class="mf">
     <button class="link" data-act="go" data-to="inicio">${I('back')} Inicio</button>
     <div><span class="eyebrow">Me fui</span><h1 class="h-xl">${a.on ? 'Estás afuera' : 'Cuando salgas'}</h1></div>
+    ${liveTopHtml()}
     ${a.on ? `<section class="mf-card" aria-labelledby="h-mf2"><div class="mf-top"><span class="mf-dot" aria-hidden="true"></span><h2 id="h-mf2" class="eyebrow">En curso</h2></div>
       <p class="mf-clock" data-away-clock>${clockHtml()}</p>
       ${statusHtml()}
