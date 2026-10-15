@@ -174,3 +174,15 @@ test('en casa (sin "Me fui"): el evento se guarda y aparece en la línea de tiem
   assert.deepEqual(evs.map(e => e.type), ['ladrido']);
   assert.equal(await kvGet('orbit:petcam:ping:casa@x.com:ladrido'), null, 'sin "Me fui" no arranca la ventana de 15 min de avisos');
 });
+
+test('aviso de prueba: llega aunque esté en casa, dice si el celu no tiene avisos y tiene tope de 5 por hora', async () => {
+  process.env.MIMITOS_MEFUI = '1'; process.env.MIMITOS_MEFUI_ALLOW = 'prueba@x.com';
+  const cam = await paired('prueba@x.com');
+  const doc = await kvGet('orbit:pets:prueba@x.com'); doc.away = { on: false }; await kvSet('orbit:pets:prueba@x.com', doc);
+  const r = await call('POST', { cam: 'testpush' }, {}, { token: cam.token });
+  assert.equal(r.code, 200); assert.equal(r.body.sent, 0); assert.equal(r.body.phones, 0, 'sin celu suscripto lo dice');
+  for (let i = 0; i < 4; i++) assert.equal((await call('POST', { cam: 'testpush' }, {}, { token: cam.token })).code, 200);
+  assert.equal((await call('POST', { cam: 'testpush' }, {}, { token: cam.token })).code, 429);
+  assert.equal((await call('POST', { cam: 'testpush' }, {}, { token: 'x'.repeat(43) })).code, 401);
+  assert.equal((await call('GET', { cam: 'testpush' }, null, { token: cam.token })).code, 405);
+});

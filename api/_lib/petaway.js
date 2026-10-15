@@ -368,6 +368,7 @@ export async function eventsOf(email, since = 0) {
    POST ?cam=ping    (Bearer token) {listen?} → { ok, sens }           (cada 5 min y al cambiar la escucha; 1 lectura + 1 escritura)
    POST ?cam=unpair  (Bearer token)          → { ok }            (el celu cámara se desvincula solo)
    POST ?cam=csens   (Bearer token) {sens}   → { ok }            (sensibilidad elegida en la cámara)
+   POST ?cam=testpush (Bearer token)         → { ok, sent, phones } (aviso de prueba al celu del dueño, con o sin "Me fui"; 5 por hora)
    POST ?cam=event   (Bearer token) {type, start, dur, conf} → { ok, merged, notify }  (solo el evento: el audio nunca viaja)
    Dueña o dueño (sesión + compra, y la cuenta habilitada):
    POST ?cam=pair {petId, name}              → { code, exp }
@@ -396,7 +397,7 @@ export async function handleCam(req, res, deps = {}) {
     return res.status(200).json({ token: r.token, camId: r.camId, name: r.name, pet: (doc?.pets || []).find(p => p.id === r.petId)?.name || '' });
   }
 
-  if (['me', 'ping', 'event', 'unpair', 'csens'].includes(act)) {
+  if (['me', 'ping', 'event', 'unpair', 'csens', 'testpush'].includes(act)) {
     const cam = await verifyCameraToken(bearer(req));
     if (!cam) return res.status(401).json({ error: 'camara_no_valida' });
     /* la lista se lee siempre: si la revocaron en otra instancia, corta acá aunque la validación esté en caché */
@@ -419,6 +420,14 @@ export async function handleCam(req, res, deps = {}) {
     if (act === 'csens') { const b = await readBody(req); return (await setCamSens(cam.email, cam.camId, b.sens)) ? res.status(200).json({ ok: true, sens: b.sens }) : res.status(400).json({ error: 'invalid' }); }
     /* "Desvincular este celu" desde la cámara misma */
     if (act === 'unpair') { await revokeCamera(cam.email, cam.camId); return res.status(200).json({ ok: true }); }
+    /* "Mandarme un aviso de prueba": para comprobar que los avisos llegan sin hacer ladrar a nadie ni prender "Me fui" */
+    if (act === 'testpush') {
+      const nt = await kvIncrBy(`orbit:petcam:rl:test:${cam.camId}:${new Date(now).toISOString().slice(0, 13)}`, 1, 3600);
+      if (nt > 5) return res.status(429).json({ error: 'limite' });
+      const n = await getNotify(cam.email);
+      const sent = await (deps.push || pushTo)(n, { title: `Aviso de prueba${pet ? ' de ' + pet : ''}`, body: `Si ves esto, los avisos de la Cámara Mimitos (${me.name || 'cámara'}) te llegan bien.`, url: '/mascotas#/mefui', tag: 'cam-prueba' });
+      return res.status(200).json({ ok: true, sent, phones: n.subs.length });
+    }
     /* evento: tope por cámara (hora y día) */
     const hr = new Date(now).toISOString().slice(0, 13);
     const nh = await kvIncrBy(`orbit:petcam:rl:ev:${cam.camId}:${hr}`, 1, 3600);

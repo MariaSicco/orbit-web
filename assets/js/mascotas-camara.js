@@ -272,14 +272,28 @@ function renderActive() {
     <p class="dim2" id="note"></p>
     <section class="card" aria-labelledby="evT"><b id="evT">Lo último que escuchó</b><ul class="evs" id="evs"></ul><p class="away-note" id="awayNote" hidden>Los avisos te llegan solo con "Me fui" activo. Igual queda guardado y lo ves en la app.</p></section>
     <section class="card test" id="test" aria-labelledby="testT"><b id="testT">¿Anda la detección?</b><p class="dim2" id="testTx">Poné un video de perros ladrando cerca del celu. Si lo detecta, vas a ver el cartel acá.</p><button class="btn ghost" id="testB">Probar detección</button></section>
+    <section class="card test" id="ptest" aria-labelledby="ptestT"><b id="ptestT">¿Te llegan los avisos?</b><p class="dim2" id="ptestTx" role="status">Te mandamos una notificación de prueba a tu celu, sin hacer ladrar a nadie.</p><button class="btn ghost" id="ptestB">Mandarme un aviso de prueba</button></section>
     ${sensHtml(S.sens)}
     <div class="row2"><button class="btn ghost" id="dimB">Atenuar pantalla</button><button class="btn stop" id="stopB">Apagar cámara</button></div>
     ${privacy()}`;
   $('#stopB').onclick = () => { stopAll(); renderReady('Cámara apagada. No escucha ni transmite.'); };
   $('#dimB').onclick = dim;
   $('#testB').onclick = startTest;
+  $('#ptestB').onclick = pushTest;
   bindSens();
   paint();
+}
+/* "Mandarme un aviso de prueba": el servidor le manda una notificación al celu del dueño */
+async function pushTest() {
+  const tx = $('#ptestTx'), b = $('#ptestB'), t = store.get()?.token; if (!tx || !t) return;
+  b.disabled = true; b.textContent = 'Mandando…';
+  let r; try { r = await api('testpush', { method: 'POST', token: t, body: {} }); } catch { r = null; }
+  b.disabled = false; b.textContent = 'Mandar otra vez';
+  if (!r || !r.ok) { tx.textContent = r?.status === 429 ? 'Ya mandaste varias pruebas en esta hora. Probá más tarde.' : r?.status === 401 ? 'Esta cámara se desconectó. Volvé a emparejarla.' : 'No pudimos mandarlo. Revisá la conexión de este celu y probá de nuevo.'; return; }
+  const d = r.d || {};
+  tx.innerHTML = d.sent ? `<b>Listo, lo mandamos.</b> Tendría que llegarte en unos segundos a ${d.sent === 1 ? 'tu celu' : `tus ${d.sent} celus`}. Si no aparece, revisá que Mimitos tenga permiso de notificaciones y que el celu no esté en No molestar.`
+    : d.phones ? 'No pudimos entregarlo: el permiso de avisos de tu celu venció. En tu celu, entrá a Mimitos → Avisos → En este celu y activalos de nuevo.'
+    : '<b>Tu celu todavía no tiene los avisos activados.</b> En tu celu (no en este), entrá a Mimitos → Avisos → En este celu y activalos. En iPhone, primero agregá Mimitos a la pantalla de inicio.';
 }
 /* "Probar detección": 90 s para poner un video de ladridos cerca; el resultado queda en la tarjeta */
 const TEST_MS = 90e3;
