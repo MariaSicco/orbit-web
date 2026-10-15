@@ -66,7 +66,7 @@ test('Inicio premium: 6 bloques, el estado solo en las tarjetas del hero y nada 
   assert.match(r, /MZAWAY\.inUse/, 'Me fui en Inicio solo si está en uso');
   assert.match(fn('weekItems'), /heroIds\(p\)/, 'lo que tiene tarjeta arriba no se repite en Esta semana');
   const h = fn('petHero');
-  assert.match(h, /p\.photoFull \|\| p\.photo/, 'la foto entera, a sangre');
+  assert.match(h, /has-cut/, 'la mascota recortada sobre su color'); assert.match(h, /cut = Boolean\(p\.photo && p\.photoFull\)/);
   assert.match(h, /ph-ini/); assert.match(h, /Subí su foto/);
   assert.doesNotMatch(js, /CLOUDS|sin-foto\.svg|bienvenida\.svg/, 'sin nubes ni dibujos');
   assert.match(fn('hoyBox'), /items\?\.length/, 'Hoy con… solo si hay rutina');

@@ -175,7 +175,7 @@ function cutFlow(file, pet) {
       show(`<div class="cut-prev" style="--bg:${bg}"><img src="${cutPng}" alt="Recorte de ${name}"></div>
         <p class="dim">${msg}</p>
         <button class="btn big wide" id="cutUse">Usar recorte</button>
-        <button class="btn ghost wide" id="cutFull">Usar foto entera</button>
+        <button class="btn ghost wide" id="cutFull">Usar foto sin recortar</button>
         <button class="link" id="cutTouch">${I('hand')} No quedó bien: tocá a ${name} en la foto</button>`);
       $('#cutUse').onclick = async () => finish({ photo: result, photoFull: await shrink(file, 900, .8) });
       $('#cutFull').onclick = () => finish({ photo: full, photoFull: '' });
@@ -186,7 +186,7 @@ function cutFlow(file, pet) {
         <button class="cut-touch" id="cutPick" aria-label="Foto: tocá a tu mascota"><img src="${full}" alt=""></button>
         <p class="amsg" id="cutMsg" role="status"></p>
         <button class="btn ghost wide" id="cutRound">Mejor un recorte redondo</button>
-        <button class="btn ghost wide" id="cutFull2">Usar foto entera</button>`);
+        <button class="btn ghost wide" id="cutFull2">Usar foto sin recortar</button>`);
       $('#cutFull2').onclick = () => finish({ photo: full, photoFull: '' });
       $('#cutRound').onclick = async () => { const r = await (await loadCut().catch(() => null))?.round(full).catch(() => null); finish(r ? { photo: r, photoFull: await shrink(file, 900, .8) } : { photo: full, photoFull: '' }); };
       $('#cutPick').onclick = async e => {
@@ -195,21 +195,21 @@ function cutFlow(file, pet) {
         $('#cutMsg').textContent = 'Recortando…';
         try { const C = await loadCut(); const r = await C.touch(full, x, y); window.MZCUT_LAST = { ...(window.MZCUT_LAST || {}), touch: r.ms };
           if (r.found) actions(r.png, 'Así queda sobre su color.'); else $('#cutMsg').textContent = 'No la pudimos separar. Probá tocando en otro lugar o usá el recorte redondo.'; }
-        catch { $('#cutMsg').textContent = 'Esto necesita conexión. Probá de nuevo o usá la foto entera.'; }
+        catch { $('#cutMsg').textContent = 'Esto necesita conexión. Probá de nuevo o usá la foto sin recortar.'; }
       };
     };
     show(`<div class="cut-prev busy" style="--bg:${bg}"><img src="${full}" alt=""><span class="cut-spin" aria-hidden="true"></span></div>
       <p class="dim" role="status">Recortando a ${name} del fondo… La primera vez tarda unos segundos.</p>
-      <button class="btn ghost wide" id="cutFull0">Usar foto entera</button>`);
+      <button class="btn ghost wide" id="cutFull0">Usar foto sin recortar</button>`);
     $('#cutFull0').onclick = () => finish({ photo: full, photoFull: '' });
     if (!dlg.open) dlg.showModal();
     try {
       const t = performance.now(), C = await loadCut(), r = await C.auto(full);
       window.MZCUT_LAST = { auto: r.ms, model: r.loadMs, total: Math.round(performance.now() - t), found: r.found, label: r.label };
       if (settled) return;
-      if (r.found) actions(r.png, `Así queda ${name} sobre su color. Si el recorte salió raro, usá la foto entera.`);
+      if (r.found) actions(r.png, r.fallback === 'round' ? `El recorte no iba a quedar prolijo, así que la pusimos redonda sobre su color. Si preferís, usá la foto sin recortar o tocá a ${name} en la foto.` : `Así queda ${name} sobre su color. Si el recorte salió raro, usá la foto sin recortar.`);
       else { touchStep(); $('#cutMsg').textContent = `No encontramos ${pet.species === 'gato' ? 'un gato' : pet.species === 'perro' ? 'un perro' : 'a tu mascota'} sola. Tocala en la foto.`; }
-    } catch { if (!settled) { touchStep(); $('#cutMsg').textContent = 'El recorte necesita conexión. Podés usar la foto entera o un recorte redondo.'; } }
+    } catch { if (!settled) { touchStep(); $('#cutMsg').textContent = 'El recorte necesita conexión. Podés usar la foto sin recortar o un recorte redondo.'; } }
   });
 }
 const CUPO_MSG = 'Llegaste al espacio de fotos y estudios de tu cuenta (200 MB). Borrá estudios o fotos que no uses para subir más.';
@@ -1130,7 +1130,7 @@ function render() {
   if (!bare) drawNav();
   document.body.dataset.route = bare ? '' : route.name;
   const hp = !bare && route.name === 'inicio' ? curPet() : null;
-  document.body.dataset.hero = hp && (hp.photoFull || hp.photo) ? 'photo' : '';
+  document.body.dataset.hero = '';
   document.body.dataset.view = mode === 'full' ? route.name : '';
   applyHue(route.name === 'alta' && ob ? ob.pet : curPet());
   drawTop(bare);
@@ -1311,10 +1311,11 @@ const heroIds = p => new Set(heroCards(p).filter(c => c.rn).map(c => c.rn.id));
 const doneChip = (p, r) => `<button type="button" class="pst-done" data-act="renew" data-pet="${p.id}" data-rec="${r.id}" aria-label="${Z.renewLabel(r)}: ${esc(r.name || TYPE[r.type])} de ${esc(p.name)}">${I('check')}<span>Ya está</span></button>`;
 const CARD_ACT = { vac: ' data-act="libsec" data-sec="vac"', des: ' data-act="libsec" data-sec="des"', ctl: ' data-act="go" data-to="agenda"', peso: ' data-act="libsec" data-sec="peso"' };
 function petHero(p, sm) {
-  const img = p.photoFull || p.photo, meta = [p.breed || Z.species(p), Z.age(p.birth), p.weight ? kg(p.weight) : ''].filter(Boolean).join(' · ');
+  /* la mascota recortada sobre su color (decisión de Majo, 15/10); si eligió la foto sin recortar, va enmarcada sobre el color */
+  const img = p.photo, cut = Boolean(p.photo && p.photoFull), meta = [p.breed || Z.species(p), Z.age(p.birth), p.weight ? kg(p.weight) : ''].filter(Boolean).join(' · ');
   const strip = doc.pets.length > 1 ? `<nav class="pstrip" aria-label="Tus mascotas">${doc.pets.map(x => `<button class="pchip" data-act="pick" data-id="${x.id}" aria-current="${x.id === p.id}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}<button class="pchip add" data-act="newPet" aria-label="Agregar mascota"><span class="av">${I('plus')}</span></button></nav>` : '';
   const cards = heroCards(p, sm);
-  return `<section class="phero${img ? ' has-photo' : ' no-photo'}" aria-labelledby="h-pet">
+  return `<section class="phero${img ? (cut ? ' has-cut' : ' has-photo') : ' no-photo'}" aria-labelledby="h-pet">
     <div class="ph-stage">${img ? `<img class="ph-img" src="${esc(img)}" alt="Foto de ${esc(p.name)}">`
       : `<span class="ph-ini" aria-hidden="true">${esc((p.name || '?').trim().charAt(0).toUpperCase())}</span><button class="ph-up" data-act="editPet">${I('camera')} Subí su foto</button>`}${strip}</div>
     <div class="psheet">

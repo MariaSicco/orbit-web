@@ -1349,13 +1349,16 @@ body[data-route="inicio"]{background:var(--bg)}
 /* hero */
 .phero{position:relative;display:flex;flex-direction:column;min-width:0}
 .ph-stage{position:relative;height:clamp(320px,55svh,540px);background:var(--hero);overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
-.phero.has-photo .ph-stage::before{content:'';position:absolute;inset:0 0 auto;height:180px;background:linear-gradient(rgba(0,0,0,.5),rgba(0,0,0,0));z-index:1;pointer-events:none}
-.ph-img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ph-img{position:absolute;display:block}
+/* la mascota recortada sobre su color, apoyada en la hoja (decisión de Majo, 15/10) */
+.phero.has-cut .ph-img{left:50%;bottom:22px;transform:translateX(-50%);height:calc(100% - 132px);max-width:90%;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 12px 20px rgba(0,0,0,.18))}
+/* foto sin recortar: enmarcada sobre el color, sin cielo ni nubes */
+.phero.has-photo .ph-img{left:16px;right:16px;top:116px;bottom:40px;width:calc(100% - 32px);height:calc(100% - 156px);object-fit:cover;border-radius:28px;box-shadow:0 0 0 4px rgba(255,255,255,.9)}
 .ph-ini{font:800 120px/1 var(--f);letter-spacing:-.05em;color:var(--ink);margin-top:24px}
 .ph-up{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 18px;border:0;border-radius:999px;background:#fff;color:var(--ink);font:700 14px/1 var(--f);cursor:pointer;transition:transform .15s var(--ease)}
 .ph-up:active{transform:scale(.97)}
 .ph-up svg.i{width:18px;height:18px}
-.pstrip{position:absolute;z-index:2;left:16px;bottom:40px;display:flex;gap:8px}
+.pstrip{position:absolute;z-index:2;left:16px;top:calc(62px + env(safe-area-inset-top,0px));display:flex;gap:8px}
 .pchip{display:grid;place-items:center;width:44px;height:44px;border:0;background:none;padding:0;cursor:pointer;border-radius:50%}
 .pchip .av{width:40px;height:40px;box-shadow:0 0 0 2px #fff}
 .pchip .av svg.i{width:20px;height:20px}
@@ -1422,6 +1425,8 @@ body[data-route="inicio"]{background:var(--bg)}
   .dash-l{position:sticky;top:calc(var(--toph,72px) + 8px)}
   .phero{border-radius:32px;overflow:hidden;background:var(--bg)}
   .ph-stage{height:clamp(300px,calc(100dvh - 440px),520px)}
+  .phero.has-cut .ph-img{height:calc(100% - 56px)}
+  .phero.has-photo .ph-img{top:20px;height:calc(100% - 64px)}
   .pstrip{display:none}
   .psheet{border-radius:28px 28px 32px 32px;padding:20px 20px 20px}
   .ps-name h1{font-size:40px}
