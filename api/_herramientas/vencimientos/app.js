@@ -353,7 +353,7 @@ function marcarFuente(k) {
 function completaTuCasa() {
   const tiene = re => d.cuentas.some(c => re.test(`${c.preset || ''} ${c.nombre} ${c.categoria}`.toLowerCase()));
   const pasos = [
-    { ok: tiene(/tarjetas/), ic: 'tarjeta', t: 'Subí el resumen de tu tarjeta', s: 'Trae suscripciones y débitos con su monto.', acc: 'resumen' },
+    { ok: tiene(/tarjetas/), ic: 'tarjeta', t: 'Subí los resúmenes de tus tarjetas', s: 'Podés elegir varios juntos: traen suscripciones y débitos con su monto.', acc: 'resumen' },
     { ok: !!d.fuentes?.mail, ic: 'sobre', t: 'Buscá tus facturas en el mail', s: 'Luz, gas, agua, celular: con fecha y monto.', acc: 'correo' },
     { ok: tiene(/expensa|alquiler|hipoteca/), ic: 'casa', t: 'Sumá expensas o alquiler', s: 'Casi nunca llegan por mail: cargalo en un toque.', acc: 'elegir', s2: 'expensas' },
     { ok: !!d.fuentes?.ics, ic: 'campana', t: 'Que te avise el celular', s: 'Sumá todo al calendario, con aviso antes.', acc: 'ics' },
@@ -520,7 +520,7 @@ function abrirRadar(n) {
 function abrirRadarTodo() {
   abrir('Radar de tu casa', `<p class="leyenda" style="margin-top:0">Lo que se sale de lo normal en tus facturas y en los resúmenes de tarjeta que subiste. Tocá cada uno para ver qué hacer.</p>
     <ul class="radar-lista">${ultimoRadar.map((r, n) => { const x = tarjetaRadar(r); return `<li><button type="button" class="radar-fila ins-${x.tono}" data-acc="radar" data-i="${n}"><span class="ins-ic"><svg><use href="#${x.ic}"/></svg></span><span><b>${x.t}</b><small>${x.p}</small></span><svg class="flecha"><use href="#i-der"/></svg></button></li>`; }).join('')}</ul>
-    ${cargarResumenes().length ? '' : '<p class="leyenda">Subí el resumen de tu tarjeta todos los meses y el radar también te avisa de cobros repetidos, nuevos o que subieron.</p><div class="acciones"><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subir un resumen</button></div>'}`);
+    ${cargarResumenes().length ? '' : '<p class="leyenda">Subí los últimos 2 o 3 resúmenes de tu tarjeta (podés elegirlos juntos) y el radar también te avisa de cobros repetidos, nuevos o que subieron.</p><div class="acciones"><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subir resúmenes</button></div>'}`);
 }
 function abrirFugas() {
   const f = R.fugas(d, hoy);
@@ -764,7 +764,7 @@ function primerUso() {
       <h2>Que las busque <span class="it">la app</span></h2>
       <p>Subí el resumen de tu tarjeta y conectá tu mail: encontramos lo que pagás todos los meses, con fechas y montos.</p>
       <div class="acciones">
-        <button type="button" class="bt prim ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subí el resumen de tu tarjeta</button>
+        <button type="button" class="bt prim ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subí los resúmenes de tu tarjeta</button>
         <button type="button" class="bt prim ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar mis facturas en el mail</button>
       </div>
       <p style="margin:12px 0 0;font-size:13px">El resumen trae lo que se cobra en la tarjeta; el mail, las facturas con vencimiento. Usá los dos.</p>
@@ -1403,27 +1403,49 @@ function guardarDesdeMail(form) {
 }
 
 /* ── resumen de tarjeta ── */
-async function leerResumen(file) {
-  if (!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) { toast('Subí el resumen en PDF, como lo descargás del banco.'); return; }
-  if (file.size > 4 * 1024 * 1024) { toast('El PDF pesa más de 4 MB. Descargalo de nuevo desde el banco.'); return; }
-  abrir('Leyendo tu resumen', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p><b>Estamos leyendo el resumen.</b><br>Tarda hasta un minuto. No lo guardamos: se lee y se descarta.</p></div>`);
-  let r, j;
-  try {
-    r = await fetch('/api/vencimientos-resumen', { method: 'POST', body: file, credentials: 'same-origin', headers: { 'Content-Type': 'application/pdf' } });
-    j = await r.json().catch(() => ({}));
-  } catch { return errorLectura('Sin conexión. La lectura necesita internet; probá de nuevo.', false, true); }
-  if (r.status === 401) return errorLectura('Tu sesión de Orbit se cerró. Entrá de nuevo para leer el resumen.', true);
-  if (!r.ok || !j.ok) {
-    errorLectura(j.error || 'No pudimos leer el resumen. Probá de nuevo en un rato.', false, true);
-    if (j.detalle) $id('hoja-cuerpo').insertAdjacentHTML('beforeend', `<details class="mas"><summary>Detalle técnico (solo administración)</summary><pre class="diag">${esc(JSON.stringify(j.detalle, null, 2))}</pre></details>`);
+const MAX_RESUMENES_JUNTOS = 6;
+/* Uno o varios resúmenes (meses distintos o tarjetas distintas). Se leen de a uno; lo encontrado
+   se junta: de cada cuenta queda el dato del resumen más nuevo y la historia de todos. */
+async function leerResumen(files) {
+  files = [...files];
+  if (files.length > MAX_RESUMENES_JUNTOS) { toast(`Subí hasta ${MAX_RESUMENES_JUNTOS} resúmenes por vez. Leemos los primeros ${MAX_RESUMENES_JUNTOS}.`); files = files.slice(0, MAX_RESUMENES_JUNTOS); }
+  const malos = [], lecturas = [];
+  let prueba = false, dudosos = false, sesion = false, sinRed = false, detalle = null;
+  for (const [n, file] of files.entries()) {
+    if (!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) { malos.push(`${file.name}: no es un PDF`); continue; }
+    if (file.size > 4 * 1024 * 1024) { malos.push(`${file.name}: pesa más de 4 MB`); continue; }
+    abrir('Leyendo tus resúmenes', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p><b>${files.length > 1 ? `Leyendo ${n + 1} de ${files.length}…` : 'Estamos leyendo el resumen.'}</b><br>Tarda hasta un minuto por resumen. No los guardamos en Orbit: se leen y se descartan.</p></div>`);
+    let r, j;
+    try {
+      r = await fetch('/api/vencimientos-resumen', { method: 'POST', body: file, credentials: 'same-origin', headers: { 'Content-Type': 'application/pdf' } });
+      j = await r.json().catch(() => ({}));
+    } catch { sinRed = true; malos.push(`${file.name}: sin conexión`); continue; }
+    if (r.status === 401) { sesion = true; break; }
+    if (!r.ok || !j.ok) { malos.push(`${file.name}: ${j.error || 'no lo pudimos leer'}`); detalle = j.detalle || detalle; continue; }
+    if (j.modo === 'prueba') prueba = true; else guardarResumenes(R.sumarResumen(cargarResumenes(), j.lectura, hoy));
+    if (j.confiable === false) dudosos = true;
+    lecturas.push(j.lectura);
+  }
+  if (sesion && !lecturas.length) return errorLectura('Tu sesión de Orbit se cerró. Entrá de nuevo para leer el resumen.', true);
+  if (!lecturas.length) {
+    errorLectura(files.length > 1 ? `No pudimos leer ninguno. ${malos.join(' · ')}` : (sinRed ? 'Sin conexión. La lectura necesita internet; probá de nuevo.' : (malos[0]?.split(': ').slice(1).join(': ') || 'No pudimos leer el resumen. Probá de nuevo en un rato.')), false, true);
+    if (detalle) $id('hoja-cuerpo').insertAdjacentHTML('beforeend', `<details class="mas"><summary>Detalle técnico (solo administración)</summary><pre class="diag">${esc(JSON.stringify(detalle, null, 2))}</pre></details>`);
     return;
   }
-  encontrados = cuentasDesdeResumen(j.lectura, hoy);
-  if (j.modo !== 'prueba') guardarResumenes(R.sumarResumen(cargarResumenes(), j.lectura, hoy));
-  const t = j.lectura?.tarjeta || {};
-  const de = [t.red, t.banco].filter(Boolean).join(' ') || 'tu tarjeta';
-  mostrarEncontrados(`${j.modo === 'prueba' ? 'Modo prueba: es un resumen de ejemplo, no el tuyo. ' : ''}Leímos el resumen de ${de}.${j.confiable === false ? ' Algunos montos no cerraron: revisalos.' : ''}`,
-    `Leímos el resumen de ${de} y no encontramos cobros que se repitan. Igual podés cargar la tarjeta a mano.`);
+  /* juntar: del más viejo al más nuevo, así gana el dato más reciente */
+  lecturas.sort((x, y) => String(x.vencimiento || '').localeCompare(String(y.vencimiento || '')));
+  const porClave = new Map();
+  for (const l of lecturas) for (const c of cuentasDesdeResumen(l, hoy)) {
+    const prev = porClave.get(c.clave);
+    if (!prev) { porClave.set(c.clave, c); continue; }
+    const historia = [...new Map([...(prev.historia || []), ...(c.historia || [])].map(h => [h.vence, h])).values()].sort((a, b) => a.vence.localeCompare(b.vence));
+    porClave.set(c.clave, { ...c, historia, encontradas: (prev.encontradas || 0) + (c.encontradas || 0) });
+  }
+  encontrados = [...porClave.values()].sort((a, b) => Number(!!b.tarjeta) - Number(!!a.tarjeta) || Number(b.conocido) - Number(a.conocido) || a.nombre.localeCompare(b.nombre));
+  const tarjetas = [...new Set(lecturas.map(l => [l.tarjeta?.red, l.tarjeta?.banco].filter(Boolean).join(' ') || 'tu tarjeta'))];
+  const que = lecturas.length > 1 ? `Leímos ${lecturas.length} resúmenes (${tarjetas.join(', ')}).` : `Leímos el resumen de ${tarjetas[0]}.`;
+  mostrarEncontrados(`${prueba ? 'Modo prueba: son resúmenes de ejemplo, no los tuyos. ' : ''}${que}${malos.length ? ` No pudimos leer: ${malos.join(' · ')}.` : ''}${dudosos ? ' Algunos montos no cerraron: revisalos.' : ''}${lecturas.length > 1 && !prueba ? ' El radar ya compara un mes con otro.' : ''}`,
+    `${que} No encontramos cobros que se repitan. Igual podés cargar la tarjeta a mano.`);
 }
 
 /* ── archivos ── */
@@ -1479,7 +1501,7 @@ function abrirAjustes() {
   </div>
   <div class="ajustes-sec"><h3>Tu mail y tus tarjetas</h3>
     <p class="leyenda" style="margin-top:0">Buscá facturas nuevas cuando quieras. El permiso es de solo lectura y se cierra al terminar.</p>
-    <div class="acciones"><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar facturas en el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subir un resumen de tarjeta</button></div>
+    <div class="acciones"><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar facturas en el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subir resúmenes de tarjeta</button></div>
   </div>
   <div class="ajustes-sec"><h3>Tu copia</h3>
     <p class="leyenda" style="margin-top:0">Tus datos viven solo en este dispositivo. ${ult}</p>
@@ -1767,8 +1789,8 @@ document.addEventListener('submit', e => {
 });
 
 $id('f-resumen').addEventListener('change', e => {
-  const file = e.target.files?.[0]; e.target.value = '';
-  if (file) leerResumen(file);
+  const files = [...(e.target.files || [])]; e.target.value = '';
+  if (files.length) leerResumen(files);
 });
 $id('f-factura').addEventListener('change', e => {
   const file = e.target.files?.[0]; e.target.value = '';
