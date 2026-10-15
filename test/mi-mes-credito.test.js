@@ -296,7 +296,7 @@ test('[socio 15/10] resumen vencido: pagué el mínimo → el saldo pasa al mes 
   const nov = M.resumenMes(min, '2026-11');
   assert.deepEqual(nov.financiados.map(f => [f.saldo, f.interes, f.estimado]), [[$(270_000), $(21_780), true]]);
   assert.equal(nov.totTarjetas, $(291_780));
-  assert.equal(M.resumenMes(min, '2026-10').totTarjetas, $(300_000), 'octubre no cambia');
+  assert.equal(M.resumenMes(min, '2026-10').totTarjetas, $(30_000), 'octubre cuenta solo lo pagado (QA v2 · 2)');
   assert.equal(M.preguntas(min, '2026-10-15').ahora.some(x => x.tipo === 'pagado'), false);
   assert.equal(M.resumenMes(M.registrarPagoResumen(m, 'r', { estado: 'total' }), '2026-11').totTarjetas, 0);
   assert.equal(M.resumenMes(M.registrarPagoResumen(m, 'r', { estado: 'otro', monto: $(100_000) }), '2026-11').financiados[0].saldo, $(200_000));

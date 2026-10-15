@@ -255,7 +255,9 @@ export function resumenMes(datos, mes) {
   });
   const resumenes = (d.resumenes || []).filter(r => r.mes === mes).map(r => {
     const t = totalResumen(r, d);
-    return { ...r, tarjeta: tarjetas.get(r.tarjetaId)?.nombre || 'Tarjeta', monto: t.ars, porMoneda: t.porMoneda, faltaCambio: t.faltaCambio };
+    /* QA v2 · 2: resumen vencido que no se pagó entero: el mes cuenta solo lo pagado */
+    const pagado = pagadoResumen(r, d);
+    return { ...r, tarjeta: tarjetas.get(r.tarjetaId)?.nombre || 'Tarjeta', monto: pagado ?? t.ars, total: t.ars, parcial: pagado !== null, porMoneda: t.porMoneda, faltaCambio: t.faltaCambio };
   });
   const conResumen = new Set(resumenes.map(r => r.tarjetaId));
   /* meses que cubre la tabla "cuotas a vencer" del banco: manda la tabla para
@@ -369,12 +371,14 @@ export function creditoTarjeta(datos, tarjetaId, hoy) {
       else futuras += pesos(p, c.moneda);
     });
   }
-  return { resumen, futuras, nuevas, percepcion, total: resumen + futuras + nuevas + percepcion, faltaCambio: [...faltaCambio], resumenMes: r?.mes || null };
+  /* QA v2 · 2: lo financiado de un resumen vencido sin pagar entero, hasta que llega el siguiente */
+  const financiado = r && pagadoResumen(r, datos) !== null ? financiacionEstimada(r, datos).total : 0;
+  return { resumen, futuras, nuevas, percepcion, financiado, total: resumen + futuras + nuevas + percepcion + financiado, faltaCambio: [...faltaCambio], resumenMes: r?.mes || null };
 }
 export function creditoTotal(datos, hoy) {
   const porTarjeta = (datos?.tarjetas || []).map(t => ({ tarjetaId: t.id, ...creditoTarjeta(datos, t.id, hoy) }));
   const sum = k => porTarjeta.reduce((a, x) => a + x[k], 0);
-  return { porTarjeta, resumen: sum('resumen'), futuras: sum('futuras'), nuevas: sum('nuevas'), percepcion: sum('percepcion'), total: sum('total') };
+  return { porTarjeta, resumen: sum('resumen'), futuras: sum('futuras'), nuevas: sum('nuevas'), percepcion: sum('percepcion'), financiado: sum('financiado'), total: sum('total') };
 }
 /* Crédito disponible = límite − lo que se debe en esa tarjeta. */
 export function disponibleTarjeta(datos, tarjetaId, hoy) {
@@ -1954,12 +1958,18 @@ export function pagoValido(p) {
   return { estado: p.estado };
 }
 export const resumenVencido = (r, hoy) => esFecha(r?.vencimiento) && diasEntre(r.vencimiento, aFecha(hoy)) > 0;
+/* Lo pagado de un resumen vencido (null si no se contestó o se pagó el total). */
+export function pagadoResumen(r, datos) {
+  const p = pagoValido(r?.pago);
+  if (!p || p.estado === 'total') return null;
+  const total = totalResumen(r, datos).ars;
+  const minimo = r.pagoMinimo ? aPesos(r.pagoMinimo.monto, r.pagoMinimo.moneda || 'ARS', datos) ?? 0 : 0;
+  return Math.min(total, p.estado === 'minimo' ? minimo : p.estado === 'otro' ? p.monto : 0);
+}
 export function financiacionEstimada(r, datos) {
   const total = totalResumen(r, datos).ars;
-  const p = pagoValido(r.pago);
-  if (!p || p.estado === 'total') return { saldo: 0, interes: 0, total: 0 };
-  const minimo = r.pagoMinimo ? aPesos(r.pagoMinimo.monto, r.pagoMinimo.moneda || 'ARS', datos) ?? 0 : 0;
-  const pagado = p.estado === 'minimo' ? minimo : p.estado === 'otro' ? p.monto : 0;
+  const pagado = pagadoResumen(r, datos);
+  if (pagado === null) return { saldo: 0, interes: 0, total: 0 };
   const saldo = Math.max(0, total - pagado);
   const tna = supuesto(datos, 'financiacion').valor;
   const interes = Math.round(saldo * tna / 100 / 12 * 1.21);

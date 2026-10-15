@@ -162,7 +162,7 @@ function pintarInicio(animar = false) {
     ...r.resumenes.map(x => {
       const ext = listaMonedas(x.porMoneda);
       return item({ ir: x.tarjetaId, icono: 'tarjetas', titulo: `Resumen ${x.tarjeta}`,
-        meta: `Vence ${fechaCorta(x.vencimiento) || corto(x.mes)}${ext ? ` · incluye ${ext}` : ''}`, monto: '−' + $(x.monto),
+        meta: x.parcial ? `Pagaste ${$(x.monto)} de ${$(x.total)}: el resto pasa al mes que viene` : `Vence ${fechaCorta(x.vencimiento) || corto(x.mes)}${ext ? ` · incluye ${ext}` : ''}`, monto: '−' + $(x.monto),
         extra: x.faltaCambio.length ? ' <span class="mm-tag">Falta tipo de cambio</span>' : '' });
     }),
     ...r.delBanco.map(x => item({ ir: x.tarjetaId, icono: 'escalera', titulo: `Cuotas de ${x.tarjeta}`, meta: 'Según la tabla "cuotas a vencer" del banco', monto: '−' + $(x.monto) })),
@@ -741,7 +741,7 @@ function pintarContraste(r, cred) {
     </div>
     <div class="mm-cx-deuda">
       <div><p class="mm-item-meta">Debés en total en tarjetas</p><p class="mm-cx-total">${esc($(cred.total))}</p></div>
-      <dl><div><dt>Resumen por pagar</dt><dd>${esc($(cred.resumen))}</dd></div><div><dt>Cuotas que vienen</dt><dd>${esc($(cred.futuras + cred.percepcion))}</dd></div><div><dt>Compras nuevas</dt><dd>${esc($(cred.nuevas))}</dd></div></dl>
+      <dl><div><dt>Resumen por pagar</dt><dd>${esc($(cred.resumen))}</dd></div><div><dt>Cuotas que vienen</dt><dd>${esc($(cred.futuras + cred.percepcion))}</dd></div><div><dt>Compras nuevas</dt><dd>${esc($(cred.nuevas))}</dd></div>${cred.financiado ? `<div><dt>Saldo sin pagar + intereses (estimado)</dt><dd>${esc($(cred.financiado))}</dd></div>` : ''}</dl>
       ${cred.percepcion ? `<p class="mm-fuente" style="margin:0">"Cuotas que vienen" incluye ${esc($(cred.percepcion))} de percepción estimada por saldos en dólares.</p>` : ''}
     </div>
     ${!datos.tarjetas.length ? `<button type="button" class="mm-btn" data-agregar-tarjeta>${ic('subir')} Agregá tu tarjeta: subí el último resumen</button>` : `<button type="button" class="mm-link" data-nuevo="cuota">¿Compraste algo que todavía no está en el resumen?</button>`}`;
@@ -820,7 +820,7 @@ function pintarUna() {
   const dispHTML = `<section class="mm-panel mm-disp" aria-labelledby="u-disp"><div class="mm-seccion-top"><h2 id="u-disp">Lo que debés en esta tarjeta</h2></div>
       <p class="mm-total-num" style="font-size:32px">${esc($(cr.total))}</p>
       <dl class="mm-datos"><div><dt>Resumen por pagar</dt><dd>${esc($(cr.resumen))}</dd></div><div><dt>Cuotas que vienen</dt><dd>${esc($(cr.futuras))}</dd></div>
-        <div><dt>Compras nuevas</dt><dd>${esc($(cr.nuevas))}</dd></div>${cr.percepcion ? `<div><dt>Percepción estimada</dt><dd>${esc($(cr.percepcion))}</dd></div>` : ''}<div><dt>${disp ? 'Crédito disponible' : 'Límite'}</dt><dd>${disp ? esc($(Math.max(0, disp.disponible))) : '—'}</dd></div></dl>
+        <div><dt>Compras nuevas</dt><dd>${esc($(cr.nuevas))}</dd></div>${cr.percepcion ? `<div><dt>Percepción estimada</dt><dd>${esc($(cr.percepcion))}</dd></div>` : ''}${cr.financiado ? `<div><dt>Saldo sin pagar + intereses (estimado)</dt><dd>${esc($(cr.financiado))}</dd></div>` : ''}<div><dt>${disp ? 'Crédito disponible' : 'Límite'}</dt><dd>${disp ? esc($(Math.max(0, disp.disponible))) : '—'}</dd></div></dl>
       ${disp ? `<div class="mm-barra" role="img" aria-label="${esc(`Usás ${$(disp.usado)} de ${$(disp.limite)}`)}"><i style="width:${Math.min(100, (disp.usado / disp.limite) * 100)}%"></i></div>
         <p class="mm-fuente" style="margin:8px 0 10px">Límite ${esc($(disp.limite))} menos lo que debés (con lo que es en otra moneda pasado a pesos).${disp.disponible < 0 ? ' <b style="color:var(--neg)">Estás por encima del límite.</b>' : ''}</p>`
         : `<p class="mm-vacio">El límite sale del resumen. <button type="button" class="mm-link" data-importar="${esc(t.id)}">Subí el último</button> o <button type="button" class="mm-link" data-editar-tarjeta="${esc(t.id)}">cargalo a mano</button>.</p>`}

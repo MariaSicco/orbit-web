@@ -31,3 +31,47 @@ test('[QA2 · 1] libera = cuotas cuyo último pago es X, desde X+1; las compras 
     { id: 'n', descripcion: 'Tele', total: $(600_000), moneda: 'ARS', cantidad: 6, tarjetaId: 't', primerMes: '2027-01', origen: 'manual' });
   assert.deepEqual(M.liberaciones(d, '2026-10', 6).map(x => [x.mes, x.libera]), [['2027-01', $(30_000)]]);
 });
+
+/* ── QA v2 · 2: "Pagué el mínimo" en un resumen vencido ── */
+const { resumenEjemplo } = await import('../api/_herramientas/mi-mes/ejemplo.js');
+function vencidoDeEjemplo() {
+  // el ejemplo armado en septiembre vence el 8/10; hoy es 15/10
+  const l = M.validarLectura(resumenEjemplo(new Date(2026, 8, 20))).lectura;
+  const r = M.importarResumen(M.datosVacios(), l, { nuevoId: () => 'r' + Math.random().toString(36).slice(2, 8), hoy: '2026-10-15' });
+  const d = r.datos;
+  d.ingresos.push({ id: 'i', nombre: 'Sueldo', monto: $(1_000_000), repite: true, desde: '2026-01' });
+  return { d, res: d.resumenes[0], tarjeta: r.tarjetaId };
+}
+test('[QA2 · 2] los números del informe: total $ 555.496, mínimo $ 44.000', () => {
+  const { d, res } = vencidoDeEjemplo();
+  assert.equal(res.vencimiento, '2026-10-08');
+  assert.equal(res.vencidoAlImportar, true);
+  assert.equal(Math.round(M.totalResumen(res, d).ars / 100), 555_496);
+});
+test('[QA2 · 2] pagué el mínimo: octubre cuenta lo pagado y el impago pasa a noviembre una sola vez, con intereses', () => {
+  const { d, res, tarjeta } = vencidoDeEjemplo();
+  const total = M.totalResumen(res, d).ars;
+  const antes = M.creditoTotal(d, '2026-10-15').total;
+  const m = M.registrarPagoResumen(d, res.id, { estado: 'minimo' });
+  const oct = M.resumenMes(m, '2026-10'), nov = M.resumenMes(m, '2026-11');
+  assert.equal(oct.totResumenes, $(44_000), 'octubre: solo lo pagado');
+  const f = nov.financiados[0];
+  assert.equal(f.saldo, total - $(44_000), 'noviembre: el saldo impago');
+  assert.equal(Math.round(f.saldo / 100), 511_496);
+  // en los dos meses juntos, el resumen cuenta UNA vez (más intereses)
+  assert.equal(oct.totResumenes + f.saldo, total);
+  // y aparece en lo que debés
+  const cr = M.creditoTotal(m, '2026-10-15');
+  assert.equal(cr.porTarjeta.find(x => x.tarjetaId === tarjeta).financiado, f.saldo + f.interes);
+  assert.equal(cr.total, antes + f.saldo + f.interes);
+});
+test('[QA2 · 2] pagué el total: octubre cuenta el total y no hay deuda; todavía no: octubre 0, todo a noviembre', () => {
+  const { d, res } = vencidoDeEjemplo();
+  const total = M.totalResumen(res, d).ars;
+  const t = M.registrarPagoResumen(d, res.id, { estado: 'total' });
+  assert.equal(M.resumenMes(t, '2026-10').totResumenes, total);
+  assert.deepEqual(M.resumenMes(t, '2026-11').financiados, []);
+  const no = M.registrarPagoResumen(d, res.id, { estado: 'no' });
+  assert.equal(M.resumenMes(no, '2026-10').totResumenes, 0);
+  assert.equal(M.resumenMes(no, '2026-11').financiados[0].saldo, total);
+});
