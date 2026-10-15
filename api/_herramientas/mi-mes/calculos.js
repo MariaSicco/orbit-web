@@ -1164,6 +1164,8 @@ export function datosParaAvisos(datos, hoy, { cobro = false } = {}) {
   const antes = cobro ? venceAntesDeCobrar(datos, hoy) : null;
   return (datos?.tarjetas || []).slice(0, 12).map(t => {
     const ac = antes?.items.find(x => x.tipo === 'tarjeta' && x.id === t.id);
+    /* QA t17 · 2: si cae dentro del rango de cobro, el push dice lo mismo que la app (sin el día de cobro) */
+    const enRango = !!(ac && antes.cobro.desde && antes.cobro.desde !== antes.cobro.fecha && diasEntre(antes.cobro.desde, ac.fecha) >= 0);
     const ciclo = cicloTarjeta(datos, t.id, hoy);
     const r = ciclo?.resumen;
     const dolares = Boolean(r && ((r.totales?.USD || 0) > 0 || (r.consumos || []).some(c => c.moneda === 'USD')));
@@ -1172,7 +1174,7 @@ export function datosParaAvisos(datos, hoy, { cobro = false } = {}) {
       cierre: ciclo?.cierre || null, vencimiento: ciclo?.vencimiento || null, dolares,
       ...(r?.proximoCierre && r?.proximoVencimiento ? { proximoCierre: r.proximoCierre, proximoVencimiento: r.proximoVencimiento } : {}),
       ...(t.diaCierre && t.diaVence ? { diaCierre: t.diaCierre, diaVence: t.diaVence } : {}),
-      ...(ac ? { antesCobro: ac.fecha } : {}),
+      ...(ac ? { antesCobro: ac.fecha, ...(enRango ? { antesCobroRango: true } : {}) } : {}),
     };
   }).filter(t => t.vencimiento || t.diaCierre);
 }
@@ -1194,7 +1196,7 @@ export function limpiarTarjetasAvisos(lista) {
     if (!id || !nombre) continue;
     const x = { id, nombre, cierre: esFecha(t.cierre) ? t.cierre : null, vencimiento: esFecha(t.vencimiento) ? t.vencimiento : null, dolares: t.dolares === true };
     if (esFecha(t.proximoCierre) && esFecha(t.proximoVencimiento)) { x.proximoCierre = t.proximoCierre; x.proximoVencimiento = t.proximoVencimiento; }
-    if (esFecha(t.antesCobro)) x.antesCobro = t.antesCobro;
+    if (esFecha(t.antesCobro)) { x.antesCobro = t.antesCobro; if (t.antesCobroRango === true) x.antesCobroRango = true; }
     if (Number.isInteger(t.diaCierre) && Number.isInteger(t.diaVence) && t.diaCierre >= 1 && t.diaCierre <= 31 && t.diaVence >= 1 && t.diaVence <= 31) {
       x.diaCierre = t.diaCierre; x.diaVence = t.diaVence;
     }
@@ -1227,7 +1229,7 @@ export function avisosPushDeHoy(tarjetas, hoy, credito = []) {
       out.push({ tag: `mm:vence:${t.id}:${vencimiento}:${d}`, title: `Tu ${t.nombre} ${cuando}`, body: 'Abrí Mi Mes para ver el total y agendar el pago.' });
     }
     if (t.antesCobro === vencimiento && d === 5) {
-      out.push({ tag: `mm:antescobro:${t.id}:${vencimiento}`, title: `Vence antes de que cobres: ${t.nombre}`,
+      out.push({ tag: `mm:antescobro:${t.id}:${vencimiento}`, title: `Tu ${t.nombre} vence el ${fechaCorta(vencimiento)}: ${t.antesCobroRango ? 'puede que todavía no hayas cobrado' : 'vence antes de que cobres'}`,
         body: `Vence el ${fechaCorta(vencimiento)}, antes de tu día de cobro. Abrí Mi Mes para ver cuánto necesitás.` });
     }
     if (dolares && d === 5) {

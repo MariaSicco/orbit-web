@@ -425,3 +425,23 @@ test('[t17 · 4] bonificación con plazo: se guarda el precio lleno, se avisa y 
   assert.equal(sin.gasto.sube, undefined);
   assert.match(sin.aviso, /55 % de descuento por 6 meses/);
 });
+
+/* ── QA t17 · media: la factura real le gana a la proyección de la bonificación ── */
+test('[QA t17 · 1] factura real después de la bonificación: manda su monto; la proyección vieja se va o se reemplaza', () => {
+  const promo = { precioLleno: $(30_000), descuento: { porcentaje: 55, meses: 3 }, finDescuento: '2027-01' };
+  const [it] = D.itemsDeFactura({ ...factura('celular', 'Claro', '2026-10-22', 13_500), promo }, base(), { archivo: 'c', hoy: '2026-10-15' });
+  const d = D.aplicarItems(base(), [it], { nuevoId, hoy: '2026-10-15' }).datos;
+  assert.equal(M.resumenMes(d, '2027-01').totGastos, $(30_000));
+  // en enero llega la factura real, sin descuento: $ 31.200
+  const [real] = D.itemsDeFactura(factura('celular', 'Claro', '2027-01-22', 31_200), d, { archivo: 'c2', hoy: '2027-01-15' });
+  assert.deepEqual([real.accion, real.antes], ['actualizar', $(30_000)], 'el "antes" es lo que hoy cuenta para ese mes');
+  const d2 = D.aplicarItems(d, [real], { nuevoId, hoy: '2027-01-15' }).datos;
+  assert.equal(d2.gastos[0].sube, undefined);
+  assert.deepEqual(['2027-01', '2027-02'].map(m => M.resumenMes(d2, m).totGastos), [$(31_200), $(31_200)]);
+  // si la nueva factura trae OTRA bonificación, se guarda la nueva
+  const otra = { precioLleno: $(45_000), descuento: { porcentaje: 30, meses: 6 }, finDescuento: '2027-07' };
+  const [conOtra] = D.itemsDeFactura({ ...factura('celular', 'Claro', '2027-01-22', 31_500), promo: otra }, d, { archivo: 'c3', hoy: '2027-01-15' });
+  const d3 = D.aplicarItems(d, [conOtra], { nuevoId, hoy: '2027-01-15' }).datos;
+  assert.deepEqual(d3.gastos[0].sube, { desde: '2027-07', monto: $(45_000) });
+  assert.deepEqual(['2027-02', '2027-07'].map(m => M.resumenMes(d3, m).totGastos), [$(31_500), $(45_000)]);
+});

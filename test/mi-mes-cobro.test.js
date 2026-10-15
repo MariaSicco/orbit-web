@@ -103,7 +103,7 @@ test('cobro push: solo la fecha que vence antes de cobrar, sin montos; aviso 5 d
   assert.doesNotMatch(JSON.stringify(limpio), /Galicia|1234|monto|cobro"/);
   const av = M.avisosPushDeHoy(limpio, '2026-10-29');
   const a = av.find(x => x.tag.startsWith('mm:antescobro'));
-  assert.equal(a.title, 'Vence antes de que cobres: Tarjeta Visa 1');
+  assert.equal(a.title, 'Tu Tarjeta Visa 1 vence el 3 nov: puede que todavía no hayas cobrado');   // del 1 al 5: el 3 cae dentro del rango
   assert.doesNotMatch(a.title + a.body, /\$/);
   assert.equal(M.avisosPushDeHoy(limpio, '2026-10-30').some(x => x.tag.startsWith('mm:antescobro')), false);
 });
@@ -174,4 +174,21 @@ test('[rango] index.html sin ids repetidos (un <symbol id="i-mas"> tapaba los ch
   const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map(m => m[1]);
   const rep = ids.filter((x, i) => ids.indexOf(x) !== i);
   assert.deepEqual(rep, []);
+});
+
+test('[QA t17 · 2] push y app dicen lo mismo cuando el vencimiento cae dentro del rango (sin montos ni día de cobro)', () => {
+  const d = conRango({ tipo: 'dia', dia: 4, mas: 3 }, 5);
+  const app = M.alertasCobro(d, '2026-10-31')[0];
+  assert.match(app.titulo, /puede que todavía no hayas cobrado$/);
+  const t = M.limpiarTarjetasAvisos(M.datosParaAvisos(d, '2026-10-31', { cobro: true }));
+  assert.equal(t[0].antesCobroRango, true);
+  const push = M.avisosPushDeHoy(t, '2026-10-31').find(x => x.tag.startsWith('mm:antescobro'));
+  assert.equal(push.title, 'Tu Tarjeta Visa 1 vence el 5 nov: puede que todavía no hayas cobrado');
+  assert.doesNotMatch(push.title + push.body, /\$|entre el|cobrás el/);
+  // fuera del rango (antes): "vence antes de que cobres", igual que la app
+  const d2 = conRango({ tipo: 'dia', dia: 4, mas: 3 }, 2);
+  const t2 = M.limpiarTarjetasAvisos(M.datosParaAvisos(d2, '2026-10-28', { cobro: true }));
+  const p2 = M.avisosPushDeHoy(t2, '2026-10-28').find(x => x.tag.startsWith('mm:antescobro'));
+  assert.equal(p2.title, 'Tu Tarjeta Visa 1 vence el 2 nov: vence antes de que cobres');
+  assert.match(M.alertasCobro(d2, '2026-10-28')[0].titulo, /vence antes de que cobres$/);
 });

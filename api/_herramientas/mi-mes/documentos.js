@@ -221,13 +221,15 @@ export function itemsDeFactura(p, datos, { archivo = '', hoy = null, cantidad = 
   return [{ id: `factura:${archivo}`, grupo: 'gastos', archivo, titulo: nombre, monto: p.monto, moneda: p.moneda || 'ARS', fechaDoc, estimado,
     detalle: [categoria, p.vence ? `vence el ${Number(p.vence.slice(8))}` : null, frecuencia > 1 ? `cada ${frecuencia} meses` : 'todos los meses',
       estimado ? `estimado de ${cantidad > 1 ? `${cantidad} facturas anteriores` : 'meses anteriores'}` : null].filter(Boolean).join(' · '),
-    accion: masViejo ? 'viejo' : previo ? (previo.monto === p.monto && !previo.doc?.estimado ? 'igual' : 'actualizar') : 'nuevo', previoId: previo?.id || null, antes: previo?.monto ?? null,
+    accion: masViejo ? 'viejo' : previo ? (vigente(previo, fechaDoc) === p.monto && !previo.doc?.estimado && !previo.sube ? 'igual' : 'actualizar') : 'nuevo', previoId: previo?.id || null, antes: previo ? vigente(previo, fechaDoc) : null,
     gasto, falta: p.monto ? null : 'Falta el monto', avisos: p.avisos || [], ...(aviso ? { aviso } : {}), ...(nota ? { nota } : {}),
     /* cargado con otro nombre (Gas ↔ Metrogas): se pregunta, con sí por defecto */
     ...(previo?._porTipo && !masViejo ? { pregunta: `¿Es tu gasto de ${previo.nombre}? Lo actualizamos con esta factura.`, previoNombre: previo.nombre } : {}),
     /* QA t15 · 2: un "Servicios" genérico que probablemente la incluye: se separa (sí por defecto) */
     ...(!previo ? separarDeGenerico(datos, p, nombre) : {}) }];
 }
+/* Lo que hoy cuenta ese gasto en el mes de la factura (con la proyección de una bonificación, si ya terminó). */
+const vigente = (g, fecha) => (g.sube && fecha && esMes(g.sube.desde) && difMeses(g.sube.desde, fecha.slice(0, 7)) >= 0 ? g.sube.monto : g.monto);
 const DEL_TIPO = { luz: 'la luz', gas: 'el gas', agua: 'el agua', internet: 'internet', celular: 'el celular' };
 function separarDeGenerico(datos, p, nombre) {
   const tipo = tipoDeServicio(nombre, p.preset);
@@ -295,12 +297,14 @@ export function aplicarItems(datos, items, { nuevoId, hoy }) {
       if (it.accion === 'actualizar' && it.previoId) {
         d.gastos = d.gastos.map(g => {
           if (g.id !== it.previoId) return g;
-          const { doc, frecuencia: _f, ...resto } = g;
+          /* QA t17 · 1: la factura real manda: la proyección vieja de la bonificación se va (o la reemplaza la nueva) */
+          const { doc, frecuencia: _f, sube: _s, ...resto } = g;
           /* QA t15 · 1: la frecuencia de la factura manda, y el ritmo se alinea con su vencimiento sin arrancar antes de lo cargado */
           const f = Number.isInteger(it.gasto.frecuencia) && it.gasto.frecuencia > 1 ? it.gasto.frecuencia : 1;
           const vm = esMes(it.gasto.desde) ? it.gasto.desde : g.desde;
           const desde = f > 1 && esMes(g.desde) && difMeses(g.desde, vm) >= 0 ? sumarMeses(vm, -f * Math.floor(difMeses(g.desde, vm) / f)) : f > 1 ? vm : g.desde;
-          return { ...resto, desde, monto: it.gasto.monto, ...(f > 1 ? { frecuencia: f } : {}), ...(it.gasto.dia ? { dia: it.gasto.dia } : {}), ...(it.gasto.doc ? { doc: it.gasto.doc } : {}) };
+          return { ...resto, desde, monto: it.gasto.monto, ...(f > 1 ? { frecuencia: f } : {}), ...(it.gasto.dia ? { dia: it.gasto.dia } : {}), ...(it.gasto.doc ? { doc: it.gasto.doc } : {}),
+            ...(it.gasto.sube ? { sube: it.gasto.sube } : {}) };
         });
         n.actualizados++;
       } else {

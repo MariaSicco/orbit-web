@@ -28,7 +28,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t17';
+const VERSION = '2026-10-15.t18';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
