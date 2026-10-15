@@ -815,7 +815,7 @@ export function migrar(crudo) {
       const items = {};
       for (const [k, it] of Object.entries(x.items || {}).slice(0, 200)) {
         if (typeof k !== 'string' || !it || !Number.isSafeInteger(it.monto)) continue;
-        items[k.slice(0, 80)] = { tipo: texto(it.tipo, 20) || 'gasto', nombre: texto(it.nombre, 60), monto: it.monto,
+        items[k.slice(0, 80)] = { tipo: texto(it.tipo, 20) || 'gasto', nombre: texto(it.nombre, 60), monto: it.monto, ...(Number.isSafeInteger(it.interes) ? { interes: it.interes } : {}),
           ref: it.ref && typeof it.ref === 'object' ? { ...(typeof it.ref.editar === 'string' ? { editar: it.ref.editar.slice(0, 10), id: String(it.ref.id).slice(0, 60) } : {}), ...(typeof it.ref.tarjeta === 'string' ? { tarjeta: it.ref.tarjeta.slice(0, 60) } : {}) } : {} };
       }
       meses[m] = { items, libres: x.libres };
@@ -1837,13 +1837,15 @@ export function fotoProyeccion(datos, desde, meses = 3) {
     const m = sumarMeses(desde, k);
     const r = resumenMes(datos, m);
     const it = {};
-    const poner = (key, tipo, nombre, monto, ref) => { if (monto) it[key] = { tipo, nombre, monto, ref }; };
+    const poner = (key, tipo, nombre, monto, ref, extra = {}) => { if (monto) it[key] = { tipo, nombre, monto, ref, ...extra }; };
     for (const i of r.ingresos) poner(`ingreso:${i.id}`, 'ingreso', i.nombre, i.monto, { editar: 'ingreso', id: i.id });
     for (const g of r.gastosConTarjeta) poner(`gasto:${g.id}`, 'gasto', g.nombre, g.monto, { editar: 'gasto', id: g.id });
     for (const g of r.gastos) poner(`gasto:${g.id}`, g.real !== null && g.real !== undefined ? 'gastoReal' : 'gasto', g.nombre, g.monto, { editar: 'gasto', id: g.id });
     for (const x of r.resumenes) poner(`resumen:${x.id}`, 'resumen', x.tarjeta, x.monto, { tarjeta: x.tarjetaId });
     for (const x of r.delBanco) poner(`banco:${x.tarjetaId}`, 'banco', x.tarjeta, x.monto, { tarjeta: x.tarjetaId });
     for (const x of r.percepciones) poner(`percep:${x.tarjetaId}`, 'percepcion', x.tarjeta, x.monto, { tarjeta: x.tarjetaId });
+    /* QA v3 · 1: el saldo financiado de un resumen pagado en parte también es un compromiso del mes */
+    for (const x of r.financiados || []) poner(`financiado:${x.tarjetaId}`, 'financiado', x.tarjeta, x.monto, { tarjeta: x.tarjetaId }, { interes: x.interes });
     for (const c of r.cuotas) poner(`cuota:${c.id}`, c.nueva ? 'compraNueva' : 'cuota', c.descripcion || 'Compra en cuotas', c.monto, { editar: 'cuota', id: c.id });
     out.meses[m] = { items: it, libres: r.libres };
   }
@@ -1856,6 +1858,7 @@ const DE = {
   resumen: (n, nuevo) => nuevo ? `del resumen de ${n}` : `del resumen de ${n}`,
   banco: n => `de la tabla de cuotas de ${n}`,
   percepcion: n => `de la percepción estimada de ${n}`,
+  financiado: (n, nuevo, l) => `por el saldo que quedó sin pagar de ${n}${l?.interes ? ` (incluye ${formatoPesos(l.interes)} de intereses estimados)` : ''}`,
   cuota: (n, nuevo) => nuevo ? `de una cuota nueva (${n})` : `de la cuota de ${n}`,
   compraNueva: (n, nuevo) => nuevo ? `de una compra nueva (${n})` : `de la compra ${n}`,
 };
@@ -1875,6 +1878,7 @@ export function cambiosDesde(foto, datos, { minimo = 100_000 } = {}) {
       const base = y || x;
       const nuevo = !x, quitado = !y;
       lineas.push({ key: k, tipo: base.tipo, nombre: base.nombre, ref: base.ref, antes: x?.monto || 0, ahora: y?.monto || 0, dif, nuevo, quitado,
+        ...(y?.interes && nuevo ? { interes: y.interes } : {}),
         ingreso: base.tipo === 'ingreso' });
     }
     if (!lineas.length) continue;
@@ -1884,7 +1888,7 @@ export function cambiosDesde(foto, datos, { minimo = 100_000 } = {}) {
     const deltaLibres = b.libres - a.libres;
     if (Math.abs(comp) < minimo && Math.abs(ing) < minimo) continue;
     const partes = lineas.filter(l => !l.ingreso).map(l => {
-      const txt = (DE[l.tipo] || DE.gasto)(l.nombre, l.nuevo);
+      const txt = (DE[l.tipo] || DE.gasto)(l.nombre, l.nuevo, l);
       return l.quitado ? `${formatoPesos(-l.dif)} menos ${txt.replace(/^de una? [^(]*\((.*)\)$/, 'de $1')}` + (l.tipo === 'cuota' || l.tipo === 'compraNueva' ? ' (ahora está en el resumen o terminó)' : '')
         : `${formatoPesos(Math.abs(l.dif))}${l.dif < 0 ? ' menos' : ''} ${txt}`;
     });
