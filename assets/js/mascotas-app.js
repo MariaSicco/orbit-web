@@ -1069,13 +1069,19 @@ const TAB_OF = { hoy: 'inicio', historial: 'inicio', vets: 'inicio', antecedente
 const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
 /* ---------- funciones nuevas, detrás de un interruptor (todas apagadas por defecto) ----------
    Cada una vive en su archivo (assets/js/mascotas-f-<nombre>.js y assets/css/mascotas-f-<nombre>.css) y solo se baja
-   si está prendida. Para probarlas sin desplegar: /mascotas?funciones=salud,vete (queda en este navegador);
-   ?funciones=no las apaga. Para que salgan para todos: poner en true acá. */
+   si está prendida. Para probarlas en local o en un preview de Vercel: /mascotas?funciones=salud,vete (queda en ese
+   navegador); ?funciones=no las apaga. En producción no hay override. Para que salgan para todos: poner en true acá. */
 const FEATURES = { salud: false, restaurar: false, avisosAlta: false, vete: false };
+/* el override (?funciones= y lo guardado en este navegador) solo vale en local y en los previews de Vercel:
+   en producción se ignora y se borra, así nadie prende algo que salió apagado por no pasar el QA */
+const FEAT_TEST_HOST = h => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(h) || /\.vercel\.app$/.test(h);
 try {
-  const q = new URLSearchParams(location.search).get('funciones');
-  if (q != null) localStorage.setItem('mimitos:funciones', q === 'no' ? '' : q);
-  for (const k of (localStorage.getItem('mimitos:funciones') || '').split(',')) if (k in FEATURES) FEATURES[k] = true;
+  if (!FEAT_TEST_HOST(location.hostname)) localStorage.removeItem('mimitos:funciones');
+  else {
+    const q = new URLSearchParams(location.search).get('funciones');
+    if (q != null) localStorage.setItem('mimitos:funciones', q === 'no' ? '' : q);
+    for (const k of (localStorage.getItem('mimitos:funciones') || '').split(',')) if (k in FEATURES) FEATURES[k] = true;
+  }
 } catch {}
 /* lo que cada función engancha: rutas, rutas sin barra, acciones (data-act) y ganchos con nombre */
 const FEAT = window.MZFEAT = { on: FEATURES, routes: {}, bare: BARE, actions: {}, hooks: {} };
