@@ -1577,3 +1577,14 @@ body[data-first="steps"] .top{background:var(--bg)}
 .sg-list{list-style:none;margin:6px 0 0;padding:4px;background:var(--card);border:1px solid var(--line2);border-radius:14px;box-shadow:0 12px 28px -14px rgba(31,26,23,.35);max-height:264px;overflow:auto}
 .sg-list li{min-height:44px;display:flex;align-items:center;padding:0 12px;border-radius:10px;cursor:pointer;font-size:16px}
 .sg-list li:hover,.sg-list li.on{background:var(--sunk)}
+/* v40: lectura de la libreta. Cada aviso se confirma ("Ya lo revisé"), las filas dudosas tienen "Está bien" y los datos
+   de la mascota leídos (nacimiento, raza, sexo, microchip) se pueden corregir antes de guardar */
+.warn-list li{grid-template-columns:auto minmax(0,1fr) auto;align-items:center}
+.warn-list li.ok span{color:var(--ink2);text-decoration:line-through}
+.warn-list li .btn{min-height:44px}
+.scanrow .btn.sm{min-height:44px;flex:none}
+.scan-pet{display:flex;flex-direction:column;gap:10px}
+.scan-pet-row{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:end}
+.scan-pet-row .f{margin:0}
+.scan-pet-row input,.scan-pet-row select{width:100%}
+@media(max-width:420px){.warn-list li{grid-template-columns:auto minmax(0,1fr)}.warn-list li .btn{grid-column:2;justify-self:start}}

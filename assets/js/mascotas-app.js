@@ -2987,7 +2987,8 @@ function startScan(p) {
 }
 async function runScan(p, files) {
   const prev = scan?.state === 'review' && scan.petId === p.id ? scan.items : [];
-  scan = { petId: p.id, state: 'reading', n: files.length, items: [], warnings: [] };
+  const prevPet = scan?.state === 'review' && scan.petId === p.id ? scan.petRead : null;
+  scan = { petId: p.id, state: 'reading', n: files.length, items: [], warnings: [], petRead: prevPet || {} };
   setRoute('lectura'); render(); window.scrollTo(0, 0);
   try {
     const images = []; for (const f of files) images.push(await shrink(f, 1600, .85));
@@ -2997,7 +2998,10 @@ async function runScan(p, files) {
     if (d.error === 'ai_expired') { markExpired(d.expiredAt); scan = null; return render(); }
     if (!r.ok) throw Object.assign(new Error(d.error === 'ai_paused' ? limitMsg(d) + ' Mientras tanto, cargá las vacunas a mano.' : d.error === 'ia_respuesta_truncada' ? 'Las fotos tienen demasiados registros para leerlas de una vez. Probá con menos fotos por tanda.' : d.error === 'limite_reintentos' ? 'Hubo demasiados reintentos fallidos hoy. Probá de nuevo mañana; mientras tanto, cargá las vacunas a mano.' : /^limite_/.test(d.error || '') ? limitMsg(d) + ' Mientras tanto, cargá las vacunas a mano.' : d.error === 'ia_no_configurada' || d.error === 'sin_fotos' ? 'La lectura automática no está disponible en este momento. Cargá las vacunas a mano y probá más tarde.' : 'No pudimos leer las fotos.'), { plain: d.error !== 'ia_respuesta_invalida' && d.error !== undefined && !String(d.error).startsWith('ia_error') });
     setQuota(d.quota);
-    scan = { ...scan, state: 'review', items: prev.concat(d.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) }))), warnings: d.warnings || [] };
+    /* datos de la mascota que se leyeron de la libreta (tapa o identificación): se proponen para confirmar o corregir */
+    const lp = d.pet || {}, petRead = {};
+    for (const k of ['birth', 'breed', 'sex', 'chip']) if (lp[k] && lp[k] !== p[k]) petRead[k] = { v: lp[k], use: !p[k] };
+    scan = { ...scan, state: 'review', items: prev.concat(d.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) }))), warnings: d.warnings || [], warnOk: [], petRead: { ...(scan?.petRead || {}), ...petRead } };
   } catch (err) { scan = { ...scan, state: 'error', msg: err.message || 'No pudimos leer las fotos.', plain: Boolean(err.plain) }; }
   render();
 }
@@ -3009,12 +3013,13 @@ function renderScan() {
   return `<section class="sec">
     <button class="link" data-act="scanBack" style="align-self:flex-start">${I('back')} ${esc(p.name)}</button>
     <h1 class="h-xl">Encontramos ${scan.items.length} ${scan.items.length === 1 ? 'registro' : 'registros'}</h1>
-    <p class="dim">Revisá que esté bien. Lo marcado con borde ocre conviene mirarlo con la libreta al lado. Tocá cualquiera para corregirlo.</p>
-    ${scan.warnings.length ? `<ul class="warn-list" aria-label="Para revisar">${scan.warnings.map(w => `<li>${I('alert')}<span>${esc(w)}</span></li>`).join('')}</ul>` : ''}
+    <p class="dim">Revisá que esté bien. Lo marcado con borde ocre conviene mirarlo con la libreta al lado: si está bien, tocá "Está bien"; si no, tocalo para corregirlo.</p>
+    ${scan.warnings.length ? `<ul class="warn-list" aria-label="Para revisar">${scan.warnings.map((w, i) => { const ok = (scan.warnOk || []).includes(i); return `<li class="${ok ? 'ok' : ''}">${I(ok ? 'check' : 'alert')}<span>${esc(w)}</span><button type="button" class="btn sm ${ok ? 'ghost' : 'soft'}" data-act="scanWarnOk" data-i="${i}" aria-pressed="${ok}">${ok ? 'Revisado' : 'Ya lo revisé'}</button></li>`; }).join('')}</ul>` : ''}
+    ${scanPetBox(p)}
     <div class="list">${scan.items.map((x, i) => `<div class="row scanrow${x.confidence === 'baja' ? ' doubt' : ''}">
       <label class="checkbox"><input type="checkbox" data-keep="${i}" ${x.keep ? 'checked' : ''} aria-label="Guardar ${esc(x.name)}"></label>
       <button class="what plain" data-fix="${i}"><b>${esc(x.name || 'Sin nombre')}${x.product ? ` <span class="dim" style="font-weight:500">(${esc(x.product)})</span>` : ''}</b><small>${TYPE[x.type]} · ${x.date ? fmt(x.date) : 'sin fecha'}${x.next ? ' · próxima ' + fmt(x.next) : ''}${x.vet ? ' · ' + esc(x.vet) : ''}</small>${x.note ? `<small style="color:var(--soon)">${esc(x.note)}</small>` : ''}</button>
-      ${I('edit')}</div>`).join('')}</div>
+      ${x.confidence === 'baja' ? `<button type="button" class="btn sm soft" data-act="scanOk" data-i="${i}">Está bien</button>` : I('edit')}</div>`).join('')}</div>
     <button class="btn big wide" data-act="scanSave" ${sel ? '' : 'disabled'}>Guardar ${sel} en la libreta de ${esc(p.name)}</button>
     <button class="btn ghost wide" data-act="scan">${I('camera')} Agregar otra página</button>
   </section>`;
@@ -3028,8 +3033,22 @@ function fixScanItem(i) {
     onSave(v) { if (!v.name) return 'Poné el nombre.'; Object.assign(x, v, { product: v.lot, confidence: 'alta', note: '', keep: true }); },
   });
 }
+const PET_READ = { birth: 'Nacimiento', breed: 'Raza', sex: 'Sexo', chip: 'Microchip' };
+function scanPetBox(p) {
+  const r = scan.petRead || {}, ks = Object.keys(r); if (!ks.length) return '';
+  const field = k => k === 'birth' ? `<input type="date" data-pr="${k}" value="${esc(r[k].v)}" max="${iso(Z.today())}">`
+    : k === 'sex' ? `<select data-pr="sex"><option value="h"${r.sex.v === 'h' ? ' selected' : ''}>Hembra</option><option value="m"${r.sex.v === 'm' ? ' selected' : ''}>Macho</option></select>`
+    : `<input data-pr="${k}" maxlength="${k === 'chip' ? 40 : 60}" value="${esc(r[k].v)}">`;
+  return `<section class="card scan-pet" aria-labelledby="spT"><h2 id="spT" class="h-s">Datos de ${esc(p.name)} que leímos</h2>
+    <p class="dim">Si alguno está escrito a mano o no se lee bien, corregilo acá. Solo se guardan los que dejes tildados.</p>
+    ${ks.map(k => `<div class="scan-pet-row"><label class="checkbox"><input type="checkbox" data-pruse="${k}" ${r[k].use ? 'checked' : ''} aria-label="Usar ${PET_READ[k]}"></label><label class="f"><span class="lb">${PET_READ[k]}${p[k] ? ` <span class="opt">(hoy: ${esc(k === 'birth' ? fmt(p[k]) : k === 'sex' ? (p[k] === 'h' ? 'Hembra' : 'Macho') : p[k])})</span>` : ''}</span>${field(k)}</label></div>`).join('')}
+  </section>`;
+}
+app.addEventListener('input', e => { const k = e.target.dataset?.pr; if (k && scan?.petRead?.[k]) { scan.petRead[k].v = e.target.value; scan.petRead[k].use = true; const c = app.querySelector(`[data-pruse="${k}"]`); if (c) c.checked = true; } });
+app.addEventListener('change', e => { const k = e.target.dataset?.pruse; if (k && scan?.petRead?.[k]) scan.petRead[k].use = e.target.checked; });
 function saveScan() {
   const p = petById(scan.petId), add = scan.items.filter(x => x.keep);
+  for (const [k, r] of Object.entries(scan.petRead || {})) if (r.use && r.v) p[k] = k === 'birth' && r.v > iso(Z.today()) ? p[k] : r.v;
   for (const x of add) p.records.push(normRec({ id: uid(), type: x.type, name: x.name, date: x.date, next: x.next, vet: x.vet, lot: x.product || '', notes: '' }));
   scan = null; ui.lib.jump = null; setRoute('libreta'); changed();
   toast(`Listo: ${add.length} ${add.length === 1 ? 'registro cargado' : 'registros cargados'} en la libreta de ${p.name}.`);
@@ -3513,6 +3532,8 @@ document.addEventListener('click', e => {
   const p = b.dataset.pet ? petById(b.dataset.pet) : cur;
   switch (b.dataset.act) {
     case 'retry': mode = 'loading'; render(); return boot();
+    case 'scanOk': { const x = scan?.items[+b.dataset.i]; if (x) { x.confidence = 'alta'; x.keep = true; render(); } return; }
+    case 'scanWarnOk': { if (scan) { const i = +b.dataset.i, w = scan.warnOk ||= []; const j = w.indexOf(i); if (j < 0) w.push(i); else w.splice(j, 1); render(); } return; }
     case 'welcomeGo': ui.welcomed = true; render(); window.scrollTo(0, 0); return;
     case 'newPet': return startOnboard();
     case 'bulkStudies': return startBulk(cur);
