@@ -583,7 +583,7 @@ function expenseForm(p, x) {
       /* un gasto de alimento nuevo: preguntamos si abrió una bolsa, así aprende cuánto le dura */
       const ask = !x && Z.bagPrompt(target, e);
       if (ask) form.afterSave = () => bagAsk(target, ask, a);
-      else toast(x ? 'Gasto actualizado.' : `Gasto de ${money(a)} guardado.`);
+      else form.afterSave = () => toast(x ? 'Gasto actualizado.' : `Gasto de ${money(a)} guardado en Gastos › Movimientos.`, x || route.name === 'gastos' ? undefined : { label: 'Ver', fn: () => go('gastos') });
     },
   });
 }
@@ -693,6 +693,7 @@ function bagAsk(p, pre, amount) {
     const b = e.target.closest('[data-bag]'); if (!b) return;
     dPanel.close();
     if (b.dataset.bag === 'si') bagSheet(p, { ...pre, fromExpense: true });
+    else toast('Gasto guardado en Gastos › Movimientos.', route.name === 'gastos' ? undefined : { label: 'Ver', fn: () => go('gastos') });
   };
 }
 function foodForm(p) {
@@ -917,7 +918,8 @@ function algoSave() {
   algo = null; dPanel.close(); changed();
   if (a.ep) return toast('Actualizado.');
   const again = Z.repeatText(Z.epRepeat(a.p, x));
-  toast(`Anotado: ${Z.epTitle(x)}, ${Z.epWhen(x)}.${again ? ` ${again}.` : ''}`, { label: 'Deshacer', fn: () => { drop(a.p.symptoms, x)(); changed(); toast('Listo, lo sacamos.'); } });
+  const where = Date.now() - Date.parse(x.at) < 7 * 864e5 ? 'Lo ves en Inicio › Últimos 7 días.' : 'Lo ves en Libreta › Historial clínico.';
+  toast(`Anotado: ${Z.epTitle(x)}, ${Z.epWhen(x)}.${again ? ` ${again}.` : ''} ${where}`, { label: 'Deshacer', fn: () => { drop(a.p.symptoms, x)(); changed(); toast('Listo, lo sacamos.'); } });
 }
 /* "¿Sigue igual?": encendido salvo que lo apague (comodidad de este navegador; cada episodio guarda si se pregunta) */
 const algoAskOn = () => store.get('algoAsk') !== '0';
@@ -1951,7 +1953,7 @@ function renderAgenda() {
   const late = all.filter(x => x.date < today), soon = all.filter(x => x.date >= today).slice(0, 12);
   const events = [...doc.pets.flatMap(p => [...Z.upcoming(p).filter(x => x.s.days >= 0).map(x => Z.recordEvent(p, x.r)), Z.foodEvent(p, p.food)]), ...(window.MZVETS?.events(doc) || [])].filter(Boolean);
   return `<div class="lib-top"><div><span class="eyebrow">${doc.pets.length > 1 ? 'Todas tus mascotas' : esc(doc.pets[0].name)}</span><h1 class="h-xl">Agenda</h1></div>
-      <div class="lib-tools"><button class="btn sm ghost" data-vx="open" data-from="agenda">${I('pin')} Veterinarias cerca</button><button class="btn sm ghost" data-vx="newAppt">${I('cal')} Anotar turno</button><button class="btn sm ghost" data-act="go" data-to="avisos">${I('bell')} Avisos</button><button class="btn sm" data-act="icsAll" ${events.length ? '' : 'disabled'}>${I('download')} Todo al calendario</button></div></div>
+      <div class="lib-tools ag-tools"><button class="btn sm" data-vx="newAppt">${I('cal')} Anotar turno</button><span class="ag-links"><button class="link" data-vx="open" data-from="agenda">${I('pin')} Veterinarias cerca</button><button class="link" data-act="go" data-to="avisos">${I('bell')} Avisos</button><button class="link" data-act="icsAll" ${events.length ? '' : 'disabled'}>${I('download')} Todo al calendario</button></span></div></div>
     <div class="cols">
       <div class="col">
         <section class="cal card" aria-label="Calendario de ${ymLabel(ym)}">
@@ -1964,7 +1966,7 @@ function renderAgenda() {
           ${sel.length ? `<div class="list">${sel.map(agendaRow).join('')}</div>` : `<p class="dim">Nada para este día.</p>`}</section>
       </div>
       <div class="col">
-        ${late.length ? `<section class="sec"><h2>Vencidas <span class="count">${late.length}</span></h2><div class="list">${late.map(agendaRow).join('')}</div></section>` : ''}
+        ${late.length ? `<section class="sec"><h2>Vencidas <span class="count">${late.length}</span></h2><div class="list">${(ui.agenda.allLate ? late : late.slice(0, 3)).map(agendaRow).join('')}</div>${late.length > 3 && !ui.agenda.allLate ? `<button class="link" data-act="lateAll" style="align-self:flex-start">Ver las ${late.length} vencidas</button>` : ''}</section>` : ''}
         <section class="sec"><h2>Próximas fechas</h2>
           ${soon.length ? `<div class="list">${soon.map(agendaRow).join('')}</div>` : `<div class="empty dash"><p>Cuando cargues vacunas, antiparasitarios o controles con su próxima fecha, aparecen acá en orden, de todas tus mascotas.</p><button class="btn sm soft" data-act="suggest">${I('sparkle')} Armar calendario sugerido</button></div>`}
         </section>
@@ -1996,8 +1998,8 @@ function foodCard(fp, ym) {
   const refNow = foodRefNow(fp);
   const histHtml = hist.length ? `<details class="bags"><summary>Tus bolsas <span class="count">${(fp.food.bags || []).length}</span></summary><ul>${hist.map(b => `<li><span><span class="bd">${fmt(b.date, { day: 'numeric', month: 'short', year: 'numeric' })}</span><small>${[b.kg ? kgTxt(b.kg) + ' kg' : '', esc(b.brand || '')].filter(Boolean).join(' · ')}</small></span><b>${b.price ? money(b.price) : ''}</b></li>`).join('')}</ul></details>` : '';
   if (!f) {
-    const one = hist.length || fp.food.opened;
-    return `<section class="sec">${head}<div class="${one ? 'card' : 'empty dash'}">${one ? `<div style="display:flex;gap:12px;align-items:center">${bubble('bowl', 'comida')}<span><b>${esc(fp.food.brand || 'Alimento')}</b><small class="dim" style="display:block">Abriste la bolsa el ${fmt(fp.food.opened, { day: 'numeric', month: 'long' })}</small></span></div><p>Con la próxima bolsa aprendemos cuánto le dura y te avisamos antes de que se termine.</p>` : `<p>Anotá la bolsa que abriste, con los kilos. Desde la segunda, Mimitos aprende cuánto le dura y te avisa antes de que se termine.</p>`}
+    const one = hist.length || fp.food.opened, spent = Object.values(sp.byMonth || {}).reduce((a, b) => a + b, 0);
+    return `<section class="sec">${head}<div class="${one ? 'card' : 'empty dash'}">${one ? `<div style="display:flex;gap:12px;align-items:center">${bubble('bowl', 'comida')}<span><b>${esc(fp.food.brand || 'Alimento')}</b><small class="dim" style="display:block">Abriste la bolsa el ${fmt(fp.food.opened, { day: 'numeric', month: 'long' })}</small></span></div><p>Con la próxima bolsa aprendemos cuánto le dura y te avisamos antes de que se termine.</p>` : spent ? `<p>Ya anotaste ${money(spent)} en alimento. Tocá "Anotar la bolsa" para saber cuánto le dura: desde la segunda, Mimitos aprende y te avisa antes de que se termine.</p>` : `<p>Anotá la bolsa que abriste, con los kilos. Desde la segunda, Mimitos aprende cuánto le dura y te avisa antes de que se termine.</p>`}
       <div class="btns"><button class="btn sm" data-act="newBag" data-pet="${fp.id}">${I('plus')} ${one ? 'Abrí una bolsa nueva' : 'Anotar la bolsa'}</button>${one ? '' : `<button class="btn ghost sm" data-act="food" data-pet="${fp.id}">Sé cuánto come por día</button>`}</div>${refNow}${histHtml}</div>${spend}</section>`;
   }
   const how = f.src === 'aprendido' ? `Le dura en promedio <b>${f.days} días</b> (según tus últimas ${f.n} ${f.n === 1 ? 'bolsa' : 'bolsas'}).` : `Le dura unos <b>${f.days} días</b>, por los ${fp.food.dailyG} g por día. Con la próxima bolsa lo ajustamos con lo real.`;
@@ -3402,6 +3404,7 @@ document.addEventListener('click', e => {
     case 'lprev': return bookGo(bookIdx - (matchMedia('(min-width:1024px)').matches ? 2 : 1));
     case 'lnext': return bookGo(bookIdx + (matchMedia('(min-width:1024px)').matches ? 2 : 1));
     case 'lgo': return bookGo(+b.dataset.i);
+    case 'lateAll': ui.agenda.allLate = true; return render();
     case 'lclear': ui.lib.q = ''; ui.lib.year = ''; return render();
     case 'newVac': return recForm(cur);
     case 'newAnti': return recForm(cur, null, { type: 'desparasitacion', name: '', scope: 'interna' });

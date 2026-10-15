@@ -654,7 +654,7 @@ body[data-shell="app"] .toast{bottom:calc(88px + env(safe-area-inset-bottom,0px)
 /* ---------- gastos ---------- */
 .month{gap:16px}
 .big-num b{display:block;font:700 40px/1 var(--f);letter-spacing:-.02em;font-variant-numeric:tabular-nums}
-.big-num small{display:block;color:var(--ink2);font-size:13.5px;margin-top:6px}
+.big-num small{display:block;color:var(--ink2);font-size:13.5px;margin-top:6px;letter-spacing:0;font-weight:500}
 
 /* ---------- cuenta ---------- */
 .profile{flex-direction:row;align-items:center;gap:14px}
@@ -1497,3 +1497,9 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
   .dash-r .bookcard .go{margin-top:4px}
 }
 @media(max-width:1023px){.dash-r .summary .sum{min-height:0;padding:10px 12px;gap:4px}}
+
+/* Agenda: una acción principal (Anotar turno) y el resto como links en fila */
+.ag-tools{flex-wrap:wrap;align-items:center;row-gap:2px}
+.ag-links{display:flex;flex-wrap:wrap;gap:0 18px}
+.ag-links .link{min-height:44px;display:inline-flex;align-items:center;gap:6px}
+.ag-links .link[disabled]{opacity:.45;cursor:default}
