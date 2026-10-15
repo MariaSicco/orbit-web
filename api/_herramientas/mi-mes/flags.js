@@ -11,6 +11,7 @@ export const FLAGS = {
   finDeCuota: true,       // 3 · lo que se libera va a la meta
   /* tanda 11: se encienden de a una cuando pasan la QA */
   diaDificil: false,      // (4) saldo de hoy y día por día
+  gastoEstimado: false,   // (5) gasto fijo estimado hasta que aparece, con monto real y "lo di de baja"
   dondeRinde: false,      // B4 · "Dónde puede rendir tu plata": APAGADO hasta el OK legal de Majo
 };
 export function flagsActivos(search = '') {

@@ -232,7 +232,13 @@ export function resumenMes(datos, mes) {
   const d = datos || {};
   const tarjetas = new Map((d.tarjetas || []).map(t => [t.id, t]));
   const ingresos = (d.ingresos || []).filter(i => activoEn(i, mes));
-  const gastos = (d.gastos || []).filter(g => activoEn(g, mes));
+  /* (5) cada gasto fijo es un estimado hasta que se confirma o se carga el monto real */
+  const conf = new Set(d.confirmados?.[mes] || []);
+  const reales = d.reales?.[mes] || {};
+  const gastos = (d.gastos || []).filter(g => activoEn(g, mes)).map(g => {
+    const real = Number.isSafeInteger(reales[g.id]) ? reales[g.id] : null;
+    return { ...g, estimado: g.monto, monto: real ?? g.monto, real, confirmado: real !== null || conf.has(g.id), diferencia: real !== null ? real - g.monto : 0 };
+  });
   const resumenes = (d.resumenes || []).filter(r => r.mes === mes).map(r => {
     const t = totalResumen(r, d);
     return { ...r, tarjeta: tarjetas.get(r.tarjetaId)?.nombre || 'Tarjeta', monto: t.ars, porMoneda: t.porMoneda, faltaCambio: t.faltaCambio };
@@ -611,7 +617,7 @@ export function conciliarCompras(datos, tarjetaId, lectura) {
 /* ── esquema y migración ── */
 export const LIMITE_DEFECTO = 30;
 export const datosVacios = () => ({ v: ESQUEMA, ingresos: [], gastos: [], cuotas: [], tarjetas: [], resumenes: [], cambio: {}, rubrosComercio: {},
-  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [], concilia: [], confirmados: {}, preguntasLuego: [], cuentas: [] });
+  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [], concilia: [], confirmados: {}, reales: {}, preguntasLuego: [], cuentas: [] });
 
 const entero = x => Number.isSafeInteger(x) && x > 0;
 const dia = x => Number.isInteger(x) && x >= 1 && x <= 31;
@@ -728,6 +734,12 @@ export function migrar(crudo) {
   /* tanda 11: saldos de cuentas (día difícil) */
   out.cuentas = (Array.isArray(crudo.cuentas) ? crudo.cuentas : []).filter(c => c && Number.isSafeInteger(c.saldo) && esFecha(c.fecha)).slice(0, 10)
     .map(c => ({ id: String(c.id || c.nombre), nombre: texto(c.nombre, 40) || 'Cuenta', saldo: c.saldo, fecha: c.fecha }));
+  out.reales = {};
+  for (const [m, x] of Object.entries(crudo.reales && typeof crudo.reales === 'object' ? crudo.reales : {})) {
+    if (!esMes(m) || !x || typeof x !== 'object') continue;
+    const ok = Object.entries(x).filter(([id, v]) => out.gastos.some(g => g.id === id) && Number.isSafeInteger(v) && v >= 0);
+    if (ok.length) out.reales[m] = Object.fromEntries(ok);
+  }
   out.preguntasLuego = (Array.isArray(crudo.preguntasLuego) ? crudo.preguntasLuego : []).filter(x => typeof x === 'string').slice(-100);
   out.consejosVistos = (Array.isArray(crudo.consejosVistos) ? crudo.consejosVistos : []).filter(x => typeof x === 'string').slice(-100);
   return out;
@@ -1436,7 +1448,7 @@ export const GASTOS_QUE_VARIAN = ['Servicios', 'Expensas'];
 export const DIAS_COPIA_VIEJA = 30;
 export const DIAS_CAMBIO_VIEJO = 7;
 export const VARIACION_CAMBIO = 0.05;     // supuesto: el dólar se pudo mover un 5 %
-export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true, diaDificil = false } = {}) {
+export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true, diaDificil = false, gastoEstimado = false } = {}) {
   hoy = aFecha(hoy);
   const mes = hoy.slice(0, 7), sig = sumarMeses(mes, 1);
   const r = resumenMes(datos, mes), r2 = resumenMes(datos, sig);
@@ -1475,6 +1487,13 @@ export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true, d
   /* 4. gastos que varían, sin confirmar este mes */
   const conf = new Set(datos?.confirmados?.[mes] || []);
   for (const g of r.gastos) {
+    if (gastoEstimado) {
+      /* (5) todo gasto fijo del mes es estimado hasta que aparece; se pregunta cuando ya debería haber aparecido */
+      if (g.confirmado || (g.dia && Number(hoy.slice(8)) < g.dia)) continue;
+      out.push({ id: `estimado:${g.id}:${mes}`, tipo: 'estimado', gastoId: g.id, impacto: g.monto,
+        titulo: `¿Ya apareció ${g.nombre}? Estimamos ${formatoPesos(g.monto)}.`, porque: 'Hasta que lo confirmes, lo reservamos con el estimado: no cuenta como plata disponible.', accion: `Sí, ${formatoPesos(g.monto)}` });
+      continue;
+    }
     if (!g.repite || !GASTOS_QUE_VARIAN.includes(g.categoria) || conf.has(g.id)) continue;
     out.push({ id: `gasto:${g.id}:${mes}`, tipo: 'gasto', gastoId: g.id, impacto: g.monto,
       titulo: `¿${g.nombre} sigue en ${formatoPesos(g.monto)} este mes?`, porque: 'Suele cambiar de un mes a otro.', accion: `Sigue en ${formatoPesos(g.monto)}` });
@@ -1628,4 +1647,36 @@ export function proyeccionSaldo(datos, hoy) {
   else if (finDeMes >= 0) mensaje = `El mes termina positivo, pero el ${dia(minimo.fecha)} faltarán unos ${formatoPesos(falta)}${cobroTxt}.`;
   else mensaje = `El ${dia(minimo.fecha)} faltarán unos ${formatoPesos(falta)}${cobroTxt}.`;
   return { inicial, dias, minimo, falta, finDeMes, hasta, cobro, mensaje, supuestos, eventos };
+}
+
+
+/* ═══════════════ (5) El gasto que todavía no apareció ═══════════════ */
+/* Confirmar con el monto real (o igual al estimado) y explicar la diferencia. */
+export function confirmarGasto(datos, gastoId, mes, real = null) {
+  const g = (datos.gastos || []).find(x => x.id === gastoId);
+  if (!g) return { datos, texto: '' };
+  const d = structuredClone(datos);
+  d.confirmados = { ...(d.confirmados || {}), [mes]: [...new Set([...(d.confirmados?.[mes] || []), gastoId])] };
+  d.reales = { ...(d.reales || {}) };
+  if (real === null || real === g.monto) {
+    if (d.reales[mes]) { delete d.reales[mes][gastoId]; if (!Object.keys(d.reales[mes]).length) delete d.reales[mes]; }
+    return { datos: d, texto: `${g.nombre}: igual al estimado (${formatoPesos(g.monto)}).` };
+  }
+  d.reales[mes] = { ...(d.reales[mes] || {}), [gastoId]: real };
+  const dif = real - g.monto;
+  return { datos: d, diferencia: dif,
+    texto: dif > 0 ? `${g.nombre} vino ${formatoPesos(dif)} más que el estimado: te quedan libres ${formatoPesos(dif)} menos.`
+      : `${g.nombre} vino ${formatoPesos(-dif)} menos que el estimado: te quedan libres ${formatoPesos(-dif)} más.` };
+}
+/* "Lo di de baja": deja de contar desde este mes (o desde el que viene, si este ya se pagó). */
+export function darDeBajaGasto(datos, gastoId, mes) {
+  const d = structuredClone(datos);
+  const g = d.gastos.find(x => x.id === gastoId);
+  if (!g) return { datos, texto: '' };
+  const pagadoEsteMes = (d.confirmados?.[mes] || []).includes(gastoId);
+  const hasta = pagadoEsteMes ? mes : sumarMeses(mes, -1);
+  if (difMeses(g.desde, hasta) < 0) d.gastos = d.gastos.filter(x => x.id !== gastoId);
+  else { g.repite = true; g.hasta = hasta; }
+  const desde = sumarMeses(hasta, 1);
+  return { datos: d, texto: `${g.nombre} deja de contar desde ${nombreMes(desde)}: te quedan libres ${formatoPesos(g.monto)} más por mes.` };
 }

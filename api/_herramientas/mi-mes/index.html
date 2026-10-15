@@ -375,6 +375,16 @@
   </form>
 </dialog>
 
+<!-- ── Monto real de un gasto fijo ── -->
+<dialog class="mm-dlg" id="dlg-real" aria-labelledby="dr-tit">
+  <form class="mm-form" novalidate>
+    <div class="mm-dlg-top"><h2 id="dr-tit">¿Cuánto vino?</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <p class="mm-ayuda" id="dr-est"></p>
+    <div class="mm-campo"><label for="r-monto">Monto real, en pesos</label><input id="r-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" aria-describedby="r-monto-err" required><p class="mm-err" id="r-monto-err"></p></div>
+    <div class="mm-dlg-pie"><button type="submit" class="mm-btn">Guardar</button></div>
+  </form>
+</dialog>
+
 <!-- ── Meta ── -->
 <dialog class="mm-dlg" id="dlg-meta" aria-labelledby="dm-tit">
   <form class="mm-form" novalidate>

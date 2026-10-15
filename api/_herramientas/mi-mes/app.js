@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -153,7 +153,9 @@ function pintarInicio(animar = false) {
 
   /* movimientos */
   const ing = r.ingresos.map(i => item({ tipo: 'ingreso', id: i.id, icono: 'ingreso', claseIc: 'ing', titulo: i.nombre, meta: textoRepite(i), monto: '+' + $(i.monto), montoClase: 'mas' }));
-  const gas = r.gastos.map(g => item({ tipo: 'gasto', id: g.id, icono: 'gasto', titulo: g.nombre, meta: `${g.nombre === g.categoria ? '' : g.categoria + ' · '}${textoRepite(g)}`, monto: '−' + $(g.monto) }));
+  const gas = r.gastos.map(g => item({ tipo: 'gasto', id: g.id, icono: 'gasto', titulo: g.nombre,
+    meta: `${g.nombre === g.categoria ? '' : g.categoria + ' · '}${F.gastoEstimado && g.real !== null ? `estimado ${$(g.estimado)}` : textoRepite(g)}`, monto: '−' + $(g.monto),
+    extra: F.gastoEstimado && !g.confirmado ? ' <span class="mm-tag ext">Estimado</span>' : '' }));
   const tar = [
     ...r.resumenes.map(x => {
       const ext = listaMonedas(x.porMoneda);
@@ -207,7 +209,7 @@ function itemsRevisar(lim) {
   }
   const fuertes = alertas.filter(a => nivelVisual(a) === 'fuerte');
   const suaves = alertas.filter(a => nivelVisual(a) !== 'fuerte');
-  const p = F.preguntas ? preguntas(datos, HOY_ISO, { ultimaCopia: ultimaCopia(), diaDeCobro: F.diaDeCobro, diaDificil: F.diaDificil }) : { ahora: [], masTarde: [], alDia: true };
+  const p = F.preguntas ? preguntas(datos, HOY_ISO, { ultimaCopia: ultimaCopia(), diaDeCobro: F.diaDeCobro, diaDificil: F.diaDificil, gastoEstimado: F.gastoEstimado }) : { ahora: [], masTarde: [], alDia: true };
   const tope = lim?.supera ? [{ clase: 'tope', lim }] : [];
   return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
     masTarde: p.masTarde };
@@ -222,6 +224,7 @@ function preguntaHTML(q) {
     cambio: `<button type="button" class="mm-btn chico" data-cambio>Actualizar</button>`,
     copia: `<button type="button" class="mm-btn chico" data-exportar>Guardar copia</button>`,
     saldo: `<button type="button" class="mm-btn chico" data-saldo>${esc(q.accion)}</button>`,
+    estimado: `<button type="button" class="mm-btn chico" data-gasto-ok="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-gasto-real="${esc(q.gastoId)}">Fue otro monto</button><button type="button" class="mm-link" data-gasto-baja="${esc(q.gastoId)}">Lo di de baja</button>`,
     dificil: `<button type="button" class="mm-btn chico" data-ver-dificil>Ver día por día</button>`,
   }[q.tipo] || '';
   return `<details class="mm-fila-alerta pregunta">
@@ -254,6 +257,26 @@ function pintarMesEn30(lim) {
     ${lista.length > 3 ? `<button type="button" class="mm-link mm-revisa-mas" data-revisa-mas aria-expanded="${revisaAbierta}">${revisaAbierta ? 'Ver menos' : `Ver ${lista.length - 3} más`}</button>` : ''}
     ${masTarde.length ? `<details class="mm-luego"><summary>Más tarde (${masTarde.length})</summary><p class="mm-fuente">Mueven menos del 1 % de tus ingresos, no mueven plata o los dejaste para después.</p><div class="mm-revisa-lista">${masTarde.map(preguntaHTML).join('')}</div></details>` : ''}`;
 }
+
+/* ════════ (5) GASTO ESTIMADO ════════ */
+const dr = $id('dlg-real');
+let realDe = null;
+function abrirReal(id) {
+  const g = datos.gastos.find(x => x.id === id);
+  if (!g) return;
+  realDe = id;
+  $id('dr-tit').textContent = `¿Cuánto vino ${g.nombre}?`;
+  $id('dr-est').textContent = `Estimamos ${$(g.monto)} para ${nombreMes(HOY)}. El monto real cuenta solo para este mes.`;
+  $id('r-monto').value = sinSimbolo(datos.reales?.[HOY]?.[id] ?? g.monto, 'ARS');
+  abrir(dr, $id('r-monto'));
+}
+dr.querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = leerMonto($id('r-monto').value);
+  if (v === null) { error($id('r-monto'), 'r-monto-err', 'Escribí el monto, por ejemplo 72.000.').focus(); return; }
+  const r = confirmarGasto(datos, realDe, HOY, v);
+  datos = r.datos; guardar(); pintarTodo(); cerrar(dr); avisar(r.texto);
+});
 
 /* ════════ (4) DÍA DIFÍCIL ════════ */
 function pintarDificil() {
@@ -1866,6 +1889,12 @@ document.addEventListener('click', e => {
   if (t.closest('[data-franja]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-franja]')?.focus(); }
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
+  const gok = t.closest('[data-gasto-ok]');
+  if (gok) { const r = confirmarGasto(datos, gok.dataset.gastoOk, HOY); datos = r.datos; guardar(); pintarTodo(); return avisar(r.texto); }
+  const gre = t.closest('[data-gasto-real]');
+  if (gre) return abrirReal(gre.dataset.gastoReal);
+  const gba = t.closest('[data-gasto-baja]');
+  if (gba) { const r = darDeBajaGasto(datos, gba.dataset.gastoBaja, HOY); datos = r.datos; guardar(); pintarTodo(); return avisar(r.texto); }
   if (t.closest('[data-saldo]')) return abrirSaldo();
   if (t.closest('[data-ver-dificil]')) { $id('dificil').scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); return $id('t-dificil')?.focus?.(); }
   const pl = t.closest('[data-pregunta-luego]');
