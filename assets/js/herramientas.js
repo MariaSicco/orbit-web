@@ -5,7 +5,7 @@
   var esc = function (s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
   var ruta = function (compra) {
     var r = compra && compra.herramienta;
-    return typeof r === 'string' && /^\/herramientas\/[a-z0-9-]+$/.test(r) ? r : null;
+    return typeof r === 'string' && /^\/[a-z0-9-]+(\/[a-z0-9-]+)?$/.test(r) ? r : null;
   };
 
   function accion(p, compra, L) {

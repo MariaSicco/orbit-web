@@ -1,13 +1,20 @@
 /* Herramientas online: productos que no se descargan, se abren en el sitio.
    Un producto es herramienta si en el catálogo del servidor tiene
    `herramienta: '/herramientas/<slug>'`. Acá van las cuentas puras (sin
-   sesión ni base), para poder probarlas sin servidor. */
+   sesión ni base), para poder probarlas sin servidor.
+
+   Una app que vive en su propia ruta y controla la compra en su API
+   (Mimitos en /mascotas) también puede declarar `herramienta: '/mascotas'`:
+   la biblioteca y el email muestran "Abrir", pero api/herramienta.js solo
+   sirve lo que está bajo /herramientas/. */
 
 export const SLUG = /^[a-z0-9][a-z0-9-]{0,40}$/;
 export const rutaHerramienta = slug => `/herramientas/${slug}`;
+/* Ruta interna del sitio: uno o dos segmentos, nada de "//", esquemas ni query. */
+export const RUTA = /^\/[a-z0-9-]+(\/[a-z0-9-]+)?$/;
 export const herramientaDe = (CAT, id) => {
   const r = CAT?.[id]?.herramienta;
-  return typeof r === 'string' && r.startsWith('/herramientas/') ? r : null;
+  return typeof r === 'string' && RUTA.test(r) ? r : null;
 };
 
 /* Producto dueño de /herramientas/<slug>, o null. */
