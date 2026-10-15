@@ -92,11 +92,15 @@ test('query: señales veterinarias (con y sin acento) + nombres de mascotas y ve
   /* Promociones y Social afuera, salvo los remitentes conocidos (la veterinaria de la ficha entra esté donde esté) */
   assert.ok(q.includes(') -category:promotions -category:social) OR from:"veterinaria san roque"'), q);
   /* los genéricos no alcanzan para traer un mail: solo van dentro de subject:(…), junto a la señal veterinaria o el nombre */
-  const who = q.slice(0, q.indexOf('-category:promotions'));
+  /* ...salvo en el asunto de un mail CON adjunto ("Radiografia", "Informe" de una veterinaria que manda desde noreply@):
+     ahí sí se pide, y el puntaje decide (caso real del 15/10) */
+  const who = q.slice(0, q.indexOf('-category:promotions')).replace(/\(has:attachment subject:\([^)]*\)\)/, '');
+  assert.ok(q.includes('(has:attachment subject:(radiografia OR radiografias'), q);
   for (const t of [' informe ', ' estudio ', ' resultado ', ' receta ', ' laboratorio ']) assert.ok(!who.includes(t), t);
   assert.ok(!q.includes(' laboratorio '));
   /* sin adjuntos en general: solo PDF y fotos (un .ics o un .docx no traen el mail) */
-  assert.ok(!q.includes('has:attachment'));
+  /* has:attachment solo dentro del asunto de estudio (el "qué" exige PDF o foto igual) */
+  assert.ok(!q.replace(/\(has:attachment subject:\([^)]*\)\)/, '').includes('has:attachment'));
   assert.ok(q.endsWith(' newer_than:3y'));
   assert.ok(G.buildQuery(doc, { range: '12m' }).endsWith(' newer_than:1y'));
   assert.ok(!/newer_than|after:/.test(G.buildQuery(doc, { range: 'all' })));

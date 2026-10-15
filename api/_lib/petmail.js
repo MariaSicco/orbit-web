@@ -63,7 +63,11 @@ const NO_DOC = ['turno', 'turnos', 'recordatorio', 'recordá', 'recorda', 'confi
 const DOC = [...RESULTISH, 'receta', 'indicaciones', 'certificado', 'constancia', 'libreta', 'historia clínica', 'historia clinica', 'presupuesto', 'orden'];
 /* el remitente es un lugar de salud: le da contexto al nombre de la mascota ("Simón" que manda "Clínica San Martín") */
 const PLACE = ['clínica', 'clinica', 'laboratorio', 'hospital', 'centro médico', 'centro medico', 'consultorio'];
-export const BASE_TERMS = VET_TERMS;   // lo que va a la consulta del proveedor (sin genéricos)
+export const BASE_TERMS = VET_TERMS;
+/* asuntos que anuncian un estudio ("Radiografia", "Informe", "Radiografias de Aika"): con un adjunto, el mail se pide
+   aunque no diga "veterinaria" ni el nombre (muchas veterinarias mandan desde noreply@ con el asunto pelado).
+   El puntaje después decide: sin señal veterinaria ni de la mascota, no se muestra */
+export const DOC_SUBJECTS = ['radiografia', 'radiografias', 'radiografía', 'radiografías', 'placa', 'placas', 'ecografia', 'ecografias', 'ecografía', 'ecografías', 'ecocardiograma', 'electrocardiograma', 'cardio', 'informe', 'informes', 'estudio', 'estudios', 'resultado', 'resultados', 'analisis', 'análisis', 'hemograma', 'receta', 'protocolo', 'biopsia', 'citologia', 'citología'];   // lo que va a la consulta del proveedor (sin genéricos)
 /* señales en contra, por familia (cada una con su peso). "certificado" no resta si el asunto es veterinario
    o nombra a la mascota (certificado de vacunación antirrábica, CVI de SENASA) */
 const NEG = {
@@ -178,7 +182,7 @@ export async function checkState(state, email, provider = 'gmail', secret = proc
   const saved = await kvGet(sKey(nonce));
   if (!saved || saved.email !== String(email).toLowerCase() || saved.provider !== provider) return null;
   await kvDel(sKey(nonce));   // un solo uso
-  return { range: RANGES[saved.range] !== undefined ? saved.range : '12m', verifier: saved.verifier };
+  return { range: RANGES[saved.range] !== undefined ? saved.range : '3y', verifier: saved.verifier };
 }
 
 /* cursor de búsqueda: viaja al navegador y vuelve, firmado para que no se pueda cambiar la consulta */
@@ -433,7 +437,7 @@ export function suggestPet(pets, ai = {}, extra = '') {
 /* ---------- estado guardado ---------- */
 export async function getState(P, email) {
   const s = (await kvGet(P.key(email))) || {};
-  return { tok: s.tok || '', address: s.address || '', connectedAt: s.connectedAt || '', range: RANGES[s.range] !== undefined ? s.range : '12m', lastSearch: s.lastSearch || '', expired: Boolean(s.expired), imported: Array.isArray(s.imported) ? s.imported : [], queue: Array.isArray(s.queue) ? s.queue : [] };
+  return { tok: s.tok || '', address: s.address || '', connectedAt: s.connectedAt || '', range: RANGES[s.range] !== undefined ? s.range : '3y', lastSearch: s.lastSearch || '', expired: Boolean(s.expired), imported: Array.isArray(s.imported) ? s.imported : [], queue: Array.isArray(s.queue) ? s.queue : [] };
 }
 export async function saveState(P, email, s) {
   s.imported = s.imported.slice(-MAX_IMPORTED); s.queue = s.queue.slice(0, MAX_QUEUE);
@@ -670,7 +674,7 @@ export async function handleMail(P, req, res, ctx) {
 
   if (action === 'start') {
     if (await capFull(P, email, st)) { await saveInterest(email); return back(res, `${P.id}/completo`); }
-    const range = RANGES[q.range] !== undefined ? String(q.range) : '12m';
+    const range = RANGES[q.range] !== undefined ? String(q.range) : '3y';
     const { state, challenge } = await makeState(email, range, P.id);
     res.setHeader('Location', P.authUrl(cfg, state, challenge));
     return res.status(302).end();

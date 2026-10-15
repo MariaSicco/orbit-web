@@ -19,7 +19,7 @@ for (const [label, args] of [['ajuste', []], ['control', ['--set', 'control']]])
     }
     assert.equal(r.bodies.gmail.negativos, 0, 'cuerpos leídos de mails que no son estudios (Gmail)');
     assert.equal(r.bodies.outlook.negativos, 0, 'cuerpos leídos de mails que no son estudios (Outlook)');
-    assert.ok(r.largo.gmail <= 1500, 'la consulta de Gmail entra en el largo');
+    assert.ok(r.largo.gmail <= 1800, 'la consulta de Gmail entra en el largo (MAX_QUERY)');
   });
 }
 

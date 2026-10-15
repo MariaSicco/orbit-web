@@ -53,7 +53,7 @@ const qt = t => /\s/.test(t) ? `"${t}"` : t;
 const SUBJECT_VET = ['veterinaria', 'veterinario', 'vet', 'mascota', 'canino', 'canina', 'felino', 'felina', 'antirrábica', 'antirrabica', 'vacuna', 'desparasitación', 'desparasitacion'];
 const SUBJECT_DOC = ['resultado', 'resultados', 'estudio', 'estudios', 'informe', 'análisis', 'analisis', 'hemograma', 'ecografía', 'ecografia', 'radiografía', 'radiografia', 'receta', 'protocolo'];
 export const FILE_TYPES = ['pdf', 'jpg', 'jpeg', 'png', 'heic', 'webp'];
-export const MAX_QUERY = 1500;
+export const MAX_QUERY = 1800;
 export function buildQuery(doc, { range = '12m', after = 0, senders } = {}) {
   const P = M.queryParts(doc, senders);
   const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`);
@@ -62,7 +62,7 @@ export function buildQuery(doc, { range = '12m', after = 0, senders } = {}) {
   const when = after ? `after:${Math.floor(after / 1000)}` : (RANGES[range] ?? RANGES['12m']);
   const make = () => {
     const trusted = [...froms, ...known.map(k => `from:${k}`)];
-    const who = `((${[...P.vet.map(qt), ...names, ...known].join(' OR ')}) -category:promotions -category:social)`;
+    const who = `((${[...P.vet.map(qt), ...names, ...known].join(' OR ')} OR (has:attachment subject:(${M.DOC_SUBJECTS.join(' OR ')}))) -category:promotions -category:social)`;
     const what = `(${[...FILE_TYPES.map(t => `filename:${t}`), `subject:(${[...SUBJECT_VET, ...SUBJECT_DOC, ...names].join(' OR ')})`, ...froms].join(' OR ')})`;
     return [trusted.length ? `(${who} OR ${trusted.join(' OR ')})` : who, what, when, ...muted].filter(Boolean).join(' ');
   };

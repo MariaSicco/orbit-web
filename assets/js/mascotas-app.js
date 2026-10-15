@@ -2709,7 +2709,7 @@ function openMail(p, m) {
 }
 async function mailConnect(p) {
   if (dirty) await flushNow();
-  const range = (gm?.p === p && gm.range) || mstat[p]?.range || '12m';
+  const range = (gm?.p === p && gm.range) || mstat[p]?.range || '3y';
   location.href = `/api/mascotas?${p}=start&range=${encodeURIComponent(range)}`;
 }
 const gmFiles = () => (gm?.cands || []).flatMap(c => c.files.map(f => c.m + '|' + f.part));

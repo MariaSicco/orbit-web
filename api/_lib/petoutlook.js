@@ -38,9 +38,11 @@ export function buildKql(doc, since, senders) {
   const P = M.queryParts(doc, senders);
   const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`), froms = P.froms.map(f => `from:${f}`);
   const att = [...ATT, ...(P.petNames || [])].map(t => `attachment:${/\s/.test(t) ? `"${t}"` : t}`);
-  const make = () => `(${[...P.vet.map(t => /\s/.test(t) ? `"${t}"` : t), ...names, ...known, ...froms, ...att].join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
+  /* asuntos de estudio con adjunto (ver M.DOC_SUBJECTS): sin tildes, KQL no las distingue */
+  const docs = `(hasattachment:true AND (${[...new Set(M.DOC_SUBJECTS.map(t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))].map(t => `subject:${t}`).join(' OR ')}))`;
+  const make = () => `(${[...P.vet.map(t => /\s/.test(t) ? `"${t}"` : t), ...names, ...known, ...froms, ...att, docs].join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
   let k = make();
-  while (k.length > 1400 && (known.length || froms.length || att.length > ATT.length)) { if (known.length) known.pop(); else if (att.length > ATT.length) att.pop(); else froms.pop(); k = make(); }
+  while (k.length > 1700 && (known.length || froms.length || att.length > ATT.length)) { if (known.length) known.pop(); else if (att.length > ATT.length) att.pop(); else froms.pop(); k = make(); }
   return k;
 }
 /* la consulta de antes del 15/10 (sin attachment:): respaldo si Graph rechaza la nueva */

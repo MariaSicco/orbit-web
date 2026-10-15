@@ -1,161 +1,2272 @@
 {
-  "_que_es": "Set de evaluación de la búsqueda de estudios veterinarios en Gmail y Outlook de Mimitos by Orbit (ob-018). Mails SINTÉTICOS pero realistas de Argentina, etiquetados a mano: expected=true si es un estudio o documento clínico de la mascota que conviene ofrecer para importar. 'snippet' hace de cuerpo: lo usa la simulación de la búsqueda del servidor de Gmail y Outlook (que sí busca en el cuerpo), NO el puntaje de Mimitos, que hoy no lee el cuerpo para decidir. Correr: node scripts/mimitos-mail-eval.mjs",
-  "_fuentes": {
-    "fvet.uba.ar": "Facultad de Ciencias Veterinarias UBA (Hospital Escuela). Dominio verificado: https://www.fvet.uba.ar/../archivos/alumnos_pdf/programas_materias_pdf/Int_Peq_An/567-Analisis_ClinicosI_PA.pdf (programa de Análisis Clínicos, Intensificación Pequeños Animales). La casilla del remitente es inventada.",
-    "fcv.unlp.edu.ar": "Facultad de Ciencias Veterinarias UNLP, cátedra de Análisis Clínicos Veterinarios. Dominio verificado: https://www.fcv.unlp.edu.ar/wp-content/uploads/2026/04/ANALISIS-CLINICOS-VETERINARIOS.pdf. La casilla es inventada.",
-    "eurofins-megalab.com": "Eurofins Megalab hace análisis veterinarios (hematología, bioquímica, parasitología, orina): https://eurofins-megalab.com/?p=1516. También es laboratorio de personas, por eso aparece de los dos lados. La casilla es inventada.",
-    "buenosaires.gob.ar": "Instituto de Zoonosis Luis Pasteur (CABA) vacuna antirrábica; dominio del Gobierno de la Ciudad. La casilla es inventada.",
-    "senasa.gob.ar": "SENASA emite el Certificado Veterinario Internacional para viajar con mascotas. La casilla es inventada.",
-    "miargentina.gob.ar": "Mi Argentina (certificado de vacunación de personas). La casilla es inventada.",
-    "osde.com.ar, swissmedical.com.ar, mercadolibre.com.ar, puppis.com.ar": "Empresas reales usadas solo como NEGATIVOS (prepagas, marketplace, pet shop). Casillas inventadas.",
-    "*.example": "Dominios de ejemplo (RFC 2606) para todo lo que no pudimos verificar: no son empresas reales. En la búsqueda web no encontramos sitios de laboratorios veterinarios privados argentinos que confirmen mandar resultados por mail, así que no inventamos nombres."
-  },
-  "account": { "email": "carla.benitez@gmail.com", "to": "Carla Benítez <carla.benitez@gmail.com>", "owner": "Carla Benítez" },
-  "doc": { "pets": [
-    { "id": "luna0001", "name": "Luna", "species": "perro", "breed": "Caniche", "contact": { "name": "Carla Benítez" }, "vet": { "name": "Veterinaria del Parque" }, "records": [{ "vet": "Dra. Ferreyra" }], "visits": [], "studies": [{ "lab": "LabVet Sur" }] },
-    { "id": "simon001", "name": "Simón", "species": "gato", "breed": "", "contact": { "name": "Carla Benítez" }, "vet": { "name": "Veterinaria del Parque" }, "records": [], "visits": [], "studies": [] },
-    { "id": "milo0001", "name": "Milo", "species": "perro", "breed": "Mestizo", "contact": { "name": "Carla Benítez" }, "vet": { "name": "" }, "records": [], "visits": [], "studies": [] }
-  ] },
-  "senders": { "manual": [], "learned": ["resultados@labvetsur.example"] },
-  "mails": [
-    { "id": "p01", "kind": "pos:laboratorio", "expected": true, "from": "LabVet Sur <resultados@labvetsur.example>", "subject": "Informe N° 48213", "snippet": "Adjuntamos el informe del protocolo 48213. Paciente: LUNA. Especie: canina.", "files": [{ "name": "48213.pdf", "type": "application/pdf", "size": 96000 }], "labels": ["CATEGORY_UPDATES"], "nota": "remitente aprendido, asunto sin palabras veterinarias" },
-    { "id": "p02", "kind": "pos:laboratorio", "expected": true, "from": "Laboratorio Veterinario Sur <informes@labvetsur.example>", "subject": "Resultados de Luna - Hemograma completo", "snippet": "Buenas tardes, le enviamos el hemograma de Luna.", "files": [{ "name": "hemograma_luna.pdf", "type": "application/pdf", "size": 120000 }] },
-    { "id": "p03", "kind": "pos:laboratorio", "expected": true, "from": "Diagnóstico Veterinario <no-reply@diagvet.example>", "subject": "Perfil bioquímico - Paciente: SIMON - Especie: Felino", "snippet": "Protocolo 2026-5531. Propietario: Benítez Carla.", "files": [{ "name": "BQ_SIMON_2026.pdf", "type": "application/pdf", "size": 88000 }] },
-    { "id": "p04", "kind": "pos:laboratorio", "expected": true, "from": "Lab Animal <lab@labanimal.example>", "subject": "Urianálisis Milo", "snippet": "Densidad 1.030, pH 6. Sedimento sin particularidades.", "files": [{ "name": "orina_milo.pdf", "type": "application/pdf", "size": 70000 }] },
-    { "id": "p05", "kind": "pos:laboratorio", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Coproparasitológico seriado - Luna (Benítez)", "snippet": "Resultado negativo para huevos y quistes.", "files": [{ "name": "copro_luna.pdf", "type": "application/pdf", "size": 64000 }] },
-    { "id": "p06", "kind": "pos:laboratorio", "expected": true, "from": "Patología Veterinaria <info@patovet.example>", "subject": "Citología por punción - paciente Simón", "snippet": "Se observan células compatibles con proceso inflamatorio.", "files": [{ "name": "citologia.pdf", "type": "application/pdf", "size": 150000 }] },
-    { "id": "p07", "kind": "pos:laboratorio", "expected": true, "from": "Anatomía Patológica DM <informes@apdm.example>", "subject": "Informe histopatológico N° 2026-1187", "snippet": "Paciente: Milo. Especie: canino. Raza: mestizo. Material: nódulo cutáneo.", "files": [{ "name": "HP-2026-1187.pdf", "type": "application/pdf", "size": 210000 }], "nota": "difícil: la señal veterinaria solo está en el cuerpo" },
-    { "id": "p08", "kind": "pos:laboratorio", "expected": true, "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>", "subject": "Test rápido FIV/FeLV - Simón", "snippet": "Te paso la foto del test, dio negativo para los dos.", "files": [{ "name": "fiv_felv.jpg", "type": "image/jpeg", "size": 310000 }] },
-    { "id": "p09", "kind": "pos:laboratorio", "expected": true, "from": "Eurofins Megalab <resultados@eurofins-megalab.com>", "subject": "Megalab Veterinaria - Resultado de estudio", "snippet": "Serología Leishmania (IFI). Paciente: MILO. Especie: canino.", "files": [{ "name": "resultado_7781.pdf", "type": "application/pdf", "size": 102000 }], "nota": "laboratorio real con área veterinaria, ver _fuentes" },
-    { "id": "p10", "kind": "pos:imagen", "expected": true, "from": "Ecovet Imágenes <turnos@ecovet.example>", "subject": "Ecografía abdominal Luna", "snippet": "Adjuntamos informe e imágenes de la ecografía.", "files": [{ "name": "informe_eco.pdf", "type": "application/pdf", "size": 140000 }, { "name": "eco1.jpg", "type": "image/jpeg", "size": 420000 }, { "name": "eco2.jpg", "type": "image/jpeg", "size": 395000 }] },
-    { "id": "p11", "kind": "pos:imagen", "expected": true, "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>", "subject": "Eco Simón 12/09", "snippet": "Acá están las imágenes, el informe te lo mando mañana.", "files": [{ "name": "IMG_2031.jpg", "type": "image/jpeg", "size": 880000 }, { "name": "IMG_2032.jpg", "type": "image/jpeg", "size": 910000 }] },
-    { "id": "p12", "kind": "pos:imagen", "expected": true, "from": "Rx Vet <rx@rxvet.example>", "subject": "Placas de tórax - Milo", "snippet": "Proyecciones LL y VD.", "files": [{ "name": "torax_ll.jpg", "type": "image/jpeg", "size": 610000 }, { "name": "torax_vd.jpg", "type": "image/jpeg", "size": 590000 }] },
-    { "id": "p13", "kind": "pos:link", "expected": true, "from": "Rx Vet <rx@rxvet.example>", "subject": "Tus estudios de imagen están disponibles", "snippet": "Descargá las imágenes y el informe de Milo desde nuestro portal: https://portal.rxvet.example/estudio/8812", "files": [] },
-    { "id": "p14", "kind": "pos:receta", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Receta - Simón", "snippet": "Meloxicam 0,5 mg cada 24 h por 5 días.", "files": [{ "name": "receta.pdf", "type": "application/pdf", "size": 45000 }] },
-    { "id": "p15", "kind": "pos:receta", "expected": true, "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>", "subject": "Te paso la receta de Luna", "snippet": "Con esto lo comprás en cualquier farmacia veterinaria.", "files": [{ "name": "WhatsApp Image 2026-10-02 at 11.40.12.jpeg", "type": "image/jpeg", "size": 230000 }] },
-    { "id": "p16", "kind": "pos:vacuna", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Certificado de vacunación antirrábica - Luna", "snippet": "Adjuntamos el certificado firmado.", "files": [{ "name": "certificado_antirrabica_luna.pdf", "type": "application/pdf", "size": 52000 }], "nota": "difícil: dice certificado" },
-    { "id": "p17", "kind": "pos:vacuna", "expected": true, "from": "Instituto de Zoonosis Luis Pasteur <vacunacion@buenosaires.gob.ar>", "subject": "Constancia de vacunación antirrábica", "snippet": "Animal: Milo, canino, macho. Vacuna antirrábica aplicada el 05/10/2026.", "files": [{ "name": "constancia.pdf", "type": "application/pdf", "size": 61000 }] },
-    { "id": "p18", "kind": "pos:libreta", "expected": true, "from": "Carla Benítez <carla.benitez@gmail.com>", "subject": "Libreta de Milo", "snippet": "", "files": [{ "name": "Libreta sanitaria Milo.pdf", "type": "application/pdf", "size": 1800000 }], "nota": "se la mandó a sí misma" },
-    { "id": "p19", "kind": "pos:libreta", "expected": true, "from": "Carla Benítez <carla.benitez@gmail.com>", "subject": "CamScanner 09-10-2026 18.22", "snippet": "", "files": [{ "name": "CamScanner 09-10-2026 18.22.pdf", "type": "application/pdf", "size": 2400000 }], "nota": "sin ninguna señal: es esperable no encontrarlo" },
-    { "id": "p20", "kind": "pos:consulta", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Resumen de la consulta de Simón", "snippet": "Motivo de consulta: vómitos. Indicaciones: dieta blanda.", "files": [{ "name": "resumen_consulta.pdf", "type": "application/pdf", "size": 58000 }] },
-    { "id": "p21", "kind": "pos:cirugia", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Presupuesto castración - Milo", "snippet": "Incluye prequirúrgico, anestesia inhalatoria e internación de 4 h.", "files": [{ "name": "presupuesto.pdf", "type": "application/pdf", "size": 41000 }] },
-    { "id": "p22", "kind": "pos:cirugia", "expected": true, "from": "Veterinaria del Parque <cirugia@vetdelparque.example>", "subject": "Informe quirúrgico y cuidados post operatorios", "snippet": "Paciente Milo. Ovariectomía sin complicaciones. Retirar puntos a los 10 días.", "files": [{ "name": "alta_quirurgica.pdf", "type": "application/pdf", "size": 77000 }] },
-    { "id": "p23", "kind": "pos:link", "expected": true, "from": "LabVet Sur <no-responder@labvetsur.example>", "subject": "Sus resultados ya están disponibles", "snippet": "Ingrese al portal con el protocolo 48990 para ver el informe de LUNA: https://resultados.labvetsur.example/p/48990", "files": [], "labels": ["CATEGORY_UPDATES"] },
-    { "id": "p24", "kind": "pos:reenvio", "expected": true, "from": "Martín Benítez <martin.benitez@hotmail.com>", "subject": "Fwd: resultados de Luna", "snippet": "---------- Forwarded message --------- De: LabVet Sur", "files": [{ "name": "resultados.pdf", "type": "application/pdf", "size": 99000 }] },
-    { "id": "p25", "kind": "pos:reenvio", "expected": true, "from": "Martín Benítez <martin.benitez@hotmail.com>", "subject": "RV: Eco de Simón", "snippet": "De: Ecovet Imágenes. Enviado: lunes.", "files": [{ "name": "eco_simon.jpg", "type": "image/jpeg", "size": 520000 }] },
-    { "id": "p26", "kind": "pos:reenvio", "expected": true, "from": "Martín Benítez <martin.benitez@hotmail.com>", "subject": "Fwd: Informe", "snippet": "Te reenvío lo que mandaron del laboratorio.", "files": [{ "name": "Informe_Laboratorio_Veterinario.pdf", "type": "application/pdf", "size": 87000 }] },
-    { "id": "p27", "kind": "pos:solo-nombre", "expected": true, "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>", "subject": "Luna", "snippet": "Te mando los estudios que quedaron pendientes.", "files": [{ "name": "estudios.pdf", "type": "application/pdf", "size": 130000 }] },
-    { "id": "p28", "kind": "pos:solo-nombre", "expected": true, "from": "Clínica San Martín <recepcion@clinicasanmartin.example>", "subject": "Simón", "snippet": "Adjunto lo solicitado en la consulta del gatito.", "files": [{ "name": "scan0001.pdf", "type": "application/pdf", "size": 300000 }] },
-    { "id": "p29", "kind": "pos:laboratorio", "expected": true, "from": "Laboratorio Zona Norte <laboratorio.zona.norte@gmail.com>", "subject": "Análisis de Milo", "snippet": "Hemograma y hepatograma. Valores dentro de rango para la especie.", "files": [{ "name": "analisis_milo.pdf", "type": "application/pdf", "size": 76000 }] },
-    { "id": "p30", "kind": "pos:vacuna", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Vacunas al día - Luna", "snippet": "Le dejamos la constancia de la séxtuple.", "files": [{ "name": "constancia_vacunas.pdf", "type": "application/pdf", "size": 48000 }] },
-    { "id": "p31", "kind": "pos:consulta", "expected": true, "from": "Hospital Escuela FCV-UBA <hospital@fvet.uba.ar>", "subject": "Informe de alta - Historia clínica 55821", "snippet": "Paciente: Milo (canino). Diagnóstico presuntivo: gastroenteritis.", "files": [{ "name": "alta_55821.pdf", "type": "application/pdf", "size": 93000 }], "nota": "institución real, ver _fuentes; sin señal veterinaria en asunto ni nombre" },
-    { "id": "p32", "kind": "pos:laboratorio", "expected": true, "from": "Laboratorio de Análisis Clínicos FCV-UNLP <labclin@fcv.unlp.edu.ar>", "subject": "Resultado laboratorio - Protocolo 3321", "snippet": "Especie: felino. Nombre: Simón. Hemograma, urea, creatinina.", "files": [{ "name": "protocolo_3321.pdf", "type": "application/pdf", "size": 68000 }], "nota": "institución real, ver _fuentes" },
-    { "id": "p33", "kind": "pos:imagen", "expected": true, "from": "Cardiovet <info@cardiovet.example>", "subject": "Ecocardiograma Simón", "snippet": "Informe del ecocardiograma Doppler.", "files": [{ "name": "ecocardio_simon.pdf", "type": "application/pdf", "size": 180000 }] },
-    { "id": "p34", "kind": "pos:consulta", "expected": true, "from": "Cardiovet <info@cardiovet.example>", "subject": "ECG prequirúrgico Milo", "snippet": "Ritmo sinusal. Apto para anestesia.", "files": [{ "name": "ecg.pdf", "type": "application/pdf", "size": 66000 }] },
-    { "id": "p35", "kind": "pos:imagen", "expected": true, "from": "Imágenes Veterinarias del Sur <estudios@imvetsur.example>", "subject": "Tomografía computada - Luna", "snippet": "Informe de la TC de cráneo.", "files": [{ "name": "TC_luna.pdf", "type": "application/pdf", "size": 260000 }] },
-    { "id": "p36", "kind": "pos:laboratorio", "expected": true, "from": "LabVet Sur <resultados@labvetsur.example>", "subject": "Protocolo 77120", "snippet": "Adjuntamos resultados.", "files": [{ "name": "77120.pdf", "type": "application/pdf", "size": 81000 }] },
-    { "id": "p37", "kind": "pos:laboratorio", "expected": true, "from": "Diagnóstico Veterinario <no-reply@diagvet.example>", "subject": "Resultados de Simón", "snippet": "Si no querés recibir más mails, desuscribite.", "files": [{ "name": "res_simon.pdf", "type": "application/pdf", "size": 90000 }], "labels": ["CATEGORY_UPDATES"], "unsub": true, "nota": "transaccional con List-Unsubscribe: no lo tiene que matar" },
-    { "id": "p38", "kind": "pos:consulta", "expected": true, "from": "Veterinaria del Parque <novedades@vetdelparque.example>", "subject": "Informe de Milo", "snippet": "Te compartimos el informe de la consulta.", "files": [{ "name": "informe_milo.pdf", "type": "application/pdf", "size": 72000 }], "labels": ["CATEGORY_PROMOTIONS"], "unsub": true, "nota": "difícil: Gmail lo puso en Promociones" },
-    { "id": "p39", "kind": "pos:consulta", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Orden de estudios para Luna", "snippet": "Hemograma, bioquímico y ecografía abdominal.", "files": [{ "name": "orden.pdf", "type": "application/pdf", "size": 39000 }] },
-    { "id": "p40", "kind": "pos:vacuna", "expected": true, "from": "Martín Benítez <martin.benitez@hotmail.com>", "subject": "foto carnet vacunas", "snippet": "", "files": [{ "name": "IMG_4432.JPG", "type": "image/jpeg", "size": 1200000 }] },
-    { "id": "p41", "kind": "pos:reenvio", "expected": true, "from": "Martín Benítez <martin.benitez@hotmail.com>", "subject": "Fwd:", "snippet": "", "files": [{ "name": "WhatsApp Image 2026-09-03 at 10.11.02.jpeg", "type": "image/jpeg", "size": 340000 }], "nota": "sin ninguna señal: es esperable no encontrarlo" },
-    { "id": "p42", "kind": "pos:laboratorio", "expected": true, "from": "LabVet Sur <resultados@labvetsur.example>", "subject": "Bioquímica sanguínea completa — paciente LUNA BENITEZ", "snippet": "", "files": [{ "name": "bq_luna.pdf", "type": "application/pdf", "size": 84000 }], "nota": "los laboratorios veterinarios suman el apellido del dueño al nombre de la mascota" },
-    { "id": "p43", "kind": "pos:laboratorio", "expected": true, "from": "Laboratorio Veterinario Oeste <informes@lvo.example>", "subject": "Resultados: MILO - Canino - Mestizo - Prop.: Benítez Carla", "snippet": "", "files": [{ "name": "MILO_BENITEZ.pdf", "type": "application/pdf", "size": 79000 }] },
-    { "id": "p44", "kind": "pos:laboratorio", "expected": true, "from": "Laboratorio Zona Norte <laboratorio.zona.norte@gmail.com>", "subject": "Hemograma + perfil renal (Simón)", "snippet": "", "files": [{ "name": "hemo_renal.pdf", "type": "application/pdf", "size": 70000 }] },
-    { "id": "p45", "kind": "pos:laboratorio", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Estudio de orina", "snippet": "", "files": [{ "name": "orina.pdf", "type": "application/pdf", "size": 51000 }] },
-    { "id": "p46", "kind": "pos:imagen", "expected": true, "from": "Ecovet Imágenes <turnos@ecovet.example>", "subject": "Informe ecográfico", "snippet": "Paciente: Luna. Especie: canino. Hígado de tamaño conservado.", "files": [{ "name": "INF_ECO_2026_0912.pdf", "type": "application/pdf", "size": 112000 }], "nota": "difícil: remitente nuevo y asunto genérico" },
-    { "id": "p47", "kind": "pos:imagen", "expected": true, "from": "Rx Vet <rx@rxvet.example>", "subject": "Radiografía", "snippet": "", "files": [{ "name": "rx_cadera.jpg", "type": "image/jpeg", "size": 700000 }] },
-    { "id": "p48", "kind": "pos:laboratorio", "expected": true, "from": "Centro Médico Veterinario Belgrano <info@cmvb.example>", "subject": "Análisis", "snippet": "", "files": [{ "name": "analisis.pdf", "type": "application/pdf", "size": 66000 }] },
-    { "id": "p49", "kind": "pos:vacuna", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Certificado de salud para viajar - Luna", "snippet": "Certificado de buena salud y libreta al día para el viaje.", "files": [{ "name": "cert_salud_luna.pdf", "type": "application/pdf", "size": 47000 }] },
-    { "id": "p50", "kind": "pos:vacuna", "expected": true, "from": "SENASA <cvi@senasa.gob.ar>", "subject": "Certificado Veterinario Internacional", "snippet": "Animal: Luna. Especie: canina. Destino: Uruguay.", "files": [{ "name": "CVI_2026_10441.pdf", "type": "application/pdf", "size": 110000 }] },
-    { "id": "p51", "kind": "pos:receta", "expected": true, "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>", "subject": "Antiparasitario - indicaciones", "snippet": "Una pipeta cada 30 días y el comprimido cada 3 meses.", "files": [{ "name": "indicaciones.pdf", "type": "application/pdf", "size": 33000 }] },
-    { "id": "p52", "kind": "pos:cirugia", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Turno + indicaciones prequirúrgicas Milo", "snippet": "Ayuno de 8 horas. Traer análisis.", "files": [{ "name": "prequirurgico_milo.pdf", "type": "application/pdf", "size": 36000 }] },
-    { "id": "p53", "kind": "pos:consulta", "expected": true, "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>", "subject": "RE: consulta Simón", "snippet": "Mirá cómo quedó la herida.", "files": [{ "name": "herida.jpg", "type": "image/jpeg", "size": 450000 }] },
-    { "id": "p54", "kind": "pos:laboratorio", "expected": true, "from": "Laboratorio Zona Norte <laboratorio.zona.norte@gmail.com>", "subject": "Hemograma", "snippet": "Paciente: Milo. Especie: Canina.", "files": [{ "name": "hemograma.pdf", "type": "application/pdf", "size": 69000 }], "nota": "difícil: remitente público nuevo y asunto genérico" },
-    { "id": "p55", "kind": "pos:laboratorio", "expected": true, "from": "Diagnóstico Veterinario <no-reply@diagvet.example>", "subject": "Protocolo 2026-6012 listo", "snippet": "Paciente: LUNA. Felino/Canino: Canino.", "files": [{ "name": "2026-6012.pdf", "type": "application/pdf", "size": 87000 }], "nota": "difícil: la señal veterinaria solo está en el nombre del remitente" },
-    { "id": "p56", "kind": "pos:link", "expected": true, "from": "Laboratorio Veterinario Oeste <informes@lvo.example>", "subject": "Resultados disponibles - Simón", "snippet": "Descargá el PDF: https://lvo.example/r/abc123", "files": [] },
-    { "id": "p57", "kind": "pos:consulta", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Historia clínica de Luna", "snippet": "Como nos pidió, adjuntamos la historia clínica completa.", "files": [{ "name": "HC_luna.pdf", "type": "application/pdf", "size": 260000 }] },
-    { "id": "p58", "kind": "pos:laboratorio", "expected": true, "from": "Laboratorio Veterinario Oeste <informes@lvo.example>", "subject": "Raspaje de piel y cultivo micológico", "snippet": "Paciente: Milo. Dermatofitos: negativo.", "files": [{ "name": "micologico.pdf", "type": "application/pdf", "size": 58000 }] },
-    { "id": "p59", "kind": "pos:imagen", "expected": true, "from": "Martín Benítez <martin.benitez@hotmail.com>", "subject": "Fwd: radiografía de Luna", "snippet": "", "files": [{ "name": "rx.jpg", "type": "image/jpeg", "size": 640000 }] },
-    { "id": "p60", "kind": "pos:laboratorio", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Resultados del análisis de sangre", "snippet": "", "files": [{ "name": "sangre.pdf", "type": "application/pdf", "size": 61000 }] },
-    { "id": "p61", "kind": "pos:consulta", "expected": true, "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>", "subject": "Lo que hablamos hoy", "snippet": "Te dejo por escrito el plan de tratamiento para Luna.", "files": [{ "name": "plan.pdf", "type": "application/pdf", "size": 30000 }] },
-    { "id": "p62", "kind": "pos:receta", "expected": true, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Receta", "snippet": "", "files": [{ "name": "receta_simon.pdf", "type": "application/pdf", "size": 41000 }] },
-
-    { "id": "n01", "kind": "neg:humano", "expected": false, "from": "Laboratorio Central <resultados@labcentral.example>", "subject": "Resultados de laboratorio disponibles", "snippet": "Paciente: BENITEZ CARLA. DNI 30.123.456. Obra social: OSDE.", "files": [{ "name": "resultados.pdf", "type": "application/pdf", "size": 98000 }] },
-    { "id": "n02", "kind": "neg:humano", "expected": false, "from": "OSDE <notificaciones@osde.com.ar>", "subject": "Tus resultados de análisis ya están disponibles", "snippet": "Paciente: Carla Benítez. Ingresá a Mi OSDE para verlos.", "files": [] },
-    { "id": "n03", "kind": "neg:humano", "expected": false, "from": "Swiss Medical <estudios@swissmedical.com.ar>", "subject": "Resultados de estudios - Swiss Medical", "snippet": "Hola Carla, ya están tus resultados.", "files": [{ "name": "estudios.pdf", "type": "application/pdf", "size": 120000 }] },
-    { "id": "n04", "kind": "neg:humano", "expected": false, "from": "Eurofins Megalab <resultados@eurofins-megalab.com>", "subject": "Eurofins Megalab - Resultado de estudio", "snippet": "Paciente: BENITEZ, CARLA. Médico solicitante: Dr. Gómez.", "files": [{ "name": "INFORME_BENITEZ_CARLA.pdf", "type": "application/pdf", "size": 104000 }], "nota": "el mismo laboratorio de p09, pero de la persona" },
-    { "id": "n05", "kind": "neg:humano", "expected": false, "from": "Diagnóstico Médico Integral <informes@dmi.example>", "subject": "Ecografía mamaria - Informe", "snippet": "Paciente: Carla Benítez.", "files": [{ "name": "eco_mamaria.pdf", "type": "application/pdf", "size": 150000 }] },
-    { "id": "n06", "kind": "neg:humano", "expected": false, "from": "Centro de Diagnóstico <informes@cdiag.example>", "subject": "Radiografía de tórax - Benítez, Carla", "snippet": "", "files": [{ "name": "rx_torax.pdf", "type": "application/pdf", "size": 210000 }] },
-    { "id": "n07", "kind": "neg:humano", "expected": false, "from": "Recetario Digital <no-reply@receta.example>", "subject": "Tu receta electrónica", "snippet": "Paciente: Carla Benítez. Amoxicilina 875 mg.", "files": [{ "name": "receta.pdf", "type": "application/pdf", "size": 40000 }] },
-    { "id": "n08", "kind": "neg:humano", "expected": false, "from": "Mi Argentina <notificaciones@miargentina.gob.ar>", "subject": "Tu certificado de vacunación", "snippet": "Antigripal y COVID-19. Carla Benítez.", "files": [{ "name": "certificado_vacunacion.pdf", "type": "application/pdf", "size": 70000 }], "nota": "difícil: vacunación de la persona" },
-    { "id": "n09", "kind": "neg:humano", "expected": false, "from": "Laboratorio Central <resultados@labcentral.example>", "subject": "Hemograma - paciente BENITEZ MARTIN", "snippet": "", "files": [{ "name": "hemograma.pdf", "type": "application/pdf", "size": 66000 }] },
-    { "id": "n10", "kind": "neg:humano", "expected": false, "from": "Consultorios Palermo <turnos@cpalermo.example>", "subject": "Turno confirmado - Dr. Pérez, clínica médica", "snippet": "Te esperamos el martes 14 a las 10.", "files": [] },
-    { "id": "n11", "kind": "neg:humano", "expected": false, "from": "Farmacia del Centro <turnos@farmaciacentro.example>", "subject": "Vacuna antigripal: tu turno", "snippet": "Recordá traer DNI y credencial de la obra social.", "files": [], "labels": ["CATEGORY_UPDATES"] },
-    { "id": "n12", "kind": "neg:humano", "expected": false, "from": "Galeno <autorizaciones@galeno.example>", "subject": "Estudios prequirúrgicos autorizados", "snippet": "Afiliado: Benítez Carla.", "files": [{ "name": "autorizacion.pdf", "type": "application/pdf", "size": 52000 }] },
-    { "id": "n13", "kind": "neg:humano", "expected": false, "from": "Consultorio Pediátrico <consultorio@pediatra.example>", "subject": "Certificado de vacunas de Mateo", "snippet": "Calendario nacional al día.", "files": [{ "name": "vacunas_mateo.pdf", "type": "application/pdf", "size": 45000 }] },
-    { "id": "n14", "kind": "neg:homonimo", "expected": false, "from": "Luna Martínez <lunamartinez@gmail.com>", "subject": "Luna te mandó fotos del cumple", "snippet": "¡Gracias por venir!", "files": [{ "name": "IMG_5501.jpg", "type": "image/jpeg", "size": 2100000 }, { "name": "IMG_5502.jpg", "type": "image/jpeg", "size": 1900000 }] },
-    { "id": "n15", "kind": "neg:homonimo", "expected": false, "from": "Simón Estudio <simon.estudio@gmail.com>", "subject": "Simón - presupuesto de la reforma", "snippet": "Te paso el presupuesto del baño.", "files": [{ "name": "presupuesto_reforma.pdf", "type": "application/pdf", "size": 90000 }] },
-    { "id": "n16", "kind": "neg:homonimo", "expected": false, "from": "Milo Gutiérrez <milog@gmail.com>", "subject": "Re: Milo y la facu", "snippet": "Te mando el TP final.", "files": [{ "name": "tp_final.pdf", "type": "application/pdf", "size": 300000 }] },
-    { "id": "n17", "kind": "neg:homonimo", "expected": false, "from": "Sofía <sofi.g@gmail.com>", "subject": "Fiesta de Luna 🎉", "snippet": "Sábado 20 h en casa.", "files": [{ "name": "invitacion.png", "type": "image/png", "size": 380000 }] },
-    { "id": "n18", "kind": "neg:homonimo", "expected": false, "from": "Luna Hotel Boutique <reservas@lunahotel.example>", "subject": "Factura - Luna Hotel Boutique", "snippet": "", "files": [{ "name": "factura_A_0003.pdf", "type": "application/pdf", "size": 60000 }] },
-    { "id": "n19", "kind": "neg:homonimo", "expected": false, "from": "Simón Rodríguez <simonrod@gmail.com>", "subject": "Simón: CV actualizado", "snippet": "", "files": [{ "name": "CV_Simon_Rodriguez.pdf", "type": "application/pdf", "size": 140000 }] },
-    { "id": "n20", "kind": "neg:homonimo", "expected": false, "from": "Prof. Ana López <alopez@colegio.example>", "subject": "Informe de Luna (trabajo práctico)", "snippet": "Hola Carla, te paso el informe de Luna sobre el TP de ciencias.", "files": [{ "name": "informe_luna.pdf", "type": "application/pdf", "size": 120000 }], "nota": "difícil: nombre de la mascota + informe" },
-    { "id": "n21", "kind": "neg:promo", "expected": false, "from": "Puppis <novedades@puppis.com.ar>", "subject": "🐶 20% OFF en alimento para tu perro", "snippet": "Solo este fin de semana.", "files": [], "labels": ["CATEGORY_PROMOTIONS"], "unsub": true },
-    { "id": "n22", "kind": "neg:promo", "expected": false, "from": "Mundo Mascota <ventas@mundomascota.example>", "subject": "Catálogo octubre: perro y gato", "snippet": "Descargá el catálogo.", "files": [{ "name": "catalogo_octubre.pdf", "type": "application/pdf", "size": 2500000 }], "labels": ["CATEGORY_PROMOTIONS"], "unsub": true },
-    { "id": "n23", "kind": "neg:promo", "expected": false, "from": "Veterinaria del Parque <novedades@vetdelparque.example>", "subject": "Semana de la vacunación: 15% off en vacunas", "snippet": "Traé a tu mascota.", "files": [{ "name": "banner_vacunacion.jpg", "type": "image/jpeg", "size": 310000 }], "labels": ["CATEGORY_PROMOTIONS"], "unsub": true, "nota": "difícil: promo de la propia veterinaria" },
-    { "id": "n24", "kind": "neg:promo", "expected": false, "from": "Zoonosis Municipal <zoonosis@municipio.example>", "subject": "Castraciones gratuitas de perros y gatos en tu barrio", "snippet": "Inscribite en el link.", "files": [{ "name": "cronograma.pdf", "type": "application/pdf", "size": 210000 }], "unsub": true },
-    { "id": "n25", "kind": "neg:newsletter", "expected": false, "from": "Mundo Mascota <newsletter@mundomascota.example>", "subject": "Newsletter #45: cuidados del cachorro", "snippet": "", "files": [], "labels": ["CATEGORY_PROMOTIONS"], "unsub": true },
-    { "id": "n26", "kind": "neg:newsletter", "expected": false, "from": "Blog Patitas <hola@patitas.example>", "subject": "Cómo cuidar a tu perro del calor", "snippet": "", "files": [], "labels": ["CATEGORY_PROMOTIONS"], "unsub": true },
-    { "id": "n27", "kind": "neg:compra", "expected": false, "from": "Mercado Libre <info@mercadolibre.com.ar>", "subject": "¡Compraste Alimento para perro Royal Canin Mini Adult 7,5 kg!", "snippet": "Te avisamos cuando esté en camino.", "files": [], "labels": ["CATEGORY_UPDATES"] },
-    { "id": "n28", "kind": "neg:compra", "expected": false, "from": "Mercado Libre <info@mercadolibre.com.ar>", "subject": "Factura de tu compra: Arena sanitaria para gato", "snippet": "", "files": [{ "name": "factura.pdf", "type": "application/pdf", "size": 50000 }], "labels": ["CATEGORY_UPDATES"] },
-    { "id": "n29", "kind": "neg:compra", "expected": false, "from": "Tienda Mascotera <ventas@mascotera.example>", "subject": "Pedido #4412 confirmado - Piedras sanitarias para gato", "snippet": "", "files": [{ "name": "comprobante.pdf", "type": "application/pdf", "size": 42000 }], "labels": ["CATEGORY_UPDATES"] },
-    { "id": "n30", "kind": "neg:compra", "expected": false, "from": "Mercado Libre <info@mercadolibre.com.ar>", "subject": "Llegó tu pipeta antipulgas para perro", "snippet": "", "files": [], "labels": ["CATEGORY_UPDATES"] },
-    { "id": "n31", "kind": "neg:factura", "expected": false, "from": "Edenor <facturas@edenor.example>", "subject": "Tu factura de luz", "snippet": "", "files": [{ "name": "factura_edenor.pdf", "type": "application/pdf", "size": 90000 }] },
-    { "id": "n32", "kind": "neg:factura", "expected": false, "from": "AySA <facturas@aysa.example>", "subject": "Factura AySA", "snippet": "", "files": [{ "name": "aysa.pdf", "type": "application/pdf", "size": 70000 }] },
-    { "id": "n33", "kind": "neg:factura", "expected": false, "from": "Banco <resumenes@banco.example>", "subject": "Resumen de tu tarjeta Visa", "snippet": "", "files": [{ "name": "resumen.pdf", "type": "application/pdf", "size": 180000 }] },
-    { "id": "n34", "kind": "neg:curso", "expected": false, "from": "UdeSA Educación Ejecutiva <educacionejecutiva@udesa.edu.ar>", "subject": "Recordatorio: ¡Carla Benítez, te enviamos tu certificado de MAD Laboratorio de IA Generativa!", "snippet": "", "files": [{ "name": "certificate.pdf", "type": "application/pdf", "size": 80000 }], "nota": "el falso positivo real que motivó el puntaje" },
-    { "id": "n35", "kind": "neg:curso", "expected": false, "from": "Escuela Online <cursos@escuela.example>", "subject": "Certificado de aprobación - Curso de Primeros Auxilios Caninos", "snippet": "", "files": [{ "name": "certificado.pdf", "type": "application/pdf", "size": 75000 }] },
-    { "id": "n36", "kind": "neg:profesional", "expected": false, "from": "Colegio de Veterinarios <info@colegiovet.example>", "subject": "Webinar: actualización en dermatología veterinaria", "snippet": "Para médicos veterinarios matriculados.", "files": [{ "name": "programa.pdf", "type": "application/pdf", "size": 140000 }], "unsub": true },
-    { "id": "n37", "kind": "neg:profesional", "expected": false, "from": "Instituto de Medicina Felina <info@imf.example>", "subject": "Inscripción abierta: Diplomatura en Medicina Felina", "snippet": "", "files": [{ "name": "diplomatura.pdf", "type": "application/pdf", "size": 900000 }], "unsub": true },
-    { "id": "n38", "kind": "neg:profesional", "expected": false, "from": "Congreso Vet <congreso@congresovet.example>", "subject": "Congreso de Medicina Veterinaria 2026 - programa", "snippet": "", "files": [{ "name": "programa_congreso.pdf", "type": "application/pdf", "size": 1200000 }], "unsub": true },
-    { "id": "n39", "kind": "neg:curso", "expected": false, "from": "Fundación Bienestar <info@bienestar.example>", "subject": "Certificado de asistencia - Jornada de Bienestar Animal", "snippet": "", "files": [{ "name": "asistencia.pdf", "type": "application/pdf", "size": 60000 }] },
-    { "id": "n40", "kind": "neg:adopcion", "expected": false, "from": "Refugio Patitas <hola@refugiopatitas.example>", "subject": "¡Adoptá! Conocé a los perros del refugio", "snippet": "", "files": [{ "name": "perros.jpg", "type": "image/jpeg", "size": 520000 }], "unsub": true },
-    { "id": "n41", "kind": "neg:adopcion", "expected": false, "from": "Refugio Patitas <hola@refugiopatitas.example>", "subject": "Necesitamos tu ayuda: donaciones para los gatos del refugio", "snippet": "", "files": [], "unsub": true },
-    { "id": "n42", "kind": "neg:adopcion", "expected": false, "from": "Refugio Patitas <hola@refugiopatitas.example>", "subject": "Tu donación fue recibida", "snippet": "", "files": [{ "name": "recibo.pdf", "type": "application/pdf", "size": 30000 }] },
-    { "id": "n43", "kind": "neg:seguro", "expected": false, "from": "Seguro Mascotas <ventas@seguromascotas.example>", "subject": "Asegurá a tu mascota desde $3.500 por mes", "snippet": "", "files": [{ "name": "condiciones.pdf", "type": "application/pdf", "size": 330000 }], "labels": ["CATEGORY_PROMOTIONS"], "unsub": true },
-    { "id": "n44", "kind": "neg:seguro", "expected": false, "from": "Seguro Mascotas <ventas@seguromascotas.example>", "subject": "Cotización del seguro para Luna", "snippet": "Plan Plus: cubre accidentes y consultas.", "files": [{ "name": "cotizacion_luna.pdf", "type": "application/pdf", "size": 90000 }], "nota": "difícil: nombre de la mascota" },
-    { "id": "n45", "kind": "neg:vet-sin-documento", "expected": false, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Confirmación de turno - Veterinaria del Parque", "snippet": "Te esperamos el jueves 16 a las 18.", "files": [{ "name": "logo.png", "type": "image/png", "size": 8000, "inline": true }] },
-    { "id": "n46", "kind": "neg:logo", "expected": false, "from": "Clínica San Martín <recepcion@clinicasanmartin.example>", "subject": "Horarios de fin de año", "snippet": "Atendemos perros y gatos hasta el 23/12.", "files": [{ "name": "firma.png", "type": "image/png", "size": 25000, "inline": true }, { "name": "banner.jpg", "type": "image/jpeg", "size": 60000 }], "unsub": true },
-    { "id": "n47", "kind": "neg:logo", "expected": false, "from": "Odontología Integral <turnos@odonto.example>", "subject": "Turno odontología", "snippet": "", "files": [{ "name": "image001.png", "type": "image/png", "size": 30000, "inline": true }] },
-    { "id": "n48", "kind": "neg:vet-sin-documento", "expected": false, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Recordatorio: vacuna anual de Luna", "snippet": "Le recordamos que Luna tiene la vacuna anual pendiente.", "files": [{ "name": "logo_vetdelparque.png", "type": "image/png", "size": 45000, "inline": true }] },
-    { "id": "n49", "kind": "neg:humano", "expected": false, "from": "Resonancia Norte <informes@resonorte.example>", "subject": "Informe de resonancia", "snippet": "Paciente: Benítez Carla. Rodilla derecha.", "files": [{ "name": "RM_rodilla.pdf", "type": "application/pdf", "size": 180000 }] },
-    { "id": "n50", "kind": "neg:humano", "expected": false, "from": "Laboratorio Central <resultados@labcentral.example>", "subject": "Paciente: Carla Benítez — Análisis clínicos", "snippet": "", "files": [{ "name": "analisis.pdf", "type": "application/pdf", "size": 77000 }] },
-    { "id": "n51", "kind": "neg:humano", "expected": false, "from": "Medifé <autorizaciones@medife.example>", "subject": "Autorización de estudios", "snippet": "Afiliado: 6012-33.", "files": [{ "name": "autorizacion.pdf", "type": "application/pdf", "size": 51000 }] },
-    { "id": "n52", "kind": "neg:social", "expected": false, "from": "Instagram <no-reply@mail.instagram.com>", "subject": "luna_la_caniche te mencionó en un comentario", "snippet": "", "files": [], "labels": ["CATEGORY_SOCIAL"], "unsub": true, "nota": "difícil: la cuenta de la propia perra" },
-    { "id": "n53", "kind": "neg:social", "expected": false, "from": "Facebook <notification@facebookmail.com>", "subject": "Perros de Palermo: nueva publicación", "snippet": "", "files": [], "labels": ["CATEGORY_SOCIAL"], "unsub": true },
-    { "id": "n54", "kind": "neg:social", "expected": false, "from": "LinkedIn Empleos <jobs-noreply@linkedin.com>", "subject": "Veterinario/a para clínica de pequeños animales: postulate", "snippet": "", "files": [], "labels": ["CATEGORY_SOCIAL"], "unsub": true },
-    { "id": "n55", "kind": "neg:otro", "expected": false, "from": "Carla Benítez <carla.benitez@gmail.com>", "subject": "Lista del super", "snippet": "leche, pan, comida del gato", "files": [] },
-    { "id": "n56", "kind": "neg:factura", "expected": false, "from": "Veterinaria del Parque <administracion@vetdelparque.example>", "subject": "Factura B 0004-00012345 - Veterinaria del Parque", "snippet": "", "files": [{ "name": "factura_B.pdf", "type": "application/pdf", "size": 38000 }], "nota": "difícil: factura de la propia veterinaria" },
-    { "id": "n57", "kind": "neg:factura", "expected": false, "from": "Veterinaria del Parque <administracion@vetdelparque.example>", "subject": "Recibo de pago - consulta Simón", "snippet": "", "files": [{ "name": "recibo.pdf", "type": "application/pdf", "size": 30000 }], "nota": "difícil: recibo de la propia veterinaria con el nombre de la mascota" },
-    { "id": "n58", "kind": "neg:servicio", "expected": false, "from": "Guardería Huellas <reservas@huellas.example>", "subject": "Reserva confirmada en guardería canina", "snippet": "", "files": [{ "name": "voucher.pdf", "type": "application/pdf", "size": 40000 }] },
-    { "id": "n59", "kind": "neg:servicio", "expected": false, "from": "Paseos Felices <cobros@paseos.example>", "subject": "Liquidación paseos de Milo - octubre", "snippet": "", "files": [{ "name": "liquidacion.pdf", "type": "application/pdf", "size": 25000 }], "nota": "difícil: nombre de la mascota" },
-    { "id": "n60", "kind": "neg:servicio", "expected": false, "from": "Peluquería Canina Guau <turnos@guau.example>", "subject": "Turno peluquería canina - Luna", "snippet": "", "files": [] },
-    { "id": "n61", "kind": "neg:newsletter", "expected": false, "from": "Protectora Animal <boletin@protectora.example>", "subject": "Boletín de la protectora - octubre", "snippet": "", "files": [{ "name": "boletin.pdf", "type": "application/pdf", "size": 700000 }], "unsub": true },
-    { "id": "n62", "kind": "neg:newsletter", "expected": false, "from": "Alertas Barrio <alertas@barrio.example>", "subject": "Mascotas perdidas en tu zona", "snippet": "", "files": [], "unsub": true },
-    { "id": "n63", "kind": "neg:curso", "expected": false, "from": "Facultad de Medicina <alumnos@fmed.example>", "subject": "Resultado del examen final - Anatomía", "snippet": "", "files": [{ "name": "acta.pdf", "type": "application/pdf", "size": 50000 }] },
-    { "id": "n64", "kind": "neg:otro", "expected": false, "from": "Laboratorio de Aguas <informes@aguas.example>", "subject": "Análisis de agua potable - informe", "snippet": "", "files": [{ "name": "agua.pdf", "type": "application/pdf", "size": 60000 }] },
-    { "id": "n65", "kind": "neg:otro", "expected": false, "from": "VTV <turnos@vtv.example>", "subject": "Informe técnico de tu VTV", "snippet": "", "files": [{ "name": "vtv.pdf", "type": "application/pdf", "size": 90000 }] },
-    { "id": "n66", "kind": "neg:otro", "expected": false, "from": "Estudio Contable <estudio@contable.example>", "subject": "Estudio contable: balances", "snippet": "", "files": [{ "name": "balance.pdf", "type": "application/pdf", "size": 300000 }] },
-    { "id": "n67", "kind": "neg:humano", "expected": false, "from": "RRHH <rrhh@empresa.example>", "subject": "Vacunación antigripal para empleados", "snippet": "", "files": [{ "name": "instructivo.pdf", "type": "application/pdf", "size": 80000 }], "nota": "difícil: vacunación de personas" },
-    { "id": "n68", "kind": "neg:humano", "expected": false, "from": "Consultorio Pediátrico <consultorio@pediatra.example>", "subject": "Calendario de vacunación - Mateo 6 meses", "snippet": "", "files": [{ "name": "calendario.pdf", "type": "application/pdf", "size": 40000 }] },
-    { "id": "n69", "kind": "neg:humano", "expected": false, "from": "Odontología Integral <turnos@odonto.example>", "subject": "Presupuesto de tratamiento dental", "snippet": "", "files": [{ "name": "presupuesto.pdf", "type": "application/pdf", "size": 45000 }] },
-    { "id": "n70", "kind": "neg:humano", "expected": false, "from": "Sanatorio Norte <informes@sanatorionorte.example>", "subject": "Informe quirúrgico - paciente Benítez Martín", "snippet": "", "files": [{ "name": "parte_quirurgico.pdf", "type": "application/pdf", "size": 70000 }] },
-    { "id": "n71", "kind": "neg:profesional", "expected": false, "from": "Google Académico <scholaralerts-noreply@google.com>", "subject": "Nuevos artículos: leishmaniasis canina en Argentina", "snippet": "", "files": [], "unsub": true },
-    { "id": "n72", "kind": "neg:newsletter", "expected": false, "from": "Royal Canin <news@royalcanin.example>", "subject": "Guía de alimentación para gatitos", "snippet": "", "files": [{ "name": "guia.pdf", "type": "application/pdf", "size": 1500000 }], "labels": ["CATEGORY_PROMOTIONS"], "unsub": true },
-    { "id": "n73", "kind": "neg:vet-sin-documento", "expected": false, "from": "Veterinaria del Parque <turnos@vetdelparque.example>", "subject": "Recordatorio de turno para Simón", "snippet": "Mañana 17 h, control.", "files": [] },
-    { "id": "n74", "kind": "neg:promo", "expected": false, "from": "Puppis <novedades@puppis.com.ar>", "subject": "Llegaron las vacunas... ¡de descuentos! Hasta 30% en antiparasitarios", "snippet": "", "files": [{ "name": "promo.jpg", "type": "image/jpeg", "size": 250000 }], "labels": ["CATEGORY_PROMOTIONS"], "unsub": true },
-    { "id": "n75", "kind": "neg:homonimo", "expected": false, "from": "Luna Martínez <lunamartinez@gmail.com>", "subject": "Resultados del partido", "snippet": "Ganamos 3 a 1.", "files": [{ "name": "foto_equipo.jpg", "type": "image/jpeg", "size": 900000 }] },
-    { "id": "n76", "kind": "neg:homonimo", "expected": false, "from": "Simón Estudio <simon.estudio@gmail.com>", "subject": "Planos", "snippet": "", "files": [{ "name": "planos.pdf", "type": "application/pdf", "size": 1100000 }] }
+ "_que_es": "Set de evaluación de la búsqueda de estudios veterinarios en Gmail y Outlook de Mimitos by Orbit (ob-018). Mails SINTÉTICOS pero realistas de Argentina, etiquetados a mano: expected=true si es un estudio o documento clínico de la mascota que conviene ofrecer para importar. 'snippet' hace de cuerpo: lo usa la simulación de la búsqueda del servidor de Gmail y Outlook (que sí busca en el cuerpo), NO el puntaje de Mimitos, que hoy no lee el cuerpo para decidir. Correr: node scripts/mimitos-mail-eval.mjs",
+ "_fuentes": {
+  "fvet.uba.ar": "Facultad de Ciencias Veterinarias UBA (Hospital Escuela). Dominio verificado: https://www.fvet.uba.ar/../archivos/alumnos_pdf/programas_materias_pdf/Int_Peq_An/567-Analisis_ClinicosI_PA.pdf (programa de Análisis Clínicos, Intensificación Pequeños Animales). La casilla del remitente es inventada.",
+  "fcv.unlp.edu.ar": "Facultad de Ciencias Veterinarias UNLP, cátedra de Análisis Clínicos Veterinarios. Dominio verificado: https://www.fcv.unlp.edu.ar/wp-content/uploads/2026/04/ANALISIS-CLINICOS-VETERINARIOS.pdf. La casilla es inventada.",
+  "eurofins-megalab.com": "Eurofins Megalab hace análisis veterinarios (hematología, bioquímica, parasitología, orina): https://eurofins-megalab.com/?p=1516. También es laboratorio de personas, por eso aparece de los dos lados. La casilla es inventada.",
+  "buenosaires.gob.ar": "Instituto de Zoonosis Luis Pasteur (CABA) vacuna antirrábica; dominio del Gobierno de la Ciudad. La casilla es inventada.",
+  "senasa.gob.ar": "SENASA emite el Certificado Veterinario Internacional para viajar con mascotas. La casilla es inventada.",
+  "miargentina.gob.ar": "Mi Argentina (certificado de vacunación de personas). La casilla es inventada.",
+  "osde.com.ar, swissmedical.com.ar, mercadolibre.com.ar, puppis.com.ar": "Empresas reales usadas solo como NEGATIVOS (prepagas, marketplace, pet shop). Casillas inventadas.",
+  "*.example": "Dominios de ejemplo (RFC 2606) para todo lo que no pudimos verificar: no son empresas reales. En la búsqueda web no encontramos sitios de laboratorios veterinarios privados argentinos que confirmen mandar resultados por mail, así que no inventamos nombres."
+ },
+ "account": {
+  "email": "carla.benitez@gmail.com",
+  "to": "Carla Benítez <carla.benitez@gmail.com>",
+  "owner": "Carla Benítez"
+ },
+ "doc": {
+  "pets": [
+   {
+    "id": "luna0001",
+    "name": "Luna",
+    "species": "perro",
+    "breed": "Caniche",
+    "contact": {
+     "name": "Carla Benítez"
+    },
+    "vet": {
+     "name": "Veterinaria del Parque"
+    },
+    "records": [
+     {
+      "vet": "Dra. Ferreyra"
+     }
+    ],
+    "visits": [],
+    "studies": [
+     {
+      "lab": "LabVet Sur"
+     }
+    ]
+   },
+   {
+    "id": "simon001",
+    "name": "Simón",
+    "species": "gato",
+    "breed": "",
+    "contact": {
+     "name": "Carla Benítez"
+    },
+    "vet": {
+     "name": "Veterinaria del Parque"
+    },
+    "records": [],
+    "visits": [],
+    "studies": []
+   },
+   {
+    "id": "milo0001",
+    "name": "Milo",
+    "species": "perro",
+    "breed": "Mestizo",
+    "contact": {
+     "name": "Carla Benítez"
+    },
+    "vet": {
+     "name": ""
+    },
+    "records": [],
+    "visits": [],
+    "studies": []
+   }
   ]
+ },
+ "senders": {
+  "manual": [],
+  "learned": [
+   "resultados@labvetsur.example"
+  ]
+ },
+ "mails": [
+  {
+   "id": "p01",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "LabVet Sur <resultados@labvetsur.example>",
+   "subject": "Informe N° 48213",
+   "snippet": "Adjuntamos el informe del protocolo 48213. Paciente: LUNA. Especie: canina.",
+   "files": [
+    {
+     "name": "48213.pdf",
+     "type": "application/pdf",
+     "size": 96000
+    }
+   ],
+   "labels": [
+    "CATEGORY_UPDATES"
+   ],
+   "nota": "remitente aprendido, asunto sin palabras veterinarias"
+  },
+  {
+   "id": "p02",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Laboratorio Veterinario Sur <informes@labvetsur.example>",
+   "subject": "Resultados de Luna - Hemograma completo",
+   "snippet": "Buenas tardes, le enviamos el hemograma de Luna.",
+   "files": [
+    {
+     "name": "hemograma_luna.pdf",
+     "type": "application/pdf",
+     "size": 120000
+    }
+   ]
+  },
+  {
+   "id": "p03",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Diagnóstico Veterinario <no-reply@diagvet.example>",
+   "subject": "Perfil bioquímico - Paciente: SIMON - Especie: Felino",
+   "snippet": "Protocolo 2026-5531. Propietario: Benítez Carla.",
+   "files": [
+    {
+     "name": "BQ_SIMON_2026.pdf",
+     "type": "application/pdf",
+     "size": 88000
+    }
+   ]
+  },
+  {
+   "id": "p04",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Lab Animal <lab@labanimal.example>",
+   "subject": "Urianálisis Milo",
+   "snippet": "Densidad 1.030, pH 6. Sedimento sin particularidades.",
+   "files": [
+    {
+     "name": "orina_milo.pdf",
+     "type": "application/pdf",
+     "size": 70000
+    }
+   ]
+  },
+  {
+   "id": "p05",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Coproparasitológico seriado - Luna (Benítez)",
+   "snippet": "Resultado negativo para huevos y quistes.",
+   "files": [
+    {
+     "name": "copro_luna.pdf",
+     "type": "application/pdf",
+     "size": 64000
+    }
+   ]
+  },
+  {
+   "id": "p06",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Patología Veterinaria <info@patovet.example>",
+   "subject": "Citología por punción - paciente Simón",
+   "snippet": "Se observan células compatibles con proceso inflamatorio.",
+   "files": [
+    {
+     "name": "citologia.pdf",
+     "type": "application/pdf",
+     "size": 150000
+    }
+   ]
+  },
+  {
+   "id": "p07",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Anatomía Patológica DM <informes@apdm.example>",
+   "subject": "Informe histopatológico N° 2026-1187",
+   "snippet": "Paciente: Milo. Especie: canino. Raza: mestizo. Material: nódulo cutáneo.",
+   "files": [
+    {
+     "name": "HP-2026-1187.pdf",
+     "type": "application/pdf",
+     "size": 210000
+    }
+   ],
+   "nota": "difícil: la señal veterinaria solo está en el cuerpo"
+  },
+  {
+   "id": "p08",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>",
+   "subject": "Test rápido FIV/FeLV - Simón",
+   "snippet": "Te paso la foto del test, dio negativo para los dos.",
+   "files": [
+    {
+     "name": "fiv_felv.jpg",
+     "type": "image/jpeg",
+     "size": 310000
+    }
+   ]
+  },
+  {
+   "id": "p09",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Eurofins Megalab <resultados@eurofins-megalab.com>",
+   "subject": "Megalab Veterinaria - Resultado de estudio",
+   "snippet": "Serología Leishmania (IFI). Paciente: MILO. Especie: canino.",
+   "files": [
+    {
+     "name": "resultado_7781.pdf",
+     "type": "application/pdf",
+     "size": 102000
+    }
+   ],
+   "nota": "laboratorio real con área veterinaria, ver _fuentes"
+  },
+  {
+   "id": "p10",
+   "kind": "pos:imagen",
+   "expected": true,
+   "from": "Ecovet Imágenes <turnos@ecovet.example>",
+   "subject": "Ecografía abdominal Luna",
+   "snippet": "Adjuntamos informe e imágenes de la ecografía.",
+   "files": [
+    {
+     "name": "informe_eco.pdf",
+     "type": "application/pdf",
+     "size": 140000
+    },
+    {
+     "name": "eco1.jpg",
+     "type": "image/jpeg",
+     "size": 420000
+    },
+    {
+     "name": "eco2.jpg",
+     "type": "image/jpeg",
+     "size": 395000
+    }
+   ]
+  },
+  {
+   "id": "p11",
+   "kind": "pos:imagen",
+   "expected": true,
+   "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>",
+   "subject": "Eco Simón 12/09",
+   "snippet": "Acá están las imágenes, el informe te lo mando mañana.",
+   "files": [
+    {
+     "name": "IMG_2031.jpg",
+     "type": "image/jpeg",
+     "size": 880000
+    },
+    {
+     "name": "IMG_2032.jpg",
+     "type": "image/jpeg",
+     "size": 910000
+    }
+   ]
+  },
+  {
+   "id": "p12",
+   "kind": "pos:imagen",
+   "expected": true,
+   "from": "Rx Vet <rx@rxvet.example>",
+   "subject": "Placas de tórax - Milo",
+   "snippet": "Proyecciones LL y VD.",
+   "files": [
+    {
+     "name": "torax_ll.jpg",
+     "type": "image/jpeg",
+     "size": 610000
+    },
+    {
+     "name": "torax_vd.jpg",
+     "type": "image/jpeg",
+     "size": 590000
+    }
+   ]
+  },
+  {
+   "id": "p13",
+   "kind": "pos:link",
+   "expected": true,
+   "from": "Rx Vet <rx@rxvet.example>",
+   "subject": "Tus estudios de imagen están disponibles",
+   "snippet": "Descargá las imágenes y el informe de Milo desde nuestro portal: https://portal.rxvet.example/estudio/8812",
+   "files": []
+  },
+  {
+   "id": "p14",
+   "kind": "pos:receta",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Receta - Simón",
+   "snippet": "Meloxicam 0,5 mg cada 24 h por 5 días.",
+   "files": [
+    {
+     "name": "receta.pdf",
+     "type": "application/pdf",
+     "size": 45000
+    }
+   ]
+  },
+  {
+   "id": "p15",
+   "kind": "pos:receta",
+   "expected": true,
+   "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>",
+   "subject": "Te paso la receta de Luna",
+   "snippet": "Con esto lo comprás en cualquier farmacia veterinaria.",
+   "files": [
+    {
+     "name": "WhatsApp Image 2026-10-02 at 11.40.12.jpeg",
+     "type": "image/jpeg",
+     "size": 230000
+    }
+   ]
+  },
+  {
+   "id": "p16",
+   "kind": "pos:vacuna",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Certificado de vacunación antirrábica - Luna",
+   "snippet": "Adjuntamos el certificado firmado.",
+   "files": [
+    {
+     "name": "certificado_antirrabica_luna.pdf",
+     "type": "application/pdf",
+     "size": 52000
+    }
+   ],
+   "nota": "difícil: dice certificado"
+  },
+  {
+   "id": "p17",
+   "kind": "pos:vacuna",
+   "expected": true,
+   "from": "Instituto de Zoonosis Luis Pasteur <vacunacion@buenosaires.gob.ar>",
+   "subject": "Constancia de vacunación antirrábica",
+   "snippet": "Animal: Milo, canino, macho. Vacuna antirrábica aplicada el 05/10/2026.",
+   "files": [
+    {
+     "name": "constancia.pdf",
+     "type": "application/pdf",
+     "size": 61000
+    }
+   ]
+  },
+  {
+   "id": "p18",
+   "kind": "pos:libreta",
+   "expected": true,
+   "from": "Carla Benítez <carla.benitez@gmail.com>",
+   "subject": "Libreta de Milo",
+   "snippet": "",
+   "files": [
+    {
+     "name": "Libreta sanitaria Milo.pdf",
+     "type": "application/pdf",
+     "size": 1800000
+    }
+   ],
+   "nota": "se la mandó a sí misma"
+  },
+  {
+   "id": "p19",
+   "kind": "pos:libreta",
+   "expected": true,
+   "from": "Carla Benítez <carla.benitez@gmail.com>",
+   "subject": "CamScanner 09-10-2026 18.22",
+   "snippet": "",
+   "files": [
+    {
+     "name": "CamScanner 09-10-2026 18.22.pdf",
+     "type": "application/pdf",
+     "size": 2400000
+    }
+   ],
+   "nota": "sin ninguna señal: es esperable no encontrarlo"
+  },
+  {
+   "id": "p20",
+   "kind": "pos:consulta",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Resumen de la consulta de Simón",
+   "snippet": "Motivo de consulta: vómitos. Indicaciones: dieta blanda.",
+   "files": [
+    {
+     "name": "resumen_consulta.pdf",
+     "type": "application/pdf",
+     "size": 58000
+    }
+   ]
+  },
+  {
+   "id": "p21",
+   "kind": "pos:cirugia",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Presupuesto castración - Milo",
+   "snippet": "Incluye prequirúrgico, anestesia inhalatoria e internación de 4 h.",
+   "files": [
+    {
+     "name": "presupuesto.pdf",
+     "type": "application/pdf",
+     "size": 41000
+    }
+   ]
+  },
+  {
+   "id": "p22",
+   "kind": "pos:cirugia",
+   "expected": true,
+   "from": "Veterinaria del Parque <cirugia@vetdelparque.example>",
+   "subject": "Informe quirúrgico y cuidados post operatorios",
+   "snippet": "Paciente Milo. Ovariectomía sin complicaciones. Retirar puntos a los 10 días.",
+   "files": [
+    {
+     "name": "alta_quirurgica.pdf",
+     "type": "application/pdf",
+     "size": 77000
+    }
+   ]
+  },
+  {
+   "id": "p23",
+   "kind": "pos:link",
+   "expected": true,
+   "from": "LabVet Sur <no-responder@labvetsur.example>",
+   "subject": "Sus resultados ya están disponibles",
+   "snippet": "Ingrese al portal con el protocolo 48990 para ver el informe de LUNA: https://resultados.labvetsur.example/p/48990",
+   "files": [],
+   "labels": [
+    "CATEGORY_UPDATES"
+   ]
+  },
+  {
+   "id": "p24",
+   "kind": "pos:reenvio",
+   "expected": true,
+   "from": "Martín Benítez <martin.benitez@hotmail.com>",
+   "subject": "Fwd: resultados de Luna",
+   "snippet": "---------- Forwarded message --------- De: LabVet Sur",
+   "files": [
+    {
+     "name": "resultados.pdf",
+     "type": "application/pdf",
+     "size": 99000
+    }
+   ]
+  },
+  {
+   "id": "p25",
+   "kind": "pos:reenvio",
+   "expected": true,
+   "from": "Martín Benítez <martin.benitez@hotmail.com>",
+   "subject": "RV: Eco de Simón",
+   "snippet": "De: Ecovet Imágenes. Enviado: lunes.",
+   "files": [
+    {
+     "name": "eco_simon.jpg",
+     "type": "image/jpeg",
+     "size": 520000
+    }
+   ]
+  },
+  {
+   "id": "p26",
+   "kind": "pos:reenvio",
+   "expected": true,
+   "from": "Martín Benítez <martin.benitez@hotmail.com>",
+   "subject": "Fwd: Informe",
+   "snippet": "Te reenvío lo que mandaron del laboratorio.",
+   "files": [
+    {
+     "name": "Informe_Laboratorio_Veterinario.pdf",
+     "type": "application/pdf",
+     "size": 87000
+    }
+   ]
+  },
+  {
+   "id": "p27",
+   "kind": "pos:solo-nombre",
+   "expected": true,
+   "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>",
+   "subject": "Luna",
+   "snippet": "Te mando los estudios que quedaron pendientes.",
+   "files": [
+    {
+     "name": "estudios.pdf",
+     "type": "application/pdf",
+     "size": 130000
+    }
+   ]
+  },
+  {
+   "id": "p28",
+   "kind": "pos:solo-nombre",
+   "expected": true,
+   "from": "Clínica San Martín <recepcion@clinicasanmartin.example>",
+   "subject": "Simón",
+   "snippet": "Adjunto lo solicitado en la consulta del gatito.",
+   "files": [
+    {
+     "name": "scan0001.pdf",
+     "type": "application/pdf",
+     "size": 300000
+    }
+   ]
+  },
+  {
+   "id": "p29",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Laboratorio Zona Norte <laboratorio.zona.norte@gmail.com>",
+   "subject": "Análisis de Milo",
+   "snippet": "Hemograma y hepatograma. Valores dentro de rango para la especie.",
+   "files": [
+    {
+     "name": "analisis_milo.pdf",
+     "type": "application/pdf",
+     "size": 76000
+    }
+   ]
+  },
+  {
+   "id": "p30",
+   "kind": "pos:vacuna",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Vacunas al día - Luna",
+   "snippet": "Le dejamos la constancia de la séxtuple.",
+   "files": [
+    {
+     "name": "constancia_vacunas.pdf",
+     "type": "application/pdf",
+     "size": 48000
+    }
+   ]
+  },
+  {
+   "id": "p31",
+   "kind": "pos:consulta",
+   "expected": true,
+   "from": "Hospital Escuela FCV-UBA <hospital@fvet.uba.ar>",
+   "subject": "Informe de alta - Historia clínica 55821",
+   "snippet": "Paciente: Milo (canino). Diagnóstico presuntivo: gastroenteritis.",
+   "files": [
+    {
+     "name": "alta_55821.pdf",
+     "type": "application/pdf",
+     "size": 93000
+    }
+   ],
+   "nota": "institución real, ver _fuentes; sin señal veterinaria en asunto ni nombre"
+  },
+  {
+   "id": "p32",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Laboratorio de Análisis Clínicos FCV-UNLP <labclin@fcv.unlp.edu.ar>",
+   "subject": "Resultado laboratorio - Protocolo 3321",
+   "snippet": "Especie: felino. Nombre: Simón. Hemograma, urea, creatinina.",
+   "files": [
+    {
+     "name": "protocolo_3321.pdf",
+     "type": "application/pdf",
+     "size": 68000
+    }
+   ],
+   "nota": "institución real, ver _fuentes"
+  },
+  {
+   "id": "p33",
+   "kind": "pos:imagen",
+   "expected": true,
+   "from": "Cardiovet <info@cardiovet.example>",
+   "subject": "Ecocardiograma Simón",
+   "snippet": "Informe del ecocardiograma Doppler.",
+   "files": [
+    {
+     "name": "ecocardio_simon.pdf",
+     "type": "application/pdf",
+     "size": 180000
+    }
+   ]
+  },
+  {
+   "id": "p34",
+   "kind": "pos:consulta",
+   "expected": true,
+   "from": "Cardiovet <info@cardiovet.example>",
+   "subject": "ECG prequirúrgico Milo",
+   "snippet": "Ritmo sinusal. Apto para anestesia.",
+   "files": [
+    {
+     "name": "ecg.pdf",
+     "type": "application/pdf",
+     "size": 66000
+    }
+   ]
+  },
+  {
+   "id": "p35",
+   "kind": "pos:imagen",
+   "expected": true,
+   "from": "Imágenes Veterinarias del Sur <estudios@imvetsur.example>",
+   "subject": "Tomografía computada - Luna",
+   "snippet": "Informe de la TC de cráneo.",
+   "files": [
+    {
+     "name": "TC_luna.pdf",
+     "type": "application/pdf",
+     "size": 260000
+    }
+   ]
+  },
+  {
+   "id": "p36",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "LabVet Sur <resultados@labvetsur.example>",
+   "subject": "Protocolo 77120",
+   "snippet": "Adjuntamos resultados.",
+   "files": [
+    {
+     "name": "77120.pdf",
+     "type": "application/pdf",
+     "size": 81000
+    }
+   ]
+  },
+  {
+   "id": "p37",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Diagnóstico Veterinario <no-reply@diagvet.example>",
+   "subject": "Resultados de Simón",
+   "snippet": "Si no querés recibir más mails, desuscribite.",
+   "files": [
+    {
+     "name": "res_simon.pdf",
+     "type": "application/pdf",
+     "size": 90000
+    }
+   ],
+   "labels": [
+    "CATEGORY_UPDATES"
+   ],
+   "unsub": true,
+   "nota": "transaccional con List-Unsubscribe: no lo tiene que matar"
+  },
+  {
+   "id": "p38",
+   "kind": "pos:consulta",
+   "expected": true,
+   "from": "Veterinaria del Parque <novedades@vetdelparque.example>",
+   "subject": "Informe de Milo",
+   "snippet": "Te compartimos el informe de la consulta.",
+   "files": [
+    {
+     "name": "informe_milo.pdf",
+     "type": "application/pdf",
+     "size": 72000
+    }
+   ],
+   "labels": [
+    "CATEGORY_PROMOTIONS"
+   ],
+   "unsub": true,
+   "nota": "difícil: Gmail lo puso en Promociones"
+  },
+  {
+   "id": "p39",
+   "kind": "pos:consulta",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Orden de estudios para Luna",
+   "snippet": "Hemograma, bioquímico y ecografía abdominal.",
+   "files": [
+    {
+     "name": "orden.pdf",
+     "type": "application/pdf",
+     "size": 39000
+    }
+   ]
+  },
+  {
+   "id": "p40",
+   "kind": "pos:vacuna",
+   "expected": true,
+   "from": "Martín Benítez <martin.benitez@hotmail.com>",
+   "subject": "foto carnet vacunas",
+   "snippet": "",
+   "files": [
+    {
+     "name": "IMG_4432.JPG",
+     "type": "image/jpeg",
+     "size": 1200000
+    }
+   ]
+  },
+  {
+   "id": "p41",
+   "kind": "pos:reenvio",
+   "expected": true,
+   "from": "Martín Benítez <martin.benitez@hotmail.com>",
+   "subject": "Fwd:",
+   "snippet": "",
+   "files": [
+    {
+     "name": "WhatsApp Image 2026-09-03 at 10.11.02.jpeg",
+     "type": "image/jpeg",
+     "size": 340000
+    }
+   ],
+   "nota": "sin ninguna señal: es esperable no encontrarlo"
+  },
+  {
+   "id": "p42",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "LabVet Sur <resultados@labvetsur.example>",
+   "subject": "Bioquímica sanguínea completa — paciente LUNA BENITEZ",
+   "snippet": "",
+   "files": [
+    {
+     "name": "bq_luna.pdf",
+     "type": "application/pdf",
+     "size": 84000
+    }
+   ],
+   "nota": "los laboratorios veterinarios suman el apellido del dueño al nombre de la mascota"
+  },
+  {
+   "id": "p43",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Laboratorio Veterinario Oeste <informes@lvo.example>",
+   "subject": "Resultados: MILO - Canino - Mestizo - Prop.: Benítez Carla",
+   "snippet": "",
+   "files": [
+    {
+     "name": "MILO_BENITEZ.pdf",
+     "type": "application/pdf",
+     "size": 79000
+    }
+   ]
+  },
+  {
+   "id": "p44",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Laboratorio Zona Norte <laboratorio.zona.norte@gmail.com>",
+   "subject": "Hemograma + perfil renal (Simón)",
+   "snippet": "",
+   "files": [
+    {
+     "name": "hemo_renal.pdf",
+     "type": "application/pdf",
+     "size": 70000
+    }
+   ]
+  },
+  {
+   "id": "p45",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Estudio de orina",
+   "snippet": "",
+   "files": [
+    {
+     "name": "orina.pdf",
+     "type": "application/pdf",
+     "size": 51000
+    }
+   ]
+  },
+  {
+   "id": "p46",
+   "kind": "pos:imagen",
+   "expected": true,
+   "from": "Ecovet Imágenes <turnos@ecovet.example>",
+   "subject": "Informe ecográfico",
+   "snippet": "Paciente: Luna. Especie: canino. Hígado de tamaño conservado.",
+   "files": [
+    {
+     "name": "INF_ECO_2026_0912.pdf",
+     "type": "application/pdf",
+     "size": 112000
+    }
+   ],
+   "nota": "difícil: remitente nuevo y asunto genérico"
+  },
+  {
+   "id": "p47",
+   "kind": "pos:imagen",
+   "expected": true,
+   "from": "Rx Vet <rx@rxvet.example>",
+   "subject": "Radiografía",
+   "snippet": "",
+   "files": [
+    {
+     "name": "rx_cadera.jpg",
+     "type": "image/jpeg",
+     "size": 700000
+    }
+   ]
+  },
+  {
+   "id": "p48",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Centro Médico Veterinario Belgrano <info@cmvb.example>",
+   "subject": "Análisis",
+   "snippet": "",
+   "files": [
+    {
+     "name": "analisis.pdf",
+     "type": "application/pdf",
+     "size": 66000
+    }
+   ]
+  },
+  {
+   "id": "p49",
+   "kind": "pos:vacuna",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Certificado de salud para viajar - Luna",
+   "snippet": "Certificado de buena salud y libreta al día para el viaje.",
+   "files": [
+    {
+     "name": "cert_salud_luna.pdf",
+     "type": "application/pdf",
+     "size": 47000
+    }
+   ]
+  },
+  {
+   "id": "p50",
+   "kind": "pos:vacuna",
+   "expected": true,
+   "from": "SENASA <cvi@senasa.gob.ar>",
+   "subject": "Certificado Veterinario Internacional",
+   "snippet": "Animal: Luna. Especie: canina. Destino: Uruguay.",
+   "files": [
+    {
+     "name": "CVI_2026_10441.pdf",
+     "type": "application/pdf",
+     "size": 110000
+    }
+   ]
+  },
+  {
+   "id": "p51",
+   "kind": "pos:receta",
+   "expected": true,
+   "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>",
+   "subject": "Antiparasitario - indicaciones",
+   "snippet": "Una pipeta cada 30 días y el comprimido cada 3 meses.",
+   "files": [
+    {
+     "name": "indicaciones.pdf",
+     "type": "application/pdf",
+     "size": 33000
+    }
+   ]
+  },
+  {
+   "id": "p52",
+   "kind": "pos:cirugia",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Turno + indicaciones prequirúrgicas Milo",
+   "snippet": "Ayuno de 8 horas. Traer análisis.",
+   "files": [
+    {
+     "name": "prequirurgico_milo.pdf",
+     "type": "application/pdf",
+     "size": 36000
+    }
+   ]
+  },
+  {
+   "id": "p53",
+   "kind": "pos:consulta",
+   "expected": true,
+   "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>",
+   "subject": "RE: consulta Simón",
+   "snippet": "Mirá cómo quedó la herida.",
+   "files": [
+    {
+     "name": "herida.jpg",
+     "type": "image/jpeg",
+     "size": 450000
+    }
+   ]
+  },
+  {
+   "id": "p54",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Laboratorio Zona Norte <laboratorio.zona.norte@gmail.com>",
+   "subject": "Hemograma",
+   "snippet": "Paciente: Milo. Especie: Canina.",
+   "files": [
+    {
+     "name": "hemograma.pdf",
+     "type": "application/pdf",
+     "size": 69000
+    }
+   ],
+   "nota": "difícil: remitente público nuevo y asunto genérico"
+  },
+  {
+   "id": "p55",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Diagnóstico Veterinario <no-reply@diagvet.example>",
+   "subject": "Protocolo 2026-6012 listo",
+   "snippet": "Paciente: LUNA. Felino/Canino: Canino.",
+   "files": [
+    {
+     "name": "2026-6012.pdf",
+     "type": "application/pdf",
+     "size": 87000
+    }
+   ],
+   "nota": "difícil: la señal veterinaria solo está en el nombre del remitente"
+  },
+  {
+   "id": "p56",
+   "kind": "pos:link",
+   "expected": true,
+   "from": "Laboratorio Veterinario Oeste <informes@lvo.example>",
+   "subject": "Resultados disponibles - Simón",
+   "snippet": "Descargá el PDF: https://lvo.example/r/abc123",
+   "files": []
+  },
+  {
+   "id": "p57",
+   "kind": "pos:consulta",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Historia clínica de Luna",
+   "snippet": "Como nos pidió, adjuntamos la historia clínica completa.",
+   "files": [
+    {
+     "name": "HC_luna.pdf",
+     "type": "application/pdf",
+     "size": 260000
+    }
+   ]
+  },
+  {
+   "id": "p58",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Laboratorio Veterinario Oeste <informes@lvo.example>",
+   "subject": "Raspaje de piel y cultivo micológico",
+   "snippet": "Paciente: Milo. Dermatofitos: negativo.",
+   "files": [
+    {
+     "name": "micologico.pdf",
+     "type": "application/pdf",
+     "size": 58000
+    }
+   ]
+  },
+  {
+   "id": "p59",
+   "kind": "pos:imagen",
+   "expected": true,
+   "from": "Martín Benítez <martin.benitez@hotmail.com>",
+   "subject": "Fwd: radiografía de Luna",
+   "snippet": "",
+   "files": [
+    {
+     "name": "rx.jpg",
+     "type": "image/jpeg",
+     "size": 640000
+    }
+   ]
+  },
+  {
+   "id": "p60",
+   "kind": "pos:laboratorio",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Resultados del análisis de sangre",
+   "snippet": "",
+   "files": [
+    {
+     "name": "sangre.pdf",
+     "type": "application/pdf",
+     "size": 61000
+    }
+   ]
+  },
+  {
+   "id": "p61",
+   "kind": "pos:consulta",
+   "expected": true,
+   "from": "Dra. Ferreyra <ferreyra.vet@gmail.com>",
+   "subject": "Lo que hablamos hoy",
+   "snippet": "Te dejo por escrito el plan de tratamiento para Luna.",
+   "files": [
+    {
+     "name": "plan.pdf",
+     "type": "application/pdf",
+     "size": 30000
+    }
+   ]
+  },
+  {
+   "id": "p62",
+   "kind": "pos:receta",
+   "expected": true,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Receta",
+   "snippet": "",
+   "files": [
+    {
+     "name": "receta_simon.pdf",
+     "type": "application/pdf",
+     "size": 41000
+    }
+   ]
+  },
+  {
+   "id": "n01",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Laboratorio Central <resultados@labcentral.example>",
+   "subject": "Resultados de laboratorio disponibles",
+   "snippet": "Paciente: BENITEZ CARLA. DNI 30.123.456. Obra social: OSDE.",
+   "files": [
+    {
+     "name": "resultados.pdf",
+     "type": "application/pdf",
+     "size": 98000
+    }
+   ]
+  },
+  {
+   "id": "n02",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "OSDE <notificaciones@osde.com.ar>",
+   "subject": "Tus resultados de análisis ya están disponibles",
+   "snippet": "Paciente: Carla Benítez. Ingresá a Mi OSDE para verlos.",
+   "files": []
+  },
+  {
+   "id": "n03",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Swiss Medical <estudios@swissmedical.com.ar>",
+   "subject": "Resultados de estudios - Swiss Medical",
+   "snippet": "Hola Carla, ya están tus resultados.",
+   "files": [
+    {
+     "name": "estudios.pdf",
+     "type": "application/pdf",
+     "size": 120000
+    }
+   ]
+  },
+  {
+   "id": "n04",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Eurofins Megalab <resultados@eurofins-megalab.com>",
+   "subject": "Eurofins Megalab - Resultado de estudio",
+   "snippet": "Paciente: BENITEZ, CARLA. Médico solicitante: Dr. Gómez.",
+   "files": [
+    {
+     "name": "INFORME_BENITEZ_CARLA.pdf",
+     "type": "application/pdf",
+     "size": 104000
+    }
+   ],
+   "nota": "el mismo laboratorio de p09, pero de la persona"
+  },
+  {
+   "id": "n05",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Diagnóstico Médico Integral <informes@dmi.example>",
+   "subject": "Ecografía mamaria - Informe",
+   "snippet": "Paciente: Carla Benítez.",
+   "files": [
+    {
+     "name": "eco_mamaria.pdf",
+     "type": "application/pdf",
+     "size": 150000
+    }
+   ]
+  },
+  {
+   "id": "n06",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Centro de Diagnóstico <informes@cdiag.example>",
+   "subject": "Radiografía de tórax - Benítez, Carla",
+   "snippet": "",
+   "files": [
+    {
+     "name": "rx_torax.pdf",
+     "type": "application/pdf",
+     "size": 210000
+    }
+   ]
+  },
+  {
+   "id": "n07",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Recetario Digital <no-reply@receta.example>",
+   "subject": "Tu receta electrónica",
+   "snippet": "Paciente: Carla Benítez. Amoxicilina 875 mg.",
+   "files": [
+    {
+     "name": "receta.pdf",
+     "type": "application/pdf",
+     "size": 40000
+    }
+   ]
+  },
+  {
+   "id": "n08",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Mi Argentina <notificaciones@miargentina.gob.ar>",
+   "subject": "Tu certificado de vacunación",
+   "snippet": "Antigripal y COVID-19. Carla Benítez.",
+   "files": [
+    {
+     "name": "certificado_vacunacion.pdf",
+     "type": "application/pdf",
+     "size": 70000
+    }
+   ],
+   "nota": "difícil: vacunación de la persona"
+  },
+  {
+   "id": "n09",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Laboratorio Central <resultados@labcentral.example>",
+   "subject": "Hemograma - paciente BENITEZ MARTIN",
+   "snippet": "",
+   "files": [
+    {
+     "name": "hemograma.pdf",
+     "type": "application/pdf",
+     "size": 66000
+    }
+   ]
+  },
+  {
+   "id": "n10",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Consultorios Palermo <turnos@cpalermo.example>",
+   "subject": "Turno confirmado - Dr. Pérez, clínica médica",
+   "snippet": "Te esperamos el martes 14 a las 10.",
+   "files": []
+  },
+  {
+   "id": "n11",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Farmacia del Centro <turnos@farmaciacentro.example>",
+   "subject": "Vacuna antigripal: tu turno",
+   "snippet": "Recordá traer DNI y credencial de la obra social.",
+   "files": [],
+   "labels": [
+    "CATEGORY_UPDATES"
+   ]
+  },
+  {
+   "id": "n12",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Galeno <autorizaciones@galeno.example>",
+   "subject": "Estudios prequirúrgicos autorizados",
+   "snippet": "Afiliado: Benítez Carla.",
+   "files": [
+    {
+     "name": "autorizacion.pdf",
+     "type": "application/pdf",
+     "size": 52000
+    }
+   ]
+  },
+  {
+   "id": "n13",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Consultorio Pediátrico <consultorio@pediatra.example>",
+   "subject": "Certificado de vacunas de Mateo",
+   "snippet": "Calendario nacional al día.",
+   "files": [
+    {
+     "name": "vacunas_mateo.pdf",
+     "type": "application/pdf",
+     "size": 45000
+    }
+   ]
+  },
+  {
+   "id": "n14",
+   "kind": "neg:homonimo",
+   "expected": false,
+   "from": "Luna Martínez <lunamartinez@gmail.com>",
+   "subject": "Luna te mandó fotos del cumple",
+   "snippet": "¡Gracias por venir!",
+   "files": [
+    {
+     "name": "IMG_5501.jpg",
+     "type": "image/jpeg",
+     "size": 2100000
+    },
+    {
+     "name": "IMG_5502.jpg",
+     "type": "image/jpeg",
+     "size": 1900000
+    }
+   ]
+  },
+  {
+   "id": "n15",
+   "kind": "neg:homonimo",
+   "expected": false,
+   "from": "Simón Estudio <simon.estudio@gmail.com>",
+   "subject": "Simón - presupuesto de la reforma",
+   "snippet": "Te paso el presupuesto del baño.",
+   "files": [
+    {
+     "name": "presupuesto_reforma.pdf",
+     "type": "application/pdf",
+     "size": 90000
+    }
+   ]
+  },
+  {
+   "id": "n16",
+   "kind": "neg:homonimo",
+   "expected": false,
+   "from": "Milo Gutiérrez <milog@gmail.com>",
+   "subject": "Re: Milo y la facu",
+   "snippet": "Te mando el TP final.",
+   "files": [
+    {
+     "name": "tp_final.pdf",
+     "type": "application/pdf",
+     "size": 300000
+    }
+   ]
+  },
+  {
+   "id": "n17",
+   "kind": "neg:homonimo",
+   "expected": false,
+   "from": "Sofía <sofi.g@gmail.com>",
+   "subject": "Fiesta de Luna 🎉",
+   "snippet": "Sábado 20 h en casa.",
+   "files": [
+    {
+     "name": "invitacion.png",
+     "type": "image/png",
+     "size": 380000
+    }
+   ]
+  },
+  {
+   "id": "n18",
+   "kind": "neg:homonimo",
+   "expected": false,
+   "from": "Luna Hotel Boutique <reservas@lunahotel.example>",
+   "subject": "Factura - Luna Hotel Boutique",
+   "snippet": "",
+   "files": [
+    {
+     "name": "factura_A_0003.pdf",
+     "type": "application/pdf",
+     "size": 60000
+    }
+   ]
+  },
+  {
+   "id": "n19",
+   "kind": "neg:homonimo",
+   "expected": false,
+   "from": "Simón Rodríguez <simonrod@gmail.com>",
+   "subject": "Simón: CV actualizado",
+   "snippet": "",
+   "files": [
+    {
+     "name": "CV_Simon_Rodriguez.pdf",
+     "type": "application/pdf",
+     "size": 140000
+    }
+   ]
+  },
+  {
+   "id": "n20",
+   "kind": "neg:homonimo",
+   "expected": false,
+   "from": "Prof. Ana López <alopez@colegio.example>",
+   "subject": "Informe de Luna (trabajo práctico)",
+   "snippet": "Hola Carla, te paso el informe de Luna sobre el TP de ciencias.",
+   "files": [
+    {
+     "name": "informe_luna.pdf",
+     "type": "application/pdf",
+     "size": 120000
+    }
+   ],
+   "nota": "difícil: nombre de la mascota + informe"
+  },
+  {
+   "id": "n21",
+   "kind": "neg:promo",
+   "expected": false,
+   "from": "Puppis <novedades@puppis.com.ar>",
+   "subject": "🐶 20% OFF en alimento para tu perro",
+   "snippet": "Solo este fin de semana.",
+   "files": [],
+   "labels": [
+    "CATEGORY_PROMOTIONS"
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n22",
+   "kind": "neg:promo",
+   "expected": false,
+   "from": "Mundo Mascota <ventas@mundomascota.example>",
+   "subject": "Catálogo octubre: perro y gato",
+   "snippet": "Descargá el catálogo.",
+   "files": [
+    {
+     "name": "catalogo_octubre.pdf",
+     "type": "application/pdf",
+     "size": 2500000
+    }
+   ],
+   "labels": [
+    "CATEGORY_PROMOTIONS"
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n23",
+   "kind": "neg:promo",
+   "expected": false,
+   "from": "Veterinaria del Parque <novedades@vetdelparque.example>",
+   "subject": "Semana de la vacunación: 15% off en vacunas",
+   "snippet": "Traé a tu mascota.",
+   "files": [
+    {
+     "name": "banner_vacunacion.jpg",
+     "type": "image/jpeg",
+     "size": 310000
+    }
+   ],
+   "labels": [
+    "CATEGORY_PROMOTIONS"
+   ],
+   "unsub": true,
+   "nota": "difícil: promo de la propia veterinaria"
+  },
+  {
+   "id": "n24",
+   "kind": "neg:promo",
+   "expected": false,
+   "from": "Zoonosis Municipal <zoonosis@municipio.example>",
+   "subject": "Castraciones gratuitas de perros y gatos en tu barrio",
+   "snippet": "Inscribite en el link.",
+   "files": [
+    {
+     "name": "cronograma.pdf",
+     "type": "application/pdf",
+     "size": 210000
+    }
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n25",
+   "kind": "neg:newsletter",
+   "expected": false,
+   "from": "Mundo Mascota <newsletter@mundomascota.example>",
+   "subject": "Newsletter #45: cuidados del cachorro",
+   "snippet": "",
+   "files": [],
+   "labels": [
+    "CATEGORY_PROMOTIONS"
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n26",
+   "kind": "neg:newsletter",
+   "expected": false,
+   "from": "Blog Patitas <hola@patitas.example>",
+   "subject": "Cómo cuidar a tu perro del calor",
+   "snippet": "",
+   "files": [],
+   "labels": [
+    "CATEGORY_PROMOTIONS"
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n27",
+   "kind": "neg:compra",
+   "expected": false,
+   "from": "Mercado Libre <info@mercadolibre.com.ar>",
+   "subject": "¡Compraste Alimento para perro Royal Canin Mini Adult 7,5 kg!",
+   "snippet": "Te avisamos cuando esté en camino.",
+   "files": [],
+   "labels": [
+    "CATEGORY_UPDATES"
+   ]
+  },
+  {
+   "id": "n28",
+   "kind": "neg:compra",
+   "expected": false,
+   "from": "Mercado Libre <info@mercadolibre.com.ar>",
+   "subject": "Factura de tu compra: Arena sanitaria para gato",
+   "snippet": "",
+   "files": [
+    {
+     "name": "factura.pdf",
+     "type": "application/pdf",
+     "size": 50000
+    }
+   ],
+   "labels": [
+    "CATEGORY_UPDATES"
+   ]
+  },
+  {
+   "id": "n29",
+   "kind": "neg:compra",
+   "expected": false,
+   "from": "Tienda Mascotera <ventas@mascotera.example>",
+   "subject": "Pedido #4412 confirmado - Piedras sanitarias para gato",
+   "snippet": "",
+   "files": [
+    {
+     "name": "comprobante.pdf",
+     "type": "application/pdf",
+     "size": 42000
+    }
+   ],
+   "labels": [
+    "CATEGORY_UPDATES"
+   ]
+  },
+  {
+   "id": "n30",
+   "kind": "neg:compra",
+   "expected": false,
+   "from": "Mercado Libre <info@mercadolibre.com.ar>",
+   "subject": "Llegó tu pipeta antipulgas para perro",
+   "snippet": "",
+   "files": [],
+   "labels": [
+    "CATEGORY_UPDATES"
+   ]
+  },
+  {
+   "id": "n31",
+   "kind": "neg:factura",
+   "expected": false,
+   "from": "Edenor <facturas@edenor.example>",
+   "subject": "Tu factura de luz",
+   "snippet": "",
+   "files": [
+    {
+     "name": "factura_edenor.pdf",
+     "type": "application/pdf",
+     "size": 90000
+    }
+   ]
+  },
+  {
+   "id": "n32",
+   "kind": "neg:factura",
+   "expected": false,
+   "from": "AySA <facturas@aysa.example>",
+   "subject": "Factura AySA",
+   "snippet": "",
+   "files": [
+    {
+     "name": "aysa.pdf",
+     "type": "application/pdf",
+     "size": 70000
+    }
+   ]
+  },
+  {
+   "id": "n33",
+   "kind": "neg:factura",
+   "expected": false,
+   "from": "Banco <resumenes@banco.example>",
+   "subject": "Resumen de tu tarjeta Visa",
+   "snippet": "",
+   "files": [
+    {
+     "name": "resumen.pdf",
+     "type": "application/pdf",
+     "size": 180000
+    }
+   ]
+  },
+  {
+   "id": "n34",
+   "kind": "neg:curso",
+   "expected": false,
+   "from": "UdeSA Educación Ejecutiva <educacionejecutiva@udesa.edu.ar>",
+   "subject": "Recordatorio: ¡Carla Benítez, te enviamos tu certificado de MAD Laboratorio de IA Generativa!",
+   "snippet": "",
+   "files": [
+    {
+     "name": "certificate.pdf",
+     "type": "application/pdf",
+     "size": 80000
+    }
+   ],
+   "nota": "el falso positivo real que motivó el puntaje"
+  },
+  {
+   "id": "n35",
+   "kind": "neg:curso",
+   "expected": false,
+   "from": "Escuela Online <cursos@escuela.example>",
+   "subject": "Certificado de aprobación - Curso de Primeros Auxilios Caninos",
+   "snippet": "",
+   "files": [
+    {
+     "name": "certificado.pdf",
+     "type": "application/pdf",
+     "size": 75000
+    }
+   ]
+  },
+  {
+   "id": "n36",
+   "kind": "neg:profesional",
+   "expected": false,
+   "from": "Colegio de Veterinarios <info@colegiovet.example>",
+   "subject": "Webinar: actualización en dermatología veterinaria",
+   "snippet": "Para médicos veterinarios matriculados.",
+   "files": [
+    {
+     "name": "programa.pdf",
+     "type": "application/pdf",
+     "size": 140000
+    }
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n37",
+   "kind": "neg:profesional",
+   "expected": false,
+   "from": "Instituto de Medicina Felina <info@imf.example>",
+   "subject": "Inscripción abierta: Diplomatura en Medicina Felina",
+   "snippet": "",
+   "files": [
+    {
+     "name": "diplomatura.pdf",
+     "type": "application/pdf",
+     "size": 900000
+    }
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n38",
+   "kind": "neg:profesional",
+   "expected": false,
+   "from": "Congreso Vet <congreso@congresovet.example>",
+   "subject": "Congreso de Medicina Veterinaria 2026 - programa",
+   "snippet": "",
+   "files": [
+    {
+     "name": "programa_congreso.pdf",
+     "type": "application/pdf",
+     "size": 1200000
+    }
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n39",
+   "kind": "neg:curso",
+   "expected": false,
+   "from": "Fundación Bienestar <info@bienestar.example>",
+   "subject": "Certificado de asistencia - Jornada de Bienestar Animal",
+   "snippet": "",
+   "files": [
+    {
+     "name": "asistencia.pdf",
+     "type": "application/pdf",
+     "size": 60000
+    }
+   ]
+  },
+  {
+   "id": "n40",
+   "kind": "neg:adopcion",
+   "expected": false,
+   "from": "Refugio Patitas <hola@refugiopatitas.example>",
+   "subject": "¡Adoptá! Conocé a los perros del refugio",
+   "snippet": "",
+   "files": [
+    {
+     "name": "perros.jpg",
+     "type": "image/jpeg",
+     "size": 520000
+    }
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n41",
+   "kind": "neg:adopcion",
+   "expected": false,
+   "from": "Refugio Patitas <hola@refugiopatitas.example>",
+   "subject": "Necesitamos tu ayuda: donaciones para los gatos del refugio",
+   "snippet": "",
+   "files": [],
+   "unsub": true
+  },
+  {
+   "id": "n42",
+   "kind": "neg:adopcion",
+   "expected": false,
+   "from": "Refugio Patitas <hola@refugiopatitas.example>",
+   "subject": "Tu donación fue recibida",
+   "snippet": "",
+   "files": [
+    {
+     "name": "recibo.pdf",
+     "type": "application/pdf",
+     "size": 30000
+    }
+   ]
+  },
+  {
+   "id": "n43",
+   "kind": "neg:seguro",
+   "expected": false,
+   "from": "Seguro Mascotas <ventas@seguromascotas.example>",
+   "subject": "Asegurá a tu mascota desde $3.500 por mes",
+   "snippet": "",
+   "files": [
+    {
+     "name": "condiciones.pdf",
+     "type": "application/pdf",
+     "size": 330000
+    }
+   ],
+   "labels": [
+    "CATEGORY_PROMOTIONS"
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n44",
+   "kind": "neg:seguro",
+   "expected": false,
+   "from": "Seguro Mascotas <ventas@seguromascotas.example>",
+   "subject": "Cotización del seguro para Luna",
+   "snippet": "Plan Plus: cubre accidentes y consultas.",
+   "files": [
+    {
+     "name": "cotizacion_luna.pdf",
+     "type": "application/pdf",
+     "size": 90000
+    }
+   ],
+   "nota": "difícil: nombre de la mascota"
+  },
+  {
+   "id": "n45",
+   "kind": "neg:vet-sin-documento",
+   "expected": false,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Confirmación de turno - Veterinaria del Parque",
+   "snippet": "Te esperamos el jueves 16 a las 18.",
+   "files": [
+    {
+     "name": "logo.png",
+     "type": "image/png",
+     "size": 8000,
+     "inline": true
+    }
+   ]
+  },
+  {
+   "id": "n46",
+   "kind": "neg:logo",
+   "expected": false,
+   "from": "Clínica San Martín <recepcion@clinicasanmartin.example>",
+   "subject": "Horarios de fin de año",
+   "snippet": "Atendemos perros y gatos hasta el 23/12.",
+   "files": [
+    {
+     "name": "firma.png",
+     "type": "image/png",
+     "size": 25000,
+     "inline": true
+    },
+    {
+     "name": "banner.jpg",
+     "type": "image/jpeg",
+     "size": 60000
+    }
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n47",
+   "kind": "neg:logo",
+   "expected": false,
+   "from": "Odontología Integral <turnos@odonto.example>",
+   "subject": "Turno odontología",
+   "snippet": "",
+   "files": [
+    {
+     "name": "image001.png",
+     "type": "image/png",
+     "size": 30000,
+     "inline": true
+    }
+   ]
+  },
+  {
+   "id": "n48",
+   "kind": "neg:vet-sin-documento",
+   "expected": false,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Recordatorio: vacuna anual de Luna",
+   "snippet": "Le recordamos que Luna tiene la vacuna anual pendiente.",
+   "files": [
+    {
+     "name": "logo_vetdelparque.png",
+     "type": "image/png",
+     "size": 45000,
+     "inline": true
+    }
+   ]
+  },
+  {
+   "id": "n49",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Resonancia Norte <informes@resonorte.example>",
+   "subject": "Informe de resonancia",
+   "snippet": "Paciente: Benítez Carla. Rodilla derecha.",
+   "files": [
+    {
+     "name": "RM_rodilla.pdf",
+     "type": "application/pdf",
+     "size": 180000
+    }
+   ]
+  },
+  {
+   "id": "n50",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Laboratorio Central <resultados@labcentral.example>",
+   "subject": "Paciente: Carla Benítez — Análisis clínicos",
+   "snippet": "",
+   "files": [
+    {
+     "name": "analisis.pdf",
+     "type": "application/pdf",
+     "size": 77000
+    }
+   ]
+  },
+  {
+   "id": "n51",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Medifé <autorizaciones@medife.example>",
+   "subject": "Autorización de estudios",
+   "snippet": "Afiliado: 6012-33.",
+   "files": [
+    {
+     "name": "autorizacion.pdf",
+     "type": "application/pdf",
+     "size": 51000
+    }
+   ]
+  },
+  {
+   "id": "n52",
+   "kind": "neg:social",
+   "expected": false,
+   "from": "Instagram <no-reply@mail.instagram.com>",
+   "subject": "luna_la_caniche te mencionó en un comentario",
+   "snippet": "",
+   "files": [],
+   "labels": [
+    "CATEGORY_SOCIAL"
+   ],
+   "unsub": true,
+   "nota": "difícil: la cuenta de la propia perra"
+  },
+  {
+   "id": "n53",
+   "kind": "neg:social",
+   "expected": false,
+   "from": "Facebook <notification@facebookmail.com>",
+   "subject": "Perros de Palermo: nueva publicación",
+   "snippet": "",
+   "files": [],
+   "labels": [
+    "CATEGORY_SOCIAL"
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n54",
+   "kind": "neg:social",
+   "expected": false,
+   "from": "LinkedIn Empleos <jobs-noreply@linkedin.com>",
+   "subject": "Veterinario/a para clínica de pequeños animales: postulate",
+   "snippet": "",
+   "files": [],
+   "labels": [
+    "CATEGORY_SOCIAL"
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n55",
+   "kind": "neg:otro",
+   "expected": false,
+   "from": "Carla Benítez <carla.benitez@gmail.com>",
+   "subject": "Lista del super",
+   "snippet": "leche, pan, comida del gato",
+   "files": []
+  },
+  {
+   "id": "n56",
+   "kind": "neg:factura",
+   "expected": false,
+   "from": "Veterinaria del Parque <administracion@vetdelparque.example>",
+   "subject": "Factura B 0004-00012345 - Veterinaria del Parque",
+   "snippet": "",
+   "files": [
+    {
+     "name": "factura_B.pdf",
+     "type": "application/pdf",
+     "size": 38000
+    }
+   ],
+   "nota": "difícil: factura de la propia veterinaria"
+  },
+  {
+   "id": "n57",
+   "kind": "neg:factura",
+   "expected": false,
+   "from": "Veterinaria del Parque <administracion@vetdelparque.example>",
+   "subject": "Recibo de pago - consulta Simón",
+   "snippet": "",
+   "files": [
+    {
+     "name": "recibo.pdf",
+     "type": "application/pdf",
+     "size": 30000
+    }
+   ],
+   "nota": "difícil: recibo de la propia veterinaria con el nombre de la mascota"
+  },
+  {
+   "id": "n58",
+   "kind": "neg:servicio",
+   "expected": false,
+   "from": "Guardería Huellas <reservas@huellas.example>",
+   "subject": "Reserva confirmada en guardería canina",
+   "snippet": "",
+   "files": [
+    {
+     "name": "voucher.pdf",
+     "type": "application/pdf",
+     "size": 40000
+    }
+   ]
+  },
+  {
+   "id": "n59",
+   "kind": "neg:servicio",
+   "expected": false,
+   "from": "Paseos Felices <cobros@paseos.example>",
+   "subject": "Liquidación paseos de Milo - octubre",
+   "snippet": "",
+   "files": [
+    {
+     "name": "liquidacion.pdf",
+     "type": "application/pdf",
+     "size": 25000
+    }
+   ],
+   "nota": "difícil: nombre de la mascota"
+  },
+  {
+   "id": "n60",
+   "kind": "neg:servicio",
+   "expected": false,
+   "from": "Peluquería Canina Guau <turnos@guau.example>",
+   "subject": "Turno peluquería canina - Luna",
+   "snippet": "",
+   "files": []
+  },
+  {
+   "id": "n61",
+   "kind": "neg:newsletter",
+   "expected": false,
+   "from": "Protectora Animal <boletin@protectora.example>",
+   "subject": "Boletín de la protectora - octubre",
+   "snippet": "",
+   "files": [
+    {
+     "name": "boletin.pdf",
+     "type": "application/pdf",
+     "size": 700000
+    }
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n62",
+   "kind": "neg:newsletter",
+   "expected": false,
+   "from": "Alertas Barrio <alertas@barrio.example>",
+   "subject": "Mascotas perdidas en tu zona",
+   "snippet": "",
+   "files": [],
+   "unsub": true
+  },
+  {
+   "id": "n63",
+   "kind": "neg:curso",
+   "expected": false,
+   "from": "Facultad de Medicina <alumnos@fmed.example>",
+   "subject": "Resultado del examen final - Anatomía",
+   "snippet": "",
+   "files": [
+    {
+     "name": "acta.pdf",
+     "type": "application/pdf",
+     "size": 50000
+    }
+   ]
+  },
+  {
+   "id": "n64",
+   "kind": "neg:otro",
+   "expected": false,
+   "from": "Laboratorio de Aguas <informes@aguas.example>",
+   "subject": "Análisis de agua potable - informe",
+   "snippet": "",
+   "files": [
+    {
+     "name": "agua.pdf",
+     "type": "application/pdf",
+     "size": 60000
+    }
+   ]
+  },
+  {
+   "id": "n65",
+   "kind": "neg:otro",
+   "expected": false,
+   "from": "VTV <turnos@vtv.example>",
+   "subject": "Informe técnico de tu VTV",
+   "snippet": "",
+   "files": [
+    {
+     "name": "vtv.pdf",
+     "type": "application/pdf",
+     "size": 90000
+    }
+   ]
+  },
+  {
+   "id": "n66",
+   "kind": "neg:otro",
+   "expected": false,
+   "from": "Estudio Contable <estudio@contable.example>",
+   "subject": "Estudio contable: balances",
+   "snippet": "",
+   "files": [
+    {
+     "name": "balance.pdf",
+     "type": "application/pdf",
+     "size": 300000
+    }
+   ]
+  },
+  {
+   "id": "n67",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "RRHH <rrhh@empresa.example>",
+   "subject": "Vacunación antigripal para empleados",
+   "snippet": "",
+   "files": [
+    {
+     "name": "instructivo.pdf",
+     "type": "application/pdf",
+     "size": 80000
+    }
+   ],
+   "nota": "difícil: vacunación de personas"
+  },
+  {
+   "id": "n68",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Consultorio Pediátrico <consultorio@pediatra.example>",
+   "subject": "Calendario de vacunación - Mateo 6 meses",
+   "snippet": "",
+   "files": [
+    {
+     "name": "calendario.pdf",
+     "type": "application/pdf",
+     "size": 40000
+    }
+   ]
+  },
+  {
+   "id": "n69",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Odontología Integral <turnos@odonto.example>",
+   "subject": "Presupuesto de tratamiento dental",
+   "snippet": "",
+   "files": [
+    {
+     "name": "presupuesto.pdf",
+     "type": "application/pdf",
+     "size": 45000
+    }
+   ]
+  },
+  {
+   "id": "n70",
+   "kind": "neg:humano",
+   "expected": false,
+   "from": "Sanatorio Norte <informes@sanatorionorte.example>",
+   "subject": "Informe quirúrgico - paciente Benítez Martín",
+   "snippet": "",
+   "files": [
+    {
+     "name": "parte_quirurgico.pdf",
+     "type": "application/pdf",
+     "size": 70000
+    }
+   ]
+  },
+  {
+   "id": "n71",
+   "kind": "neg:profesional",
+   "expected": false,
+   "from": "Google Académico <scholaralerts-noreply@google.com>",
+   "subject": "Nuevos artículos: leishmaniasis canina en Argentina",
+   "snippet": "",
+   "files": [],
+   "unsub": true
+  },
+  {
+   "id": "n72",
+   "kind": "neg:newsletter",
+   "expected": false,
+   "from": "Royal Canin <news@royalcanin.example>",
+   "subject": "Guía de alimentación para gatitos",
+   "snippet": "",
+   "files": [
+    {
+     "name": "guia.pdf",
+     "type": "application/pdf",
+     "size": 1500000
+    }
+   ],
+   "labels": [
+    "CATEGORY_PROMOTIONS"
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n73",
+   "kind": "neg:vet-sin-documento",
+   "expected": false,
+   "from": "Veterinaria del Parque <turnos@vetdelparque.example>",
+   "subject": "Recordatorio de turno para Simón",
+   "snippet": "Mañana 17 h, control.",
+   "files": []
+  },
+  {
+   "id": "n74",
+   "kind": "neg:promo",
+   "expected": false,
+   "from": "Puppis <novedades@puppis.com.ar>",
+   "subject": "Llegaron las vacunas... ¡de descuentos! Hasta 30% en antiparasitarios",
+   "snippet": "",
+   "files": [
+    {
+     "name": "promo.jpg",
+     "type": "image/jpeg",
+     "size": 250000
+    }
+   ],
+   "labels": [
+    "CATEGORY_PROMOTIONS"
+   ],
+   "unsub": true
+  },
+  {
+   "id": "n75",
+   "kind": "neg:homonimo",
+   "expected": false,
+   "from": "Luna Martínez <lunamartinez@gmail.com>",
+   "subject": "Resultados del partido",
+   "snippet": "Ganamos 3 a 1.",
+   "files": [
+    {
+     "name": "foto_equipo.jpg",
+     "type": "image/jpeg",
+     "size": 900000
+    }
+   ]
+  },
+  {
+   "id": "n76",
+   "kind": "neg:homonimo",
+   "expected": false,
+   "from": "Simón Estudio <simon.estudio@gmail.com>",
+   "subject": "Planos",
+   "snippet": "",
+   "files": [
+    {
+     "name": "planos.pdf",
+     "type": "application/pdf",
+     "size": 1100000
+    }
+   ]
+  },
+  {
+   "id": "r01",
+   "kind": "pos:veterinaria-noreply",
+   "expected": true,
+   "from": "noreply@myvete.example",
+   "subject": "Radiografias de Luna",
+   "snippet": "Radiografias de Luna",
+   "files": [
+    {
+     "name": "IMG_0412.jpg",
+     "type": "image/jpeg",
+     "size": 380000
+    }
+   ],
+   "nota": "caso real (15/10): plataforma de la veterinaria, noreply, plural sin tilde"
+  },
+  {
+   "id": "r02",
+   "kind": "pos:veterinaria-noreply",
+   "expected": true,
+   "from": "noreply@myvete.example",
+   "subject": "Radiografia",
+   "snippet": "",
+   "files": [
+    {
+     "name": "estudio.pdf",
+     "type": "application/pdf",
+     "size": 240000
+    }
+   ],
+   "nota": "caso real: asunto pelado, sin nombre ni la palabra veterinaria"
+  },
+  {
+   "id": "r03",
+   "kind": "pos:veterinaria-noreply",
+   "expected": true,
+   "from": "noreply@myvete.example",
+   "subject": "Informe",
+   "snippet": "",
+   "files": [
+    {
+     "name": "informe.pdf",
+     "type": "application/pdf",
+     "size": 240000
+    }
+   ],
+   "nota": "caso real: asunto pelado"
+  },
+  {
+   "id": "r04",
+   "kind": "pos:reenvio",
+   "expected": true,
+   "from": "Cecilia Romano <ceci.romano@gmail.com>",
+   "subject": "Fwd: Informe cardio Luna Benítez",
+   "snippet": "---------- Forwarded message --------- De: cardiologa",
+   "files": [
+    {
+     "name": "Informe cardio.pdf",
+     "type": "application/pdf",
+     "size": 240000
+    }
+   ],
+   "nota": "caso real: reenvío de un informe de cardiología"
+  },
+  {
+   "id": "r05",
+   "kind": "neg:informe-no-vet",
+   "expected": false,
+   "from": "noreply@tienda-online.example",
+   "subject": "Informe de tu pedido",
+   "snippet": "Tu pedido fue despachado",
+   "files": [
+    {
+     "name": "pedido.pdf",
+     "type": "application/pdf",
+     "size": 240000
+    }
+   ],
+   "nota": "contracara: 'informe' con adjunto de un remitente que no es veterinario"
+  },
+  {
+   "id": "r06",
+   "kind": "neg:informe-no-vet",
+   "expected": false,
+   "from": "Estudio Contable <info@estudiocontable.example>",
+   "subject": "Informe mensual",
+   "snippet": "Adjuntamos el informe",
+   "files": [
+    {
+     "name": "informe-septiembre.pdf",
+     "type": "application/pdf",
+     "size": 240000
+    }
+   ],
+   "nota": "contracara: 'informe' de un estudio contable"
+  }
+ ]
 }
