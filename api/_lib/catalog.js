@@ -27,8 +27,10 @@ export const CATALOG = {
     bajada: '25 diagramas de comando verificados y una calculadora que te arma la lista de materiales del tablero.' },
   /* Drop 01 (19/10/2026) · herramientas online */
   'ob-019': { code: 'OB—019', name: 'Mi Mes by Orbit',
-    usd: 0, ars: 0, // PRECIO A DEFINIR (aprobación de Majo). Con soon: true no se puede comprar.
-    soon: true, herramienta: '/herramientas/mi-mes',
+    /* Precio aprobado por Majo (decision-log 15/10): USD 19 / ARS 28.990 de lanzamiento hasta el 12/11.
+       El 13/11 pasa a USD 24 / ARS 35.990 de lista (cambiarlo a mano acá y en products.js; no está automatizado).
+       La lectura automática con IA vence a los 12 meses de la compra (api/_lib/mi-mes-ia.js). */
+    usd: 19, ars: 28990, herramienta: '/herramientas/mi-mes',
     bajada: 'Cuánto te queda libre este mes y los que vienen, con tus cuotas ya descontadas.' },
   /* Drop 1 · Fleteros */
   'ob-006': { code: 'OB—006', name: 'Tarifador de fletes',            usd: 10, ars: 14999, foto: 'arch',

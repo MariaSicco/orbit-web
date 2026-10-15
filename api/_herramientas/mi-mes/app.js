@@ -28,7 +28,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t18';
+const VERSION = '2026-10-15.t19';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -1386,10 +1386,23 @@ function abrirSubir(tarjetaId = null, { agregar = false } = {}) {
 }
 /* ¿la lectura es real o de prueba? Se pregunta una vez; sin servidor, prueba. */
 let modoLectura = LOCAL ? 'prueba' : null;
+/* decisiones de Majo (15/10): la lectura automática vence a los 12 meses de la compra y se pausa si se llega al techo del mes */
+let iaInfo = { iaHasta: null, iaVencida: false, pausa: null };
+const fechaIA = iso => { const [a, m, d] = iso.split('-').map(Number); return `${d}/${m}/${a}`; };
+function pintarIA() {
+  const v = $id('ia-vence'), p = $id('ia-pausa');
+  v.hidden = !iaInfo.iaHasta;
+  v.textContent = iaInfo.iaHasta ? (iaInfo.iaVencida
+    ? `Tu lectura automática venció el ${fechaIA(iaInfo.iaHasta)}. La app y tus datos siguen; podés cargar a mano.`
+    : `Lectura automática incluida hasta el ${fechaIA(iaInfo.iaHasta)}.`) : '';
+  const msg = iaInfo.iaVencida ? `Tu lectura automática venció el ${fechaIA(iaInfo.iaHasta)}. La app y tus datos siguen; podés cargar a mano.`
+    : iaInfo.pausa ? `La lectura automática está en pausa hasta el ${iaInfo.pausa}: cargalo a mano.` : '';
+  p.hidden = !msg; p.textContent = msg;
+}
 if (!LOCAL) {
-  fetch('/api/leer-resumen', { credentials: 'same-origin' })
+  fetch(F.subiLoQueTengas ? '/api/mi-mes-leer' : '/api/leer-resumen', { credentials: 'same-origin' })
     .then(r => (r.ok ? r.json() : { modo: null }))
-    .then(j => { modoLectura = j?.modo || null; })
+    .then(j => { modoLectura = j?.modo || null; iaInfo = { iaHasta: j?.iaHasta || null, iaVencida: !!j?.iaVencida, pausa: j?.pausa || null }; pintarIA(); })
     .catch(() => { modoLectura = null; });   // sin red no hay "modo prueba": solo lo dice el servidor
 }
 $id('dlg-subir').querySelector('form').addEventListener('submit', e => {

@@ -701,3 +701,6 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 @media (prefers-reduced-motion:reduce){.mm-drop{transition:none}}
 .mm-reemplaza{align-items:flex-start;font-size:14px;gap:8px;margin:4px 0 0}
 .mm-leido-cobro{margin:6px 0 0}.mm-leido-cobro select{max-width:120px}
+
+.mm-ia-vence{margin:0 0 10px;font-size:14px;color:var(--tinta2)}
+.mm-ia-pausa{width:auto;margin:0 0 12px}

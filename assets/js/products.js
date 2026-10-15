@@ -393,6 +393,53 @@ window.ORBIT_PRODUCTS = [
       {es: 'Quien concilia a mano el sistema contra ARCA', en: 'Anyone reconciling their system against ARCA by hand'},
     ],
   },
+  {
+    /* Mi Mes by Orbit: herramienta online (app en /herramientas/mi-mes), una sola versión paga.
+       Se entrega como acceso desde Mi cuenta, igual que Orbit IVA y Mimitos. */
+    /* Precio aprobado por Majo (decision-log 15/10): USD 19 / ARS 28.990 de lanzamiento hasta el 12/11;
+       el 13/11 pasa a USD 24 / ARS 35.990 de lista (a mano, acá y en api/_lib/catalog.js). */
+    id: 'ob-019', cover: 'libro', code: 'OB—019', n: '19', name: 'Mi Mes by Orbit',
+    family: 'systems', status: 'available', price: 19, ars: 28990,
+    accent: 'blue', checkout: '', photo: 'studio',
+    /* sello propio en la ficha, como Mimitos: la lectura automática con IA vence a los 12 meses */
+    sello: ['12 meses de lectura automática', '12 months of automatic reading'],
+    acceso: '/herramientas/mi-mes',
+    pantallasDir: 'ob-019',
+    pantallas: [
+      ['p1', {es: 'Inicio', en: 'Home'},
+             {es: 'Cuánto te queda libre este mes, con tus cuotas y tarjetas ya descontadas.', en: 'What you have left this month, with your installments and cards already taken out.'}],
+      ['p2', {es: 'Revisá lo que leí', en: 'Review what I read'},
+             {es: 'Subís el PDF del resumen y revisás lo que leyó antes de guardar.', en: 'Upload your statement PDF and review what it read before saving.'}],
+      ['p3', {es: 'Mis tarjetas', en: 'My cards'},
+             {es: 'Lo que debés en cada tarjeta, el crédito disponible y los intereses y cargos de cada resumen.', en: 'What you owe on each card, your available credit and the interest and charges on each statement.'}],
+      ['p4', {es: 'Escalera de cuotas', en: 'Installment ladder'},
+             {es: 'Mes a mes, cuánto está comprometido y cuándo se te libera plata.', en: 'Month by month, how much is committed and when money frees up.'}],
+    ],
+    tagline: {es: 'Cuánto te queda libre este mes y los que vienen, con tus cuotas y tarjetas ya descontadas. Subís tus resúmenes, recibos y facturas y se arma solo.', en: 'How much you have left this month and the next ones, with your installments and cards already taken out. Upload your statements, pay slips and bills and it builds itself.'},
+    specs: [
+      [{es: 'Formato', en: 'Format'}, {es: 'Online, sin instalar (se puede agregar al inicio del celu)', en: 'Online, no install (you can add it to your phone’s home screen)'}],
+      [{es: 'Tarjetas', en: 'Cards'}, {es: 'Todas las que tengas, con adicionales', en: 'As many as you have, including additional cards'}],
+      [{es: 'Monedas', en: 'Currencies'}, {es: 'Pesos, dólares y otras, pasadas a pesos', en: 'Pesos, dollars and others, converted to pesos'}],
+      [{es: 'Tus datos', en: 'Your data'}, {es: 'Quedan en tu dispositivo, con copia exportable', en: 'They stay on your device, with an exportable backup'}],
+      [{es: 'Lectura automática', en: 'Automatic reading'}, {es: 'Resúmenes, recibos, facturas y capturas, con IA (Claude), por 12 meses. Los archivos no se guardan', en: 'Statements, pay slips, bills and screenshots, with AI (Claude), for 12 months. Files are not stored'}],
+      [{es: 'Acceso', en: 'Access'}, {es: 'Con tu cuenta de Orbit', en: 'With your Orbit account'}],
+      [{es: 'Alcance', en: 'Scope'}, {es: 'Organizador, no es asesoramiento financiero', en: 'An organizer, not financial advice'}],
+    ],
+    includes: [
+      [{es: 'Te quedan libres, mes a mes', en: 'What’s left, month by month'}, {es: 'Tus ingresos menos tus gastos fijos y lo que vence de tarjetas. Pasás a los meses que vienen con flechas', en: 'Your income minus your fixed expenses and what’s due on your cards. Move ahead to the coming months with arrows'}],
+      [{es: 'El resumen de la tarjeta, leído solo', en: 'Your card statement, read for you'}, {es: 'Subís el PDF y se leen el banco, las fechas, el total por moneda, los consumos, las cuotas, los cargos y los límites. Antes de guardar ves todo y lo podés corregir. Si la cuenta no cierra, te avisa y podés cargarlo a mano. La lectura la hace la IA de Anthropic (Claude); el PDF pasa por el servidor de Orbit y no se guarda', en: 'Upload the PDF and it reads the bank, dates, total per currency, purchases, installments, charges and limits. You see everything before saving and can correct it. If the numbers don’t add up, it tells you and you can enter it by hand. The reading is done by Anthropic’s AI (Claude); the PDF goes through Orbit’s server and is not stored'}],
+      [{es: 'Plata líquida contra crédito', en: 'Cash versus credit'}, {es: 'Con qué pagás (ingresos menos gastos fijos) y lo que debés en tarjetas (resumen, cuotas que vienen y compras nuevas), con el crédito disponible de cada tarjeta. Te avisa cuando un mes lo que vence supera tu plata', en: 'What you pay with (income minus fixed expenses) and what you owe on cards (statement, coming installments and new purchases), with each card’s available credit. It warns you when a month’s card payments exceed your cash'}],
+      [{es: 'Escalera de cuotas', en: 'Installment ladder'}, {es: 'Mes a mes, cuánto está comprometido por tarjeta, en qué mes se te libera plata y un tope de cuotas sobre tus ingresos', en: 'Month by month, how much is committed per card, when money frees up and a cap on installments as a share of your income'}],
+      [{es: 'Avisos de cierre y vencimiento', en: 'Closing and due-date reminders'}, {es: 'Dentro de la app, en tu calendario (archivo .ics) y en el celu, sin montos. En iPhone, para los avisos al celu, la agregás a la pantalla de inicio (iOS 16.4 o más)', en: 'In the app, in your calendar (.ics file) and on your phone, without amounts. On iPhone, add it to your home screen to get phone reminders (iOS 16.4 or later)'}],
+      [{es: 'Dólares a la vista', en: 'Dollars in view'}, {es: 'Los consumos en dólares cuentan en tus cuentas al oficial, con la percepción del 30 % estimada aparte. Tipo de cambio editable, con fuente y fecha', en: 'Dollar purchases count at the official rate, with the 30% tax withholding estimated separately. Editable exchange rate, with source and date'}],
+      [{es: 'Antes de comprar', en: 'Before you buy'}, {es: '“¿Y si compro esto?” muestra cómo quedaría cada mes, y “¿Cuotas o contado?” compara con la inflación y lo que rinde tu plata. Son cuentas orientativas', en: '“What if I buy this?” shows how each month would look, and “Installments or cash?” compares using inflation and what your money earns. Guidance only'}],
+    ],
+    for: [
+      {es: 'Quien paga en cuotas con una o varias tarjetas y no sabe cuánto de cada sueldo ya está comprometido', en: 'Anyone paying in installments on one or more cards who doesn’t know how much of each paycheck is already committed'},
+      {es: 'Quien quiere ver el resumen de la tarjeta claro, con los intereses y cargos a la vista', en: 'Anyone who wants to see their card statement clearly, with interest and charges in view'},
+      {es: 'Quien no quiere conectar su banco a ninguna app', en: 'Anyone who doesn’t want to connect their bank to an app'},
+    ],
+  },
 ];
 
 window.ORBIT_FAMILIES = {

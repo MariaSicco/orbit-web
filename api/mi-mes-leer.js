@@ -13,7 +13,9 @@
    El archivo no se guarda. Los logs llevan tokens por tipo, nunca datos. */
 import { createHash } from 'node:crypto';
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
-import { kvIncr, kvGet, kvDel } from './_lib/kv.js';
+import { kvIncrBy, kvGet, kvDel, getPurchases } from './_lib/kv.js';
+import { reservar, ajustar, devolver, mensajePausa, enPausa, vigenciaIA, mensajeVencida } from './_lib/mi-mes-ia.js';
+const kvIncr = (k, ttl) => kvIncrBy(k, 1, ttl);
 import { hoyAR } from './_lib/mi-mes-avisos.js';
 import { hayKey, leerResumenConClaude, ErrorLectura } from './_lib/mi-mes-lector.js';
 import { leerFacturaConClaude } from './_lib/vencimientos-lector.js';
@@ -89,7 +91,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') { res.setHeader('Allow', 'GET, POST'); return responder(res, 405, { ok: false, error: 'Usá POST con el archivo.' }); }
   const acc = await requireHerramienta(req, res, PRODUCTO);
   if (!acc) return;
-  if (req.method === 'GET') return responder(res, 200, { ok: true, modo: hayKey() ? 'real' : 'prueba' });
+  /* decisiones de Majo (15/10): la lectura automática vence a los 12 meses de la compra y tiene un techo global por mes */
+  const vig = await vigenciaIA(acc, acc.admin ? [] : await getPurchases(acc.email).catch(() => []));
+  if (req.method === 'GET') return responder(res, 200, { ok: true, modo: hayKey() ? 'real' : 'prueba', iaHasta: vig.hasta, iaVencida: vig.vencida, pausa: await enPausa().catch(() => null) });
+  if (vig.vencida) return responder(res, 403, { ok: false, motivo: 'ia_vencida', error: mensajeVencida(vig.hasta) });
 
   const url = new URL(req.url, 'http://x');
   const pedido = url.searchParams.get('tipo');
@@ -118,25 +123,34 @@ export default async function handler(req, res) {
     const c = clasificarDeEjemplo(url.searchParams.get('nombre'), hoy);
     return responder(res, 200, { ok: true, modo: 'prueba', tipo: c.tipo, siguiente: ['resumen', 'factura'].includes(c.tipo), lectura: c });
   }
+  /* techo global de IA de Mi Mes: se reserva lo máximo antes de llamar a Claude */
+  const reserva = await reservar(paso);
+  if (!reserva.ok) return responder(res, 503, { ok: false, motivo: 'pausa', error: mensajePausa(reserva.hasta) });
   const t0 = Date.now();
   const resto = () => presupuesto - (Date.now() - t0);
   try {
     if (pedido === 'resumen') {
       const r = await conTope(leerResumenConClaude(buf, tipo), resto());
+      await ajustar(reserva, { modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida });
       log({ modo: 'real', tipoDoc: 'resumen', modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida, ms: Date.now() - t0 });
       return responder(res, 200, { ok: true, modo: 'real', tipo: 'resumen', confiable: r.confiable, lectura: r.lectura });
     }
     if (pedido === 'factura') {
       const r = await conTope(leerFacturaConClaude({ buf, tipo }), resto());
+      await ajustar(reserva, { modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida });
       log({ modo: 'real', tipoDoc: 'factura', modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida, ms: Date.now() - t0 });
       /* la propuesta (nombre, categoría, monto en centavos, vencimiento, frecuencia) se arma acá: el navegador de Mi Mes no carga los módulos de Vencimientos */
       return responder(res, 200, { ok: true, modo: 'real', tipo: 'factura', lectura: r.lectura, propuesta: propuestaDesde(r.lectura, hoyAR()) });
     }
     const r = await conTope(clasificarConClaude({ buf, tipo }), resto());
+    await ajustar(reserva, { modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida });
     log({ modo: 'real', tipoDoc: r.lectura.tipo, modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida, ms: Date.now() - t0 });
     return responder(res, 200, { ok: true, modo: 'real', tipo: r.lectura.tipo, siguiente: ['resumen', 'factura'].includes(r.lectura.tipo), lectura: r.lectura });
   } catch (e) {
     const t = e instanceof ErrorLectura || e?.tipo ? e.tipo : 'api';
+    /* con tokens usados se cobra lo real; si se pasó de tiempo la llamada sigue corriendo: queda la reserva; si no hubo respuesta, vuelve */
+    if (e?.uso && (e.uso.entrada || e.uso.salida)) await ajustar(reserva, { entrada: e.uso.entrada, salida: e.uso.salida });
+    else if (t !== 'tiempo') await devolver(reserva);
     console.warn(JSON.stringify({ evento: 'mi-mes-leer', paso, modo: 'real', modelo: pedido ? undefined : MODELO_CLASIFICAR, resultado: t,
       entrada: e?.uso?.entrada ?? 0, salida: e?.uso?.salida ?? 0, bytes: buf.length, paginas, ms: Date.now() - t0 }));
     return responder(res, ESTADO_ERROR[t] || 502, { ok: false, modo: 'real', motivo: t, error: e?.message || 'No pudimos leer el archivo ahora. Cargalo a mano.' });

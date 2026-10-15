@@ -163,6 +163,7 @@
     <div class="mm-vista-top"><h1 id="t-cargado" tabindex="-1">Lo cargado</h1></div>
     <p class="mm-sub">Tocá cualquier ítem para editarlo o borrarlo.</p>
     <section class="mm-panel mm-copia" aria-labelledby="t-copia">
+      <p class="mm-ia-vence" id="ia-vence" hidden></p>
       <div><h2 id="t-copia" class="mm-h2">Tu copia de seguridad</h2>
       <p class="mm-ayuda">Tus datos viven solo en este dispositivo. Bajá una copia de vez en cuando y, si cambiás de celular, importala ahí.</p></div>
       <div class="mm-acciones"><button type="button" class="mm-btn sec" data-exportar><svg class="ic"><use href="#i-bajar"/></svg> Exportar copia</button><button type="button" class="mm-btn sec" data-importar-copia><svg class="ic"><use href="#i-subir"/></svg> Importar copia</button></div>
@@ -248,6 +249,7 @@
   <!-- ════════ SUBÍ LO QUE TENGAS (interruptor subiLoQueTengas) ════════ -->
   <section class="mm-vista" id="vista-subir" aria-labelledby="t-subir" hidden>
     <div class="mm-vista-top"><h1 id="t-subir" tabindex="-1">Subí todos los resúmenes que tengas</h1></div>
+    <p class="mm-alerta mm-ia-pausa" id="ia-pausa" role="status" hidden></p>
     <p class="mm-sub" id="subir-sub">Viejos o actuales: resúmenes de tarjeta de varios meses, recibos de sueldo, facturas y capturas del homebanking. Con eso armamos tu mes.</p>
     <div class="mm-subir">
       <label class="mm-drop" id="drop" for="archivos">
