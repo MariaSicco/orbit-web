@@ -1570,7 +1570,7 @@ function detail(p, kind, id) {
     ({ rec: () => recForm(p, x), visit: () => visitForm(p, x), study: () => studyForm(p, x), sym: () => x.kind ? algoSheet(p, x) : symptomForm(p, x), surg: () => surgeryForm(p, x), med: () => medForm(p, x) })[kind]();
   };
 }
-function panel(title, html) { $('#dPanelT').textContent = title; $('#pBody').innerHTML = html; $('#pBody').onclick = null; if (!dPanel.open) dPanel.showModal(); }
+function panel(title, html) { $('#dPanelT').textContent = title; $('#pBody').innerHTML = html; $('#pBody').onclick = null; $('#pBody').oninput = null; $('#pBody').onchange = null; if (!dPanel.open) dPanel.showModal(); }
 
 /* ---------- LIBRETA SANITARIA DIGITAL ----------
    Imita la libreta del veterinario y se arma con el mismo doc de la mascota:
@@ -2876,13 +2876,30 @@ function qrCanvas(text, size = 400) {
   const c = document.createElement('canvas'); c.width = src.width; c.height = src.height; c.getContext('2d').drawImage(src, 0, 0);
   box.innerHTML = ''; return c;
 }
-async function makeLink(p, kind) {
+/* crea, actualiza o apaga un link (QR o cuidador). extra viaja con el pedido (p. ej. los datos del cuidador).
+   Si algo falla, el error lleva un mensaje para mostrar tal cual (e.ui). */
+async function makeLink(p, kind, extra = {}) {
   await flushNow();
-  const r = await fetch(`/api/mascotas?${kind}=1`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ petId: p.id }) });
-  const d = await r.json(); if (!r.ok) throw new Error(d.error); adopt(d.doc);
+  let r, d;
+  try { r = await fetch(`/api/mascotas?${kind}=1`, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ petId: p.id, ...extra }) }); }
+  catch { throw Object.assign(new Error('red'), { ui: 'No hay conexión. Revisá internet y probá de nuevo.' }); }
+  d = await r.json().catch(() => null);
+  if (!r.ok || !d?.doc) throw Object.assign(new Error(d?.error || String(r.status)), { ui: linkErr(r.status, d) });
+  adopt(d.doc);
   if (kind === 'sitter') sitterLinks[p.id] = d.until ? { active: true, until: d.until } : { active: Boolean(d.token) };
   if (kind === 'unsitter') delete sitterLinks[p.id];
   return petById(p.id);
+}
+/* qué decirle a la persona según lo que respondió el servidor (sin JSON = la protección de Vercel o un error nuestro) */
+function linkErr(st, d) {
+  const e = d?.error || '';
+  if (e === 'hasta_pasado') return `La fecha "hasta" (${longDate(d.to)}) ya pasó: el link nacería vencido. Poné hasta cuándo ${la(curPet() || {})} cuidan, o dejala vacía.`;
+  if (e === 'fechas_invertidas') return 'La fecha "hasta" no puede ser anterior a "desde".';
+  if (st === 401 || st === 403) return 'Se cerró tu sesión. Recargá la página y entrá de nuevo.';
+  if (st === 402) return 'No encontramos la compra de Mimitos en esta cuenta.';
+  if (st === 404) return 'Esta mascota todavía no está guardada en tu cuenta. Esperá a que arriba diga "Guardado" y probá de nuevo.';
+  if (st === 429) return 'Hiciste muchos pedidos seguidos. Esperá un minuto y probá de nuevo.';
+  return `No pudimos crear el link (error ${st || 'de red'}). Probá de nuevo en un rato.`;
 }
 function copyBtn(sel, url) { $(sel).onclick = async () => { try { await navigator.clipboard.writeText(url); toast('Link copiado.'); } catch { const i = $(sel).previousElementSibling; i.select(); } }; }
 function sharePanel(p) {
@@ -2929,42 +2946,60 @@ function tagImage(p, url) {
 }
 
 /* ---------- modo cuidador ---------- */
-function sitterPanel(p) {
+function sitterPanel(p, opts = {}) {
   const s = p.sitter;
   const fields = [
-    [{ k: 'name', label: Cap(quienCuida(p)).replace(/^Quien/, 'Quién'), max: 60, ph: 'Caro' }, { k: 'contact', label: 'Tu contacto mientras no estás', max: 120 }],
+    { k: 'name', label: Cap(quienCuida(p)).replace(/^Quien/, 'Quién'), max: 60, ph: 'Caro' },
     [{ k: 'from', label: 'Desde', type: 'date' }, { k: 'to', label: 'Hasta', type: 'date' }],
+    { k: 'contact', label: 'Tu contacto mientras no estás', max: 120, ph: 'Tu WhatsApp o el de alguien cerca' },
     { k: 'food', label: 'Comida', type: 'textarea', max: 400, ph: 'Cuánto, a qué hora y dónde está el alimento.' },
     { k: 'walks', label: 'Paseos y salidas', type: 'textarea', max: 300, ph: 'Horarios, si va con correa, si se puede soltar.' },
     { k: 'where', label: 'Dónde está cada cosa', type: 'textarea', max: 300, ph: 'Correa, bolsitas, transportadora, remedios.' },
     { k: 'habits', label: 'Mañas y miedos', type: 'textarea', max: 400, ph: 'Se escapa si abren la puerta, le tiene miedo a los cohetes…' },
     { k: 'key', label: 'Llave de respaldo', max: 200, ph: 'Quién tiene otra llave por si se queda afuera.' },
     { k: 'emergency', label: 'Si pasa algo', type: 'textarea', max: 400, ph: 'A quién llamar primero y qué hacer.' },
-    { k: 'vetAuth', label: `Avisé a la veterinaria que puede atender${la(p)} en mi nombre`, type: 'check', hint: 'Es lo que más se olvida: sin ese aviso, en una emergencia pueden no atenderla si no te ubican.' },
+    { k: 'vetAuth', label: `Avisé a la veterinaria que puede atender${la(p)} en mi nombre`, type: 'check', hint: 'Es lo que más se olvida: sin ese aviso, en una emergencia pueden no atender' + la(p) + ' si no te ubican.' },
   ];
   const sl = sitterLinks[p.id], gone = Boolean(p.sitterToken && sl?.expired);
   const link = p.sitterToken && !gone ? `${location.origin}/cuida/${p.sitterToken}` : '';
-  const vig = gone ? `<p class="banner sl-state" role="status">${bubble('alert', 'perdida')}<span><b>Este link venció</b>El cuidador ya no ve la información. Si lo sigue necesitando, creá uno nuevo.</span></p>`
-    : link && sl?.until ? `<p class="sl-state dim" role="status">Vigente hasta el ${esc(longDate(sl.until))}. Después se apaga solo.</p>` : '';
-  panel(`Quién cuida a ${p.name}`, `<p class="lead-s">Completalo una vez. El cuidador abre un link con todo esto, los remedios con sus horarios y la veterinaria, y marca cada día si comió, paseó y le dio los remedios. Lo ves en Inicio, en "Lo que anotó ${esc(quienCuida(p))}". No te llega un aviso al celu.</p>
-    <div class="fbody">${fields.map(f => Array.isArray(f) ? `<div class="two">${f.map(x => field(x, s[x.k])).join('')}</div>` : field(f, s[f.k])).join('')}</div>
-    ${vig}
+  const who = s.name ? esc(s.name) : esc(quienCuida(p));
+  /* el link va arriba de todo: es lo que se busca al volver y lo primero que se ve al crearlo */
+  const box = link ? `<section class="sl-box${opts.fresh ? ' fresh' : ''}" aria-labelledby="slT">
+      <h3 id="slT">${opts.fresh ? 'Listo, este es el link' : 'Link para ' + who}</h3>
+      <div class="linkbox"><input readonly value="${esc(link)}" aria-label="Link del cuidador" id="sLink"><button class="btn sm" id="sCp" type="button">Copiar</button></div>
+      <div class="sl-btns"><a class="btn sm" id="sWa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`Todo lo de ${p.name} mientras no estoy: ${link}`)}">Compartir por WhatsApp</a><a class="btn ghost sm" id="sOpen" href="${esc(link)}" target="_blank" rel="noopener">Abrir</a></div>
+      ${sl?.until ? `<p class="sl-state dim" role="status">Vigente hasta el ${esc(longDate(sl.until))}. Después se apaga solo.</p>` : ''}
+    </section>` : gone ? `<p class="banner sl-state" role="status">${bubble('alert', 'perdida')}<span><b>Este link venció</b>El cuidador ya no ve la información. Si lo sigue necesitando, creá uno nuevo abajo.</span></p>` : '';
+  panel(`Quién cuida a ${p.name}`, `${box}
+    <p class="lead-s">${link ? 'Si cambiás algo, tocá "Guardar cambios": el cuidador lo ve al recargar.' : `Completalo una vez. El cuidador abre un link con todo esto, los remedios y la veterinaria, y marca cada día si comió, paseó y le dio los remedios. Lo ves en Inicio, en "Lo que anotó ${esc(quienCuida(p))}".`}</p>
+    <p class="banner sl-err" id="sErr" role="alert" hidden></p>
+    <div class="fbody sl-form">${fields.map(f => Array.isArray(f) ? `<div class="two">${f.map(x => field(x, s[x.k])).join('')}</div>` : field(f, s[f.k])).join('')}</div>
     <button class="row link-row" id="sRut" type="button">${bubble('cal', 'cuida')}<span class="what"><b>Rutina</b><small>${esc(rutinaResumen(p))}</small></span>${I('chevron')}</button>
-    <button class="btn wide" id="sSave">${link ? 'Guardar cambios' : gone ? 'Guardar y crear un link nuevo' : 'Guardar y crear link'}</button>
-    ${link ? `<div class="linkbox"><input readonly value="${esc(link)}" aria-label="Link del cuidador"><button class="btn sm" id="sCp" type="button">Copiar</button></div>
-      <a class="btn ghost wide" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(`Todo lo de ${p.name} mientras no estoy: ${link}`)}">Mandar por WhatsApp</a>
-      <button class="link danger" id="sOff" type="button">Apagar link</button>` : ''}`);
+    <button class="btn wide" id="sSave" type="button">${link ? 'Guardar cambios' : gone ? 'Guardar y crear un link nuevo' : 'Guardar y crear link'}</button>
+    ${link ? '<button class="link danger" id="sOff" type="button">Apagar link</button>' : ''}`);
+  const sheet = $('#dPanel .sheet');
+  if (opts.fresh && sheet) { sheet.scrollTop = 0; $('#sCp')?.focus({ preventScroll: true }); }
+  const fail = msg => { const el = $('#sErr'); if (el) { el.textContent = msg; el.hidden = false; el.scrollIntoView({ block: 'center', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' }); } toast(msg); };
   $('#sSave').onclick = async () => {
+    const btn = $('#sSave');
     const v = {}; for (const f of fields.flat()) { const el = $('#f_' + f.k); v[f.k] = f.type === 'check' ? el.checked : el.value.trim(); }
-    if (v.from && v.to && v.to < v.from) return toast('La fecha "hasta" no puede ser anterior a "desde".');
+    if (v.from && v.to && v.to < v.from) return fail('La fecha "hasta" no puede ser anterior a "desde".');
     p.sitter = v; changed();
-    if (!p.sitterToken || gone) { try { sitterPanel(await makeLink(p, 'sitter')); toast(`Link creado. Mandáselo a ${quienCuida(p)}.`); } catch { toast('No pudimos crear el link. Probá de nuevo.'); } }
-    else { toast('Guardado. El cuidador ve los cambios al recargar.'); try { sitterPanel(await makeLink(p, 'sitter')); } catch {} }
+    const creating = !p.sitterToken || gone;
+    btn.disabled = true; btn.setAttribute('aria-busy', 'true'); btn.textContent = creating ? 'Creando el link…' : 'Guardando…';
+    try {
+      const np = await makeLink(p, 'sitter', { sitter: v });
+      render(); sitterPanel(np, { fresh: creating });
+      toast(creating ? `Link creado. Mandáselo a ${v.name || quienCuida(p)}.` : 'Guardado. El cuidador ve los cambios al recargar.');
+    } catch (e) {
+      btn.disabled = false; btn.removeAttribute('aria-busy'); btn.textContent = creating ? (gone ? 'Guardar y crear un link nuevo' : 'Guardar y crear link') : 'Guardar cambios';
+      fail(e.ui || 'No pudimos crear el link. Probá de nuevo.');
+    }
   };
   $('#sRut').onclick = () => rutinaPanel(p);
   if (link) {
     copyBtn('#sCp', link);
-    $('#sOff').onclick = async () => { const b = $('#sOff'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tocá de nuevo: el cuidador deja de ver la información'; return; } try { sitterPanel(await makeLink(p, 'unsitter')); toast('Link apagado.'); } catch { toast('No pudimos apagar el link.'); } };
+    $('#sOff').onclick = async () => { const b = $('#sOff'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'Tocá de nuevo: el cuidador deja de ver la información'; return; } try { sitterPanel(await makeLink(p, 'unsitter')); toast('Link apagado.'); } catch (e) { fail(e.ui ? e.ui.replace('crear', 'apagar') : 'No pudimos apagar el link.'); } };
   }
 }
 

@@ -328,7 +328,7 @@ main.wide{max-width:1180px}
 .chart svg{display:block;width:100%;height:auto}
 
 /* ---------- hojas (dialogs) ---------- */
-dialog{border:0;padding:0;width:min(560px,100%);max-width:100%;max-height:94vh;border-radius:24px 24px 0 0;margin:auto auto 0;background:var(--bg);color:var(--ink);box-shadow:0 -10px 40px rgba(31,26,23,.18)}
+dialog{border:0;padding:0;width:min(560px,100%);max-width:100%;max-height:94vh;max-height:94dvh;border-radius:24px 24px 0 0;margin:auto auto 0;background:var(--bg);color:var(--ink);box-shadow:0 -10px 40px rgba(31,26,23,.18)}
 @media(min-width:640px){dialog{border-radius:24px;margin:auto}}
 dialog::backdrop{background:rgba(31,26,23,.38)}
 @media(prefers-reduced-motion:no-preference){
@@ -337,7 +337,7 @@ dialog::backdrop{background:rgba(31,26,23,.38)}
 }
 @keyframes sheet{from{transform:translateY(24px);opacity:0}to{transform:none;opacity:1}}
 @keyframes fade{from{opacity:0}}
-.sheet{display:flex;flex-direction:column;gap:16px;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));overflow:auto;max-height:94vh}
+.sheet{display:flex;flex-direction:column;gap:16px;padding:8px 16px calc(20px + env(safe-area-inset-bottom,0px));overflow:auto;overflow-x:hidden;overscroll-behavior:contain;max-height:94vh;max-height:94dvh}
 .sheet::before{content:'';align-self:center;width:36px;height:4px;border-radius:999px;background:var(--line2);margin-top:2px;flex:none}
 @media(min-width:640px){.sheet{padding:20px 24px 24px}.sheet::before{display:none}}
 .sheet-h{display:flex;justify-content:space-between;align-items:center;gap:12px;position:sticky;top:-8px;background:var(--bg);padding:4px 0;z-index:2}
@@ -356,7 +356,9 @@ input::placeholder,textarea::placeholder{color:#8E847C}
 textarea{min-height:88px;resize:vertical;line-height:1.45}
 input:focus,select:focus,textarea:focus{outline:0;border-color:var(--act);box-shadow:0 0 0 3px rgba(31,77,64,.18)}
 input[type=date],input[type=datetime-local]{font-variant-numeric:tabular-nums}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
+/* iOS le da a los date/time un ancho propio que rompe la grilla a 360 px */
+input[type=date],input[type=time],input[type=datetime-local]{min-width:0;max-width:100%;width:100%}
 @media(max-width:440px){.two.stack-s{grid-template-columns:1fr}}
 .chips{display:flex;flex-wrap:wrap;gap:8px}
 .chip{border:0;background:var(--card);box-shadow:inset 0 0 0 1px var(--line2);border-radius:999px;padding:0 16px;min-height:44px;cursor:pointer;font-weight:500;font-size:14.5px;color:var(--ink);transition:background .15s var(--ease),color .15s var(--ease),box-shadow .15s var(--ease)}
@@ -369,7 +371,8 @@ input[type=date],input[type=datetime-local]{font-variant-numeric:tabular-nums}
 .photo-pick .av{background:var(--card);box-shadow:inset 0 0 0 1px var(--line2)}
 .qr{background:#fff;border-radius:var(--r);padding:18px;display:grid;place-items:center;box-shadow:var(--sh1)}
 .qr canvas{width:200px!important;height:200px!important}
-.linkbox{display:flex;gap:8px}
+.linkbox{display:flex;gap:8px;min-width:0}
+.linkbox input{flex:1;min-width:0}
 .linkbox input{font-size:13.5px;color:var(--ink2)}
 .preview{width:100%;border-radius:var(--r-s)}
 .steps{margin:0;padding:16px 16px 16px 36px;display:flex;flex-direction:column;gap:8px;background:var(--card);border-radius:var(--r);box-shadow:var(--sh1)}
@@ -1336,6 +1339,15 @@ body[data-view="preguntar"] .disclaimer,body[data-view="preguntar"] .made{displa
 .sl-state{margin:4px 0 12px;font-size:14px}
 .sl-state.banner{background:var(--perdida);box-shadow:none;align-items:flex-start}
 .sl-state.banner b{display:block}
+/* el link del cuidador, arriba del formulario: copiar, compartir y abrir a un toque */
+.sl-box{background:var(--card);border-radius:var(--r);padding:14px;box-shadow:var(--sh1);display:flex;flex-direction:column;gap:10px;min-width:0}
+.sl-box h3{margin:0;font-size:16px}
+.sl-box.fresh{outline:2px solid var(--ok);outline-offset:-2px}
+.sl-box .sl-state{margin:0}
+.sl-btns{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:8px}
+.sl-btns .btn,.sl-box .linkbox .btn{min-height:44px;justify-content:center}
+.sl-err{background:var(--late-bg);color:var(--ink);box-shadow:none;font-size:14.5px;line-height:1.45}
+.sl-err[hidden]{display:none}
 /* "Ya se la di": el botón de cerrar una fecha vencida, de hoy o pronto (Inicio, Agenda, Libreta y detalle) */
 .ibtn.renew{display:inline-flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;padding:0 14px;border-radius:999px;font-size:14.5px}
 .ibtn.renew svg.i{width:17px;height:17px;stroke-width:2.4}
@@ -1447,3 +1459,4 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 .sheetdoc .pd-th img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .sheetdoc .pd-th small{position:relative;width:100%;font-size:9px;line-height:1.3;text-align:center;background:rgba(255,255,255,.88)}
 .sheetdoc .pd-eps td{vertical-align:top}
+@media(max-width:400px){.sl-btns{grid-template-columns:minmax(0,1fr)}}

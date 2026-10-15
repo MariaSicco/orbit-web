@@ -135,12 +135,7 @@ export function cleanDoc(d, email) {
     qrNote: { show: Boolean(p?.qrNote?.show), text: str(p?.qrNote?.text, 200) },
     share: tok(p?.share),
     sitterToken: tok(p?.sitterToken),
-    sitter: {
-      name: str(p?.sitter?.name, 60), from: day(p?.sitter?.from), to: day(p?.sitter?.to),
-      food: str(p?.sitter?.food, 400), walks: str(p?.sitter?.walks, 300), where: str(p?.sitter?.where, 300),
-      habits: str(p?.sitter?.habits, 400), emergency: str(p?.sitter?.emergency, 400), key: str(p?.sitter?.key, 200),
-      vetAuth: Boolean(p?.sitter?.vetAuth), contact: str(p?.sitter?.contact, 120),
-    },
+    sitter: cleanSitter(p?.sitter),
     neutered: pick(p?.neutered, ['si', 'no'], ''),
     chronic: str(p?.chronic, 300),
     onboarded: Boolean(p?.onboarded),
@@ -232,6 +227,15 @@ export function publicPet(p) {
   };
 }
 
+/* datos para el cuidador (los mismos en el guardado de la libreta y en "crear link") */
+export function cleanSitter(x) {
+  return {
+    name: str(x?.name, 60), from: day(x?.from), to: day(x?.to),
+    food: str(x?.food, 400), walks: str(x?.walks, 300), where: str(x?.where, 300),
+    habits: str(x?.habits, 400), emergency: str(x?.emergency, 400), key: str(x?.key, 200),
+    vetAuth: Boolean(x?.vetAuth), contact: str(x?.contact, 120),
+  };
+}
 /* ---------- link del cuidador: vencimiento y registro aparte ----------
    Con "hasta" (sitter.to) anda hasta el día siguiente inclusive (hora de Argentina); sin "hasta", 30 días
    desde que se creó. Vencido, el GET y el POST dan 404 y el token se borra solo. Mientras anda, viajan
@@ -274,7 +278,7 @@ async function withSitterLogs(doc, email) {
 export function sitterView(p) {
   const since = Date.now() - 1000 * 60 * 60 * 24 * 10;
   return {
-    name: p.name, species: p.species, speciesOther: p.speciesOther, photo: p.photo, allergies: p.allergies, temper: p.temper,
+    name: p.name, species: p.species, speciesOther: p.speciesOther, sex: p.sex === 'm' || p.sex === 'h' ? p.sex : '', photo: p.photo, allergies: p.allergies, temper: p.temper,
     sitter: p.sitter, vet: p.vet, contact: { name: p.contact?.name, phone: p.contact?.phone },
     meds: p.meds.map(m => ({ id: m.id, name: m.name, dose: m.dose, every: m.every, start: m.start, days: m.days, notes: m.notes })),
     log: p.log.filter(l => Date.parse(l.at) > since),
@@ -755,10 +759,21 @@ export default async function handler(req, res) {
     if (!pet) return res.status(404).json({ error: 'not_found' });
     const field = q.share || q.unshare ? 'share' : 'sitterToken';
     const keyOf = field === 'share' ? shareKey : sitterKey;
+    /* "Guardar y crear link": los datos del cuidador viajan con el pedido y se guardan acá mismo, así el link
+       nunca sale con datos viejos aunque el guardado general de la libreta haya fallado (conflicto, sin conexión…) */
+    if (q.sitter && body.sitter && typeof body.sitter === 'object') {
+      const sx = cleanSitter(body.sitter);
+      if (sx.from && sx.to && sx.to < sx.from) return res.status(400).json({ error: 'fechas_invertidas' });
+      pet.sitter = sx;
+    }
+    /* con "hasta" ya pasado el link nacería vencido: se avisa en vez de crear un link que no anda */
+    if (q.sitter && pet.sitter?.to && sitterExpired(pet, { at: new Date().toISOString() })) return res.status(400).json({ error: 'hasta_pasado', to: pet.sitter.to });
     /* un link del cuidador vencido (o ya apagado solo) no se devuelve: se crea uno nuevo */
     if (field === 'sitterToken' && pet[field] && !(q.unsitter)) {
       const link = await kvGet(sitterKey(pet[field]));
       if (!link || sitterExpired(pet, link)) { await kvDel(sitterKey(pet[field])); await kvDel(sitterLogKey(pet[field])); pet[field] = ''; }
+      /* links de antes del vencimiento (sin fecha de creación) que siguen andando por el "hasta": se les pone fecha */
+      else if (!Number.isFinite(Date.parse(link.at || ''))) await kvSet(sitterKey(pet[field]), { ...link, at: new Date().toISOString() });
     }
     if (q.unshare || q.unsitter) {
       if (pet[field]) { await kvDel(keyOf(pet[field])); if (field === 'sitterToken') await kvDel(sitterLogKey(pet[field])); }
