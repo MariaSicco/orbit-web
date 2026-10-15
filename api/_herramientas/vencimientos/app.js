@@ -762,12 +762,11 @@ function primerUso() {
     </div>
     <div class="primer primer-mail">
       <h2>Que las busque <span class="it">la app</span></h2>
-      <p>Subí el resumen de tu tarjeta y conectá tu mail: encontramos lo que pagás todos los meses, con fechas y montos.</p>
+      <p>Subí los resúmenes de tus tarjetas y conectá tu mail, todo en un paso: encontramos lo que pagás todos los meses, con fechas y montos.</p>
       <div class="acciones">
-        <button type="button" class="bt prim ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subí los resúmenes de tu tarjeta</button>
-        <button type="button" class="bt prim ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar mis facturas en el mail</button>
+        <button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> Cargá todo junto</button>
       </div>
-      <p style="margin:12px 0 0;font-size:13px">El resumen trae lo que se cobra en la tarjeta; el mail, las facturas con vencimiento. Usá los dos.</p>
+      <p style="margin:12px 0 0;font-size:13px">También podés hacer uno solo: <button type="button" class="btn-txt" data-acc="resumen">solo resúmenes</button> · <button type="button" class="btn-txt" data-acc="correo">solo mail</button></p>
     </div>
     <div class="primer">
       <h2>O elegí <span class="it">a mano</span></h2>
@@ -1325,22 +1324,7 @@ async function abrirCorreo() {
     <div class="acciones">${boton('correo-gmail', 'Con Gmail', !!cfg.google)}${boton('correo-outlook', 'Con Outlook o Hotmail', !!cfg.microsoft)}</div>
     ${!cfg.google && !cfg.microsoft ? '<p class="leyenda">La conexión con el mail se está habilitando. Mientras tanto, sacale una foto a la factura.</p>' : ''}`);
 }
-async function buscarCorreo(proveedor) {
-  const cfg = DEMO_CORREO ? {} : await configCorreo();
-  abrir('Buscando tus facturas', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p><b id="correo-avance">Esperando el permiso…</b><br>Se abre una ventana de ${proveedor === 'gmail' ? 'Google' : 'Microsoft'} para que des el permiso.</p></div>`);
-  const avance = (n, total) => { const el = $id('correo-avance'); if (el) el.textContent = total ? `Revisando ${n} de ${total} mails…` : n ? `Leídos ${n} mails…` : 'Buscando…'; };
-  let mails;
-  try {
-    if (DEMO_CORREO) { await new Promise(r => setTimeout(r, 900)); mails = mailsDemo(hoy); }
-    else mails = proveedor === 'gmail' ? await buscarEnGmail(cfg.google, avance) : await buscarEnOutlook(cfg.microsoft, avance);
-  } catch (e) {
-    abrir('No se pudo buscar', `<p class="nota">${esc(e.message || 'No pudimos revisar el mail.')}</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="correo">Probar de nuevo</button><button type="button" class="bt sec ancho" data-acc="leer">Sacarle una foto a una factura</button></div>`);
-    return;
-  }
-  marcarFuente('mail');
-  encontrados = cuentasDesdeMails(mails, hoy);
-  mostrarEncontrados(`Revisamos ${mails.length} mails.`, `Revisamos ${mails.length} mails y no encontramos facturas con fecha de vencimiento. Puede que te lleguen a otro mail o en papel.`);
-}
+const buscarCorreo = proveedor => cargarTodo({ proveedor });
 function mostrarEncontrados(origen, siVacio) {
   if (!encontrados.length) {
     abrir('No encontramos nada', `<p class="nota">${esc(siVacio)}</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="leer"><svg><use href="#i-camara"/></svg> Sacale una foto a una factura</button><button type="button" class="bt sec ancho" data-acc="leer-manual">Cargar a mano</button></div>`);
@@ -1404,36 +1388,30 @@ function guardarDesdeMail(form) {
 
 /* ── resumen de tarjeta ── */
 const MAX_RESUMENES_JUNTOS = 6;
-/* Uno o varios resúmenes (meses distintos o tarjetas distintas). Se leen de a uno; lo encontrado
-   se junta: de cada cuenta queda el dato del resumen más nuevo y la historia de todos. */
-async function leerResumen(files) {
-  files = [...files];
-  if (files.length > MAX_RESUMENES_JUNTOS) { toast(`Subí hasta ${MAX_RESUMENES_JUNTOS} resúmenes por vez. Leemos los primeros ${MAX_RESUMENES_JUNTOS}.`); files = files.slice(0, MAX_RESUMENES_JUNTOS); }
-  const malos = [], lecturas = [];
-  let prueba = false, dudosos = false, sesion = false, sinRed = false, detalle = null;
+/* Lee uno o varios resúmenes (meses o tarjetas distintas) de a uno. */
+async function leerResumenesNucleo(files, avance) {
+  files = [...files].slice(0, MAX_RESUMENES_JUNTOS);
+  const res = { lecturas: [], malos: [], prueba: false, dudosos: false, sesion: false, detalle: null };
   for (const [n, file] of files.entries()) {
-    if (!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) { malos.push(`${file.name}: no es un PDF`); continue; }
-    if (file.size > 4 * 1024 * 1024) { malos.push(`${file.name}: pesa más de 4 MB`); continue; }
-    abrir('Leyendo tus resúmenes', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p><b>${files.length > 1 ? `Leyendo ${n + 1} de ${files.length}…` : 'Estamos leyendo el resumen.'}</b><br>Tarda hasta un minuto por resumen. No los guardamos en Orbit: se leen y se descartan.</p></div>`);
+    avance(n + 1, files.length);
+    if (!(file.type === 'application/pdf' || /\.pdf$/i.test(file.name))) { res.malos.push(`${file.name}: no es un PDF`); continue; }
+    if (file.size > 4 * 1024 * 1024) { res.malos.push(`${file.name}: pesa más de 4 MB`); continue; }
     let r, j;
     try {
       r = await fetch('/api/vencimientos-resumen', { method: 'POST', body: file, credentials: 'same-origin', headers: { 'Content-Type': 'application/pdf' } });
       j = await r.json().catch(() => ({}));
-    } catch { sinRed = true; malos.push(`${file.name}: sin conexión`); continue; }
-    if (r.status === 401) { sesion = true; break; }
-    if (!r.ok || !j.ok) { malos.push(`${file.name}: ${j.error || 'no lo pudimos leer'}`); detalle = j.detalle || detalle; continue; }
-    if (j.modo === 'prueba') prueba = true; else guardarResumenes(R.sumarResumen(cargarResumenes(), j.lectura, hoy));
-    if (j.confiable === false) dudosos = true;
-    lecturas.push(j.lectura);
+    } catch { res.malos.push(`${file.name}: sin conexión`); continue; }
+    if (r.status === 401) { res.sesion = true; break; }
+    if (!r.ok || !j.ok) { res.malos.push(`${file.name}: ${j.error || 'no lo pudimos leer'}`); res.detalle = j.detalle || res.detalle; continue; }
+    if (j.modo === 'prueba') res.prueba = true; else guardarResumenes(R.sumarResumen(cargarResumenes(), j.lectura, hoy));
+    if (j.confiable === false) res.dudosos = true;
+    res.lecturas.push(j.lectura);
   }
-  if (sesion && !lecturas.length) return errorLectura('Tu sesión de Orbit se cerró. Entrá de nuevo para leer el resumen.', true);
-  if (!lecturas.length) {
-    errorLectura(files.length > 1 ? `No pudimos leer ninguno. ${malos.join(' · ')}` : (sinRed ? 'Sin conexión. La lectura necesita internet; probá de nuevo.' : (malos[0]?.split(': ').slice(1).join(': ') || 'No pudimos leer el resumen. Probá de nuevo en un rato.')), false, true);
-    if (detalle) $id('hoja-cuerpo').insertAdjacentHTML('beforeend', `<details class="mas"><summary>Detalle técnico (solo administración)</summary><pre class="diag">${esc(JSON.stringify(detalle, null, 2))}</pre></details>`);
-    return;
-  }
-  /* juntar: del más viejo al más nuevo, así gana el dato más reciente */
-  lecturas.sort((x, y) => String(x.vencimiento || '').localeCompare(String(y.vencimiento || '')));
+  return res;
+}
+/* Del más viejo al más nuevo: de cada cuenta queda el dato más reciente y la historia de todos. */
+function cuentasDeResumenes(lecturas) {
+  lecturas = [...lecturas].sort((x, y) => String(x.vencimiento || '').localeCompare(String(y.vencimiento || '')));
   const porClave = new Map();
   for (const l of lecturas) for (const c of cuentasDesdeResumen(l, hoy)) {
     const prev = porClave.get(c.clave);
@@ -1441,12 +1419,84 @@ async function leerResumen(files) {
     const historia = [...new Map([...(prev.historia || []), ...(c.historia || [])].map(h => [h.vence, h])).values()].sort((a, b) => a.vence.localeCompare(b.vence));
     porClave.set(c.clave, { ...c, historia, encontradas: (prev.encontradas || 0) + (c.encontradas || 0) });
   }
-  encontrados = [...porClave.values()].sort((a, b) => Number(!!b.tarjeta) - Number(!!a.tarjeta) || Number(b.conocido) - Number(a.conocido) || a.nombre.localeCompare(b.nombre));
-  const tarjetas = [...new Set(lecturas.map(l => [l.tarjeta?.red, l.tarjeta?.banco].filter(Boolean).join(' ') || 'tu tarjeta'))];
-  const que = lecturas.length > 1 ? `Leímos ${lecturas.length} resúmenes (${tarjetas.join(', ')}).` : `Leímos el resumen de ${tarjetas[0]}.`;
-  mostrarEncontrados(`${prueba ? 'Modo prueba: son resúmenes de ejemplo, no los tuyos. ' : ''}${que}${malos.length ? ` No pudimos leer: ${malos.join(' · ')}.` : ''}${dudosos ? ' Algunos montos no cerraron: revisalos.' : ''}${lecturas.length > 1 && !prueba ? ' El radar ya compara un mes con otro.' : ''}`,
-    `${que} No encontramos cobros que se repitan. Igual podés cargar la tarjeta a mano.`);
+  return [...porClave.values()];
 }
+/* Lo del resumen y lo del mail en una sola lista. Si una cuenta aparece en los dos (por ejemplo,
+   Personal debitado en la tarjeta que además manda la factura por mail), queda la del resumen
+   (sabemos que se cobra en la tarjeta) y se completa con el monto y la historia del mail. */
+const normNombre = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+function juntarEncontradas(deResumen, deMail) {
+  const out = [...deResumen];
+  for (const m of deMail) {
+    const i = out.findIndex(r => !r.tarjeta && ((m.preset && r.preset === m.preset) || normNombre(r.nombre) === normNombre(m.nombre)));
+    if (i < 0) { out.push(m); continue; }
+    const r = out[i];
+    const historia = [...new Map([...(m.historia || []), ...(r.historia || [])].map(h => [h.vence, h])).values()].sort((a, b) => a.vence.localeCompare(b.vence));
+    out[i] = { ...r, monto: r.monto ?? m.monto, historia, encontradas: (r.encontradas || 0) + (m.encontradas || 0) };
+  }
+  return out.sort((a, b) => Number(!!b.tarjeta) - Number(!!a.tarjeta) || Number(!!b.conocido) - Number(!!a.conocido) || a.nombre.localeCompare(b.nombre));
+}
+
+/* ── cargá todo junto: resúmenes de tarjeta + mail, en un solo paso ── */
+const carga = { files: [], proveedor: null, cfg: null };
+async function abrirCargaTodo({ files = null, proveedor } = {}) {
+  if (files) carga.files = [...files].slice(0, MAX_RESUMENES_JUNTOS);
+  if (proveedor !== undefined) carga.proveedor = proveedor;
+  if (!carga.cfg) carga.cfg = DEMO_CORREO ? { google: 'demo', microsoft: 'demo' } : await configCorreo().catch(() => ({}));
+  const cfg = carga.cfg;
+  const op = (v, t, ok) => `<label class="${ok ? '' : 'off'}"><input type="radio" name="prov" value="${v}" ${carga.proveedor === v ? 'checked' : ''} ${ok ? '' : 'disabled'} data-acc="carga-prov"><span>${t}</span></label>`;
+  abrir('Cargá todo junto', `
+    <p class="lead-s" style="margin-top:0">Juntamos lo que se cobra en tus tarjetas y las facturas que te llegan por mail, y te mostramos todo en una sola lista. Vos elegís qué cargar.</p>
+    <div class="carga-paso${carga.files.length ? ' listo' : ''}"><span class="carga-n">1</span><div><b>Resúmenes de tarjeta</b><small>${carga.files.length ? `${carga.files.length} elegido${carga.files.length > 1 ? 's' : ''}: ${esc(carga.files.map(f => f.name).join(', '))}` : 'Los PDF que bajás del banco. Podés elegir varios: meses y tarjetas distintas.'}</small>
+      <button type="button" class="bt sec" data-acc="carga-archivos"><svg><use href="#i-tarjeta"/></svg> ${carga.files.length ? 'Cambiar' : 'Elegir resúmenes'}</button></div></div>
+    <div class="carga-paso${carga.proveedor ? ' listo' : ''}"><span class="carga-n">2</span><div><b>Tu mail</b><small>Solo lectura, se lee en este teléfono y el permiso se cierra al terminar.</small>
+      <div class="seg carga-prov">${op('gmail', 'Gmail', !!cfg.google)}${op('outlook', 'Outlook o Hotmail', !!cfg.microsoft)}${op('', 'Sin mail', true)}</div></div></div>
+    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="carga-buscar" ${carga.files.length || carga.proveedor ? '' : 'disabled'}><svg><use href="#i-buscar"/></svg> Buscar todo</button></div>
+    <p class="leyenda">El resumen trae suscripciones y débitos de la tarjeta; el mail, las facturas con vencimiento (luz, gas, internet, celular). Con los dos juntos aparece casi todo.</p>`);
+}
+async function cargarTodo({ files = [], proveedor = null } = {}) {
+  files = [...files];
+  const cfg = carga.cfg || (DEMO_CORREO ? {} : await configCorreo().catch(() => ({})));
+  abrir('Buscando todo', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p>
+    ${proveedor ? `<b id="av-mail">Mail: esperando el permiso…</b><br>` : ''}${files.length ? `<b id="av-res">Resúmenes: preparando…</b><br>` : ''}
+    <small>${proveedor ? `Se abre una ventana de ${proveedor === 'gmail' ? 'Google' : 'Microsoft'} para el permiso. ` : ''}${files.length ? 'Cada resumen tarda hasta un minuto. Los resúmenes no se guardan en Orbit.' : ''}</small></p></div>`);
+  const txt = (id, t) => { const el = $id(id); if (el) el.textContent = t; };
+  /* el mail arranca primero: la ventana de permiso tiene que abrirse pegada al toque */
+  const pMail = !proveedor ? Promise.resolve(null) : (async () => {
+    const avance = (n, total) => txt('av-mail', total ? `Mail: revisando ${n} de ${total}…` : n ? `Mail: leídos ${n}…` : 'Mail: buscando…');
+    if (DEMO_CORREO) { await new Promise(r => setTimeout(r, 900)); return mailsDemo(hoy); }
+    return proveedor === 'gmail' ? buscarEnGmail(cfg.google, avance) : buscarEnOutlook(cfg.microsoft, avance);
+  })().then(m => { txt('av-mail', `Mail: listo, ${m.length} mails revisados ✓`); return m; }, e => ({ error: e?.message || 'No pudimos revisar el mail.' }));
+  const pRes = !files.length ? Promise.resolve(null)
+    : leerResumenesNucleo(files, (n, t) => txt('av-res', t > 1 ? `Resúmenes: leyendo ${n} de ${t}…` : 'Resúmenes: leyendo…')).then(r => { txt('av-res', `Resúmenes: listo ✓`); return r; });
+  const [mails, res] = await Promise.all([pMail, pRes]);
+  carga.files = []; carga.proveedor = null;
+
+  const mailOk = Array.isArray(mails);
+  if (mailOk) marcarFuente('mail');
+  if (res?.sesion && !res.lecturas.length && !mailOk) return errorLectura('Tu sesión de Orbit se cerró. Entrá de nuevo para leer el resumen.', true);
+  const deResumen = res ? cuentasDeResumenes(res.lecturas) : [];
+  const deMail = mailOk ? cuentasDesdeMails(mails, hoy) : [];
+  encontrados = juntarEncontradas(deResumen, deMail);
+
+  const partes = [];
+  if (res) {
+    const tarjetas = [...new Set(res.lecturas.map(l => [l.tarjeta?.red, l.tarjeta?.banco].filter(Boolean).join(' ') || 'tu tarjeta'))];
+    if (res.prueba) partes.push('Modo prueba: los resúmenes son de ejemplo.');
+    if (res.lecturas.length) partes.push(res.lecturas.length > 1 ? `Leímos ${res.lecturas.length} resúmenes (${tarjetas.join(', ')}).` : `Leímos el resumen de ${tarjetas[0]}.`);
+    if (res.malos.length) partes.push(`No pudimos leer: ${res.malos.join(' · ')}.`);
+    if (res.dudosos) partes.push('Algunos montos no cerraron: revisalos.');
+  }
+  if (proveedor) partes.push(mailOk ? `Revisamos ${mails.length} mails.` : `El mail no se pudo revisar: ${mails.error}`);
+  if (!encontrados.length && !res?.lecturas.length && !mailOk) {
+    abrir('No se pudo buscar', `<p class="nota">${esc(partes.join(' '))}</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo">Probar de nuevo</button><button type="button" class="bt sec ancho" data-acc="leer">Sacarle una foto a una factura</button></div>`);
+    if (res?.detalle) $id('hoja-cuerpo').insertAdjacentHTML('beforeend', `<details class="mas"><summary>Detalle técnico (solo administración)</summary><pre class="diag">${esc(JSON.stringify(res.detalle, null, 2))}</pre></details>`);
+    return;
+  }
+  const faltaUno = !files.length ? ' Sumá tus resúmenes de tarjeta para traer suscripciones y débitos.' : !proveedor ? ' Conectá tu mail para traer luz, gas, internet y celular.' : '';
+  mostrarEncontrados(partes.join(' ') + (encontrados.length ? faltaUno : ''), `${partes.join(' ')} No encontramos cuentas que se repitan.${faltaUno}`);
+}
+const leerResumen = files => cargarTodo({ files });
 
 /* ── archivos ── */
 function bajar(nombre, texto, tipo) {
@@ -1501,7 +1551,7 @@ function abrirAjustes() {
   </div>
   <div class="ajustes-sec"><h3>Tu mail y tus tarjetas</h3>
     <p class="leyenda" style="margin-top:0">Buscá facturas nuevas cuando quieras. El permiso es de solo lectura y se cierra al terminar.</p>
-    <div class="acciones"><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar facturas en el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Subir resúmenes de tarjeta</button></div>
+    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> Resúmenes y mail, todo junto</button><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Solo el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Solo resúmenes</button></div>
   </div>
   <div class="ajustes-sec"><h3>Tu copia</h3>
     <p class="leyenda" style="margin-top:0">Tus datos viven solo en este dispositivo. ${ult}</p>
@@ -1666,6 +1716,10 @@ document.addEventListener('click', e => {
     case 'leer-manual': abrirAgregar(); break;
     case 'correo': abrirCorreo(); break;
     case 'resumen': $id('f-resumen').click(); break;
+    case 'cargar-todo': abrirCargaTodo(); break;
+    case 'carga-archivos': $id('f-resumen').dataset.para = 'carga'; $id('f-resumen').click(); break;
+    case 'carga-prov': carga.proveedor = b.value || null; abrirCargaTodo(); break;
+    case 'carga-buscar': cargarTodo({ files: carga.files, proveedor: carga.proveedor }); break;
     case 'correo-gmail': buscarCorreo('gmail'); break;
     case 'correo-outlook': buscarCorreo('outlook'); break;
     case 'ejemplo': cerrar(); guardar(datosEjemplo(hoy)); ui.mes = V.mesDe(hoy); toast('Datos de ejemplo cargados.'); break;
@@ -1790,7 +1844,9 @@ document.addEventListener('submit', e => {
 
 $id('f-resumen').addEventListener('change', e => {
   const files = [...(e.target.files || [])]; e.target.value = '';
-  if (files.length) leerResumen(files);
+  const paraCarga = e.target.dataset.para === 'carga'; delete e.target.dataset.para;
+  if (!files.length) return;
+  if (paraCarga) abrirCargaTodo({ files }); else leerResumen(files);
 });
 $id('f-factura').addEventListener('change', e => {
   const file = e.target.files?.[0]; e.target.value = '';

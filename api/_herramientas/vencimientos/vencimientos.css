@@ -588,3 +588,11 @@ details.mas[open] summary::after{transform:rotate(45deg)}
 .reparto-pcts{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
 .reparto-form{display:grid;gap:10px;margin:14px 0}
 .reparto-personas{margin-top:12px}
+
+/* ── cargá todo junto ── */
+.carga-paso{display:grid;grid-template-columns:32px 1fr;gap:12px;padding:14px;border:1px solid var(--linea);border-radius:16px;margin:10px 0}
+.carga-paso.listo{border-color:var(--azul)}
+.carga-n{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--fondo);font:600 13px var(--mono)}
+.carga-paso.listo .carga-n{background:var(--azul);color:#F2EFE8}
+.carga-paso b{display:block;font-size:15px}.carga-paso small{display:block;color:var(--suave);font-size:12.5px;margin:3px 0 10px;overflow-wrap:anywhere}
+.carga-prov{flex-wrap:wrap}.carga-prov label.off{opacity:.45}
