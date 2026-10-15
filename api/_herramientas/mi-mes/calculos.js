@@ -617,7 +617,7 @@ export function conciliarCompras(datos, tarjetaId, lectura) {
 /* ── esquema y migración ── */
 export const LIMITE_DEFECTO = 30;
 export const datosVacios = () => ({ v: ESQUEMA, ingresos: [], gastos: [], cuotas: [], tarjetas: [], resumenes: [], cambio: {}, rubrosComercio: {},
-  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [], concilia: [], confirmados: {}, reales: {}, preguntasLuego: [], cuentas: [] });
+  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [], concilia: [], confirmados: {}, reales: {}, preguntasLuego: [], cuentas: [], devolver: [] });
 
 const entero = x => Number.isSafeInteger(x) && x > 0;
 const dia = x => Number.isInteger(x) && x >= 1 && x <= 31;
@@ -745,6 +745,7 @@ export function migrar(crudo) {
   if (crudo.fotoBase && typeof crudo.fotoBase === 'object' && crudo.fotoBase.meses && typeof crudo.fotoBase.meses === 'object') out.fotoBase = crudo.fotoBase;
   out.cambios = (Array.isArray(crudo.cambios) ? crudo.cambios : []).filter(c => typeof c?.motivo === 'string' && typeof c?.fecha === 'string').slice(-20)
     .map(c => ({ motivo: texto(c.motivo, 80), fecha: c.fecha.slice(0, 25) }));
+  out.devolver = (Array.isArray(crudo.devolver) ? crudo.devolver : []).map(devolverValido).filter(Boolean).slice(-100);
   out.preguntasLuego = (Array.isArray(crudo.preguntasLuego) ? crudo.preguntasLuego : []).filter(x => typeof x === 'string').slice(-100);
   out.consejosVistos = (Array.isArray(crudo.consejosVistos) ? crudo.consejosVistos : []).filter(x => typeof x === 'string').slice(-100);
   return out;
@@ -1828,4 +1829,48 @@ export function compartidaDe(datos, cuotaId, hoy) {
   const vencidoSinDevolver = cuotas.filter(q => q.pasada && !q.cubierta).reduce((a, q) => a + q.suParte, 0);
   return { con: x.con, alEmisor: c.total, tuParte: c.total - suParte, teDeben: suParte, teDevolvieron: devuelto, falta: Math.max(0, suParte - devuelto),
     aFavor: Math.max(0, devuelto - suParte), cuotasCubiertas: cuotas.filter(q => q.cubierta).length, vencidoSinDevolver, cuotas };
+}
+
+
+/* ═══════════════ (6) Plata que te tienen que devolver ═══════════════
+   Reintegros de promos, devoluciones, gastos laborales y lo que te deben de
+   compras compartidas. Nada suma a lo disponible hasta que se acredita, y
+   tampoco cuenta como ingreso: es plata que vuelve. La app no envía reclamos:
+   deja el mensaje armado para copiar. */
+export const TIPOS_DEVOLVER = { reintegro: 'Reintegro de promo', devolucion: 'Devolución de compra', laboral: 'Gasto laboral', prestamo: 'Le presté a alguien' };
+export function devolverValido(x) {
+  if (!x || typeof x !== 'object' || !TIPOS_DEVOLVER[x.tipo] || !Number.isSafeInteger(x.monto) || x.monto <= 0) return null;
+  return { id: String(x.id || ''), tipo: x.tipo, motivo: texto(x.motivo, 80) || TIPOS_DEVOLVER[x.tipo], monto: x.monto,
+    fecha: esFecha(x.fecha) ? x.fecha : null, esperada: esFecha(x.esperada) ? x.esperada : null, quien: texto(x.quien, 40),
+    ...(typeof x.cuotaId === 'string' ? { cuotaId: x.cuotaId } : {}),
+    ...(esFecha(x.acreditado) ? { acreditado: x.acreditado } : {}),
+    ...(x.credito && typeof x.credito === 'object' ? { credito: { resumenId: String(x.credito.resumenId), i: Number(x.credito.i) } } : {}) };
+}
+const RE_REINTEGRO = /reintegro|bonif|devol|promo|cashback|ajuste a favor|contracargo/i;
+export function bandejaDevolver(datos, hoy) {
+  hoy = aFecha(hoy);
+  const propios = (datos?.devolver || []).map(x => ({ ...x, origen: 'cargado', vencido: !x.acreditado && x.esperada ? diasEntre(x.esperada, hoy) > 0 : false }));
+  const compartidas = (datos?.cuotas || []).filter(c => c.compartida).map(c => {
+    const x = compartidaDe(datos, c.id, hoy);
+    return x && x.falta > 0 ? { id: `comp:${c.id}`, tipo: 'prestamo', origen: 'compartida', motivo: `Su parte de ${c.descripcion || 'una compra'}`, quien: x.con,
+      monto: x.falta, cuotaId: c.id, fecha: c.fecha || null, esperada: null, vencido: x.vencidoSinDevolver > 0, vencidoMonto: x.vencidoSinDevolver } : null;
+  }).filter(Boolean);
+  const usados = new Set((datos?.devolver || []).filter(x => x.credito).map(x => `${x.credito.resumenId}:${x.credito.i}`));
+  /* créditos del resumen que parecen un reintegro o una devolución: candidatos, nunca automáticos */
+  const candidatos = [];
+  for (const r of datos?.resumenes || []) (r.pagosYCreditos || []).forEach((p, i) => {
+    if (usados.has(`${r.id}:${i}`) || p.tipo === 'pago' || p.monto >= 0) return;
+    if (p.tipo !== 'credito' && !RE_REINTEGRO.test(p.concepto || '')) return;
+    const monto = aPesos(-p.monto, p.moneda || 'ARS', datos) ?? 0;
+    const parecido = propios.filter(x => !x.acreditado && Math.abs(x.monto - monto) <= Math.max(100, Math.round(x.monto * 0.05)));
+    candidatos.push({ resumenId: r.id, i, concepto: p.concepto, fecha: p.fecha, monto, tarjetaId: r.tarjetaId, parecido: parecido.map(x => x.id) });
+  });
+  const pendientes = [...propios.filter(x => !x.acreditado), ...compartidas];
+  return { pendientes, acreditados: propios.filter(x => x.acreditado), candidatos,
+    total: pendientes.reduce((a, x) => a + x.monto, 0), vencidos: pendientes.filter(x => x.vencido) };
+}
+export function mensajeReclamo(item, { tarjeta = '' } = {}) {
+  const f = d => (d ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}/${d.slice(0, 4)}` : '');
+  if (item.tipo === 'prestamo') return `Hola${item.quien ? ` ${item.quien}` : ''}! Te escribo por ${item.motivo.charAt(0).toLowerCase() + item.motivo.slice(1)}: quedan ${formatoPesos(item.monto)} pendientes. ¿Cuándo te queda cómodo? Gracias!`;
+  return `Hola. Les escribo por ${TIPOS_DEVOLVER[item.tipo].toLowerCase()}: ${item.motivo}${item.fecha ? `, del ${f(item.fecha)}` : ''}${tarjeta ? `, pagado con ${tarjeta}` : ''}, por ${formatoPesos(item.monto)}. Tendría que haberse acreditado${item.esperada ? ` el ${f(item.esperada)}` : ''} y todavía no lo veo. ¿Me confirman cuándo se acredita? Gracias.`;
 }

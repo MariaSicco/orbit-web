@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -211,9 +211,11 @@ function itemsRevisar(lim) {
   const suaves = alertas.filter(a => nivelVisual(a) !== 'fuerte');
   const p = F.preguntas ? preguntas(datos, HOY_ISO, { ultimaCopia: ultimaCopia(), diaDeCobro: F.diaDeCobro, diaDificil: F.diaDificil, gastoEstimado: F.gastoEstimado }) : { ahora: [], masTarde: [], alDia: true };
   const tope = lim?.supera ? [{ clase: 'tope', lim }] : [];
+  const bd = F.devolver ? bandejaDevolver(datos, HOY_ISO) : null;
+  const dev = bd && (bd.vencidos.length || bd.candidatos.some(c => c.parecido.length)) ? [{ clase: 'devolver', bd }] : [];
   const cm = F.queCambio && datos.fotoBase ? cambiosDesde(datos.fotoBase, datos) : [];
   const cambios = cm.length ? [{ clase: 'cambio', meses: cm }] : [];   // una sola fila, con todos los meses adentro
-  return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...cambios, ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
+  return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...cambios, ...dev, ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
     masTarde: p.masTarde };
 }
 function preguntaHTML(q) {
@@ -250,6 +252,13 @@ function filaRevisar(x) {
       ${motivos.length ? `<p class="mm-fuente">Desde la última vez: ${esc(motivos.join(' · ').toLowerCase())}.</p>` : ''}
       <div class="mm-fa-acc"><button type="button" class="mm-link" data-cambios-visto>Entendido</button></div></div></details>`;
   }
+  if (x.clase === 'devolver') {
+    const v = x.bd.vencidos, c = x.bd.candidatos.filter(k => k.parecido.length);
+    const txt = v.length ? `Te deben ${$(v.reduce((a, i) => a + (i.vencidoMonto || i.monto), 0))} que ya deberían estar` : `Puede que te hayan acreditado un reintegro`;
+    return `<details class="mm-fila-alerta pregunta"><summary><span class="mm-fa-ic">${ic('bajar')}</span><span class="mm-fa-txt">${esc(txt)}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
+      <div class="mm-fa-det"><p>${v.length ? `${v.length === 1 ? 'Un ítem pasó' : `${v.length} ítems pasaron`} la fecha esperada. Tenés el mensaje de reclamo armado para copiar.` : `En tu resumen aparece ${esc(c[0].concepto)} por ${esc($(c[0].monto))}.`}</p>
+      <div class="mm-fa-acc"><button type="button" class="mm-btn chico" data-ir="devolver">Ver la bandeja</button></div></div></details>`;
+  }
   if (x.clase === 'tope') return `<details class="mm-fila-alerta suave"><summary><span class="mm-fa-ic">${ic('escalera')}</span><span class="mm-fa-txt">Las cuotas son el ${Math.round(x.lim.usado * 100)} % de tus ingresos</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
     <div class="mm-fa-det"><p>Tu tope es ${x.lim.pct} %. Lo podés cambiar en la escalera.</p><div class="mm-fa-acc"><button type="button" class="mm-link" data-ir="escalera">Ver escalera</button></div></div></details>`;
   return alertaHTML(x.a, { descartable: true });
@@ -283,6 +292,62 @@ function registrarCambio(motivo) {
   datos.fotoBase ||= fotoProyeccion(datos, HOY);
   datos.cambios = [...(datos.cambios || []), { motivo, fecha: new Date().toISOString().slice(0, 16) }].slice(-20);
 }
+
+/* ════════ (6) TE TIENEN QUE DEVOLVER ════════ */
+const fechaAR = d => (d ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}` : '');
+function pintarDevolver() {
+  const b = bandejaDevolver(datos, HOY_ISO);
+  const fila = x => `<li class="mm-dev${x.vencido ? ' vencido' : ''}">
+      <div class="mm-dev-cab"><b>${esc(x.motivo)}</b><b>${esc($(x.monto))}</b></div>
+      <p class="mm-fuente">${esc(TIPOS_DEVOLVER[x.tipo])}${x.quien ? ` · ${esc(x.quien)}` : ''}${x.esperada ? ` · esperado el ${esc(fechaAR(x.esperada))}` : ''}${x.vencido ? ' · <b class="neg">ya debería estar</b>' : ''}${x.origen === 'compartida' ? ' · de una compra compartida' : ''}</p>
+      <div class="mm-meta-acc">${x.origen === 'compartida' ? `<button type="button" class="mm-link" data-editar="cuota" data-id="${esc(x.cuotaId)}">Ver la compra</button>`
+        : `<button type="button" class="mm-btn sec chico" data-dev-ok="${esc(x.id)}">Ya me lo acreditaron</button>`}
+        ${x.vencido ? `<button type="button" class="mm-link" data-dev-reclamo="${esc(x.id)}">Copiar mensaje de reclamo</button>` : ''}
+        ${x.origen !== 'compartida' ? `<button type="button" class="mm-link quieto" data-dev-borrar="${esc(x.id)}">Borrar</button>` : ''}</div></li>`;
+  $id('devolver').innerHTML = `<section class="mm-panel"><p class="mm-item-meta">Pendiente</p><p class="mm-total-num">${esc($(b.total))}</p>
+      <p class="mm-fuente">No suma a te quedan libres ni a tus ingresos hasta que se acredita.</p>
+      ${b.pendientes.length ? `<ul class="mm-dev-lista">${b.pendientes.map(fila).join('')}</ul>` : '<p class="mm-vacio">No tenés nada pendiente.</p>'}</section>
+    ${b.candidatos.length ? `<section class="mm-panel"><h2 class="mm-h2">En tus resúmenes</h2><p class="mm-fuente">Créditos que pueden ser un reintegro o una devolución. Vos decidís.</p>
+      <ul class="mm-dev-lista">${b.candidatos.map(c => `<li class="mm-dev"><div class="mm-dev-cab"><span>${esc(c.concepto)} · ${esc(fechaAR(c.fecha))}</span><b>${esc($(c.monto))}</b></div>
+        <div class="mm-meta-acc">${c.parecido.map(id => { const p = datos.devolver.find(x => x.id === id); return `<button type="button" class="mm-btn sec chico" data-dev-vincular="${esc(id)}" data-res="${esc(c.resumenId)}" data-i="${c.i}">Es ${esc(p.motivo)}</button>`; }).join('')}</div></li>`).join('')}</ul></section>` : ''}
+    ${b.acreditados.length ? `<section class="mm-panel"><h2 class="mm-h2">Ya acreditado</h2><ul class="mm-dev-lista">${b.acreditados.slice(-10).reverse().map(x => `<li class="mm-dev"><div class="mm-dev-cab"><span>${esc(x.motivo)} · ${esc(fechaAR(x.acreditado))}</span><b>${esc($(x.monto))}</b></div></li>`).join('')}</ul></section>` : ''}
+    <p class="mm-letra">Mi Mes no envía nada: el mensaje de reclamo lo copiás y lo mandás vos, si querés.</p>`;
+}
+const ddv = $id('dlg-devolver');
+let devTipo = 'reintegro', devEsperada = null;
+function abrirDevolver() {
+  devTipo = 'reintegro'; devEsperada = sumarDias(HOY_ISO, 30);
+  $id('dv-tipos').innerHTML = Object.entries(TIPOS_DEVOLVER).map(([k, v]) => `<label class="mm-chip"><input type="radio" name="dv-tipo" value="${k}"${k === devTipo ? ' checked' : ''}><span>${esc(v)}</span></label>`).join('');
+  $id('dv-esperada').innerHTML = [15, 30, 60, 90].map(n => { const f = sumarDias(HOY_ISO, n); return `<label class="mm-chip"><input type="radio" name="dv-esp" value="${f}"${f === devEsperada ? ' checked' : ''}><span>En ${n} días</span></label>`; }).join('');
+  for (const id of ['dv-motivo', 'dv-monto', 'dv-quien']) $id(id).value = '';
+  abrir(ddv, $id('dv-monto'));
+}
+ddv.addEventListener('change', e => { if (e.target.name === 'dv-tipo') devTipo = e.target.value; if (e.target.name === 'dv-esp') devEsperada = e.target.value; });
+ddv.querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const monto = leerMonto($id('dv-monto').value);
+  if (!monto) { error($id('dv-monto'), 'dv-monto-err', 'Escribí el monto, por ejemplo 8.000.').focus(); return; }
+  datos.devolver = [...datos.devolver, { id: nuevoId(), tipo: devTipo, motivo: $id('dv-motivo').value.trim().slice(0, 80) || TIPOS_DEVOLVER[devTipo], monto, fecha: HOY_ISO, esperada: devEsperada, quien: $id('dv-quien').value.trim().slice(0, 40) }];
+  guardar(); cerrar(ddv); pintarDevolver(); pintarInicio(); avisar('Agregado a la bandeja');
+});
+$id('vista-devolver').addEventListener('click', async e => {
+  const t = e.target;
+  if (t.closest('[data-dev-nuevo]')) return abrirDevolver();
+  const ok = t.closest('[data-dev-ok]');
+  if (ok) { datos.devolver = datos.devolver.map(x => (x.id === ok.dataset.devOk ? { ...x, acreditado: HOY_ISO } : x)); guardar(); pintarDevolver(); pintarInicio(); return avisar('Listo: acreditado'); }
+  const vi = t.closest('[data-dev-vincular]');
+  if (vi) { datos.devolver = datos.devolver.map(x => (x.id === vi.dataset.devVincular ? { ...x, acreditado: HOY_ISO, credito: { resumenId: vi.dataset.res, i: Number(vi.dataset.i) } } : x)); guardar(); pintarDevolver(); pintarInicio(); return avisar('Listo: vinculado con el resumen'); }
+  const bo = t.closest('[data-dev-borrar]');
+  if (bo) { datos.devolver = datos.devolver.filter(x => x.id !== bo.dataset.devBorrar); guardar(); pintarDevolver(); pintarInicio(); return avisar('Borrado'); }
+  const re = t.closest('[data-dev-reclamo]');
+  if (re) {
+    const x = bandejaDevolver(datos, HOY_ISO).pendientes.find(i => i.id === re.dataset.devReclamo);
+    const tj = x?.cuotaId ? tarjetaDe(datos.cuotas.find(c => c.id === x.cuotaId)?.tarjetaId)?.nombre : '';
+    const txt = mensajeReclamo(x, { tarjeta: tj || '' });
+    try { await navigator.clipboard.writeText(txt); avisar('Mensaje copiado: pegalo donde quieras mandarlo'); }
+    catch { window.prompt('Copiá el mensaje:', txt); }
+  }
+});
 
 /* ════════ (5) GASTO ESTIMADO ════════ */
 const dr = $id('dlg-real');
@@ -1022,10 +1087,10 @@ function irAMes(nuevo) {
 $id('mes-ant').addEventListener('click', () => irAMes(sumarMeses(mes, -1)));
 $id('mes-sig').addEventListener('click', () => irAMes(sumarMeses(mes, 1)));
 
-const VISTAS = ['inicio', 'tarjetas', 'tarjeta', 'cargado', 'revisar', 'escalera', 'contado', 'simular', 'rinde'];
-const TITULOS = { tarjetas: 't-tarjetas', tarjeta: 't-una', cargado: 't-cargado', revisar: 't-revisar', escalera: 't-escalera', contado: 't-contado', simular: 't-simular', rinde: 't-rinde' };
+const VISTAS = ['inicio', 'tarjetas', 'tarjeta', 'cargado', 'revisar', 'escalera', 'contado', 'simular', 'rinde', 'devolver'];
+const TITULOS = { tarjetas: 't-tarjetas', tarjeta: 't-una', cargado: 't-cargado', revisar: 't-revisar', escalera: 't-escalera', contado: 't-contado', simular: 't-simular', rinde: 't-rinde', devolver: 't-devolver' };
 function verVista(v, { foco = true } = {}) {
-  if (v === 'rinde' && !F.dondeRinde) v = 'inicio';
+  if ((v === 'rinde' && !F.dondeRinde) || (v === 'devolver' && !F.devolver)) v = 'inicio';
   vista = v;
   const nav = v === 'tarjeta' ? 'tarjetas' : ['tarjetas', 'cargado', 'inicio'].includes(v) ? v : '';
   for (const b of document.querySelectorAll('[data-vista]')) {
@@ -1037,6 +1102,7 @@ function verVista(v, { foco = true } = {}) {
   if (v === 'contado') pintarContado(true);
   if (v === 'simular') pintarSimular(true);
   if (v === 'rinde') pintarRinde();
+  if (v === 'devolver') pintarDevolver();
   try { history.replaceState(null, '', v === 'inicio' ? location.pathname : `#${v}`); } catch {}
   window.scrollTo({ top: 0, behavior: 'instant' });
   if (foco && v !== 'inicio') $id(TITULOS[v])?.focus();
@@ -2050,10 +2116,11 @@ else {
   catch { puedeGuardar = false; $id('sin-storage').hidden = false; }
 }
 if (LOCAL) $id('modo-local').hidden = false;
+$id('acceso-devolver').hidden = !F.devolver;
 if (F.queCambio && !datos.fotoBase && puedeGuardar) { datos.fotoBase = fotoProyeccion(datos, HOY); guardar(); }
 pintarTodo();
 const inicial = location.hash.slice(1);
-if (['tarjetas', 'cargado', 'escalera', 'contado', 'simular', ...(F.dondeRinde ? ['rinde'] : [])].includes(inicial)) verVista(inicial, { foco: false });
+if (['tarjetas', 'cargado', 'escalera', 'contado', 'simular', ...(F.dondeRinde ? ['rinde'] : []), ...(F.devolver ? ['devolver'] : [])].includes(inicial)) verVista(inicial, { foco: false });
 iniciarGuiaSiHaceFalta();
 marcarPush(pushActivo());
 if (pushActivo()) { ultimoSync = null; programarSync(); }   // al abrir, manda las fechas del ciclo nuevo

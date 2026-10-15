@@ -649,3 +649,11 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 .mm-compartida{border:1px solid var(--linea);border-radius:var(--r2);padding:12px 14px 6px}
 .mm-comp-t{margin:0 0 8px;font-size:16px;font-weight:700}
 .mm-compartida .mm-chips{margin:0 0 6px}
+
+/* ════════ (6) Te deben ════════ */
+.mm-dev-lista{list-style:none;margin:8px 0;padding:0}
+.mm-dev{padding:10px 0;border-top:1px solid var(--linea)}
+.mm-dev:first-child{border-top:0}
+.mm-dev-cab{display:flex;justify-content:space-between;gap:10px}
+.mm-dev .mm-fuente{margin:2px 0 4px}
+.mm-dev.vencido .mm-dev-cab b:last-child{color:var(--neg)}
