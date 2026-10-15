@@ -662,3 +662,40 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 .mm-check-lista{list-style:none;margin:0 0 6px;padding:0}
 .mm-check-lista .mm-check{align-items:flex-start;min-height:44px;padding:6px 0}
 .mm-cambiotj .mm-meta-txt{color:var(--tinta)}
+
+/* ════════ Subí lo que tengas ════════ */
+.mm-subir{display:grid;gap:14px;max-width:760px}
+.mm-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;min-height:180px;padding:24px;border:2px dashed var(--azul);border-radius:var(--r);background:var(--papel);text-align:center;cursor:pointer;transition:background .2s var(--ease),border-color .2s var(--ease)}
+.mm-drop .ic{width:34px;height:34px;color:var(--azul)}
+.mm-drop b{font-size:18px}
+.mm-drop span{color:var(--tinta2);font-size:14px}
+.mm-drop:hover,.mm-drop.sobre{background:var(--azul-suave)}
+.mm-drop:focus-within{outline:3px solid var(--azul);outline-offset:2px}
+.mm-ejemplos{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:700px){.mm-ejemplos{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.mm-ejemplos li{display:flex;align-items:center;gap:8px;padding:10px 12px;border-radius:12px;background:var(--papel);font-size:14px;color:var(--tinta2)}
+.mm-ejemplos .ic{color:var(--azul);width:20px;height:20px}
+.mm-cola{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.mm-cola-it{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px 12px;border-radius:14px;background:var(--papel)}
+.mm-cola-ic{display:grid;place-items:center;width:36px;height:36px;border-radius:50%;background:var(--azul-suave);color:var(--azul)}
+.mm-cola-it.listo .mm-cola-ic{background:#F6FFD1;color:var(--tinta)}
+.mm-cola-it.error .mm-cola-ic,.mm-cola-it.otro .mm-cola-ic{background:var(--neg-suave);color:var(--neg)}
+.mm-cola-txt{display:flex;flex-direction:column;min-width:0}
+.mm-cola-txt b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mm-cola-txt small{color:var(--tinta2);font-size:13px}
+.mm-cola-chips{margin-top:6px}
+.mm-spinner.chico{width:20px;height:20px;border-width:2px}
+.mm-subir-acc{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center}
+.mm-leido{list-style:none;margin:0 0 8px;padding:0}
+.mm-leido-it{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:8px;align-items:start;padding:10px 0;border-top:1px solid var(--linea)}
+.mm-leido-it:first-child{border-top:0}
+.mm-leido-it.fuera{opacity:.55}
+.mm-leido-it .mm-check{min-height:44px;margin:0}
+.mm-leido-txt{display:flex;flex-direction:column;gap:3px;min-width:0}
+.mm-leido-txt small{color:var(--tinta2);font-size:13px}
+.mm-leido-txt .mm-tag{margin:0;align-self:flex-start}
+.mm-leido-txt select{min-height:44px;margin-top:4px;max-width:100%}
+.mm-leido-monto input{width:120px;text-align:right;min-height:44px}
+.mm-leido-total{white-space:nowrap;padding-top:10px}
+.mm-fila-alerta.etapa summary .mm-fa-txt{font-weight:700}
+@media (prefers-reduced-motion:reduce){.mm-drop{transition:none}}

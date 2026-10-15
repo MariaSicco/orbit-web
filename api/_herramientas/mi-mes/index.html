@@ -245,6 +245,36 @@
   </section>
 
   <!-- ════════ REVISÁ LO QUE LEÍ ════════ -->
+  <!-- ════════ SUBÍ LO QUE TENGAS (interruptor subiLoQueTengas) ════════ -->
+  <section class="mm-vista" id="vista-subir" aria-labelledby="t-subir" hidden>
+    <div class="mm-vista-top"><h1 id="t-subir" tabindex="-1">Subí todos los resúmenes que tengas</h1></div>
+    <p class="mm-sub" id="subir-sub">Viejos o actuales: resúmenes de tarjeta de varios meses, recibos de sueldo, facturas y capturas del homebanking. Con eso armamos tu mes.</p>
+    <div class="mm-subir">
+      <label class="mm-drop" id="drop" for="archivos">
+        <svg class="ic"><use href="#i-subir"/></svg>
+        <b>Elegí o soltá tus archivos</b>
+        <span>PDF o fotos (JPG, PNG, WebP, HEIC). Podés elegir varios a la vez.</span>
+        <input type="file" id="archivos" accept="application/pdf,image/*,.heic,.heif" multiple class="mm-sr">
+      </label>
+      <ul class="mm-ejemplos" id="ejemplos" aria-label="Qué podés subir"></ul>
+      <ul class="mm-cola" id="cola" aria-live="polite"></ul>
+      <div class="mm-subir-acc">
+        <button type="button" class="mm-btn" id="ir-revisar" data-ir-revisar hidden>Revisar lo que leí</button>
+        <button type="button" class="mm-link" data-a-mano>Prefiero cargarlo a mano</button>
+        <button type="button" class="mm-link" id="conectar-mail" data-conectar-mail hidden>Conectar mi mail</button>
+      </div>
+      <p class="mm-fuente">Para leerlos, los archivos pasan por el servidor de Orbit y por la API de Anthropic (Claude). No se guardan: en tu dispositivo queda solo lo que confirmes. Del recibo de sueldo guardamos solo el neto y el día de cobro.</p>
+    </div>
+  </section>
+
+  <!-- ════════ REVISÁ LO QUE LEÍ (todo junto) ════════ -->
+  <section class="mm-vista" id="vista-leido" aria-labelledby="t-leido" hidden>
+    <div class="mm-vista-top"><h1 id="t-leido" tabindex="-1">Revisá lo que leí</h1></div>
+    <p class="mm-sub">Corregí o descartá lo que no va. Al guardar, ves tu mes.</p>
+    <div id="leido"></div>
+    <div class="mm-rev-pie"><button type="button" class="mm-btn sec" data-ir="subir">Subir más</button><button type="button" class="mm-btn" data-guardar-todo>Guardar todo</button></div>
+  </section>
+
   <!-- ════════ TE TIENEN QUE DEVOLVER (interruptor devolver) ════════ -->
   <section class="mm-vista" id="vista-devolver" aria-labelledby="t-devolver" hidden>
     <div class="mm-vista-top"><h1 id="t-devolver" tabindex="-1">Te tienen que devolver</h1><button type="button" class="mm-btn sec chico" data-dev-nuevo>+ Agregar</button></div>

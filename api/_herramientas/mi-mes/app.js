@@ -10,11 +10,15 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, tarjetaDeGasto, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, SIN_RED, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, tarjetaDeGasto, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
 import { flagsActivos } from './flags.js';
+import {
+  EJEMPLOS_DOC, TIPOS_DOC, MAX_BYTES_DOC, PARALELO_DOCS, huella, yaSubido, consolidar, aplicarItems, etapaPrimerUso, estimadosViejos,
+  clasificarDeEjemplo, facturaDeEjemplo,
+} from './documentos.js';
 import { TASAS, AVISO_LEGAL, avisoCorto } from './tasas.js';
 
 const CLAVE = 'orbit:mi-mes';
@@ -24,7 +28,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t13';
+const VERSION = '2026-10-15.t14';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -145,8 +149,9 @@ function pintarInicio(animar = false) {
   /* acción principal: sin tarjetas, agregar una (subiendo el resumen); con tarjetas, subir el resumen */
   const principal = $id('accion-principal');
   const sinTarjetas = !datos.tarjetas.length;
-  $id('accion-texto').textContent = sinTarjetas ? 'Agregar tarjeta' : 'Subir resumen';
-  if (sinTarjetas) { principal.dataset.agregarTarjeta = ''; delete principal.dataset.importar; }
+  $id('accion-texto').textContent = F.subiLoQueTengas ? 'Subí lo que tengas' : sinTarjetas ? 'Agregar tarjeta' : 'Subir resumen';
+  if (F.subiLoQueTengas) { principal.dataset.ir = 'subir'; delete principal.dataset.importar; delete principal.dataset.agregarTarjeta; }
+  else if (sinTarjetas) { principal.dataset.agregarTarjeta = ''; delete principal.dataset.importar; }
   else { principal.dataset.importar = ''; delete principal.dataset.agregarTarjeta; }
 
   /* tarjetas */
@@ -220,7 +225,24 @@ function itemsRevisar(lim) {
   const dev = bd && (bd.vencidos.length || bd.candidatos.some(c => c.parecido.length)) ? [{ clase: 'devolver', bd }] : [];
   const cm = F.queCambio && datos.fotoBase ? cambiosDesde(datos.fotoBase, datos) : [];
   const cambios = cm.length ? [{ clase: 'cambio', meses: cm }] : [];   // una sola fila, con todos los meses adentro
-  return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...cambios, ...dev, ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
+  /* etapas del primer uso: 2 · una sola invitación a actualizar con lo de este mes; 3 · el mail */
+  const etapas = [];
+  if (F.etapas) {
+    const faltanRes = p.ahora.concat(p.masTarde).filter(q => q.tipo === 'resumen');
+    const viejos = estimadosViejos(datos, HOY_ISO);
+    const etapa = etapaPrimerUso(datos, { visitas: VISITAS, pendientes: faltanRes.length + viejos.length, mailConectado: false });
+    if (etapa === 2) {
+      const partes = [...faltanRes.sort((a, b) => b.impacto - a.impacto).map(q => ({ txt: `el resumen de este mes de ${tarjetaDe(q.tarjetaId)?.nombre || 'tu tarjeta'}`, imp: q.impacto })),
+        ...viejos.map(g => ({ txt: `la factura de ${g.nombre.toLowerCase() === g.nombre ? g.nombre : g.nombre} de ${nombreMes(HOY).split(' ')[0]}`, imp: g.monto }))].sort((a, b) => b.imp - a.imp);
+      const top = partes.slice(0, 2).map(x => x.txt);
+      etapas.push({ clase: 'etapa', etapa: 2, impacto: partes.reduce((a, x) => a + x.imp, 0),
+        titulo: `Para que el cálculo sea exacto, subí ${top.join(' y ')}${partes.length > 2 ? ` (y ${partes.length - 2} más)` : ''}.` });
+      /* las preguntas sueltas de "falta tu resumen" quedan dentro de esta invitación */
+      p.ahora = p.ahora.filter(q => q.tipo !== 'resumen');
+    }
+    if (etapa === 3 && F.conectarMail) etapas.push({ clase: 'etapa', etapa: 3, titulo: 'Conectá tu mail para que lleguen solos tus resúmenes y facturas.' });
+  }
+  return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...etapas, ...cambios, ...dev, ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
     masTarde: p.masTarde };
 }
 function preguntaHTML(q) {
@@ -259,6 +281,10 @@ function filaRevisar(x) {
       <div class="mm-fa-det">${x.meses.map(bloque).join('')}
       ${motivos.length ? `<p class="mm-fuente">Desde la última vez: ${esc(motivos.join(' · ').toLowerCase())}.</p>` : ''}
       <div class="mm-fa-acc"><button type="button" class="mm-link" data-cambios-visto>Entendido</button></div></div></details>`;
+  }
+  if (x.clase === 'etapa') {
+    return `<details class="mm-fila-alerta pregunta etapa" ${x.etapa === 2 ? 'open' : ''}><summary><span class="mm-fa-ic">${ic(x.etapa === 2 ? 'subir' : 'campana')}</span><span class="mm-fa-txt">${esc(x.etapa === 2 ? 'Actualizá con lo de este mes' : 'Que lleguen solos')}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
+      <div class="mm-fa-det"><p>${esc(x.titulo)}</p><div class="mm-fa-acc">${x.etapa === 2 ? '<button type="button" class="mm-btn chico" data-ir="subir">Subir lo de este mes</button>' : '<button type="button" class="mm-btn chico" data-conectar-mail>Conectar mi mail</button>'}</div></div></details>`;
   }
   if (x.clase === 'devolver') {
     const v = x.bd.vencidos, c = x.bd.candidatos.filter(k => k.parecido.length);
@@ -368,6 +394,200 @@ document.addEventListener('change', e => {
   datos.cambiosTarjeta = datos.cambiosTarjeta.map(x => (x.id === c.dataset.ctCheck ? { ...x, checklist: c.checked ? [...new Set([...x.checklist, c.value])] : x.checklist.filter(k => k !== c.value) } : x));
   guardar();
 });
+
+/* ════════ SUBÍ LO QUE TENGAS (tanda 14) ════════
+   Varios archivos a la vez, de a PARALELO_DOCS. Cada uno: se prepara (HEIC →
+   JPG, fotos grandes se achican), se reconoce por su huella (si ya se subió,
+   no se lee de nuevo), se clasifica y, si es un resumen o una factura, lo lee
+   su lector. Nada se guarda hasta "Guardar todo". */
+let cola = [];
+let itemsLeido = [];
+const ESTADOS = { cola: 'En cola', leyendo: 'Leyendo…', listo: 'Listo', error: 'No se pudo leer', repetido: 'Ya lo subiste', otro: 'No pudimos saber qué es', manual: 'Cargalo a mano' };
+const CLAVE_VISITAS = 'orbit:mi-mes:visitas';
+function visitas() {
+  try {
+    const v = JSON.parse(localStorage.getItem(CLAVE_VISITAS) || '{}');
+    if (v.dia !== HOY_ISO) { v.n = (v.n || 0) + 1; v.dia = HOY_ISO; localStorage.setItem(CLAVE_VISITAS, JSON.stringify(v)); }
+    return v.n || 1;
+  } catch { return 1; }
+}
+const VISITAS = visitas();
+function pintarSubir() {
+  const hayDatos = datos.ingresos.length || datos.gastos.length || datos.resumenes.length;
+  $id('t-subir').textContent = hayDatos ? 'Actualizá con lo de este mes' : 'Subí todos los resúmenes que tengas';
+  $id('subir-sub').textContent = hayDatos
+    ? 'Subí el resumen de este mes de cada tarjeta y las facturas nuevas: reemplazan a los estimados y te contamos qué cambió.'
+    : 'Viejos o actuales: resúmenes de tarjeta de varios meses, recibos de sueldo, facturas y capturas del homebanking. Con el historial armamos tu mes.';
+  $id('ejemplos').innerHTML = EJEMPLOS_DOC.map(e => `<li>${ic(e.icono)}<span>${esc(e.texto)}</span></li>`).join('');
+  $id('cola').innerHTML = cola.map(x => `<li class="mm-cola-it ${x.estado}">
+      <span class="mm-cola-ic">${ic(x.estado === 'listo' ? 'check' : x.estado === 'error' || x.estado === 'otro' ? 'alerta' : 'subir')}</span>
+      <span class="mm-cola-txt"><b>${esc(x.nombre)}</b><small>${esc(x.estado === 'listo' ? TIPOS_DOC[x.tipo] + (x.confiable === false ? ' · leído con dudas' : '') : x.estado === 'repetido' ? `Ya lo subiste${x.yaFecha ? ` el ${fechaAR(x.yaFecha)}` : ''}: no lo leemos de nuevo` : x.error || ESTADOS[x.estado])}</small>
+      ${x.estado === 'otro' ? `<span class="mm-chips mm-cola-chips">${['resumen', 'factura', 'recibo', 'captura'].map(t => `<button type="button" class="mm-chip" data-tipo-doc="${t}" data-doc="${esc(x.id)}">${esc(TIPOS_DOC[t])}</button>`).join('')}</span>` : ''}
+      ${x.estado === 'error' ? `<button type="button" class="mm-link" data-reintentar="${esc(x.id)}">Reintentar</button>` : ''}
+      ${x.estado === 'manual' ? `<button type="button" class="mm-link" data-nuevo="${x.tipo === 'recibo' ? 'ingreso' : 'cuota'}">Cargar a mano</button>` : ''}</span>
+      ${x.estado === 'leyendo' ? '<span class="mm-spinner chico" aria-hidden="true"></span>' : ''}</li>`).join('');
+  const pendientes = cola.some(x => ['cola', 'leyendo'].includes(x.estado));
+  const listos = cola.filter(x => x.estado === 'listo').length;
+  $id('ir-revisar').hidden = !listos || pendientes;
+  $id('ir-revisar').textContent = `Revisar lo que leí (${listos})`;
+  $id('conectar-mail').hidden = !F.conectarMail;
+}
+async function prepararArchivo(f) {
+  const heic = /heic|heif/i.test(f.type) || /\.(heic|heif)$/i.test(f.name);
+  const imagen = heic || /^image\//.test(f.type);
+  if (!imagen) return f;
+  if (!heic && f.size <= 3_500_000 && /^image\/(jpeg|png|webp)$/.test(f.type)) return f;
+  /* HEIC (iPhone) o fotos pesadas: a JPG de hasta 2200 px, si el navegador puede abrirlas */
+  let bmp;
+  try { bmp = await createImageBitmap(f); } catch { throw new Error(heic ? 'Este navegador no abre fotos HEIC: exportala como JPG o sacale una captura.' : 'No pudimos abrir esa imagen.'); }
+  const k = Math.min(1, 2200 / Math.max(bmp.width, bmp.height));
+  const c = Object.assign(document.createElement('canvas'), { width: Math.round(bmp.width * k), height: Math.round(bmp.height * k) });
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  return await new Promise(ok => c.toBlob(b => ok(b), 'image/jpeg', 0.85));
+}
+async function postDoc(blob, query) {
+  const r = await fetch(`/api/mi-mes-leer${query}`, { method: 'POST', body: blob, credentials: 'same-origin', headers: { 'Content-Type': 'application/octet-stream' } });
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j?.ok) throw new Error(j?.error || SIN_RED);
+  return j;
+}
+async function leerUno(x, tipoForzado = null) {
+  x.estado = 'leyendo'; x.error = ''; pintarSubir();
+  try {
+    const blob = x.blob || (x.blob = await prepararArchivo(x.file));
+    if (blob.size > MAX_BYTES_DOC) throw new Error('El archivo pesa más de 4 MB. Probá con una foto más chica.');
+    if (!x.huella) x.huella = await huella(await blob.arrayBuffer());
+    if (!tipoForzado) {
+      const otro = cola.find(o => o !== x && o.huella === x.huella && o.estado !== 'repetido');
+      const ya = yaSubido(datos, x.huella);
+      if (otro || ya) { x.estado = 'repetido'; x.yaFecha = ya?.fecha || null; return; }
+    }
+    let tipo = tipoForzado, j = null;
+    if (LOCAL) {
+      await new Promise(r => setTimeout(r, 250));
+      const c = clasificarDeEjemplo(x.nombre, HOY_ISO);
+      tipo ||= c.tipo;
+      j = tipo === 'resumen' ? { lectura: resumenEjemplo() } : tipo === 'factura' ? { propuesta: facturaDeEjemplo(x.nombre, HOY_ISO) } : { lectura: c };
+    } else {
+      if (!tipo) {
+        j = await postDoc(blob, modoLectura === 'prueba' ? `?nombre=${encodeURIComponent(x.nombre.slice(0, 80))}` : '');
+        tipo = j.tipo;
+      }
+      if (tipo === 'resumen' || tipo === 'factura') j = await postDoc(blob, `?tipo=${tipo}`);
+    }
+    x.tipo = tipo;
+    if (tipo === 'otro') { x.estado = 'otro'; return; }
+    if (tipoForzado && ['recibo', 'captura'].includes(tipo)) { x.estado = 'manual'; return; }
+    if (tipo === 'resumen') {
+      const v = validarLectura(j.lectura);
+      if (!v.ok) throw new Error('No encontramos los datos clave del resumen. Cargalo a mano.');
+      x.lectura = v.lectura; x.confiable = j.confiable !== false && v.lectura.confianza === 'alta';
+    } else if (tipo === 'factura') { x.propuesta = j.propuesta; if (!x.propuesta?.monto) x.confiable = false; }
+    else x.lectura = j.lectura;
+    x.estado = 'listo';
+  } catch (e) { x.estado = 'error'; x.error = e?.message || 'No se pudo leer'; }
+  finally { pintarSubir(); }
+}
+async function procesarCola() {
+  const trabajador = async () => { for (let x; (x = cola.find(c => c.estado === 'cola'));) await leerUno(x); };
+  await Promise.all(Array.from({ length: PARALELO_DOCS }, trabajador));
+}
+function agregarArchivos(files) {
+  for (const f of files) cola.push({ id: nuevoId(), nombre: f.name || 'archivo', file: f, estado: 'cola' });
+  pintarSubir(); procesarCola();
+}
+$id('archivos').addEventListener('change', e => { agregarArchivos([...e.target.files]); e.target.value = ''; });
+const drop = $id('drop');
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('sobre'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('sobre'); }));
+drop.addEventListener('drop', e => agregarArchivos([...(e.dataTransfer?.files || [])]));
+$id('vista-subir').addEventListener('click', e => {
+  const t = e.target;
+  const td = t.closest('[data-tipo-doc]');
+  if (td) { const x = cola.find(c => c.id === td.dataset.doc); if (x) leerUno(x, td.dataset.tipoDoc); return; }
+  const re = t.closest('[data-reintentar]');
+  if (re) { const x = cola.find(c => c.id === re.dataset.reintentar); if (x) leerUno(x); return; }
+  if (t.closest('[data-a-mano]')) { verVista('inicio'); return abrirGuia(); }
+  if (t.closest('[data-ir-revisar]')) return irALeido();
+});
+function irALeido() {
+  const tjDefault = datos.tarjetas[0]?.id || null;
+  const lecturas = cola.filter(x => x.estado === 'listo').map(x => ({ archivo: x.id, tipo: x.tipo, lectura: x.tipo === 'factura' ? x.propuesta : x.lectura, confiable: x.confiable, tarjetaId: tjDefault }));
+  itemsLeido = consolidar(lecturas, datos, HOY_ISO);
+  verVista('leido');
+}
+const GRUPOS_LEIDO = [['ingresos', 'Ingresos'], ['gastos', 'Gastos fijos'], ['tarjetas', 'Tarjetas'], ['compras', 'Compras nuevas'], ['saldo', 'Saldo de hoy']];
+const ACCION_TXT = { nuevo: 'Nuevo', actualizar: 'Actualiza', igual: 'Ya estaba', viejo: 'Más viejo: no pisa lo nuevo', historial: 'Historial' };
+function pintarLeido() {
+  const fila = it => {
+    const editable = ['ingresos', 'gastos', 'compras', 'saldo'].includes(it.grupo) && !['viejo', 'igual'].includes(it.accion);
+    return `<li class="mm-leido-it${it.descartado ? ' fuera' : ''}" data-it="${esc(it.id)}">
+      <label class="mm-check"><input type="checkbox" data-it-incluir ${it.descartado || ['viejo', 'igual'].includes(it.accion) ? '' : 'checked'} ${['viejo', 'igual'].includes(it.accion) ? 'disabled' : ''}><span class="mm-sr">Incluir ${esc(it.titulo)}</span></label>
+      <span class="mm-leido-txt"><b>${esc(it.titulo)}</b><small>${esc(it.detalle || '')}</small>
+        <span class="mm-tag ${it.accion === 'nuevo' ? '' : 'ext'}">${esc(ACCION_TXT[it.accion] || '')}${it.accion === 'actualizar' && it.antes != null ? ` ${$(it.antes)} → ${$(it.monto)}` : ''}</span>
+        ${it.grupo === 'tarjetas' && it.confiable === false ? '<span class="mm-tag">Leído con dudas: revisá el total</span>' : ''}
+        ${it.grupo === 'compras' ? `<label class="mm-sr" for="tj-${esc(it.id)}">Tarjeta</label><select id="tj-${esc(it.id)}" data-it-tarjeta>${datos.tarjetas.length ? datos.tarjetas.map(t => `<option value="${esc(t.id)}"${t.id === it.compra.tarjetaId ? ' selected' : ''}>${esc(t.nombre)}</option>`).join('') : `<option value="">${itemsLeido.some(i => i.grupo === 'tarjetas') ? 'La del resumen que subiste' : 'Primero agregá la tarjeta'}</option>`}</select>` : ''}</span>
+      ${editable ? `<span class="mm-leido-monto"><label class="mm-sr" for="m-${esc(it.id)}">Monto de ${esc(it.titulo)}</label><input id="m-${esc(it.id)}" type="text" inputmode="decimal" data-it-monto value="${esc(sinSimbolo(it.monto, 'ARS'))}"></span>` : `<b class="mm-leido-total">${esc($(it.monto || 0))}</b>`}
+    </li>`;
+  };
+  $id('leido').innerHTML = !itemsLeido.length ? '<p class="mm-vacio">No hay nada para guardar. Subí otro archivo o cargalo a mano.</p>'
+    : GRUPOS_LEIDO.map(([g, tit]) => {
+      const its = itemsLeido.filter(i => i.grupo === g);
+      if (!its.length) return '';
+      const vivos = its.filter(i => !['viejo', 'historial'].includes(i.accion)), viejos = its.filter(i => ['viejo', 'historial'].includes(i.accion));
+      return `<section class="mm-panel" aria-label="${esc(tit)}"><h2 class="mm-h2">${esc(tit)}</h2><ul class="mm-leido">${vivos.map(fila).join('')}</ul>
+        ${viejos.length ? `<details class="mm-luego"><summary>${g === 'tarjetas' ? `Historial (${viejos.length})` : `Más viejos (${viejos.length}): no pisan a lo nuevo`}</summary><ul class="mm-leido">${viejos.map(fila).join('')}</ul></details>` : ''}</section>`;
+    }).join('');
+}
+$id('leido').addEventListener('change', e => {
+  const li = e.target.closest('[data-it]');
+  const it = li && itemsLeido.find(i => i.id === li.dataset.it);
+  if (!it) return;
+  if (e.target.matches('[data-it-incluir]')) { it.descartado = !e.target.checked; li.classList.toggle('fuera', it.descartado); }
+  if (e.target.matches('[data-it-tarjeta]')) { it.compra.tarjetaId = e.target.value || null; it.compra.primerMes = null; }
+});
+function guardarTodo() {
+  let mal = null;
+  for (const li of $id('leido').querySelectorAll('[data-it]')) {
+    const it = itemsLeido.find(i => i.id === li.dataset.it);
+    const inp = li.querySelector('[data-it-monto]');
+    if (!it || !inp || it.descartado) continue;
+    const v = leerMonto(inp.value);
+    if (!v) { inp.setAttribute('aria-invalid', 'true'); mal ||= inp; continue; }
+    inp.removeAttribute('aria-invalid');
+    it.monto = v;
+    if (it.gasto) it.gasto.monto = v;
+    if (it.ingreso) it.ingreso.monto = v;
+    if (it.compra) it.compra.total = v;
+    if (it.cuenta) it.cuenta.saldo = v;
+  }
+  if (mal) { avisar('Revisá ese monto (los centavos van con coma).'); return mal.focus(); }
+  const eraVacio = !datos.ingresos.length && !datos.gastos.length && !datos.cuotas.length && !datos.resumenes.length;
+  const r = aplicarItems(datos, itemsLeido, { nuevoId, hoy: HOY_ISO });
+  datos = r.datos;
+  const subidos = cola.filter(x => x.estado === 'listo' && x.huella);
+  datos.documentos = [...(datos.documentos || []), ...subidos.map(x => ({ huella: x.huella, tipo: x.tipo, fecha: HOY_ISO }))].slice(-200);
+  /* en el primer uso, lo subido es el punto de partida (no un "cambio"); después, qué cambió lo explica */
+  if (eraVacio) { if (F.queCambio) { datos.fotoBase = fotoProyeccion(datos, HOY); datos.cambios = []; } }
+  else registrarCambio('Subiste documentos');
+  guardar();
+  try { localStorage.setItem(GUIA, '1'); } catch {}
+  cola = []; itemsLeido = [];
+  mes = HOY;
+  pintarTodo(); verVista('inicio');
+  const n = r.n;
+  avisar(`Listo: ${[n.resumenes && `${n.resumenes} resumen${n.resumenes === 1 ? '' : 'es'}`, n.ingresos && `${n.ingresos} ingreso${n.ingresos === 1 ? '' : 's'}`, n.gastos && `${n.gastos} gasto${n.gastos === 1 ? '' : 's'} fijo${n.gastos === 1 ? '' : 's'}`, n.compras && `${n.compras} compra${n.compras === 1 ? '' : 's'}`, n.actualizados && `${n.actualizados} actualizado${n.actualizados === 1 ? '' : 's'}`].filter(Boolean).join(', ') || 'nada nuevo'}`);
+}
+/* ── conectar el mail (etapa 3; interruptor conectarMail) ── */
+async function conectarMail() {
+  if (!F.conectarMail) return;
+  try {
+    const { buscarDocumentosEnMail } = await import('./correo-mi-mes.js');
+    const encontrados = await buscarDocumentosEnMail(n => { $id('subir-sub').textContent = `Buscando en tu mail… ${n} archivos`; });
+    if (!encontrados.length) return avisar('No encontramos resúmenes, facturas ni recibos en tu mail.');
+    agregarArchivos(encontrados.map(x => new File([x.bytes], x.nombre, { type: 'application/pdf' })));
+  } catch (e) { avisar(e?.message || 'Por ahora subí los PDF; te avisamos cuando se habilite.'); }
+}
 
 /* ════════ (6) TE TIENEN QUE DEVOLVER ════════ */
 const fechaAR = d => (d ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}` : '');
@@ -1184,10 +1404,10 @@ function irAMes(nuevo) {
 $id('mes-ant').addEventListener('click', () => irAMes(sumarMeses(mes, -1)));
 $id('mes-sig').addEventListener('click', () => irAMes(sumarMeses(mes, 1)));
 
-const VISTAS = ['inicio', 'tarjetas', 'tarjeta', 'cargado', 'revisar', 'escalera', 'contado', 'simular', 'rinde', 'devolver'];
-const TITULOS = { tarjetas: 't-tarjetas', tarjeta: 't-una', cargado: 't-cargado', revisar: 't-revisar', escalera: 't-escalera', contado: 't-contado', simular: 't-simular', rinde: 't-rinde', devolver: 't-devolver' };
+const VISTAS = ['inicio', 'tarjetas', 'tarjeta', 'cargado', 'revisar', 'escalera', 'contado', 'simular', 'rinde', 'devolver', 'subir', 'leido'];
+const TITULOS = { tarjetas: 't-tarjetas', tarjeta: 't-una', cargado: 't-cargado', revisar: 't-revisar', escalera: 't-escalera', contado: 't-contado', simular: 't-simular', rinde: 't-rinde', devolver: 't-devolver', subir: 't-subir', leido: 't-leido' };
 function verVista(v, { foco = true } = {}) {
-  if ((v === 'rinde' && !F.dondeRinde) || (v === 'devolver' && !F.devolver)) v = 'inicio';
+  if ((v === 'rinde' && !F.dondeRinde) || (v === 'devolver' && !F.devolver) || (['subir', 'leido'].includes(v) && !F.subiLoQueTengas)) v = 'inicio';
   vista = v;
   const nav = v === 'tarjeta' ? 'tarjetas' : ['tarjetas', 'cargado', 'inicio'].includes(v) ? v : '';
   for (const b of document.querySelectorAll('[data-vista]')) {
@@ -1200,6 +1420,8 @@ function verVista(v, { foco = true } = {}) {
   if (v === 'simular') pintarSimular(true);
   if (v === 'rinde') pintarRinde();
   if (v === 'devolver') pintarDevolver();
+  if (v === 'subir') pintarSubir();
+  if (v === 'leido') pintarLeido();
   try { history.replaceState(null, '', v === 'inicio' ? location.pathname : `#${v}`); } catch {}
   window.scrollTo({ top: 0, behavior: 'instant' });
   if (foco && v !== 'inicio') $id(TITULOS[v])?.focus();
@@ -1989,6 +2211,8 @@ function iniciarGuiaSiHaceFalta() {
   const vacio = !datos.ingresos.length && !datos.gastos.length && !datos.cuotas.length && !datos.resumenes.length;
   let vista = false;
   try { vista = localStorage.getItem(GUIA) === '1'; } catch {}
+  /* tanda 14: el primer uso es subir lo que tengas; la guía a mano queda como alternativa */
+  if (vacio && F.subiLoQueTengas) return verVista('subir', { foco: false });
   if (vacio && !vista) abrirGuia();
 }
 function abrirGuia() { pasoGuia = 0; pintarGuia(); abrir(dgu, dgu.querySelector('input')); }
@@ -2224,6 +2448,8 @@ document.addEventListener('click', e => {
   if (gb2) { const r = darDeBajaGasto(datos, gb2.dataset.gastoBaja2, HOY, { cobradoEsteMes: gb2.dataset.cobrado === '1' }); datos = r.datos; guardar(); pintarTodo(); return avisar(r.texto); }
   const gtodos = t.closest('[data-gastos-ok]');
   if (gtodos) { datos = confirmarTodos(datos, HOY, gtodos.dataset.gastosOk.split(',')); registrarCambio('Confirmaste tus gastos fijos'); guardar(); pintarTodo(); return avisar('Listo: confirmados para este mes'); }
+  if (t.closest('[data-guardar-todo]')) return guardarTodo();
+  if (t.closest('[data-conectar-mail]')) { if (vista !== 'subir') verVista('subir'); return conectarMail(); }
   if (t.closest('[data-cambios-visto]')) { datos.fotoBase = fotoProyeccion(datos, HOY); datos.cambios = []; guardar(); pintarInicio(); return avisar('Listo: tomamos esto como punto de partida'); }
   if (t.closest('[data-saldo]')) return abrirSaldo();
   if (t.closest('[data-ver-dificil]')) { $id('dificil').scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); return $id('t-dificil')?.focus?.(); }

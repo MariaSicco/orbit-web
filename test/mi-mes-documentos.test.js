@@ -229,3 +229,15 @@ test('[etapas] el orden: 1 sin datos; 2 con estimados pendientes desde la 2.ª v
   assert.equal(D.etapaPrimerUso(d, { visitas: 3, pendientes: 1 }), 2, 'lo actual primero');
   assert.equal(D.etapaPrimerUso(d, { visitas: 4, pendientes: 0, mailConectado: true }), 0);
 });
+
+test('[tanda 14] flags: subiLoQueTengas y etapas prendidos; conectarMail apagado; lo que app.js importa de documentos existe', async () => {
+  const { FLAGS } = await import('../api/_herramientas/mi-mes/flags.js');
+  assert.deepEqual([FLAGS.subiLoQueTengas, FLAGS.etapas, FLAGS.conectarMail], [true, true, false]);
+  const src = readFileSync(new URL('../api/_herramientas/mi-mes/app.js', import.meta.url), 'utf8');
+  const lista = src.match(/import \{([^}]*)\} from '\.\/documentos\.js'/)[1].split(',').map(x => x.trim()).filter(Boolean);
+  for (const n of lista) assert.ok(n in D, `falta ${n}`);
+  // los archivos compartidos con Vencimientos siguen idénticos a los de esa rama (se verifica con git en la QA); acá, que el mail no se guarde
+  const correo = readFileSync(new URL('../api/_herramientas/mi-mes/correo-mi-mes.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(correo, /localStorage/);
+  assert.match(correo, /revoke/);
+});

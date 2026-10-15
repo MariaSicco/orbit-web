@@ -9,6 +9,9 @@ export const FLAGS = {
   mesEn30: true,          // 1 · Inicio "tu mes en 30 segundos"
   preguntas: true,        // 2 · "preguntame solo lo que cambia mi mes"
   finDeCuota: true,       // 3 · lo que se libera va a la meta
+  subiLoQueTengas: true,  // tanda 14: primer uso subiendo documentos (recibo, resúmenes, facturas, capturas)
+  etapas: true,           // tanda 14: 1 subí todo · 2 actualizá con lo de este mes · 3 conectá tu mail
+  conectarMail: false,    // tanda 14: APAGADO hasta que Majo cargue los orígenes en Google y Microsoft y lo pruebe
   pagoVencido: true,      // resumen ya vencido al importarlo: ¿ya lo pagaste? (ajuste del socio, 15/10)
   /* tanda 11: encendidas tras la QA v2 (15/10) y sus arreglos; historia y dondeRinde siguen apagadas */
   diaDificil: true,       // (4) saldo de hoy y día por día
