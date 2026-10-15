@@ -628,7 +628,16 @@ export async function handleMail(P, req, res, ctx) {
   const st = await getState(P, email);
 
   /* full: Gmail llegó al cupo de Google y esta cuenta todavía no lo había conectado nunca */
-  if (action === 'status') return res.status(200).json({ ...statusView(P, st, true, cfg.ready), full: await capFull(P, email, st), senders: (await getSenders(email)).manual });
+  if (action === 'status') { const s = await getSenders(email); return res.status(200).json({ ...statusView(P, st, true, cfg.ready), full: await capFull(P, email, st), senders: s.manual, muted: s.muted }); }
+  /* "No es de la mascota": silencia la dirección del remitente para las búsquedas siguientes (los dos proveedores).
+     Solo se guarda la dirección. A un remitente conocido no se lo silencia: { known: true } */
+  if (action === 'mute' || action === 'unmute') {
+    if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+    const b = ctx.body || {};
+    const s = action === 'mute' ? await muteSender(email, String(b.from || '').slice(0, 200), await ctx.getDoc()) : await unmuteSender(email, String(b.v || '').slice(0, 120));
+    if (!s) return res.status(400).json({ error: 'invalid' });
+    return res.status(200).json({ muted: s.muted, known: Boolean(s.known), address: action === 'mute' ? muteKey(b.from) : '' });
+  }
   /* "Gmail está completo por ahora": se guarda que la cuenta lo quería, para avisarle cuando se libere */
   if (action === 'interest') {
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });

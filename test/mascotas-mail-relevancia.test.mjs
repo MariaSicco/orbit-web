@@ -9,7 +9,7 @@ process.env.GOOGLE_CLIENT_ID = 'cliente.apps.googleusercontent.com';
 process.env.GOOGLE_CLIENT_SECRET = 'secreto';
 process.env.MIMITOS_TOKEN_KEY = randomBytes(32).toString('base64');
 process.env.MIMITOS_MAIL_ALLOW = 'majo@ejemplo.com';
-const { kvSet } = await import('../api/_lib/kv.js');
+const { kvSet, kvGet } = await import('../api/_lib/kv.js');
 const { makeSession } = await import('../api/_lib/auth.js');
 const M = await import('../api/_lib/petmail.js');
 const G = await import('../api/_lib/petgmail.js');
@@ -115,4 +115,78 @@ test('búsqueda real: UdeSA afuera, Aika adentro, el remitente agregado a mano a
 
   const rm = await call('POST', { gmail: 'senders' }, { remove: 'resultados@vetsur.com.ar' });
   assert.deepEqual(rm.body.senders, []);
+});
+
+/* ---------- casos del set de evaluación que no pueden volver a fallar ---------- */
+test('humanos, homónimos, promos y facturas de la propia veterinaria quedan AFUERA; los estudios reales ADENTRO', () => {
+  const out = [
+    { subject: 'Hemograma - paciente SICCO MARIA', from: 'Laboratorio Central <r@labcentral.com.ar>' },
+    { subject: 'Tu certificado de vacunación', from: 'Mi Argentina <n@miargentina.gob.ar>' },
+    { subject: 'Vacuna antigripal: tu turno', from: 'Farmacia <t@farmacia.com.ar>' },
+    { subject: 'Aika te mandó fotos del cumple', from: 'Aika Martínez <aika.m@gmail.com>', files: [{ part: '1', name: 'IMG_1.jpg', type: 'image/jpeg', size: 900000 }] },
+    { subject: 'Factura B 0004-00012345 - Veterinaria Panda', from: 'Veterinaria Panda <admin@vetpanda.com.ar>' },
+    { subject: '¡Feliz cumple Aika!', from: 'Veterinaria Panda <turnos@vetpanda.com.ar>', files: [{ part: '1', name: 'tarjeta.jpg', type: 'image/jpeg', size: 200000 }] },
+    { subject: 'Curso de adiestramiento canino - certificado', from: 'Escuela <info@escuela.com.ar>' },
+    { subject: 'Mascota del mes: ¡Aika ganó!', from: 'Pet Shop Barrio <hola@petshop.com.ar>', files: [{ part: '1', name: 'aika.jpg', type: 'image/jpeg', size: 500000 }] },
+    { subject: '20% OFF en alimento para perro', from: 'Tienda <promo@tienda.com.ar>', labels: ['CATEGORY_PROMOTIONS'], unsub: true },
+  ];
+  for (const c of out) assert.equal(judge({ files: [pdf('x.pdf')], ...c }).pass, false, c.subject);
+  const inn = [
+    { subject: 'Certificado de vacunación antirrábica - Aika', from: 'Veterinaria Panda <turnos@vetpanda.com.ar>' },
+    { subject: 'Informe de alta - Historia clínica 55821', from: 'Hospital Escuela FCV-UBA <hospital@fvet.uba.ar>' },
+    { subject: 'Fwd: resultados de Feliza', from: 'Martín <martin@hotmail.com>' },
+    { subject: 'Presupuesto castración - Feliza', from: 'Veterinaria Panda <turnos@vetpanda.com.ar>' },
+    { subject: 'Informe de Feliza', from: 'Veterinaria Panda <novedades@vetpanda.com.ar>', labels: ['CATEGORY_PROMOTIONS'], unsub: true },
+  ];
+  for (const c of inn) assert.equal(judge({ files: [pdf('x.pdf')], ...c }).pass, true, c.subject);
+});
+
+test('sin adjunto: solo si anuncia un resultado (y ahí se lee el cuerpo); un turno o recordatorio no', () => {
+  assert.equal(judge({ subject: 'Sus resultados ya están disponibles', from: 'Diagnovet <no-responder@diagnovet.com.ar>' }).show, 'nofile');
+  assert.equal(judge({ subject: 'Recordatorio de turno para Aika', from: 'Veterinaria Panda <turnos@vetpanda.com.ar>' }).show, '');
+  assert.equal(judge({ subject: '¡Compraste alimento para perro!', from: 'Mercado Libre <info@mercadolibre.com.ar>' }).show, '');
+});
+
+test('logos, firmas, banners e image00N chicas no cuentan como adjunto', () => {
+  const img = (name, size) => ({ name, type: 'image/png', size });
+  assert.equal(M.fileOk(img('logo_vetpanda.png', 45000)), false);
+  assert.equal(M.fileOk(img('firma.png', 25000)), false);
+  assert.equal(M.fileOk(img('banner_vacunacion.jpg', 310000)), false);
+  assert.equal(M.fileOk(img('image001.png', 30000)), false);
+  assert.equal(M.fileOk(img('IMG_2031.png', 880000)), true);
+  assert.equal(M.fileOk(img('WhatsApp Image 2026-10-02 at 11.40.12.jpeg', 230000)), true);
+});
+
+test('"No es de la mascota": silencia la dirección, se va de la búsqueda y de la consulta; un remitente conocido no se silencia', async () => {
+  MAILS.cvn00001 = { id: 'cvn00001', threadId: 'thcvn001', internalDate: String(Date.parse('2026-09-05')), payload: { headers: [H('Subject', 'Ecografía de Aika'), H('From', 'Centro Vet Norte <info@centrovetnorte.com.ar>')], parts: [{ partId: '1', mimeType: 'application/pdf', filename: 'eco.pdf', body: { attachmentId: 'W', size: 90000 } }] } };
+  let s = await call('POST', { gmail: 'search' }, { mode: 'all' });
+  assert.ok(s.body.candidates.some(c => c.m === 'cvn00001'));
+
+  const mu = await call('POST', { gmail: 'mute' }, { from: 'Centro Vet Norte <info@centrovetnorte.com.ar>' });
+  assert.equal(mu.code, 200);
+  assert.deepEqual([mu.body.known, mu.body.address, mu.body.muted], [false, 'info@centrovetnorte.com.ar', ['info@centrovetnorte.com.ar']]);
+  /* solo la dirección: nada del asunto ni del cuerpo */
+  assert.deepEqual(await kvGet(`orbit:petmailsenders:${EMAIL}`), { manual: [], learned: [], muted: ['info@centrovetnorte.com.ar'] });
+  assert.deepEqual((await call('GET', { gmail: 'status' })).body.muted, ['info@centrovetnorte.com.ar']);
+
+  s = await call('POST', { gmail: 'search' }, { mode: 'all' });
+  assert.ok(!s.body.candidates.some(c => c.m === 'cvn00001'), 'ya no aparece');
+  assert.ok(lastQ.includes('-from:info@centrovetnorte.com.ar'), 'y no se pide a Gmail');
+
+  /* la veterinaria de la ficha no se silencia */
+  const kn = await call('POST', { gmail: 'mute' }, { from: 'Veterinaria Panda <turnos@vetpanda.com.ar>' });
+  assert.deepEqual([kn.body.known, kn.body.muted], [true, ['info@centrovetnorte.com.ar']]);
+
+  /* deshacer */
+  const un = await call('POST', { gmail: 'unmute' }, { v: 'info@centrovetnorte.com.ar' });
+  assert.deepEqual(un.body.muted, []);
+  s = await call('POST', { gmail: 'search' }, { mode: 'all' });
+  assert.ok(s.body.candidates.some(c => c.m === 'cvn00001'), 'vuelve');
+
+  /* si después importa algo de un silenciado, deja de estar silenciado y pasa a aprendido */
+  await call('POST', { gmail: 'mute' }, { from: 'Centro Vet Norte <info@centrovetnorte.com.ar>' });
+  await M.learnSender(EMAIL, 'Centro Vet Norte <info@centrovetnorte.com.ar>');
+  const after = await M.getSenders(EMAIL);
+  assert.deepEqual([after.muted, after.learned], [[], ['info@centrovetnorte.com.ar']]);
+  delete MAILS.cvn00001;
 });

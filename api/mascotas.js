@@ -26,7 +26,7 @@
    topes internos y vencimiento a 12 meses en api/_lib/petquota.js. Vencidas → 403 { error: 'ai_expired' }
    POST ?ask=1 {question, petId?, history?, tz?} → "Preguntale a Mimitos": responde SOLO con los datos de la cuenta,
                                 con citas validadas (api/_lib/petask.js). La conversación no se guarda en el servidor
-   ?gmail=… y ?outlook=… (status|start|callback|search|import|queue|unqueue|disconnect) → "Conectar tu mail"
+   ?gmail=… y ?outlook=… (status|start|callback|search|import|queue|unqueue|senders|mute|unmute|disconnect) → "Conectar tu mail"
                                 (api/_lib/petmail.js + adaptadores): busca estudios en el mail y los importa por el mismo motor de ?studyscan
 
    POST ?scanclear=1 {petId?} → borra el registro de escaneos del QR (de una mascota o todo)

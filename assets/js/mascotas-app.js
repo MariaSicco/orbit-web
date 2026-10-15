@@ -27,7 +27,7 @@ let sitterLinks = {};
 let mefui = false;
 /* Conectar tu mail: estado de cada proveedor (undefined mientras carga, null si la cuenta no está habilitada) y la búsqueda en curso */
 const mstat = { gmail: undefined, outlook: undefined };
-let gm = null, msenders = [];
+let gm = null, msenders = [], mmuted = [];
 let route = { name: 'inicio' }, lastKey = '';
 const ui = { hist: { type: 'todo', year: '', q: '' }, lib: { year: '', q: '', page: 0 }, agenda: { ym: iso(Z.today()).slice(0, 7), sel: iso(Z.today()) }, gastos: { ym: iso(Z.today()).slice(0, 7), pet: 'all' } };
 const store = { get(k) { try { return localStorage.getItem('mimitos:' + k); } catch { return null; } }, set(k, v) { try { localStorage.setItem('mimitos:' + k, v); } catch {} } };
@@ -2543,7 +2543,7 @@ let mailAllowed = null;
 async function loadMail() {
   if (mailAllowed === false) { MAILS.forEach(p => { mstat[p] = null; }); mailRoute(); return render(); }
   await Promise.all(MAILS.map(async p => {
-    try { const r = await fetch(`/api/mascotas?${p}=status`); const d = await r.json().catch(() => null); mstat[p] = r.ok && d?.allowed ? d : null; if (mstat[p]?.senders) msenders = mstat[p].senders; }
+    try { const r = await fetch(`/api/mascotas?${p}=status`); const d = await r.json().catch(() => null); mstat[p] = r.ok && d?.allowed ? d : null; if (mstat[p]?.senders) msenders = mstat[p].senders; if (mstat[p]?.muted) mmuted = mstat[p].muted; }
     catch { mstat[p] = null; }
   }));
   mailRoute(); render();
@@ -2637,7 +2637,8 @@ function renderMail(p) {
       <p class="lead-s" style="margin-top:6px">Elegí cuáles traer. Nada se descarga ni se lee hasta que tocás Importar.</p></div>
     ${qBox}
     <div class="gm-bar"><span class="dim">${n ? `${n} ${n === 1 ? 'elegido' : 'elegidos'}` : 'Ninguno elegido'}</span><button class="link" data-act="mailAll">${files.every(k => gm.sel.has(k)) ? 'Desmarcar todos' : 'Marcar todos'}</button></div>
-    <div class="gm-list">${gm.cands.map(c => `<article class="gm-mail"><div class="gm-h"><b>${esc(c.subject || '(Sin asunto)')}</b><small>${esc(c.from)}${c.date ? ' · ' + date(c) : ''}</small></div>
+    <div class="gm-list">${gm.cands.map(c => `<article class="gm-mail"><div class="gm-h"><b>${esc(c.subject || '(Sin asunto)')}</b><small>${esc(c.from)}${c.date ? ' · ' + date(c) : ''}</small>
+      <button type="button" class="link gm-not" data-act="mailMute" data-m="${esc(c.m)}">No es de la mascota</button></div>
       ${c.files.map(f => { const k = c.m + '|' + f.part; return `<label class="gm-file"><input type="checkbox" data-gsel="${esc(k)}" ${gm.sel.has(k) ? 'checked' : ''}>${bubble(f.type === 'link' ? 'download' : f.type === 'application/pdf' ? 'doc' : 'camera', f.type === 'link' ? 'cuida' : 'viaje')}<span class="what"><b>${esc(f.name)}</b><small>${f.type === 'link' ? 'Link en el mail · lo bajamos del sitio del laboratorio' : `${f.type === 'application/pdf' ? 'PDF' : 'Foto'} · ${kb(f.size)}`}${/heic|heif/.test(f.type) ? ' · se adjunta sin leer' : ''}</small></span></label>`; }).join('')}
     </article>`).join('')}</div>
     ${moreBox}${noFile}${tips}${srcBox}
@@ -2652,6 +2653,8 @@ function sendersBox(p, after) {
     <div class="gm-src-row"><input id="srcIn" maxlength="80" autocomplete="off" placeholder="Veterinaria, laboratorio o mail"><button type="button" class="btn sm ghost" data-act="srcAdd" data-p="${p}">Agregar</button></div>
     ${msenders.length ? `<div class="chips gm-src-chips">${msenders.map(x => `<span class="chip on">${esc(x)}<button type="button" class="chip-x" data-act="srcRm" data-v="${esc(x)}" aria-label="Quitar ${esc(x)}">${I('x')}</button></span>`).join('')}</div>` : ''}
     <small class="hint">Por ejemplo “Panda” o lab@…. Lo sumamos a la búsqueda: sus mails entran aunque no digan “veterinaria”.</small>
+    ${mmuted.length ? `<details class="gm-muted"><summary>Remitentes que no buscamos (${mmuted.length})</summary><p class="note">Los marcaste con “No es de la mascota”. Tocá la cruz para volver a buscarlos.</p>
+      <div class="chips gm-src-chips">${mmuted.map(x => `<span class="chip">${esc(x)}<button type="button" class="chip-x" data-act="muteRm" data-v="${esc(x)}" aria-label="Volver a buscar ${esc(x)}">${I('x')}</button></span>`).join('')}</div></details>` : ''}
     ${after && gm?.srcDirty ? `<button type="button" class="btn sm" data-act="mailRangeGo" data-v="${esc(mstat[p].range || '12m')}">Buscar de nuevo con esto</button>` : ''}</div>`;
 }
 async function sendersPost(body) {
@@ -2659,6 +2662,32 @@ async function sendersPost(body) {
     const r = await fetch(`/api/mascotas?${MAILS.find(x => mstat[x]) || 'gmail'}=senders`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const d = await r.json(); if (!r.ok) throw new Error();
     msenders = d.senders || []; if (gm) gm.srcDirty = true; render();
+  } catch { toast('No se pudo guardar. Probá de nuevo.'); }
+}
+/* "No es de la mascota": saca el mail de la lista y deja de buscar ese remitente (solo se guarda su dirección).
+   Si es la veterinaria de la ficha o un remitente conocido, no se silencia: se perderían sus estudios */
+const mAddr = f => ((/<([^>]+)>/.exec(f || '') || [])[1] || f || '').trim().toLowerCase();
+async function mailMute(m) {
+  const p = gm?.p, c = gm?.cands.find(x => x.m === m); if (!p || !c) return;
+  const before = gm.cands.slice(), sel = new Set(gm.sel);
+  const hide = pred => { const out = gm.cands.filter(pred); gm.cands = gm.cands.filter(x => !pred(x)); out.forEach(x => x.files.forEach(f => gm.sel.delete(x.m + '|' + f.part))); return out.length; };
+  const restore = () => { gm.cands = before; gm.sel = sel; render(); };
+  hide(x => x.m === m); render();
+  try {
+    const r = await fetch(`/api/mascotas?${p}=mute`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ from: c.from }) });
+    const d = await r.json(); if (!r.ok) throw new Error();
+    if (d.known) return toast('Lo sacamos de la lista. Es de un remitente que ya conocemos, así que no lo silenciamos: sus estudios van a seguir apareciendo.', { label: 'Deshacer', fn: restore });
+    mmuted = d.muted || mmuted;
+    const more = hide(x => mAddr(x.from) === d.address); render();
+    toast(`Listo: no vamos a buscar más mails de ${d.address}${more ? ` (sacamos ${more + 1} de la lista)` : ''}.`, { label: 'Deshacer', fn: async () => { restore(); await mailUnmute(p, d.address, true); } });
+  } catch { restore(); toast('No se pudo guardar. Probá de nuevo.'); }
+}
+async function mailUnmute(p, v, quiet) {
+  try {
+    const r = await fetch(`/api/mascotas?${p || MAILS.find(x => mstat[x]) || 'gmail'}=unmute`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ v }) });
+    const d = await r.json(); if (!r.ok) throw new Error();
+    mmuted = d.muted || []; if (gm) gm.srcDirty = true; render();
+    if (!quiet) toast(`Volvemos a buscar mails de ${v}.`);
   } catch { toast('No se pudo guardar. Probá de nuevo.'); }
 }
 function mailIntro(p, back) {
@@ -3368,6 +3397,8 @@ document.addEventListener('click', e => {
     case 'mailRangeGo': return mailSearch(route.name, 'all', null, b.dataset.v);
     case 'srcAdd': { const v = ($('#srcIn')?.value || '').trim(); if (v.length < 3) { $('#srcIn')?.focus(); return toast('Escribí el nombre o el mail (3 letras o más).'); } return sendersPost({ add: v }); }
     case 'srcRm': return sendersPost({ remove: b.dataset.v });
+    case 'mailMute': return mailMute(b.dataset.m);
+    case 'muteRm': return mailUnmute(gm?.p, b.dataset.v);
     case 'petsMore': return petsPanel();
     case 'pick': selectPet(b.dataset.id); if (TAB_OF[route.name] === 'inicio') return go('inicio'); return render();
     case 'go': return go(b.dataset.to);
