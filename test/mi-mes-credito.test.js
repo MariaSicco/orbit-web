@@ -274,3 +274,38 @@ test('[QA 20] manifest: nombre completo e íconos any y maskable por separado', 
   assert.ok(m.icons.every(i => i.purpose === 'any' || i.purpose === 'maskable'));
   assert.ok(m.icons.some(i => i.purpose === 'maskable'));
 });
+
+test('[socio 15/10] resumen vencido: pagué el mínimo → el saldo pasa al mes siguiente con intereses estimados', () => {
+  const d = M.datosVacios();
+  d.ingresos.push({ id: 'i', nombre: 'Sueldo', monto: $(1_000_000), repite: true, desde: '2026-01' });
+  d.tarjetas.push({ id: 'v', nombre: 'Visa', red: 'Visa', banco: '', ultimos4: '', color: 'azul' });
+  d.resumenes.push({ id: 'r', tarjetaId: 'v', mes: '2026-10', cierre: '2026-09-26', vencimiento: '2026-10-09', totales: { ARS: $(300_000) },
+    pagoMinimo: { moneda: 'ARS', monto: $(30_000) }, consumos: [], cargos: [], pagosYCreditos: [], vencidoAlImportar: true });
+  const m = M.migrar(d);
+  // importar marca el resumen vencido solo si ya había vencido ese día
+  const l = M.validarLectura({ ...fixture('simple') }).lectura;
+  assert.equal(M.importarResumen(M.datosVacios(), l, { hoy: '2026-09-02' }).datos.resumenes[0].vencidoAlImportar, true);
+  assert.equal(M.importarResumen(M.datosVacios(), l, { hoy: '2026-08-25' }).datos.resumenes[0].vencidoAlImportar, undefined);
+  const q = M.preguntas(m, '2026-10-15').ahora.find(x => x.tipo === 'pagado');
+  assert.equal(q.titulo, 'Tu resumen de Visa venció el 9/10. ¿Ya lo pagaste?');
+  assert.equal(M.resumenMes(m, '2026-11').totTarjetas, 0, 'sin respuesta no inventa deuda');
+  const min = M.registrarPagoResumen(m, 'r', { estado: 'minimo' });
+  // saldo 270.000; interés 270.000 × 80 % / 12 × 1,21 = 21.780
+  const nov = M.resumenMes(min, '2026-11');
+  assert.deepEqual(nov.financiados.map(f => [f.saldo, f.interes, f.estimado]), [[$(270_000), $(21_780), true]]);
+  assert.equal(nov.totTarjetas, $(291_780));
+  assert.equal(M.resumenMes(min, '2026-10').totTarjetas, $(300_000), 'octubre no cambia');
+  assert.equal(M.preguntas(min, '2026-10-15').ahora.some(x => x.tipo === 'pagado'), false);
+  assert.equal(M.resumenMes(M.registrarPagoResumen(m, 'r', { estado: 'total' }), '2026-11').totTarjetas, 0);
+  assert.equal(M.resumenMes(M.registrarPagoResumen(m, 'r', { estado: 'otro', monto: $(100_000) }), '2026-11').financiados[0].saldo, $(200_000));
+  // cuando llega el resumen de noviembre, manda lo real
+  const conNov = { ...min, resumenes: [...min.resumenes, { ...min.resumenes[0], id: 'r2', mes: '2026-11', vencimiento: '2026-11-09', totales: { ARS: $(295_000) }, pago: undefined }] };
+  assert.equal(M.resumenMes(conNov, '2026-11').totTarjetas, $(295_000));
+  assert.deepEqual(M.migrar(min).resumenes[0].pago, { estado: 'minimo' });
+});
+
+test('[socio 15/10] versión: app.js y version.json coinciden (aviso de recargar)', () => {
+  const app = readFileSync(new URL('../api/_herramientas/mi-mes/app.js', import.meta.url), 'utf8');
+  const v = JSON.parse(readFileSync(new URL('../api/_herramientas/mi-mes/version.json', import.meta.url), 'utf8')).v;
+  assert.equal(app.match(/const VERSION = '([^']+)'/)[1], v);
+});

@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -23,6 +23,8 @@ const MAX_PDF = 4 * 1024 * 1024;
 const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
+/* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
+const VERSION = '2026-10-15.t11';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -164,6 +166,7 @@ function pintarInicio(animar = false) {
         extra: x.faltaCambio.length ? ' <span class="mm-tag">Falta tipo de cambio</span>' : '' });
     }),
     ...r.delBanco.map(x => item({ ir: x.tarjetaId, icono: 'escalera', titulo: `Cuotas de ${x.tarjeta}`, meta: 'Según la tabla "cuotas a vencer" del banco', monto: '−' + $(x.monto) })),
+    ...(r.financiados || []).map(x => item({ ir: x.tarjetaId, icono: 'alerta', titulo: `Saldo sin pagar · ${x.tarjeta}`, meta: `${$(x.saldo)} del resumen anterior + ${$(x.interes)} de intereses estimados`, monto: '−' + $(x.monto), extra: ' <span class="mm-tag ext">Estimado</span>' })),
     ...r.percepciones.map(x => item({ ir: x.tarjetaId, icono: 'dolar', titulo: `Percepción 30 % · ${x.tarjeta}`, meta: 'Estimada: si pagaste en pesos los US$ del resumen anterior. Si los pagaste con dólares propios, no va', monto: '−' + $(x.monto), extra: ' <span class="mm-tag ext">Estimado</span>' })),
     ...r.cuotas.map(c => item({ tipo: 'cuota', id: c.id, icono: 'cuota', titulo: c.descripcion || 'Compra en cuotas',
       meta: `${c.tarjeta} · ${c.cantidad > 1 ? `cuota ${c.numero}/${c.cantidad}` : 'un pago'}`, monto: '−' + $(c.monto),
@@ -229,6 +232,7 @@ function preguntaHTML(q) {
     copia: `<button type="button" class="mm-btn chico" data-exportar>Guardar copia</button>`,
     saldo: `<button type="button" class="mm-btn chico" data-saldo>${esc(q.accion)}</button>`,
     estimado: `<button type="button" class="mm-btn chico" data-gasto-ok="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-gasto-real="${esc(q.gastoId)}">Fue otro monto</button><button type="button" class="mm-link" data-gasto-baja="${esc(q.gastoId)}">Lo di de baja</button>`,
+    pagado: Object.entries(PAGOS_VENCIDO).map(([k, v], i) => `<button type="button" class="${i ? 'mm-link' : 'mm-btn chico'}" data-pago-res="${esc(q.resumenId)}" data-pago="${k}">${esc(v)}</button>`).join(''),
     dificil: `<button type="button" class="mm-btn chico" data-ver-dificil>Ver día por día</button>`,
   }[q.tipo] || '';
   return `<details class="mm-fila-alerta pregunta">
@@ -292,6 +296,17 @@ function registrarCambio(motivo) {
   datos.fotoBase ||= fotoProyeccion(datos, HOY);
   datos.cambios = [...(datos.cambios || []), { motivo, fecha: new Date().toISOString().slice(0, 16) }].slice(-20);
 }
+
+/* ── resumen vencido: pagué otro monto ── */
+let pagoDe = null;
+$id('dlg-pago').querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const v = leerMonto($id('p-monto').value);
+  if (v === null) { error($id('p-monto'), 'p-monto-err', 'Escribí el monto, por ejemplo 100.000.').focus(); return; }
+  datos = registrarPagoResumen(datos, pagoDe, { estado: 'otro', monto: v }); guardar(); pintarTodo(); cerrar($id('dlg-pago'));
+  const rr = datos.resumenes.find(x => x.id === pagoDe), f = rr ? financiacionEstimada(rr, datos) : null;
+  avisar(f?.total ? `Pasan ${$(f.saldo)} al mes que viene, más ${$(f.interes)} de intereses estimados` : 'Listo, pagado');
+});
 
 /* ════════ (6) TE TIENEN QUE DEVOLVER ════════ */
 const fechaAR = d => (d ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}` : '');
@@ -876,13 +891,15 @@ function pintarRevisar() {
   const opciones = [`<option value="">Tarjeta nueva: ${esc(nueva.nombre)}${nueva.ultimos4 ? ` ···${esc(nueva.ultimos4)}` : ''}</option>`,
     ...datos.tarjetas.map(t => `<option value="${esc(t.id)}"${t.id === match ? ' selected' : ''}>${esc(t.nombre)}${t.ultimos4 ? ` ···${esc(t.ultimos4)}` : ''}</option>`)].join('');
   const mesCuenta = l.vencimiento.slice(0, 7);
-  const totalesHTML = Object.entries(l.totales).map(([m, v]) => {
+  /* moneda extranjera en 0: no se muestra la fila (queda una línea corta) */
+  const enCero = Object.entries(l.totales).filter(([m, v]) => m !== 'ARS' && !v).map(([m]) => MONEDAS[m].nombre);
+  const totalesHTML = Object.entries(l.totales).filter(([m, v]) => m === 'ARS' || v).map(([m, v]) => {
     const conv = m !== 'ARS' ? aPesos(v, m, datos) : null;
     const c = cambioDe(datos, m);
     return `<div class="mm-rev-fila"><label for="rt-${m}"><b>Total en ${esc(MONEDAS[m].nombre)}</b>${m !== 'ARS' ? `<br><span class="mm-fuente">${conv === null ? 'Sin tipo de cambio: no se suma hasta que lo cargues.' : `≈ ${esc($(conv))} a ${esc($(c.valor, { centavos: true }))} por ${esc(MONEDAS[m].simbolo)} 1`}</span>` : ''}</label>
       <span style="display:flex;align-items:center;gap:6px"><span aria-hidden="true">${esc(MONEDAS[m].simbolo)}</span><input type="text" inputmode="decimal" id="rt-${m}" data-total="${m}" value="${esc(sinSimbolo(v, m))}" style="width:150px;text-align:right" aria-describedby="rt-${m}-err"></span>
       <p class="mm-err" id="rt-${m}-err" style="grid-column:1/-1"></p></div>`;
-  }).join('');
+  }).join('') + (enCero.length ? `<p class="mm-fuente" style="margin:4px 0 0">Sin consumos en ${esc(enCero.join(' ni en '))}.</p>` : '');
   const grupos = agruparPorMoneda(l.consumos.map((c, i) => ({ ...c, i })));
   const consumosHTML = Object.entries(grupos).map(([m, cs]) => `
     <div class="mm-moneda-tit">En ${esc(MONEDAS[m].nombre)} <span>${cs.length} consumo${cs.length === 1 ? '' : 's'}</span></div>
@@ -922,6 +939,11 @@ function pintarRevisar() {
           ${totalesHTML}
           <p class="mm-fuente" style="margin:6px 0 10px">El total a pagar sale del resumen: es lo que se descuenta de "te quedan libres" en ${esc(nombreMes(mesCuenta))}. Si no coincide con tu PDF, corregilo.</p>
         </section>
+        ${F.pagoVencido && resumenVencido(l, HOY_ISO) ? `<section class="mm-panel mm-pago-vencido" aria-labelledby="rv-pv">
+          <h2 id="rv-pv" class="mm-h2">Este resumen venció el ${esc(fechaAR(l.vencimiento))}. ¿Ya lo pagaste?</h2>
+          <div class="mm-chips">${Object.entries(PAGOS_VENCIDO).map(([k, v]) => `<label class="mm-chip"><input type="radio" name="rv-pago" value="${k}"><span>${esc(v)}</span></label>`).join('')}</div>
+          <div class="mm-campo" id="rv-pago-otro" hidden><label for="rv-pago-monto">¿Cuánto pagaste?</label><input id="rv-pago-monto" type="text" inputmode="decimal" autocomplete="off"></div>
+          <p class="mm-fuente">Si quedó saldo sin pagar, lo sumamos al mes que viene con intereses estimados. Podés contestarlo después.</p></section>` : ''}
         ${Object.keys(l.saldoAnterior || {}).length || l.pagosYCreditos?.length ? `<section class="mm-panel" aria-labelledby="rv-p"><div class="mm-seccion-top"><h2 id="rv-p">Saldo anterior, pagos y créditos</h2></div>
           ${Object.keys(l.saldoAnterior || {}).length ? `<p class="mm-fuente" style="margin:0 0 4px">Saldo anterior: ${Object.entries(l.saldoAnterior).map(([m, v]) => esc(fm(v, m))).join(' y ')}.</p>` : ''}
           ${listaMovs(l.pagosYCreditos || [])}<p class="mm-fuente" style="margin:6px 0 10px">No cuentan como gasto: solo sirven para controlar que la cuenta cierre.</p></section>` : ''}
@@ -970,7 +992,14 @@ function guardarRevisado() {
   if (primerError) { primerError.focus(); return; }
   l.consumos = consumos;
   const destino = $id('rv-tarjeta').value || null;
-  const r = importarResumen(datos, l, { tarjetaId: destino, nuevoId });
+  const r = importarResumen(datos, l, { tarjetaId: destino, nuevoId, hoy: HOY_ISO });
+  /* si venció antes de importarlo y ya contestó si lo pagó */
+  const pagoElegido = F.pagoVencido ? $id('revisar').querySelector('[name="rv-pago"]:checked')?.value : null;
+  if (pagoElegido) {
+    const nuevo = r.datos.resumenes.find(x => x.tarjetaId === r.tarjetaId && x.mes === r.mes);
+    const montoOtro = pagoElegido === 'otro' ? leerMonto($id('rv-pago-monto').value) : null;
+    if (nuevo && (pagoElegido !== 'otro' || montoOtro !== null)) r.datos = registrarPagoResumen(r.datos, nuevo.id, { estado: pagoElegido, monto: montoOtro });
+  }
   datos = r.datos;
   datos.rubrosComercio = memoria;
   registrarCambio(`Importaste el resumen de ${tarjetaDe(r.tarjetaId)?.nombre || 'tu tarjeta'}`);
@@ -2055,6 +2084,13 @@ document.addEventListener('click', e => {
   if (t.closest('[data-franja]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-franja]')?.focus(); }
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
+  const pg = t.closest('[data-pago-res]');
+  if (pg) {
+    if (pg.dataset.pago === 'otro') { pagoDe = pg.dataset.pagoRes; $id('p-monto').value = ''; return abrir($id('dlg-pago'), $id('p-monto')); }
+    datos = registrarPagoResumen(datos, pg.dataset.pagoRes, { estado: pg.dataset.pago }); guardar(); pintarTodo();
+    const rr = datos.resumenes.find(x => x.id === pg.dataset.pagoRes), f = rr ? financiacionEstimada(rr, datos) : null;
+    return avisar(f?.total ? `Pasan ${$(f.saldo)} al mes que viene, más ${$(f.interes)} de intereses estimados` : 'Listo, pagado');
+  }
   const gok = t.closest('[data-gasto-ok]');
   if (gok) { const r = confirmarGasto(datos, gok.dataset.gastoOk, HOY); datos = r.datos; registrarCambio('Confirmaste un gasto'); guardar(); pintarTodo(); return avisar(r.texto); }
   const gre = t.closest('[data-gasto-real]');
@@ -2104,6 +2140,7 @@ document.addEventListener('click', e => {
 /* incluir o no un consumo en la revisión */
 $id('revisar').addEventListener('change', e => {
   if (e.target.id === 'rv-tarjeta') $id('rv-card').innerHTML = tcard(tarjetaDe(e.target.value) || pendiente.nueva, { boton: false });
+  if (e.target.name === 'rv-pago') $id('rv-pago-otro').hidden = e.target.value !== 'otro';
   if (e.target.matches('[data-incluir]')) e.target.closest('.mm-consumo').classList.toggle('fuera', !e.target.checked);
 });
 
@@ -2117,6 +2154,16 @@ else {
 }
 if (LOCAL) $id('modo-local').hidden = false;
 $id('acceso-devolver').hidden = !F.devolver;
+async function revisarVersion() {
+  if (LOCAL || document.hidden) return;
+  try {
+    const j = await (await fetch('version.json', { cache: 'no-store', credentials: 'same-origin' })).json();
+    if (j?.v && j.v !== VERSION) $id('version-nueva').hidden = false;
+  } catch { /* sin red: no molesta */ }
+}
+document.addEventListener('visibilitychange', revisarVersion);
+setInterval(revisarVersion, 30 * 60 * 1000);
+document.addEventListener('click', e => { if (e.target.closest('[data-recargar]')) location.reload(); });
 if (F.queCambio && !datos.fotoBase && puedeGuardar) { datos.fotoBase = fotoProyeccion(datos, HOY); guardar(); }
 pintarTodo();
 const inicial = location.hash.slice(1);

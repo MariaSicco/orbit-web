@@ -115,3 +115,21 @@ test('migrar: los resúmenes guardados conservan cargos, pagos, adicionales y la
   assert.deepEqual(d.tarjetas[0].adicionales, ['3333']);
   assert.ok(res.consumos.every(c => c.tarjeta === '2222' || c.tarjeta === '3333'));
 });
+
+test('[socio 15/10] comercio sin moneda ni monto pegados, y rubros Hogar y Educación', () => {
+  assert.equal(M.limpiarComercio('RUNWAY PRO PLAN csliveb1uUSD 35,00'), 'RUNWAY PRO PLAN');
+  assert.equal(M.limpiarComercio('WWW.MAKE.COM USD 10,59'), 'WWW.MAKE.COM');
+  assert.equal(M.limpiarComercio('MERPAGO*KIOSCO 24'), 'MERPAGO*KIOSCO 24', 'no toca números que no son monto en moneda');
+  assert.equal(M.limpiarComercio('USD 10,59'), 'USD 10,59', 'si quedaría vacío, deja el original');
+  assert.equal(M.rubroPorRegla('EASY SUC 23'), 'Hogar');
+  assert.equal(M.rubroPorRegla('SODIMAC SAN ISIDRO'), 'Hogar');
+  assert.equal(M.rubroPorRegla('WWW.UADE.EDU.AR'), 'Educación');
+  assert.equal(M.rubroPorRegla('UNIVERSIDAD INVENTADA'), 'Educación');
+  assert.equal(M.rubroPorRegla('Instituto de Inglés'), 'Educación');
+  assert.equal(M.rubroPorRegla('SUPERMERCADO EJEMPLO'), null);
+  // la corrección de la persona gana sobre la regla
+  assert.equal(M.rubroPara('EASY SUC 23', 'Otros', { 'EASY SUC': 'Otros' }), 'Otros');
+  assert.equal(M.rubroPara('EASY SUC 23', 'Otros'), 'Hogar');
+  const v = M.validarLectura({ ...fixture('simple'), consumos: [{ fecha: '2026-08-13', comercio: 'WWW.MAKE.COM USD 10,59', monto: 10.59, moneda: 'USD', rubro: 'Otros', cuota: null, tarjeta: null }] });
+  assert.equal(v.lectura.consumos[0].comercio, 'WWW.MAKE.COM');
+});

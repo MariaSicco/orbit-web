@@ -38,8 +38,22 @@ export const mesAguinaldo = hoyMes => {
 };
 export const RUBROS = [
   'Supermercado', 'Comida', 'Transporte', 'Servicios', 'Salud', 'Ropa',
-  'Entretenimiento', 'Suscripciones', 'Otros',
+  'Entretenimiento', 'Suscripciones', 'Hogar', 'Educación', 'Otros',
 ];
+/* Reglas fijas de rubro (ganan sobre lo que sugiere la lectura, no sobre lo que corrigió la persona). */
+export const REGLAS_RUBRO = [
+  [/\b(EASY|SODIMAC|BLAISTEN|CORRALON|PINTURERIA|FERRETERIA)\b/, 'Hogar'],
+  [/\.EDU\.AR\b|\bUNIVERSIDAD\b|\bUNIV\b|\bCOLEGIO\b|\bINSTITUTO\b|\bESCUELA\b/, 'Educación'],
+];
+export function rubroPorRegla(comercio) {
+  const k = String(comercio || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toUpperCase();
+  return REGLAS_RUBRO.find(([re]) => re.test(k))?.[1] || null;
+}
+/* Nombre del comercio sin la moneda ni el monto pegados al final:
+   "RUNWAY PRO PLAN csliveb1uUSD 35,00" → "RUNWAY PRO PLAN"; "WWW.MAKE.COM USD 10,59" → "WWW.MAKE.COM". */
+export const limpiarComercio = s => String(s || '').trim()
+  .replace(/\s+\S*?(?:USD|U\$S|EUR|ARS)\s*[\d.,]+\s*$/i, '')
+  .replace(/\s+(?:USD|U\$S|EUR)\s*$/i, '').trim() || String(s || '').trim();
 export const REDES = ['Visa', 'Mastercard', 'American Express', 'Cabal', 'Naranja', 'Otra'];
 export const COLORES = ['azul', 'negro', 'naranja', 'violeta', 'verde', 'gris'];
 
@@ -275,14 +289,22 @@ export function resumenMes(datos, mes) {
     const p = percepcionEstimada(r0, d);
     if (p > 0) percepciones.push({ tarjetaId: r0.tarjetaId, tarjeta: tarjetas.get(r0.tarjetaId)?.nombre || 'Tarjeta', monto: p, estimado: true });
   }
+  /* resumen que venció sin pagarse entero: el saldo impago pasa al mes siguiente
+     con intereses estimados, hasta que se importa el resumen que trae lo real */
+  const financiados = [];
+  for (const r0 of (d.resumenes || []).filter(x => x.mes === sumarMeses(mes, -1) && x.pago && x.pago.estado !== 'total')) {
+    if (conResumen.has(r0.tarjetaId)) continue;
+    const f = financiacionEstimada(r0, d);
+    if (f.total > 0) financiados.push({ tarjetaId: r0.tarjetaId, tarjeta: tarjetas.get(r0.tarjetaId)?.nombre || 'Tarjeta', monto: f.total, saldo: f.saldo, interes: f.interes, estimado: true });
+  }
   const suma = xs => xs.reduce((s, x) => s + x.monto, 0);
   const totIngresos = suma(ingresos);
   const totGastos = suma(gastos);
-  const totCuotas = suma(cuotas) + suma(delBanco) + suma(percepciones);
+  const totCuotas = suma(cuotas) + suma(delBanco) + suma(percepciones) + suma(financiados);
   const totResumenes = suma(resumenes);
   const totNuevas = suma(cuotas.filter(c => c.nueva));
   return {
-    mes, ingresos, gastos, cuotas, delBanco, percepciones, resumenes, dentroDeResumen, sinCambio,
+    mes, ingresos, gastos, cuotas, delBanco, percepciones, financiados, resumenes, dentroDeResumen, sinCambio,
     totIngresos, totGastos, totCuotas, totResumenes,
     totTarjetas: totCuotas + totResumenes,
     /* plata líquida = lo que hay para pagar tarjetas; crédito que vence = lo que hay que pagar */
@@ -435,6 +457,8 @@ export const normalizarComercio = s => String(s || '')
 export function rubroPara(comercio, sugerido, memoria = {}) {
   const k = normalizarComercio(comercio);
   if (k && RUBROS.includes(memoria[k])) return memoria[k];
+  const regla = rubroPorRegla(comercio);
+  if (regla) return regla;
   return RUBROS.includes(sugerido) ? sugerido : 'Otros';
 }
 
@@ -470,8 +494,8 @@ export function validarLectura(json) {
     if (monto === null || !esMoneda(c?.moneda) || !String(c?.comercio || '').trim()) { descartados++; continue; }
     const n = Number(c?.cuota?.n), de = Number(c?.cuota?.de);
     consumos.push({
-      fecha: fecha(c.fecha), comercio: String(c.comercio).trim().slice(0, 60), monto, moneda: c.moneda,
-      rubro: RUBROS.includes(c.rubro) ? c.rubro : 'Otros',
+      fecha: fecha(c.fecha), comercio: limpiarComercio(c.comercio).slice(0, 60), monto, moneda: c.moneda,
+      rubro: rubroPorRegla(c.comercio) || (RUBROS.includes(c.rubro) ? c.rubro : 'Otros'),
       cuota: Number.isInteger(n) && Number.isInteger(de) && n >= 1 && de >= n && de <= 72 ? { n, de } : null,
       tarjeta: u4(c.tarjeta) || null,
     });
@@ -527,7 +551,7 @@ export function desfaseCuotasAVencer(l) {
    adicional), carga los límites que traiga, reemplaza el resumen de ese mes
    y suma las cuotas detectadas sin duplicarlas si se importa el resumen
    siguiente. Devuelve datos nuevos (no toca los de entrada). */
-export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = () => Math.random().toString(36).slice(2) } = {}) {
+export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = () => Math.random().toString(36).slice(2), hoy = null } = {}) {
   const d = structuredClone(datos);
   const mes = mesDeFecha(lectura.vencimiento);
   const finales = [...new Set([lectura.tarjeta.ultimos4, ...(lectura.tarjetas || []).map(t => t.ultimos4)].filter(Boolean))];
@@ -561,7 +585,8 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
     pagosYCreditos: (lectura.pagosYCreditos || []).map(c => ({ ...c })),
     cargos: (lectura.cargos || []).map(c => ({ ...c })),
     cuotasAVencer: (lectura.cuotasAVencer || []).map(c => ({ ...c, mesPago: sumarMeses(c.mes, desfase) })),
-    ...(lectura.confianza === 'alta' ? {} : { dudoso: true }) });
+    ...(lectura.confianza === 'alta' ? {} : { dudoso: true }),
+    ...(hoy && esFecha(lectura.vencimiento) && diasEntre(lectura.vencimiento, aFecha(hoy)) > 0 ? { vencidoAlImportar: true } : {}) });
   /* compras nuevas cargadas a mano que ahora salen en el resumen: se
      concilian solas (mismo monto de cuota, cantidad, moneda y fecha cercana);
      si no es seguro, se pregunta */
@@ -693,6 +718,8 @@ export function migrar(crudo) {
       cuotasAVencer: (Array.isArray(r.cuotasAVencer) ? r.cuotasAVencer : []).filter(c => esMes(c?.mes) && esMes(c?.mesPago) && Number.isSafeInteger(c?.monto))
         .slice(0, 24).map(c => ({ mes: c.mes, mesPago: c.mesPago, monto: c.monto, moneda: esMoneda(c.moneda) ? c.moneda : 'ARS', desde: c.desde === true })),
       ...(r.dudoso === true ? { dudoso: true } : {}),
+      ...(pagoValido(r.pago) ? { pago: pagoValido(r.pago) } : {}),
+      ...(r.vencidoAlImportar === true ? { vencidoAlImportar: true } : {}),
       periodo: r.periodo && typeof r.periodo === 'object' ? { desde: esFecha(r.periodo.desde) ? r.periodo.desde : null, hasta: esFecha(r.periodo.hasta) ? r.periodo.hasta : null } : { desde: null, hasta: null },
       totales, pagoMinimo: r.pagoMinimo && esMoneda(r.pagoMinimo.moneda) && Number.isSafeInteger(r.pagoMinimo.monto) ? { moneda: r.pagoMinimo.moneda, monto: r.pagoMinimo.monto } : null,
       consumos });
@@ -862,6 +889,7 @@ export function comprometidoMes(datos, mes) {
   for (const x of r.delBanco) sumar(x.tarjetaId, x.monto);
   for (const x of r.cuotas) sumar(x.tarjetaId, x.monto);
   for (const x of r.percepciones) sumar(x.tarjetaId, x.monto);
+  for (const x of r.financiados) sumar(x.tarjetaId, x.monto);
   return { porTarjeta, total: r.totTarjetas, delBanco: r.delBanco.map(x => x.tarjetaId), sinCambio: [...new Set(r.sinCambio.map(c => c.moneda))] };
 }
 /* Primer mes, desde `desde`, a partir del cual no queda ninguna cuota. */
@@ -1013,6 +1041,7 @@ export function eventosTarjeta(datos, tarjetaId, hoy) {
    mínimo, eso). VP de las cuotas − precio de contado = diferencia: si es
    negativa, las cuotas salen más baratas. Orientativo, no asesoramiento. */
 export const SUPUESTOS_DEFECTO = {
+  financiacion: { valor: 80, fecha: '', fuente: 'Supuesto de Mi Mes, no es un dato: cada banco informa su TNA de financiación en el resumen. Cargá la tuya', url: '' },
   inflacion: { valor: 1.7, fecha: '2026-08-06', fuente: 'Inflación mensual esperada para octubre, REM del BCRA de agosto 2026 (vía NoticiasNQN)',
     url: 'https://www.noticiasnqn.com.ar/noticias/2026/08/06/346909-el-bcra-proyecta-inflacion-por-debajo-del-2por_ciento-y-un-dolar-a-1652-para-fin-de-2026' },
   rendimiento: { valor: 1.56, fecha: '2026-10-01', fuente: 'Plazo fijo a 30 días en Banco Nación: 18,75 % TNA ≈ 1,56 % por mes (calcularsueldo.com.ar)',
@@ -1473,6 +1502,15 @@ export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true, d
       porque: `Cerró el ${fechaCorta(c.cierre)}. ${ultimo ? `El último fue de ${formatoPesos(ultimo)}` : `Hoy estimamos ${formatoPesos(estimado)}`}: hasta que lo subas, ese número es una estimación.`,
       accion: 'Subir resumen' });
   }
+  /* 1b. resumen que ya venció y no sabemos si se pagó (el último de cada tarjeta) */
+  for (const t of datos?.tarjetas || []) {
+    const x = (datos.resumenes || []).filter(y => y.tarjetaId === t.id).sort((a, b) => difMeses(a.mes, b.mes)).pop();
+    if (!x || x.pago || !x.vencidoAlImportar || difMeses(x.mes, mes) > 1) continue;
+    const f = x.vencimiento;
+    out.push({ id: `pagado:${x.id}`, tipo: 'pagado', resumenId: x.id, tarjetaId: t.id, impacto: totalResumen(x, datos).ars,
+      titulo: `Tu resumen de ${t.nombre} venció el ${Number(f.slice(8))}/${Number(f.slice(5, 7))}. ¿Ya lo pagaste?`,
+      porque: 'Si quedó saldo sin pagar, pasa al mes que viene con intereses: lo sumamos estimado.', accion: PAGOS_VENCIDO.total });
+  }
   /* 2. dudas de la lectura que quedaron guardadas */
   for (const x of datos?.resumenes || []) {
     if (!x.dudoso || difMeses(x.mes, mes) > 1 || difMeses(sig, x.mes) > 0) continue;
@@ -1873,4 +1911,33 @@ export function mensajeReclamo(item, { tarjeta = '' } = {}) {
   const f = d => (d ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}/${d.slice(0, 4)}` : '');
   if (item.tipo === 'prestamo') return `Hola${item.quien ? ` ${item.quien}` : ''}! Te escribo por ${item.motivo.charAt(0).toLowerCase() + item.motivo.slice(1)}: quedan ${formatoPesos(item.monto)} pendientes. ¿Cuándo te queda cómodo? Gracias!`;
   return `Hola. Les escribo por ${TIPOS_DEVOLVER[item.tipo].toLowerCase()}: ${item.motivo}${item.fecha ? `, del ${f(item.fecha)}` : ''}${tarjeta ? `, pagado con ${tarjeta}` : ''}, por ${formatoPesos(item.monto)}. Tendría que haberse acreditado${item.esperada ? ` el ${f(item.esperada)}` : ''} y todavía no lo veo. ¿Me confirman cuándo se acredita? Gracias.`;
+}
+
+
+/* ═══════════════ Resumen ya vencido al importarlo ═══════════════
+   "Este resumen venció el 9/10. ¿Ya lo pagaste?" Si no se pagó entero, el
+   saldo impago pasa al mes siguiente como deuda con intereses estimados
+   (TNA de financiación: supuesto editable, + 21 % de IVA sobre el interés). */
+export const PAGOS_VENCIDO = { total: 'Sí, el total', minimo: 'Pagué el mínimo', otro: 'Pagué otro monto', no: 'Todavía no' };
+export function pagoValido(p) {
+  if (!p || typeof p !== 'object' || !PAGOS_VENCIDO[p.estado]) return null;
+  if (p.estado === 'otro') return Number.isSafeInteger(p.monto) && p.monto >= 0 ? { estado: 'otro', monto: p.monto } : null;
+  return { estado: p.estado };
+}
+export const resumenVencido = (r, hoy) => esFecha(r?.vencimiento) && diasEntre(r.vencimiento, aFecha(hoy)) > 0;
+export function financiacionEstimada(r, datos) {
+  const total = totalResumen(r, datos).ars;
+  const p = pagoValido(r.pago);
+  if (!p || p.estado === 'total') return { saldo: 0, interes: 0, total: 0 };
+  const minimo = r.pagoMinimo ? aPesos(r.pagoMinimo.monto, r.pagoMinimo.moneda || 'ARS', datos) ?? 0 : 0;
+  const pagado = p.estado === 'minimo' ? minimo : p.estado === 'otro' ? p.monto : 0;
+  const saldo = Math.max(0, total - pagado);
+  const tna = supuesto(datos, 'financiacion').valor;
+  const interes = Math.round(saldo * tna / 100 / 12 * 1.21);
+  return { saldo, interes, total: saldo + interes, tna };
+}
+export function registrarPagoResumen(datos, resumenId, pago) {
+  const p = pagoValido(pago);
+  if (!p) return datos;
+  return { ...datos, resumenes: (datos.resumenes || []).map(r => (r.id === resumenId ? { ...r, pago: p } : r)) };
 }

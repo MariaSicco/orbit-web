@@ -61,6 +61,7 @@
 <div class="mm-alerta" id="sin-storage" role="alert" hidden>
   Este navegador no nos deja guardar (¿modo incógnito?). Podés usar la app, pero lo que cargues se pierde al cerrar.
 </div>
+<div class="mm-cartel mm-cartel-top mm-version" id="version-nueva" role="status" hidden>Hay una versión nueva de Mi Mes. <button type="button" class="mm-link" data-recargar>Recargar</button></div>
 <div class="mm-cartel mm-cartel-top" id="modo-local" hidden>
   <b>Modo prueba</b> · abriste la app como archivo: la lectura de resúmenes usa datos de ejemplo.
 </div>
@@ -404,6 +405,16 @@
     <div class="mm-campo"><label for="dv-monto">Monto, en pesos</label><input id="dv-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" aria-describedby="dv-monto-err"><p class="mm-err" id="dv-monto-err"></p></div>
     <div class="mm-campo"><label for="dv-quien">Quién te lo devuelve <span class="opc">(opcional)</span></label><input id="dv-quien" type="text" maxlength="40" autocomplete="off" placeholder="Ej: el banco, tu empresa"></div>
     <fieldset class="mm-campo"><legend>¿Para cuándo debería estar?</legend><div class="mm-chips" id="dv-esperada"></div></fieldset>
+    <div class="mm-dlg-pie"><button type="submit" class="mm-btn">Guardar</button></div>
+  </form>
+</dialog>
+
+<!-- ── Pagué otro monto (resumen vencido) ── -->
+<dialog class="mm-dlg" id="dlg-pago" aria-labelledby="dp-tit">
+  <form class="mm-form" novalidate>
+    <div class="mm-dlg-top"><h2 id="dp-tit">¿Cuánto pagaste?</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <div class="mm-campo"><label for="p-monto">Monto que pagaste, en pesos</label><input id="p-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" aria-describedby="p-monto-err" required><p class="mm-err" id="p-monto-err"></p></div>
+    <p class="mm-ayuda">Lo que quedó sin pagar lo sumamos al mes que viene con intereses estimados.</p>
     <div class="mm-dlg-pie"><button type="submit" class="mm-btn">Guardar</button></div>
   </form>
 </dialog>

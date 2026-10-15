@@ -9,6 +9,7 @@ export const FLAGS = {
   mesEn30: true,          // 1 · Inicio "tu mes en 30 segundos"
   preguntas: true,        // 2 · "preguntame solo lo que cambia mi mes"
   finDeCuota: true,       // 3 · lo que se libera va a la meta
+  pagoVencido: true,      // resumen ya vencido al importarlo: ¿ya lo pagaste? (ajuste del socio, 15/10)
   /* tanda 11: se encienden de a una cuando pasan la QA */
   diaDificil: false,      // (4) saldo de hoy y día por día
   devolver: false,        // (6) plata que te tienen que devolver
