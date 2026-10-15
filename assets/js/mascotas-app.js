@@ -1071,7 +1071,7 @@ const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
    Cada una vive en su archivo (assets/js/mascotas-f-<nombre>.js y assets/css/mascotas-f-<nombre>.css) y solo se baja
    si está prendida. Para probarlas en local o en un preview de Vercel: /mascotas?funciones=salud,vete (queda en ese
    navegador); ?funciones=no las apaga. En producción no hay override. Para que salgan para todos: poner en true acá. */
-const FEATURES = { salud: false, restaurar: false, avisosAlta: false, vete: false };
+const FEATURES = { salud: true, restaurar: false, avisosAlta: false, vete: true };
 /* el override (?funciones= y lo guardado en este navegador) solo vale en local y en los previews de Vercel:
    en producción se ignora y se borra, así nadie prende algo que salió apagado por no pasar el QA */
 const FEAT_TEST_HOST = h => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(h) || /\.vercel\.app$/.test(h);
