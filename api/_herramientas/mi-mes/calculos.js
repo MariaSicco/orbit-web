@@ -1201,16 +1201,21 @@ export function cargosDelResumen(resumen, datos) {
 }
 
 /* ── cuándo se te libera plata ──
-   Mes a mes, cuando baja lo comprometido en cuotas respecto del mes
-   anterior: { mes, libera } (centavos por mes que dejás de pagar). */
+   SOLO de cuotas que terminan (QA v2 · 1): lo que dejás de pagar desde X+1
+   es la suma de las cuotas cuya última cuota cae en X. Nunca sale de un
+   resumen entero ni de consumos en un pago. { mes: X+1, libera }. */
 export function liberaciones(datos, desde, meses = 18) {
-  const f = escalera(datos, sumarMeses(desde, -1), meses + 1).filas;
-  const out = [];
-  for (let k = 1; k < f.length; k++) {
-    const libera = f[k - 1].total - f[k].total;
-    if (libera > 0) out.push({ mes: f[k].mes, libera });
+  const porMes = new Map();
+  for (const c of datos?.cuotas || []) {
+    if (!(c.cantidad >= 2)) continue;
+    const fin = ultimoMes(c);
+    const mesLibre = sumarMeses(fin, 1);
+    if (difMeses(desde, mesLibre) < 0 || difMeses(desde, mesLibre) >= meses) continue;
+    const ultima = repartirCuotas(c.total, c.cantidad)[c.cantidad - 1];
+    const pesos = aPesos(ultima, c.moneda || 'ARS', datos, { percepcion: c.origen === 'manual' && (c.moneda || 'ARS') !== 'ARS' }) ?? 0;
+    porMes.set(mesLibre, (porMes.get(mesLibre) || 0) + pesos);
   }
-  return out;
+  return [...porMes].filter(([, v]) => v > 0).sort((x, y) => difMeses(y[0], x[0])).map(([mes, libera]) => ({ mes, libera }));
 }
 /* La próxima liberación a partir de un mes (incluido el mes siguiente). */
 export const proximaLiberacion = (datos, mes, meses = 18) => liberaciones(datos, sumarMeses(mes, 1), meses)[0] || null;

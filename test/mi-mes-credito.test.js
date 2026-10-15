@@ -242,11 +242,13 @@ test('[QA 5] una sola cuenta: Inicio, escalera, tope y "se te liberan" coinciden
   const dic = e.filas.find(f => f.mes === '2026-12');
   assert.equal(dic.porTarjeta[tarjeta], $(120_000) + $(125_020), 'tabla del banco + la compra nueva de esa tarjeta');
   assert.deepEqual(e.diferencias, [], 'la compra nueva no aparece como "falta cargar"');
+  /* QA v2 · 1: "se te liberan" ya no es la baja del total (eso mezclaba resúmenes): son las cuotas que terminan */
   const lib = M.liberaciones(d, '2026-10', 8);
   for (const l of lib) {
-    const prev = M.resumenMes(d, M.sumarMeses(l.mes, -1)).totTarjetas;
-    assert.equal(l.libera, prev - M.resumenMes(d, l.mes).totTarjetas, `se te liberan = baja del Inicio en ${l.mes}`);
+    const terminan = d.cuotas.filter(c => c.cantidad >= 2 && M.ultimoMes(c) === M.sumarMeses(l.mes, -1));
+    assert.ok(terminan.length, `en ${l.mes} se libera porque terminan cuotas`);
   }
+  assert.deepEqual(lib.find(l => l.mes === '2027-02')?.libera, $(125_020) + $(30_000), 'en enero terminan la bici y las zapatillas');
 });
 test('[QA 7] al servidor de avisos va un alias: nunca el banco ni los últimos 4', () => {
   const todas = [{ id: 'a', red: 'Visa' }, { id: 'b', red: 'Visa' }, { id: 'c', red: 'Mastercard' }, { id: 'd', red: 'Otra' }];
