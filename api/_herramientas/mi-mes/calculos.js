@@ -24,8 +24,18 @@ export const ESQUEMA = 3;
 
 export const CATEGORIAS = [
   'Alquiler', 'Expensas', 'Servicios', 'Suscripciones', 'Seguros',
-  'Transporte', 'Educación', 'Salud', 'Otros',
+  'Transporte', 'Educación', 'Salud', 'Patente', 'Vacaciones', 'Otros',
 ];
+/* Gastos de un solo mes (no se repiten): el chip pone nombre y categoría. */
+export const GASTOS_UN_MES = [
+  { nombre: 'Patente', categoria: 'Patente' }, { nombre: 'Seguro', categoria: 'Seguros' },
+  { nombre: 'Matrícula', categoria: 'Educación' }, { nombre: 'Vacaciones', categoria: 'Vacaciones' },
+];
+/* Aguinaldo: se cobra en junio y en diciembre; sugerimos el próximo. */
+export const mesAguinaldo = hoyMes => {
+  const [a, m] = hoyMes.split('-').map(Number);
+  return m <= 6 ? `${a}-06` : `${a}-12`;
+};
 export const RUBROS = [
   'Supermercado', 'Comida', 'Transporte', 'Servicios', 'Salud', 'Ropa',
   'Entretenimiento', 'Suscripciones', 'Otros',
@@ -1028,3 +1038,30 @@ export function avisosPushDeHoy(tarjetas, hoy, credito = []) {
   }
   return out;
 }
+
+
+/* ── intereses y cargos de un resumen ──
+   Suma de cargos e impuestos (intereses, IVA, sellos, percepciones,
+   comisiones); las devoluciones restan. En pesos, con otras monedas convertidas. */
+export function cargosDelResumen(resumen, datos) {
+  const porMoneda = {};
+  for (const c of resumen?.cargos || []) porMoneda[c.moneda] = (porMoneda[c.moneda] || 0) + c.monto;
+  let ars = 0;
+  for (const [m, v] of Object.entries(porMoneda)) ars += aPesos(v, m, datos) ?? 0;
+  return { ars, porMoneda, hay: (resumen?.cargos || []).length > 0 };
+}
+
+/* ── cuándo se te libera plata ──
+   Mes a mes, cuando baja lo comprometido en cuotas respecto del mes
+   anterior: { mes, libera } (centavos por mes que dejás de pagar). */
+export function liberaciones(datos, desde, meses = 18) {
+  const f = escalera(datos, sumarMeses(desde, -1), meses + 1).filas;
+  const out = [];
+  for (let k = 1; k < f.length; k++) {
+    const libera = f[k - 1].total - f[k].total;
+    if (libera > 0) out.push({ mes: f[k].mes, libera });
+  }
+  return out;
+}
+/* La próxima liberación a partir de un mes (incluido el mes siguiente). */
+export const proximaLiberacion = (datos, mes, meses = 18) => liberaciones(datos, sumarMeses(mes, 1), meses)[0] || null;

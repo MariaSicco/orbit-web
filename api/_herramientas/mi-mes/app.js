@@ -8,6 +8,7 @@ import {
   validarLectura, importarResumen, datosVacios, migrar,
   escalera, limiteDelMes, alertasTarjetas, cicloTarjeta, eventosTarjeta, generarICS, diasEntre,
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
+  cargosDelResumen, proximaLiberacion, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -107,8 +108,13 @@ function pintarInicio(animar = false) {
   const num = $id('libres');
   num.textContent = sinNada ? '$ —' : $(r.libres);
   num.style.setProperty('--n', Math.max(8, num.textContent.length));
+  const libera = proximaLiberacion(datos, mes);
+  const frase = libera ? `En ${nombreMes(libera.mes)} se te liberan ${$(libera.libera)} de cuotas por mes.` : '';
+  /* negativo sin culpa y con salida: el dato, y el próximo mes mejor a la vista */
   $id('pasas').hidden = !(r.libres < 0);
-  $id('pasas').textContent = r.libres < 0 ? `Te pasás por ${$(-r.libres)}` : '';
+  $id('pasas').textContent = r.libres < 0 ? `Este mes faltan ${$(-r.libres)}.${frase ? ` ${frase}` : ''}` : '';
+  $id('libera').hidden = !(r.libres >= 0 && libera);
+  $id('libera').textContent = r.libres >= 0 && libera ? frase : '';
   const lim = limiteDelMes(datos, mes);
   $id('tope').hidden = !lim.supera;
   $id('tope').innerHTML = lim.supera ? `${ic('alerta')} Las cuotas de este mes ${lim.ingresos ? `son el ${Math.round(lim.usado * 100)} % de tus ingresos` : 'no tienen ingresos que las cubran'}: tu tope es ${lim.pct} %. <u>Ver escalera</u>` : '';
@@ -191,13 +197,22 @@ function pintarContraste(r, cred) {
       <div class="mm-cx-fila"><div class="mm-cx-top"><span><b>Vence de tarjetas</b> en ${esc(mesTxt)}<small>Lo que gastaste con crédito y se paga este mes</small></span><b>${esc($(r.totTarjetas))}</b></div>
         <div class="mm-cx-barra"><i class="ant" style="width:${w(r.totAnteriores)}"></i><i class="nue" style="width:${w(r.totNuevas)}"></i></div>
         ${r.totNuevas ? `<p class="mm-cx-ley"><span><i class="ant"></i>De antes ${esc($(r.totAnteriores))}</span><span><i class="nue"></i>Compras nuevas ${esc($(r.totNuevas))}</span></p>` : ''}</div>
-      <p class="mm-cx-res ${falta > 0 ? 'neg' : ''}">${!datos.ingresos.length ? 'Cargá tu sueldo para ver si te alcanza.' : falta > 0 ? `Te faltan ${esc($(falta))} para cubrir las tarjetas.` : `Te quedan libres ${esc($(-falta))}.`}</p>
+      <p class="mm-cx-res">${!datos.ingresos.length ? 'Cargá tu sueldo para ver si te alcanza.' : falta > 0 ? `Este mes faltan ${esc($(falta))} para cubrir las tarjetas.${(() => { const l = proximaLiberacion(datos, mes); return l ? ` En ${esc(nombreMes(l.mes))} se te liberan ${esc($(l.libera))} por mes.` : ''; })()}` : `Te quedan libres ${esc($(-falta))}.`}</p>
     </div>
     <div class="mm-cx-deuda">
       <div><p class="mm-item-meta">Debés en total en tarjetas</p><p class="mm-cx-total">${esc($(cred.total))}</p></div>
       <dl><div><dt>Resumen por pagar</dt><dd>${esc($(cred.resumen))}</dd></div><div><dt>Cuotas que vienen</dt><dd>${esc($(cred.futuras))}</dd></div><div><dt>Compras nuevas</dt><dd>${esc($(cred.nuevas))}</dd></div></dl>
     </div>
     ${!datos.tarjetas.length ? `<button type="button" class="mm-btn" data-agregar-tarjeta>${ic('subir')} Agregá tu tarjeta: subí el último resumen</button>` : `<button type="button" class="mm-link" data-nuevo="cuota">¿Compraste algo que todavía no está en el resumen?</button>`}`;
+}
+
+/* "Este resumen te cobró $ X de intereses y cargos" (las devoluciones restan) */
+function lineaCargos(res) {
+  const c = cargosDelResumen(res, datos);
+  if (!c.hay) return '';
+  if (c.ars > 0) return `<p class="mm-cargos-linea">Este resumen te cobró <b>${esc($(c.ars))}</b> de intereses y cargos. Pagando el total, ese número baja a cero.</p>`;
+  if (c.ars < 0) return `<p class="mm-cargos-linea">Entre cargos y devoluciones, este resumen te devolvió <b>${esc($(-c.ars))}</b>.</p>`;
+  return '';
 }
 
 /* ════════ TARJETAS ════════ */
@@ -240,6 +255,7 @@ function pintarUna() {
       <p class="mm-total-num">${esc($(tot.ars))}</p>
       <div class="mm-chips-mon">${Object.entries(tot.porMoneda).map(([m, v]) => `<span class="mm-mon">${esc(fm(v, m))}</span>`).join('')}</div>
       ${tot.faltaCambio.length ? `<p class="mm-err">Falta el tipo de cambio de ${tot.faltaCambio.map(m => MONEDAS[m].nombre).join(' y ')}: no está sumado. <button type="button" class="mm-link" data-cambio>Cargarlo</button></p>` : ''}
+      ${lineaCargos(res)}
       <dl class="mm-datos">
         <div><dt>Vence</dt><dd>${esc(fechaCorta(res.vencimiento) || '—')}</dd></div>
         <div><dt>Cierre</dt><dd>${esc(fechaCorta(res.cierre) || '—')}</dd></div>
@@ -413,6 +429,7 @@ function pintarRevisar() {
             <div><dt>Pago mínimo</dt><dd>${l.pagoMinimo ? esc(fm(l.pagoMinimo.monto, l.pagoMinimo.moneda)) : '—'}</dd></div>
             <div><dt>Cuenta en</dt><dd>${esc(capital(nombreMes(mesCuenta)))}</dd></div>
           </dl>
+          ${lineaCargos({ cargos: l.cargos })}
           <div class="mm-seccion-top"><h2 style="font-size:16px">Total a pagar, por moneda</h2></div>
           ${totalesHTML}
           <p class="mm-fuente" style="margin:6px 0 10px">El total a pagar sale del resumen: es lo que se descuenta de "te quedan libres" en ${esc(nombreMes(mesCuenta))}. Si no coincide con tu PDF, corregilo.</p>
@@ -801,13 +818,27 @@ function abrirIngreso(id = null) {
   abrir(di, $id('i-monto'));
 }
 function etiquetaDesde(p) {
-  $id(`${p}-desde-lbl`).textContent = $id(`${p}-repite`).checked ? 'Desde' : 'Mes';
-  if (p === 'g') $id('g-hasta-wrap').hidden = !$id('g-repite').checked;
+  const repite = $id(`${p}-repite`).checked;
+  $id(`${p}-desde-lbl`).textContent = repite ? 'Desde' : 'Mes';
+  if (p === 'g') { $id('g-hasta-wrap').hidden = !repite; $id('g-monto-lbl').textContent = repite ? 'Monto por mes, en pesos' : 'Monto, en pesos'; }
+  /* un solo mes: el mes se elige con chips (los próximos 12), sin escribir */
+  $id(`${p}-meses-wrap`).hidden = repite;
+  $id(`${p}-desde-wrap`).hidden = !repite;
+  if (!repite) pintarMesesChips(p);
 }
+function pintarMesesChips(p) {
+  const sel = $id(`${p}-desde`);
+  if (difMeses(HOY, sel.value) < 0 || difMeses(HOY, sel.value) > 11) sel.value = HOY;
+  $id(`${p}-meses`).innerHTML = Array.from({ length: 12 }, (_, k) => sumarMeses(HOY, k)).map(m =>
+    `<label class="mm-chip"><input type="radio" name="${p}-mes" value="${m}"${m === sel.value ? ' checked' : ''}><span>${esc(corto(m))}</span></label>`).join('');
+}
+for (const p of ['i', 'g']) $id(`${p}-meses`).addEventListener('change', e => { $id(`${p}-desde`).value = e.target.value; });
 $id('i-repite').addEventListener('change', () => etiquetaDesde('i'));
 const TIPOS_INGRESO = ['Sueldo', 'Extra', 'Aguinaldo', 'Alquiler que cobro', 'Otro'];
 let nombreIngresoPrevio = '';
-$id('i-tipos').addEventListener('change', e => { if (e.target.value === 'Aguinaldo') { $id('i-repite').checked = false; etiquetaDesde('i'); } });
+$id('i-tipos').addEventListener('change', e => {
+  if (e.target.value === 'Aguinaldo') { $id('i-repite').checked = false; $id('i-desde').value = mesAguinaldo(HOY); etiquetaDesde('i'); }
+});
 di.querySelector('form').addEventListener('submit', e => {
   e.preventDefault();
   const monto = leerMonto($id('i-monto').value);
@@ -829,7 +860,19 @@ let editGasto = null, catElegida = CATEGORIAS[0], nombreGastoPrevio = null;
 function pintarCats() {
   $id('g-cats').innerHTML = CATEGORIAS.map(c => `<label class="mm-chip"><input type="radio" name="cat" value="${esc(c)}"${c === catElegida ? ' checked' : ''}><span>${esc(c)}</span></label>`).join('');
 }
-$id('g-cats').addEventListener('change', e => { catElegida = e.target.value; });
+$id('g-cats').addEventListener('change', e => { catElegida = e.target.value; unMesElegido = null; pintarUnMes(); });
+let unMesElegido = null;
+function pintarUnMes() {
+  $id('g-unmes').innerHTML = GASTOS_UN_MES.map(g => `<label class="mm-chip"><input type="radio" name="g-unmes" value="${esc(g.nombre)}"${unMesElegido?.nombre === g.nombre ? ' checked' : ''}><span>${esc(g.nombre)}</span></label>`).join('');
+}
+$id('g-unmes').addEventListener('change', e => {
+  unMesElegido = GASTOS_UN_MES.find(g => g.nombre === e.target.value) || null;
+  if (!unMesElegido) return;
+  catElegida = unMesElegido.categoria;
+  pintarCats();
+  $id('g-repite').checked = false;
+  etiquetaDesde('g');
+});
 const opcionesHasta = (desde, elegido) => opcionesMes($id('g-hasta'), desde, sumarMeses(HOY, ADELANTE), elegido || '', 'Sin fecha de fin');
 function abrirGasto(id = null) {
   editGasto = id;
@@ -838,6 +881,8 @@ function abrirGasto(id = null) {
   const usadas = new Set(datos.gastos.map(g => g.categoria));
   catElegida = x ? x.categoria : (['Alquiler', 'Expensas', 'Servicios', 'Suscripciones'].find(c => !usadas.has(c)) || 'Otros');
   pintarCats();
+  unMesElegido = x && !x.repite ? GASTOS_UN_MES.find(g => g.nombre === x.nombre) || null : null;
+  pintarUnMes();
   $id('g-monto').value = x ? sinSimbolo(x.monto, 'ARS') : '';
   nombreGastoPrevio = x && x.nombre !== x.categoria ? { nombre: x.nombre, categoria: x.categoria } : null;
   $id('g-repite').checked = x ? x.repite : true;
@@ -863,7 +908,7 @@ dg.querySelector('form').addEventListener('submit', e => {
   if (!monto) { error($id('g-monto'), 'g-monto-err', 'Escribí el monto, por ejemplo 450.000 (los centavos van con coma).').focus(); return; }
   const repite = $id('g-repite').checked;
   const hasta = repite ? $id('g-hasta').value : '';
-  const x = { id: editGasto || nuevoId(), nombre: nombreGastoPrevio && nombreGastoPrevio.categoria === catElegida ? nombreGastoPrevio.nombre : catElegida,
+  const x = { id: editGasto || nuevoId(), nombre: unMesElegido && unMesElegido.categoria === catElegida ? unMesElegido.nombre : nombreGastoPrevio && nombreGastoPrevio.categoria === catElegida ? nombreGastoPrevio.nombre : catElegida,
     categoria: catElegida, monto, repite, desde: $id('g-desde').value, ...(hasta ? { hasta } : {}) };
   if (editGasto) datos.gastos = datos.gastos.map(g => (g.id === editGasto ? x : g));
   else datos.gastos.push(x);
@@ -1006,10 +1051,11 @@ dx.querySelector('form').addEventListener('submit', e => {
 /* Texto corto de una alerta (una línea), para la franja y las filas. */
 function alertaCorta(a) {
   const t = tarjetaDe(a.tarjetaId);
-  if (a.tipo === 'credito') return `Tarjetas > plata líquida en ${corto(a.mes)}: te faltan ${$(a.vence - a.liquida)}`;
-  if (a.tipo === 'vence') return `${a.dias === 0 ? 'Vence hoy' : a.dias === 1 ? 'Vence mañana' : `Vence en ${a.dias} días`} · ${t?.nombre || 'Tarjeta'}`;
-  if (a.tipo === 'cierre') return `Cerró el resumen de ${t?.nombre || 'tu tarjeta'}`;
-  if (a.tipo === 'dolares') return `${fm(a.usd, 'USD')} en ${t?.nombre || 'tu tarjeta'}: pagalos en dólares`;
+  const n = t?.nombre || 'tu tarjeta';
+  if (a.tipo === 'credito') return `${capital(nombreMes(a.mes).split(' ')[0])}: debés más de lo que tenés`;
+  if (a.tipo === 'vence') return `${a.dias === 0 ? 'Vence hoy' : a.dias === 1 ? 'Vence mañana' : `Vence en ${a.dias} días`}: ${n}`;
+  if (a.tipo === 'cierre') return `Cerró ${n}`;
+  if (a.tipo === 'dolares') return `${fm(a.usd, 'USD')} en ${n}`;
   return a.titulo;
 }
 /* color fuerte solo para vence hoy/mañana y para crédito > líquido */
@@ -1068,6 +1114,7 @@ function pintarEscalera() {
   $id('esc-libre').innerHTML = !datos.cuotas.length
     ? `<p class="mm-vacio"><b>No tenés cuotas cargadas.</b> Cuando cargues una compra en cuotas o subas un resumen, acá ves mes a mes cuánto está comprometido.</p><button type="button" class="mm-btn" data-nuevo="cuota">Cargar una cuota</button>`
     : `<p class="mm-item-meta">Quedás libre de cuotas en</p><p class="mm-total-num">${esc(capital(nombreMes(e.mesLibre)))}</p>
+       ${(() => { const l = proximaLiberacion(datos, HOY); return l ? `<p class="mm-libera-esc">En ${esc(nombreMes(l.mes))} se te liberan <b>${esc($(l.libera))}</b> por mes.</p>` : ''; })()}
        <p class="${pasados ? 'mm-err' : 'mm-fuente'}">${pasados ? `${pasados === 1 ? 'Un mes pasa' : `${pasados} meses pasan`} tu tope de ${datos.limiteCuotas} % de los ingresos.` : `Ningún mes pasa tu tope de ${datos.limiteCuotas} % de los ingresos.`}</p>`;
   $id('tope-pct').value = datos.limiteCuotas;
   $id('esc-leyenda').innerHTML = usadas.map(t => `<span><i class="${esc(t.color)}"></i>${esc(t.nombre)}</span>`).join('') + (filas.some(f => f.tope) ? '<span><i class="tope"></i>Tu tope</span>' : '');
@@ -1077,7 +1124,7 @@ function pintarEscalera() {
       ${usadas.map(t => f.porTarjeta[t.id] ? `<i class="${esc(t.color)}" style="width:${(f.porTarjeta[t.id] / max) * 100}%"></i>` : '').join('')}
       ${f.tope ? `<b class="esc-tope" style="left:${Math.min(100, (f.tope / max) * 100)}%"></b>` : ''}
     </span>
-    <span class="esc-monto">${esc($(f.total))}${f.supera ? '<small>Te pasás</small>' : ''}${f.delBanco.length ? '<small class="banco">según el banco</small>' : ''}</span></li>`).join('') +
+    <span class="esc-monto">${esc($(f.total))}${f.supera ? '<small>Te pasás</small>' : ''}${(() => { const i = filas.indexOf(f); const libera = i > 0 ? filas[i - 1].total - f.total : 0; return libera > 0 ? `<small class="libera">se te liberan ${esc($(libera))}</small>` : ''; })()}${f.delBanco.length ? '<small class="banco">según el banco</small>' : ''}</span></li>`).join('') +
     (e.diferencias.length ? `<li class="esc-dif"><p class="mm-fuente">${ic('alerta')} En ${e.diferencias.length === 1 ? 'un mes' : `${e.diferencias.length} meses`} la tabla del banco no coincide con lo que proyecta la app (por ejemplo ${esc(corto(e.diferencias[0].mes))}: banco ${esc($(e.diferencias[0].banco))}, app ${esc($(e.diferencias[0].propio))}). Usamos la del banco; si falta cargar alguna cuota, sumala.</p></li>` : '');
 }
 $id('tope-form').addEventListener('submit', e => {

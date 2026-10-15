@@ -486,3 +486,22 @@ fieldset.mm-campo>legend{margin-bottom:8px}
 @media (min-width:1000px){.mm-inicio{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}}
 .mm-alertas,.mm-franja,.mm-fila-alerta{min-width:0;max-width:100%}
 .mm-fila-alerta>summary .mm-fa-txt{white-space:normal}
+
+/* tanda 7: cargos, liberaciones, negativo sin culpa, meses con chips */
+.mm-cargos-linea{margin:0 0 10px;padding:10px 12px;border-radius:12px;background:var(--fondo);font-size:14.5px}
+.mm-libera{margin:10px 0 0;font-size:14px;font-weight:600;opacity:1}
+.mm-saldo .mm-pasas{display:block;background:rgba(13,13,14,.22);color:#fff;font-weight:600;border-radius:12px;padding:8px 12px;font-size:14.5px}
+.mm-libera-esc{margin:0 0 6px;font-size:15px}
+.esc-monto small.libera{color:var(--azul);font-weight:700}
+.mm-meses .mm-chips{gap:6px}
+.mm-meses .mm-chip{padding:0 10px;font-size:13px}
+@media (max-width:420px){
+  .mm-franja{gap:8px;padding:6px 10px 6px 6px;font-size:14px;letter-spacing:-.005em}
+  .mm-franja .mm-fa-flecha{display:none}
+  .mm-franja .mm-fa-ic{width:30px;height:30px}
+}
+
+/* dentro del saldo, el tope es un dato, no una alarma */
+.mm-saldo .mm-tope{color:var(--tinta);font-weight:500}
+.mm-saldo .mm-tope .ic{color:var(--tinta2)}
+.mm-saldo .mm-tope u{color:var(--azul)}

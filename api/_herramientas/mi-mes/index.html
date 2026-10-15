@@ -78,6 +78,7 @@
         <p class="mm-saldo-lbl">Te quedan libres</p>
         <p class="mm-num" id="libres">$ 0</p>
         <p class="mm-pasas" id="pasas" hidden></p>
+        <p class="mm-libera" id="libera" hidden></p>
         <button type="button" class="mm-tope" id="tope" data-ir="escalera" hidden></button>
         <dl class="mm-saldo-pie" id="saldo-pie">
           <div><dt>Ingresos</dt><dd id="s-ing">$ 0</dd></div>
@@ -295,7 +296,8 @@
     <div class="mm-campo"><label for="i-monto">Monto en pesos</label><input id="i-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 1.200.000" aria-describedby="i-monto-err" required><p class="mm-err" id="i-monto-err"></p></div>
     <fieldset class="mm-campo"><legend>Qué es</legend><div class="mm-chips" id="i-tipos"></div></fieldset>
     <label class="mm-check"><input type="checkbox" id="i-repite" checked> <span>Se repite todos los meses</span></label>
-    <div class="mm-campo"><label for="i-desde" id="i-desde-lbl">Desde</label><select id="i-desde"></select></div>
+    <fieldset class="mm-campo mm-meses" id="i-meses-wrap" hidden><legend>¿En qué mes?</legend><div class="mm-chips" id="i-meses"></div></fieldset>
+    <div class="mm-campo" id="i-desde-wrap"><label for="i-desde" id="i-desde-lbl">Desde</label><select id="i-desde"></select></div>
     <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="i-borrar" hidden>Borrar</button><button type="submit" class="mm-btn">Guardar ingreso</button></div>
   </form>
 </dialog>
@@ -305,10 +307,12 @@
   <form class="mm-form" novalidate>
     <div class="mm-dlg-top"><h2 id="dg-tit">Nuevo gasto fijo</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
     <fieldset class="mm-campo"><legend>Categoría</legend><div class="mm-chips" id="g-cats"></div></fieldset>
-    <div class="mm-campo"><label for="g-monto">Monto por mes, en pesos</label><input id="g-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 450.000" aria-describedby="g-monto-err" required><p class="mm-err" id="g-monto-err"></p></div>
+    <fieldset class="mm-campo"><legend>De un solo mes</legend><div class="mm-chips" id="g-unmes"></div></fieldset>
+    <div class="mm-campo"><label for="g-monto" id="g-monto-lbl">Monto por mes, en pesos</label><input id="g-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 450.000" aria-describedby="g-monto-err" required><p class="mm-err" id="g-monto-err"></p></div>
     <label class="mm-check"><input type="checkbox" id="g-repite" checked> <span>Se repite todos los meses</span></label>
+    <fieldset class="mm-campo mm-meses" id="g-meses-wrap" hidden><legend>¿En qué mes?</legend><div class="mm-chips" id="g-meses"></div></fieldset>
     <div class="mm-fila">
-      <div class="mm-campo"><label for="g-desde" id="g-desde-lbl">Desde</label><select id="g-desde"></select></div>
+      <div class="mm-campo" id="g-desde-wrap"><label for="g-desde" id="g-desde-lbl">Desde</label><select id="g-desde"></select></div>
       <div class="mm-campo" id="g-hasta-wrap"><label for="g-hasta">Hasta</label><select id="g-hasta"></select></div>
     </div>
     <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="g-borrar" hidden>Borrar</button><button type="submit" class="mm-btn">Guardar gasto</button></div>

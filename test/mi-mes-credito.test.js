@@ -169,3 +169,32 @@ test('importar: el banco del resumen sale de la lista y el nombre se arma solo',
   const r = M.importarResumen(M.datosVacios(), M.validarLectura(f).lectura, { nuevoId: () => 'z' });
   assert.deepEqual([r.datos.tarjetas[0].banco, r.datos.tarjetas[0].nombre], ['Macro', 'Macro Visa']);
 });
+
+/* ── tanda 7: cargos, liberaciones y gastos de un mes ── */
+test('intereses y cargos del resumen: suma cargos e impuestos, las devoluciones restan', () => {
+  const r = M.validarLectura(fixture('dolares-rg5617')).lectura;
+  const c = M.cargosDelResumen({ cargos: r.cargos }, M.datosVacios());
+  // devolución −110.000 + sellos 15.000 + intereses 3.000 + IVA 630 + percepción 25.000
+  assert.equal(c.ars, $(-66_370));
+  assert.equal(M.cargosDelResumen({ cargos: M.validarLectura(fixture('adicional-creditos')).lectura.cargos }, M.datosVacios()).ars, $(2_420));
+  assert.deepEqual(M.cargosDelResumen({}, M.datosVacios()), { ars: 0, porMoneda: {}, hay: false });
+});
+test('se te liberan: el mes en que baja lo comprometido en cuotas y cuánto', () => {
+  const d = M.datosVacios();
+  d.tarjetas.push({ id: 't', nombre: 'X', red: 'Visa', banco: '', ultimos4: '', color: 'azul' });
+  d.cuotas.push({ id: 'a', total: $(300_000), moneda: 'ARS', cantidad: 3, tarjetaId: 't', primerMes: '2026-10', origen: 'resumen' });
+  d.cuotas.push({ id: 'b', total: $(600_000), moneda: 'ARS', cantidad: 6, tarjetaId: 't', primerMes: '2026-10', origen: 'resumen' });
+  assert.deepEqual(M.liberaciones(d, '2026-10', 8).map(x => [x.mes, x.libera / 100]), [['2027-01', 100_000], ['2027-04', 100_000]]);
+  assert.deepEqual(M.proximaLiberacion(d, '2026-10'), { mes: '2027-01', libera: $(100_000) });
+  assert.equal(M.proximaLiberacion(M.datosVacios(), '2026-10'), null);
+});
+test('gastos de un solo mes y aguinaldo', () => {
+  for (const g of M.GASTOS_UN_MES) assert.ok(M.CATEGORIAS.includes(g.categoria), g.nombre);
+  assert.deepEqual(M.GASTOS_UN_MES.map(g => g.nombre), ['Patente', 'Seguro', 'Matrícula', 'Vacaciones']);
+  assert.equal(M.mesAguinaldo('2026-10'), '2026-12');
+  assert.equal(M.mesAguinaldo('2027-02'), '2027-06');
+  const d = M.migrar({ gastos: [{ id: 'p', nombre: 'Patente', categoria: 'Patente', monto: 100, repite: false, desde: '2027-03' }] });
+  assert.equal(d.gastos[0].categoria, 'Patente');
+  assert.equal(M.resumenMes(d, '2027-03').totGastos, 100);
+  assert.equal(M.resumenMes(d, '2027-04').totGastos, 0);
+});
