@@ -68,7 +68,8 @@ test('Inicio premium: 6 bloques, el estado solo en las tarjetas del hero y nada 
   const h = fn('petHero');
   assert.match(h, /has-cut/, 'la mascota recortada sobre su color'); assert.match(h, /cut = Boolean\(p\.photo && p\.photoFull\)/);
   assert.match(h, /ph-ini/); assert.match(h, /Subí su foto/);
-  assert.doesNotMatch(js, /CLOUDS|sin-foto\.svg|bienvenida\.svg/, 'sin nubes ni dibujos');
+  assert.doesNotMatch(js, /sin-foto\.svg|bienvenida\.svg/, 'sin el cachorro dibujado');
+  assert.match(h, /ph-stage">\$\{CLOUDS\}/, 'la decoración de libreta-mascota detrás de la mascota (pedido de Majo)');
   assert.match(fn('hoyBox'), /items\?\.length/, 'Hoy con… solo si hay rutina');
   assert.match(fn('petMenu'), /sharePanel\(p\)/); assert.match(fn('petMenu'), /sitterPanel\(p\)/); assert.match(fn('petMenu'), /lostPanel\(p\)/);
 });

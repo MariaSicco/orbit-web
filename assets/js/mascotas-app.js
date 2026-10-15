@@ -1310,13 +1310,15 @@ function heroCards(p, sm = Z.summary(p)) {
 const heroIds = p => new Set(heroCards(p).filter(c => c.rn).map(c => c.rn.id));
 const doneChip = (p, r) => `<button type="button" class="pst-done" data-act="renew" data-pet="${p.id}" data-rec="${r.id}" aria-label="${Z.renewLabel(r)}: ${esc(r.name || TYPE[r.type])} de ${esc(p.name)}">${I('check')}<span>Ya está</span></button>`;
 const CARD_ACT = { vac: ' data-act="libsec" data-sec="vac"', des: ' data-act="libsec" data-sec="des"', ctl: ' data-act="go" data-to="agenda"', peso: ' data-act="libsec" data-sec="peso"' };
+/* decoración del fondo del hero, igual que en libreta-mascota (pedido de Majo, 15/10): nubes y líneas punteadas detrás de la mascota */
+const CLOUDS = `<svg class="clouds" viewBox="0 0 400 320" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><path d="M-20 250C60 170 140 300 230 210S360 120 430 170" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round" opacity=".7"/><path d="M-10 90C80 40 150 140 260 80S380 30 420 60" fill="none" stroke="#fff" stroke-width="2" stroke-dasharray="2 9" stroke-linecap="round" opacity=".5"/><path d="M262 64a22 22 0 0 1 42-6 16 16 0 0 1 22 15H250a12 12 0 0 1 12-9z" fill="#fff" opacity=".85"/><path d="M24 168a18 18 0 0 1 34-5 13 13 0 0 1 18 12H14a10 10 0 0 1 10-7z" fill="#fff" opacity=".75"/></svg>`;
 function petHero(p, sm) {
   /* la mascota recortada sobre su color (decisión de Majo, 15/10); si eligió la foto sin recortar, va enmarcada sobre el color */
   const img = p.photo, cut = Boolean(p.photo && p.photoFull), meta = [p.breed || Z.species(p), Z.age(p.birth), p.weight ? kg(p.weight) : ''].filter(Boolean).join(' · ');
   const strip = doc.pets.length > 1 ? `<nav class="pstrip" aria-label="Tus mascotas">${doc.pets.map(x => `<button class="pchip" data-act="pick" data-id="${x.id}" aria-current="${x.id === p.id}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}<button class="pchip add" data-act="newPet" aria-label="Agregar mascota"><span class="av">${I('plus')}</span></button></nav>` : '';
   const cards = heroCards(p, sm);
   return `<section class="phero${img ? (cut ? ' has-cut' : ' has-photo') : ' no-photo'}" aria-labelledby="h-pet">
-    <div class="ph-stage">${img ? `<img class="ph-img" src="${esc(img)}" alt="Foto de ${esc(p.name)}">`
+    <div class="ph-stage">${CLOUDS}${img ? `<img class="ph-img" src="${esc(img)}" alt="Foto de ${esc(p.name)}">`
       : `<span class="ph-ini" aria-hidden="true">${esc((p.name || '?').trim().charAt(0).toUpperCase())}</span><button class="ph-up" data-act="editPet">${I('camera')} Subí su foto</button>`}${strip}</div>
     <div class="psheet">
       <div class="ps-top">
