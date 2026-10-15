@@ -719,7 +719,8 @@ export function migrar(crudo) {
     if (!i?.id || !entero(i.monto) || !esMes(i.desde)) continue;
     out.ingresos.push({ id: String(i.id), nombre: texto(i.nombre) || 'Ingreso', monto: i.monto,
       repite: !!i.repite, desde: i.desde, ...(i.repite && esMes(i.hasta) ? { hasta: i.hasta } : {}),
-      ...(cobroValido(i.cobro) ? { cobro: cobroValido(i.cobro) } : {}) });
+      ...(cobroValido(i.cobro) ? { cobro: cobroValido(i.cobro) } : {}),
+      ...(docValido(i.doc) ? { doc: docValido(i.doc) } : {}) });
   }
   for (const g of Array.isArray(crudo.gastos) ? crudo.gastos : []) {
     if (!g?.id || !entero(g.monto) || !esMes(g.desde)) continue;
@@ -729,7 +730,8 @@ export function migrar(crudo) {
       ...(dia(g.dia) ? { dia: g.dia } : {}),
       ...(typeof g.tarjetaId === 'string' && out.tarjetas.some(t => t.id === g.tarjetaId) ? { tarjetaId: g.tarjetaId } : {}),
       ...(g.sinTarjeta === true ? { sinTarjeta: true } : {}),
-      ...(g.repite && Number.isInteger(g.frecuencia) && g.frecuencia > 1 && g.frecuencia <= 12 ? { frecuencia: g.frecuencia } : {}) });
+      ...(g.repite && Number.isInteger(g.frecuencia) && g.frecuencia > 1 && g.frecuencia <= 12 ? { frecuencia: g.frecuencia } : {}),
+      ...(docValido(g.doc) ? { doc: docValido(g.doc) } : {}) });
   }
   for (const c of Array.isArray(crudo.cuotas) ? crudo.cuotas : []) {
     if (!c?.id || !entero(c.total) || !entero(c.cantidad) || c.cantidad > 72 || !esMes(c.primerMes)) continue;
@@ -2210,3 +2212,6 @@ export function tarjetaDeGasto(datos, g, mes) {
   }
   return null;
 }
+
+/* De qué documento salió un ingreso o gasto (solo la fecha y si es estimado de meses anteriores). */
+export const docValido = d => (d && typeof d === 'object' && esFecha(d.fecha) ? { fecha: d.fecha, ...(d.estimado === true ? { estimado: true } : {}) } : null);

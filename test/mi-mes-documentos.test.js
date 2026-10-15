@@ -33,14 +33,14 @@ test('clasificación: recibo → solo neto, fecha, período y clase; nunca CUIL,
 test('recibo → ingreso Sueldo con su día de cobro; aguinaldo de un solo mes', () => {
   const r = D.validarClasificacion(fx('doc-recibo')).lectura.recibo;
   const [it] = D.itemsDeRecibo(r, base(), { archivo: 'a' });
-  assert.deepEqual(it.ingreso, { nombre: 'Sueldo', monto: $(1_450_320.55), repite: true, desde: '2026-10', cobro: { tipo: 'dia', dia: 5 } });
+  assert.deepEqual(it.ingreso, { nombre: 'Sueldo', monto: $(1_450_320.55), repite: true, desde: '2026-10', cobro: { tipo: 'dia', dia: 5 }, doc: { fecha: '2026-10-05' } });
   const [ag] = D.itemsDeRecibo({ ...r, clase: 'aguinaldo', fechaPago: '2026-12-18' }, base(), { archivo: 'b' });
   assert.deepEqual([ag.ingreso.nombre, ag.ingreso.repite, ag.ingreso.desde, ag.ingreso.cobro], ['Aguinaldo', false, '2026-12', undefined]);
 });
 test('factura (lector de Vencimientos) → gasto fijo con monto, día, frecuencia y categoría', () => {
   const p = F.propuestaDesde(fx('doc-factura-gas'), '2026-10-15');
   const [it] = D.itemsDeFactura(p, base(), { archivo: 'f' });
-  assert.deepEqual(it.gasto, { nombre: 'Metrogas', categoria: 'Servicios', monto: $(38_450), repite: true, desde: '2026-10', frecuencia: 2, dia: 20 });
+  assert.deepEqual(it.gasto, { nombre: 'Metrogas', categoria: 'Servicios', monto: $(38_450), repite: true, desde: '2026-10', frecuencia: 2, dia: 20, doc: { fecha: '2026-10-20' } });
   const d = D.aplicarItems(base(), [it], { nuevoId, hoy: '2026-10-15' }).datos;
   // bimestral: octubre sí, noviembre no, diciembre sí
   assert.deepEqual(['2026-10', '2026-11', '2026-12'].map(m => M.resumenMes(d, m).totGastos), [$(38_450), 0, $(38_450)]);
@@ -160,4 +160,72 @@ test('endpoint (real, cliente falso): Haiku clasifica y el log lleva tokens por 
   assert.deepEqual([l.tipoDoc, l.modelo, l.entrada, l.salida], ['recibo', 'claude-haiku-5-5', 1800, 120]);
   assert.doesNotMatch(logs.join(' '), /1450320|INVENTADA|recibo-octubre/);
   assert.equal(docs.MODELO_CLASIFICAR, 'claude-haiku-5-5');
+});
+
+
+/* ── Etapa 1: el historial arma el sistema ── */
+const facturaEdenor = (vence, monto) => F.propuestaDesde({ empresa: 'Edenor', servicio: 'edenor', categoria: 'Luz, gas y agua', periodo: { desde: null, hasta: null },
+  vencimientos: [{ fecha: vence, monto }], moneda: 'ARS', frecuencia: 1, cuota: null, debitoAutomatico: false, proximoVencimiento: null, confianza: 'alta', dudas: [], avisos: [] }, '2026-10-15');
+const lecturaResumen = (venc, consumos) => M.validarLectura({ ...fx('simple'), tarjetas: [], vencimiento: venc, cierre: null, proximoCierre: null, proximoVencimiento: null, cuotasAVencer: [],
+  pagosYCreditos: [], cargos: [], saldoAnterior: [], consumos, totales: [{ moneda: 'ARS', monto: consumos.reduce((a, c) => a + c.monto, 0) }] }).lectura;
+test('[etapa 1] 3 facturas de Edenor → 1 gasto fijo con el monto de la más nueva, estimado de meses anteriores', () => {
+  const lecturas = [['ago', '2026-08-18', 40_000], ['sep', '2026-09-18', 44_000], ['jul', '2026-07-18', 38_000]].map(([a, v, m]) => ({ archivo: a, tipo: 'factura', lectura: facturaEdenor(v, m) }));
+  const items = D.consolidar(lecturas, base(), '2026-10-15');
+  const vivos = items.filter(i => i.accion !== 'viejo');
+  assert.equal(vivos.length, 1);
+  assert.deepEqual([vivos[0].titulo, vivos[0].monto, vivos[0].estimado, vivos[0].promedio], ['Edenor', $(44_000), true, 4_066_667]);
+  assert.match(vivos[0].detalle, /estimado de 3 facturas anteriores/);
+  assert.equal(items.filter(i => i.accion === 'viejo').length, 2);
+  const d = D.aplicarItems(base(), items, { nuevoId, hoy: '2026-10-15' }).datos;
+  assert.equal(d.gastos.length, 1);
+  assert.deepEqual(d.gastos[0].doc, { fecha: '2026-09-18', estimado: true });
+  assert.equal(M.resumenMes(d, '2026-10').totGastos, $(44_000), 'cuenta en el mes actual como estimado');
+  assert.deepEqual(D.estimadosViejos(d, '2026-10-15').map(x => x.nombre), ['Edenor']);
+});
+test('[etapa 1] la misma suscripción en 2 resúmenes → 1 gasto con esa tarjeta, contado una sola vez', () => {
+  const nf = m => ({ fecha: m, comercio: 'NETFLIX.COM', monto: 9_000, moneda: 'ARS', rubro: 'Suscripciones', cuota: null, tarjeta: null });
+  const lecturas = [{ archivo: 'r1', tipo: 'resumen', lectura: lecturaResumen('2026-09-08', [nf('2026-08-15')]) },
+    { archivo: 'r2', tipo: 'resumen', lectura: lecturaResumen('2026-10-08', [nf('2026-09-15'), { fecha: '2026-09-20', comercio: 'SUPER', monto: 50_000, moneda: 'ARS', rubro: 'Supermercado', cuota: null, tarjeta: null }]) }];
+  const items = D.consolidar(lecturas, M.datosVacios(), '2026-10-15');
+  const subs = items.filter(i => i.id.startsWith('subs:'));
+  assert.deepEqual(subs.map(i => [i.titulo, i.monto, i.tarjetaClave]), [['Netflix', $(9_000), '1111']]);
+  const d = D.aplicarItems(M.datosVacios(), items, { nuevoId, hoy: '2026-10-15' }).datos;
+  assert.equal(d.tarjetas.length, 1);
+  assert.equal(d.resumenes.length, 2);
+  const g = d.gastos.find(x => x.nombre === 'Netflix');
+  assert.equal(g.tarjetaId, d.tarjetas[0].id, 'gasto con tarjeta');
+  // octubre: adentro del resumen (no aparte); diciembre: una vez como gasto de la tarjeta
+  assert.equal(M.resumenMes(d, '2026-10').totGastos, 0);
+  assert.equal(M.resumenMes(d, '2026-12').totTarjetas, $(9_000));
+});
+test('[etapa 1] lo viejo no pisa a lo nuevo: recibo, factura y límites de la tarjeta', () => {
+  const r = D.validarClasificacion(fx('doc-recibo')).lectura.recibo;
+  const viejo = { ...r, neto: 120_000_000, fechaPago: '2026-08-05', periodo: '2026-07' };
+  const items = D.consolidar([{ archivo: 'a', tipo: 'recibo', lectura: { recibo: viejo } }, { archivo: 'b', tipo: 'recibo', lectura: { recibo: r } }], base(), '2026-10-15');
+  assert.deepEqual(items.map(i => [i.archivo, i.accion]), [['b', 'nuevo'], ['a', 'viejo']]);
+  // ya cargado el nuevo, subir después el viejo no lo pisa
+  const d = D.aplicarItems(base(), items, { nuevoId, hoy: '2026-10-15' }).datos;
+  const [otra] = D.itemsDeRecibo(viejo, d, { archivo: 'c' });
+  assert.equal(otra.accion, 'viejo');
+  assert.equal(D.aplicarItems(d, [otra], { nuevoId, hoy: '2026-10-15' }).datos.ingresos[0].monto, r.neto);
+  // factura vieja después de la nueva
+  const d2 = D.aplicarItems(base(), D.itemsDeFactura(facturaEdenor('2026-10-18', 50_000), base(), { archivo: 'n', hoy: '2026-10-15' }), { nuevoId, hoy: '2026-10-15' }).datos;
+  const [fv] = D.itemsDeFactura(facturaEdenor('2026-08-18', 40_000), d2, { archivo: 'v', hoy: '2026-10-15' });
+  assert.equal(fv.accion, 'viejo');
+  // resumen viejo importado después del nuevo: no pisa el límite
+  const l1 = lecturaResumen('2026-10-08', []); l1.limites = { compra: $(900_000), financiacion: null };
+  const l0 = lecturaResumen('2026-08-08', []); l0.limites = { compra: $(500_000), financiacion: null };
+  const d3 = D.aplicarItems(M.datosVacios(), [{ grupo: 'tarjetas', lectura: l1 }], { nuevoId, hoy: '2026-10-15' }).datos;
+  const d4 = D.aplicarItems(d3, [{ grupo: 'tarjetas', lectura: l0 }], { nuevoId, hoy: '2026-10-15' }).datos;
+  assert.equal(d4.tarjetas[0].limite, $(900_000));
+  assert.equal(d4.resumenes.length, 2);
+});
+test('[etapas] el orden: 1 sin datos; 2 con estimados pendientes desde la 2.ª visita; 3 (mail) después, nunca al entrar', () => {
+  assert.equal(D.etapaPrimerUso(M.datosVacios(), { visitas: 1 }), 1);
+  const d = base(); d.gastos.push({ id: 'g', nombre: 'Luz', categoria: 'Servicios', monto: 1, repite: true, desde: '2026-09' });
+  assert.equal(D.etapaPrimerUso(d, { visitas: 1, pendientes: 2 }), 0, 'en la primera visita no se invita a nada más');
+  assert.equal(D.etapaPrimerUso(d, { visitas: 2, pendientes: 2 }), 2);
+  assert.equal(D.etapaPrimerUso(d, { visitas: 2, pendientes: 0 }), 3, 'mes al día: recién ahí el mail');
+  assert.equal(D.etapaPrimerUso(d, { visitas: 3, pendientes: 1 }), 2, 'lo actual primero');
+  assert.equal(D.etapaPrimerUso(d, { visitas: 4, pendientes: 0, mailConectado: true }), 0);
 });

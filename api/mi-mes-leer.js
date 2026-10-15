@@ -17,7 +17,7 @@ import { kvGet, kvSet } from './_lib/kv.js';
 import { hoyAR } from './_lib/mi-mes-avisos.js';
 import { hayKey, leerResumenConClaude, ErrorLectura } from './_lib/mi-mes-lector.js';
 import { leerFacturaConClaude } from './_lib/vencimientos-lector.js';
-import { lecturaEjemplo } from './_herramientas/vencimientos/factura.js';
+import { lecturaEjemplo, propuestaDesde } from './_herramientas/vencimientos/factura.js';
 import { resumenEjemplo } from './_herramientas/mi-mes/ejemplo.js';
 import { clasificarConClaude, clasificarDeEjemplo, MODELO_CLASIFICAR } from './_lib/mi-mes-documentos.js';
 import { MAX_BYTES_DOC, MAX_PAGINAS_DOC, TOPE_DIA_DOCS } from './_herramientas/mi-mes/documentos.js';
@@ -88,7 +88,7 @@ export default async function handler(req, res) {
     const hoy = hoyAR();
     log({ modo: 'prueba' });
     if (pedido === 'resumen') return responder(res, 200, { ok: true, modo: 'prueba', tipo: 'resumen', lectura: resumenEjemplo() });
-    if (pedido === 'factura') return responder(res, 200, { ok: true, modo: 'prueba', tipo: 'factura', lectura: lecturaEjemplo(hoy) });
+    if (pedido === 'factura') { const l = lecturaEjemplo(hoy); return responder(res, 200, { ok: true, modo: 'prueba', tipo: 'factura', lectura: l, propuesta: propuestaDesde(l, hoy) }); }
     const c = clasificarDeEjemplo(url.searchParams.get('nombre'), hoy);
     return responder(res, 200, { ok: true, modo: 'prueba', tipo: c.tipo, siguiente: ['resumen', 'factura'].includes(c.tipo), lectura: c });
   }
@@ -102,7 +102,8 @@ export default async function handler(req, res) {
     if (pedido === 'factura') {
       const r = await leerFacturaConClaude({ buf, tipo });
       log({ modo: 'real', tipoDoc: 'factura', modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida, ms: Date.now() - t0 });
-      return responder(res, 200, { ok: true, modo: 'real', tipo: 'factura', lectura: r.lectura });
+      /* la propuesta (nombre, categoría, monto en centavos, vencimiento, frecuencia) se arma acá: el navegador de Mi Mes no carga los módulos de Vencimientos */
+      return responder(res, 200, { ok: true, modo: 'real', tipo: 'factura', lectura: r.lectura, propuesta: propuestaDesde(r.lectura, hoyAR()) });
     }
     const r = await clasificarConClaude({ buf, tipo });
     log({ modo: 'real', tipoDoc: r.lectura.tipo, modelo: r.modelo, entrada: r.uso.entrada, salida: r.uso.salida, ms: Date.now() - t0 });

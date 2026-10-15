@@ -58,21 +58,4 @@ export async function clasificarConClaude({ buf, tipo }) {
 }
 const sumar = us => us.reduce((a, u) => ({ entrada: a.entrada + u.entrada, salida: a.salida + u.salida }), { entrada: 0, salida: 0 });
 
-/* Modo prueba (sin key): adivina el tipo por el nombre del archivo y devuelve
-   datos de ejemplo inventados. El nombre no se guarda ni se loguea. */
-export function clasificarDeEjemplo(nombre, hoy) {
-  const n = String(nombre || '').toLowerCase();
-  const tipo = /recibo|sueldo|haberes/.test(n) ? 'recibo' : /resumen|visa|master|amex|tarjeta/.test(n) ? 'resumen'
-    : /factura|boleta|edenor|edesur|metrogas|aysa|luz|gas|agua|internet|expensas|alquiler|abl|patente/.test(n) ? 'factura'
-    : /captura|screenshot|movimientos|homebanking|img|whatsapp image/.test(n) ? 'captura' : 'otro';
-  const [a, m] = hoy.split('-').map(Number);
-  const mesAnt = `${m === 1 ? a - 1 : a}-${String(m === 1 ? 12 : m - 1).padStart(2, '0')}`;
-  if (tipo === 'recibo') return { tipo, confianza: 'alta', avisos: ['Modo prueba: datos de ejemplo.'], captura: null,
-    recibo: { neto: 185_000_000, moneda: 'ARS', fechaPago: `${hoy.slice(0, 7)}-05`, periodo: mesAnt, clase: 'mensual' } };
-  if (tipo === 'captura') return { tipo, confianza: 'alta', avisos: ['Modo prueba: datos de ejemplo.'], recibo: null,
-    captura: { origen: 'tarjeta', saldo: null, movimientos: [
-      { fecha: hoy, descripcion: 'FARMACIA EJEMPLO', monto: 3_250_000, moneda: 'ARS', tipo: 'consumo', cuota: null },
-      { fecha: hoy, descripcion: 'ZAPATILLERIA EJEMPLO', monto: 4_500_000, moneda: 'ARS', tipo: 'consumo', cuota: { n: 1, de: 3 } },
-      { fecha: hoy, descripcion: 'Transferencia a mi caja de ahorro', monto: 10_000_000, moneda: 'ARS', tipo: 'transferencia_propia', cuota: null }] } };
-  return { tipo, confianza: 'alta', avisos: ['Modo prueba: datos de ejemplo.'], recibo: null, captura: null };
-}
+export { clasificarDeEjemplo } from '../_herramientas/mi-mes/documentos.js';
