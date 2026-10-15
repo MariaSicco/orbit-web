@@ -180,7 +180,7 @@ test('intereses y cargos del resumen: suma cargos e impuestos, las devoluciones 
   // devolución −110.000 + sellos 15.000 + intereses 3.000 + IVA 630 + percepción 25.000
   assert.equal(c.ars, $(-66_370));
   assert.equal(M.cargosDelResumen({ cargos: M.validarLectura(fixture('adicional-creditos')).lectura.cargos }, M.datosVacios()).ars, $(2_420));
-  assert.deepEqual(M.cargosDelResumen({}, M.datosVacios()), { ars: 0, porMoneda: {}, hay: false });
+  assert.deepEqual(M.cargosDelResumen({}, M.datosVacios()), { ars: 0, porMoneda: {}, intereses: 0, impuestos: 0, otros: 0, hay: false });
 });
 test('se te liberan: el mes en que baja lo comprometido en cuotas y cuánto', () => {
   const d = M.datosVacios();

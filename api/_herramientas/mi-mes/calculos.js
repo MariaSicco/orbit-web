@@ -1210,7 +1210,22 @@ export function cargosDelResumen(resumen, datos) {
   for (const c of resumen?.cargos || []) porMoneda[c.moneda] = (porMoneda[c.moneda] || 0) + c.monto;
   let ars = 0;
   for (const [m, v] of Object.entries(porMoneda)) ars += aPesos(v, m, datos) ?? 0;
-  return { ars, porMoneda, hay: (resumen?.cargos || []).length > 0 };
+  /* QA v2 · 5: intereses (bajan a cero pagando el total) separados de impuestos y percepciones (no) */
+  const de = tipos => (resumen?.cargos || []).filter(c => tipos.includes(c.tipo)).reduce((a, c) => a + (aPesos(c.monto, c.moneda || 'ARS', datos) ?? 0), 0);
+  const intereses = de(['interes']);
+  const impuestos = de(['iva', 'sellos', 'percepcion', 'devolucion']);
+  const otros = de(['comision', 'otro']);
+  return { ars, porMoneda, intereses, impuestos, otros, hay: (resumen?.cargos || []).length > 0 };
+}
+/* "Este resumen te cobró $ X de intereses (por no pagar el total) y $ Y de impuestos y percepciones." */
+export function textoCargos(c, vencido) {
+  if (!c?.hay) return '';
+  const verbo = vencido ? 'te cobró' : 'te cobra';
+  const imp = c.impuestos > 0 ? `${formatoPesos(c.impuestos)} de impuestos y percepciones` : '';
+  if (c.intereses > 0) return `Este resumen ${verbo} ${formatoPesos(c.intereses)} de intereses (por no pagar el total)${imp ? ` y ${imp}` : ''}. Pagando el total, los intereses bajan a cero.`;
+  if (imp) return `Este resumen ${verbo} ${imp}. No son intereses: se cobran aunque pagues el total.`;
+  if (c.ars < 0) return `Entre cargos y devoluciones, este resumen te devolvió ${formatoPesos(-c.ars)}.`;
+  return '';
 }
 
 /* ── cuándo se te libera plata ──
@@ -1388,8 +1403,8 @@ export function consejos(datos, hoy) {
   const ultimo = (datos?.resumenes || []).slice().sort((a, b) => difMeses(a.mes, b.mes)).pop();
   if (ultimo && difMeses(ultimo.mes, mes) <= 1) {
     const c = cargosDelResumen(ultimo, datos);
-    if (c.ars > 0) out.push({ id: `intereses:${ultimo.mes}`, tipo: 'intereses',
-      texto: `En el último resumen pagaste ${formatoPesos(c.ars)} en intereses y cargos de tarjeta. Pagando el total, ese número baja a cero.` });
+    if (c.intereses > 0) out.push({ id: `intereses:${ultimo.mes}`, tipo: 'intereses',
+      texto: textoCargos(c, esFecha(ultimo.vencimiento) && diasEntre(ultimo.vencimiento, hoy) > 0) });
   }
   const r = resumenMes(datos, mes);
   const lib = proximaLiberacion(datos, mes);

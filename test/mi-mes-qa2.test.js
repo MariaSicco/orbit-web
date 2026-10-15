@@ -129,3 +129,31 @@ test('[QA2 · 4] sin marcar, el motor pregunta si va con la tarjeta (lo vio en e
     .find(x => x.tipo === 'suscripciones');
   assert.match(c.texto, /Tenés 2 suscripciones por \$ 20\.000/);
 });
+
+/* ── QA v2 · 5: consejo de intereses ── */
+function conCargos(cargos, vencimiento = '2026-10-08') {
+  const d = M.datosVacios();
+  d.ingresos.push({ id: 'i', nombre: 'Sueldo', monto: $(1_000_000), repite: true, desde: '2026-01' });
+  d.tarjetas.push({ id: 'v', nombre: 'Visa', red: 'Visa', banco: '', ultimos4: '', color: 'azul' });
+  d.resumenes.push({ id: 'r', tarjetaId: 'v', mes: '2026-10', cierre: '2026-09-26', vencimiento, totales: { ARS: $(300_000) }, consumos: [], pagosYCreditos: [], cargos });
+  return M.migrar(d);
+}
+const cargo = (tipo, monto) => ({ fecha: null, concepto: tipo.toUpperCase(), monto: $(monto), moneda: 'ARS', tipo });
+test('[QA2 · 5] sin intereses (solo sellos y percepción) no dice "pagando el total baja a cero"', () => {
+  const d = conCargos([cargo('sellos', 1_200), cargo('percepcion', 33_726), cargo('devolucion', -679)]);
+  assert.equal(M.consejos(d, '2026-10-15').some(c => c.tipo === 'intereses'), false);
+  const c = M.cargosDelResumen(d.resumenes[0], d);
+  assert.deepEqual([c.intereses, c.impuestos], [0, $(34_247)]);
+});
+test('[QA2 · 5] separa intereses de impuestos y percepciones; "baja a cero" solo para intereses', () => {
+  const d = conCargos([cargo('interes', 18_000), cargo('iva', 3_780), cargo('sellos', 1_200), cargo('percepcion', 10_000)]);
+  const c = M.consejos(d, '2026-10-15').find(x => x.tipo === 'intereses');
+  assert.equal(c.texto, 'Este resumen te cobró $ 18.000 de intereses (por no pagar el total) y $ 14.980 de impuestos y percepciones. Pagando el total, los intereses bajan a cero.');
+  assert.doesNotMatch(c.texto, /pagaste/);
+});
+test('[QA2 · 5] si el resumen todavía no venció, "te cobra" y nada de pagar de más', () => {
+  const d = conCargos([cargo('interes', 18_000)], '2026-10-20');
+  const c = M.consejos(d, '2026-10-15').find(x => x.tipo === 'intereses');
+  assert.match(c.texto, /^Este resumen te cobra \$ 18\.000 de intereses/);
+  assert.doesNotMatch(c.texto, /pagaste|de más/);
+});

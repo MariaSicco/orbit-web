@@ -38,7 +38,7 @@ test('consejo: intereses primero; con libres negativo, el negativo con salida y 
   });
   const c = M.consejos(M.migrar(d), '2026-10-15');
   assert.equal(c[0].tipo, 'intereses');
-  assert.match(c[0].texto, /pagaste \$ 18\.400 en intereses y cargos/);
+  assert.match(c[0].texto, /te cobró \$ 18\.400 de intereses \(por no pagar el total\)/);
   assert.equal(c[1].tipo, 'negativo');
   assert.equal(c.some(x => x.tipo === 'libera'), false);
 });

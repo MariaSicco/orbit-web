@@ -762,10 +762,8 @@ function lineaPercepcion(res) {
 /* "Este resumen te cobró $ X de intereses y cargos" (las devoluciones restan) */
 function lineaCargos(res) {
   const c = cargosDelResumen(res, datos);
-  if (!c.hay) return '';
-  if (c.ars > 0) return `<p class="mm-cargos-linea">Este resumen te cobró <b>${esc($(c.ars))}</b> de intereses y cargos. Pagando el total, ese número baja a cero.</p>`;
-  if (c.ars < 0) return `<p class="mm-cargos-linea">Entre cargos y devoluciones, este resumen te devolvió <b>${esc($(-c.ars))}</b>.</p>`;
-  return '';
+  const t = textoCargos(c, resumenVencido(res, HOY_ISO));
+  return t ? `<p class="mm-cargos-linea">${esc(t)}</p>` : '';
 }
 
 /* ════════ TARJETAS ════════ */
