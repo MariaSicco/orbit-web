@@ -35,7 +35,9 @@ test('Exportar copia: nada promete que se restaura (app, ficha, mails y toasts)'
     ...(await readdir(new URL('../api/', import.meta.url), { recursive: true })).filter(f => f.endsWith('.js')).map(f => 'api/' + f)];
   for (const f of files) {
     const s = await rd(f).catch(() => '');
-    assert.doesNotMatch(s, /te la restauramos|la restauramos|te la recuperamos|restaurar (desde )?(una|la|tu) copia|volver a cargar(la)? cuando/i, f);
+    /* premium (F2): la app ya restaura sola desde Cuenta; nadie promete que "se la restauramos" nosotros */
+    assert.doesNotMatch(s, /te la restauramos|la restauramos|te la recuperamos|volver a cargar(la)? cuando/i, f);
+    if (f !== 'assets/js/mascotas-app.js') assert.doesNotMatch(s, /restaurar (desde )?(una|la|tu) copia/i, f);
   }
-  assert.match(app, /Todavía no se puede volver a cargar en la app\./);
+  assert.match(app, /function restorePreview\(/);
 });

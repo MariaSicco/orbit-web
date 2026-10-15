@@ -1067,7 +1067,7 @@ async function uploadStudy(file, extra = {}) {
 const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['agenda', 'grid', 'Agenda'], ['gastos', 'wallet', 'Gastos'], ['cuenta', 'user', 'Cuenta']];
 /* en el celu: 4 secciones y el + en el medio; Cuenta queda en el avatar de arriba */
 const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
-const TAB_OF = { hoy: 'inicio', historial: 'inicio', vets: 'inicio', antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta', mefui: 'inicio' };
+const TAB_OF = { hoy: 'inicio', historial: 'inicio', vets: 'inicio', antecedentes: 'libreta', salud: 'libreta', vete: 'libreta', viajes: 'libreta', datos: 'libreta', pdf: 'libreta', avisos: 'cuenta', mefui: 'inicio' };
 const BAND = ['libreta', 'pdf', 'agenda', 'gastos', 'cuenta', 'avisos', 'hoy', 'historial', 'antecedentes', 'salud', 'viajes', 'datos', 'vete'];
 const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
 const nav = $('#nav'), topBar = $('.top');
@@ -1165,7 +1165,8 @@ function view() {
     case 'gastos': return renderGastos(p);
     case 'cuenta': return renderCuenta();
     case 'avisos': return renderAvisos();
-    case 'antecedentes': return renderAntecedentes(p);
+    case 'antecedentes': case 'salud': return renderSalud(p);
+    case 'vete': return renderVete(p);
     case 'viajes': return renderViajes(p);
     case 'datos': return renderDatos(p);
     case 'hoy': return renderHoy(p);
@@ -1421,6 +1422,7 @@ function renderInicio(p) {
     <div class="dash-r">
       ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
       ${scanBanner(p)}
+      ${completeCard(p)}
       ${weekSection(p)}
       ${algoBlock(p)}
       ${hoyBox(p)}
@@ -1850,7 +1852,10 @@ function renderLibreta(p) {
         <label class="sel"><span class="sr">Año</span><select id="libY"><option value="">Año</option>${years.map(y => `<option${y === ui.lib.year ? ' selected' : ''}>${y}</option>`).join('')}</select></label>
       </div>
     </div>
-    <div id="bookWrap">${bookHtml(p)}</div>`;
+    <div id="bookWrap">${bookHtml(p)}</div>
+    <section class="sec" aria-labelledby="h-more"><h2 id="h-more">Más de ${esc(p.name)}</h2>
+      <div class="list quick">${[['go:vete', 'steth', 'cuida', 'Para el vete', 'Una hoja para mostrar en la consulta'], ['go:salud', 'heart', 'perdida', 'Salud', 'Problemas, alergias, remedios y cirugías'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad']].map(([a, ic, c, t, d]) => { const [act, to] = a.split(':'); return `<button class="row link-row" data-act="${act}"${to ? ` data-to="${to}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}</div>
+    </section>`;
 }
 function refreshLibreta() {
   const p = curPet(); $('#bookWrap').innerHTML = bookHtml(p);
@@ -2097,7 +2102,8 @@ function renderCuenta() {
       <section class="sec"><h2>Ajustes</h2>
         <div class="list">
           <button class="row link-row" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span class="what"><b>Centro de avisos</b><small>${nOn ? 'Activados' + (notify.devices ? ` en ${notify.devices} ${notify.devices === 1 ? 'dispositivo' : 'dispositivos'}` : '') + (notify.mail ? (notify.devices ? ' y por mail' : ' por mail') : '') : 'Apagados: activalos para no perderte fechas'}</small></span>${I('chevron')}</button>
-          <button class="row link-row" data-act="export">${bubble('download', 'viaje')}<span class="what"><b>Exportar copia de tus datos</b><small>Un archivo con todo lo que cargaste, para guardarlo en tu compu o en Drive. Todavía no se puede volver a cargar en la app.</small></span>${I('chevron')}</button>
+          <button class="row link-row" data-act="export">${bubble('download', 'viaje')}<span class="what"><b>Exportar copia de tus datos</b><small>Un archivo con todo lo que cargaste, para guardarlo en tu compu o en Drive.</small></span>${I('chevron')}</button>
+          <button class="row link-row" data-act="restore">${bubble('copy', 'viaje')}<span class="what"><b>Restaurar una copia</b><small>Elegís el archivo, ves qué trae y confirmás dos veces antes de reemplazar.</small></span>${I('chevron')}</button>
           <a class="row link-row" href="/privacidad" target="_blank" rel="noopener">${bubble('shield', 'salud')}<span class="what"><b>Privacidad</b><small>Tus datos viven en tu cuenta. El QR solo muestra lo necesario para que te la devuelvan.</small></span>${I('chevron')}</a>
           <a class="row link-row" href="/terminos" target="_blank" rel="noopener">${bubble('doc', 'med')}<span class="what"><b>Términos y condiciones</b><small>Licencia y soporte</small></span>${I('chevron')}</a>
         </div>
@@ -2243,8 +2249,11 @@ app.addEventListener('change', async e => {
 
 /* ---------- ALTA GUIADA DE CERO: mascota y su próxima vacuna en menos de un minuto ---------- */
 let ob = null;
-const OB_STEPS = 5;
-const newOb = () => ({ step: 0, pet: blankPet(), photo: null, vac: { name: '', date: '', next: '' }, sug: [], conds: {} });
+/* F4 · alta en 4 pasos: nombre y foto, nacimiento y sexo, última vacuna y avisos (con la guía de iPhone adentro).
+   El color se asigna solo; raza, castración y salud pasan a "Completá a…" en Inicio */
+const OB_STEPS = 4;
+const freeHue = () => Object.keys(HUES).find(k => !doc.pets.some(x => (x.hue || 'azul') === k)) || Object.keys(HUES)[doc.pets.length % 7];
+const newOb = () => ({ step: 0, pet: { ...blankPet(), hue: freeHue() }, photo: null, vac: { name: '', date: '', next: '' }, sug: [], conds: {} });
 function startOnboard() { ob = newOb(); go('alta'); }
 /* cambiar de vista sin esperar al hashchange (que llega después) */
 function setRoute(name) { route = { name, arg: '' }; history.replaceState(null, '', '#/' + name); }
@@ -2257,14 +2266,14 @@ function tiles(name, opts, val) { return `<div class="tiles" role="group" data-t
 function renderOnboard() {
   if (!ob) ob = newOb();
   const p = ob.pet, n = esc(p.name || 'tu mascota');
-  let h = '', primary = 'Siguiente', skip = '';
+  let h = '', primary = 'Siguiente', skip = '', primCls = 'btn big wide';
   if (ob.step === 0) {
-    h = obHead('¿Cómo se llama?', 'Empezamos por lo básico. Lo demás lo completás cuando quieras.') + `
+    h = obHead('¿Cómo se llama?', 'Nombre, especie y, si querés, una foto. Lo demás lo completás después.') + `
     <div class="f"><label for="ob_name" class="sr">Nombre</label><input id="ob_name" class="big-input" maxlength="60" value="${esc(p.name)}" placeholder="Nombre" autocomplete="off"></div>
     <div class="f"><span class="lb">Es un…</span>${tiles('species', [['perro', 'Perro', 'dog'], ['gato', 'Gato', 'cat'], ['otra', 'Otro', 'paw']], p.species)}</div>
     <div class="f" ${p.species === 'otra' ? '' : 'hidden'}><label for="ob_other">¿Qué es?</label><input id="ob_other" maxlength="40" value="${esc(p.speciesOther)}" placeholder="Conejo, hurón, loro…"></div>
     <div class="photo-pick"><div class="av big${ob.photoFull ? ' cut' : ''}" id="ob_prev" style="background:${hueOf(p)[0]}">${ob.photo ? `<img src="${ob.photo}" alt="">` : Z.petIcon(p)}</div><div class="f"><label class="btn ghost sm" for="ob_photo">${I('camera')} ${ob.photo ? 'Cambiar foto' : 'Agregar una foto'}</label><input id="ob_photo" type="file" accept="image/*" class="sr"><small>Opcional. La recortamos sola y la ponemos sobre su color.</small></div></div>
-    <div class="f"><span class="lb">Su color <span class="opt">(opcional)</span></span>${swatches('hue', p.hue)}<small>Lo podés cambiar cuando quieras.</small></div>`;
+`;
     primary = 'Empezar';
     if (!p.name) after(() => $('#ob_name')?.focus());
   }
@@ -2272,41 +2281,43 @@ function renderOnboard() {
     h = obHead(`Contanos de ${n}`, 'Con la fecha de nacimiento armamos el calendario que le corresponde. Aproximada sirve.') + `
     <div class="two"><div class="f"><label for="ob_birth">Nacimiento</label><input id="ob_birth" type="date" max="${iso(Z.today())}" value="${esc(p.birth)}"></div><div class="f"><label for="ob_weight">Peso (kg) <span class="opt">(opcional)</span></label><input id="ob_weight" inputmode="decimal" value="${p.weight ? String(p.weight).replace('.', ',') : ''}" placeholder="12,5"></div></div>
     <div class="f"><span class="lb">Sexo</span>${tiles('sex', [['h', 'Hembra'], ['m', 'Macho']], p.sex)}</div>
-    <div class="f"><label for="ob_breed">Raza <span class="opt">(opcional)</span></label><input id="ob_breed" list="ob_breeds" maxlength="60" value="${esc(p.breed)}" placeholder="Escribí para buscar" autocomplete="off"><datalist id="ob_breeds">${(Z.BREEDS[p.species] || []).map(b => `<option value="${esc(b)}">`).join('')}</datalist></div>
-    <div class="f"><span class="lb">¿Está castrado o castrada?</span>${tiles('neutered', [['si', 'Sí'], ['no', 'No'], ['ns', 'No sé']], p.neutered || '')}</div>`;
+`;
   }
   if (ob.step === 2) {
     const opts = (SUGGEST[p.species] || SUGGEST.otra).vacuna;
     h = obHead(`¿Cuál fue su última vacuna?`, `Copiala de la libreta del veterinario. Con esto ya sabemos cuándo le toca la próxima.`) + `
+    <label class="scanbox main" for="ob_scan">${bubble('camera', 'viaje')}<span><b>Sacarle foto a la libreta</b><small>Leemos vacunas, antiparasitarios y controles con sus fechas. Vos revisás antes de guardar.</small></span></label><input id="ob_scan" type="file" accept="image/*" multiple class="sr">
+    <div class="or">o cargala a mano</div>
     ${opts.length ? `<div class="f"><span class="lb">Vacuna</span><div class="chips" role="group" data-vac>${opts.map(o => `<button type="button" class="chip" data-v="${esc(o)}" aria-pressed="${ob.vac.name === o}">${esc(o)}</button>`).join('')}</div></div>` : ''}
     <div class="f"><label for="ob_vname">${opts.length ? 'O escribila' : 'Vacuna'}</label><input id="ob_vname" maxlength="80" value="${esc(opts.includes(ob.vac.name) ? '' : ob.vac.name)}" placeholder="Como figura en la libreta"></div>
     <div class="two"><div class="f"><label for="ob_vdate">Se aplicó el</label><input id="ob_vdate" type="date" max="${iso(Z.today())}" value="${esc(ob.vac.date)}"></div><div class="f"><label for="ob_vnext">Próxima dosis</label><input id="ob_vnext" type="date" value="${esc(ob.vac.next)}"></div></div>
     <div class="chips"><button type="button" class="chip" data-ob="plus" data-m="1">+1 mes</button><button type="button" class="chip" data-ob="plus" data-m="12">+1 año</button></div>
-    <div class="or">o</div>
-    <label class="scanbox" for="ob_scan">${bubble('camera', 'viaje')}<span><b>Sacarle foto a la libreta</b><small>Leemos vacunas, antiparasitarios y controles con sus fechas. Vos revisás antes de guardar.</small></span></label><input id="ob_scan" type="file" accept="image/*" multiple class="sr">`;
+`;
     skip = 'Todavía no tiene vacunas o no sé';
   }
   if (ob.step === 3) {
-    h = obHead('Su calendario sugerido', `Fechas de referencia general para ${Z.stage(p) === 'cachorro' ? 'un cachorro' : 'un adulto'}. Destildá lo que no quieras y cambiá las fechas. <b>Es una referencia: confirmalo con tu veterinario.</b>`) + (ob.sug.length ? sugRows(ob.sug) : `<div class="empty dash"><p>${n} ya tiene próxima fecha para todo lo del calendario de referencia.</p></div>`);
-    skip = ob.sug.length ? 'Ahora no' : '';
-  }
-  if (ob.step === 4) {
-    const list = Z.CONDITIONS[p.species] || Z.CONDITIONS.otra;
-    h = obHead(`¿Algo de su salud que convenga anotar?`, 'Opcional. Marcá lo que te haya dicho un veterinario. Va a sus antecedentes.') + `
-      <div class="chips" role="group" aria-label="Problemas de salud" data-conds>${list.map(c => `<button type="button" class="chip" data-c="${esc(c)}" aria-pressed="${Boolean(ob.conds[c])}">${esc(c)}</button>`).join('')}</div>
-      <div class="f"><label for="ob_all">Alergias <span class="opt">(opcional)</span></label><input id="ob_all" maxlength="300" value="${esc(p.allergies)}" placeholder="A un alimento, a un remedio…"></div>`;
-    primary = `Listo, ver a ${n}`; skip = 'Saltar';
+    const on = pushHere || (notify && (notify.devices || notify.mail));
+    let how;
+    if (on) how = `<div class="banner ok-b">${bubble('check', 'salud')}<span><b>Los avisos ya están activados</b><small class="dim">Te avisamos 3 días antes y el mismo día.</small></span></div>`;
+    else if (isIOS && !standalone()) how = `<div class="ios-steps"><b>En iPhone, primero agregala al inicio</b><ol><li>Tocá <b>Compartir</b> abajo en Safari (el cuadrado con la flecha).</li><li>Elegí <b>Agregar a inicio</b>.</li><li>Abrí Mimitos desde el ícono: te volvemos a preguntar.</li></ol><small class="dim">Necesita iOS 16.4 o más nuevo. Mientras tanto, te avisamos por mail.</small></div>`;
+    else if (pushSupported()) how = `<button type="button" class="btn big wide" id="aOn" data-ob="push">${I('bell')} Activar avisos en este celu</button>`;
+    else how = `<p class="note">Este navegador no acepta avisos en el celu. Te avisamos por mail.</p>`;
+    h = obHead(`¿Te avisamos antes de cada fecha?`, `Así no se te pasa ninguna vacuna ni pipeta de ${n}. Es lo que hace que Mimitos trabaje por vos.`) + `
+      ${how}<p class="amsg" id="aMsg" role="status" hidden></p>
+      ${notify?.mail ? '' : `<label class="toggle"><input type="checkbox" id="ob_mail" ${on || pushSupported() && !isIOS ? '' : 'checked'}><span><b>También por mail</b><br><small class="dim">Un solo mail a la mañana con lo del día, a ${esc(me.email || 'tu casilla')}.</small></span></label>`}`;
+    primary = `Listo, ver a ${n}`; skip = '';
+    /* una sola acción principal: si está el botón de activar, "Listo" queda secundario */
+    if (!on && pushSupported() && !(isIOS && !standalone())) primCls = 'btn ghost wide';
   }
   return `<section class="sec onboard" aria-live="polite">${h}<p class="err-msg" id="obErr" role="alert" hidden></p>
-    <div class="ob-actions"><button class="btn big wide" data-ob="next">${primary}</button>${skip ? `<button class="btn ghost wide" data-ob="skipstep">${skip}</button>` : ''}</div></section>`;
+    <div class="ob-actions"><button class="${primCls}" data-ob="next">${primary}</button>${skip ? `<button class="btn ghost wide" data-ob="skipstep">${skip}</button>` : ''}</div></section>`;
 }
 function obRead() {
   const p = ob.pet, v = id => $(id)?.value.trim() ?? '';
   if (ob.step === 0) { p.name = v('#ob_name'); p.speciesOther = v('#ob_other'); }
-  if (ob.step === 1) { p.birth = v('#ob_birth'); const w = numDec(v('#ob_weight')); p.weight = Number.isNaN(w) ? p.weight : w; p.breed = v('#ob_breed'); }
+  if (ob.step === 1) { p.birth = v('#ob_birth'); const w = numDec(v('#ob_weight')); p.weight = Number.isNaN(w) ? p.weight : w; }
   if (ob.step === 2) { const typed = v('#ob_vname'); if (typed) ob.vac.name = typed; ob.vac.date = v('#ob_vdate'); ob.vac.next = v('#ob_vnext'); }
-  if (ob.step === 3 && ob.sug.length) ob.sug = readSug(app, ob.sug);
-  if (ob.step === 4) p.allergies = v('#ob_all');
+  if (ob.step === 3) ob.mail = Boolean($('#ob_mail')?.checked);
 }
 function obErr(t) { const e = $('#obErr'); e.textContent = t; e.hidden = false; }
 async function obFinish(scanFiles) {
@@ -2317,7 +2328,8 @@ async function obFinish(scanFiles) {
   if (ob.vac.name && (ob.vac.date || ob.vac.next)) p.records.push(normRec({ id: uid(), type: 'vacuna', name: ob.vac.name, date: ob.vac.date, next: ob.vac.next, vet: '', notes: '', lot: '' }));
   p.onboarded = true;
   if (ob.photo) { try { p.photo = await uploadPhoto(ob.photo); p.photoFull = ob.photoFull ? await uploadPhoto(ob.photoFull) : ''; } catch (e) { toast((e?.msg ? e.msg + ' ' : 'La foto no se pudo subir. ') + 'Podés agregarla después.'); } }
-  applySug(p, ob.sug || []);
+  /* el calendario sugerido entra solo (como antes venía tildado); queda "Sin confirmar" hasta que se confirme con el veterinario */
+  const sugN = applySug(p, Z.suggested(p).map(x => ({ ...x, keep: true })));
   doc.pets.push(p); selectPet(p.id); ob = null;
   if (scanFiles?.length) { changed(); return runScan(p, scanFiles); }
   setRoute('inicio'); changed(); window.scrollTo(0, 0);
@@ -2325,7 +2337,7 @@ async function obFinish(scanFiles) {
   /* lo que se promete es "te avisamos antes de cada dosis": si los avisos están apagados, el alta termina ofreciéndolos */
   const avOff = !(notify && (notify.devices || notify.mail));
   const when = nx ? fmt(nx.r.next || nx.r.date, { day: 'numeric', month: 'short' }) : '';
-  toast(`Listo, ${p.name} ya está en Mimitos.${nx ? ` Próxima: ${nx.r.name}, ${when}.` : ''}${avOff && nx ? ' ¿Te avisamos antes?' : ''}`, avOff ? goAvisos : undefined);
+  toast(`Listo, ${p.name} ya está en Mimitos.${nx ? ` Próxima: ${nx.r.name}, ${when}.` : ''}${sugN ? ' Sumamos su calendario sugerido: confirmalo con tu veterinario.' : ''}`, avOff && !scanFiles ? goAvisos : undefined);
 }
 app.addEventListener('click', e => {
   if (route.name !== 'alta' || !ob) return;
@@ -2339,7 +2351,8 @@ app.addEventListener('click', e => {
   const a = b.dataset.ob;
   if (a === 'plus') { obRead(); const base = ob.vac.date || iso(Z.today()); ob.vac.next = Z.addMonths(base, +b.dataset.m); render(); return; }
   if (a === 'back') { if (!ob.step) { ob = null; go('inicio'); return; } obRead(); ob.step--; render(); return; }
-  if (a === 'skipstep') { if (ob.step === 2) ob.vac = { name: '', date: '', next: '' }; if (ob.step === 3) ob.sug = []; if (ob.step === 4) { ob.conds = {}; ob.pet.allergies = ''; return obFinish(); } }
+  if (a === 'push') return enablePush();
+  if (a === 'skipstep') { if (ob.step === 2) ob.vac = { name: '', date: '', next: '' }; if (ob.step === 3) { ob.mail = false; return obFinish(); } }
   else {
     obRead();
     if (ob.step === 0 && !ob.pet.name) return obErr('Poné su nombre para seguir.');
@@ -2347,10 +2360,9 @@ app.addEventListener('click', e => {
     if (ob.step === 2 && (ob.vac.date || ob.vac.next) && !ob.vac.name) return obErr('Elegí o escribí qué vacuna fue.');
     if (ob.step === 2 && ob.vac.name && !ob.vac.date && !ob.vac.next) return obErr('Poné cuándo se aplicó o cuándo le toca la próxima.');
     if (ob.step === 2 && ob.vac.date && ob.vac.next && ob.vac.next < ob.vac.date) return obErr('La próxima dosis no puede ser anterior a la aplicación.');
-    if (ob.step === 4) return obFinish();
+    if (ob.step === 3) { if (ob.mail) notifyPost({ mail: true }).catch(() => {}); return obFinish(); }
   }
   ob.step++;
-  if (ob.step === 3) { const tmp = { ...ob.pet, records: ob.vac.name && ob.vac.next ? [{ type: 'vacuna', name: ob.vac.name, date: ob.vac.date, next: ob.vac.next }] : [] }; ob.sug = Z.suggested(tmp).map(x => ({ ...x, keep: true })); }
   render(); window.scrollTo(0, 0);
 });
 app.addEventListener('change', async e => {
@@ -2900,6 +2912,110 @@ function saveScan() {
   toast(`Listo: ${add.length} ${add.length === 1 ? 'registro cargado' : 'registros cargados'} en la libreta de ${p.name}.`);
 }
 
+/* ---------- F1 · Salud: problemas como chips con su estado (2 toques), cirugías, alergias y remedios ---------- */
+const COND_ST = [['activa', 'Lo tiene'], ['controlada', 'Controlado'], ['resuelta', 'Ya pasó']];
+function renderSalud(p) {
+  const common = (Z.CONDITIONS[p.species] || Z.CONDITIONS.otra).filter(n => !p.conditions.some(c => norm1(c.name) === norm1(n)));
+  const activeMeds = p.meds.filter(m => Z.medState(m, p.log).state !== 'ended');
+  const condRow = c => `<div class="cond" role="group" aria-label="${esc(c.name)}"><button type="button" class="cond-n" data-act="editCond" data-id="${c.id}">${esc(c.name)}${c.since || c.notes ? `<small>${esc([c.since ? 'desde ' + c.since : '', c.notes].filter(Boolean).join(' · '))}</small>` : ''}</button>
+    <div class="chips cond-st">${COND_ST.map(([k, l]) => `<button type="button" class="chip" data-act="condSet" data-id="${c.id}" data-st="${k}" aria-pressed="${c.status === k}">${l}</button>`).join('')}</div></div>`;
+  return `${secHead(p, 'Salud', { back: backLink('libreta', 'Libreta'), sub: 'Lo primero que pregunta un veterinario nuevo. Mimitos no diagnostica: solo lo anota.' })}
+    <section class="sec card2" aria-labelledby="h-cond"><div class="sec-h"><h2 id="h-cond">Lo que tiene o tuvo</h2><button class="link" data-act="newCond">${I('plus')} Otro</button></div>
+      ${p.conditions.length ? `<div class="conds">${[...p.conditions].sort((a, b) => (a.status === 'resuelta') - (b.status === 'resuelta')).map(condRow).join('')}</div>` : `<p class="dim">Nada anotado. Tocá abajo lo que te haya dicho un veterinario.</p>`}
+      ${common.length ? `<h3 class="eyebrow">Frecuentes en ${p.species === 'gato' ? 'gatos' : p.species === 'perro' ? 'perros' : 'mascotas'}</h3><div class="chips" role="group" aria-label="Agregar un problema frecuente">${common.map(n => `<button type="button" class="chip" data-act="condAdd" data-n="${esc(n)}">${I('plus')} ${esc(n)}</button>`).join('')}</div>` : ''}
+    </section>
+    <section class="sec card2" aria-labelledby="h-all"><div class="sec-h"><h2 id="h-all">Alergias y remedios de siempre</h2><button class="link" data-act="editPet">${I('edit')} Editar</button></div>
+      <div class="facts"><div><span>Alergias</span><b>${esc(p.allergies || 'Ninguna cargada')}</b></div><div><span>Remedios que toma siempre</span><b>${esc(p.chronic || 'Ninguno')}</b></div><div><span>Castración</span><b>${p.neutered === 'si' ? 'Sí' : p.neutered === 'no' ? 'No' : 'Sin dato'}</b></div></div></section>
+    <section class="sec card2" aria-labelledby="h-meds"><div class="sec-h"><h2 id="h-meds">Remedios en curso</h2><button class="link" data-act="newMed">${I('plus')} Remedio</button></div>
+      ${activeMeds.length ? `<div class="list">${activeMeds.map(m => medRow(p, m)).join('')}</div>` : '<p class="dim">Ninguno ahora.</p>'}</section>
+    <section class="sec card2" aria-labelledby="h-surg"><div class="sec-h"><h2 id="h-surg">Cirugías</h2><button class="link" data-act="newSurg">${I('plus')} Agregar</button></div>
+      ${p.surgeries.length ? `<div class="list">${p.surgeries.map(c => `<button class="row link-row" data-act="detail" data-kind="surg" data-id="${c.id}">${bubble('scalpel', 'perdida')}<span class="what"><b>${esc(c.name)}</b><small>${c.date ? fmt(c.date) : 'Sin fecha'}</small></span>${I('chevron')}</button>`).join('')}</div>` : '<p class="dim">Castración, limpieza dental, una fractura: con fecha aproximada alcanza.</p>'}</section>`;
+}
+function condSet(p, id, st) {
+  const c = p.conditions.find(x => x.id === id); if (!c) return;
+  const before = c.status; c.status = st;
+  changed(); toast(`${c.name}: ${COND_ST.find(x => x[0] === st)[1].toLowerCase()}.`, { label: 'Deshacer', fn: () => { c.status = before; changed(); } });
+}
+function condAdd(p, name) {
+  const c = { id: uid(), name, status: 'activa', since: '', notes: '' };
+  p.conditions.push(c); changed();
+  toast(`${name} anotado como "Lo tiene". Cambiale el estado si hace falta.`, { label: 'Deshacer', fn: () => { drop(p.conditions, c)(); changed(); } });
+}
+
+/* ---------- F5 · Para el vete: una hoja de una página para mostrar en la consulta ---------- */
+function renderVete(p) {
+  const up = Z.upcoming(p), vac = p.records.filter(r => r.type === 'vacuna' && r.date).sort((a, b) => b.date.localeCompare(a.date));
+  const lastOf = n => vac.find(r => norm1(r.name) === norm1(n));
+  const vacNames = [...new Set(vac.map(r => r.name))].slice(0, 6);
+  const anti = p.records.filter(r => r.type === 'desparasitacion' && r.date).sort((a, b) => b.date.localeCompare(a.date));
+  const lastInt = anti.find(r => Z.scopeOf(r) === 'interna'), lastExt = anti.find(r => Z.scopeOf(r) === 'externa');
+  const w = [...p.weights].sort((a, b) => a.date.localeCompare(b.date)), wl = w.at(-1), w6 = w.filter(x => x.date >= iso(new Date(Date.now() - 183 * Z.DAY)))[0];
+  const meds = p.meds.filter(m => Z.medState(m, p.log).state !== 'ended');
+  const eps = Z.recentEpisodes(p, 30);
+  const st = r => { const x = up.find(u => u.r.name === r.name && u.r.type === r.type); return x ? (x.s.days < 0 ? `<b class="v-late">vencida</b>` : `próx. ${dd(x.r.next)}`) : ''; };
+  const sexTxt = p.sex === 'h' ? 'hembra' : p.sex === 'm' ? 'macho' : '';
+  return `${secHead(p, 'Para el vete', { back: backLink('libreta', 'Libreta'), sub: 'Una hoja para mostrar en la consulta. Lo cargó la familia: el veterinario confirma.', tools: `<button class="btn sm" data-act="veteShare">${I('share')} Compartir</button>` })}
+    <article class="vete" aria-label="Resumen de ${esc(p.name)} para el veterinario">
+      <header class="vete-h">${avatar(p, 'big')}<div><h2>${esc(p.name)}</h2><p>${esc([Z.species(p), p.breed, sexTxt, p.birth ? `${Z.age(p.birth)} (${dd(p.birth)})` : '', p.neutered === 'si' ? 'castrado/a' : p.neutered === 'no' ? 'sin castrar' : ''].filter(Boolean).join(' · '))}</p>${p.chip ? `<p class="num">Microchip ${esc(p.chip)}</p>` : ''}</div></header>
+      ${p.allergies ? `<p class="vete-alert">${I('alert')}<span><b>Alergias:</b> ${esc(p.allergies)}</span></p>` : ''}
+      <div class="vete-g">
+        <section><h3>Vacunas</h3>${vacNames.length ? `<ul>${vacNames.map(n => { const r = lastOf(n); return `<li><b>${esc(n)}</b><span>${dd(r.date)}${st(r) ? ' · ' + st(r) : ''}</span></li>`; }).join('')}</ul>` : '<p class="dim">Sin vacunas cargadas.</p>'}</section>
+        <section><h3>Antiparasitarios</h3><ul>${[['Interno', lastInt], ['Externo', lastExt]].map(([k, r]) => `<li><b>${k}</b><span>${r ? `${esc(r.name)} · ${dd(r.date)}${st(r) ? ' · ' + st(r) : ''}` : 'Sin dato'}</span></li>`).join('')}</ul></section>
+        <section><h3>Peso</h3>${wl ? `<p class="vete-big num">${kg(wl.kg)}</p><p class="dim">${dd(wl.date)}${w6 && w6 !== wl ? ` · ${wl.kg - w6.kg >= 0 ? '+' : ''}${String(Math.round((wl.kg - w6.kg) * 10) / 10).replace('.', ',')} kg desde ${dd(w6.date)}` : ''}</p>` : '<p class="dim">Sin peso cargado.</p>'}</section>
+        <section><h3>Remedios</h3>${meds.length || p.chronic ? `<ul>${meds.map(m => `<li><b>${esc(m.name)}</b><span>${esc(m.dose || '')}${m.dose ? ' · ' : ''}cada ${m.every} h</span></li>`).join('')}${p.chronic ? `<li><b>De siempre</b><span>${esc(p.chronic)}</span></li>` : ''}</ul>` : '<p class="dim">Ninguno.</p>'}</section>
+        <section><h3>Problemas de salud</h3>${p.conditions.length ? `<ul>${p.conditions.map(c => `<li><b>${esc(c.name)}</b><span>${COND_ST.find(x => x[0] === c.status)?.[1] || ''}${c.since ? ' · desde ' + esc(c.since) : ''}</span></li>`).join('')}</ul>` : '<p class="dim">Ninguno cargado.</p>'}</section>
+        <section class="vete-wide"><h3>Algo pasó (últimos 30 días)</h3>${eps.length ? `<ul>${eps.slice(0, 6).map(g => `<li><b>${esc(Z.epTitle(g.last))}${g.n > 1 ? ` · ${g.n} veces` : ''}</b><span>${dd(g.last.date)}${g.sevs.length ? ' · ' + esc(g.sevs.join(', ')) : ''}${g.notes.length ? ' · ' + esc(g.notes.join(' · ')) : ''}</span></li>`).join('')}</ul>` : '<p class="dim">Nada anotado.</p>'}</section>
+      </div>
+      <p class="vete-f">Mimitos by Orbit · ${dd(iso(Z.today()))} · Mimitos es un organizador: no reemplaza al veterinario.</p>
+    </article>
+    <button class="btn ghost wide" data-act="go" data-to="pdf">${I('print')} La libreta completa en PDF</button>`;
+}
+async function veteShare(p) {
+  const txt = document.querySelector('.vete')?.innerText.replace(/\n{2,}/g, '\n') || '';
+  try { if (navigator.share) return await navigator.share({ title: `${p.name} · para el vete`, text: txt }); await navigator.clipboard.writeText(txt); toast('Copiado. Pegalo en el chat de tu veterinaria.'); }
+  catch (e) { if (e?.name !== 'AbortError') toast('No se pudo compartir. Mostrá la pantalla en la consulta.'); }
+}
+
+/* ---------- F2 · Restaurar una copia: vista previa y doble confirmación. Compatible con el JSON de "Exportar" ---------- */
+function restorePick() {
+  const i = document.createElement('input'); i.type = 'file'; i.accept = 'application/json,.json';
+  i.onchange = async () => {
+    const f = i.files[0]; if (!f) return;
+    let d = null; try { if (f.size > 8 * 1024 * 1024) throw new Error('big'); d = JSON.parse(await f.text()); } catch {}
+    const ok = d && d.app === 'mimitos-by-orbit' && Array.isArray(d.pets) && d.pets.every(x => x && typeof x === 'object' && typeof x.name === 'string');
+    if (!ok) return panel('Restaurar una copia', `<p class="amsg err">Ese archivo no es una copia de Mimitos. Elegí el .json que bajaste con "Exportar copia de tus datos".</p><button class="btn ghost wide" data-rs="again">Elegir otro archivo</button>`), ($('#pBody').onclick = e => { if (e.target.closest('[data-rs]')) { dPanel.close(); restorePick(); } });
+    restorePreview(d);
+  };
+  i.click();
+}
+function restorePreview(d) {
+  const n = l => (Array.isArray(l) ? l.length : 0);
+  const regs = d.pets.reduce((a, x) => a + n(x.records) + n(x.visits) + n(x.studies) + n(x.symptoms) + n(x.weights) + n(x.expenses) + n(x.meds), 0);
+  const when = d.exportedAt ? fmt(String(d.exportedAt).slice(0, 10), { day: 'numeric', month: 'long', year: 'numeric' }) : 'fecha desconocida';
+  const now = doc.pets.length;
+  panel('Restaurar una copia', `<div class="rs-sum"><b>${d.pets.length} ${d.pets.length === 1 ? 'mascota' : 'mascotas'}, ${regs} ${regs === 1 ? 'registro' : 'registros'}</b><small>Copia del ${esc(when)}: ${esc(d.pets.map(x => x.name).join(', ') || 'sin mascotas')}</small></div>
+    <p class="amsg err"><b>Reemplaza todo lo que hay ahora en Mimitos</b>${now ? ` (${now} ${now === 1 ? 'mascota' : 'mascotas'})` : ''}. Los turnos y los avisos no se tocan. Si te arrepentís, tenés unos segundos para deshacerlo.</p>
+    <button class="btn wide danger-fill" id="rsGo" data-step="1">Reemplazar todo</button><button class="btn ghost wide" data-close>Cancelar</button>`);
+  const b = $('#rsGo');
+  b.onclick = () => {
+    if (b.dataset.step === '1') { b.dataset.step = '2'; b.textContent = 'Sí, reemplazar todo con la copia'; b.classList.add('armed'); b.focus(); return; }
+    const prev = doc.pets, prevCur = curId;
+    doc.pets = d.pets.map(x => norm(JSON.parse(JSON.stringify(x))));
+    curId = doc.pets[0]?.id || ''; dPanel.close(); changed(); go('inicio');
+    toast(`Listo: restauramos ${doc.pets.length} ${doc.pets.length === 1 ? 'mascota' : 'mascotas'} de la copia.`, { label: 'Deshacer', fn: () => { doc.pets = prev; curId = prevCur; changed(); toast('Listo, volvió a como estaba.'); } });
+  };
+}
+
+/* ---------- F12 · Completá a {mascota}: lo que el alta corto dejó para después ---------- */
+function completeCard(p) {
+  if (store.get('done:' + p.id) === '1') return '';
+  const items = [['foto', 'Foto', Boolean(p.photo), 'editPet'], ['salud', 'Salud', Boolean(p.conditions.length || p.allergies || p.chronic || p.neutered), 'go:salud'], ['vete', 'Veterinaria', Boolean(p.vet?.name), 'vet']];
+  const done = items.filter(x => x[2]).length; if (done === items.length) return '';
+  return `<section class="sec card2 complete" aria-labelledby="h-comp"><div class="sec-h"><h2 id="h-comp">Completá a ${esc(p.name)}</h2><span class="count">${done} de ${items.length}</span></div>
+    <div class="chips">${items.map(([k, l, ok, a]) => { const [act, to] = a.split(':'); return ok ? `<span class="chip done">${I('check')} ${l}</span>` : `<button type="button" class="chip" data-act="${act}"${to ? ` data-to="${to}"` : ''}>${I('plus')} ${l}</button>`; }).join('')}</div>
+    <button class="link" data-act="compHide" data-id="${p.id}" style="align-self:flex-start">Ahora no</button></section>`;
+}
+
 /* ---------- subpáginas de Inicio ---------- */
 /* E7 · cabecera con el color de la mascota: avatar, nombre y el título de la sección. La barra de arriba toma el mismo color */
 function secHead(p, title, { all = false, back = '', sub = '', tools = '' } = {}) {
@@ -2913,17 +3029,6 @@ function secHead(p, title, { all = false, back = '', sub = '', tools = '' } = {}
 }
 const backLink = (to, label) => `<button class="link" data-act="go" data-to="${to}">${I('back')} ${esc(label)}</button>`;
 const backTo = (p, to = 'inicio', label) => `<button class="link" data-act="go" data-to="${to}" style="align-self:flex-start">${I('back')} ${esc(label || p.name)}</button>`;
-function renderAntecedentes(p) {
-  const sm = Z.summary(p);
-  const cRow = c => `<button class="row link-row" data-act="editCond" data-id="${c.id}">${bubble('heart', c.status === 'resuelta' ? 'salud' : 'perdida')}<span class="what"><b>${esc(c.name)}</b><small>${{ activa: 'Lo tiene', controlada: 'Controlado', resuelta: 'Ya pasó' }[c.status]}${c.since ? ' · desde ' + esc(c.since) : ''}${c.notes ? ' · ' + esc(c.notes) : ''}</small></span>${I('chevron')}</button>`;
-  return `${secHead(p, 'Antecedentes', { back: backLink('inicio', 'Inicio'), sub: 'Lo que le pasó a lo largo de su vida. Es lo primero que pregunta un veterinario nuevo.' })}
-    <section class="sec"><div class="sec-h"><h2>Problemas de salud</h2><button class="link" data-act="newCond">${I('plus')} Agregar</button></div>
-      ${sm.active.length || sm.past.length ? `${sm.active.length ? `<div class="list">${sm.active.map(cRow).join('')}</div>` : ''}${sm.past.length ? `<h3 class="eyebrow" style="margin-top:6px">Ya pasaron</h3><div class="list">${sm.past.map(cRow).join('')}</div>` : ''}` : `<div class="empty dash"><p>Si un veterinario le diagnosticó algo (otitis, alergia, un problema de riñón), anotalo acá con su estado. La app no diagnostica: solo lo registra.</p></div>`}</section>
-    <section class="sec"><div class="sec-h"><h2>Cirugías</h2><button class="link" data-act="newSurg">${I('plus')} Agregar</button></div>
-      ${p.surgeries.length ? `<div class="list">${p.surgeries.map(c => `<button class="row link-row" data-act="detail" data-kind="surg" data-id="${c.id}">${bubble('scalpel', 'perdida')}<span class="what"><b>${esc(c.name)}</b><small>${c.date ? fmt(c.date) : 'Sin fecha'}</small></span>${I('chevron')}</button>`).join('')}</div>` : `<div class="empty dash"><p>Castración, limpieza dental, una fractura: con fecha aproximada alcanza.</p></div>`}</section>
-    <section class="sec"><div class="sec-h"><h2>Alergias y remedios de siempre</h2><button class="link" data-act="editPet">${I('edit')} Editar</button></div>
-      <div class="facts"><div><span>Alergias</span><b>${esc(p.allergies || 'Ninguna cargada')}</b></div><div><span>Remedios que toma siempre</span><b>${esc(p.chronic || 'Ninguno')}</b></div><div><span>Castración</span><b>${p.neutered === 'si' ? 'Sí' : p.neutered === 'no' ? 'No' : 'Sin dato'}</b></div></div></section>`;
-}
 function renderViajes(p) {
   const t = Z.trip(p);
   return `${secHead(p, 'Viaje al exterior', { back: backLink('libreta', 'Libreta') })}
@@ -3359,7 +3464,7 @@ function askCite(ti, id) {
     case 'weight': { const w = p.weights.find(x => x.date === c.itemId); return w ? panel(`Peso de ${p.name}`, `<dl class="dl"><div><dt>Fecha</dt><dd>${fmt(w.date, { day: 'numeric', month: 'long', year: 'numeric' })}</dd></div><div><dt>Peso</dt><dd>${kg(w.kg)}</dd></div></dl><div class="d-acts"><button class="btn soft wide" data-askgo="datos">Ver sus datos</button></div>`) : toast('Ese peso ya no está cargado.'); }
     case 'expense': { const x = p.expenses.find(e => e.id === c.itemId); if (!x) return toast('Ese gasto ya no está cargado.'); ui.gastos.ym = x.date.slice(0, 7); ui.gastos.pet = p.id; return go('gastos'); }
     case 'gastos': ui.gastos.ym = String(c.itemId).slice(0, 7); ui.gastos.pet = p.id; return go('gastos');
-    case 'antecedentes': return go('antecedentes');
+    case 'antecedentes': return go('salud');
     case 'datos': return go('datos');
     case 'qr': return sharePanel(p);
     case 'mefui': return go('mefui');
@@ -3469,6 +3574,12 @@ document.addEventListener('click', e => {
     case 'vet': return vetForm(cur);
     case 'share': return sharePanel(cur);
     case 'petMenu': return petMenu(cur);
+    case 'condSet': return condSet(cur, b.dataset.id, b.dataset.st);
+    case 'condAdd': return condAdd(cur, b.dataset.n);
+    case 'newMed': return medForm(cur);
+    case 'veteShare': return veteShare(cur);
+    case 'restore': return restorePick();
+    case 'compHide': store.set('done:' + b.dataset.id, '1'); return render();
     case 'sitter': return sitterPanel(cur);
     case 'rutina': return rutinaPanel(cur);
     case 'lost': return lostPanel(cur);

@@ -54,7 +54,7 @@ const overflow = (page, root) => page.evaluate(root => {
   return { scroll: document.documentElement.scrollWidth - W, out: out.slice(0, 5).map(e => e.tagName + '.' + e.className) };
 }, root);
 
-test('layout a 360–414 px: Inicio, Quién la cuida (crear link) y /cuida/:t sin desbordes; Inicio premium ≤ 3 pantallas; Quién la cuida desde el ⋯ del hero', { skip }, async () => {
+test('layout a 360–414 px: Inicio, Quién la cuida (crear link) y /cuida/:t sin desbordes; Inicio premium ≤ 3,5 pantallas (con "Completá a…"); Quién la cuida desde el ⋯ del hero', { skip }, async () => {
   const { srv, base } = await server();
   const browser = await PW.chromium.launch({ executablePath: EXE, args: ['--mute-audio', '--headless=new'] });
   try {
@@ -64,7 +64,7 @@ test('layout a 360–414 px: Inicio, Quién la cuida (crear link) y /cuida/:t si
       await p.goto(base + '/mascotas#/inicio'); await p.waitForSelector('main [data-act=petMenu]'); await p.waitForTimeout(800);
       let o = await overflow(p, 'main'); assert.equal(o.scroll, 0, `${W}: Inicio sin scroll horizontal`); assert.deepEqual(o.out, [], `${W}: Inicio`);
       const screens = await p.evaluate(() => document.documentElement.scrollHeight / innerHeight);
-      assert.ok(screens <= 3, `${W}: Inicio mide ${screens.toFixed(2)} pantallas`);
+      assert.ok(screens <= 3.5, `${W}: Inicio mide ${screens.toFixed(2)} pantallas`);
       await p.click('main [data-act=petMenu]'); await p.click('#pBody [data-pm=sitter]'); await p.waitForSelector('#sSave'); await p.waitForTimeout(400);
       o = await overflow(p, '#dPanel'); assert.deepEqual(o.out, [], `${W}: Quién la cuida`);
       await p.fill('#f_name', 'Caro'); await p.fill('#f_to', new Date(Date.now() + 4 * 864e5).toISOString().slice(0, 10));
