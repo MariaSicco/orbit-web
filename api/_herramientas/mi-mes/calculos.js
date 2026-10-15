@@ -251,7 +251,7 @@ export function resumenMes(datos, mes) {
   /* (5) cada gasto fijo es un estimado hasta que se confirma o se carga el monto real */
   const conf = new Set(d.confirmados?.[mes] || []);
   const reales = d.reales?.[mes] || {};
-  const gastos = (d.gastos || []).filter(g => activoEn(g, mes)).map(g => {
+  const gastosTodos = (d.gastos || []).filter(g => activoEn(g, mes)).map(g => {
     const real = Number.isSafeInteger(reales[g.id]) ? reales[g.id] : null;
     return { ...g, estimado: g.monto, monto: real ?? g.monto, real, confirmado: real !== null || conf.has(g.id), diferencia: real !== null ? real - g.monto : 0 };
   });
@@ -262,6 +262,12 @@ export function resumenMes(datos, mes) {
     return { ...r, tarjeta: tarjetas.get(r.tarjetaId)?.nombre || 'Tarjeta', monto: pagado ?? t.ars, total: t.ars, parcial: pagado !== null, porMoneda: t.porMoneda, faltaCambio: t.faltaCambio };
   });
   const conResumen = new Set(resumenes.map(r => r.tarjetaId));
+  /* QA v2 · 4: un gasto fijo que se debita de una tarjeta no se resta aparte:
+     si la tarjeta tiene resumen ese mes ya está adentro; si no, cuenta una vez como gasto de la tarjeta */
+  const deTarjeta = g => g.tarjetaId && tarjetas.has(g.tarjetaId);
+  const gastos = gastosTodos.filter(g => !deTarjeta(g));
+  const gastosTarjeta = gastosTodos.filter(deTarjeta).map(g => ({ ...g, tarjeta: tarjetas.get(g.tarjetaId).nombre, dentro: conResumen.has(g.tarjetaId) }));
+  const gastosConTarjeta = gastosTarjeta.filter(g => !g.dentro);
   /* meses que cubre la tabla "cuotas a vencer" del banco: manda la tabla para
      las cuotas que vinieron de resúmenes; las compras nuevas se suman aparte */
   const tabla = d.resumenes?.some(r => r.cuotasAVencer?.length) ? tablaCuotasAVencer(d) : {};
@@ -304,11 +310,11 @@ export function resumenMes(datos, mes) {
   const suma = xs => xs.reduce((s, x) => s + x.monto, 0);
   const totIngresos = suma(ingresos);
   const totGastos = suma(gastos);
-  const totCuotas = suma(cuotas) + suma(delBanco) + suma(percepciones) + suma(financiados);
+  const totCuotas = suma(cuotas) + suma(delBanco) + suma(percepciones) + suma(financiados) + suma(gastosConTarjeta);
   const totResumenes = suma(resumenes);
   const totNuevas = suma(cuotas.filter(c => c.nueva));
   return {
-    mes, ingresos, gastos, cuotas, delBanco, percepciones, financiados, resumenes, dentroDeResumen, sinCambio,
+    mes, ingresos, gastos, gastosTarjeta, gastosConTarjeta, cuotas, delBanco, percepciones, financiados, resumenes, dentroDeResumen, sinCambio,
     totIngresos, totGastos, totCuotas, totResumenes,
     totTarjetas: totCuotas + totResumenes,
     /* plata líquida = lo que hay para pagar tarjetas; crédito que vence = lo que hay que pagar */
@@ -920,6 +926,7 @@ export function comprometidoMes(datos, mes) {
   for (const x of r.cuotas) sumar(x.tarjetaId, x.monto);
   for (const x of r.percepciones) sumar(x.tarjetaId, x.monto);
   for (const x of r.financiados) sumar(x.tarjetaId, x.monto);
+  for (const x of r.gastosConTarjeta) sumar(x.tarjetaId, x.monto);
   return { porTarjeta, total: r.totTarjetas, delBanco: r.delBanco.map(x => x.tarjetaId), sinCambio: [...new Set(r.sinCambio.map(c => c.moneda))] };
 }
 /* Primer mes, desde `desde`, a partir del cual no queda ninguna cuota. */
@@ -1306,7 +1313,7 @@ export function venceAntesDeCobrar(datos, hoy) {
   }
   for (const m of [hoy.slice(0, 7), cobro.fecha.slice(0, 7)].filter((x, i, a) => a.indexOf(x) === i)) {
     for (const g of datos?.gastos || []) {
-      if (!g.dia || !activoEn(g, m)) continue;
+      if (!g.dia || g.tarjetaId || !activoEn(g, m)) continue;
       const f = fechaConDia(m, g.dia);
       if (diasEntre(hoy, f) < 0 || diasEntre(f, cobro.fecha) <= 0) continue;
       items.push({ tipo: 'gasto', id: g.id, nombre: g.nombre, fecha: f, monto: g.monto });
@@ -1338,7 +1345,7 @@ export function lineaDelMes(datos, mes) {
       desde = sumarDias(c.vencimiento, 1);
     }
   }
-  for (const g of datos?.gastos || []) if (g.dia && activoEn(g, mes)) ev.push({ tipo: 'gasto', id: g.id, fecha: fechaConDia(mes, g.dia), nombre: g.nombre, monto: g.monto });
+  for (const g of datos?.gastos || []) if (g.dia && !g.tarjetaId && activoEn(g, mes)) ev.push({ tipo: 'gasto', id: g.id, fecha: fechaConDia(mes, g.dia), nombre: g.nombre, monto: g.monto });
   return ev.sort((a, b) => diasEntre(b.fecha, a.fecha) || (a.tipo === 'cobro' ? -1 : 1));
 }
 /* De hoy al próximo cobro (incluido): lo que viene, en orden. */
@@ -1403,9 +1410,10 @@ export function consejos(datos, hoy) {
     out.push({ id: `diez:${mes}`, tipo: 'diez',
       texto: `Te quedan libres ${formatoPesos(r.libres)}. Si separás el 10 % (${formatoPesos(diez)}) ${cobro ? `el ${fechaCorta(cobro.fecha)}, cuando cobrás` : 'el día que cobrás'}, en 6 meses tenés ${formatoPesos(diez * 6)} de colchón.` });
   }
+  /* QA v2 · 4: sin contar dos veces la misma suscripción (gasto fijo y consumo del resumen) */
   const subs = (datos?.gastos || []).filter(g => g.categoria === 'Suscripciones' && activoEn(g, mes));
   const subsResumen = ultimo && difMeses(ultimo.mes, mes) <= 1
-    ? [...new Map((ultimo.consumos || []).filter(c => c.rubro === 'Suscripciones').map(c => [normalizarComercio(c.comercio), c])).values()] : [];
+    ? [...new Map((ultimo.consumos || []).filter(c => c.rubro === 'Suscripciones' && !subs.some(g => mismoComercio(c.comercio, g.nombre))).map(c => [normalizarComercio(c.comercio), c])).values()] : [];
   const nSubs = subs.length + subsResumen.length;
   if (nSubs >= 2) {
     const total = subs.reduce((a, g) => a + g.monto, 0) + subsResumen.reduce((a, c) => a + (aPesos(c.monto, c.moneda, datos) ?? 0), 0);
@@ -1576,6 +1584,16 @@ export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true, d
     if (!g.repite || !GASTOS_QUE_VARIAN.includes(g.categoria) || conf.has(g.id)) continue;
     out.push({ id: `gasto:${g.id}:${mes}`, tipo: 'gasto', gastoId: g.id, impacto: g.monto,
       titulo: `¿${g.nombre} sigue en ${formatoPesos(g.monto)} este mes?`, porque: 'Suele cambiar de un mes a otro.', accion: `Sigue en ${formatoPesos(g.monto)}` });
+  }
+  /* 4b. QA v2 · 4: gasto fijo sin tarjeta que aparece en un resumen → ¿se paga con esa tarjeta? */
+  for (const g of r.gastos) {
+    if (g.tarjetaId) continue;
+    const res = (datos.resumenes || []).filter(x => difMeses(x.mes, mes) <= 1 && difMeses(mes, x.mes) <= 1)
+      .find(x => (x.consumos || []).some(c => mismoComercio(c.comercio, g.nombre)));
+    const t = res && (datos.tarjetas || []).find(y => y.id === res.tarjetaId);
+    if (!t) continue;
+    out.push({ id: `gastotj:${g.id}`, tipo: 'gastoTarjeta', gastoId: g.id, tarjetaId: t.id, impacto: g.monto,
+      titulo: `¿${g.nombre} se paga con ${t.nombre}? Lo vimos en el resumen.`, porque: 'Si es así, lo contamos una sola vez: adentro de la tarjeta.', accion: `Sí, con ${t.nombre}` });
   }
   /* 5. ingreso principal sin día de cobro */
   if (diaDeCobro) {
@@ -1773,6 +1791,7 @@ export function fotoProyeccion(datos, desde, meses = 3) {
     const it = {};
     const poner = (key, tipo, nombre, monto, ref) => { if (monto) it[key] = { tipo, nombre, monto, ref }; };
     for (const i of r.ingresos) poner(`ingreso:${i.id}`, 'ingreso', i.nombre, i.monto, { editar: 'ingreso', id: i.id });
+    for (const g of r.gastosConTarjeta) poner(`gasto:${g.id}`, 'gasto', g.nombre, g.monto, { editar: 'gasto', id: g.id });
     for (const g of r.gastos) poner(`gasto:${g.id}`, g.real !== null && g.real !== undefined ? 'gastoReal' : 'gasto', g.nombre, g.monto, { editar: 'gasto', id: g.id });
     for (const x of r.resumenes) poner(`resumen:${x.id}`, 'resumen', x.tarjeta, x.monto, { tarjeta: x.tarjetaId });
     for (const x of r.delBanco) poner(`banco:${x.tarjetaId}`, 'banco', x.tarjeta, x.monto, { tarjeta: x.tarjetaId });

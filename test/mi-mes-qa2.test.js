@@ -93,3 +93,39 @@ test('[QA2 · 3] sin percepción cobrada: se estima para el saldo en US$ de ESE 
   assert.equal(M.resumenMes(r.datos, '2026-11').percepciones[0].monto, Math.round(M.aPesos(usd, 'USD', r.datos) * 0.3));
   assert.deepEqual(M.resumenMes(r.datos, '2026-12').percepciones, [], 'una sola vez');
 });
+
+/* ── QA v2 · 4: gasto fijo que se paga con tarjeta, una sola vez ── */
+function conNetflix(tarjetaId) {
+  const d = M.datosVacios();
+  d.ingresos.push({ id: 'i', nombre: 'Sueldo', monto: $(1_000_000), repite: true, desde: '2026-01' });
+  d.tarjetas.push({ id: 'v', nombre: 'Visa', red: 'Visa', banco: '', ultimos4: '', color: 'azul', diaCierre: 28, diaVence: 8 });
+  d.gastos.push({ id: 'nf', nombre: 'Netflix', categoria: 'Suscripciones', monto: $(15_000), repite: true, desde: '2026-01', ...(tarjetaId ? { tarjetaId } : {}) });
+  d.resumenes.push({ id: 'r', tarjetaId: 'v', mes: '2026-11', cierre: '2026-10-28', vencimiento: '2026-11-08', totales: { ARS: $(15_000) },
+    consumos: [{ fecha: '2026-10-12', comercio: 'NETFLIX.COM', monto: $(15_000), moneda: 'ARS', rubro: 'Suscripciones', cuota: null }], cargos: [], pagosYCreditos: [] });
+  return M.migrar(d);
+}
+test('[QA2 · 4] Netflix marcado con la Visa: con resumen, no se resta aparte', () => {
+  const d = conNetflix('v');
+  const nov = M.resumenMes(d, '2026-11');
+  assert.equal(nov.totGastos + nov.totTarjetas, $(15_000), 'una sola vez, adentro del resumen');
+  assert.equal(nov.libres, $(985_000));
+});
+test('[QA2 · 4] sin resumen importado, cuenta una vez como gasto de la tarjeta', () => {
+  const d = conNetflix('v');
+  const dic = M.resumenMes(d, '2026-12');
+  assert.equal(dic.totGastos, 0);
+  assert.equal(dic.totTarjetas, $(15_000));
+  assert.equal(M.comprometidoMes(d, '2026-12').porTarjeta.v, $(15_000));
+  assert.equal(dic.libres, $(985_000));
+  // el día de vencimiento de la tarjeta lo lleva; no es un pago aparte
+  assert.equal(M.lineaDelMes(d, '2026-12').filter(e => e.nombre === 'Netflix').length, 0);
+});
+test('[QA2 · 4] sin marcar, el motor pregunta si va con la tarjeta (lo vio en el resumen) y el consejo no suma doble', () => {
+  const d = conNetflix(null);
+  const q = M.preguntas(d, '2026-11-02').ahora.find(x => x.tipo === 'gastoTarjeta');
+  assert.equal(q.titulo, '¿Netflix se paga con Visa? Lo vimos en el resumen.');
+  assert.equal(q.impacto, $(15_000));
+  const c = M.consejos({ ...d, gastos: [...d.gastos, { id: 'sp', nombre: 'Spotify', categoria: 'Suscripciones', monto: $(5_000), repite: true, desde: '2026-01' }] }, '2026-11-02')
+    .find(x => x.tipo === 'suscripciones');
+  assert.match(c.texto, /Tenés 2 suscripciones por \$ 20\.000/);
+});

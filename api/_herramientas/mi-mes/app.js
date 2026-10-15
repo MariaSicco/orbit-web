@@ -155,6 +155,8 @@ function pintarInicio(animar = false) {
 
   /* movimientos */
   const ing = r.ingresos.map(i => item({ tipo: 'ingreso', id: i.id, icono: 'ingreso', claseIc: 'ing', titulo: i.nombre, meta: textoRepite(i), monto: '+' + $(i.monto), montoClase: 'mas' }));
+  const gasTj = (r.gastosTarjeta || []).map(g => item({ tipo: 'gasto', id: g.id, icono: 'tarjetas', titulo: g.nombre,
+    meta: g.dentro ? `Con ${g.tarjeta}: ya está adentro del resumen` : `Con ${g.tarjeta}: se paga con la tarjeta`, monto: g.dentro ? '' : '−' + $(g.monto) }));
   const gas = r.gastos.map(g => item({ tipo: 'gasto', id: g.id, icono: 'gasto', titulo: g.nombre,
     meta: `${g.nombre === g.categoria ? '' : g.categoria + ' · '}${F.gastoEstimado && g.real !== null ? `estimado ${$(g.estimado)}` : textoRepite(g)}`, monto: '−' + $(g.monto),
     extra: F.gastoEstimado && !g.confirmado ? ' <span class="mm-tag ext">Estimado</span>' : '' }));
@@ -183,7 +185,7 @@ function pintarInicio(animar = false) {
     ? `<p class="mm-vacio"><b>Empezá por tu sueldo.</b> Después sumá tus gastos fijos y tus cuotas (o subí el resumen de tu tarjeta) y arriba ves cuánto te queda libre este mes y los que vienen.</p>`
     : grupo('Ingresos', '+' + $(r.totIngresos), ing, datos.ingresos.length ? 'Sin ingresos este mes.' : '<b>Cargá tu sueldo</b> o lo que cobres todos los meses.') +
       grupo('Gastos fijos', (r.totGastos ? '−' : '') + $(r.totGastos), gas, datos.gastos.length ? 'Sin gastos fijos este mes.' : 'Alquiler, expensas, servicios, suscripciones: lo que pagás sí o sí.') +
-      grupo('Tarjetas y cuotas', (r.totTarjetas ? '−' : '') + $(r.totTarjetas), tar, datos.cuotas.length || datos.resumenes.length ? 'Sin cuotas ni resúmenes este mes.' : 'Cargá una compra en cuotas o subí el resumen de tu tarjeta.', dentro);
+      grupo('Tarjetas y cuotas', (r.totTarjetas ? '−' : '') + $(r.totTarjetas), [...tar, ...gasTj], datos.cuotas.length || datos.resumenes.length ? 'Sin cuotas ni resúmenes este mes.' : 'Cargá una compra en cuotas o subí el resumen de tu tarjeta.', dentro);
 
   /* moneda extranjera */
   const faltan = [...new Set([...r.sinCambio.map(c => c.moneda), ...r.resumenes.flatMap(x => x.faltaCambio)])];
@@ -232,6 +234,7 @@ function preguntaHTML(q) {
     copia: `<button type="button" class="mm-btn chico" data-exportar>Guardar copia</button>`,
     saldo: `<button type="button" class="mm-btn chico" data-saldo>${esc(q.accion)}</button>`,
     estimado: `<button type="button" class="mm-btn chico" data-gasto-ok="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-gasto-real="${esc(q.gastoId)}">Fue otro monto</button><button type="button" class="mm-link" data-gasto-baja="${esc(q.gastoId)}">Lo di de baja</button>`,
+    gastoTarjeta: `<button type="button" class="mm-btn chico" data-gasto-tj="${esc(q.gastoId)}" data-tj="${esc(q.tarjetaId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-pregunta-luego="${esc(q.id)}">No, es otro</button>`,
     pagado: Object.entries(PAGOS_VENCIDO).map(([k, v], i) => `<button type="button" class="${i ? 'mm-link' : 'mm-btn chico'}" data-pago-res="${esc(q.resumenId)}" data-pago="${k}">${esc(v)}</button>`).join(''),
     dificil: `<button type="button" class="mm-btn chico" data-ver-dificil>Ver día por día</button>`,
   }[q.tipo] || '';
@@ -1548,7 +1551,7 @@ function abrirGasto(id = null) {
   nombreGastoPrevio = x && x.nombre !== x.categoria ? { nombre: x.nombre, categoria: x.categoria } : null;
   $id('g-repite').checked = x ? x.repite : true;
   $id('g-dia-wrap').hidden = !F.diaDeCobro;
-  $id('g-tj-wrap').hidden = !F.cambioTarjeta || !datos.tarjetas.length;
+  $id('g-tj-wrap').hidden = !datos.tarjetas.length;   // QA v2 · 4: siempre, es lo que evita el doble conteo
   $id('g-tj').innerHTML = [{ id: '', nombre: 'No, de la cuenta' }, ...datos.tarjetas.filter(t => !t.baja)].map(t => `<label class="mm-chip"><input type="radio" name="g-tj" value="${esc(t.id)}"${(x?.tarjetaId || '') === t.id ? ' checked' : ''}><span>${esc(t.nombre)}</span></label>`).join('');
   $id('g-dia').innerHTML = '<option value="">Sin día</option>' + Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}">El ${k + 1}</option>`).join('');
   $id('g-dia').value = x?.dia ? String(x.dia) : '';
@@ -1577,7 +1580,7 @@ dg.querySelector('form').addEventListener('submit', e => {
   const x = { id: editGasto || nuevoId(), nombre: unMesElegido && unMesElegido.categoria === catElegida ? unMesElegido.nombre : nombreGastoPrevio && nombreGastoPrevio.categoria === catElegida ? nombreGastoPrevio.nombre : catElegida,
     categoria: catElegida, monto, repite, desde: $id('g-desde').value, ...(hasta ? { hasta } : {}) };
   const previoG = datos.gastos.find(g => g.id === editGasto);
-  const tjG = F.cambioTarjeta ? (dg.querySelector('[name="g-tj"]:checked')?.value || '') : (previoG?.tarjetaId || '');
+  const tjG = datos.tarjetas.length ? (dg.querySelector('[name="g-tj"]:checked')?.value || '') : (previoG?.tarjetaId || '');
   if (tjG) x.tarjetaId = tjG;
   const diaG = F.diaDeCobro ? Number($id('g-dia').value) : (datos.gastos.find(g => g.id === editGasto)?.dia || 0);
   if (diaG >= 1 && diaG <= 31) x.dia = diaG;
@@ -1972,6 +1975,7 @@ function iniciarGuiaSiHaceFalta() {
 function abrirGuia() { pasoGuia = 0; pintarGuia(); abrir(dgu, dgu.querySelector('input')); }
 function terminarGuia() { try { localStorage.setItem(GUIA, '1'); } catch {} cerrar(dgu); }
 const GUIA_GASTOS = ['Alquiler', 'Expensas', 'Servicios', 'Suscripciones'];
+let guiaSubs = 'tarjeta';
 function pintarGuia() {
   const titulos = ['¿Cuánto cobrás por mes?', 'Tus gastos fijos principales', 'Agregá tu primera tarjeta', ''];
   $id('gu-paso').textContent = pasoGuia < 3 ? `Paso ${pasoGuia + 1} de 3` : 'Listo';
@@ -1988,7 +1992,12 @@ function pintarGuia() {
   } else if (pasoGuia === 1) {
     cuerpo.innerHTML = `<p class="mm-ayuda">Solo el monto por mes. Dejá vacío el que no tengas.</p>` + GUIA_GASTOS.map((c, i) => {
       const previo = datos.gastos.find(g => g.id === `guia-g${i}`);
-      return `<div class="mm-guia-fila"><label for="gu-g${i}">${esc(c)}</label><input id="gu-g${i}" type="text" inputmode="decimal" autocomplete="off" placeholder="$ por mes" value="${previo ? esc(sinSimbolo(previo.monto, 'ARS')) : ''}" aria-describedby="gu-g-err"></div>`;
+      const fila = `<div class="mm-guia-fila"><label for="gu-g${i}">${esc(c)}</label><input id="gu-g${i}" type="text" inputmode="decimal" autocomplete="off" placeholder="$ por mes" value="${previo ? esc(sinSimbolo(previo.monto, 'ARS')) : ''}" aria-describedby="gu-g-err"></div>`;
+      /* QA v2 · 4: las suscripciones suelen ir con tarjeta: si es así, salen en el resumen y no se cargan aparte */
+      return c !== 'Suscripciones' ? fila : `${fila}<div class="mm-chips mm-guia-tj" role="radiogroup" aria-label="¿Cómo pagás las suscripciones?">
+        <label class="mm-chip"><input type="radio" name="gu-subs" value="tarjeta"${guiaSubs === 'tarjeta' ? ' checked' : ''}><span>Con tarjeta</span></label>
+        <label class="mm-chip"><input type="radio" name="gu-subs" value="cuenta"${guiaSubs === 'cuenta' ? ' checked' : ''}><span>Débito o efectivo</span></label></div>
+        <p class="mm-fuente" id="gu-subs-txt">${guiaSubs === 'tarjeta' ? 'Con tarjeta: no las cargues acá, salen en el resumen y las contamos una vez.' : ''}</p>`;
     }).join('') + '<p class="mm-err" id="gu-g-err"></p>';
   } else if (pasoGuia === 2) {
     cuerpo.innerHTML = `<p class="mm-ayuda">Subí el último resumen en PDF y sacamos todo de ahí: banco, límite, fechas, saldo y cuotas. No hace falta escribir nada.</p>
@@ -2004,6 +2013,14 @@ function pintarGuia() {
 }
 $id('gu-atras').addEventListener('click', () => { pasoGuia = Math.max(0, pasoGuia - 1); pintarGuia(); dgu.querySelector('input,select')?.focus(); });
 dgu.addEventListener('click', e => { if (e.target.closest('[data-saltear-guia]')) terminarGuia(); });
+dgu.addEventListener('change', e => {
+  if (e.target.name !== 'gu-subs') return;
+  guiaSubs = e.target.value;
+  const i = GUIA_GASTOS.indexOf('Suscripciones');
+  $id(`gu-g${i}`).disabled = guiaSubs === 'tarjeta';
+  if (guiaSubs === 'tarjeta') $id(`gu-g${i}`).value = '';
+  $id('gu-subs-txt').textContent = guiaSubs === 'tarjeta' ? 'Con tarjeta: no las cargues acá, salen en el resumen y las contamos una vez.' : '';
+});
 dgu.addEventListener('cancel', () => { try { localStorage.setItem(GUIA, '1'); } catch {} });
 dgu.querySelector('form').addEventListener('submit', e => {
   e.preventDefault();
@@ -2017,7 +2034,10 @@ dgu.querySelector('form').addEventListener('submit', e => {
     const malos = filas.findIndex(f => f.txt && !leerMonto(f.txt));
     if (malos >= 0) { error($id(`gu-g${malos}`), 'gu-g-err', 'Revisá ese monto (los centavos van con coma).').focus(); return; }
     datos.gastos = datos.gastos.filter(g => !g.id.startsWith('guia-g'));
-    filas.forEach((f, i) => { if (f.txt) datos.gastos.push({ id: `guia-g${i}`, nombre: f.cat, categoria: f.cat, monto: leerMonto(f.txt), repite: true, desde: HOY }); });
+    filas.forEach((f, i) => {
+      if (!f.txt || (f.cat === 'Suscripciones' && guiaSubs === 'tarjeta')) return;   // con tarjeta: van en el resumen
+      datos.gastos.push({ id: `guia-g${i}`, nombre: f.cat, categoria: f.cat, monto: leerMonto(f.txt), repite: true, desde: HOY });
+    });
   } else if (pasoGuia === 2) {
     /* sin resumen ahora: sigue al final */
   } else { terminarGuia(); return; }
@@ -2159,6 +2179,8 @@ document.addEventListener('click', e => {
   if (vc) { datos = vincularCredito(datos, vc.dataset.vincular, vc.dataset.res, Number(vc.dataset.i)); guardar(); pintarFicha(datos.cuotas.find(x => x.id === vc.dataset.vincular)); return avisar('Listo: queda en la historia de la compra'); }
   const dd = t.closest('[data-dev-de]');
   if (dd) { cerrar(dc); return abrirDevolver(dd.dataset.devDe); }
+  const gtj = t.closest('[data-gasto-tj]');
+  if (gtj) { datos.gastos = datos.gastos.map(g => (g.id === gtj.dataset.gastoTj ? { ...g, tarjetaId: gtj.dataset.tj } : g)); guardar(); pintarTodo(); return avisar('Listo: lo contamos una sola vez, adentro de la tarjeta'); }
   const pg = t.closest('[data-pago-res]');
   if (pg) {
     if (pg.dataset.pago === 'otro') { pagoDe = pg.dataset.pagoRes; $id('p-monto').value = ''; return abrir($id('dlg-pago'), $id('p-monto')); }
