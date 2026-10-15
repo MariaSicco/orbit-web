@@ -479,7 +479,7 @@ function apptForm(p, a, preset = {}) {
       Object.assign(it, { petId: x.pet || p.id, date: x.date, time: x.time || '', reason: x.reason, place: { name: x.name, phone: x.phone, address: x.address, placeId: x.name === v.name ? placeId : '' } });
       if (!a) appts().push(it);
       const on = A().notify && (A().notify.devices || A().notify.mail);
-      A().toast(a ? 'Turno actualizado.' : on ? `Anotado. Te avisamos el ${T.dayShort(T.addDays(x.date, -1))} y 2 horas antes.` : 'Anotado en la agenda. Activá los avisos para que te recordemos.');
+      A().toast(a ? 'Turno actualizado.' : on ? `Anotado en la Agenda. Te avisamos el ${T.dayShort(T.addDays(x.date, -1))} y 2 horas antes.` : 'Anotado en la Agenda. Para que te lo recordemos, activá los avisos.', a || on ? undefined : { label: 'Activar avisos', fn: () => A().go('avisos') });
     },
   });
 }

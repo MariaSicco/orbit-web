@@ -43,8 +43,8 @@ function codeFromHash() { const m = /[#&]c=([A-Za-z0-9-]{8,9})/.exec(location.ha
 function renderPair(msg = '') {
   const code = codeFromHash();
   main.innerHTML = `${head}
-    <h1>Usar este celu como cámara</h1>
-    <p class="dim2">En tu celu de siempre, en Mimitos → "Me fui" → "Usar un celu como cámara", te damos un código. Escribilo acá.</p>
+    <h1>Usar este celu como Cámara Mimitos</h1>
+    <p class="dim2">En tu celu de siempre, en Mimitos → "Me fui" → "Convertir un celu viejo en cámara", te damos un código. Escribilo acá.</p>
     <form id="pairF" class="card" novalidate>
       <div class="f"><label for="code">Código</label><input id="code" class="code-in" inputmode="text" autocomplete="one-time-code" autocapitalize="characters" maxlength="9" value="${esc(code ? code.slice(0, 4) + '-' + code.slice(4) : '')}" placeholder="XXXX-XXXX" aria-describedby="codeH"><small id="codeH" class="dim2">Vence a los 10 minutos y sirve una sola vez.</small></div>
       <div class="f"><label for="label">Nombre de esta cámara <span class="dim2">(opcional)</span></label><input id="label" maxlength="40" placeholder="Living, cocina, patio…"></div>

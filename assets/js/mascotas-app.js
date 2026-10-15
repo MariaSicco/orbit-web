@@ -118,8 +118,13 @@ function toast(t, action) {
   el.innerHTML = `<span>${esc(t)}</span>${action ? `<button type="button">${esc(action.label || 'Deshacer')}</button>` : ''}`;
   el.classList.toggle('act', Boolean(action));
   if (action) el.querySelector('button').onclick = () => { el.classList.remove('on'); action.fn(); };
-  el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), action ? 6000 : 3200);
+  /* con botón, 7 s; sin botón, 3,2 s o 5 s si el texto es largo (los que dicen dónde quedó algo no llegaban a leerse) */
+  el.classList.add('on'); clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), action ? 7000 : t.length > 60 ? 5000 : 3200);
 }
+/* después de guardar: decir dónde quedó y llevar ahí con [Ver] (sección de la libreta de esa mascota) */
+function libGo(p, sec) { if (p) selectPet(p.id); ui.lib.q = ''; ui.lib.year = ''; ui.lib.jumpSec = sec; go('libreta'); }
+const verLib = (p, sec) => ({ label: 'Ver', fn: () => libGo(p, sec) });
+const goAvisos = { label: 'Activar avisos', fn: () => go('avisos') };
 /* sacar algo de una lista y devolver cómo volver a ponerlo */
 const drop = (arr, x) => { const i = arr.indexOf(x); if (i < 0) return () => {}; arr.splice(i, 1); return () => arr.splice(Math.min(i, arr.length), 0, x); };
 function undoable(msg, restore) { changed(); toast(msg, { label: 'Deshacer', fn: () => { restore(); changed(); toast('Listo, volvió.'); } }); }
@@ -269,8 +274,11 @@ function limitMsg(d = {}) {
 const dForm = $('#dForm'), dPanel = $('#dPanel');
 document.querySelectorAll('[data-close]').forEach(b => { b.innerHTML = I('x'); b.addEventListener('click', () => b.closest('dialog').close()); });
 document.querySelectorAll('dialog').forEach(d => d.addEventListener('click', e => { if (e.target === d) d.close(); }));
-dForm.addEventListener('close', () => { $('#fBody').innerHTML = ''; });
-dPanel.addEventListener('close', () => { $('#pBody').innerHTML = ''; $('#pBody').onclick = null; });
+/* un toast que se mostró con la hoja abierta queda adentro del <dialog>: al cerrarla se saca afuera para que se siga viendo
+   (antes "Peso guardado." y otros se mostraban adentro de la hoja ya cerrada y no se veían) */
+const freeToast = dlg => { const t = $('#toast'); if (t && dlg.contains(t)) document.body.appendChild(t); };
+dForm.addEventListener('close', () => { freeToast(dForm); $('#fBody').innerHTML = ''; });
+dPanel.addEventListener('close', () => { freeToast(dPanel); $('#pBody').innerHTML = ''; $('#pBody').onclick = null; });
 let form = null;
 function field(f, v) {
   const id = 'f_' + f.k, val = v ?? '';
@@ -439,7 +447,9 @@ function recForm(p, r, preset) {
       Object.assign(rec, { type: v.type || 'otro', name: v.name, date: v.date, next: v.next, vet: v.vet, lot: v.lot, notes: Z.isSug(rec) && v.date ? '' : v.notes, scope: v.type === 'desparasitacion' ? (v.scope || Z.scopeOf(v)) : '' });
       if (v.sticker) { try { rec.sticker = await uploadPhoto(v.sticker); } catch (e) { toast((e?.msg || 'La foto del sticker no se pudo subir.') + ' El resto quedó guardado.'); } }
       if (!r) p.records.push(rec);
-      toast(r ? 'Registro actualizado.' : v.next ? `Guardado. Te avisamos antes del ${fmt(v.next, { day: 'numeric', month: 'short' })}.` : 'Guardado en la libreta.');
+      const sec = rec.type === 'vacuna' ? 'vac' : rec.type === 'desparasitacion' ? 'des' : 'ctl';
+      const msg = r ? 'Registro actualizado.' : sec === 'vac' ? `Vacuna guardada en la libreta de ${p.name}.` : sec === 'des' ? `Antiparasitario guardado en la libreta de ${p.name}.` : 'Guardado en Libreta › Controles y consultas.';
+      form.afterSave = () => toast(msg, verLib(p, sec));
     },
   });
 }
@@ -547,7 +557,7 @@ function medForm(p, m) {
       const med = m || { id: uid() };
       Object.assign(med, { name: v.name, dose: v.dose, every: parseInt(v.every, 10) || 24, start: v.start, days, notes: v.notes });
       if (!m) p.meds.push(med);
-      toast(m ? 'Remedio actualizado.' : 'Remedio guardado. Sumalo al calendario para que te avise en cada toma.');
+      form.afterSave = () => m ? toast('Remedio actualizado.') : toast('Remedio guardado. Sumalo al calendario para que te avise en cada toma.', { label: 'Al calendario', fn: () => calendar([Z.medEvent(p, med)], `${p.name} ${med.name}`) });
     },
   });
 }
@@ -727,7 +737,7 @@ function vetForm(p) {
 }
 function symptomForm(p, s) {
   openForm({
-    title: s ? 'Editar anotación' : 'Algo que notaste', intro: 'Anotalo con fecha para contárselo al veterinario. La app no diagnostica.',
+    title: s ? 'Editar anotación' : 'Algo pasó', intro: 'Anotalo con fecha para contárselo al veterinario. La app no diagnostica.',
     values: s || { date: iso(Z.today()) },
     fields: [{ k: 'date', label: 'Fecha', type: 'date' }, { k: 'text', label: 'Qué notaste', type: 'textarea', max: 300, ph: 'Vomitó dos veces, no quiere comer, se rasca…' }],
     onDelete: s ? () => ({ msg: 'Anotación borrada.', undo: drop(p.symptoms, s) }) : null,
@@ -953,7 +963,7 @@ function visitForm(p, v, preset) {
       if (!v) p.visits.push(it);
       preset?.onSaved?.(it);
       if (w) addWeight(p, x.date, w);
-      toast('Consulta guardada en la libreta.');
+      form.afterSave = () => toast('Consulta guardada en Libreta › Controles y consultas.', verLib(p, 'ctl'));
     },
   });
 }
@@ -969,7 +979,7 @@ function weightForm(p, w) {
     onSave(x) {
       const k = numDec(x.kg); if (!(k > 0) || k > 2000) return 'Poné el peso en kilos, por ejemplo 14,2.'; if (!x.date) return 'Poné la fecha.';
       if (w) drop(p.weights, w);
-      addWeight(p, x.date, k); toast('Peso guardado.');
+      addWeight(p, x.date, k); form.afterSave = () => toast(`Peso guardado: ${kg(k)}. Lo ves en Libreta › Peso.`, verLib(p, 'peso'));
     },
   });
 }
@@ -1016,7 +1026,7 @@ function studyForm(p, st) {
       if (!x.title && !studyFiles.length) return 'Poné un nombre o subí el archivo.';
       const it = st || { id: uid() }; Object.assign(it, { date: x.date, kind: x.kind || 'otro', title: x.title || Z.STUDY[x.kind], notes: x.notes, files: studyFiles });
       if (!st) p.studies.push(it);
-      toast('Estudio guardado en su historia.');
+      form.afterSave = () => toast('Estudio guardado en Libreta › Historial clínico.', verLib(p, 'hist'));
     },
     after() {
       const box = document.createElement('div'); box.className = 'f';
@@ -1063,7 +1073,7 @@ function drawNav() {
   const tab = TAB_OF[route.name] || route.name;
   nav.innerHTML = `<a class="brand side-only" href="#/inicio" aria-label="Mimitos, inicio">${HEART}<b>mimitos</b><span class="by">by Orbit</span></a>
     <button type="button" class="nav-add side-only" data-act="add">${I('plus')}<span>Cargar algo</span></button>
-    <div class="nav-items">${PILL.map(k => k === '+' ? `<button type="button" class="nav-plus" data-act="add" aria-label="Cargar algo">${I('plus')}</button>` : (([kk, ic, l]) => `<a href="#/${kk}" class="nav-i" aria-label="${l}" ${tab === kk ? 'aria-current="page"' : ''}>${I(ic)}<span>${l}</span></a>`)(TABS.find(t => t[0] === k))).join('')}<a href="#/cuenta" class="nav-i side-only" ${tab === 'cuenta' ? 'aria-current="page"' : ''}>${I('user')}<span>Cuenta</span></a></div>
+    <div class="nav-items">${PILL.map(k => k === '+' ? `<button type="button" class="nav-plus" data-act="add" aria-label="Cargar algo"><span class="np-c">${I('plus')}</span><span class="np-l" aria-hidden="true">Cargar</span></button>` : (([kk, ic, l]) => `<a href="#/${kk}" class="nav-i" aria-label="${l}" ${tab === kk ? 'aria-current="page"' : ''}>${I(ic)}<span>${l}</span></a>`)(TABS.find(t => t[0] === k))).join('')}<a href="#/cuenta" class="nav-i side-only" ${tab === 'cuenta' ? 'aria-current="page"' : ''}>${I('user')}<span>Cuenta</span></a></div>
     <div class="side-only side-pets">${doc.pets.length ? `<span class="eyebrow">Tus mascotas</span>${doc.pets.map(p => `<button type="button" class="side-pet" data-act="pick" data-id="${p.id}" ${p.id === curPet()?.id ? 'aria-current="true"' : ''}>${avatar(p)}<span>${esc(p.name)}</span></button>`).join('')}<button type="button" class="side-pet add" data-act="newPet">${I('plus')}<span>Agregar mascota</span></button>` : ''}</div>`;
 }
 /* escritorio: en la barra entran pocas mascotas; con más, se muestran algunas (siempre la elegida) y "+N" abre la lista */
@@ -1097,7 +1107,7 @@ function drawTop(bare) {
   /* escritorio: barra liviana con las secciones, las mascotas y el + */
   /* "Me fui" es una sección más en escritorio (con punto verde si hay una cámara activa) */
   const mf = mefui && window.MZAWAY && doc.pets.length;
-  const desk = `<nav class="tnav desk-only" aria-label="Secciones">${TABS.filter(t => t[0] !== 'cuenta').map(([k, , l]) => `<a href="#/${k}" ${tab === k && route.name !== 'mefui' ? 'aria-current="page"' : ''}>${l}</a>`).join('')}${mf ? `<a href="#/mefui" class="tnav-mf" title="Me fui y cámara" aria-label="Me fui y cámara" ${route.name === 'mefui' ? 'aria-current="page"' : ''}>${I('camera')}Me fui${window.MZAWAY.hasCamOn() || doc.away?.on ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}</a>` : ''}</nav>
+  const desk = `<nav class="tnav desk-only" aria-label="Secciones">${TABS.filter(t => t[0] !== 'cuenta').map(([k, , l]) => `<a href="#/${k}" ${tab === k && route.name !== 'mefui' ? 'aria-current="page"' : ''}>${l}</a>`).join('')}${mf ? `<a href="#/mefui" class="tnav-mf" title="Me fui" aria-label="Me fui" ${route.name === 'mefui' ? 'aria-current="page"' : ''}>${I('camera')}Me fui${window.MZAWAY.hasCamOn() || doc.away?.on ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}</a>` : ''}</nav>
     ${doc.pets.length ? `<div class="tpets desk-only" aria-label="Tus mascotas">${topPets(p).map(x => `<button type="button" class="tpet" data-act="pick" data-id="${x.id}" aria-current="${x.id === p?.id}" title="${esc(x.name)}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}${topPets(p).length < doc.pets.length ? `<button type="button" class="tpet more" data-act="petsMore" aria-label="Ver todas tus mascotas (${doc.pets.length})">+${doc.pets.length - topPets(p).length}</button>` : ''}<button type="button" class="tpet add" data-act="newPet" aria-label="Agregar mascota">${I('plus')}</button></div>` : ''}
     ${doc.pets.length ? askBtn('desk-only') : ''}
     ${doc.pets.length ? `<button type="button" class="btn sm ghost desk-only al-top" data-act="algo">${I('plus')} Algo pasó</button>` : ''}
@@ -1278,8 +1288,8 @@ function renderInicio(p) {
   /* las vacunas y pipetas van en Próximos cuidados; acá quedan remedios y alimento */
   const sm = Z.summary(p), next = nextItems(p).filter(x => x.kind !== 'rec').slice(0, 5);
   const activeMeds = p.meds.filter(m => ['ok', 'soon'].includes(Z.medState(m, p.log).state));
-  const vacc = { ok: ['Al día', 'ok'], late: [`Vencida: ${sm.vaccLate.map(x => x.r.name).join(', ')}`, 'late'], none: ['Sin cargar', 'none'] }[sm.vacc];
-  const anti = { ok: ['Al día', 'ok'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
+  const vacc = { ok: ['Al día', 'ok'], sug: ['Sin confirmar', 'none'], late: [`Vencida: ${sm.vaccLate.map(x => x.r.name).join(', ')}`, 'late'], none: ['Sin cargar', 'none'] }[sm.vacc];
+  const anti = { ok: ['Al día', 'ok'], sug: ['Sin confirmar', 'none'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
   const recs = p.records.filter(r => r.date).length;
   const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', esc(Cap(quienCuida(p)).replace(/^Quien/, 'Quién')), 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
   quick.unshift(['vets', 'pin', 'cuida', 'Veterinarias cerca', 'Pedir turno, guardias 24 h y pet shops']);
@@ -1336,7 +1346,8 @@ function petHero(p, sm, vacc, anti) {
   const pip = up.find(x => x.r.type === 'desparasitacion'), ctl = up.find(x => x.r.type === 'control');
   /* la primera fecha de cada tipo que ya se puede cerrar (vencida, hoy o en 14 días) lleva su "Ya se la di" */
   const due = t => up.find(x => x.r.type === t && Z.renewable(x.r));
-  const stat = (act, to, ic, c, k, v, late, rn) => `<div class="pstat-w${rn ? ' has-rn' : ''}"><button class="pstat" data-act="${act}"${to}><span class="sic s-${c}">${I(ic)}</span><span><small>${k}</small><b${late ? ' class="late"' : ''}>${v}</b></span></button>${rn ? doneBtn(p, rn.r, 'wide') : ''}</div>`;
+  /* sub: "Sugerida: 14 nov" debajo de "Sin confirmar" (fecha del calendario sugerido, no una dosis cargada) */
+  const stat = (act, to, ic, c, k, v, late, rn, sub) => `<div class="pstat-w${rn ? ' has-rn' : ''}"><button class="pstat" data-act="${act}"${to}><span class="sic s-${c}">${I(ic)}</span><span><small>${k}</small><b${late ? ' class="late"' : sub ? ' class="unconf"' : ''}>${v}</b>${sub ? `<small class="ps-sub">${sub}</small>` : ''}</span></button>${rn ? doneBtn(p, rn.r, 'wide') : ''}</div>`;
   const sexIc = p.sex === 'h' ? ['female', 'Hembra'] : p.sex === 'm' ? ['male', 'Macho'] : null;
   const cut = Boolean(p.photo && p.photoFull);
   if (!p.photo) after(loadHeroArt);
@@ -1352,8 +1363,8 @@ function petHero(p, sm, vacc, anti) {
         <div class="ps-ic"><span class="round s-violeta" role="img" aria-label="${esc(Z.species(p))}">${Z.petIcon(p)}</span>${sexIc ? `<span class="round s-rosa" role="img" aria-label="${sexIc[1]}">${I(sexIc[0])}</span>` : ''}<button class="round" data-act="editPet" aria-label="Editar perfil de ${esc(p.name)}">${I('edit')}</button></div>
       </div>
       <div class="pstats">
-        ${stat('libsec', ' data-sec="vac"', 'syringe', 'rosa', 'Vacunas', esc(vacc[1] === 'late' ? 'Vencida' : vacc[0]), vacc[1] === 'late', due('vacuna'))}
-        ${stat('libsec', ' data-sec="des"', 'drop', 'naranja', 'Pipeta', pip ? (pip.s.days < 0 ? 'Vencida' : d(pip.r)) : esc(anti[0]), pip ? pip.s.days < 0 : anti[1] === 'late', due('desparasitacion'))}
+        ${stat('libsec', ' data-sec="vac"', 'syringe', 'rosa', 'Vacunas', esc(vacc[1] === 'late' ? 'Vencida' : vacc[0]), vacc[1] === 'late', due('vacuna'), sm.vacc === 'sug' && sm.vaccNext ? `Sugerida: ${d(sm.vaccNext.r).replace(" ", "\u00a0")}` : '')}
+        ${stat('libsec', ' data-sec="des"', 'drop', 'naranja', 'Antiparasitario', pip ? (pip.s.days < 0 ? 'Vencido' : sm.anti === 'sug' ? 'Sin confirmar' : d(pip.r)) : esc(anti[0]), pip ? pip.s.days < 0 : anti[1] === 'late', due('desparasitacion'), pip && pip.s.days >= 0 && sm.anti === 'sug' ? `Sugerida: ${d(pip.r).replace(" ", "\u00a0")}` : '')}
         ${stat('go', ' data-to="agenda"', 'steth', 'violeta', 'Control', ctl ? d(ctl.r) : 'Sin turno', ctl && ctl.s.days < 0, due('control'))}
         ${stat('go', ' data-to="datos"', 'scale', 'verde', 'Peso', p.weight ? kg(p.weight) : 'Sin cargar', false)}
       </div>
@@ -1567,7 +1578,7 @@ function detail(p, kind, id) {
       + `<p class="note">${esc(Z.ALGO_NOTE)}</p>`;
     acts = btn('edit', 'edit', 'Editar', 'soft');
   } else if (kind === 'sym') {
-    title = 'Algo que notaste';
+    title = 'Algo pasó';
     head = `<div class="d-head">${bubble('note', 'plata')}<div><span class="eyebrow">${fmt(x.date, { day: 'numeric', month: 'long', year: 'numeric' })}</span></div></div>`;
     body = `<p style="white-space:pre-wrap">${esc(x.text)}</p>`;
     acts = btn('edit', 'edit', 'Editar', 'soft');
@@ -1611,7 +1622,7 @@ function panel(title, html) { $('#dPanelT').textContent = title; $('#pBody').inn
    records (vacunas, desparasitaciones, controles), visits, weights y los datos de la ficha. */
 const dd = s => s ? fmt(s, { day: '2-digit', month: '2-digit', year: 'numeric' }) : '';
 const PER_PAGE = 5;
-const LIB_SECS = [['tapa', 'Pasaporte'], ['id', 'Identificación'], ['vac', 'Vacunas'], ['des', 'Desparasitaciones'], ['ctl', 'Controles y consultas'], ['hist', 'Historial clínico'], ['peso', 'Peso']];
+const LIB_SECS = [['tapa', 'Pasaporte'], ['id', 'Identificación'], ['vac', 'Vacunas'], ['des', 'Antiparasitarios'], ['ctl', 'Controles y consultas'], ['hist', 'Historial clínico'], ['peso', 'Peso']];
 const byDate = (a, b) => (a.date || '9999').localeCompare(b.date || '9999') || (a.next || '').localeCompare(b.next || '');
 function libFilter(text, date) {
   const q = norm1(ui.lib.q);
@@ -1696,7 +1707,7 @@ function libPages(p) {
   chunk('vac', 'Vacunas', vac.map(r => ({ html: recE(r) })), emptyPg(`Todavía no hay vacunas en la libreta. Cargá la última que figure en la libreta del veterinario, con su sticker si lo tenés.`, 'newVac', 'Cargar vacuna'));
   const des = p.records.filter(r => r.type === 'desparasitacion' && libFilter(`${r.name} ${r.lot} ${r.vet}`, r.date || r.next)).sort(byDate);
   const dItems = [...des.filter(r => Z.scopeOf(r) === 'interna').map(r => ({ group: 'Interna', html: recE(r) })), ...des.filter(r => Z.scopeOf(r) === 'externa').map(r => ({ group: 'Externa', html: recE(r) }))];
-  chunk('des', 'Desparasitaciones', dItems, emptyPg('Anotá cada antiparasitario: los internos (comprimidos) y los externos (pipetas, collares, comprimidos antipulgas).', 'newAnti', 'Cargar antiparasitario'));
+  chunk('des', 'Antiparasitarios', dItems, emptyPg('Anotá cada antiparasitario: los internos (comprimidos) y los externos (pipetas, collares, comprimidos antipulgas).', 'newAnti', 'Cargar antiparasitario'));
   const ctl = [
     ...p.records.filter(r => (r.type === 'control' || r.type === 'otro') && libFilter(`${r.name} ${r.vet} ${r.notes}`, r.date || r.next)).map(r => ({ date: r.date || r.next, html: `<li class="entry noseal${r.date ? '' : ' planned'}"><div class="e-main"><span class="e-name">${esc(r.name)}</span><span class="e-dates">${r.date ? `<span><em>Fecha</em> ${dd(r.date)}</span>` : '<span><em>Sin hacer</em></span>'}${r.next ? `<span><em>Próx.</em> ${dd(r.next)}</span>` : ''}</span>${r.vet || r.notes ? `<span class="e-sub">${esc([r.vet, r.notes].filter(Boolean).join(' · '))}</span>` : ''}</div><button class="e-edit" data-act="detail" data-kind="rec" data-id="${r.id}" aria-label="Ver ${esc(r.name)}">${I('more')}</button></li>` })),
     ...p.visits.filter(v => libFilter(`${v.reason} ${v.vet} ${v.findings} ${v.plan}`, v.date)).map(v => ({ date: v.date, html: `<li class="entry noseal"><div class="e-main"><span class="e-name">${esc(v.reason || 'Consulta')}</span><span class="e-dates"><span><em>Fecha</em> ${dd(v.date)}</span>${v.weight ? `<span><em>Peso</em> ${kg(v.weight)}</span>` : ''}</span>${v.vet || v.findings ? `<span class="e-sub">${esc([v.vet, v.findings].filter(Boolean).join(' · '))}</span>` : ''}</div><button class="e-edit" data-act="detail" data-kind="visit" data-id="${v.id}" aria-label="Ver consulta">${I('more')}</button></li>` })),
@@ -2058,7 +2069,7 @@ function renderCuenta() {
       <section class="sec"><h2>Ajustes</h2>
         <div class="list">
           <button class="row link-row" data-act="go" data-to="avisos">${bubble('bell', 'plata')}<span class="what"><b>Centro de avisos</b><small>${nOn ? 'Activados' + (notify.devices ? ` en ${notify.devices} ${notify.devices === 1 ? 'dispositivo' : 'dispositivos'}` : '') + (notify.mail ? (notify.devices ? ' y por mail' : ' por mail') : '') : 'Apagados: activalos para no perderte fechas'}</small></span>${I('chevron')}</button>
-          <button class="row link-row" data-act="export">${bubble('download', 'viaje')}<span class="what"><b>Exportar copia de tus datos</b><small>Un archivo con todo lo que cargaste (JSON)</small></span>${I('chevron')}</button>
+          <button class="row link-row" data-act="export">${bubble('download', 'viaje')}<span class="what"><b>Exportar copia de tus datos</b><small>Un archivo con todo lo que cargaste, para guardarlo en tu compu o en Drive. Todavía no se puede volver a cargar en la app.</small></span>${I('chevron')}</button>
           <a class="row link-row" href="/privacidad" target="_blank" rel="noopener">${bubble('shield', 'salud')}<span class="what"><b>Privacidad</b><small>Tus datos viven en tu cuenta. El QR solo muestra lo necesario para que te la devuelvan.</small></span>${I('chevron')}</a>
           <a class="row link-row" href="/terminos" target="_blank" rel="noopener">${bubble('doc', 'med')}<span class="what"><b>Términos y condiciones</b><small>Licencia y soporte</small></span>${I('chevron')}</a>
         </div>
@@ -2103,7 +2114,7 @@ async function renewAsk() {
 function exportCopy() {
   const data = { app: 'mimitos-by-orbit', version: 2, exportedAt: new Date().toISOString(), pets: doc.pets };
   download(`mimitos-copia-${iso(Z.today())}.json`, JSON.stringify(data, null, 1), 'application/json');
-  toast('Copia descargada. Guardala en un lugar seguro.');
+  toast('Copia descargada. En iPhone la encontrás en Archivos › Descargas.');
 }
 async function logout() {
   if (dirty) await flushNow();
@@ -2181,17 +2192,13 @@ function renderAvisos() {
   return `<button class="link" data-act="go" data-to="cuenta" style="align-self:flex-start">${I('back')} Cuenta</button>
     <div><span class="eyebrow">Centro de avisos</span><h1 class="h-xl">Avisos</h1><p class="lead-s" style="margin-top:6px">Te avisamos antes de cada fecha para que no se te pase nada.</p></div>
     <div class="cols"><div class="col">
-      <div class="summary">
-        <div class="sum static"><span>En este celu</span><span class="badge ${pushHere ? 'ok' : 'none'}">${pushHere ? 'Activados' : pushHere === null ? 'Revisando…' : 'Apagados'}</span></div>
-        <div class="sum static"><span>Por mail</span><span class="badge ${n.mail ? 'ok' : 'none'}">${n.mail ? 'Activado' : 'Apagado'}</span></div>
-      </div>
+      <section class="sec"><div class="sec-h"><h2>En este celu</h2><span class="badge ${pushHere ? 'ok' : 'none'}">${pushHere ? 'Activados' : pushHere === null ? 'Revisando…' : 'Apagados'}</span></div>${celu}<p class="amsg" id="aMsg" role="status" hidden></p></section>
+      <section class="sec"><div class="sec-h"><h2>Por mail</h2><span class="badge ${n.mail ? 'ok' : 'none'}">${n.mail ? 'Activado' : 'Apagado'}</span></div>
+        <label class="toggle"><input type="checkbox" id="aMail" ${n.mail ? 'checked' : ''}><span><b>${n.mail ? 'Mandarme también un mail' : 'Activar por mail'}</b><br><small class="dim">Un solo mail con todo lo del día, a la mañana, a ${esc(me.email || 'tu casilla')}. Si escanean el QR, al momento.</small></span></label></section>
       <section class="sec"><h2>Próximos avisos</h2>
-        ${nexts.length ? `<div class="list">${nexts.map(a => `<div class="row"><span class="ag-date"><b>${fmt(a.date, { day: 'numeric' })}</b><small>${fmt(a.date, { month: 'short' }).replace('.', '')}</small></span><span class="what"><b>${esc(a.text)}</b><small>${anyOn ? (pushHere && n.mail ? 'En el celu y por mail' : pushHere ? 'En el celu' : 'Por mail') + ', a la mañana' : 'No te va a llegar: los avisos están apagados'}</small></span><span></span></div>`).join('')}</div>`
+        ${nexts.length ? `${anyOn ? '' : '<p class="note">Están apagados: no te va a llegar ninguno hasta que los actives arriba.</p>'}<div class="list">${nexts.map(a => `<div class="row"><span class="ag-date"><b>${fmt(a.date, { day: 'numeric' })}</b><small>${fmt(a.date, { month: 'short' }).replace('.', '')}</small></span><span class="what"><b>${esc(a.text)}</b>${anyOn ? `<small>${(pushHere && n.mail ? 'En el celu y por mail' : pushHere ? 'En el celu' : 'Por mail') + ', a la mañana'}</small>` : ''}</span><span></span></div>`).join('')}</div>`
           : `<div class="empty dash"><p>Todavía no hay fechas para avisarte. Cargá una vacuna con su próxima dosis o armá el calendario sugerido.</p></div>`}
       </section>
-      <section class="sec"><h2>En el celu</h2>${celu}<p class="amsg" id="aMsg" role="status" hidden></p></section>
-      <section class="sec"><h2>Por mail</h2>
-        <label class="toggle"><input type="checkbox" id="aMail" ${n.mail ? 'checked' : ''}><span><b>Mandarme también un mail</b><br><small class="dim">Un solo mail con todo lo del día, a la mañana, a ${esc(me.email || 'tu casilla')}. Si escanean el QR, al momento.</small></span></label></section>
     </div><div class="col">
       <section class="sec"><h2>Qué te avisamos</h2>
         <div class="list">${KINDS_UI.map(([k, ic, t, d]) => `<label class="row toggle-row">${bubble(ic, 'salud')}<span class="what"><b>${t}</b><small>${d}</small></span><input type="checkbox" class="sw-in" data-kind="${k}" ${(n.off?.[k] ?? k === 'med') ? '' : 'checked'} aria-label="${t}"></label>`).join('')}</div></section>
@@ -2288,7 +2295,10 @@ async function obFinish(scanFiles) {
   if (scanFiles?.length) { changed(); return runScan(p, scanFiles); }
   setRoute('inicio'); changed(); window.scrollTo(0, 0);
   const nx = Z.upcoming(p)[0];
-  toast(nx ? `Listo. Próxima: ${nx.r.name}, ${nx.s.t.toLowerCase()}.` : `Listo. Esta es la libreta de ${p.name}.`);
+  /* lo que se promete es "te avisamos antes de cada dosis": si los avisos están apagados, el alta termina ofreciéndolos */
+  const avOff = !(notify && (notify.devices || notify.mail));
+  const when = nx ? fmt(nx.r.next || nx.r.date, { day: 'numeric', month: 'short' }) : '';
+  toast(`Listo, ${p.name} ya está en Mimitos.${nx ? ` Próxima: ${nx.r.name}, ${when}.` : ''}${avOff && nx ? ' ¿Te avisamos antes?' : ''}`, avOff ? goAvisos : undefined);
 }
 app.addEventListener('click', e => {
   if (route.name !== 'alta' || !ob) return;
@@ -2345,8 +2355,8 @@ function suggestPanel(p) {
 /* ---------- "cargar algo" ---------- */
 function addPanel(p) {
   const opt = (act, ic, c, t, d) => `<button class="row link-row" data-add="${act}">${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`;
-  const camOn = mefui && window.MZAWAY?.hasCamOn(), cams = mefui && window.MZAWAY?.state.cams?.length;
-  panel(`Cargar en la libreta de ${p.name}`, `${mefui && window.MZAWAY ? `<button class="row link-row mf-hub" data-mf="hub">${bubble('camera', 'cuida')}<span class="what"><b>Me fui · Cámara</b><small>${doc.away?.on ? 'Salida en curso: ver estado y cámara' : camOn ? 'Ver en vivo, lo que escuchó y "Me fui"' : cams ? 'Tus cámaras, lo que escucharon y "Me fui"' : 'Usar un celu viejo como cámara'}</small></span>${camOn ? '<span class="mf-topdot inline" aria-hidden="true"></span>' : I('chevron')}</button>` : ''}<div class="list">
+  /* "Me fui" no se carga en la libreta: tiene su píldora arriba y su tarjeta en Inicio (antes había una fila acá que abría el emparejado de cámara) */
+  panel(`Cargar en la libreta de ${p.name}`, `<div class="list">
     ${opt('algo', 'alert', 'perdida', 'Algo pasó', 'Vómito, diarrea, picazón… con hora y foto')}
     ${opt('vacuna', 'syringe', 'salud', 'Vacuna', 'Con lote, veterinaria y foto del sticker')}
     ${opt('anti', 'drop', 'salud', 'Antiparasitario', 'Interno o externo: pipeta, collar, comprimido')}
@@ -2369,7 +2379,7 @@ function addPanel(p) {
 }
 
 /* ---------- historial clínico: consultas, estudios, cirugías, problemas y síntomas, en orden ---------- */
-const HK = { consulta: ['steth', 'cuida', 'Consulta'], estudio: ['flask', 'viaje', 'Estudio'], cirugia: ['scalpel', 'perdida', 'Cirugía'], sintoma: ['note', 'plata', 'Algo que notaste'], problema: ['heart', 'med', 'Problema de salud'] };
+const HK = { consulta: ['steth', 'cuida', 'Consulta'], estudio: ['flask', 'viaje', 'Estudio'], cirugia: ['scalpel', 'perdida', 'Cirugía'], sintoma: ['note', 'plata', 'Algo pasó'], problema: ['heart', 'med', 'Problema de salud'] };
 const HIST_NOTE = 'Mimitos guarda y ordena tus estudios; no los interpreta. Consultá siempre a tu veterinario.';
 function histEvents(p) {
   const ev = Z.timeline(p).filter(e => HK[e.k]);

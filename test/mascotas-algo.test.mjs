@@ -68,7 +68,7 @@ test('línea de tiempo: el episodio se titula por su tipo y lleva hora e intensi
   const tl = Z.timeline(p);
   assert.deepEqual(tl.map(e => e.title), ['Comió una media', 'Vómito', 'Se rasca la oreja']);
   assert.match(tl[1].sub, /Algo pasó · 08:05 · Leve/);
-  assert.equal(tl[2].sub, 'Algo que notaste');
+  assert.equal(tl[2].sub, 'Algo pasó');
 });
 
 test('horas rápidas: ahora, hace 1 h y hoy a la mañana (9:00, o ahora si es más temprano)', () => {

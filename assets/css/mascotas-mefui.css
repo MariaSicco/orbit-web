@@ -122,6 +122,9 @@ dialog.mf-live-open .sheet{gap:12px}
 .mf-topic{position:relative}
 .mf-topdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2FB863;box-shadow:0 0 0 2px var(--bg,#fff)}
 .mf-topic .mf-topdot{position:absolute;top:6px;right:6px}
+.round.mf-pill{width:auto;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;gap:7px;font:700 14px/1 var(--f);letter-spacing:0;white-space:nowrap}
+.mf-pill .mf-topdot{position:static;box-shadow:none}
+@media(max-width:380px){.round.mf-pill{padding:0 11px;font-size:13.5px}}
 .tnav-mf{display:inline-flex;align-items:center;gap:6px}
 .mf-topdot.inline{box-shadow:none;margin-right:6px}
 .mf-hub{margin-bottom:10px;border-radius:18px;background:var(--cuida);min-height:64px}

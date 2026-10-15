@@ -430,7 +430,7 @@
     for (const r of p.records || []) if (r.date) ev.push({ k: r.type === 'vacuna' ? 'vacuna' : r.type === 'desparasitacion' ? 'anti' : 'control', date: r.date, title: r.name || TYPE[r.type], sub: [TYPE[r.type], r.vet].filter(Boolean).join(' · '), ref: r, kind: 'rec' });
     for (const v of p.visits || []) ev.push({ k: 'consulta', date: v.date, title: v.reason || 'Consulta', sub: [v.vet, v.findings].filter(Boolean).join(' · '), ref: v, kind: 'visit' });
     for (const x of p.studies || []) ev.push({ k: 'estudio', date: x.date, title: x.title || STUDY[x.kind], sub: [STUDY[x.kind], x.files?.length ? `${x.files.length} archivo${x.files.length > 1 ? 's' : ''}` : ''].filter(Boolean).join(' · '), ref: x, kind: 'study' });
-    for (const s of p.symptoms || []) if (!isEp(s)) ev.push({ k: 'sintoma', date: s.date, title: s.text, sub: 'Algo que notaste', ref: s, kind: 'sym' });
+    for (const s of p.symptoms || []) if (!isEp(s)) ev.push({ k: 'sintoma', date: s.date, title: s.text, sub: 'Algo pasó', ref: s, kind: 'sym' });
     /* "+ Algo pasó": el mismo tipo a menos de 72 h del anterior va en una sola entrada ("Vómito · 3 veces") */
     for (const g of epGroups(p)) {
       const s = g.last, nMedia = g.items.reduce((a, x) => a + (x.media?.length || 0), 0);
@@ -447,10 +447,12 @@
     const up = upcoming(p);
     const vacc = up.filter(x => x.r.type === 'vacuna'), anti = up.filter(x => x.r.type === 'desparasitacion');
     const lastAnti = (p.records || []).filter(r => r.type === 'desparasitacion' && r.date).sort((a, b) => b.date.localeCompare(a.date))[0];
+    /* "Al día" solo con algo cargado de verdad: si todo lo que hay son fechas del calendario sugerido, es "sug" (sin confirmar) */
+    const allSug = l => l.every(x => isSug(x.r));
     return {
-      vacc: !vacc.length ? 'none' : vacc.some(x => x.s.days < 0) ? 'late' : 'ok',
-      vaccLate: vacc.filter(x => x.s.days < 0),
-      anti: !anti.length ? (lastAnti ? 'unknown' : 'none') : anti.some(x => x.s.days < 0) ? 'late' : 'ok', lastAnti,
+      vacc: !vacc.length ? 'none' : vacc.some(x => x.s.days < 0) ? 'late' : allSug(vacc) ? 'sug' : 'ok',
+      vaccLate: vacc.filter(x => x.s.days < 0), vaccNext: vacc[0] || null,
+      anti: !anti.length ? (lastAnti ? 'unknown' : 'none') : anti.some(x => x.s.days < 0) ? 'late' : allSug(anti) ? 'sug' : 'ok', lastAnti, antiNext: anti[0] || null,
       active: (p.conditions || []).filter(c => c.status !== 'resuelta'),
       past: (p.conditions || []).filter(c => c.status === 'resuelta'),
     };

@@ -141,7 +141,7 @@ function homeCard(p) {
     const who = one ? `se queda ${esc(one.name)} ${sola(one)}` : 'se quedan solas tus mascotas';
     return `<section class="mf-cam none span2" aria-labelledby="h-mfnone">
       <div class="mf-cam-h"><span class="mf-cam-ic" aria-hidden="true">🏠</span><div><h2 id="h-mfnone">Me fui</h2><p class="mf-cam-st">Contamos cuánto tiempo ${who}${D().awaySet.alertH ? ` y te avisamos si pasa de ${D().awaySet.alertH} h` : ''}. Con un celu viejo en casa, además la ves en vivo y te avisamos si ladra.</p></div></div>
-      <div class="btns"><button class="btn big" data-mf="leave">${I('home')} Me fui</button><button class="btn ghost" data-mf="pair">${I('camera')} Usar un celu viejo como cámara</button></div>
+      <div class="btns"><button class="btn big" data-mf="leave">${I('home')} Me fui</button><button class="btn ghost" data-mf="pair">${I('camera')} Convertir un celu viejo en cámara</button></div>
     </section>`;
   }
   if (!a.on) {
@@ -156,7 +156,7 @@ function homeCard(p) {
     ${statusHtml()}
     <small class="dim">Saliste a las ${hm(Date.parse(a.since))}. ${esc(alertLine())}</small>
     <div class="btns"><button class="btn" data-mf="back">${I('check')} Volví</button><button class="btn ghost" data-mf="open">Ver detalle</button></div>
-    ${st.cams && !st.cams.length ? `<button class="link" data-mf="pair">${I('camera')} Usar un celu viejo como cámara</button>` : ''}
+    ${st.cams && !st.cams.length ? `<button class="link" data-mf="pair">${I('camera')} Convertir un celu viejo en cámara</button>` : ''}
   </section>`;
 }
 const bubbleI = (ic, c = 'cuida') => `<span class="ib c-${c}">${I(ic)}</span>`;
@@ -182,7 +182,8 @@ function leaveForm() {
     },
     afterSave: () => {
       const n = A().notify;
-      A().toast(n && !n.devices && !n.mail && D().awaySet.alertH ? 'Listo, contamos desde ahora. Activá los avisos en Cuenta para que te llegue el aviso.' : 'Listo, contamos desde ahora. Cuando vuelvas, tocá "Volví".');
+      const off = n && !n.devices && !n.mail && D().awaySet.alertH;
+      A().toast(off ? 'Listo, contamos desde ahora. Para que te llegue el aviso, activá los avisos.' : 'Listo, contamos desde ahora. Cuando vuelvas, tocá "Volví".', off ? { label: 'Activar avisos', fn: () => A().go('avisos') } : undefined);
     },
   });
 }
@@ -251,7 +252,7 @@ function camsListHtml(withLive) {
   if (!cams) return '<p class="dim">Cargando cámaras…</p>';
   const rows = cams.map(c => `<div class="row x4"><span class="ib c-${c.online ? 'salud' : 'plata'}">${I('camera')}</span><span class="what"><b>${esc(c.name)}</b><small>${c.online ? '<span class="mf-on">Activa ahora</span>' : `Vista por última vez ${esc(Z.fmtWhen(new Date(c.seen)))}`}${D().pets.length > 1 ? ' · ' + esc(A().petById(c.petId)?.name || '') : ''}</small></span>${withLive && c.online ? `<button class="btn sm soft" data-mf="live" data-cam="${c.camId}">Ver en vivo</button>` : '<span></span>'}<button class="btn sm ghost" data-mf="revoke" data-cam="${c.camId}" aria-label="Desconectar ${esc(c.name)}">Desconectar</button>${withLive ? `<label class="mf-sens"><span>Sensibilidad</span><select data-mfsens="${c.camId}" aria-label="Sensibilidad de ${esc(c.name)}">${[['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']].map(([v, l]) => `<option value="${v}"${(c.sens || 'media') === v ? ' selected' : ''}>${l}</option>`).join('')}</select></label>` : ''}</div>`).join('');
   return `${cams.length ? `<div class="list">${rows}</div>` : ''}
-    ${cams.length < (st.max || 4) ? `<button class="btn ${cams.length ? 'ghost' : ''} wide" data-mf="pair">${I('camera')} Usar un celu como cámara</button>` : `<p class="note">Llegaste al máximo de ${st.max || 4} cámaras. Desconectá una para sumar otra.</p>`}`;
+    ${cams.length < (st.max || 4) ? `<button class="btn ${cams.length ? 'ghost' : ''} wide" data-mf="pair">${I('camera')} Convertir un celu viejo en cámara</button>` : `<p class="note">Llegaste al máximo de ${st.max || 4} cámaras. Desconectá una para sumar otra.</p>`}`;
 }
 function render(p) {
   const a = D().away;
@@ -314,7 +315,7 @@ const CONSENT = `<ul class="mf-ul">
   <li><b>Otras personas:</b> no la apuntes a lugares donde haya personas (empleadas, visitas, vecinos) sin que lo sepan y estén de acuerdo.</li></ul>`;
 function pairPanel() {
   clearInterval(st.pairTimer); st.pair = null;
-  A().panel('Usar un celu como cámara', `<p>Sirve cualquier celu viejo con Chrome o Safari. Dejalo enchufado, con la pantalla hacia arriba, cerca de donde se queda.</p>${CONSENT}
+  A().panel('Convertir un celu viejo en Cámara Mimitos', `<p>Sirve cualquier celu viejo con Chrome o Safari. Dejalo enchufado, con la pantalla hacia arriba, cerca de donde se queda.</p>${CONSENT}
     <label class="toggle"><input type="checkbox" id="mfOk"><span><b>Entiendo y no la voy a apuntar a otras personas sin su consentimiento</b></span></label>
     <div class="f"><label for="mfName">Nombre de la cámara <span class="opt">(opcional)</span></label><input id="mfName" maxlength="40" placeholder="Living, cocina, patio…"></div>
     <div id="mfPairErr" class="err-msg" role="alert" hidden></div>
@@ -520,8 +521,8 @@ async function live(camId) {
 /* ---------- Cuenta → Cámaras ---------- */
 function cuentaSection() {
   if (!st.cams) loadCams().then(() => { if (A().route.name === 'cuenta') A().render(); });
-  return `<section class="sec" aria-labelledby="h-cams"><h2 id="h-cams">Cámaras</h2>
-    <p class="note">Celus usados como Cámara Mimitos. Desconectá los que ya no uses: dejan de andar al toque.</p>${camsListHtml(false)}</section>`;
+  return `<section class="sec" aria-labelledby="h-cams"><h2 id="h-cams">Cámaras Mimitos</h2>
+    <p class="note">Celus usados como Cámara Mimitos. Desconectá los que ya no uses: dejan de andar al toque.</p>${camsListHtml(false)}${(st.cams || []).length ? `<a class="link" href="#/mefui" style="align-self:flex-start">${(st.cams || []).some(c => c.online) ? 'Ver en vivo en Me fui' : 'Ir a Me fui'} ›</a>` : ''}</section>`;
 }
 
 /* ---------- acciones ---------- */
@@ -581,11 +582,13 @@ setInterval(async () => {
 /* al cargar, si hay una salida en curso, se piden las cámaras para el "Cámara activa" del Inicio */
 setTimeout(function wait() { if (A()?.mode === 'full') { if (A().mefui) loadCams().then(() => A().render()); } else if (A()?.mode === 'loading') setTimeout(wait, 400); }, 400);
 
-/* acceso fijo en la barra de arriba: ícono de cámara (punto verde si hay una activa) que lleva a "Me fui" */
+/* acceso fijo en la barra de arriba: píldora con texto ("Me fui", o "En vivo" con punto verde si hay una cámara activa).
+   Antes era un ícono de cámara solo y se leía como "sacar una foto". */
 function topIcon() {
   const on = (st.cams || []).some(c => c.online), away = D().away?.on;
-  const lbl = on ? 'Me fui y cámara: cámara activa' : away ? 'Me fui: en curso' : 'Me fui y cámara';
-  return `<a class="round mf-topic${on ? ' is-on' : ''}" href="#/mefui" aria-label="${lbl}" title="${lbl}">${I('camera')}${on || away ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}</a>`;
+  const txt = on ? 'En vivo' : 'Me fui';
+  const lbl = on ? 'Me fui: Cámara Mimitos en vivo' : away ? 'Me fui: salida en curso' : 'Me fui';
+  return `<a class="round mf-topic mf-pill${on ? ' is-on' : ''}${away ? ' is-away' : ''}" href="#/mefui" aria-label="${lbl}" title="${lbl}">${on || away ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}<span>${txt}</span></a>`;
 }
 const hasCamOn = () => (st.cams || []).some(c => c.online);
 window.MZAWAY = { homeCard, render, cuentaSection, loadCams, topIcon, hasCamOn, state: st };
