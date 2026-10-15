@@ -1,0 +1,6 @@
+/* Mimitos · F2 "Restaurar una copia" (usa los estilos de la app) */
+.rs-sum{display:flex;flex-direction:column;gap:4px;background:var(--card);border-radius:var(--r-s);padding:14px 16px}
+.rs-sum b{font-weight:700;font-size:16px}
+.rs-sum small{color:var(--ink2);font-size:13.5px}
+.btn.rs-go{background:var(--late);color:#fff}
+.btn.rs-go.armed{box-shadow:0 0 0 3px var(--late-bg)}
