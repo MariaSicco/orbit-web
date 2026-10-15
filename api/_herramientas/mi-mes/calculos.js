@@ -554,7 +554,8 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
     consumos: lectura.consumos.map(c => ({ ...c })),
     pagosYCreditos: (lectura.pagosYCreditos || []).map(c => ({ ...c })),
     cargos: (lectura.cargos || []).map(c => ({ ...c })),
-    cuotasAVencer: (lectura.cuotasAVencer || []).map(c => ({ ...c, mesPago: sumarMeses(c.mes, desfase) })) });
+    cuotasAVencer: (lectura.cuotasAVencer || []).map(c => ({ ...c, mesPago: sumarMeses(c.mes, desfase) })),
+    ...(lectura.confianza === 'alta' ? {} : { dudoso: true }) });
   /* compras nuevas cargadas a mano que ahora salen en el resumen: se
      concilian solas (mismo monto de cuota, cantidad, moneda y fecha cercana);
      si no es seguro, se pregunta */
@@ -572,6 +573,8 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
       cantidad: c.cuota.de, tarjetaId: tId, primerMes, origen: 'resumen' });
     nuevas++;
   }
+  /* las dudas de conciliación quedan guardadas hasta que la persona responda */
+  d.concilia = [...(d.concilia || []).filter(x => x.tarjetaId !== tId), ...dudosas.map(x => ({ ...x, tarjetaId: tId }))];
   return { datos: d, tarjetaId: tId, mes, cuotasNuevas: nuevas, conciliadas, dudosas };
 }
 
@@ -608,7 +611,7 @@ export function conciliarCompras(datos, tarjetaId, lectura) {
 /* ── esquema y migración ── */
 export const LIMITE_DEFECTO = 30;
 export const datosVacios = () => ({ v: ESQUEMA, ingresos: [], gastos: [], cuotas: [], tarjetas: [], resumenes: [], cambio: {}, rubrosComercio: {},
-  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [] });
+  limiteCuotas: LIMITE_DEFECTO, alertasVistas: [], supuestos: {}, retos: {}, consejosVistos: [], concilia: [], confirmados: {}, preguntasLuego: [] });
 
 const entero = x => Number.isSafeInteger(x) && x > 0;
 const dia = x => Number.isInteger(x) && x >= 1 && x <= 31;
@@ -682,6 +685,7 @@ export function migrar(crudo) {
       tarjetas: (Array.isArray(r.tarjetas) ? r.tarjetas : []).filter(t => /^\d{4}$/.test(String(t?.ultimos4))).slice(0, 6).map(t => ({ ultimos4: String(t.ultimos4), adicional: t.adicional === true, totales: centMon(t.totales) })),
       cuotasAVencer: (Array.isArray(r.cuotasAVencer) ? r.cuotasAVencer : []).filter(c => esMes(c?.mes) && esMes(c?.mesPago) && Number.isSafeInteger(c?.monto))
         .slice(0, 24).map(c => ({ mes: c.mes, mesPago: c.mesPago, monto: c.monto, moneda: esMoneda(c.moneda) ? c.moneda : 'ARS', desde: c.desde === true })),
+      ...(r.dudoso === true ? { dudoso: true } : {}),
       periodo: r.periodo && typeof r.periodo === 'object' ? { desde: esFecha(r.periodo.desde) ? r.periodo.desde : null, hasta: esFecha(r.periodo.hasta) ? r.periodo.hasta : null } : { desde: null, hasta: null },
       totales, pagoMinimo: r.pagoMinimo && esMoneda(r.pagoMinimo.moneda) && Number.isSafeInteger(r.pagoMinimo.monto) ? { moneda: r.pagoMinimo.moneda, monto: r.pagoMinimo.monto } : null,
       consumos });
@@ -712,6 +716,15 @@ export function migrar(crudo) {
   for (const [mesR, r] of Object.entries(retos)) {
     if (esMes(mesR) && RETOS.some(x => x.id === r?.id)) out.retos[mesR] = { id: r.id, estado: ['aceptado', 'hecho', 'esta-vez-no'].includes(r.estado) ? r.estado : 'aceptado' };
   }
+  /* v4: dudas de conciliación pendientes, gastos confirmados por mes, preguntas para más tarde */
+  out.concilia = (Array.isArray(crudo.concilia) ? crudo.concilia : [])
+    .filter(x => out.cuotas.some(c => c.id === x?.cuotaId) && Number.isSafeInteger(x?.monto))
+    .map(x => ({ cuotaId: x.cuotaId, tarjetaId: String(x.tarjetaId || ''), descripcion: texto(x.descripcion) || 'Compra cargada a mano', total: x.total, cantidad: x.cantidad,
+      moneda: esMoneda(x.moneda) ? x.moneda : 'ARS', comercio: texto(x.comercio), monto: x.monto, ...(x.cuota ? { cuota: { n: x.cuota.n, de: x.cuota.de } } : {}) }));
+  out.confirmados = {};
+  for (const [m, ids] of Object.entries(crudo.confirmados && typeof crudo.confirmados === 'object' ? crudo.confirmados : {}))
+    if (esMes(m) && Array.isArray(ids)) out.confirmados[m] = ids.filter(i => typeof i === 'string').slice(0, 100);
+  out.preguntasLuego = (Array.isArray(crudo.preguntasLuego) ? crudo.preguntasLuego : []).filter(x => typeof x === 'string').slice(-100);
   out.consejosVistos = (Array.isArray(crudo.consejosVistos) ? crudo.consejosVistos : []).filter(x => typeof x === 'string').slice(-100);
   return out;
 }
@@ -1408,4 +1421,105 @@ export function fichaCompra(datos, cuotaId, hoy) {
   });
   return { cuota: c, tarjeta: t, compra: c.total, moneda, cantidad: c.cantidad, obligaciones,
     pagadas: obligaciones.filter(o => o.pasada).length, restan: obligaciones.filter(o => !o.pasada).reduce((a, o) => a + o.monto, 0) };
+}
+
+
+/* ═══════════════ "Preguntame solamente lo que cambia mi mes" ═══════════════
+   Lista las dudas y pendientes y las ordena por cuánto pueden mover "te
+   quedan libres" de este mes o del que viene. Lo que mueve menos del 1 % de
+   los ingresos (o no mueve plata) va a "más tarde". */
+export const GASTOS_QUE_VARIAN = ['Servicios', 'Expensas'];
+export const DIAS_COPIA_VIEJA = 30;
+export const DIAS_CAMBIO_VIEJO = 7;
+export const VARIACION_CAMBIO = 0.05;     // supuesto: el dólar se pudo mover un 5 %
+export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true } = {}) {
+  hoy = aFecha(hoy);
+  const mes = hoy.slice(0, 7), sig = sumarMeses(mes, 1);
+  const r = resumenMes(datos, mes), r2 = resumenMes(datos, sig);
+  const out = [];
+  const umbral = Math.round(Math.max(r.totIngresos, r2.totIngresos) * 0.01);
+  /* 1. tarjeta que ya cerró y no tiene el resumen importado */
+  for (const t of datos?.tarjetas || []) {
+    const c = cicloTarjeta(datos, t.id, hoy);
+    if (!c?.cierre || diasEntre(c.cierre, hoy) < 0 || c.origen === 'resumen') continue;
+    if ((datos.resumenes || []).some(x => x.tarjetaId === t.id && x.mes === c.mes)) continue;
+    const previos = (datos.resumenes || []).filter(x => x.tarjetaId === t.id).sort((a, b) => difMeses(a.mes, b.mes));
+    const ultimo = previos.length ? totalResumen(previos[previos.length - 1], datos).ars : 0;
+    const estimado = comprometidoMes(datos, c.mes).porTarjeta[t.id] || 0;
+    out.push({ id: `resumen:${t.id}:${c.mes}`, tipo: 'resumen', tarjetaId: t.id, impacto: Math.max(ultimo, estimado),
+      titulo: `Para estimar cuánto te queda, falta tu resumen de ${t.nombre}.`,
+      porque: `Cerró el ${fechaCorta(c.cierre)}. ${ultimo ? `El último fue de ${formatoPesos(ultimo)}` : `Hoy estimamos ${formatoPesos(estimado)}`}: hasta que lo subas, ese número es una estimación.`,
+      accion: 'Subir resumen' });
+  }
+  /* 2. dudas de la lectura que quedaron guardadas */
+  for (const x of datos?.resumenes || []) {
+    if (!x.dudoso || difMeses(x.mes, mes) > 1 || difMeses(sig, x.mes) > 0) continue;
+    const t = (datos.tarjetas || []).find(y => y.id === x.tarjetaId);
+    out.push({ id: `lectura:${x.id}`, tipo: 'lectura', tarjetaId: x.tarjetaId, resumenId: x.id, impacto: totalResumen(x, datos).ars,
+      titulo: `Revisá el resumen de ${t?.nombre || 'tu tarjeta'}: parte se leyó con dudas.`,
+      porque: `Es el total de ${nombreMes(x.mes)}. Si coincide con tu PDF, confirmalo.`, accion: 'Está bien' });
+  }
+  /* 3. compra nueva con conciliación dudosa */
+  for (const x of datos?.concilia || []) {
+    const c = (datos.cuotas || []).find(y => y.id === x.cuotaId);
+    if (!c) continue;
+    const cuota = repartirCuotas(c.total, c.cantidad)[0];
+    out.push({ id: `concilia:${x.cuotaId}`, tipo: 'concilia', cuotaId: x.cuotaId, impacto: aPesos(cuota, c.moneda || 'ARS', datos) ?? 0,
+      titulo: `¿${x.comercio} es tu compra ${x.descripcion}?`,
+      porque: 'Si es la misma, la contamos una sola vez.', accion: 'Sí, es la misma' });
+  }
+  /* 4. gastos que varían, sin confirmar este mes */
+  const conf = new Set(datos?.confirmados?.[mes] || []);
+  for (const g of r.gastos) {
+    if (!g.repite || !GASTOS_QUE_VARIAN.includes(g.categoria) || conf.has(g.id)) continue;
+    out.push({ id: `gasto:${g.id}:${mes}`, tipo: 'gasto', gastoId: g.id, impacto: g.monto,
+      titulo: `¿${g.nombre} sigue en ${formatoPesos(g.monto)} este mes?`, porque: 'Suele cambiar de un mes a otro.', accion: `Sigue en ${formatoPesos(g.monto)}` });
+  }
+  /* 5. ingreso principal sin día de cobro */
+  if (diaDeCobro) {
+    const principal = (datos?.ingresos || []).filter(i => i.repite && activoEn(i, mes)).sort((a, b) => b.monto - a.monto)[0];
+    if (principal && !cobroValido(principal.cobro)) {
+      /* impacto: lo que vence en tarjetas este mes (si vence antes de cobrar, hace falta tenerlo antes) */
+      const enTarjetas = (datos.tarjetas || []).reduce((a, t) => {
+        const prev = (datos.resumenes || []).filter(x => x.tarjetaId === t.id).sort((x, y) => difMeses(x.mes, y.mes)).pop();
+        return a + Math.max(comprometidoMes(datos, mes).porTarjeta[t.id] || 0, prev ? totalResumen(prev, datos).ars : 0);
+      }, 0);
+      out.push({ id: `cobro:${principal.id}`, tipo: 'cobro', ingresoId: principal.id, impacto: Math.min(principal.monto, enTarjetas),
+        titulo: '¿Qué día cobrás?', porque: 'Con ese dato vemos qué vence antes de que cobres.', accion: 'Elegir el día' });
+    }
+  }
+  /* 6. tipo de cambio viejo, si hay dólares */
+  const usd = ((rr) => rr.cuotas.filter(c => c.moneda === 'USD').reduce((a, c) => a + (c.monto || 0), 0)
+    + rr.resumenes.reduce((a, x) => a + ((x.porMoneda?.USD || 0) > 0 ? aPesos(x.porMoneda.USD, 'USD', datos) || 0 : 0), 0));
+  const exp = usd(r) + usd(r2);
+  const cam = cambioDe(datos, 'USD');
+  if (exp > 0 && cam && datoViejo(cam.fecha, hoy, DIAS_CAMBIO_VIEJO)) {
+    out.push({ id: `cambio:${cam.fecha || 'sin'}`, tipo: 'cambio', impacto: Math.round(exp * VARIACION_CAMBIO),
+      titulo: `El dólar que usamos es del ${fechaCorta(cam.fecha) || 'sin fecha'}.`, porque: `Tenés ${formatoPesos(exp)} en dólares entre este mes y el que viene: un 5 % de diferencia mueve ${formatoPesos(Math.round(exp * VARIACION_CAMBIO))}.`, accion: 'Actualizar' });
+  }
+  /* 7. copia vieja (no mueve plata: va al final) */
+  const hayDatos = (datos?.ingresos || []).length + (datos?.cuotas || []).length + (datos?.resumenes || []).length > 0;
+  if (hayDatos && (!esFecha(ultimaCopia) || diasEntre(ultimaCopia, hoy) > DIAS_COPIA_VIEJA)) {
+    out.push({ id: `copia:${mes}`, tipo: 'copia', impacto: 0,
+      titulo: esFecha(ultimaCopia) ? `Tu última copia es del ${fechaCorta(ultimaCopia)}.` : 'Todavía no guardaste una copia.',
+      porque: 'Tus datos viven solo en este dispositivo. Si se borra el navegador, la copia los recupera.', accion: 'Guardar copia' });
+  }
+  const luego = new Set(datos?.preguntasLuego || []);
+  out.sort((a, b) => b.impacto - a.impacto);
+  const ahora = out.filter(x => !luego.has(x.id) && x.impacto >= Math.max(1, umbral));
+  const resto = out.filter(x => !ahora.includes(x));
+  /* la copia sube si no hay nada urgente */
+  if (!ahora.length) { const c = resto.findIndex(x => x.tipo === 'copia' && !luego.has(x.id)); if (c >= 0) ahora.push(...resto.splice(c, 1)); }
+  return { ahora, masTarde: resto, umbral, alDia: !ahora.length && !resto.length };
+}
+
+/* Qué tenés que pagar: los próximos vencimientos con fecha (tarjetas y gastos con día), desde hoy. */
+export function proximosPagos(datos, hoy, n = 3) {
+  hoy = aFecha(hoy);
+  const m = hoy.slice(0, 7);
+  return [m, sumarMeses(m, 1)].flatMap(x => lineaDelMes(datos, x))
+    .filter(e => (e.tipo === 'vence' || e.tipo === 'gasto') && diasEntre(hoy, e.fecha) >= 0 && e.monto > 0)
+    .sort((a, b) => diasEntre(b.fecha, a.fecha))
+    .slice(0, n)
+    .map(e => ({ ...e, dias: diasEntre(hoy, e.fecha) }));
 }
