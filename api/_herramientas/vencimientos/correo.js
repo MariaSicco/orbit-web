@@ -2,10 +2,31 @@
    Gmail: Google Identity Services, permiso gmail.readonly, token solo en memoria y
    revocado al terminar. Outlook/Hotmail: MSAL, permiso Mail.Read, caché en la sesión
    que se borra al terminar. Los mails se leen acá, en el teléfono: nada pasa por Orbit. */
-import { consultasGmail, textoDeHtml, PALABRAS, DOMINIOS } from './correo-lector.js';
+import { consultasGmail, textoDeHtml, PALABRAS, DOMINIOS, adjuntoUtil } from './correo-lector.js';
 
 const MAX_MAILS = 250;
 const PARALELO = 6;
+const MAX_PDFS = 60;           // adjuntos por búsqueda
+const MAX_PDF_BYTES = 3e6;
+
+/* ── PDF adjuntos: se leen acá, con pdf.js (Apache 2.0) alojado con la app. Solo el texto de las 3 primeras páginas. ── */
+let pdfsLeidos = 0;
+export async function textoDePdf(bytes) {
+  await cargarScript('vendor/pdfjs-3.11.174-pdf.min.js');
+  const lib = window.pdfjsLib;
+  if (!lib) return '';
+  lib.GlobalWorkerOptions.workerSrc = new URL('vendor/pdfjs-3.11.174-pdf.worker.min.js', document.baseURI).href;
+  const doc = await lib.getDocument({ data: bytes, isEvalSupported: false }).promise;
+  let t = '';
+  for (let i = 1; i <= Math.min(doc.numPages, 3); i++) {
+    const c = await (await doc.getPage(i)).getTextContent();
+    t += c.items.map(x => x.str + (x.hasEOL ? '\n' : ' ')).join('') + '\n';
+  }
+  doc.destroy();
+  return t.slice(0, 20000);
+}
+const bytesDeB64 = s => Uint8Array.from(atob(String(s).replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+const reservarPdf = () => pdfsLeidos++ < MAX_PDFS;
 
 const cargarScript = src => new Promise((ok, mal) => {
   if (document.querySelector(`script[src="${src}"]`)) return ok();
@@ -64,6 +85,7 @@ async function tokenGoogle(clientId) {
   });
 }
 export async function buscarEnGmail(clientId, avance) {
+  pdfsLeidos = 0;
   const token = await tokenGoogle(clientId);
   const api = async ruta => {
     const r = await fetch(`https://gmail.googleapis.com/gmail/v1/users/me/${ruta}`, { headers: { Authorization: `Bearer ${token}` } });
@@ -84,7 +106,15 @@ export async function buscarEnGmail(clientId, avance) {
     return await enTandas([...ids].slice(0, MAX_MAILS), async id => {
       const m = await api(`messages/${id}?format=full`);
       const h = n => m.payload?.headers?.find(x => x.name.toLowerCase() === n)?.value || '';
-      return { id, de: h('from'), asunto: h('subject'), fecha: fecha(Number(m.internalDate)), texto: cuerpoGmail(m.payload).slice(0, 20000) };
+      const msg = { id, de: h('from'), asunto: h('subject'), fecha: fecha(Number(m.internalDate)), texto: cuerpoGmail(m.payload).slice(0, 20000) };
+      if (adjuntoUtil(msg.de, msg.asunto)) {
+        const pdfs = [];
+        (function rec(p) { if (!p) return; if (/\.pdf$/i.test(p.filename || '') && p.body?.attachmentId && (p.body.size || 0) < MAX_PDF_BYTES) pdfs.push(p.body.attachmentId); (p.parts || []).forEach(rec); })(m.payload);
+        if (pdfs.length && reservarPdf()) {
+          try { const a = await api(`messages/${id}/attachments/${pdfs[0]}`); msg.adjunto = await textoDePdf(bytesDeB64(a.data)); } catch {}
+        }
+      }
+      return msg;
     }, avance);
   } finally {
     try { google.accounts.oauth2.revoke(token, () => {}); } catch {}
@@ -93,6 +123,7 @@ export async function buscarEnGmail(clientId, avance) {
 
 /* ── Outlook / Hotmail ── */
 export async function buscarEnOutlook(clientId, avance) {
+  pdfsLeidos = 0;
   /* MSAL 2.38.3 (MIT) alojado con la app: el CDN de Microsoft dejó de servir esa ruta */
   await cargarScript('vendor/msal-browser-2.38.3.min.js');
   if (typeof window.msal === 'undefined') throw new Error('No pudimos cargar el acceso de Microsoft. Probá de nuevo en un rato.');
@@ -118,7 +149,7 @@ export async function buscarEnOutlook(clientId, avance) {
     const desde = Date.now() - 183 * 864e5;
     let fallidas = 0;
     for (const q of consultas) {
-      let url = `https://graph.microsoft.com/v1.0/me/messages?$search=${encodeURIComponent(q)}&$top=50&$select=id,subject,from,receivedDateTime,body`;
+      let url = `https://graph.microsoft.com/v1.0/me/messages?$search=${encodeURIComponent(q)}&$top=50&$select=id,subject,from,receivedDateTime,body,hasAttachments`;
       let vueltas = 0;
       while (url && vueltas++ < 4 && mails.length < MAX_MAILS) {
         const r = await pedir(url);
@@ -129,13 +160,24 @@ export async function buscarEnOutlook(clientId, avance) {
           if (vistos.has(m.id) || Date.parse(m.receivedDateTime) < desde) continue;
           vistos.add(m.id);
           mails.push({ id: m.id, de: `${m.from?.emailAddress?.name || ''} <${m.from?.emailAddress?.address || ''}>`, asunto: m.subject || '',
-            fecha: fecha(Date.parse(m.receivedDateTime)), texto: String(m.body?.content || '').slice(0, 20000) });
+            fecha: fecha(Date.parse(m.receivedDateTime)), texto: String(m.body?.content || '').slice(0, 20000), conAdjuntos: !!m.hasAttachments });
         }
         avance?.(mails.length, 0);
         url = j['@odata.nextLink'] || null;
       }
     }
     if (fallidas === consultas.length) throw new Error('Outlook no respondió a la búsqueda. Probá de nuevo en un rato.');
+    /* PDF adjuntos de las facturas (luz, gas, celular…): el monto suele estar ahí y no en el cuerpo */
+    const conPdf = mails.filter(m => m.conAdjuntos && adjuntoUtil(m.de, m.asunto));
+    if (conPdf.length) avance?.(0, conPdf.length);
+    await enTandas(conPdf, async m => {
+      if (!reservarPdf()) return null;
+      const r = await pedir(`https://graph.microsoft.com/v1.0/me/messages/${m.id}/attachments`);
+      if (!r.ok) return null;
+      const a = ((await r.json()).value || []).find(x => /\.pdf$/i.test(x.name || '') && x.contentBytes && (x.size || 0) < MAX_PDF_BYTES);
+      if (a) m.adjunto = await textoDePdf(bytesDeB64(a.contentBytes));
+      return m;
+    }, avance);
     return mails;
   } finally {
     try { sessionStorage.clear(); } catch {}

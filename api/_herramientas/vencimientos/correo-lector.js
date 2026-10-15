@@ -64,6 +64,22 @@ export function servicioDelRemitente(de, asunto = '') {
   return null;
 }
 
+/* ¿Vale la pena abrir el PDF adjunto? Solo de empresas conocidas o con asunto de factura (y si no es suscripción). */
+export function adjuntoUtil(de, asunto = '') {
+  const id = servicioDelRemitente(de, asunto);
+  if (id && esSuscripcion(id)) return false;
+  return !!id || /factura|boleta|expensas|liquidaci[oó]n|aviso de (pago|deuda)|resumen de cuenta|vencimiento/i.test(asunto || '');
+}
+
+/* Número de cliente / cuenta / partida en el texto de una factura (para reconocerla la próxima vez). */
+const RE_CLIENTE = /(?:n(?:[°ºo.]|ro\.?|[uú]mero)?\s*(?:de\s*)?(?:cliente|cuenta|suministro|partida|socio|medidor|l[ií]nea)|cliente\s*n[°ºo.]?|cuenta\s*n[°ºo.]?|partida)\s*[:#]?\s*([0-9][0-9 .\-\/]{3,24}[0-9])(?![\d,])/i;
+export function numeroDeCliente(texto) {
+  const m = sinTildes(String(texto || '')).match(RE_CLIENTE);
+  if (!m) return null;
+  const n = m[1].replace(/[ .]/g, '');
+  return n.replace(/\D/g, '').length >= 5 ? n : null;
+}
+
 /* Recibo de suscripción → { vence: fecha del próximo cobro o del cobro, monto }. */
 const CLAVE_PROX = /(proxima fecha de (facturacion|cobro|pago)|proximo (cobro|pago)|se renovara|renovacion|next billing|next payment|renews on)/g;
 export function leerRecibo(msg) {
@@ -158,7 +174,13 @@ export function cuentasDesdeMails(mensajes, hoy) {
   for (const msg of mensajes) {
     const servicio = servicioDelRemitente(msg.de, msg.asunto);
     const clave = servicio || `otro:${String(msg.de || '').toLowerCase().replace(/.*@/, '').replace(/>.*/, '')}`;
-    const lectura = esSuscripcion(servicio) ? (leerRecibo(msg) || leerMail(msg)) : leerMail(msg);
+    let lectura = esSuscripcion(servicio) ? (leerRecibo(msg) || leerMail(msg)) : leerMail(msg);
+    /* si el cuerpo del mail no trae monto o fecha, se completa con el PDF adjunto (leído en el teléfono) */
+    if (msg.adjunto && (!lectura || lectura.monto == null || !lectura.vence)) {
+      const delPdf = leerMail({ ...msg, texto: msg.adjunto });
+      if (delPdf) lectura = { vence: lectura?.vence || delPdf.vence, segundo: lectura?.segundo || delPdf.segundo, monto: lectura?.monto ?? delPdf.monto, delPdf: true };
+    }
+    if (lectura && msg.adjunto) lectura.cliente = numeroDeCliente(msg.adjunto) || numeroDeCliente(msg.texto);
     if (!lectura || !lectura.vence) continue;               // sin fecha no sirve para avisar
     /* remitente desconocido: tiene que decir que es una factura y traer un monto (afuera promos y newsletters) */
     if (!servicio && (lectura.monto == null || !/factura|expensas|boleta|liquidacion|aviso de (pago|deuda)|resumen de cuenta/.test(sinTildes(`${msg.asunto} ${msg.texto}`.toLowerCase())))) continue;
@@ -183,6 +205,8 @@ export function cuentasDesdeMails(mensajes, hoy) {
       frecuencia, proximo, proximoEstimado: estimado, monto: ultima.monto, segundoVto: ultima.segundo ? difDias(ultima.vence, ultima.segundo) : null,
       historia: porFecha.filter(f => f.monto != null).map(f => ({ vence: f.vence, monto: f.monto })),
       encontradas: porFecha.length, conocido: !!s,
+      ...(porFecha.some(f => f.delPdf) ? { delPdf: true } : {}),
+      ...(fs.map(f => f.cliente).filter(Boolean).at(-1) ? { nroCliente: fs.map(f => f.cliente).filter(Boolean).at(-1) } : {}),
     });
   }
   return out.sort((a, b) => Number(b.conocido) - Number(a.conocido) || a.proximo.localeCompare(b.proximo));

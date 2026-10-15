@@ -9,6 +9,7 @@ import { configCorreo, buscarEnGmail, buscarEnOutlook, mailsDemo } from './corre
 import { cuentasDesdeResumen, nombreDesdeComercio } from './resumen-tarjeta.js';
 import * as R from './radar.js';
 import * as P from './reparto.js';
+import { serviciosDesdeNota } from './notas.js';
 
 /* Interruptores de lo que entra para el 19/10: si algo no queda firme en QA, se apaga acá. */
 const FUNCIONES = { radar: true, costoCasa: true, reparto: true };
@@ -766,7 +767,7 @@ function primerUso() {
       <div class="acciones">
         <button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> Cargá todo junto</button>
       </div>
-      <p style="margin:12px 0 0;font-size:13px">También podés hacer uno solo: <button type="button" class="btn-txt" data-acc="resumen">solo resúmenes</button> · <button type="button" class="btn-txt" data-acc="correo">solo mail</button></p>
+      <p style="margin:12px 0 0;font-size:13px">También podés hacer uno solo: <button type="button" class="btn-txt" data-acc="resumen">solo resúmenes</button> · <button type="button" class="btn-txt" data-acc="correo">solo mail</button> · <button type="button" class="btn-txt" data-acc="nota">pegar mi nota de servicios</button></p>
     </div>
     <div class="primer">
       <h2>O elegí <span class="it">a mano</span></h2>
@@ -1076,6 +1077,7 @@ function verCuenta(cid) {
     c.segundoVto ? ['2º vencimiento', `${c.segundoVto} días después`] : null,
     c.ajusteCada ? ['Se ajusta', `cada ${c.ajusteCada} meses`] : null,
     c.debito ? ['Débito automático', 'Sí'] : null,
+    c.nroCliente ? ['N.º de cliente', esc(c.nroCliente)] : null,
     c.habil ? ['Fin de semana', 'Pasa al lunes'] : null,
     c.moneda === 'USD' ? ['Moneda', 'Dólares'] : null,
   ].filter(Boolean);
@@ -1325,15 +1327,29 @@ async function abrirCorreo() {
     ${!cfg.google && !cfg.microsoft ? '<p class="leyenda">La conexión con el mail se está habilitando. Mientras tanto, sacale una foto a la factura.</p>' : ''}`);
 }
 const buscarCorreo = proveedor => cargarTodo({ proveedor });
+/* Lo que casi todas las casas pagan: si no apareció en lo encontrado ni está cargado, se ofrece completarlo ahí mismo. */
+const BASICOS = [
+  { id: 'luz', corto: 'la luz', grupo: ['edenor', 'edesur', 'epec', 'edelap', 'luz'], re: /luz|edenor|edesur|epec|edelap|electric/ },
+  { id: 'gas', corto: 'el gas', grupo: ['metrogas', 'naturgy', 'camuzzi', 'ecogas', 'gas', 'garrafa'], re: /gas|metrogas|naturgy|camuzzi|ecogas/ },
+  { id: 'agua', corto: 'el agua', grupo: ['aysa', 'absa', 'agua'], re: /agua|aysa|absa/ },
+  { id: 'abl', corto: 'el ABL', grupo: ['abl', 'tasa-municipal', 'inmobiliario'], re: /abl|municipal|inmobiliario|agip/ },
+  { id: 'internet', corto: 'internet', grupo: ['internet'], re: /internet|wifi|fibra|telecentro|fibertel|flow|iplan|starlink/ },
+  { id: 'celular', corto: 'el celular', grupo: ['celular'], re: /celular|personal|movistar|claro/ },
+];
+function faltantes() {
+  const todas = [...d.cuentas, ...encontrados];
+  return BASICOS.filter(b => !todas.some(c => b.grupo.includes(c.preset) || b.re.test(normNombre(c.nombre))));
+}
 function mostrarEncontrados(origen, siVacio) {
-  if (!encontrados.length) {
+  if (!encontrados.length && !faltantes().length) {
     abrir('No encontramos nada', `<p class="nota">${esc(siVacio)}</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="leer"><svg><use href="#i-camara"/></svg> Sacale una foto a una factura</button><button type="button" class="bt sec ancho" data-acc="leer-manual">Cargar a mano</button></div>`);
     return;
   }
   const filas = encontrados.map((c, i) => {
     const ya = cuentaQueCoincide(d.cuentas, c);
-    const sub = [`${c.proximoEstimado ? 'próximo ≈ ' : 'vence '}${V.fechaCorta(c.proximo)} ${V.mesDe(c.proximo) !== V.mesDe(hoy) ? `de ${V.nombreMes(V.mesDe(c.proximo))}` : ''}`.trim(),
-      V.nombreFrecuencia(c.frecuencia).toLowerCase(), c.tarjeta ? 'total del resumen' : c.origen ? `en ${c.origen}` : `${c.encontradas} factura${c.encontradas > 1 ? 's' : ''}`, ya ? `ya la tenés: se actualiza` : ''].filter(Boolean).join(' · ');
+    const sub = [c.aConfirmar ? 'fecha a confirmar' : `${c.proximoEstimado ? 'próximo ≈ ' : 'vence '}${V.fechaCorta(c.proximo)} ${V.mesDe(c.proximo) !== V.mesDe(hoy) ? `de ${V.nombreMes(V.mesDe(c.proximo))}` : ''}`.trim(),
+      V.nombreFrecuencia(c.frecuencia).toLowerCase(), c.tarjeta ? 'total del resumen' : c.origen ? `en ${c.origen}` : c.deNota ? 'de tu nota' : `${c.encontradas} factura${c.encontradas > 1 ? 's' : ''}${c.delPdf ? ' (PDF)' : ''}`,
+      c.nroCliente ? `n.º ${c.nroCliente}` : '', ya ? `ya la tenés: se actualiza` : ''].filter(Boolean).join(' · ');
     return `<li><label class="encontrada">
       <input type="checkbox" name="c" value="${i}" ${c.conocido || ya || c.nombre === 'Expensas' || c.origen ? 'checked' : ''}>
       ${avatar({ nombre: c.nombre, color: c.color })}
@@ -1341,9 +1357,14 @@ function mostrarEncontrados(origen, siVacio) {
       <span class="fila-monto">${c.monto != null ? plata(c.monto, c.moneda) : '<small>Sin monto</small>'}</span>
     </label></li>`;
   }).join('');
-  abrir(`Encontramos ${encontrados.length}`, `
+  const falt = faltantes();
+  abrir(encontrados.length ? `Encontramos ${encontrados.length}` : 'Completá lo que falta', `
     <p class="leyenda" style="margin-top:0">${esc(origen)} Destildá lo que no sea tuyo o no quieras cargar. Las fechas con ≈ son estimadas a partir de los cobros anteriores.</p>
     <form data-form="correo"><ul class="lista lista-sel">${filas}</ul>
+    ${falt.length ? `<div class="faltan"><h3>No encontramos ${falt.map(s => s.corto).join(', ')}</h3><p class="leyenda">Si los pagás, tildalos y poné cuánto pagaste la última vez y el día que vence. Si no sabés el día, dejalo vacío y te lo preguntamos cuando llegue la factura.</p>
+      <ul class="faltan-lista">${falt.map(s => `<li><label class="faltan-si"><input type="checkbox" name="falta" value="${s.id}"><span>${esc(s.corto)}</span></label>
+        <input type="text" inputmode="decimal" name="fm:${s.id}" placeholder="$ última vez" aria-label="Cuánto pagaste la última vez de ${esc(s.corto)}">
+        <input type="number" inputmode="numeric" min="1" max="31" name="fd:${s.id}" placeholder="Día" aria-label="Día de vencimiento de ${esc(s.corto)}"></li>`).join('')}</ul></div>` : ''}
     <div class="acciones" style="margin-top:16px"><button class="bt prim ancho" type="submit"><svg><use href="#i-check"/></svg> Cargar las elegidas</button>
     <button type="button" class="bt sec ancho" data-acc="cerrar">Ahora no</button></div></form>`);
 }
@@ -1351,13 +1372,24 @@ function mostrarEncontrados(origen, siVacio) {
    y guarda la historia de montos como facturas, para "cuánto subió". */
 function guardarDesdeMail(form) {
   const elegidas = [...form.querySelectorAll('input[name=c]:checked')].map(x => encontrados[Number(x.value)]).filter(Boolean);
+  /* lo que faltaba y la persona completó ahí mismo */
+  const f = new FormData(form);
+  for (const id of f.getAll('falta')) {
+    const s = servicio(id); if (!s) continue;
+    const dia = Number(f.get(`fd:${id}`));
+    const conDia = dia >= 1 && dia <= 31;
+    elegidas.push({ clave: `falta:${id}`, preset: s.id, nombre: s.nombre, categoria: s.categoria, color: s.color, frecuencia: s.frecuencia || 1,
+      proximo: conDia ? V.proximoDia(dia, hoy, s.frecuencia || 1) : fechaProvisoria(s), proximoEstimado: true, aConfirmar: !conDia,
+      monto: V.leerPesos(f.get(`fm:${id}`)), historia: [], encontradas: 0 });
+  }
   if (!elegidas.length) { cerrar(); return; }
   let n = d.ejemplo ? V.estadoVacio() : d;
   let nuevas = 0, actualizadas = 0;
   for (const e of elegidas) {
     let c = cuentaQueCoincide(n.cuentas, e);
     if (c) {
-      c = { ...c }; delete c.fechaAConfirmar;
+      c = { ...c }; if (!e.aConfirmar) delete c.fechaAConfirmar;
+      if (e.nroCliente && !c.nroCliente) c.nroCliente = e.nroCliente;
       if (e.segundoVto && !c.segundoVto) c.segundoVto = e.segundoVto;
       if (!V.claves(c, V.sumarDias(e.proximo, -10), V.sumarDias(e.proximo, 10)).length) c.primerVto = e.proximo;
       actualizadas++;
@@ -1367,6 +1399,7 @@ function guardarDesdeMail(form) {
         ...(e.monto != null ? { monto: e.monto } : {}), ...(e.segundoVto ? { segundoVto: e.segundoVto } : {}),
         ...(e.debito || servicio(e.preset)?.debito ? { debito: true } : {}), ...(servicio(e.preset)?.habil ? { habil: true } : {}),
         ...(e.moneda === 'USD' ? { moneda: 'USD' } : {}), ...(e.nota ? { nota: e.nota } : {}),
+        ...(e.aConfirmar ? { fechaAConfirmar: true } : {}), ...(e.nroCliente ? { nroCliente: e.nroCliente } : {}),
         ...(e.origen && !e.tarjeta ? { enTarjeta: e.origen, nota: `Se cobra en la tarjeta ${e.origen}: ya está dentro de su total.` } : {}) };
       nuevas++;
     }
@@ -1425,20 +1458,21 @@ function cuentasDeResumenes(lecturas) {
    Personal debitado en la tarjeta que además manda la factura por mail), queda la del resumen
    (sabemos que se cobra en la tarjeta) y se completa con el monto y la historia del mail. */
 const normNombre = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
-function juntarEncontradas(deResumen, deMail) {
+function juntarEncontradas(deResumen, deMail, deNota = []) {
   const out = [...deResumen];
-  for (const m of deMail) {
+  for (const m of [...deMail, ...deNota]) {
     const i = out.findIndex(r => !r.tarjeta && ((m.preset && r.preset === m.preset) || normNombre(r.nombre) === normNombre(m.nombre)));
     if (i < 0) { out.push(m); continue; }
     const r = out[i];
     const historia = [...new Map([...(m.historia || []), ...(r.historia || [])].map(h => [h.vence, h])).values()].sort((a, b) => a.vence.localeCompare(b.vence));
-    out[i] = { ...r, monto: r.monto ?? m.monto, historia, encontradas: (r.encontradas || 0) + (m.encontradas || 0) };
+    out[i] = { ...r, monto: r.monto ?? m.monto, historia, encontradas: (r.encontradas || 0) + (m.encontradas || 0),
+      ...(r.nroCliente || m.nroCliente ? { nroCliente: r.nroCliente || m.nroCliente } : {}) };
   }
   return out.sort((a, b) => Number(!!b.tarjeta) - Number(!!a.tarjeta) || Number(!!b.conocido) - Number(!!a.conocido) || a.nombre.localeCompare(b.nombre));
 }
 
 /* ── cargá todo junto: resúmenes de tarjeta + mail, en un solo paso ── */
-const carga = { files: [], proveedor: null, cfg: null };
+const carga = { files: [], proveedor: null, cfg: null, nota: '' };
 async function abrirCargaTodo({ files = null, proveedor } = {}) {
   if (files) carga.files = [...files].slice(0, MAX_RESUMENES_JUNTOS);
   if (proveedor !== undefined) carga.proveedor = proveedor;
@@ -1451,11 +1485,14 @@ async function abrirCargaTodo({ files = null, proveedor } = {}) {
       <button type="button" class="bt sec" data-acc="carga-archivos"><svg><use href="#i-tarjeta"/></svg> ${carga.files.length ? 'Cambiar' : 'Elegir resúmenes'}</button></div></div>
     <div class="carga-paso${carga.proveedor ? ' listo' : ''}"><span class="carga-n">2</span><div><b>Tu mail</b><small>Solo lectura, se lee en este teléfono y el permiso se cierra al terminar.</small>
       <div class="seg carga-prov">${op('gmail', 'Gmail', !!cfg.google)}${op('outlook', 'Outlook o Hotmail', !!cfg.microsoft)}${op('', 'Sin mail', true)}</div></div></div>
-    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="carga-buscar" ${carga.files.length || carga.proveedor ? '' : 'disabled'}><svg><use href="#i-buscar"/></svg> Buscar todo</button></div>
+    <div class="carga-paso${carga.nota.trim() ? ' listo' : ''}"><span class="carga-n">3</span><div><b>Tu nota de servicios <span class="dim">(opcional)</span></b><small>Si tenés anotados tus servicios con el número de cliente, copiá la nota y pegala acá. Se lee en este teléfono.</small>
+      <textarea id="carga-nota" rows="4" placeholder="Edenor cliente 0012345678 vence 21&#10;ABL partida 1234567&#10;Wifi Telecentro 98765432">${esc(carga.nota)}</textarea></div></div>
+    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="carga-buscar"><svg><use href="#i-buscar"/></svg> Buscar todo</button></div>
     <p class="leyenda">El resumen trae suscripciones y débitos de la tarjeta; el mail, las facturas con vencimiento (luz, gas, internet, celular). Con los dos juntos aparece casi todo.</p>`);
 }
-async function cargarTodo({ files = [], proveedor = null } = {}) {
+async function cargarTodo({ files = [], proveedor = null, nota = '' } = {}) {
   files = [...files];
+  const deNota = nota.trim() ? serviciosDesdeNota(nota, hoy) : [];
   const cfg = carga.cfg || (DEMO_CORREO ? {} : await configCorreo().catch(() => ({})));
   abrir('Buscando todo', `<div class="leyendo" role="status"><span class="giro" aria-hidden="true"></span><p>
     ${proveedor ? `<b id="av-mail">Mail: esperando el permiso…</b><br>` : ''}${files.length ? `<b id="av-res">Resúmenes: preparando…</b><br>` : ''}
@@ -1470,14 +1507,14 @@ async function cargarTodo({ files = [], proveedor = null } = {}) {
   const pRes = !files.length ? Promise.resolve(null)
     : leerResumenesNucleo(files, (n, t) => txt('av-res', t > 1 ? `Resúmenes: leyendo ${n} de ${t}…` : 'Resúmenes: leyendo…')).then(r => { txt('av-res', `Resúmenes: listo ✓`); return r; });
   const [mails, res] = await Promise.all([pMail, pRes]);
-  carga.files = []; carga.proveedor = null;
+  carga.files = []; carga.proveedor = null; carga.nota = '';
 
   const mailOk = Array.isArray(mails);
   if (mailOk) marcarFuente('mail');
   if (res?.sesion && !res.lecturas.length && !mailOk) return errorLectura('Tu sesión de Orbit se cerró. Entrá de nuevo para leer el resumen.', true);
   const deResumen = res ? cuentasDeResumenes(res.lecturas) : [];
   const deMail = mailOk ? cuentasDesdeMails(mails, hoy) : [];
-  encontrados = juntarEncontradas(deResumen, deMail);
+  encontrados = juntarEncontradas(deResumen, deMail, deNota);
 
   const partes = [];
   if (res) {
@@ -1487,8 +1524,9 @@ async function cargarTodo({ files = [], proveedor = null } = {}) {
     if (res.malos.length) partes.push(`No pudimos leer: ${res.malos.join(' · ')}.`);
     if (res.dudosos) partes.push('Algunos montos no cerraron: revisalos.');
   }
-  if (proveedor) partes.push(mailOk ? `Revisamos ${mails.length} mails.` : `El mail no se pudo revisar: ${mails.error}`);
-  if (!encontrados.length && !res?.lecturas.length && !mailOk) {
+  if (proveedor) partes.push(mailOk ? `Revisamos ${mails.length} mails${mails.some(m => m.adjunto) ? ` y ${mails.filter(m => m.adjunto).length} facturas en PDF` : ''}.` : `El mail no se pudo revisar: ${mails.error}`);
+  if (deNota.length) partes.push(`De tu nota salieron ${deNota.length} servicios.`);
+  if (!encontrados.length && !res?.lecturas.length && !mailOk && !deNota.length) {
     abrir('No se pudo buscar', `<p class="nota">${esc(partes.join(' '))}</p><div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo">Probar de nuevo</button><button type="button" class="bt sec ancho" data-acc="leer">Sacarle una foto a una factura</button></div>`);
     if (res?.detalle) $id('hoja-cuerpo').insertAdjacentHTML('beforeend', `<details class="mas"><summary>Detalle técnico (solo administración)</summary><pre class="diag">${esc(JSON.stringify(res.detalle, null, 2))}</pre></details>`);
     return;
@@ -1497,6 +1535,13 @@ async function cargarTodo({ files = [], proveedor = null } = {}) {
   mostrarEncontrados(partes.join(' ') + (encontrados.length ? faltaUno : ''), `${partes.join(' ')} No encontramos cuentas que se repitan.${faltaUno}`);
 }
 const leerResumen = files => cargarTodo({ files });
+function abrirNota() {
+  abrir('Pegá tu nota de servicios', `<p class="lead-s" style="margin-top:0">¿Tenés anotados tus servicios con el número de cliente? Copiá la nota y pegala acá: armamos la lista de una. Se lee en este teléfono, no se manda a ningún lado.</p>
+    <textarea id="nota-txt" rows="7" placeholder="Edenor cliente 0012345678 vence 21&#10;Metrogas 40-123456-7&#10;ABL partida 1234567 $16.000&#10;Wifi Telecentro 98765432&#10;Celu Personal"></textarea>
+    <p class="leyenda">Un servicio por renglón. Si ponés el día ("vence 21") o el monto ("$16.000"), también los tomamos. El número de cliente queda guardado para reconocer tus facturas.</p>
+    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="nota-leer">Armar la lista</button></div>`);
+  setTimeout(() => $id('nota-txt')?.focus(), 60);
+}
 
 /* ── archivos ── */
 function bajar(nombre, texto, tipo) {
@@ -1551,7 +1596,7 @@ function abrirAjustes() {
   </div>
   <div class="ajustes-sec"><h3>Tu mail y tus tarjetas</h3>
     <p class="leyenda" style="margin-top:0">Buscá facturas nuevas cuando quieras. El permiso es de solo lectura y se cierra al terminar.</p>
-    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> Resúmenes y mail, todo junto</button><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Solo el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Solo resúmenes</button></div>
+    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> Resúmenes y mail, todo junto</button><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Solo el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Solo resúmenes</button><button type="button" class="bt sec ancho" data-acc="nota"><svg><use href="#c-doc"/></svg> Pegar mi nota de servicios</button></div>
   </div>
   <div class="ajustes-sec"><h3>Tu copia</h3>
     <p class="leyenda" style="margin-top:0">Tus datos viven solo en este dispositivo. ${ult}</p>
@@ -1717,9 +1762,19 @@ document.addEventListener('click', e => {
     case 'correo': abrirCorreo(); break;
     case 'resumen': $id('f-resumen').click(); break;
     case 'cargar-todo': abrirCargaTodo(); break;
-    case 'carga-archivos': $id('f-resumen').dataset.para = 'carga'; $id('f-resumen').click(); break;
-    case 'carga-prov': carga.proveedor = b.value || null; abrirCargaTodo(); break;
-    case 'carga-buscar': cargarTodo({ files: carga.files, proveedor: carga.proveedor }); break;
+    case 'carga-archivos': carga.nota = $id('carga-nota')?.value ?? carga.nota; $id('f-resumen').dataset.para = 'carga'; $id('f-resumen').click(); break;
+    case 'carga-prov': carga.nota = $id('carga-nota')?.value ?? carga.nota; carga.proveedor = b.value || null; abrirCargaTodo(); break;
+    case 'carga-buscar': {
+      carga.nota = $id('carga-nota')?.value || '';
+      if (!carga.files.length && !carga.proveedor && !carga.nota.trim()) { toast('Elegí al menos una: resúmenes, mail o tu nota.'); return; }
+      cargarTodo({ files: carga.files, proveedor: carga.proveedor, nota: carga.nota }); break;
+    }
+    case 'nota': abrirNota(); break;
+    case 'nota-leer': {
+      encontrados = serviciosDesdeNota($id('nota-txt')?.value || '', hoy);
+      mostrarEncontrados(encontrados.length ? `Encontramos ${encontrados.length} servicios en tu nota.` : 'No reconocimos servicios en la nota.', 'No reconocimos servicios en la nota. Probá con un servicio por renglón, por ejemplo "Edenor cliente 0012345678".');
+      break;
+    }
     case 'correo-gmail': buscarCorreo('gmail'); break;
     case 'correo-outlook': buscarCorreo('outlook'); break;
     case 'ejemplo': cerrar(); guardar(datosEjemplo(hoy)); ui.mes = V.mesDe(hoy); toast('Datos de ejemplo cargados.'); break;
@@ -2069,3 +2124,11 @@ pintarMarca();
 const inicial = location.hash.slice(1);
 if (['inicio', 'calendario', 'cuentas', 'numeros'].includes(inicial)) ui.vista = inicial;
 render();
+
+/* "No encontramos…": al escribir el monto o el día, se tilda solo */
+document.addEventListener('input', e => {
+  const m = /^f[md]:(.+)$/.exec(e.target.name || '');
+  if (!m || !e.target.value) return;
+  const cb = e.target.closest('li')?.querySelector(`input[name=falta][value="${m[1]}"]`);
+  if (cb) cb.checked = true;
+});

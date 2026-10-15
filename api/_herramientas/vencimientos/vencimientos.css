@@ -596,3 +596,13 @@ details.mas[open] summary::after{transform:rotate(45deg)}
 .carga-paso.listo .carga-n{background:var(--azul);color:#F2EFE8}
 .carga-paso b{display:block;font-size:15px}.carga-paso small{display:block;color:var(--suave);font-size:12.5px;margin:3px 0 10px;overflow-wrap:anywhere}
 .carga-prov{flex-wrap:wrap}.carga-prov label.off{opacity:.45}
+
+/* ── nota de servicios y lo que falta ── */
+#nota-txt,#carga-nota{width:100%;box-sizing:border-box;border:1px solid var(--linea);border-radius:12px;padding:10px 12px;font:14px/1.45 var(--mono);background:var(--papel);color:inherit;resize:vertical;margin-top:6px}
+.faltan{margin-top:16px;padding:14px;border-radius:16px;background:var(--fondo)}
+.faltan h3{margin:0 0 4px;font-size:15px}
+.faltan-lista{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:8px}
+.faltan-lista li{display:grid;grid-template-columns:1fr 110px 64px;gap:8px;align-items:center}
+.faltan-lista input[type=text],.faltan-lista input[type=number]{min-height:40px;border:1px solid var(--linea);border-radius:10px;padding:0 10px;font:inherit;background:var(--papel);color:inherit;width:100%;box-sizing:border-box}
+.faltan-si{display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px;cursor:pointer}
+.faltan-si input{width:20px;height:20px;accent-color:var(--azul)}
