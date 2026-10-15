@@ -25,3 +25,27 @@ test('los ganchos están en su lugar (rutas, acciones, Cuenta, Libreta, Inicio y
   /* con todo apagado, Cuenta sigue diciendo que la copia no se puede volver a cargar */
   assert.match(js, /Todavía no se puede volver a cargar en la app\./);
 });
+
+/* corre el bloque de interruptores tal cual, con un location y un localStorage falsos */
+function flags(hostname, search, saved) {
+  const i = js.indexOf('const FEATURES = '), j = js.indexOf('/* lo que cada función engancha');
+  const mem = new Map(saved == null ? [] : [['mimitos:funciones', saved]]);
+  const localStorage = { getItem: k => mem.get(k) ?? null, setItem: (k, v) => mem.set(k, String(v)), removeItem: k => mem.delete(k) };
+  const FEATURES = Function('location', 'localStorage', 'URLSearchParams', js.slice(i, j) + '\nreturn FEATURES;')({ hostname, search }, localStorage, URLSearchParams);
+  return { on: Object.keys(FEATURES).filter(k => FEATURES[k]), saved: mem.get('mimitos:funciones') };
+}
+
+test('en producción (orbitando.com.ar) se ignora ?funciones= y se borra lo guardado', () => {
+  for (const h of ['www.orbitando.com.ar', 'orbitando.com.ar']) {
+    const r = flags(h, '?funciones=salud,vete', 'restaurar');
+    assert.deepEqual(r.on, [], h); assert.equal(r.saved, undefined, h);
+  }
+});
+
+test('en local y en previews de Vercel el override sí anda', () => {
+  assert.deepEqual(flags('localhost', '?funciones=salud,vete').on, ['salud', 'vete']);
+  assert.deepEqual(flags('127.0.0.1', '', 'restaurar').on, ['restaurar']);
+  assert.deepEqual(flags('orbit-web-git-drop01-libreta-funciones-mariasiccos-projects.vercel.app', '?funciones=avisosAlta').on, ['avisosAlta']);
+  assert.deepEqual(flags('localhost', '?funciones=no', 'salud').on, []);
+  assert.deepEqual(flags('evil.vercel.app.example.com', '?funciones=salud').on, [], 'no alcanza con que diga vercel.app en el medio');
+});
