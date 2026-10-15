@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  historiaCompra, vincularCredito, TIPOS_EVIDENCIA, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -330,7 +330,9 @@ function pintarDevolver() {
 }
 const ddv = $id('dlg-devolver');
 let devTipo = 'reintegro', devEsperada = null;
-function abrirDevolver() {
+let devCuota = null;
+function abrirDevolver(cuotaId = null) {
+  devCuota = cuotaId;
   devTipo = 'reintegro'; devEsperada = sumarDias(HOY_ISO, 30);
   $id('dv-tipos').innerHTML = Object.entries(TIPOS_DEVOLVER).map(([k, v]) => `<label class="mm-chip"><input type="radio" name="dv-tipo" value="${k}"${k === devTipo ? ' checked' : ''}><span>${esc(v)}</span></label>`).join('');
   $id('dv-esperada').innerHTML = [15, 30, 60, 90].map(n => { const f = sumarDias(HOY_ISO, n); return `<label class="mm-chip"><input type="radio" name="dv-esp" value="${f}"${f === devEsperada ? ' checked' : ''}><span>En ${n} días</span></label>`; }).join('');
@@ -342,7 +344,7 @@ ddv.querySelector('form').addEventListener('submit', e => {
   e.preventDefault();
   const monto = leerMonto($id('dv-monto').value);
   if (!monto) { error($id('dv-monto'), 'dv-monto-err', 'Escribí el monto, por ejemplo 8.000.').focus(); return; }
-  datos.devolver = [...datos.devolver, { id: nuevoId(), tipo: devTipo, motivo: $id('dv-motivo').value.trim().slice(0, 80) || TIPOS_DEVOLVER[devTipo], monto, fecha: HOY_ISO, esperada: devEsperada, quien: $id('dv-quien').value.trim().slice(0, 40) }];
+  datos.devolver = [...datos.devolver, { id: nuevoId(), tipo: devTipo, motivo: $id('dv-motivo').value.trim().slice(0, 80) || TIPOS_DEVOLVER[devTipo], monto, fecha: HOY_ISO, esperada: devEsperada, quien: $id('dv-quien').value.trim().slice(0, 40), ...(devCuota ? { cuotaId: devCuota } : {}) }];
   guardar(); cerrar(ddv); pintarDevolver(); pintarInicio(); avisar('Agregado a la bandeja');
 });
 $id('vista-devolver').addEventListener('click', async e => {
@@ -1274,7 +1276,20 @@ function pintarFicha(c) {
       <span class="mm-ficha-n">${o.n}/${f.cantidad}</span>
       <span class="mm-ficha-txt"><b>${esc(fm(o.monto, m))}</b><small>${o.vencimiento ? `Resumen que vence el ${esc(fechaCorta(o.vencimiento))}` : `Resumen de ${esc(nombreMes(o.mes))}`}</small></span>
       <span class="mm-tag ${o.estado === 'resumen' ? '' : 'ext'}">${o.estado === 'resumen' ? 'En el resumen' : 'Estimada'}</span></li>`).join('')}</ol>
-    <p class="mm-fuente">Cada mes cuenta solo su cuota. Pagar el resumen no es otro gasto: es cómo se pagan estas cuotas.</p>`;
+    <p class="mm-fuente">Cada mes cuenta solo su cuota. Pagar el resumen no es otro gasto: es cómo se pagan estas cuotas.</p>${historiaHTML(c)}`;
+}
+/* (2) una sola historia: todo lo que sabemos de esta compra */
+function historiaHTML(c) {
+  if (!F.historia) return '';
+  const h = historiaCompra(datos, c.id);
+  if (!h) return '';
+  const linea = e => `<li><span class="mm-ficha-n">${esc(e.fecha ? fechaAR(e.fecha) : '—')}</span><span class="mm-ficha-txt"><b>${esc(TIPOS_EVIDENCIA[e.tipo])}</b><small>${esc(
+    e.tipo === 'resumen' ? `${e.comercio || ''}${e.n ? ` · cuota ${e.n}/${c.cantidad}` : ''}${e.mes ? ` · ${nombreMes(e.mes)}` : ''}` : e.descripcion || e.concepto || '')}</small></span>
+    <span>${Number.isSafeInteger(e.monto) ? esc((e.tipo === 'credito' || e.tipo === 'reintegro' ? '−' : '') + fm(e.monto, c.moneda || 'ARS')) : ''}</span></li>`;
+  return `<h3 class="mm-comp-t" style="margin-top:12px">Historia de esta compra</h3><ol class="mm-ficha-lista">${h.evidencias.map(linea).join('')}</ol>
+    ${h.propuestas.map(p => `<p class="mm-fuente">En el resumen aparece <b>${esc(p.concepto)}</b> por ${esc($(p.monto))} el ${esc(fechaAR(p.fecha))}. ¿Es de esta compra?</p>
+      <div class="mm-meta-acc"><button type="button" class="mm-btn sec chico" data-vincular="${esc(c.id)}" data-res="${esc(p.resumenId)}" data-i="${p.i}">Sí, es de esta compra</button></div>`).join('')}
+    ${F.devolver ? `<button type="button" class="mm-link" data-dev-de="${esc(c.id)}">Espero un reintegro o devolución de esta compra</button>` : ''}`;
 }
 /* (8) la pago con alguien: se guarda al toque, sin tocar el cronograma de la tarjeta */
 function pintarCompartida(c) {
@@ -2084,6 +2099,10 @@ document.addEventListener('click', e => {
   if (t.closest('[data-franja]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-franja]')?.focus(); }
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
+  const vc = t.closest('[data-vincular]');
+  if (vc) { datos = vincularCredito(datos, vc.dataset.vincular, vc.dataset.res, Number(vc.dataset.i)); guardar(); pintarFicha(datos.cuotas.find(x => x.id === vc.dataset.vincular)); return avisar('Listo: queda en la historia de la compra'); }
+  const dd = t.closest('[data-dev-de]');
+  if (dd) { cerrar(dc); return abrirDevolver(dd.dataset.devDe); }
   const pg = t.closest('[data-pago-res]');
   if (pg) {
     if (pg.dataset.pago === 'otro') { pagoDe = pg.dataset.pagoRes; $id('p-monto').value = ''; return abrir($id('dlg-pago'), $id('p-monto')); }

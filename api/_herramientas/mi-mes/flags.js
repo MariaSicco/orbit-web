@@ -12,6 +12,7 @@ export const FLAGS = {
   pagoVencido: true,      // resumen ya vencido al importarlo: ¿ya lo pagaste? (ajuste del socio, 15/10)
   /* tanda 11: se encienden de a una cuando pasan la QA */
   diaDificil: false,      // (4) saldo de hoy y día por día
+  historia: false,        // (2) una sola historia por gasto
   devolver: false,        // (6) plata que te tienen que devolver
   compartidas: false,     // (8) cuotas compartidas
   comoPagar: false,       // (9) ¿cómo me conviene pagar esta compra?

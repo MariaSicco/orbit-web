@@ -590,20 +590,37 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
   /* compras nuevas cargadas a mano que ahora salen en el resumen: se
      concilian solas (mismo monto de cuota, cantidad, moneda y fecha cercana);
      si no es seguro, se pregunta */
-  const { conciliadas, dudosas } = conciliarCompras(d, tId, lectura);
-  d.cuotas = d.cuotas.filter(x => !conciliadas.includes(x.id));
+  const { conciliadas, dudosas, pares } = conciliarCompras(d, tId, lectura);
+  const resumenId = d.resumenes[d.resumenes.length - 1].id;
+  /* (2) una sola historia: la compra cargada a mano se convierte en la del
+     resumen (mismo id: conserva lo compartido, la bandeja y la ficha) y
+     suma la evidencia del resumen */
+  const evResumen = (c, i) => ({ tipo: 'resumen', origen: resumenId, fecha: c.fecha || null, mes, n: c.cuota?.n || 1, comercio: c.comercio, monto: c.monto, i });
+  const porConsumo = new Map(pares.map(x => [x.i, x.cuotaId]));
+  d.cuotas = d.cuotas.flatMap(x => {
+    if (!conciliadas.includes(x.id)) return [x];
+    const par = pares.find(y => y.cuotaId === x.id);
+    const c = lectura.consumos[par.i];
+    const ev = [{ tipo: 'compra', origen: 'manual', fecha: x.fecha || null, descripcion: x.descripcion || '', monto: x.total }, ...(x.evidencias || []).filter(e => e.tipo !== 'compra'), evResumen(c, par.i)];
+    const de = c.cuota?.de || 1;
+    return [{ ...x, total: c.monto * de, moneda: c.moneda, cantidad: de, primerMes: sumarMeses(mes, -((c.cuota?.n || 1) - 1)), origen: 'resumen', comercio: c.comercio, evidencias: ev }];
+  });
   let nuevas = 0;
-  for (const c of lectura.consumos) {
-    if (!c.cuota || c.cuota.de < 2) continue;
+  lectura.consumos.forEach((c, i) => {
+    if (porConsumo.has(i) || !c.cuota || c.cuota.de < 2) return;
     const primerMes = sumarMeses(mes, -(c.cuota.n - 1));
     const igual = x => x.tarjetaId === tId && x.cantidad === c.cuota.de && x.primerMes === primerMes &&
-      (x.moneda || 'ARS') === c.moneda && normalizarComercio(x.descripcion) === normalizarComercio(c.comercio) &&
+      (x.moneda || 'ARS') === c.moneda && normalizarComercio(x.comercio || x.descripcion) === normalizarComercio(c.comercio) &&
       repartirCuotas(x.total, x.cantidad)[1] === c.monto;
-    if (d.cuotas.some(igual)) continue;
+    const ya = d.cuotas.find(igual);
+    if (ya) {
+      if (!(ya.evidencias || []).some(e => e.tipo === 'resumen' && e.mes === mes)) ya.evidencias = [...(ya.evidencias || []), evResumen(c, i)].slice(-80);
+      return;
+    }
     d.cuotas.push({ id: nuevoId(), descripcion: c.comercio, total: c.monto * c.cuota.de, moneda: c.moneda,
-      cantidad: c.cuota.de, tarjetaId: tId, primerMes, origen: 'resumen' });
+      cantidad: c.cuota.de, tarjetaId: tId, primerMes, origen: 'resumen', evidencias: [evResumen(c, i)] });
     nuevas++;
-  }
+  });
   /* las dudas de conciliación quedan guardadas hasta que la persona responda */
   d.concilia = [...(d.concilia || []).filter(x => x.tarjetaId !== tId), ...dudosas.map(x => ({ ...x, tarjetaId: tId }))];
   return { datos: d, tarjetaId: tId, mes, cuotasNuevas: nuevas, conciliadas, dudosas };
@@ -615,7 +632,7 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
    un único candidato. Parecido (±5 % o sin fecha cercana) = duda. */
 export function conciliarCompras(datos, tarjetaId, lectura) {
   const pendientes = (datos.cuotas || []).filter(x => x.tarjetaId === tarjetaId && x.origen === 'manual');
-  const conciliadas = [], dudosas = [];
+  const conciliadas = [], dudosas = [], pares = [];
   const usados = new Set();
   for (const p of pendientes) {
     const montoCuota = repartirCuotas(p.total, p.cantidad);
@@ -629,14 +646,14 @@ export function conciliarCompras(datos, tarjetaId, lectura) {
       else if (dif <= Math.max(100, Math.round(esperado * 0.05))) cand.push({ i, seguro: false });
     });
     const seguros = cand.filter(x => x.seguro);
-    if (seguros.length === 1) { conciliadas.push(p.id); usados.add(seguros[0].i); }
+    if (seguros.length === 1) { conciliadas.push(p.id); usados.add(seguros[0].i); pares.push({ cuotaId: p.id, i: seguros[0].i }); }
     else if (cand.length) {
       const c = lectura.consumos[cand[0].i];
       dudosas.push({ cuotaId: p.id, descripcion: p.descripcion || 'Compra cargada a mano', total: p.total, cantidad: p.cantidad, moneda: p.moneda || 'ARS',
         comercio: c.comercio, monto: c.monto, cuota: c.cuota });
     }
   }
-  return { conciliadas, dudosas };
+  return { conciliadas, dudosas, pares };
 }
 
 /* ── esquema y migración ── */
@@ -694,7 +711,9 @@ export function migrar(crudo) {
       moneda: esMoneda(c.moneda) ? c.moneda : 'ARS',
       cantidad: c.cantidad, tarjetaId: String(c.tarjetaId), primerMes: c.primerMes,
       ...(c.origen === 'resumen' || c.origen === 'manual' ? { origen: c.origen } : {}), ...(esFecha(c.fecha) ? { fecha: c.fecha } : {}),
-      ...(compartidaValida(c.compartida, c.total) ? { compartida: compartidaValida(c.compartida, c.total) } : {}) });
+      ...(compartidaValida(c.compartida, c.total) ? { compartida: compartidaValida(c.compartida, c.total) } : {}),
+      ...(typeof c.comercio === 'string' && c.comercio ? { comercio: texto(c.comercio, 60) } : {}),
+      ...(Array.isArray(c.evidencias) && c.evidencias.length ? { evidencias: c.evidencias.map(evidenciaValida).filter(Boolean).slice(-80) } : {}) });
   }
   for (const r of Array.isArray(crudo.resumenes) ? crudo.resumenes : []) {
     if (!r?.id || !ids.has(String(r.tarjetaId)) || !esMes(r.mes)) continue;
@@ -1940,4 +1959,61 @@ export function registrarPagoResumen(datos, resumenId, pago) {
   const p = pagoValido(pago);
   if (!p) return datos;
   return { ...datos, resumenes: (datos.resumenes || []).map(r => (r.id === resumenId ? { ...r, pago: p } : r)) };
+}
+
+
+/* ═══════════════ (2) Una sola historia por gasto ═══════════════
+   La ficha junta las evidencias de una misma compra: la compra cargada, el
+   consumo en cada resumen, devoluciones o créditos vinculados y reintegros de
+   la bandeja. Mail y ticket todavía no son fuentes, pero el modelo ya los
+   acepta. La vinculación nunca es solo por monto: comercio + fecha + monto
+   (+ cuotas); si hay duda, se propone y decide la persona. */
+export const TIPOS_EVIDENCIA = { compra: 'La cargaste', resumen: 'En el resumen', credito: 'Crédito o devolución', reintegro: 'Reintegro', mail: 'Mail', ticket: 'Ticket' };
+export function evidenciaValida(e) {
+  if (!e || typeof e !== 'object' || !TIPOS_EVIDENCIA[e.tipo]) return null;
+  const out = { tipo: e.tipo, origen: texto(String(e.origen ?? ''), 60), fecha: esFecha(e.fecha) ? e.fecha : null };
+  if (Number.isSafeInteger(e.monto)) out.monto = e.monto;
+  if (esMes(e.mes)) out.mes = e.mes;
+  if (Number.isInteger(e.n)) out.n = e.n;
+  if (Number.isInteger(e.i)) out.i = e.i;
+  if (typeof e.comercio === 'string') out.comercio = texto(e.comercio, 60);
+  if (typeof e.descripcion === 'string') out.descripcion = texto(e.descripcion, 60);
+  if (typeof e.concepto === 'string') out.concepto = texto(e.concepto, 60);
+  return out;
+}
+const palabras = s => normalizarComercio(s).split(' ').filter(w => w.length >= 3);
+const mismoComercio = (a, b) => { const x = palabras(a), y = new Set(palabras(b)); return x.length > 0 && x.some(w => y.has(w)); };
+export function historiaCompra(datos, cuotaId) {
+  const c = (datos?.cuotas || []).find(x => x.id === cuotaId);
+  if (!c) return null;
+  const ev = [...(c.evidencias || [])];
+  if (!ev.length) ev.push(c.origen === 'manual' ? { tipo: 'compra', origen: 'manual', fecha: c.fecha || null, descripcion: c.descripcion, monto: c.total } : { tipo: 'resumen', origen: '', fecha: c.fecha || null });
+  for (const x of datos.devolver || []) if (x.cuotaId === cuotaId) ev.push({ tipo: 'reintegro', origen: x.id, fecha: x.acreditado || x.esperada || x.fecha, monto: x.monto, descripcion: x.motivo });
+  for (const d of c.compartida?.devoluciones || []) ev.push({ tipo: 'credito', origen: 'compartida', fecha: d.fecha, monto: d.monto, descripcion: `Te devolvió ${c.compartida.con}` });
+  /* propuestas: créditos del resumen de la misma tarjeta, mismo comercio, después de la compra y de un monto posible */
+  const vinculados = new Set(ev.filter(e => e.tipo === 'credito' && e.origen && e.origen !== 'compartida').map(e => `${e.origen}:${e.i}`));
+  const usadosOtras = new Set((datos.cuotas || []).filter(x => x.id !== cuotaId).flatMap(x => (x.evidencias || []).filter(e => e.tipo === 'credito').map(e => `${e.origen}:${e.i}`)));
+  const nombre = c.comercio || c.descripcion || '';
+  const cuotaMonto = repartirCuotas(c.total, c.cantidad)[0];
+  const propuestas = [];
+  for (const r of datos.resumenes || []) {
+    if (r.tarjetaId !== c.tarjetaId) continue;
+    (r.pagosYCreditos || []).forEach((p, i) => {
+      const k = `${r.id}:${i}`;
+      if (p.tipo !== 'credito' || p.monto >= 0 || vinculados.has(k) || usadosOtras.has(k)) return;
+      if (!mismoComercio(p.concepto, nombre)) return;                 // nunca solo por monto
+      const m = -p.monto;
+      if (m > c.total + 100) return;
+      if (esFecha(c.fecha) && esFecha(p.fecha) && diasEntre(c.fecha, p.fecha) < 0) return;
+      propuestas.push({ resumenId: r.id, i, concepto: p.concepto, fecha: p.fecha, monto: m, seguro: Math.abs(m - c.total) <= 100 || Math.abs(m - cuotaMonto) <= 100 });
+    });
+  }
+  ev.sort((a, b) => (a.fecha && b.fecha ? diasEntre(b.fecha, a.fecha) : 0));
+  return { cuota: c, evidencias: ev, propuestas };
+}
+export function vincularCredito(datos, cuotaId, resumenId, i) {
+  const r = (datos.resumenes || []).find(x => x.id === resumenId);
+  const p = r?.pagosYCreditos?.[i];
+  if (!p) return datos;
+  return { ...datos, cuotas: datos.cuotas.map(c => (c.id === cuotaId ? { ...c, evidencias: [...(c.evidencias || []), { tipo: 'credito', origen: resumenId, i, fecha: p.fecha || null, monto: -p.monto, concepto: p.concepto }] } : c)) };
 }
