@@ -187,7 +187,9 @@ export function cleanDoc(d, email) {
   /* "mi zona" de Veterinarias cerca (opcional): solo texto corto y coordenadas redondeadas a 3 decimales */
   const zone = cleanZone(d?.zone);
   /* "Me fui" (api/_lib/petaway.js): salida en curso, ajustes e historial; los docs viejos no lo tienen */
-  return { pets, appointments: cleanAppointments(d?.appointments, pets), ...(zone ? { zone } : {}), ...cleanAway(d, pets.map(p => p.id)) };
+  /* lo que la persona ya vio una vez (la introducción de bienvenida): solo la fecha */
+  const seen = day(d?.seen?.tour) ? { seen: { tour: day(d.seen.tour) } } : {};
+  return { pets, appointments: cleanAppointments(d?.appointments, pets), ...(zone ? { zone } : {}), ...seen, ...cleanAway(d, pets.map(p => p.id)) };
 }
 /* un episodio de "+ Algo pasó" (o una nota vieja): solo lo que la app usa; los campos vacíos no se guardan */
 export const EPISODE_KINDS = ['vomito', 'diarrea', 'picazon', 'herida', 'nocomio', 'tos', 'cojea', 'raro', 'otro'];

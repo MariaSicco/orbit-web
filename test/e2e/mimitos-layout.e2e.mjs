@@ -24,7 +24,8 @@ async function server() {
   const { default: mascotas } = await import('../../api/mascotas.js');
   const { bigDoc } = await import('../fixtures/mimitos-cuenta-grande.mjs');
   await kvSet(`orbit:purchases:${EMAIL}`, [{ productId: 'ob-018', date: '2026-10-12' }]);
-  await kvSet(`orbit:pets:${EMAIL}`, { rev: 1, ...bigDoc() });
+  /* la introducción de bienvenida ya vista: si no, su cartel tapa la pantalla y los clics de esta prueba */
+  await kvSet(`orbit:pets:${EMAIL}`, { rev: 1, ...bigDoc(), seen: { tour: '2026-10-15' } });
   const vj = JSON.parse(await readFile(join(ROOT, 'vercel.json'), 'utf8'));
   const match = (src, p) => new RegExp('^' + src.replace(/\(\.\*\)/g, '.*').replace(/:[a-z]+\*?/g, '[^/]+') + '$').test(p);
   const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png', '.json': 'application/json', '.webmanifest': 'application/json' };

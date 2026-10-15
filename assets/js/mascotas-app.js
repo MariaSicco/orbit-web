@@ -1074,8 +1074,9 @@ const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
    si está prendida. Para probarlas en local o en un preview de Vercel: /mascotas?funciones=salud,vete (queda en ese
    navegador); ?funciones=no las apaga. En producción no hay override. Para que salgan para todos: poner en true acá. */
 /* versión de cada archivo de función: subila cuando cambie, así el celu no se queda con la vieja */
-const FEATV = { salud: 2, restaurar: 1, avisosAlta: 1, vete: 2 };
-const FEATURES = { salud: true, restaurar: false, avisosAlta: false, vete: true };
+const FEATV = { salud: 2, restaurar: 1, avisosAlta: 1, vete: 2, tour: 1 };
+/* tour: introducción de bienvenida (mascotas-f-tour.js), prendida por pedido de Majo (15/10) */
+const FEATURES = { salud: true, restaurar: false, avisosAlta: false, vete: true, tour: true };
 /* el override (?funciones= y lo guardado en este navegador) solo vale en local y en los previews de Vercel:
    en producción se ignora y se borra, así nadie prende algo que salió apagado por no pasar el QA */
 const FEAT_TEST_HOST = h => /^(localhost|127\.0\.0\.1|\[::1\])$/.test(h) || /\.vercel\.app$/.test(h);
@@ -1165,6 +1166,8 @@ function render() {
   if (html != null) app.innerHTML = html;
   if (key !== lastKey) { app.classList.add('view-in'); lastKey = key; } else app.classList.remove('view-in');
   afterRender();
+  /* funciones con interruptor que miran la pantalla ya dibujada (la introducción) */
+  if (mode === 'full') (FEAT.hooks.afterRender || []).forEach(fn => { try { fn(route); } catch {} });
 }
 function view() {
   if (mode === 'loading') return skeleton();
@@ -3588,7 +3591,7 @@ try {
 /* puente para los módulos aparte (mascotas-vets.js: Veterinarias cerca y turnos) */
 window.MZAPP = { get doc() { return doc; }, get mefui() { return mefui; }, get mode() { return mode; }, get notify() { return notify; }, get route() { return route; }, get pushHere() { return pushHere; }, get curId() { return curId; }, set curId(v) { curId = v; }, me, dPanel, curPet, petById, changed, render, go, panel, toast, openForm, calendar, visitForm,
   /* para las funciones con interruptor (mascotas-f-*.js) */
-  store, avatar, bubble, medRow, uid, norm, drop, la, Cap, kg, dd, after, backTo, notifyPost, enablePush, isIOS, standalone, pushSupported, conditionForm, surgeryForm, medForm, petForm, exportCopy, normRec: r => normRec(r) };
+  store, avatar, bubble, medRow, uid, norm, drop, la, Cap, kg, dd, after, backTo, notifyPost, enablePush, isIOS, standalone, pushSupported, conditionForm, surgeryForm, medForm, petForm, recForm, exportCopy, normRec: r => normRec(r) };
 route = parseHash();
 render();
 boot();
