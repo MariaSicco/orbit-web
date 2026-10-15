@@ -197,7 +197,20 @@ export function itemsDeFactura(p, datos, { archivo = '', hoy = null, cantidad = 
     accion: masViejo ? 'viejo' : previo ? (previo.monto === p.monto && !previo.doc?.estimado ? 'igual' : 'actualizar') : 'nuevo', previoId: previo?.id || null, antes: previo?.monto ?? null,
     gasto, falta: p.monto ? null : 'Falta el monto', avisos: p.avisos || [],
     /* cargado con otro nombre (Gas ↔ Metrogas): se pregunta, con sí por defecto */
-    ...(previo?._porTipo && !masViejo ? { pregunta: `¿Es tu gasto de ${previo.nombre}? Lo actualizamos con esta factura.`, previoNombre: previo.nombre } : {}) }];
+    ...(previo?._porTipo && !masViejo ? { pregunta: `¿Es tu gasto de ${previo.nombre}? Lo actualizamos con esta factura.`, previoNombre: previo.nombre } : {}),
+    /* QA t15 · 2: un "Servicios" genérico que probablemente la incluye: se separa (sí por defecto) */
+    ...(!previo ? separarDeGenerico(datos, p, nombre) : {}) }];
+}
+const DEL_TIPO = { luz: 'la luz', gas: 'el gas', agua: 'el agua', internet: 'internet', celular: 'el celular' };
+function separarDeGenerico(datos, p, nombre) {
+  const tipo = tipoDeServicio(nombre, p.preset);
+  if (!DEL_TIPO[tipo] || !p.monto) return {};
+  const g = (datos?.gastos || []).find(x => x.categoria === 'Servicios' && x.repite && !tipoDeServicio(x.nombre));
+  if (!g) return {};
+  const queda = Math.max(0, g.monto - p.monto);
+  return { separar: { id: g.id, nombre: g.nombre, monto: g.monto },
+    pregunta: `¿Tu gasto "${g.nombre}" incluye ${DEL_TIPO[tipo]}? Lo separamos: ${NOMBRE_TIPO[tipo]} ${formatoPesos(p.monto)} y ${g.nombre} queda en ${formatoPesos(queda)}.`
+      + (queda === 0 ? ` (La factura supera lo que tenías en ${g.nombre}: lo sacamos.)` : '') };
 }
 /* Captura: de tarjeta → compras nuevas; de cuenta o billetera → solo el saldo de hoy.
    Las transferencias entre cuentas propias nunca son ingreso ni gasto. */
@@ -231,7 +244,7 @@ export const yaSubido = (datos, h) => (datos?.documentos || []).find(x => x.huel
 /* Aplica lo confirmado: devuelve datos nuevos + cuántos de cada cosa. */
 export function aplicarItems(datos, items, { nuevoId, hoy }) {
   const d = structuredClone(datos);
-  const n = { ingresos: 0, gastos: 0, compras: 0, saldo: 0, actualizados: 0 };
+  const n = { ingresos: 0, gastos: 0, compras: 0, saldo: 0, actualizados: 0, avisos: [] };
   /* los resúmenes primero, del más viejo al más nuevo: lo nuevo siempre queda arriba */
   const res = items.filter(it => it.grupo === 'tarjetas' && !it.descartado && it.lectura).sort((a, b) => (a.lectura.vencimiento || '').localeCompare(b.lectura.vencimiento || ''));
   for (const it of res) {
@@ -253,9 +266,28 @@ export function aplicarItems(datos, items, { nuevoId, hoy }) {
     if (it.grupo === 'gastos') {
       const tarjetaId = it.tarjetaClave ? (d.tarjetas.find(t => t.ultimos4 && t.ultimos4 === it.tarjetaClave)?.id || null) : null;
       if (it.accion === 'actualizar' && it.previoId) {
-        d.gastos = d.gastos.map(g => { if (g.id !== it.previoId) return g; const { doc, ...resto } = g; return { ...resto, monto: it.gasto.monto, ...(it.gasto.dia ? { dia: it.gasto.dia } : {}), ...(it.gasto.doc ? { doc: it.gasto.doc } : {}) }; });
+        d.gastos = d.gastos.map(g => {
+          if (g.id !== it.previoId) return g;
+          const { doc, frecuencia: _f, ...resto } = g;
+          /* QA t15 · 1: la frecuencia de la factura manda, y el ritmo se alinea con su vencimiento sin arrancar antes de lo cargado */
+          const f = Number.isInteger(it.gasto.frecuencia) && it.gasto.frecuencia > 1 ? it.gasto.frecuencia : 1;
+          const vm = esMes(it.gasto.desde) ? it.gasto.desde : g.desde;
+          const desde = f > 1 && esMes(g.desde) && difMeses(g.desde, vm) >= 0 ? sumarMeses(vm, -f * Math.floor(difMeses(g.desde, vm) / f)) : f > 1 ? vm : g.desde;
+          return { ...resto, desde, monto: it.gasto.monto, ...(f > 1 ? { frecuencia: f } : {}), ...(it.gasto.dia ? { dia: it.gasto.dia } : {}), ...(it.gasto.doc ? { doc: it.gasto.doc } : {}) };
+        });
         n.actualizados++;
-      } else { d.gastos.push({ id: nuevoId(), ...it.gasto, ...(tarjetaId ? { tarjetaId } : {}) }); n.gastos++; }
+      } else {
+        d.gastos.push({ id: nuevoId(), ...it.gasto, ...(tarjetaId ? { tarjetaId } : {}) }); n.gastos++;
+        /* QA t15 · 2: se separa del "Servicios" genérico; nunca queda negativo */
+        if (it.separar) {
+          const g = d.gastos.find(x => x.id === it.separar.id);
+          if (g) {
+            const queda = g.monto - it.gasto.monto;
+            if (queda > 0) g.monto = queda;
+            else { d.gastos = d.gastos.filter(x => x.id !== g.id); n.avisos.push(`${g.nombre} quedaba en $ 0 con la factura de ${it.gasto.nombre}: lo sacamos.`); }
+          }
+        }
+      }
     }
     /* captura de tarjeta sin tarjeta elegida: si después de importar hay una sola, va a esa */
     if (it.grupo === 'compras' && !it.compra.tarjetaId && d.tarjetas.length === 1) it.compra.tarjetaId = d.tarjetas[0].id;

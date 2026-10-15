@@ -13,7 +13,7 @@
    El archivo no se guarda. Los logs llevan tokens por tipo, nunca datos. */
 import { createHash } from 'node:crypto';
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
-import { kvIncr } from './_lib/kv.js';
+import { kvIncr, kvGet, kvDel } from './_lib/kv.js';
 import { hoyAR } from './_lib/mi-mes-avisos.js';
 import { hayKey, leerResumenConClaude, ErrorLectura } from './_lib/mi-mes-lector.js';
 import { leerFacturaConClaude } from './_lib/vencimientos-lector.js';
@@ -51,19 +51,29 @@ const responder = (res, code, cuerpo) => { res.setHeader('Cache-Control', 'no-st
 const ESTADO_ERROR = { timeout: 504, tiempo: 504, limite: 503, api: 502, rechazo: 422, invalida: 422 };
 const GRANDE = 'El archivo pesa más de 4 MB. Probá con una foto más chica o cargalo a mano.';
 
-/* Topes (QA t14 · 1): contadores atómicos (INCR), uno por día y uno por mes,
-   por persona. CADA lectura suma, aunque sea el mismo archivo: la huella evita
-   releer del lado del navegador, pero acá cada llamada a Claude cuesta.
-   Los comparte /api/leer-resumen. */
-export async function contarLectura(email, { dia = hoyAR(), topeDia = TOPE_DIA_DOCS, topeMes = TOPE_MES_DOCS } = {}) {
-  let nd = 0, nm = 0;
+/* Topes (QA t14 · 1 y t15 · 3): contadores atómicos (INCR) por persona, por
+   día y por mes, que cuentan ARCHIVOS: clasificar y leer el mismo archivo
+   suma 1 (una marca por huella y día). El mismo archivo se puede pedir hasta
+   4 veces por día (2 lecturas completas) para que no se lea sin límite.
+   Los rechazos no suman al mes. Lo comparte /api/leer-resumen. */
+export const MAX_POR_HUELLA = 4;
+export async function contarLectura(email, { huella = null, dia = hoyAR(), topeDia = TOPE_DIA_DOCS, topeMes = TOPE_MES_DOCS } = {}) {
+  const kd = `orbit:mi-mes:lecturas-dia:${email}:${dia}`, km = `orbit:mi-mes:lecturas-mes:${email}:${dia.slice(0, 7)}`;
   try {
-    nm = await kvIncr(`orbit:mi-mes:lecturas-mes:${email}:${dia.slice(0, 7)}`, 60 * 60 * 24 * 40);
-    nd = await kvIncr(`orbit:mi-mes:lecturas-dia:${email}:${dia}`, 60 * 60 * 36);
+    if (huella) {
+      const veces = await kvIncr(`orbit:mi-mes:leido:${email}:${dia}:${huella}`, 60 * 60 * 36);
+      if (veces > MAX_POR_HUELLA) return { ok: false, motivo: 'repetido' };
+      if (veces > 1) return { ok: true, repetido: true, dia: Number(await kvGet(kd)) || 0, mes: Number(await kvGet(km)) || 0 };
+    }
+    const nd = await kvIncr(kd, 60 * 60 * 36);
+    if (nd > topeDia) { if (huella) await kvDel(`orbit:mi-mes:leido:${email}:${dia}:${huella}`); return { ok: false, motivo: 'dia', dia: nd }; }
+    const nm = await kvIncr(km, 60 * 60 * 24 * 40);
+    if (nm > topeMes) {
+      if (huella) await kvDel(`orbit:mi-mes:leido:${email}:${dia}:${huella}`);
+      return { ok: false, motivo: 'mes', dia: nd, mes: nm };
+    }
+    return { ok: true, dia: nd, mes: nm };
   } catch { return { ok: true, dia: 0, mes: 0 }; }   // sin base no frenamos la lectura
-  if (nm > topeMes) return { ok: false, motivo: 'mes', dia: nd, mes: nm };
-  if (nd > topeDia) return { ok: false, motivo: 'dia', dia: nd, mes: nm };
-  return { ok: true, dia: nd, mes: nm };
 }
 /* Presupuesto de tiempo alrededor de la lectura (la función tiene 60 s). */
 export const PRESUPUESTO_MS = 55_000;
@@ -92,10 +102,11 @@ export default async function handler(req, res) {
   const paginas = tipo === 'pdf' ? contarPaginas(buf) : 1;
   if (paginas > MAX_PAGINAS_DOC) return responder(res, 413, { ok: false, motivo: 'paginas', error: `El PDF tiene más de ${MAX_PAGINAS_DOC} páginas. Subí un documento por vez.` });
 
-  const cuenta = await contarLectura(acc.email);
+  const cuenta = await contarLectura(acc.email, { huella: huellaServidor(buf) });
   if (!cuenta.ok) return responder(res, 429, { ok: false, motivo: 'tope', error: cuenta.motivo === 'mes'
-    ? `Llegaste a ${TOPE_MES_DOCS} lecturas este mes. El mes que viene podés seguir, o cargalo a mano.`
-    : `Llegaste a ${TOPE_DIA_DOCS} lecturas por hoy. Mañana podés seguir, o cargalo a mano.` });
+    ? `Llegaste a ${TOPE_MES_DOCS} archivos este mes. El mes que viene podés seguir, o cargalo a mano.`
+    : cuenta.motivo === 'repetido' ? 'Ya leímos este archivo varias veces hoy. Mañana podés probar de nuevo, o cargalo a mano.'
+    : `Llegaste a ${TOPE_DIA_DOCS} archivos por hoy. Mañana podés seguir, o cargalo a mano.` });
 
   const paso = pedido || 'clasificar';
   const log = extra => console.log(JSON.stringify({ evento: 'mi-mes-leer', paso, tipoArchivo: tipo, bytes: buf.length, paginas, ...extra }));

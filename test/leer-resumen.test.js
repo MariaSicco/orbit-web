@@ -17,7 +17,8 @@ const leer = api.default;
 await addPurchase('compro@orbit.test', { productId: 'ob-019', orderId: 'OBTEST:ob-019', via: 'mercadopago', amount: 0, currency: 'ARS', date: new Date().toISOString() });
 await addPurchase('otro@orbit.test', { productId: 'ob-012', orderId: 'OBTEST:ob-012', via: 'mercadopago', amount: 0, currency: 'ARS', date: new Date().toISOString() });
 
-const PDF = (paginas = 2) => Buffer.from(`%PDF-1.4\n${Array.from({ length: paginas }, (_, i) => `${i + 3} 0 obj << /Type /Page /Parent 2 0 R >> endobj`).join('\n')}\n2 0 obj << /Type /Pages /Count ${paginas} >> endobj\n%%EOF`, 'latin1');
+let nPdf = 0;   // cada PDF distinto: el tope cuenta archivos y limita el mismo archivo (QA t15 · 3)
+const PDF = (paginas = 2) => Buffer.from(`%PDF-1.4\n% prueba ${nPdf++}\n${Array.from({ length: paginas }, (_, i) => `${i + 3} 0 obj << /Type /Page /Parent 2 0 R >> endobj`).join('\n')}\n2 0 obj << /Type /Pages /Count ${paginas} >> endobj\n%%EOF`, 'latin1');
 const pedido = (email, cuerpo, extra = {}) => {
   const r = Readable.from(cuerpo ? [cuerpo] : []);
   r.method = 'POST';

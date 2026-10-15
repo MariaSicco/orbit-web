@@ -10,7 +10,7 @@
    Controles: compra de ob-019 (o admin), tamaño, que sea PDF, páginas y un
    tope de lecturas por persona por día. El log no lleva datos del resumen. */
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
-import { contarLectura } from './mi-mes-leer.js';
+import { contarLectura, huellaServidor } from './mi-mes-leer.js';
 import { resumenEjemplo } from './_herramientas/mi-mes/ejemplo.js';
 import { hayKey, leerResumenConClaude, ErrorLectura, MODELO } from './_lib/mi-mes-lector.js';
 import { hoyAR } from './_lib/mi-mes-avisos.js';
@@ -60,7 +60,7 @@ export default async function handler(req, res) {
 
   /* tope diario por persona (para controlar el costo cuando se lea de verdad) */
   /* QA t14 · 1: contador atómico compartido con /api/mi-mes-leer (día y mes); acá el tope del día es 15 */
-  const cuenta = await contarLectura(acc.email, { topeDia: TOPE_DIA });
+  const cuenta = await contarLectura(acc.email, { topeDia: TOPE_DIA, huella: huellaServidor(buf) });
   if (!cuenta.ok) return responder(res, 429, { ok: false, motivo: 'tope', error: cuenta.motivo === 'mes'
     ? 'Llegaste al máximo de lecturas de este mes. El mes que viene podés seguir, o cargá este resumen a mano.'
     : `Llegaste a ${TOPE_DIA} lecturas por hoy. Mañana podés seguir, o cargá este resumen a mano.` });
