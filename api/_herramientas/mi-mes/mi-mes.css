@@ -579,3 +579,18 @@ fieldset.mm-campo>legend{margin-bottom:8px}
 .mm-rinde-res li:first-child{border-top:0}
 .mm-legal{margin:0;padding:14px 16px;border-radius:var(--r2);background:var(--papel);border:1px solid var(--linea);font-size:13px;line-height:1.5;color:var(--tinta2)}
 @media (prefers-reduced-motion:reduce){.mm-meta-barra i,.mm-reto-op{transition:none}}
+
+/* ════════ Ficha de una compra ════════ */
+.mm-ficha{background:var(--fondo);border-radius:var(--r2);padding:12px 14px 4px}
+.mm-ficha-tit{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0}
+.mm-ficha-tit span{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--tinta2)}
+.mm-ficha-tit b{font-size:22px;font-weight:800;letter-spacing:-.03em}
+.mm-ficha-sub{margin:2px 0 8px;color:var(--tinta2);font-size:14px}
+.mm-ficha-lista{list-style:none;margin:0;padding:0}
+.mm-ficha-lista li{display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:48px;border-top:1px solid var(--linea)}
+.mm-ficha-n{font-family:var(--mono);font-size:13px;color:var(--tinta2)}
+.mm-ficha-txt{display:flex;flex-direction:column}
+.mm-ficha-txt small{color:var(--tinta2);font-size:12.5px}
+.mm-ficha-lista li.pasada .mm-ficha-txt b{color:var(--tinta3);font-weight:600}
+.mm-ficha .mm-tag{margin:0}
+.mm-ficha .mm-fuente{margin:6px 0 8px}

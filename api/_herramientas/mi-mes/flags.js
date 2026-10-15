@@ -5,6 +5,10 @@ export const FLAGS = {
   consejo: true,          // B1 · tarjeta de consejo en Inicio
   metas: true,            // B2 · una meta a la vez
   retos: true,            // B3 · retos de un mes
+  fichaCompra: true,      // 0 · ficha de una compra: la compra, sus cuotas y en qué resumen se paga cada una
+  mesEn30: true,          // 1 · Inicio "tu mes en 30 segundos"
+  preguntas: true,        // 2 · "preguntame solo lo que cambia mi mes"
+  finDeCuota: true,       // 3 · lo que se libera va a la meta
   dondeRinde: false,      // B4 · "Dónde puede rendir tu plata": APAGADO hasta el OK legal de Majo
 };
 export function flagsActivos(search = '') {

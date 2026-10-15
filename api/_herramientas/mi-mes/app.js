@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  fichaCompra, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -979,6 +979,21 @@ function previewCuota() {
   if (k > 1) txt += ` · este mes pagás la ${k}/${n}`;
   p.textContent = txt;
 }
+/* compra ≠ compromiso ≠ pago: la compra, sus N cuotas y en qué resumen se paga cada una */
+function pintarFicha(c) {
+  const el = $id('c-ficha');
+  const f = F.fichaCompra && c ? fichaCompra(datos, c.id, HOY_ISO) : null;
+  el.hidden = !f;
+  if (!f) { el.innerHTML = ''; return; }
+  const m = f.moneda;
+  el.innerHTML = `<p class="mm-ficha-tit"><span>La compra</span><b>${esc(fm(f.compra, m))}</b></p>
+    <p class="mm-ficha-sub">${f.cantidad > 1 ? `${f.cantidad} cuotas de ${esc(fm(f.obligaciones[0].monto, m))}` : 'Un pago'}${f.tarjeta ? ` · ${esc(f.tarjeta.nombre)}` : ''}${f.restan && f.pagadas ? ` · faltan ${esc(fm(f.restan, m))}` : ''}</p>
+    <ol class="mm-ficha-lista">${f.obligaciones.map(o => `<li class="${o.pasada ? 'pasada' : ''}">
+      <span class="mm-ficha-n">${o.n}/${f.cantidad}</span>
+      <span class="mm-ficha-txt"><b>${esc(fm(o.monto, m))}</b><small>${o.vencimiento ? `Resumen que vence el ${esc(fechaCorta(o.vencimiento))}` : `Resumen de ${esc(nombreMes(o.mes))}`}</small></span>
+      <span class="mm-tag ${o.estado === 'resumen' ? '' : 'ext'}">${o.estado === 'resumen' ? 'En el resumen' : 'Estimada'}</span></li>`).join('')}</ol>
+    <p class="mm-fuente">Cada mes cuenta solo su cuota. Pagar el resumen no es otro gasto: es cómo se pagan estas cuotas.</p>`;
+}
 function abrirCuota(id = null, tarjetaId = null) {
   editCuota = id;
   const c = id ? datos.cuotas.find(x => x.id === id) : null;
@@ -1003,6 +1018,7 @@ function abrirCuota(id = null, tarjetaId = null) {
     datos.cuotas = datos.cuotas.filter(x => x.id !== id);
     guardar(); pintarTodo(); cerrar(dc); avisar('Cuota borrada');
   });
+  pintarFicha(c);
   textoMesCompra();
   $id('c-mes-wrap').open = false;
   marcarCantRapida(); previewCuota();

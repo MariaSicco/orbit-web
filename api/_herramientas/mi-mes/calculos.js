@@ -1383,3 +1383,29 @@ export function retoDelMes(datos, mes) {
   if (r) return { ...RETOS.find(x => x.id === r.id), estado: r.estado };
   return null;
 }
+
+/* ═══════════════ Compra ≠ compromiso ≠ pago ═══════════════
+   La ficha de una compra: el total que compraste, sus N obligaciones (una
+   por mes) y en qué resumen se paga cada una. El pago del resumen no es
+   otro gasto: es cómo se cancelan esas obligaciones. */
+export function fichaCompra(datos, cuotaId, hoy) {
+  const c = (datos?.cuotas || []).find(x => x.id === cuotaId);
+  if (!c) return null;
+  hoy = aFecha(hoy || hoyISO());
+  const t = (datos.tarjetas || []).find(x => x.id === c.tarjetaId) || null;
+  const montos = repartirCuotas(c.total, c.cantidad);
+  const moneda = c.moneda || 'ARS';
+  const obligaciones = montos.map((monto, i) => {
+    const mes = sumarMeses(c.primerMes, i);
+    const r = (datos.resumenes || []).find(x => x.tarjetaId === c.tarjetaId && x.mes === mes);
+    let vencimiento = r?.vencimiento || null, estado = r ? 'resumen' : 'proyectada';
+    if (!vencimiento) {
+      const prox = (datos.resumenes || []).find(x => x.tarjetaId === c.tarjetaId && x.proximoVencimiento?.startsWith(mes));
+      vencimiento = prox?.proximoVencimiento || (t?.diaVence ? fechaConDia(mes, t.diaVence) : null);
+    }
+    return { n: i + 1, mes, monto, moneda, pesos: aPesos(monto, moneda, datos), estado, vencimiento,
+      pasada: vencimiento ? diasEntre(vencimiento, hoy) > 0 : difMeses(mes, hoy.slice(0, 7)) > 0 };
+  });
+  return { cuota: c, tarjeta: t, compra: c.total, moneda, cantidad: c.cantidad, obligaciones,
+    pagadas: obligaciones.filter(o => o.pasada).length, restan: obligaciones.filter(o => !o.pasada).reduce((a, o) => a + o.monto, 0) };
+}
