@@ -84,3 +84,52 @@ dialog.mf-live-open .sheet{gap:12px}
 .mf-lines .t-ok svg{color:var(--ok)}
 .mf-lines .t-warn svg{color:var(--soon)}
 .mf-sum{margin:0;font-size:16px;line-height:1.5;font-weight:500}
+/* Inicio: "Ver a {nombre} en vivo" (con cámara) o "Me fui" con el atajo a emparejar (sin cámara) */
+.mf-cam{display:flex;flex-direction:column;gap:14px;padding:20px;border-radius:28px;background:#141414;color:#F7F3EE;box-shadow:var(--sh2)}
+.mf-cam.none{background:var(--card);color:var(--ink)}
+.mf-cam-h{display:grid;grid-template-columns:auto minmax(0,1fr);gap:12px;align-items:start}
+.mf-cam-ic{display:grid;place-items:center;width:48px;height:48px;border-radius:16px;background:rgba(247,243,238,.1);font-size:26px;line-height:1}
+.mf-cam.none .mf-cam-ic{background:var(--cuida)}
+.mf-cam h2{margin:0;font-size:22px;line-height:1.2;letter-spacing:-.02em;font-weight:700}
+.mf-cam-st{margin:4px 0 0;display:flex;align-items:center;gap:8px;font-size:14.5px;line-height:1.4;color:#CFC6BD}
+.mf-cam.none .mf-cam-st{display:block;color:var(--ink2)}
+.mf-cam-st.on{color:#7BD8A0;font-weight:600}
+.mf-cam-dot{flex:none;width:9px;height:9px;border-radius:50%;background:#F2B66B}
+.mf-cam-st.on .mf-cam-dot{background:#7BD8A0;animation:mfCamPulse 2.4s var(--ease) infinite}
+@keyframes mfCamPulse{0%{box-shadow:0 0 0 0 rgba(123,216,160,.55)}70%{box-shadow:0 0 0 9px rgba(123,216,160,0)}100%{box-shadow:0 0 0 0 rgba(123,216,160,0)}}
+.mf-cam .btns{display:grid;grid-template-columns:1fr;gap:8px}
+@media(min-width:480px){.mf-cam .btns{grid-template-columns:1.4fr 1fr}}
+.mf-cam:not(.none) .btn:not(.ghost){background:#D9FF45;color:#141414}
+.mf-cam:not(.none) .btn:not(.ghost):hover{background:#CBF02F}
+.mf-cam:not(.none) .btn.ghost{background:transparent;color:#F7F3EE;box-shadow:inset 0 0 0 1.5px rgba(247,243,238,.32)}
+.mf-cam .btn{min-height:54px}
+.mf-cam .note,.mf-cam .dim{color:#CFC6BD;margin:0}
+.mf-cam.none .note,.mf-cam.none .dim{color:var(--ink2)}
+.mf-cam .link{color:inherit;align-self:flex-start;min-height:44px;display:inline-flex;align-items:center;gap:4px;font-weight:600}
+.mf-cam-away{display:flex;flex-direction:column;gap:8px;padding:14px;border-radius:18px;background:rgba(247,243,238,.08)}
+.mf-cam-away .eyebrow{color:#F5C2D4}
+.mf-cam-away .mf-dot{background:#F5C2D4}
+.mf-cam-away .mf-clock span{color:#CFC6BD}
+.mf-cam .mf-lines .t-ok svg{color:#7BD8A0}.mf-cam .mf-lines .t-warn svg{color:#F2B66B}
+.mf-cam-more{display:flex;flex-wrap:wrap;gap:4px 16px}
+.mf-rec-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:2px}
+.mf-rec-h .mf-h3{margin:0;font-size:14px;font-weight:600;color:#CFC6BD}
+.mf-rec{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.mf-rec li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px;align-items:center;padding:8px 10px;border-radius:14px;background:rgba(247,243,238,.08);font-size:14.5px;line-height:1.35}
+.mf-rec .ib{width:32px;height:32px}
+.mf-rec-empty{font-size:14px}
+/* acceso fijo: ícono de cámara en la barra de arriba (mobile) y "Me fui · Cámara" en la de escritorio */
+.mf-topic{position:relative}
+.mf-topdot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#2FB863;box-shadow:0 0 0 2px var(--bg,#fff)}
+.mf-topic .mf-topdot{position:absolute;top:6px;right:6px}
+.tnav-mf{display:inline-flex;align-items:center;gap:6px}
+.mf-topdot.inline{box-shadow:none;margin-right:6px}
+.mf-hub{margin-bottom:10px;border-radius:18px;background:var(--cuida);min-height:64px}
+@media (prefers-reduced-motion:reduce){.mf-cam-st.on .mf-cam-dot{animation:none}}
+.tnav-mf{white-space:nowrap}
+.tnav-mf svg.i{width:17px;height:17px}
+/* con "Me fui" en la barra de escritorio entra una sección más: los botones no se parten en dos líneas */
+@media(min-width:1024px){.top .al-top,.top .btn.lime{white-space:nowrap}.tnav:has(.tnav-mf) a{padding:0 13px}}
+@media(min-width:1024px) and (max-width:1366px){.tnav:has(.tnav-mf) a{padding:0 9px}}
+/* escritorio angosto: "Me fui" queda como ícono de cámara (con el punto verde) y el nombre en aria-label */
+@media(min-width:1024px) and (max-width:1279px){.tnav-mf{font-size:0!important;gap:3px}.tnav-mf svg.i{width:19px;height:19px}.top .btn.lime{white-space:normal}}

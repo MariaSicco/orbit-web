@@ -213,3 +213,13 @@ test('ventanas reales: en sensibilidad media cada sonido de mascota da su tipo y
 test('ventanas reales: ni en sensibilidad alta hay falsos positivos con voces, TV, aspiradora, timbre o silencio', () => {
   for (const [name, type, scores] of REAL) if (!type) assert.deepEqual(detect(mapScores(scores), 'alta'), [], name);
 });
+
+test('onDetect: el cartel sale al toque (antes de que cierre el episodio) y una sola vez por episodio', () => {
+  const seen = [], closed = [];
+  const tr = createEpisodeTracker({ minHits: 1, onEvent: e => closed.push(e), onDetect: d => seen.push(d) });
+  tr.add('ladrido', 0.4, 0, 975); tr.add('ladrido', 0.5, 1000, 1975);
+  assert.equal(seen.length, 1); assert.equal(closed.length, 0, 'el evento recién se manda al cerrar');
+  tr.tick(1975 + GAP_MS); assert.equal(closed.length, 1);
+  const s2 = []; const t2 = createEpisodeTracker({ minHits: 2, onDetect: d => s2.push(d) });
+  t2.add('maullido', 0.3, 0, 975); assert.equal(s2.length, 0); t2.add('maullido', 0.3, 1000, 1975); assert.equal(s2.length, 1);
+});

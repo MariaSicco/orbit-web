@@ -82,10 +82,10 @@ function camLine() {
   const seen = Math.max(...cams.map(c => Date.parse(c.seen) || 0));
   return { ic: 'alert', tone: 'warn', text: seen ? `Cámara sin conexión desde las ${hm(seen)}` : 'Cámara sin conexión' };
 }
-function statusHtml() {
+function statusHtml(noCam) {
   const a = D().away; if (!a.on) return '';
   const since = Date.parse(a.since);
-  const lines = [checkLine(a), soundLine(since), camLine()].filter(Boolean);
+  const lines = [checkLine(a), soundLine(since), noCam ? null : camLine()].filter(Boolean);
   if (!lines.length) return '';
   return `<ul class="mf-lines">${lines.map(l => `<li class="t-${l.tone}">${I(l.ic)}<span>${esc(l.text)}</span></li>`).join('')}</ul>`;
 }
@@ -99,10 +99,51 @@ function summaryText(evs) {
 }
 const alertLine = () => { const h = D().awaySet.alertH; return h ? `Te avisamos si pasa de ${h} h${D().awaySet.sitter && D().awaySet.sitterMail ? ', a vos y a quien la cuida' : ''}.` : 'Sin aviso: solo contamos el tiempo.'; };
 
-/* ---------- Inicio ---------- */
-function homeCard() {
+/* ---------- Inicio ----------
+   Con cámara: "Ver a {nombre} en vivo" arriba de todo (1 toque al video), con el estado de la cámara, lo último que
+   escuchó y "Me fui" (o el estado de la salida en curso). Sin cámara: "Me fui" y "Usar un celu viejo como cámara". */
+const camState = c => !c.online ? 'sin conexión' : c.listen === 'error' ? 'activa · no está escuchando' : c.listen === 'pausado' ? 'activa · en pausa' : 'activa · escuchando';
+const bestCam = () => { const cams = st.cams || []; return cams.find(c => c.online && c.listen !== 'pausado' && c.listen !== 'error') || cams.find(c => c.online) || cams[0] || null; };
+function recentHtml() {
+  if (st.events == null) return '<p class="dim mf-rec-empty">Buscando lo último que escuchó…</p>';
+  const evs = st.events.slice(-3).reverse();
+  /* con "Me fui" en curso, el estado en frases ya dice "sin ladridos desde que saliste" */
+  if (!evs.length) return D().away.on ? '' : '<p class="dim mf-rec-empty">Sin ladridos, maullidos ni llanto en las últimas 24 horas.</p>';
+  return `<ol class="mf-rec">${evs.map(e => `<li><span class="ib c-cuida">${I(ICON[e.type] || 'bell')}</span><span>${esc(evText(e))}</span></li>`).join('')}</ol>`;
+}
+function camHomeCard(p) {
+  const a = D().away, c = bestCam(), others = (st.cams || []).filter(x => x !== c && x.online);
+  const pet = A().petById(c.petId) || p || D().pets[0];
+  const since = a.on ? Date.parse(a.since) : (st.dayKey ||= Date.now() - 864e5);
+  if (st.evKey !== String(since) && !st.loadingHome) {
+    st.loadingHome = true;
+    loadEvents(since, true).finally(() => { st.loadingHome = false; if (A().route.name === 'inicio' && !document.querySelector('dialog[open]')) A().render(); });
+  }
+  return `<section class="mf-cam span2" aria-labelledby="h-mfcam">
+    <div class="mf-cam-h"><span class="mf-cam-ic" aria-hidden="true">📷</span><div><h2 id="h-mfcam">Ver a ${esc(pet?.name || 'tu mascota')} en vivo</h2>
+      <p class="mf-cam-st ${c.online ? 'on' : 'off'}"><span class="mf-cam-dot" aria-hidden="true"></span>${esc(c.name)} · ${esc(camState(c))}</p></div></div>
+    ${a.on ? `<div class="mf-cam-away"><div class="mf-top"><span class="mf-dot" aria-hidden="true"></span><span class="eyebrow">Me fui · en curso</span></div><p class="mf-clock" data-away-clock>${clockHtml()}</p>${statusHtml(true)}</div>` : ''}
+    <div class="btns"><button class="btn big" data-mf="live" data-cam="${c.camId}">${I('camera')} Ver en vivo</button>${a.on ? `<button class="btn ghost" data-mf="back">${I('check')} Volví</button>` : `<button class="btn ghost" data-mf="leave">${I('home')} Me fui</button>`}</div>
+    ${c.online ? '' : '<p class="note">Para verla, en el celu de casa abrí la Cámara Mimitos y tocá "Prender cámara".</p>'}
+    ${others.length ? `<div class="mf-cam-more">${others.map(x => `<button class="link" data-mf="live" data-cam="${x.camId}">Ver ${esc(x.name)}</button>`).join('')}</div>` : ''}
+    <div class="mf-rec-h"><h3 class="mf-h3">${a.on ? 'Desde que saliste' : 'Lo último que escuchó'}</h3><button class="link" data-mf="refresh">Actualizar</button></div>
+    ${recentHtml()}
+    <button class="link" data-mf="open">Ver todo en Me fui ${I('chevron')}</button>
+  </section>`;
+}
+function homeCard(p) {
   const a = D().away;
   if (!D().pets.length) return '';
+  if ((st.cams || []).length) return camHomeCard(p);
+  /* sin cámara (lista ya cargada): "Me fui" y el atajo al emparejado */
+  if (st.cams && !a.on) {
+    const one = D().pets.length === 1 ? D().pets[0] : null;
+    const who = one ? `se queda ${esc(one.name)} ${sola(one)}` : 'se quedan solas tus mascotas';
+    return `<section class="mf-cam none span2" aria-labelledby="h-mfnone">
+      <div class="mf-cam-h"><span class="mf-cam-ic" aria-hidden="true">🏠</span><div><h2 id="h-mfnone">Me fui</h2><p class="mf-cam-st">Contamos cuánto tiempo ${who}${D().awaySet.alertH ? ` y te avisamos si pasa de ${D().awaySet.alertH} h` : ''}. Con un celu viejo en casa, además la ves en vivo y te avisamos si ladra.</p></div></div>
+      <div class="btns"><button class="btn big" data-mf="leave">${I('home')} Me fui</button><button class="btn ghost" data-mf="pair">${I('camera')} Usar un celu viejo como cámara</button></div>
+    </section>`;
+  }
   if (!a.on) {
     const one = D().pets.length === 1 ? D().pets[0] : null;
     const who = one ? `se queda ${esc(one.name)} ${sola(one)}` : 'se quedan solas tus mascotas';
@@ -115,6 +156,7 @@ function homeCard() {
     ${statusHtml()}
     <small class="dim">Saliste a las ${hm(Date.parse(a.since))}. ${esc(alertLine())}</small>
     <div class="btns"><button class="btn" data-mf="back">${I('check')} Volví</button><button class="btn ghost" data-mf="open">Ver detalle</button></div>
+    ${st.cams && !st.cams.length ? `<button class="link" data-mf="pair">${I('camera')} Usar un celu viejo como cámara</button>` : ''}
   </section>`;
 }
 const bubbleI = (ic, c = 'cuida') => `<span class="ib c-${c}">${I(ic)}</span>`;
@@ -214,7 +256,8 @@ function camsListHtml(withLive) {
 function render(p) {
   const a = D().away;
   if (!st.cams) loadCams().then(() => { if (A().route.name === 'mefui' || A().route.name === 'cuenta') A().render(); });
-  const since = a.on ? Date.parse(a.since) : Date.now() - 864e5;
+  /* la ventana de 24 h queda fija entre dibujos (si no, cada render pediría de nuevo); el refresco de 1 min la corre */
+  const since = a.on ? Date.parse(a.since) : (st.dayKey ||= Date.now() - 864e5);
   const evKey = String(since);
   if (st.evKey !== evKey && (st.cams || []).length) { st.evKey = evKey; st.events = null; loadEvents(since, true).then(() => { if (A().route.name === 'mefui') A().render(); }); }
   const set = D().awaySet;
@@ -483,7 +526,7 @@ function cuentaSection() {
 
 /* ---------- acciones ---------- */
 document.addEventListener('click', e => {
-  const b = e.target.closest('[data-mf]'); if (!b || !document.getElementById('app').contains(b)) return;
+  const b = e.target.closest('[data-mf]'); if (!b || !['app', 'nav', 'pBody'].some(id => document.getElementById(id)?.contains(b)) && !document.querySelector('.top')?.contains(b)) return;
   switch (b.dataset.mf) {
     case 'leave': return leaveForm();
     case 'back': return comeBack();
@@ -493,6 +536,9 @@ document.addEventListener('click', e => {
     case 'pair': return pairPanel();
     case 'revoke': return revoke(b);
     case 'live': return live(b.dataset.cam);
+    case 'refresh': return refreshAway(true, b);
+    /* desde el "+": con cámara va a "Me fui"; sin cámara, directo a emparejar */
+    case 'hub': return (st.cams || []).length || D().away.on ? A().go('mefui') : pairPanel();
   }
 });
 /* sensibilidad de cada cámara (la cámara la toma en su próximo aviso de "sigo acá", como mucho en 5 minutos) */
@@ -512,18 +558,20 @@ setInterval(() => {
 }, 30e3);
 /* trae cámaras y eventos de la salida en curso y vuelve a dibujar si cambió algo */
 let refreshing = false;
-async function refreshAway() {
+async function refreshAway(manual, btn) {
   if (refreshing) return; refreshing = true;
+  if (btn) { btn.disabled = true; btn.textContent = 'Actualizando…'; }
   try {
-    const since = D().away.on ? Date.parse(D().away.since) : Date.now() - 864e5;
-    await Promise.all([loadCams(true), loadEvents(since, true)]);
+    const since = D().away.on ? Date.parse(D().away.since) : (st.dayKey = Date.now() - 864e5);
+    const [, evs] = await Promise.all([loadCams(true), loadEvents(since, true)]);
     if (!document.querySelector('dialog[open]') && ['inicio', 'mefui'].includes(A().route.name)) A().render();
+    if (manual) A().toast(evs ? 'Listo, actualizado.' : 'No pudimos actualizar. Probá de nuevo.');
   } finally { refreshing = false; }
 }
 /* con Inicio o "Me fui" abiertos y una salida en curso, el estado se refresca cada minuto (solo si hay cámaras) */
 setInterval(async () => {
-  if (A()?.mode !== 'full' || !A().mefui || !['mefui', 'inicio'].includes(A().route.name) || document.hidden || !(st.cams || []).length || (A().route.name === 'inicio' && !D().away.on)) return;
-  const since = D().away.on ? Date.parse(D().away.since) : Date.now() - 864e5;
+  if (A()?.mode !== 'full' || !A().mefui || !['mefui', 'inicio'].includes(A().route.name) || document.hidden || !(st.cams || []).length) return;
+  const since = D().away.on ? Date.parse(D().away.since) : (st.dayKey = Date.now() - 864e5);
   const sig = () => JSON.stringify([(st.events || []).map(e => e.id + e.dur), (st.cams || []).map(c => c.camId + c.online)]);
   const before = sig();
   await Promise.all([loadCams(true), loadEvents(since, true)]);
@@ -533,5 +581,12 @@ setInterval(async () => {
 /* al cargar, si hay una salida en curso, se piden las cámaras para el "Cámara activa" del Inicio */
 setTimeout(function wait() { if (A()?.mode === 'full') { if (A().mefui) loadCams().then(() => A().render()); } else if (A()?.mode === 'loading') setTimeout(wait, 400); }, 400);
 
-window.MZAWAY = { homeCard, render, cuentaSection, loadCams, state: st };
+/* acceso fijo en la barra de arriba: ícono de cámara (punto verde si hay una activa) que lleva a "Me fui" */
+function topIcon() {
+  const on = (st.cams || []).some(c => c.online), away = D().away?.on;
+  const lbl = on ? 'Me fui y cámara: cámara activa' : away ? 'Me fui: en curso' : 'Me fui y cámara';
+  return `<a class="round mf-topic${on ? ' is-on' : ''}" href="#/mefui" aria-label="${lbl}" title="${lbl}">${I('camera')}${on || away ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}</a>`;
+}
+const hasCamOn = () => (st.cams || []).some(c => c.online);
+window.MZAWAY = { homeCard, render, cuentaSection, loadCams, topIcon, hasCamOn, state: st };
 })();

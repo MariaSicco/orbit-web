@@ -14,6 +14,7 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': 
 const hm = ms => new Date(ms).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' });
 /* gemido y llanto son los menos confiables del detector: "posible" */
 const VERB = { ladrido: 'Ladrido', aullido: 'Aullido', maullido: 'Maullido', gemido: 'Posible gemido', llanto: 'Posible llanto' };
+const EMOJI = { ladrido: '🐶', aullido: '🐶', maullido: '🐱', gemido: '🐶', llanto: '🐶' };
 const SENS = [['baja', 'Baja'], ['media', 'Media'], ['alta', 'Alta']];
 const sensHtml = cur => `<fieldset class="card sens" style="border:0;margin:0"><legend class="dim2" style="padding:0;float:left;margin-bottom:6px">Sensibilidad</legend><div class="chips" role="radiogroup" aria-label="Sensibilidad" style="clear:both">${SENS.map(([v, l]) => `<label class="chip"><input type="radio" name="sens" value="${v}"${v === cur ? ' checked' : ''}> ${l}</label>`).join('')}</div><small class="dim2">Alta detecta más, pero puede confundir otros ruidos. También la cambiás desde "Me fui" en tu celu.</small></fieldset>`;
 const LOGO = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27.5c-6.3-4.2-11-8.3-11-13.4C5 10.6 7.7 8 10.9 8c2.2 0 4 1.1 5.1 2.9C17.1 9.1 18.9 8 21.1 8 24.3 8 27 10.6 27 14.1c0 5.1-4.7 9.2-11 13.4z" fill="#D9694A"/><circle cx="12" cy="16" r="1.5" fill="#1F1A17"/><circle cx="20" cy="16" r="1.5" fill="#1F1A17"/></svg>';
@@ -35,7 +36,7 @@ async function api(act, { method = 'GET', body, token } = {}) {
 }
 
 /* ---------- estado ---------- */
-const S = { me: null, audio: null, rtc: null, wake: null, ping: null, events: [], queue: [], level: 0, listen: 'off', video: 'off', battery: null, dimTimer: null, started: 0 };
+const S = { me: null, audio: null, rtc: null, wake: null, ping: null, events: [], queue: [], level: 0, listen: 'off', video: 'off', battery: null, dimTimer: null, started: 0, test: 0, testHit: null };
 
 /* ---------- 1. emparejar ---------- */
 function codeFromHash() { const m = /[#&]c=([A-Za-z0-9-]{8,9})/.exec(location.hash); return m ? m[1].replace('-', '').toUpperCase() : ''; }
@@ -161,12 +162,12 @@ async function ping() {
 async function listen() {
   try { S.audio?.stop?.(); } catch {} S.audio = null;
   try {
-    const A = await import('/assets/js/mascotas-audio.js?v=2');
+    const A = await import('/assets/js/mascotas-audio.js?v=3');
     const fn = A.startListening || window.MZAUDIO?.startListening;
     if (!fn) throw Object.assign(new Error('sin módulo'), { code: 'modelo' });
     S.listen = 'cargando'; paint();
     const sens = S.sens;
-    const h = await fn({ sensitivity: sens, onEvent: onSound, onLevel: l => { S.level = l; meter(); },
+    const h = await fn({ sensitivity: sens, onEvent: onSound, onDetect, onLevel: l => { S.level = l; meter(); },
       onState: s => { S.listen = s.state || 'escuchando'; S.listenMsg = s.message || ''; paint(); listenChanged(); } });
     if (!S.started) { try { h.stop?.(); } catch {} return; }
     S.audio = h; S.audioSens = sens;
@@ -209,9 +210,24 @@ function loadScript(src, global) {
   if (window[global]) return Promise.resolve(window[global]);
   return new Promise(ok => { const s = document.createElement('script'); s.src = src; s.onload = () => ok(window[global] || null); s.onerror = () => ok(null); document.head.appendChild(s); });
 }
+/* al toque: el detector reconoció algo (el evento completo llega ~10 s después, cuando termina el episodio) */
+let hitTimer = null;
+function onDetect(d) {
+  const at = d.at || Date.now();
+  /* se anota ya en "Lo último que escuchó" (queda "escuchando…" hasta que termina el episodio) */
+  if (!S.events.some(x => x.live && x.type === d.type)) { S.events.unshift({ type: d.type, start: new Date(at - 975).toISOString(), dur: 1, live: true }); S.events = S.events.slice(0, 20); }
+  if (S.test && Date.now() < S.test) S.testHit = { type: d.type, at };
+  const box = $('#hit'); if (!box) return;
+  box.innerHTML = `<span class="hit-e" aria-hidden="true">${EMOJI[d.type] || '🔔'}</span><span><b>${esc(VERB[d.type] || d.type)} detectado · ${hm(at)}</b>${S.away === false ? '<small>Queda guardado en la app. Los avisos te llegan solo con "Me fui" activo.</small>' : S.away ? '<small>Con "Me fui" activo, te avisamos al celu.</small>' : ''}</span>`;
+  box.hidden = false; box.classList.remove('out'); void box.offsetWidth; box.classList.add('in');
+  clearTimeout(hitTimer); hitTimer = setTimeout(() => { box.classList.remove('in'); box.classList.add('out'); hitTimer = setTimeout(() => { box.hidden = true; }, 300); }, 7000);
+  paint();
+}
 async function onSound(e) {
   const ev = { type: e.type, start: new Date(e.start).toISOString(), dur: Math.max(1, Math.round(e.durationSec ?? ((e.end - e.start) / 1000) ?? 1)), conf: Math.round((e.confidence ?? 0) * 100) / 100 };
-  S.events.unshift({ ...ev, sent: false }); S.events = S.events.slice(0, 20);
+  const i = S.events.findIndex(x => x.live && x.type === ev.type);
+  if (i >= 0) S.events[i] = { ...ev, sent: false }; else S.events.unshift({ ...ev, sent: false });
+  S.events = S.events.slice(0, 20);
   S.queue.push(ev); await flushQueue(); paint();
 }
 async function flushQueue() {
@@ -223,7 +239,7 @@ async function flushQueue() {
       if (r.ok && 'away' in r.d) S.away = Boolean(r.d.away);
       /* 400 (inválido) o 429 (tope): se descarta; error de red: se reintenta en el próximo ping */
       const ev = S.queue.shift();
-      const local = S.events.find(x => x.start === ev.start && x.type === ev.type); if (local) local.sent = r.ok;
+      const local = S.events.find(x => !x.live && x.start === ev.start && x.type === ev.type); if (local) { local.sent = r.ok; local.done = true; local.notify = r.d?.notify || ''; local.merged = Boolean(r.d?.merged); local.limit = r.status === 429; }
     } catch { break; }
   }
   S.queue = S.queue.slice(-50);
@@ -250,18 +266,37 @@ function revoked() { stopAll(); store.clear(); main.innerHTML = `${head}<h1>Esta
 
 function renderActive() {
   main.innerHTML = `${head}
-    <section class="live" id="live" aria-labelledby="liveT"><span class="live-dot" aria-hidden="true"></span><b id="liveT">Cámara activa</b><p class="dim2" id="liveSub">Prendiendo…</p><div class="meter" aria-hidden="true"><span id="lvl"></span></div></section>
+    <section class="live" id="live" aria-labelledby="liveT"><span class="live-dot" aria-hidden="true"></span><b id="liveT">Cámara activa</b><p class="dim2" id="liveSub">Prendiendo…</p><div class="lvl-w"><span class="lvl-l">Nivel de sonido</span><div class="meter" aria-hidden="true"><span id="lvl"></span></div></div></section>
     <div class="talk" id="talk" role="status" aria-live="assertive" hidden></div>
     <div class="chips" id="chips" aria-label="Estado"></div>
     <p class="dim2" id="note"></p>
-    <section class="card" aria-labelledby="evT"><b id="evT">Lo que detectó</b><ul class="evs" id="evs"></ul></section>
+    <section class="card" aria-labelledby="evT"><b id="evT">Lo último que escuchó</b><ul class="evs" id="evs"></ul><p class="away-note" id="awayNote" hidden>Los avisos te llegan solo con "Me fui" activo. Igual queda guardado y lo ves en la app.</p></section>
+    <section class="card test" id="test" aria-labelledby="testT"><b id="testT">¿Anda la detección?</b><p class="dim2" id="testTx">Poné un video de perros ladrando cerca del celu. Si lo detecta, vas a ver el cartel acá.</p><button class="btn ghost" id="testB">Probar detección</button></section>
     ${sensHtml(S.sens)}
     <div class="row2"><button class="btn ghost" id="dimB">Atenuar pantalla</button><button class="btn stop" id="stopB">Apagar cámara</button></div>
     ${privacy()}`;
   $('#stopB').onclick = () => { stopAll(); renderReady('Cámara apagada. No escucha ni transmite.'); };
   $('#dimB').onclick = dim;
+  $('#testB').onclick = startTest;
   bindSens();
   paint();
+}
+/* "Probar detección": 90 s para poner un video de ladridos cerca; el resultado queda en la tarjeta */
+const TEST_MS = 90e3;
+let testTimer = null;
+function startTest() {
+  S.test = Date.now() + TEST_MS; S.testHit = null;
+  clearInterval(testTimer); testTimer = setInterval(() => { if (!S.test || Date.now() >= S.test || S.testHit) clearInterval(testTimer); paintTest(); }, 1000);
+  paintTest();
+}
+function paintTest() {
+  const tx = $('#testTx'), b = $('#testB'), box = $('#test'); if (!tx) return;
+  const left = Math.max(0, Math.ceil((S.test - Date.now()) / 1000));
+  box.classList.toggle('on', Boolean(S.test && (left || S.testHit)));
+  if (S.testHit) { tx.innerHTML = `<b>¡Anda!</b> Detectó ${esc((VERB[S.testHit.type] || S.testHit.type).toLowerCase())} a las ${hm(S.testHit.at)}. Así te va a aparecer.`; b.textContent = 'Probar de nuevo'; b.disabled = false; return; }
+  if (S.test && left) { tx.textContent = S.listen === 'escuchando' ? `Escuchando… Poné el video ahora, con buen volumen y cerca del celu. Quedan ${left} s.` : 'Primero tiene que estar escuchando: volvé a esta pantalla y dejala prendida.'; b.textContent = 'Probando…'; b.disabled = true; return; }
+  if (S.test) { tx.textContent = 'No detectó nada. Subí el volumen, acercá el celu o probá con sensibilidad Alta. Ojo: imitar un ladrido con la voz casi nunca anda, lo toma como voz.'; b.textContent = 'Probar de nuevo'; b.disabled = false; S.test = 0; return; }
+  tx.textContent = 'Poné un video de perros ladrando cerca del celu. Si lo detecta, vas a ver el cartel acá.'; b.textContent = 'Probar detección'; b.disabled = false;
 }
 function chip(ok, text) { return `<span class="chip ${ok ? 'ok' : 'no'}">${ok ? '●' : '▲'} ${esc(text)}</span>`; }
 function paint() {
@@ -285,9 +320,19 @@ function paint() {
     S.away === true ? chip(true, 'Me fui activo: avisamos') : S.away === false ? chip(false, 'Estás en casa: solo registra') : '',
   ].join('');
   $('#note').textContent = S.wakeSt === 'no' ? 'Este navegador no deja la pantalla prendida: subí el tiempo de apagado de pantalla en los ajustes del celu.' : b && !b.charging ? 'Enchufalo: escuchar todo el día gasta batería.' : S.videoMsg && S.video !== 'esperando' ? S.videoMsg : '';
-  $('#evs').innerHTML = S.events.length ? S.events.slice(0, 8).map(e => `<li><span>${esc(VERB[e.type] || e.type)} · ${e.dur < 60 ? e.dur + ' s' : Math.round(e.dur / 60) + ' min'}</span><small>${hm(Date.parse(e.start))}</small></li>`).join('') : '<li><small>Todavía nada. Si ladra, maúlla o llora, aparece acá.</small></li>';
+  $('#evs').innerHTML = S.events.length ? S.events.slice(0, 5).map(e => `<li${e.live ? ' class="now"' : ''}><span>${EMOJI[e.type] || ''} ${esc(VERB[e.type] || e.type)}${e.live ? '' : ` · ${e.dur < 60 ? e.dur + ' s' : Math.round(e.dur / 60) + ' min'}`}<small class="ev-st">${esc(evState(e))}</small></span><small>${hm(Date.parse(e.start))}</small></li>`).join('') : '<li><small>Todavía nada. Si ladra, maúlla o llora, aparece acá al toque.</small></li>';
+  $('#awayNote').hidden = S.away !== false;
+  paintTest();
 }
-function meter() { const el = $('#lvl'); if (el) el.style.setProperty('--l', Math.min(100, Math.round(Math.sqrt(S.level) * 160)) + '%'); }
+/* qué pasó con cada evento: se ve que llegó a la app (y si avisó) */
+function evState(e) {
+  if (e.live) return 'Escuchando…';
+  if (e.limit) return 'No se guardó: muchos seguidos';
+  if (!e.sent) return e.done ? 'No se pudo guardar' : S.queue.some(q => q.start === e.start && q.type === e.type) && !navigator.onLine ? 'Sin conexión: lo mandamos al volver' : 'Mandando…';
+  if (e.merged) return 'Guardado · sumado al anterior';
+  return e.notify === 'avisado' ? 'Guardado y avisado' : e.notify === 'agrupado' ? 'Guardado · va en el resumen de 15 min' : 'Guardado en la app (sin aviso)';
+}
+function meter() { const w = Math.min(100, Math.round(Math.sqrt(S.level) * 160)) + '%'; for (const id of ['#lvl', '#lvl2']) { const el = $(id); if (el) el.style.setProperty('--l', w); } }
 
 /* ---------- pantalla atenuada ---------- */
 function dim() { $('#dim').hidden = false; $('#dimOff').focus(); }

@@ -18,7 +18,8 @@
      isSupported() -> boolean
      loadModel() -> Promise  (precarga wasm + modelo; se puede llamar antes de pedir el micrófono)
      startListening({ onEvent, onLevel, onState, sensitivity: 'baja'|'media'|'alta' }) -> Promise<{ stop, pause, resume, state, track }>
-       onEvent({ type, start, end, durationSec, confidence, hits })   start/end en ms epoch
+       onEvent({ type, start, end, durationSec, confidence, hits })   start/end en ms epoch (al cerrar el episodio, ~10 s después)
+       onDetect({ type, confidence, at })   al toque, cuando un episodio llega a minHits (para el cartel en pantalla)
        onLevel(rms)   0..1, ~10 veces por segundo, para el vúmetro
        onState({ state: 'escuchando'|'pausado'|'detenido', reason, message })
      Errores de startListening: Error con .code 'no-soportado' | 'permiso-denegado' | 'sin-microfono' | 'modelo'.
@@ -39,7 +40,7 @@ export const WIN_SEC = 0.975;      // ventana de YAMNet (15600 muestras a 16 kHz
    para que un episodio cuente. */
 export const SENS = {
   baja:  { gate: 0.003, minHits: 2, th: { ladrido: 0.45, aullido: 0.35, maullido: 0.40, gemido: 0.18, llanto: 0.35 } },
-  media: { gate: 0.002, minHits: 1, th: { ladrido: 0.25, aullido: 0.20, maullido: 0.20, gemido: 0.12, llanto: 0.20 } },
+  media: { gate: 0.002, minHits: 1, th: { ladrido: 0.20, aullido: 0.20, maullido: 0.20, gemido: 0.12, llanto: 0.20 } },
   alta:  { gate: 0.002, minHits: 1, th: { ladrido: 0.15, aullido: 0.12, maullido: 0.12, gemido: 0.10, llanto: 0.12 } },
 };
 
@@ -87,7 +88,7 @@ export function detect(mapped, sensitivity = 'media') {
 
 /* Agrupa ventanas en episodios por tipo. add() por cada detección; tick(ahora) cierra los episodios
    con más de gapMs sin ese sonido; flush() cierra todo (al parar o pausar). */
-export function createEpisodeTracker({ gapMs = GAP_MS, minHits = 1, onEvent = () => {} } = {}) {
+export function createEpisodeTracker({ gapMs = GAP_MS, minHits = 1, onEvent = () => {}, onDetect = () => {} } = {}) {
   const open = new Map();
   const close = (type) => {
     const e = open.get(type);
@@ -105,9 +106,11 @@ export function createEpisodeTracker({ gapMs = GAP_MS, minHits = 1, onEvent = ()
       const e = open.get(type);
       if (e && start - e.end < gapMs) {
         e.end = Math.max(e.end, end); e.hits++; e.confidence = Math.max(e.confidence, confidence);
+        if (e.hits === minHits) onDetect({ type, confidence: e.confidence, at: end });
       } else {
         if (e) close(type);
         open.set(type, { start, end, hits: 1, confidence });
+        if (minHits <= 1) onDetect({ type, confidence, at: end });
       }
     },
     tick(now) { for (const [type, e] of [...open]) if (now - e.end >= gapMs) close(type); },
@@ -170,7 +173,7 @@ const MSG = {
   micCortado: 'El micrófono se cortó. Tocá "Empezar" para volver a escuchar.',
 };
 
-export async function startListening({ onEvent = () => {}, onLevel = () => {}, onState = () => {}, sensitivity = 'media', _onFrame } = {}) {
+export async function startListening({ onEvent = () => {}, onDetect = () => {}, onLevel = () => {}, onState = () => {}, sensitivity = 'media', _onFrame } = {}) {
   if (!isSupported()) throw fail('no-soportado', 'Este navegador no puede escuchar el micrófono. Probá con Chrome o Safari actualizados.');
   const cfg = SENS[sensitivity] || SENS.media;
 
@@ -196,7 +199,7 @@ export async function startListening({ onEvent = () => {}, onLevel = () => {}, o
   let wpos = 0, filled = 0, sinceHop = 0, levelAcc = 0, levelN = 0, lastLevel = 0;
   let state = 'escuchando', stopped = false;
 
-  const tracker = createEpisodeTracker({ gapMs: GAP_MS, minHits: cfg.minHits, onEvent: (ev) => { try { onEvent(ev); } catch (e) { console.error(e); } } });
+  const tracker = createEpisodeTracker({ gapMs: GAP_MS, minHits: cfg.minHits, onEvent: (ev) => { try { onEvent(ev); } catch (e) { console.error(e); } }, onDetect: (d) => { try { onDetect(d); } catch (e) { console.error(e); } } });
   const setState = (st, reason, message) => { state = st; try { onState({ state: st, reason, message }); } catch (e) { console.error(e); } };
 
   function analyze() {

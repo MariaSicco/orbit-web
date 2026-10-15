@@ -1095,13 +1095,15 @@ function drawTop(bare) {
   hi.innerHTML = onHome ? `<a class="me" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a><span><small>${greet()}${me.name ? ',' : ''}</small><b>${me.name ? esc(me.name.split(' ')[0]) : 'Hola'}</b></span>` : '';
   const tab = TAB_OF[route.name] || route.name;
   /* escritorio: barra liviana con las secciones, las mascotas y el + */
-  const desk = `<nav class="tnav desk-only" aria-label="Secciones">${TABS.filter(t => t[0] !== 'cuenta').map(([k, , l]) => `<a href="#/${k}" ${tab === k ? 'aria-current="page"' : ''}>${l}</a>`).join('')}</nav>
+  /* "Me fui" es una sección más en escritorio (con punto verde si hay una cámara activa) */
+  const mf = mefui && window.MZAWAY && doc.pets.length;
+  const desk = `<nav class="tnav desk-only" aria-label="Secciones">${TABS.filter(t => t[0] !== 'cuenta').map(([k, , l]) => `<a href="#/${k}" ${tab === k && route.name !== 'mefui' ? 'aria-current="page"' : ''}>${l}</a>`).join('')}${mf ? `<a href="#/mefui" class="tnav-mf" title="Me fui y cámara" aria-label="Me fui y cámara" ${route.name === 'mefui' ? 'aria-current="page"' : ''}>${I('camera')}Me fui${window.MZAWAY.hasCamOn() || doc.away?.on ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}</a>` : ''}</nav>
     ${doc.pets.length ? `<div class="tpets desk-only" aria-label="Tus mascotas">${topPets(p).map(x => `<button type="button" class="tpet" data-act="pick" data-id="${x.id}" aria-current="${x.id === p?.id}" title="${esc(x.name)}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}${topPets(p).length < doc.pets.length ? `<button type="button" class="tpet more" data-act="petsMore" aria-label="Ver todas tus mascotas (${doc.pets.length})">+${doc.pets.length - topPets(p).length}</button>` : ''}<button type="button" class="tpet add" data-act="newPet" aria-label="Agregar mascota">${I('plus')}</button></div>` : ''}
     ${doc.pets.length ? askBtn('desk-only') : ''}
     ${doc.pets.length ? `<button type="button" class="btn sm ghost desk-only al-top" data-act="algo">${I('plus')} Algo pasó</button>` : ''}
     <button type="button" class="btn sm lime desk-only" data-act="add">${I('plus')} Cargar algo</button>`;
   $('#tnavBox').innerHTML = desk;
-  box.innerHTML = `${doc.pets.length ? `<button type="button" class="round ask-ic mob-only" data-act="askGo" aria-label="Preguntale a Mimitos">${ASK_IC.stars}</button>` : ''}<a class="round" href="#/avisos" aria-label="Avisos">${I('bell')}</a><a class="me${onHome ? ' desk-only' : ''}" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a>`;
+  box.innerHTML = `${doc.pets.length ? `<button type="button" class="round ask-ic mob-only" data-act="askGo" aria-label="Preguntale a Mimitos">${ASK_IC.stars}</button>` : ''}${mf ? window.MZAWAY.topIcon().replace('class="round', 'class="round mob-only') : ''}<a class="round" href="#/avisos" aria-label="Avisos">${I('bell')}</a><a class="me${onHome ? ' desk-only' : ''}" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a>`;
 }
 const greet = () => { const h = new Date().getHours(); return h < 6 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'; };
 const HEART = '<svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 27.5c-6.3-4.2-11-8.3-11-13.4C5 10.6 7.7 8 10.9 8c2.2 0 4 1.1 5.1 2.9C17.1 9.1 18.9 8 21.1 8 24.3 8 27 10.6 27 14.1c0 5.1-4.7 9.2-11 13.4z" fill="#D9694A"/><circle cx="12" cy="16" r="1.5" fill="#1F1A17"/><circle cx="20" cy="16" r="1.5" fill="#1F1A17"/><path d="M14 19.6c1.1.9 2.9.9 4 0" fill="none" stroke="#1F1A17" stroke-width="1.5" stroke-linecap="round"/></svg>';
@@ -1282,11 +1284,11 @@ function renderInicio(p) {
   return `<div class="dash">
     <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
     <div class="dash-r">
+      ${mefui && window.MZAWAY ? window.MZAWAY.homeCard(p) : ''}
       ${askBtn('ask-home span2')}
       <button type="button" class="algo-cta span2" data-act="algo">${I('plus')}<span><b>Algo pasó</b><small>Vómito, diarrea, picazón… anotalo en 2 toques</small></span></button>
       ${followCard(p)}
       ${weekCard(p)}
-      ${mefui && window.MZAWAY ? window.MZAWAY.homeCard(p) : ''}
       ${p.lost.on ? `<div class="banner lost">${bubble('search', 'perdida')}<span style="flex:1;min-width:160px"><b>Modo perdida activo</b>Desde ${p.lost.since ? Z.fmtWhen(new Date(p.lost.since)) : 'hoy'}</span><button class="btn sm" data-act="lost">Ver cartel</button></div>` : ''}
       ${scanBanner(p)}
       ${hoyBox(p)}
@@ -2309,7 +2311,8 @@ function suggestPanel(p) {
 /* ---------- "cargar algo" ---------- */
 function addPanel(p) {
   const opt = (act, ic, c, t, d) => `<button class="row link-row" data-add="${act}">${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`;
-  panel(`Cargar en la libreta de ${p.name}`, `<div class="list">
+  const camOn = mefui && window.MZAWAY?.hasCamOn(), cams = mefui && window.MZAWAY?.state.cams?.length;
+  panel(`Cargar en la libreta de ${p.name}`, `${mefui && window.MZAWAY ? `<button class="row link-row mf-hub" data-mf="hub">${bubble('camera', 'cuida')}<span class="what"><b>Me fui · Cámara</b><small>${doc.away?.on ? 'Salida en curso: ver estado y cámara' : camOn ? 'Ver en vivo, lo que escuchó y "Me fui"' : cams ? 'Tus cámaras, lo que escucharon y "Me fui"' : 'Usar un celu viejo como cámara'}</small></span>${camOn ? '<span class="mf-topdot inline" aria-hidden="true"></span>' : I('chevron')}</button>` : ''}<div class="list">
     ${opt('algo', 'alert', 'perdida', 'Algo pasó', 'Vómito, diarrea, picazón… con hora y foto')}
     ${opt('vacuna', 'syringe', 'salud', 'Vacuna', 'Con lote, veterinaria y foto del sticker')}
     ${opt('anti', 'drop', 'salud', 'Antiparasitario', 'Interno o externo: pipeta, collar, comprimido')}

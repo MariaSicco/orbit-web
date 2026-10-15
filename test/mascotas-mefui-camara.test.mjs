@@ -163,3 +163,14 @@ test('estado de la escucha: viaja en el ping y la dueña lo ve en la lista (sin 
   await call('POST', { cam: 'ping' }, { listen: 'cualquiera' }, { token: cam.token });
   assert.equal((await call('GET', { cam: 'list' }, null, { email: 'escucha@x.com' })).body.cams[0].listen, 'pausado', 'un valor raro no se guarda');
 });
+
+test('en casa (sin "Me fui"): el evento se guarda y aparece en la línea de tiempo, pero no avisa', async () => {
+  process.env.MIMITOS_MEFUI = '1'; process.env.MIMITOS_MEFUI_ALLOW = 'casa@x.com';
+  const cam = await paired('casa@x.com');
+  const doc = await kvGet('orbit:pets:casa@x.com'); doc.away = { on: false }; await kvSet('orbit:pets:casa@x.com', doc);
+  const r = await call('POST', { cam: 'event' }, ev('ladrido', 0, 2), { token: cam.token });
+  assert.equal(r.code, 200); assert.equal(r.body.notify, 'en_casa'); assert.equal(r.body.away, false);
+  const evs = (await call('GET', { cam: 'events', since: new Date(Date.now() - 864e5).toISOString() }, null, { email: 'casa@x.com' })).body.events;
+  assert.deepEqual(evs.map(e => e.type), ['ladrido']);
+  assert.equal(await kvGet('orbit:petcam:ping:casa@x.com:ladrido'), null, 'sin "Me fui" no arranca la ventana de 15 min de avisos');
+});
