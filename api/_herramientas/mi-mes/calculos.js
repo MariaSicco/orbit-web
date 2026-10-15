@@ -807,7 +807,21 @@ export function migrar(crudo) {
     if (ok.length) out.reales[m] = Object.fromEntries(ok);
   }
   /* (3) foto de la proyección y cambios desde la última vez */
-  if (crudo.fotoBase && typeof crudo.fotoBase === 'object' && crudo.fotoBase.meses && typeof crudo.fotoBase.meses === 'object') out.fotoBase = crudo.fotoBase;
+  /* QA v2 · 10: la foto que viene de una copia se limpia (montos numéricos, textos cortos) */
+  if (crudo.fotoBase && typeof crudo.fotoBase === 'object' && esMes(crudo.fotoBase.desde) && crudo.fotoBase.meses && typeof crudo.fotoBase.meses === 'object') {
+    const meses = {};
+    for (const [m, x] of Object.entries(crudo.fotoBase.meses).slice(0, 6)) {
+      if (!esMes(m) || !x || typeof x !== 'object' || !Number.isSafeInteger(x.libres)) continue;
+      const items = {};
+      for (const [k, it] of Object.entries(x.items || {}).slice(0, 200)) {
+        if (typeof k !== 'string' || !it || !Number.isSafeInteger(it.monto)) continue;
+        items[k.slice(0, 80)] = { tipo: texto(it.tipo, 20) || 'gasto', nombre: texto(it.nombre, 60), monto: it.monto,
+          ref: it.ref && typeof it.ref === 'object' ? { ...(typeof it.ref.editar === 'string' ? { editar: it.ref.editar.slice(0, 10), id: String(it.ref.id).slice(0, 60) } : {}), ...(typeof it.ref.tarjeta === 'string' ? { tarjeta: it.ref.tarjeta.slice(0, 60) } : {}) } : {} };
+      }
+      meses[m] = { items, libres: x.libres };
+    }
+    if (Object.keys(meses).length) out.fotoBase = { desde: crudo.fotoBase.desde, meses };
+  }
   out.cambios = (Array.isArray(crudo.cambios) ? crudo.cambios : []).filter(c => typeof c?.motivo === 'string' && typeof c?.fecha === 'string').slice(-20)
     .map(c => ({ motivo: texto(c.motivo, 80), fecha: c.fecha.slice(0, 25) }));
   out.devolver = (Array.isArray(crudo.devolver) ? crudo.devolver : []).map(devolverValido).filter(Boolean).slice(-100);
@@ -1329,7 +1343,7 @@ export function venceAntesDeCobrar(datos, hoy) {
     const ciclo = cicloTarjeta(datos, t.id, hoy);
     if (!ciclo || diasEntre(hoy, ciclo.vencimiento) < 0 || diasEntre(ciclo.vencimiento, cobro.fecha) <= 0) continue;
     const monto = comprometidoMes(datos, ciclo.vencimiento.slice(0, 7)).porTarjeta[t.id] || 0;
-    items.push({ tipo: 'tarjeta', id: t.id, nombre: t.nombre, fecha: ciclo.vencimiento, monto });
+    if (monto > 0) items.push({ tipo: 'tarjeta', id: t.id, nombre: t.nombre, fecha: ciclo.vencimiento, monto });
   }
   for (const m of [hoy.slice(0, 7), cobro.fecha.slice(0, 7)].filter((x, i, a) => a.indexOf(x) === i)) {
     for (const g of datos?.gastos || []) {
@@ -1357,7 +1371,8 @@ export function lineaDelMes(datos, mes) {
     for (let k = 0; k < 3 && desde.startsWith(mes); k++) {
       const c = cicloTarjeta(datos, t.id, desde);
       if (!c?.vencimiento) break;
-      if (c.vencimiento.startsWith(mes) && !vistos.has('v' + c.vencimiento)) {
+      const montoV = comprometidoMes(datos, mes).porTarjeta[t.id] || 0;
+      if (c.vencimiento.startsWith(mes) && !vistos.has('v' + c.vencimiento) && montoV > 0) {   // QA v2 · 12: sin "−$ 0"
         vistos.add('v' + c.vencimiento);
         ev.push({ tipo: 'vence', id: t.id, fecha: c.vencimiento, nombre: t.nombre, monto: comprometidoMes(datos, mes).porTarjeta[t.id] || 0 });
       }
@@ -1593,7 +1608,14 @@ export function preguntas(datos, hoy, { ultimaCopia = null, diaDeCobro = true, d
   }
   /* 4. gastos que varían, sin confirmar este mes */
   const conf = new Set(datos?.confirmados?.[mes] || []);
+  const pendientesEst = gastoEstimado ? r.gastos.filter(g => !g.confirmado && !(g.dia && Number(hoy.slice(8)) < g.dia)) : [];
+  if (pendientesEst.length >= 3) {
+    /* QA v2 · 7: no más de una pregunta por todos los gastos fijos del mes */
+    out.push({ id: `estimados:${mes}`, tipo: 'estimados', gastoIds: pendientesEst.map(g => g.id), impacto: pendientesEst.reduce((a, g) => a + g.monto, 0),
+      titulo: `¿Siguen igual tus ${pendientesEst.length} gastos fijos este mes?`, porque: 'Hasta que los confirmes, los reservamos con el estimado. Si alguno cambió, lo corregís en Lo cargado.', accion: 'Sí, todos' });
+  }
   for (const g of r.gastos) {
+    if (gastoEstimado && pendientesEst.length >= 3) continue;
     if (gastoEstimado) {
       /* (5) todo gasto fijo del mes es estimado hasta que aparece; se pregunta cuando ya debería haber aparecido */
       if (g.confirmado || (g.dia && Number(hoy.slice(8)) < g.dia)) continue;
@@ -1786,11 +1808,17 @@ export function confirmarGasto(datos, gastoId, mes, real = null) {
       : `${g.nombre} vino ${formatoPesos(-dif)} menos que el estimado: te quedan libres ${formatoPesos(-dif)} más.` };
 }
 /* "Lo di de baja": deja de contar desde este mes (o desde el que viene, si este ya se pagó). */
-export function darDeBajaGasto(datos, gastoId, mes) {
+export function confirmarTodos(datos, mes, ids = null) {
+  const r = resumenMes(datos, mes);
+  const lista = ids || r.gastos.filter(g => !g.confirmado).map(g => g.id);
+  return { ...datos, confirmados: { ...(datos.confirmados || {}), [mes]: [...new Set([...(datos.confirmados?.[mes] || []), ...lista])] } };
+}
+export function darDeBajaGasto(datos, gastoId, mes, { cobradoEsteMes = true } = {}) {
   const d = structuredClone(datos);
   const g = d.gastos.find(x => x.id === gastoId);
   if (!g) return { datos, texto: '' };
-  const pagadoEsteMes = (d.confirmados?.[mes] || []).includes(gastoId);
+  /* QA v2 · 7: por defecto se toma como ya cobrado este mes (la plata ya salió): deja de contar desde el que viene */
+  const pagadoEsteMes = cobradoEsteMes || (d.confirmados?.[mes] || []).includes(gastoId);
   const hasta = pagadoEsteMes ? mes : sumarMeses(mes, -1);
   if (difMeses(g.desde, hasta) < 0) d.gastos = d.gastos.filter(x => x.id !== gastoId);
   else { g.repite = true; g.hasta = hasta; }
@@ -1952,7 +1980,7 @@ export function compartidaDe(datos, cuotaId, hoy) {
 export const TIPOS_DEVOLVER = { reintegro: 'Reintegro de promo', devolucion: 'Devolución de compra', laboral: 'Gasto laboral', prestamo: 'Le presté a alguien' };
 export function devolverValido(x) {
   if (!x || typeof x !== 'object' || !TIPOS_DEVOLVER[x.tipo] || !Number.isSafeInteger(x.monto) || x.monto <= 0) return null;
-  return { id: String(x.id || ''), tipo: x.tipo, motivo: texto(x.motivo, 80) || TIPOS_DEVOLVER[x.tipo], monto: x.monto,
+  return { id: String(x.id || ''), tipo: x.tipo, motivo: texto(x.motivo, 80) || TIPOS_DEVOLVER[x.tipo], monto: x.monto, moneda: esMoneda(x.moneda) ? x.moneda : 'ARS',
     fecha: esFecha(x.fecha) ? x.fecha : null, esperada: esFecha(x.esperada) ? x.esperada : null, quien: texto(x.quien, 40),
     ...(typeof x.cuotaId === 'string' ? { cuotaId: x.cuotaId } : {}),
     ...(esFecha(x.acreditado) ? { acreditado: x.acreditado } : {}),
@@ -1961,11 +1989,11 @@ export function devolverValido(x) {
 const RE_REINTEGRO = /reintegro|bonif|devol|promo|cashback|ajuste a favor|contracargo/i;
 export function bandejaDevolver(datos, hoy) {
   hoy = aFecha(hoy);
-  const propios = (datos?.devolver || []).map(x => ({ ...x, origen: 'cargado', vencido: !x.acreditado && x.esperada ? diasEntre(x.esperada, hoy) > 0 : false }));
+  const propios = (datos?.devolver || []).map(x => ({ ...x, moneda: x.moneda || 'ARS', origen: 'cargado', vencido: !x.acreditado && x.esperada ? diasEntre(x.esperada, hoy) > 0 : false }));
   const compartidas = (datos?.cuotas || []).filter(c => c.compartida).map(c => {
     const x = compartidaDe(datos, c.id, hoy);
     return x && x.falta > 0 ? { id: `comp:${c.id}`, tipo: 'prestamo', origen: 'compartida', motivo: `Su parte de ${c.descripcion || 'una compra'}`, quien: x.con,
-      monto: x.falta, cuotaId: c.id, fecha: c.fecha || null, esperada: null, vencido: x.vencidoSinDevolver > 0, vencidoMonto: x.vencidoSinDevolver } : null;
+      monto: x.falta, moneda: c.moneda || 'ARS', cuotaId: c.id, fecha: c.fecha || null, esperada: null, vencido: x.vencidoSinDevolver > 0, vencidoMonto: x.vencidoSinDevolver } : null;
   }).filter(Boolean);
   const usados = new Set((datos?.devolver || []).filter(x => x.credito).map(x => `${x.credito.resumenId}:${x.credito.i}`));
   /* créditos del resumen que parecen un reintegro o una devolución: candidatos, nunca automáticos */
@@ -1978,13 +2006,17 @@ export function bandejaDevolver(datos, hoy) {
     candidatos.push({ resumenId: r.id, i, concepto: p.concepto, fecha: p.fecha, monto, tarjetaId: r.tarjetaId, parecido: parecido.map(x => x.id) });
   });
   const pendientes = [...propios.filter(x => !x.acreditado), ...compartidas];
+  /* QA v2 · 7: totales por moneda, nunca US$ sumados como pesos */
+  const totales = {};
+  for (const x of pendientes) totales[x.moneda] = (totales[x.moneda] || 0) + x.monto;
   return { pendientes, acreditados: propios.filter(x => x.acreditado), candidatos,
-    total: pendientes.reduce((a, x) => a + x.monto, 0), vencidos: pendientes.filter(x => x.vencido) };
+    totales, total: totales.ARS || 0, vencidos: pendientes.filter(x => x.vencido) };
 }
 export function mensajeReclamo(item, { tarjeta = '' } = {}) {
   const f = d => (d ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}/${d.slice(0, 4)}` : '');
-  if (item.tipo === 'prestamo') return `Hola${item.quien ? ` ${item.quien}` : ''}! Te escribo por ${item.motivo.charAt(0).toLowerCase() + item.motivo.slice(1)}: quedan ${formatoPesos(item.monto)} pendientes. ¿Cuándo te queda cómodo? Gracias!`;
-  return `Hola. Les escribo por ${TIPOS_DEVOLVER[item.tipo].toLowerCase()}: ${item.motivo}${item.fecha ? `, del ${f(item.fecha)}` : ''}${tarjeta ? `, pagado con ${tarjeta}` : ''}, por ${formatoPesos(item.monto)}. Tendría que haberse acreditado${item.esperada ? ` el ${f(item.esperada)}` : ''} y todavía no lo veo. ¿Me confirman cuándo se acredita? Gracias.`;
+  const plata = formatoMoneda(item.monto, item.moneda || 'ARS');
+  if (item.tipo === 'prestamo') return `¡Hola${item.quien ? `, ${item.quien}` : ''}! Te escribo por ${item.motivo.charAt(0).toLowerCase() + item.motivo.slice(1)}: quedan ${plata} pendientes. ¿Cuándo te queda cómodo? ¡Gracias!`;
+  return `Hola. Les escribo por ${TIPOS_DEVOLVER[item.tipo].toLowerCase()}: ${item.motivo}${item.fecha ? `, del ${f(item.fecha)}` : ''}${tarjeta ? `, pagado con ${tarjeta}` : ''}, por ${plata}. Tendría que haberse acreditado${item.esperada ? ` el ${f(item.esperada)}` : ''} y todavía no lo veo. ¿Me confirman cuándo se acredita? Gracias.`;
 }
 
 

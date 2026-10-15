@@ -31,7 +31,7 @@ test('estimado: hasta confirmar se reserva el estimado; el real reemplaza y expl
 });
 test('estimado: lo di de baja deja de contar desde este mes, o desde el próximo si ya se pagó', () => {
   const d = persona();
-  const b = M.darDeBajaGasto(d, 'gym', '2026-10');
+  const b = M.darDeBajaGasto(d, 'gym', '2026-10', { cobradoEsteMes: false });   // dijo que este mes no se cobró
   assert.equal(M.resumenMes(b.datos, '2026-10').totGastos, $(60_000));
   assert.match(b.texto, /deja de contar desde octubre 2026/);
   assert.equal(M.resumenMes(b.datos, '2026-09').totGastos, $(90_000), 'el pasado no cambia');

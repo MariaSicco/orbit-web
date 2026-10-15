@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -233,6 +233,7 @@ function preguntaHTML(q) {
     cambio: `<button type="button" class="mm-btn chico" data-cambio>Actualizar</button>`,
     copia: `<button type="button" class="mm-btn chico" data-exportar>Guardar copia</button>`,
     saldo: `<button type="button" class="mm-btn chico" data-saldo>${esc(q.accion)}</button>`,
+    estimados: `<button type="button" class="mm-btn chico" data-gastos-ok="${esc(q.gastoIds.join(','))}">${esc(q.accion)}</button><button type="button" class="mm-link" data-ir="cargado">Alguno cambió</button>`,
     estimado: `<button type="button" class="mm-btn chico" data-gasto-ok="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-gasto-real="${esc(q.gastoId)}">Fue otro monto</button><button type="button" class="mm-link" data-gasto-baja="${esc(q.gastoId)}">Lo di de baja</button>`,
     gastoTarjeta: `<button type="button" class="mm-btn chico" data-gasto-tj="${esc(q.gastoId)}" data-tj="${esc(q.tarjetaId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-pregunta-luego="${esc(q.id)}">No, es otro</button>`,
     pagado: Object.entries(PAGOS_VENCIDO).map(([k, v], i) => `<button type="button" class="${i ? 'mm-link' : 'mm-btn chico'}" data-pago-res="${esc(q.resumenId)}" data-pago="${k}">${esc(v)}</button>`).join(''),
@@ -261,7 +262,9 @@ function filaRevisar(x) {
   }
   if (x.clase === 'devolver') {
     const v = x.bd.vencidos, c = x.bd.candidatos.filter(k => k.parecido.length);
-    const txt = v.length ? `Te deben ${$(v.reduce((a, i) => a + (i.vencidoMonto || i.monto), 0))} que ya deberían estar` : `Puede que te hayan acreditado un reintegro`;
+    const porMon = {};
+    for (const i of v) porMon[i.moneda || 'ARS'] = (porMon[i.moneda || 'ARS'] || 0) + (i.vencidoMonto || i.monto);
+    const txt = v.length ? `Te deben ${Object.entries(porMon).map(([m, x2]) => fm(x2, m)).join(' y ')} que ya deberían estar` : `Puede que te hayan acreditado un reintegro`;
     return `<details class="mm-fila-alerta pregunta"><summary><span class="mm-fa-ic">${ic('bajar')}</span><span class="mm-fa-txt">${esc(txt)}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
       <div class="mm-fa-det"><p>${v.length ? `${v.length === 1 ? 'Un ítem pasó' : `${v.length} ítems pasaron`} la fecha esperada. Tenés el mensaje de reclamo armado para copiar.` : `En tu resumen aparece ${esc(c[0].concepto)} por ${esc($(c[0].monto))}.`}</p>
       <div class="mm-fa-acc"><button type="button" class="mm-btn chico" data-ir="devolver">Ver la bandeja</button></div></div></details>`;
@@ -371,13 +374,14 @@ const fechaAR = d => (d ? `${Number(d.slice(8))}/${Number(d.slice(5, 7))}` : '')
 function pintarDevolver() {
   const b = bandejaDevolver(datos, HOY_ISO);
   const fila = x => `<li class="mm-dev${x.vencido ? ' vencido' : ''}">
-      <div class="mm-dev-cab"><b>${esc(x.motivo)}</b><b>${esc($(x.monto))}</b></div>
+      <div class="mm-dev-cab"><b>${esc(x.motivo)}</b><b>${esc(fm(x.monto, x.moneda || 'ARS'))}</b></div>
       <p class="mm-fuente">${esc(TIPOS_DEVOLVER[x.tipo])}${x.quien ? ` · ${esc(x.quien)}` : ''}${x.esperada ? ` · esperado el ${esc(fechaAR(x.esperada))}` : ''}${x.vencido ? ' · <b class="neg">ya debería estar</b>' : ''}${x.origen === 'compartida' ? ' · de una compra compartida' : ''}</p>
       <div class="mm-meta-acc">${x.origen === 'compartida' ? `<button type="button" class="mm-link" data-editar="cuota" data-id="${esc(x.cuotaId)}">Ver la compra</button>`
         : `<button type="button" class="mm-btn sec chico" data-dev-ok="${esc(x.id)}">Ya me lo acreditaron</button>`}
         ${x.vencido ? `<button type="button" class="mm-link" data-dev-reclamo="${esc(x.id)}">Copiar mensaje de reclamo</button>` : ''}
         ${x.origen !== 'compartida' ? `<button type="button" class="mm-link quieto" data-dev-borrar="${esc(x.id)}">Borrar</button>` : ''}</div></li>`;
-  $id('devolver').innerHTML = `<section class="mm-panel"><p class="mm-item-meta">Pendiente</p><p class="mm-total-num">${esc($(b.total))}</p>
+  const totTxt = Object.entries(b.totales).map(([m, v]) => fm(v, m)).join(' · ') || $(0);
+  $id('devolver').innerHTML = `<section class="mm-panel"><p class="mm-item-meta">Pendiente</p><p class="mm-total-num">${esc(totTxt)}</p>
       <p class="mm-fuente">No suma a te quedan libres ni a tus ingresos hasta que se acredita.</p>
       ${b.pendientes.length ? `<ul class="mm-dev-lista">${b.pendientes.map(fila).join('')}</ul>` : '<p class="mm-vacio">No tenés nada pendiente.</p>'}</section>
     ${b.candidatos.length ? `<section class="mm-panel"><h2 class="mm-h2">En tus resúmenes</h2><p class="mm-fuente">Créditos que pueden ser un reintegro o una devolución. Vos decidís.</p>
@@ -2202,7 +2206,15 @@ document.addEventListener('click', e => {
   const gre = t.closest('[data-gasto-real]');
   if (gre) return abrirReal(gre.dataset.gastoReal);
   const gba = t.closest('[data-gasto-baja]');
-  if (gba) { const r = darDeBajaGasto(datos, gba.dataset.gastoBaja, HOY); datos = r.datos; guardar(); pintarTodo(); return avisar(r.texto); }
+  if (gba) {
+    /* QA v2 · 7: antes de dar de baja, ¿ya se cobró este mes? (si sí, este mes no cambia) */
+    gba.parentElement.innerHTML = `<span class="mm-fuente">¿Ya se cobró este mes?</span><button type="button" class="mm-btn chico" data-gasto-baja2="${esc(gba.dataset.gastoBaja)}" data-cobrado="1">Sí, ya se cobró</button><button type="button" class="mm-link" data-gasto-baja2="${esc(gba.dataset.gastoBaja)}" data-cobrado="0">No</button>`;
+    return;
+  }
+  const gb2 = t.closest('[data-gasto-baja2]');
+  if (gb2) { const r = darDeBajaGasto(datos, gb2.dataset.gastoBaja2, HOY, { cobradoEsteMes: gb2.dataset.cobrado === '1' }); datos = r.datos; guardar(); pintarTodo(); return avisar(r.texto); }
+  const gtodos = t.closest('[data-gastos-ok]');
+  if (gtodos) { datos = confirmarTodos(datos, HOY, gtodos.dataset.gastosOk.split(',')); registrarCambio('Confirmaste tus gastos fijos'); guardar(); pintarTodo(); return avisar('Listo: confirmados para este mes'); }
   if (t.closest('[data-cambios-visto]')) { datos.fotoBase = fotoProyeccion(datos, HOY); datos.cambios = []; guardar(); pintarInicio(); return avisar('Listo: tomamos esto como punto de partida'); }
   if (t.closest('[data-saldo]')) return abrirSaldo();
   if (t.closest('[data-ver-dificil]')) { $id('dificil').scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); return $id('t-dificil')?.focus?.(); }

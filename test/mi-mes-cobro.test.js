@@ -72,6 +72,7 @@ test('cobro: línea del mes ordenada por fecha, el cobro primero si coincide', (
   const d = base({
     ingresos: [sueldo({ tipo: 'dia', dia: 10 })],
     tarjetas: [{ id: 't1', nombre: 'Visa', red: 'Visa', banco: '', ultimos4: '', color: 'azul', diaCierre: 24, diaVence: 10 }],
+    cuotas: [{ id: 'c1', descripcion: 'Tele', total: 1_200_00, cantidad: 12, tarjetaId: 't1', primerMes: '2026-06', moneda: 'ARS' }],
     gastos: [{ id: 'g1', nombre: 'Alquiler', categoria: 'Alquiler', monto: 1, repite: true, desde: '2026-01', dia: 1 }],
   });
   const l = M.lineaDelMes(d, '2026-11');
@@ -109,6 +110,7 @@ test('cobro: de hoy al cobro cruza el mes y marca lo que vence antes', () => {
   const d = base({
     ingresos: [sueldo({ tipo: 'quintoHabil' })],
     tarjetas: [{ id: 't1', nombre: 'Visa', red: 'Visa', banco: '', ultimos4: '', color: 'azul', diaCierre: 10, diaVence: 20 }],
+    cuotas: [{ id: 'c1', descripcion: 'Tele', total: 1_200_00, cantidad: 12, tarjetaId: 't1', primerMes: '2026-06', moneda: 'ARS' }],
     gastos: [{ id: 'g1', nombre: 'Alquiler', categoria: 'Alquiler', monto: 1, repite: true, desde: '2026-01', dia: 1 },
       { id: 'g2', nombre: 'Luz', categoria: 'Servicios', monto: 1, repite: true, desde: '2026-01', dia: 12 }],
   });

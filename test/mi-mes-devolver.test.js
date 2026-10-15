@@ -39,5 +39,5 @@ test('reclamo: mensaje armado para copiar, con motivo, monto y fechas', () => {
   const b = M.bandejaDevolver(persona(), '2026-10-15');
   const t = M.mensajeReclamo(b.pendientes[0], { tarjeta: 'Visa' });
   assert.equal(t, 'Hola. Les escribo por reintegro de promo: Promo súper 20 %, del 10/9/2026, pagado con Visa, por $ 8.000. Tendría que haberse acreditado el 10/10/2026 y todavía no lo veo. ¿Me confirman cuándo se acredita? Gracias.');
-  assert.match(M.mensajeReclamo(b.pendientes[2]), /^Hola Juli! Te escribo por su parte de Heladera: quedan \$ 60\.000 pendientes/);
+  assert.match(M.mensajeReclamo(b.pendientes[2]), /^¡Hola, Juli! Te escribo por su parte de Heladera: quedan \$ 60\.000 pendientes/);
 });

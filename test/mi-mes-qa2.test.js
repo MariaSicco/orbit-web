@@ -192,3 +192,51 @@ test('[QA2] todo lo que app.js importa existe en calculos.js', async () => {
     if (usa && !local) assert.ok(lista.includes(n), `app.js usa ${n} sin importarlo`);
   }
 });
+
+/* ── QA v2 · 7: compartidas y bandeja por moneda ── */
+test('[QA2 · 7] te deben: US$ y pesos no se mezclan; reclamo en la moneda de la compra y con ¡', () => {
+  const d = M.datosVacios();
+  d.tarjetas.push({ id: 'v', nombre: 'Visa', red: 'Visa', banco: '', ultimos4: '', color: 'azul' });
+  d.cuotas.push({ id: 'p', descripcion: 'Pasajes', total: 60_000, moneda: 'USD', cantidad: 1, tarjetaId: 'v', primerMes: '2026-10', origen: 'manual', compartida: { con: 'Juli', tipo: '%', valor: 50 } });
+  d.devolver = [{ id: 'r', tipo: 'reintegro', motivo: 'Promo', monto: $(20_000), fecha: '2026-10-01', esperada: '2026-10-30' }];
+  const b = M.bandejaDevolver(M.migrar(d), '2026-10-15');
+  assert.deepEqual(b.totales, { ARS: $(20_000), USD: 30_000 });
+  const juli = b.pendientes.find(x => x.origen === 'compartida');
+  assert.equal(juli.moneda, 'USD');
+  assert.equal(M.mensajeReclamo(juli), '¡Hola, Juli! Te escribo por su parte de Pasajes: quedan US$ 300 pendientes. ¿Cuándo te queda cómodo? ¡Gracias!');
+});
+
+/* ── QA v2 · 7: gastoEstimado sin bombardeo, y "lo di de baja" sin inflar el mes ── */
+function conSeisGastos() {
+  const d = M.datosVacios();
+  d.ingresos.push({ id: 'i', nombre: 'Sueldo', monto: $(1_000_000), repite: true, desde: '2026-01' });
+  ['Alquiler', 'Expensas', 'Luz', 'Gas', 'Internet', 'Gimnasio'].forEach((n, i) => d.gastos.push({ id: `g${i}`, nombre: n, categoria: 'Otros', monto: $(10_000 * (i + 1)), repite: true, desde: '2026-01' }));
+  return M.migrar(d);
+}
+test('[QA2 · 7] gastoEstimado: con muchos gastos, una sola pregunta "¿Siguen igual tus 6 gastos fijos?"', () => {
+  const p = M.preguntas(conSeisGastos(), '2026-10-15', { gastoEstimado: true });
+  const est = [...p.ahora, ...p.masTarde].filter(x => x.tipo === 'estimado' || x.tipo === 'estimados');
+  assert.equal(est.length, 1);
+  assert.equal(est[0].titulo, '¿Siguen igual tus 6 gastos fijos este mes?');
+  assert.equal(est[0].accion, 'Sí, todos');
+  assert.equal(est[0].impacto, $(210_000));
+  const todos = M.confirmarTodos(conSeisGastos(), '2026-10');
+  assert.equal(M.preguntas(todos, '2026-10-15', { gastoEstimado: true }).ahora.filter(x => x.tipo.startsWith('estimado')).length, 0);
+});
+test('[QA2 · 7] lo di de baja: si ya se cobró este mes (por defecto), el mes en curso no cambia', () => {
+  const d = conSeisGastos();
+  const b = M.darDeBajaGasto(d, 'g5', '2026-10');
+  assert.equal(M.resumenMes(b.datos, '2026-10').libres, M.resumenMes(d, '2026-10').libres, 'octubre igual: la plata ya salió');
+  assert.equal(M.resumenMes(b.datos, '2026-11').totGastos, M.resumenMes(d, '2026-11').totGastos - $(60_000));
+  const n = M.darDeBajaGasto(d, 'g5', '2026-10', { cobradoEsteMes: false });
+  assert.equal(M.resumenMes(n.datos, '2026-10').totGastos, M.resumenMes(d, '2026-10').totGastos - $(60_000));
+});
+
+test('[QA2 · 10 y 12] foto de una copia sin números se descarta; tarjeta sin nada ese mes no muestra "−$ 0"', () => {
+  const m = M.migrar({ v: 4, fotoBase: { desde: '2026-10', meses: { '2026-10': { libres: 'mucho', items: {} }, '2026-11': { libres: 5, items: { a: { monto: 'x' }, b: { monto: 3, nombre: '<img>' } } } } } });
+  assert.deepEqual(Object.keys(m.fotoBase.meses), ['2026-11']);
+  assert.deepEqual(Object.keys(m.fotoBase.meses['2026-11'].items), ['b']);
+  const d = M.datosVacios();
+  d.tarjetas.push({ id: 'a', nombre: 'Amex', red: 'American Express', banco: '', ultimos4: '', color: 'azul', diaCierre: 20, diaVence: 2 });
+  assert.equal(M.lineaDelMes(d, '2026-11').some(e => e.tipo === 'vence'), false);
+});
