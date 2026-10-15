@@ -157,3 +157,38 @@ test('[QA2 · 5] si el resumen todavía no venció, "te cobra" y nada de pagar d
   assert.match(c.texto, /^Este resumen te cobra \$ 18\.000 de intereses/);
   assert.doesNotMatch(c.texto, /pagaste|de más/);
 });
+
+/* ── QA v2 · 6: TNA del saldo impago ── */
+test('[QA2 · 6] la TNA del propio resumen manda; si no viene, el supuesto editable', () => {
+  const l = M.validarLectura({ ...fixture('simple'), tasas: { tnaFinanciacion: 96.5, tnaPunitorios: null } }).lectura;
+  assert.equal(l.tnaFinanciacion, 96.5);
+  assert.equal(M.validarLectura({ ...fixture('simple'), tasas: { tnaFinanciacion: 'mucho' } }).lectura.tnaFinanciacion, null);
+  const r = M.importarResumen(M.datosVacios(), l, { nuevoId: () => 'q' });
+  assert.equal(r.datos.resumenes[0].tna, 96.5);
+  assert.equal(M.migrar(r.datos).resumenes[0].tna, 96.5);
+  const d = M.registrarPagoResumen(r.datos, 'q', { estado: 'no' });
+  const f = M.financiacionEstimada(d.resumenes[0], d);
+  assert.deepEqual([f.tna, f.tnaDe], [96.5, 'resumen']);
+  delete d.resumenes[0].tna;
+  const g = M.financiacionEstimada(d.resumenes[0], d);
+  assert.deepEqual([g.tna, g.tnaDe], [80, 'supuesto']);
+  d.supuestos = { financiacion: { valor: 110, fecha: '2026-10-15' } };
+  assert.deepEqual([M.financiacionEstimada(d.resumenes[0], d).tna, M.financiacionEstimada(d.resumenes[0], d).tnaDe], [110, 'tuya']);
+});
+test('[QA2 · 6] el esquema del lector pide la TNA y el prompt dice cómo', async () => {
+  const lector = await import('../api/_lib/mi-mes-lector.js');
+  assert.ok(lector.ESQUEMA.properties.tasas);
+  assert.match(readFileSync(new URL('../api/_lib/mi-mes-lector.js', import.meta.url), 'utf8'), /"tasas": la TNA de financiación/);
+});
+
+test('[QA2] todo lo que app.js importa existe en calculos.js', async () => {
+  const src = readFileSync(new URL('../api/_herramientas/mi-mes/app.js', import.meta.url), 'utf8');
+  const lista = src.match(/import \{([^}]*)\} from '\.\/calculos\.js'/)[1].split(',').map(x => x.trim().split(' as ')[0]).filter(Boolean);
+  for (const n of lista) assert.ok(n in M, `falta ${n}`);
+  // y lo que usa con nombre de calculos (funciones exportadas) está importado
+  for (const n of Object.keys(M)) {
+    const usa = new RegExp(`(^|[^.\\w$])${n}\\(`).test(src);
+    const local = new RegExp(`(function|const|let) ${n}\\b`).test(src);
+    if (usa && !local) assert.ok(lista.includes(n), `app.js usa ${n} sin importarlo`);
+  }
+});

@@ -305,7 +305,7 @@ export function resumenMes(datos, mes) {
   for (const r0 of (d.resumenes || []).filter(x => x.mes === sumarMeses(mes, -1) && x.pago && x.pago.estado !== 'total')) {
     if (conResumen.has(r0.tarjetaId)) continue;
     const f = financiacionEstimada(r0, d);
-    if (f.total > 0) financiados.push({ tarjetaId: r0.tarjetaId, tarjeta: tarjetas.get(r0.tarjetaId)?.nombre || 'Tarjeta', monto: f.total, saldo: f.saldo, interes: f.interes, estimado: true });
+    if (f.total > 0) financiados.push({ tarjetaId: r0.tarjetaId, tarjeta: tarjetas.get(r0.tarjetaId)?.nombre || 'Tarjeta', monto: f.total, saldo: f.saldo, interes: f.interes, tna: f.tna, tnaDe: f.tnaDe, sinPago: f.sinPago, estimado: true });
   }
   const suma = xs => xs.reduce((s, x) => s + x.monto, 0);
   const totIngresos = suma(ingresos);
@@ -475,6 +475,7 @@ export function rubroPara(comercio, sugerido, memoria = {}) {
 }
 
 /* ── lectura de un resumen (lo que devuelve /api/leer-resumen) ── */
+const tnaOk = x => (typeof x === 'number' && Number.isFinite(x) && x > 0 && x < 500 ? Math.round(x * 100) / 100 : null);
 const aCentavos = x => (typeof x === 'number' && Number.isFinite(x) ? Math.round(x * 100) : null);
 const mesDeFecha = f => f.slice(0, 7);
 
@@ -545,6 +546,8 @@ export function validarLectura(json) {
     saldoAnterior: porMoneda(json.saldoAnterior), totales, consumos, pagosYCreditos, cargos, cuotasAVencer,
     pagoMinimo: pm && pm.monto !== null ? pm : null,
     limites: { compra: aCentavos(lim.compra) || null, financiacion: aCentavos(lim.financiacion) || null },
+    /* QA v2 · 6: TNA de financiación que informa el propio resumen, si viene */
+    tnaFinanciacion: tnaOk(json?.tasas?.tnaFinanciacion),
     confianza: json.confianza === 'alta' ? 'alta' : 'baja',
     avisos,
   };
@@ -598,6 +601,7 @@ export function importarResumen(datos, lectura, { tarjetaId = null, nuevoId = ()
     cargos: (lectura.cargos || []).map(c => ({ ...c })),
     cuotasAVencer: (lectura.cuotasAVencer || []).map(c => ({ ...c, mesPago: sumarMeses(c.mes, desfase) })),
     ...(lectura.confianza === 'alta' ? {} : { dudoso: true }),
+    ...(lectura.tnaFinanciacion ? { tna: lectura.tnaFinanciacion } : {}),
     ...(hoy && esFecha(lectura.vencimiento) && diasEntre(lectura.vencimiento, aFecha(hoy)) > 0 ? { vencidoAlImportar: true } : {}) });
   /* compras nuevas cargadas a mano que ahora salen en el resumen: se
      concilian solas (mismo monto de cuota, cantidad, moneda y fecha cercana);
@@ -753,6 +757,7 @@ export function migrar(crudo) {
       ...(r.dudoso === true ? { dudoso: true } : {}),
       ...(pagoValido(r.pago) ? { pago: pagoValido(r.pago) } : {}),
       ...(r.vencidoAlImportar === true ? { vencidoAlImportar: true } : {}),
+      ...(tnaOk(r.tna) ? { tna: tnaOk(r.tna) } : {}),
       periodo: r.periodo && typeof r.periodo === 'object' ? { desde: esFecha(r.periodo.desde) ? r.periodo.desde : null, hasta: esFecha(r.periodo.hasta) ? r.periodo.hasta : null } : { desde: null, hasta: null },
       totales, pagoMinimo: r.pagoMinimo && esMoneda(r.pagoMinimo.moneda) && Number.isSafeInteger(r.pagoMinimo.monto) ? { moneda: r.pagoMinimo.moneda, monto: r.pagoMinimo.monto } : null,
       consumos });
@@ -2007,9 +2012,11 @@ export function financiacionEstimada(r, datos) {
   const pagado = pagadoResumen(r, datos);
   if (pagado === null) return { saldo: 0, interes: 0, total: 0 };
   const saldo = Math.max(0, total - pagado);
-  const tna = supuesto(datos, 'financiacion').valor;
+  /* TNA: la del propio resumen; si no viene, la que cargó la persona; si no, el supuesto (rotulado) */
+  const tnaDe = tnaOk(r.tna) ? 'resumen' : datos?.supuestos?.financiacion ? 'tuya' : 'supuesto';
+  const tna = tnaOk(r.tna) ?? supuesto(datos, 'financiacion').valor;
   const interes = Math.round(saldo * tna / 100 / 12 * 1.21);
-  return { saldo, interes, total: saldo + interes, tna };
+  return { saldo, interes, total: saldo + interes, tna, tnaDe, sinPago: pagado === 0 };
 }
 export function registrarPagoResumen(datos, resumenId, pago) {
   const p = pagoValido(pago);
@@ -2125,3 +2132,6 @@ export function verificarCambio(datos, cambio) {
     : partes.length ? `${unir(partes).charAt(0).toUpperCase()}${unir(partes).slice(1)}.` : '';
   return { items, texto: texto2, listo: items.length > 0 && items.every(i => i.estado === 'nueva'), hayResumenNuevo: nuevos.length > 0 };
 }
+
+/* Rótulo de la TNA que se usó (QA v2 · 6). */
+export const textoTNA = f => `TNA ${String(f.tna).replace('.', ',')} % ${f.tnaDe === 'resumen' ? 'del resumen' : f.tnaDe === 'tuya' ? '(la que cargaste)' : '(supuesto: cada banco informa la suya en el resumen)'}`;

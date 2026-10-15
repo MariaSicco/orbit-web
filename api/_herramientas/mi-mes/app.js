@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -168,7 +168,7 @@ function pintarInicio(animar = false) {
         extra: x.faltaCambio.length ? ' <span class="mm-tag">Falta tipo de cambio</span>' : '' });
     }),
     ...r.delBanco.map(x => item({ ir: x.tarjetaId, icono: 'escalera', titulo: `Cuotas de ${x.tarjeta}`, meta: 'Según la tabla "cuotas a vencer" del banco', monto: '−' + $(x.monto) })),
-    ...(r.financiados || []).map(x => item({ ir: x.tarjetaId, icono: 'alerta', titulo: `Saldo sin pagar · ${x.tarjeta}`, meta: `${$(x.saldo)} del resumen anterior + ${$(x.interes)} de intereses estimados`, monto: '−' + $(x.monto), extra: ' <span class="mm-tag ext">Estimado</span>' })),
+    ...(r.financiados || []).map(x => item({ ir: x.tarjetaId, icono: 'alerta', titulo: `Saldo sin pagar · ${x.tarjeta}`, meta: `${$(x.saldo)} del resumen anterior + ${$(x.interes)} de intereses estimados · ${textoTNA(x)}${x.sinPago ? '. Sin pago, el banco suma punitorios: no los estimamos' : ''}`, monto: '−' + $(x.monto), extra: ' <span class="mm-tag ext">Estimado</span>' })),
     ...r.percepciones.map(x => item({ ir: x.tarjetaId, icono: 'dolar', titulo: `Percepción 30 % · ${x.tarjeta}`, meta: 'Estimada: si pagaste en pesos los US$ del resumen anterior. Si los pagaste con dólares propios, no va', monto: '−' + $(x.monto), extra: ' <span class="mm-tag ext">Estimado</span>' })),
     ...r.cuotas.map(c => item({ tipo: 'cuota', id: c.id, icono: 'cuota', titulo: c.descripcion || 'Compra en cuotas',
       meta: `${c.tarjeta} · ${c.cantidad > 1 ? `cuota ${c.numero}/${c.cantidad}` : 'un pago'}`, monto: '−' + $(c.monto),
@@ -185,7 +185,7 @@ function pintarInicio(animar = false) {
     ? `<p class="mm-vacio"><b>Empezá por tu sueldo.</b> Después sumá tus gastos fijos y tus cuotas (o subí el resumen de tu tarjeta) y arriba ves cuánto te queda libre este mes y los que vienen.</p>`
     : grupo('Ingresos', '+' + $(r.totIngresos), ing, datos.ingresos.length ? 'Sin ingresos este mes.' : '<b>Cargá tu sueldo</b> o lo que cobres todos los meses.') +
       grupo('Gastos fijos', (r.totGastos ? '−' : '') + $(r.totGastos), gas, datos.gastos.length ? 'Sin gastos fijos este mes.' : 'Alquiler, expensas, servicios, suscripciones: lo que pagás sí o sí.') +
-      grupo('Tarjetas y cuotas', (r.totTarjetas ? '−' : '') + $(r.totTarjetas), [...tar, ...gasTj], datos.cuotas.length || datos.resumenes.length ? 'Sin cuotas ni resúmenes este mes.' : 'Cargá una compra en cuotas o subí el resumen de tu tarjeta.', dentro);
+      grupo('Tarjetas y cuotas', (r.totTarjetas ? '−' : '') + $(r.totTarjetas), [...tar, ...gasTj, ...((r.financiados || []).some(f => f.tnaDe !== 'resumen') ? [`<li class="mm-tna"><button type="button" class="mm-link" data-tna>Cambiar la TNA supuesta (${esc(String(supuesto(datos, 'financiacion').valor).replace('.', ','))} %)</button></li>`] : [])], datos.cuotas.length || datos.resumenes.length ? 'Sin cuotas ni resúmenes este mes.' : 'Cargá una compra en cuotas o subí el resumen de tu tarjeta.', dentro);
 
   /* moneda extranjera */
   const faltan = [...new Set([...r.sinCambio.map(c => c.moneda), ...r.resumenes.flatMap(x => x.faltaCambio)])];
@@ -298,6 +298,16 @@ function registrarCambio(motivo) {
   if (!F.queCambio) return;
   datos.fotoBase ||= fotoProyeccion(datos, HOY);
   datos.cambios = [...(datos.cambios || []), { motivo, fecha: new Date().toISOString().slice(0, 16) }].slice(-20);
+}
+
+/* ── TNA de financiación: supuesto editable (QA v2 · 6) ── */
+function abrirTNA() {
+  const v = window.prompt('TNA de financiación en % (la informa tu resumen, por ejemplo 89,5):', String(supuesto(datos, 'financiacion').valor).replace('.', ','));
+  if (v === null) return;
+  const n = numero(v);
+  if (n === null || n <= 0 || n >= 500) return avisar('Revisá la TNA: un número entre 1 y 499');
+  datos.supuestos = { ...datos.supuestos, financiacion: { valor: n, fecha: HOY_ISO } }; guardar(); pintarTodo();
+  avisar(`Listo: usamos TNA ${String(n).replace('.', ',')} % para estimar los intereses`);
 }
 
 /* ── resumen vencido: pagué otro monto ── */
@@ -2177,6 +2187,7 @@ document.addEventListener('click', e => {
   if (vc) { datos = vincularCredito(datos, vc.dataset.vincular, vc.dataset.res, Number(vc.dataset.i)); guardar(); pintarFicha(datos.cuotas.find(x => x.id === vc.dataset.vincular)); return avisar('Listo: queda en la historia de la compra'); }
   const dd = t.closest('[data-dev-de]');
   if (dd) { cerrar(dc); return abrirDevolver(dd.dataset.devDe); }
+  if (t.closest('[data-tna]')) return abrirTNA();
   const gtj = t.closest('[data-gasto-tj]');
   if (gtj) { datos.gastos = datos.gastos.map(g => (g.id === gtj.dataset.gastoTj ? { ...g, tarjetaId: gtj.dataset.tj } : g)); guardar(); pintarTodo(); return avisar('Listo: lo contamos una sola vez, adentro de la tarjeta'); }
   const pg = t.closest('[data-pago-res]');

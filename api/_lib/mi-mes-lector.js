@@ -69,6 +69,7 @@ export const ESQUEMA = {
     totales: LISTA_MONTOS,
     pagoMinimo: { anyOf: [MONTO_MONEDA, { type: 'null' }] },
     limites: { type: 'object', additionalProperties: false, required: ['compra', 'financiacion'], properties: { compra: NUM_O_NULL, financiacion: NUM_O_NULL } },
+    tasas: { type: 'object', additionalProperties: false, required: ['tnaFinanciacion', 'tnaPunitorios'], properties: { tnaFinanciacion: { type: 'number' }, tnaPunitorios: { type: 'number' } } },
     consumos: { type: 'array', items: { type: 'object', additionalProperties: false,
       required: ['fecha', 'comercio', 'monto', 'moneda', 'rubro', 'cuota', 'tarjeta'],
       properties: {
@@ -102,7 +103,7 @@ Reglas generales:
 - No copies nombres de personas, direcciones, CUIT, números de cuenta ni números completos de tarjeta. De las tarjetas, solo los últimos 4 números.
 - Montos como número con punto decimal (12.345,67 → 12345.67). Un signo menos al final ("1.234,56-") o adelante es negativo.
 - Fechas en AAAA-MM-DD (en pagos y cargos, si una línea no tiene fecha, cadena vacía). Los resúmenes usan formatos como 05.03.26, 05-03-26, "5 Mar 26" o "26 Marzo 05" (este último es año, mes, día). El año de dos cifras es 20xx.
-- Ignorá el texto legal, publicidad, planes de cuotas ofrecidos (Plan V), tasas y ejemplos de CFT: no son movimientos.
+- Ignorá el texto legal, publicidad, planes de cuotas ofrecidos (Plan V) y ejemplos de CFT: no son movimientos. Las tasas tampoco son movimientos, pero las de financiación van en "tasas".
 - En algunos resúmenes el saldo actual aparece recién en la última hoja y en las anteriores el recuadro está vacío: buscalo en todas las hojas.
 
 Qué va en cada lista (cada línea en UNA sola lista):
@@ -117,6 +118,7 @@ Totales y controles:
 - Por moneda tiene que dar: saldo anterior + pagos y créditos + consumos + cargos = total. Si no te da, revisá; si sigue sin dar, avisá y poné confianza "baja".
 - "tarjetas": una entrada por tarjeta del resumen (titular y adicionales), con "adicional" y el subtotal de sus consumos por moneda ("Total Consumos de ...").
 - "limites": límite de compra y de financiación en pesos, si figuran.
+- "tasas": la TNA de financiación en pesos y la de punitorios, en porcentaje como número ("T.N.A. 89,50 %" → 89.5), si el resumen las informa; si no, 0.
 - "pagoMinimo", "cierre", "vencimiento", "cierreAnterior", "vencimientoAnterior", "proximoCierre", "proximoVencimiento" si figuran.
 - "cuotasAVencer": la tabla "Cuotas a vencer" tal como viene: "mes" es el mes que nombra la tabla en AAAA-MM ("Setiembre/26" → 2026-09) y "desde": true para la fila "A partir de ...". Si no hay tabla, lista vacía.
 - "dudas": cada cosa que no pudiste leer con seguridad, con el campo afectado ("montos", "totales", "moneda", "cuotas", "fechas", "periodo", "tarjeta", "limites", "texto" u "otro") y un detalle corto. Que falte algo que el resumen no trae (por ejemplo la fecha de inicio del período, o no hay saldo anterior ni pagos) NO es una duda.
