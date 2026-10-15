@@ -238,6 +238,13 @@
   </section>
 
   <!-- ════════ REVISÁ LO QUE LEÍ ════════ -->
+  <!-- ════════ DÓNDE PUEDE RENDIR (interruptor dondeRinde) ════════ -->
+  <section class="mm-vista" id="vista-rinde" aria-labelledby="t-rinde" hidden>
+    <div class="mm-vista-top"><h1 id="t-rinde" tabindex="-1">Dónde puede rendir tu plata</h1></div>
+    <p class="mm-sub">Información general por tipo de opción, con fuente y fecha. Sin marcas: Orbit no vende ni recomienda productos.</p>
+    <div class="mm-rinde" id="rinde"></div>
+  </section>
+
   <section class="mm-vista" id="vista-revisar" aria-labelledby="t-revisar" hidden>
     <div class="mm-vista-top"><h1 id="t-revisar" tabindex="-1">Revisá lo que leí</h1></div>
     <div id="revisar"></div>
@@ -349,6 +356,28 @@
     <p class="mm-err" id="t-dias-err"></p>
     <div class="mm-campo"><label for="t-limite">Límite de compra en pesos <span class="opc">(opcional)</span></label><input id="t-limite" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 2.500.000" aria-describedby="t-limite-err"><p class="mm-ayuda">Si lo cargás, te mostramos cuánto te queda disponible.</p><p class="mm-err" id="t-limite-err"></p></div>
     <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="t-borrar" hidden>Borrar tarjeta</button><button type="submit" class="mm-btn">Guardar tarjeta</button></div>
+  </form>
+</dialog>
+
+<!-- ── Meta ── -->
+<dialog class="mm-dlg" id="dlg-meta" aria-labelledby="dm-tit">
+  <form class="mm-form" novalidate>
+    <div class="mm-dlg-top"><h2 id="dm-tit">Tu meta</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <fieldset class="mm-campo"><legend>Para qué</legend><div class="mm-chips" id="m-nombres"></div></fieldset>
+    <div class="mm-campo"><label for="m-objetivo">Cuánto querés juntar, en pesos</label><input id="m-objetivo" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 600.000" aria-describedby="m-objetivo-err" required><p class="mm-err" id="m-objetivo-err"></p></div>
+    <fieldset class="mm-campo"><legend>¿Para cuándo?</legend><div class="mm-chips" id="m-fechas"></div></fieldset>
+    <p class="mm-ayuda" id="m-calc" aria-live="polite"></p>
+    <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="m-borrar" hidden>Borrar meta</button><button type="submit" class="mm-btn">Guardar meta</button></div>
+  </form>
+</dialog>
+
+<!-- ── Separé plata para la meta ── -->
+<dialog class="mm-dlg" id="dlg-aporte" aria-labelledby="da-tit">
+  <form class="mm-form" novalidate>
+    <div class="mm-dlg-top"><h2 id="da-tit">¿Cuánto separaste?</h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <div class="mm-campo"><label for="a-monto">Monto en pesos</label><input id="a-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" aria-describedby="a-monto-err" required><p class="mm-err" id="a-monto-err"></p></div>
+    <p class="mm-ayuda">Lo anotás vos: Mi Mes no se conecta con tu banco.</p>
+    <div class="mm-dlg-pie"><button type="submit" class="mm-btn">Anotar</button></div>
   </form>
 </dialog>
 

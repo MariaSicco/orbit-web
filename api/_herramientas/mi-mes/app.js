@@ -10,10 +10,12 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
+  consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
 import { flagsActivos } from './flags.js';
+import { TASAS, AVISO_LEGAL, avisoCorto } from './tasas.js';
 
 const CLAVE = 'orbit:mi-mes';
 const ATRAS = 6, ADELANTE = 60;          // meses que se pueden mirar
@@ -125,7 +127,10 @@ function pintarInicio(animar = false) {
   $id('tope').hidden = !lim.supera;
   $id('tope').innerHTML = lim.supera ? `${ic('alerta')} Las cuotas de este mes ${lim.ingresos ? `son el ${Math.round(lim.usado * 100)} % de tus ingresos` : 'no tienen ingresos que las cubran'}: tu tope es ${lim.pct} %. <u>Ver escalera</u>` : '';
   pintarCobroLinea();
+  pintarConsejo();
   pintarCobro();
+  pintarMeta();
+  pintarReto();
   pintarAlertas();
   const cred = creditoTotal(datos, HOY_ISO);
   $id('s-ing').textContent = $(r.totIngresos);
@@ -225,6 +230,179 @@ function pintarCobro() {
     <ol class="mm-lm-lista">${filas || '<li class="mm-vacio">No hay cobros ni vencimientos con fecha.</li>'}</ol>
     <p class="mm-fuente">Días hábiles aproximados: de lunes a viernes, sin feriados. Si cobrás en un rango, tomamos el último día.</p>`;
 }
+
+/* ════════ HACER RENDIR LA PLATA ════════
+   Todo se calcula acá, en el dispositivo. Se informa y se propone: nunca "deberías". */
+let consejoIdx = 0;
+function pintarConsejo() {
+  const el = $id('consejo');
+  const vistos = new Set(datos.consejosVistos);
+  const vics = F.consejo ? victorias(datos, HOY_ISO).filter(v => !vistos.has(v.id)) : [];
+  const lista = F.consejo ? consejos(datos, HOY_ISO) : [];
+  if (!lista.length && !vics.length) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  consejoIdx = lista.length ? consejoIdx % lista.length : 0;
+  const c = lista[consejoIdx];
+  const v = vics[0];
+  const acc = [];
+  if (c && ['libera', 'diez'].includes(c.tipo) && F.metas && !datos.meta) acc.push('<button type="button" class="mm-link" data-meta-nueva>Armar una meta</button>');
+  if (c && c.tipo === 'diez' && F.dondeRinde) acc.push('<button type="button" class="mm-link" data-ir="rinde">Dónde puede rendir</button>');
+  if (c && ['intereses', 'negativo'].includes(c.tipo)) acc.push('<button type="button" class="mm-link" data-ir="escalera">Ver mes a mes</button>');
+  if (lista.length > 1) acc.push('<button type="button" class="mm-link" data-consejo-sig>Otro consejo</button>');
+  if (c) acc.push(`<button type="button" class="mm-link quieto" data-consejo-ocultar="${esc(c.id)}">Ocultar</button>`);
+  el.innerHTML = `${v ? `<p class="mm-victoria"><span>${esc(v.texto)}</span><button type="button" class="mm-cerrar chico" data-consejo-ocultar="${esc(v.id)}" aria-label="Ocultar">${ic('cerrar')}</button></p>` : ''}
+    ${c ? `<div class="mm-consejo-top"><span class="mm-consejo-lbl">Para hacer rendir tu plata</span>${lista.length > 1 ? `<span class="mm-consejo-n">${consejoIdx + 1} de ${lista.length}</span>` : ''}</div>
+    <p class="mm-consejo-txt">${esc(c.texto)}</p><div class="mm-consejo-acc">${acc.join('')}</div>` : ''}`;
+}
+
+function pintarMeta() {
+  const el = $id('meta');
+  if (!F.metas || (!datos.meta && !datos.ingresos.length)) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const linkRinde = F.dondeRinde ? '<button type="button" class="mm-link" data-ir="rinde">Dónde puede rendir lo que separás</button>' : '';
+  if (!datos.meta) {
+    const s = metaSugerida(datos, HOY_ISO);
+    const txt = !s ? 'Elegí para qué querés juntar y cuánto. Una meta por vez.'
+      : s.desde === 'libera' ? `En ${nombreMes(s.mesLibera)} se te liberan cuotas. Si separás ${$(s.porMes)} por mes durante 6 meses, juntás ${$(s.objetivo)}.`
+      : `Si separás ${$(s.porMes)} por mes, en 6 meses juntás ${$(s.objetivo)}.`;
+    el.innerHTML = `<div class="mm-seccion-top"><h2 id="t-meta">Una meta</h2></div><p class="mm-meta-txt">${esc(txt)}</p>
+      <div class="mm-meta-acc"><button type="button" class="mm-btn sec" data-meta-nueva>Armar mi meta</button>${linkRinde}</div>`;
+    return;
+  }
+  const m = datos.meta, e = estadoMeta(m, HOY_ISO);
+  const pct = Math.round(e.avance * 100);
+  el.innerHTML = `<div class="mm-seccion-top"><h2 id="t-meta">${esc(m.nombre)}</h2><button type="button" class="mm-link" data-meta-editar>Editar</button></div>
+    ${e.victoria ? `<p class="mm-victoria solo"><span>${esc(e.victoria)}</span></p>` : ''}
+    <p class="mm-meta-num"><b>${esc($(e.separado))}</b> <span>de ${esc($(m.objetivo))}</span></p>
+    <div class="mm-meta-barra" role="progressbar" aria-label="Avance de tu meta" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}" aria-valuetext="${pct} %"><i style="width:${pct}%"></i></div>
+    <p class="mm-meta-txt">${e.llegaste ? `Llegaste. Si querés, armá la próxima.` : `Para ${esc(nombreMes(m.fecha))}: ${esc($(e.porMes))} por mes ${e.meses === 1 ? 'este mes' : `durante ${e.meses} meses`}.`}</p>
+    <div class="mm-meta-acc">${e.llegaste ? '<button type="button" class="mm-btn sec" data-meta-nueva>Armar otra meta</button>'
+      : `<button type="button" class="mm-btn sec" data-aporte="${e.porMes}">Separé ${esc($(e.porMes))}</button><button type="button" class="mm-link" data-aporte-otro>Otro monto</button>`}${linkRinde}</div>`;
+}
+
+function pintarReto() {
+  const el = $id('reto');
+  if (!F.retos || (!datos.ingresos.length && !datos.tarjetas.length)) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const r = retoDelMes(datos, HOY);
+  const mesTxt = nombreMes(HOY).split(' ')[0];
+  if (!r) {
+    el.innerHTML = `<div class="mm-seccion-top"><h2 id="t-reto">Un reto para ${esc(mesTxt)}</h2></div>
+      <p class="mm-meta-txt">Si querés. Dura hasta fin de mes y no hay rachas que se corten.</p>
+      <ul class="mm-retos">${RETOS.map(x => `<li><button type="button" class="mm-reto-op" data-reto="${esc(x.id)}"><b>${esc(x.titulo)}</b><span>${esc(x.texto)}</span></button></li>`).join('')}</ul>`;
+    return;
+  }
+  const cuerpo = r.estado === 'hecho'
+    ? `<p class="mm-victoria solo"><span>Hecho: ${esc(r.titulo.toLowerCase())}.</span></p><p class="mm-meta-txt">En ${esc(nombreMes(sumarMeses(HOY, 1)).split(' ')[0])} hay otro, si querés.</p>`
+    : r.estado === 'esta-vez-no'
+      ? `<p class="mm-meta-txt">Esta vez no. No pasa nada: en ${esc(nombreMes(sumarMeses(HOY, 1)).split(' ')[0])} hay otro.</p><div class="mm-meta-acc"><button type="button" class="mm-link" data-reto-cambiar>Elegir otro</button></div>`
+      : `<p class="mm-reto-tit">${esc(r.titulo)}</p><p class="mm-meta-txt">${esc(r.texto)}</p>
+         <div class="mm-meta-acc"><button type="button" class="mm-btn sec" data-reto-estado="hecho">Lo hice</button><button type="button" class="mm-link" data-reto-estado="esta-vez-no">Esta vez no</button><button type="button" class="mm-link quieto" data-reto-cambiar>Cambiar</button></div>`;
+  el.innerHTML = `<div class="mm-seccion-top"><h2 id="t-reto">Tu reto de ${esc(mesTxt)}</h2></div>${cuerpo}`;
+}
+
+/* ── diálogo de meta ── */
+const dm = $id('dlg-meta');
+let metaFecha = null;
+function abrirMeta(editar = false) {
+  const m = editar ? datos.meta : null;
+  const s = !m ? metaSugerida(datos, HOY_ISO) : null;
+  const nombre = m?.nombre || s?.nombre || METAS_SUGERIDAS[0];
+  const nombres = METAS_SUGERIDAS.includes(nombre) ? METAS_SUGERIDAS : [nombre, ...METAS_SUGERIDAS];
+  $id('m-nombres').innerHTML = nombres.filter(n => n !== 'Otra').map(n => `<label class="mm-chip"><input type="radio" name="m-nombre" value="${esc(n)}"${n === nombre ? ' checked' : ''}><span>${esc(n)}</span></label>`).join('');
+  $id('m-objetivo').value = m ? sinSimbolo(m.objetivo, 'ARS') : s ? sinSimbolo(s.objetivo, 'ARS') : '';
+  metaFecha = m?.fecha || s?.fecha || sumarMeses(HOY, 6);
+  pintarFechasMeta();
+  $id('dm-tit').textContent = m ? 'Editar tu meta' : 'Tu meta';
+  $id('m-borrar').hidden = !m;
+  if (m) armarBorrar($id('m-borrar'), 'Borrar meta', () => { delete datos.meta; guardar(); pintarTodo(); cerrar(dm); avisar('Meta borrada'); });
+  calcMeta();
+  abrir(dm, $id('m-objetivo'));
+}
+function pintarFechasMeta() {
+  const ops = [3, 6, 9, 12, 18].map(k => sumarMeses(HOY, k));
+  if (!ops.includes(metaFecha)) ops.push(metaFecha);
+  ops.sort((a, b) => difMeses(b, a));
+  $id('m-fechas').innerHTML = ops.map(m => `<label class="mm-chip"><input type="radio" name="m-fecha" value="${m}"${m === metaFecha ? ' checked' : ''}><span>${esc(corto(m))}</span></label>`).join('');
+}
+function calcMeta() {
+  const obj = leerMonto($id('m-objetivo').value);
+  const e = obj ? estadoMeta({ objetivo: obj, fecha: metaFecha, aportes: datos.meta?.aportes || [] }, HOY_ISO) : null;
+  $id('m-calc').textContent = e && !e.llegaste ? `Son ${$(e.porMes)} por mes durante ${e.meses} ${e.meses === 1 ? 'mes' : 'meses'}.` : '';
+}
+$id('m-objetivo').addEventListener('input', calcMeta);
+$id('m-fechas').addEventListener('change', e => { metaFecha = e.target.value; calcMeta(); });
+dm.querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const objetivo = leerMonto($id('m-objetivo').value);
+  if (!objetivo) { error($id('m-objetivo'), 'm-objetivo-err', 'Escribí cuánto querés juntar, por ejemplo 600.000.').focus(); return; }
+  const nombre = dm.querySelector('[name="m-nombre"]:checked')?.value || 'Mi meta';
+  const nueva = !datos.meta || estadoMeta(datos.meta, HOY_ISO).llegaste;
+  datos.meta = { nombre, objetivo, fecha: metaFecha, aportes: nueva ? [] : datos.meta.aportes };
+  guardar(); pintarTodo(); cerrar(dm); avisar(nueva ? 'Meta armada' : 'Meta actualizada');
+});
+const da = $id('dlg-aporte');
+function anotarAporte(monto) {
+  if (!datos.meta || !(monto > 0)) return;
+  const antes = estadoMeta(datos.meta, HOY_ISO).victoria;
+  datos.meta.aportes = [...datos.meta.aportes, { fecha: HOY_ISO, monto }].slice(-200);
+  guardar(); pintarTodo();
+  const v = estadoMeta(datos.meta, HOY_ISO).victoria;
+  avisar(v && v !== antes ? v : `Anotado: separaste ${$(monto)}`);
+}
+da.querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const monto = leerMonto($id('a-monto').value);
+  if (!monto) { error($id('a-monto'), 'a-monto-err', 'Escribí el monto, por ejemplo 50.000.').focus(); return; }
+  cerrar(da); anotarAporte(monto);
+});
+
+/* ════════ DÓNDE PUEDE RENDIR (información general) ════════
+   Solo datos por categoría del archivo tasas.js. Esta vista NO usa los
+   números del usuario: el monto de la calculadora lo escribe la persona. */
+let rindeDias = 30;
+const pctR = n => `${String(n).replace('.', ',')} %`;
+const fechaLarga = f => `${fechaCorta(f)} ${f.slice(0, 4)}`;
+const fuenteTasa = o => `${o.url ? `<a href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">${esc(o.fuente)}</a>` : esc(o.fuente)} · ${esc(fechaLarga(o.fecha))}${datoViejo(o.fecha, HOY_ISO) ? ` <span class="mm-tag">Dato del ${esc(fechaCorta(o.fecha))}: puede haber cambiado</span>` : ''}`;
+function pintarRinde() {
+  const inf = TASAS.inflacion;
+  const pf = TASAS.opciones[0];
+  $id('rinde').innerHTML = `
+    <section class="mm-panel mm-rinde-inf" aria-labelledby="ri-inf">
+      <h2 id="ri-inf" class="mm-h2">La plata quieta pierde contra la inflación</h2>
+      <p class="mm-rinde-big">${esc(pctR(inf.mensual))} <span>en ${esc(nombreMes(inf.mes))}</span></p>
+      <p class="mm-meta-txt">Inflación esperada a 12 meses: ${esc(pctR(inf.rem12))}. Para comparar con una tasa anual, dividila por 12: ${esc(pctR(pf.tna.min))} TNA ≈ ${esc(pctR(tnaMensual(pf.tna.min)))} por mes.</p>
+      <p class="mm-fuente">${fuenteTasa(inf)}</p>
+    </section>
+    <ul class="mm-rinde-ops">${TASAS.opciones.map(o => `<li class="mm-panel mm-rinde-op ${esc(o.clase)}">
+      <div class="mm-rinde-cab"><h2 class="mm-h2">${esc(o.nombre)}</h2><span class="mm-tag">${o.clase === 'deposito' ? 'Depósito' : 'Fondo común'}</span></div>
+      <p class="mm-meta-txt">${esc(o.que)}</p>
+      <p class="mm-rinde-tna"><b>${o.tna.min === o.tna.max ? esc(pctR(o.tna.min)) : `${esc(pctR(o.tna.min))} a ${esc(pctR(o.tna.max))}`}</b> <span>TNA de referencia · ${esc(o.detalle)}</span></p>
+      <p class="mm-meta-txt">${esc(o.tener)}</p>
+      <p class="mm-fuente">${fuenteTasa(o)}</p></li>`).join('')}</ul>
+    <section class="mm-panel mm-rinde-calc" aria-labelledby="ri-calc">
+      <h2 id="ri-calc" class="mm-h2">Hacé la cuenta</h2>
+      <div class="mm-campo"><label for="ri-monto">Un monto, en pesos</label><input id="ri-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 100.000"></div>
+      <fieldset class="mm-campo"><legend>Durante</legend><div class="mm-chips" id="ri-dias">${[30, 90, 180, 365].map(d => `<label class="mm-chip"><input type="radio" name="ri-dias" value="${d}"${d === rindeDias ? ' checked' : ''}><span>${d} días</span></label>`).join('')}</div></fieldset>
+      <div id="ri-res" aria-live="polite"></div>
+      <p class="mm-fuente">Interés simple: monto × TNA × días ÷ 365, antes de impuestos. ${esc(avisoCorto(fechaLarga(TASAS.revisado)))}</p>
+    </section>
+    <p class="mm-legal">${esc(AVISO_LEGAL)}</p>`;
+  calcRinde();
+}
+function calcRinde() {
+  const monto = leerMonto($id('ri-monto')?.value || '');
+  const res = $id('ri-res');
+  if (!res) return;
+  if (!monto) { res.innerHTML = '<p class="mm-meta-txt">Escribí un monto para ver cuánto rendiría en cada opción.</p>'; return; }
+  res.innerHTML = `<ul class="mm-rinde-res">${TASAS.opciones.map(o => {
+    const r = calculoRendir(monto, o, rindeDias);
+    return `<li><span>${esc(o.nombre)}</span><b>≈ ${r.min === r.max ? esc($(r.min)) : `${esc($(r.min))} a ${esc($(r.max))}`}</b></li>`;
+  }).join('')}</ul>`;
+}
+$id('rinde').addEventListener('input', e => { if (e.target.id === 'ri-monto') calcRinde(); });
+$id('rinde').addEventListener('change', e => { if (e.target.name === 'ri-dias') { rindeDias = Number(e.target.value); calcRinde(); } });
+/* ════════ FIN DÓNDE PUEDE RENDIR ════════ */
 
 function fuenteHTML(c) {
   if (!c) return '';
@@ -657,9 +835,10 @@ function irAMes(nuevo) {
 $id('mes-ant').addEventListener('click', () => irAMes(sumarMeses(mes, -1)));
 $id('mes-sig').addEventListener('click', () => irAMes(sumarMeses(mes, 1)));
 
-const VISTAS = ['inicio', 'tarjetas', 'tarjeta', 'cargado', 'revisar', 'escalera', 'contado', 'simular'];
-const TITULOS = { tarjetas: 't-tarjetas', tarjeta: 't-una', cargado: 't-cargado', revisar: 't-revisar', escalera: 't-escalera', contado: 't-contado', simular: 't-simular' };
+const VISTAS = ['inicio', 'tarjetas', 'tarjeta', 'cargado', 'revisar', 'escalera', 'contado', 'simular', 'rinde'];
+const TITULOS = { tarjetas: 't-tarjetas', tarjeta: 't-una', cargado: 't-cargado', revisar: 't-revisar', escalera: 't-escalera', contado: 't-contado', simular: 't-simular', rinde: 't-rinde' };
 function verVista(v, { foco = true } = {}) {
+  if (v === 'rinde' && !F.dondeRinde) v = 'inicio';
   vista = v;
   const nav = v === 'tarjeta' ? 'tarjetas' : ['tarjetas', 'cargado', 'inicio'].includes(v) ? v : '';
   for (const b of document.querySelectorAll('[data-vista]')) {
@@ -670,6 +849,7 @@ function verVista(v, { foco = true } = {}) {
   if (v === 'escalera') pintarEscalera();
   if (v === 'contado') pintarContado(true);
   if (v === 'simular') pintarSimular(true);
+  if (v === 'rinde') pintarRinde();
   try { history.replaceState(null, '', v === 'inicio' ? location.pathname : `#${v}`); } catch {}
   window.scrollTo({ top: 0, behavior: 'instant' });
   if (foco && v !== 'inicio') $id(TITULOS[v])?.focus();
@@ -1529,6 +1709,19 @@ document.addEventListener('click', e => {
   if (t.closest('[data-franja]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-franja]')?.focus(); }
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
+  if (t.closest('[data-consejo-sig]')) { consejoIdx++; pintarConsejo(); return $id('consejo').querySelector('[data-consejo-sig]')?.focus(); }
+  const oc = t.closest('[data-consejo-ocultar]');
+  if (oc) { datos.consejosVistos = [...datos.consejosVistos, oc.dataset.consejoOcultar].slice(-100); guardar(); pintarConsejo(); return avisar('Listo, no lo mostramos más'); }
+  if (t.closest('[data-meta-nueva]')) return abrirMeta(false);
+  if (t.closest('[data-meta-editar]')) return abrirMeta(true);
+  const ap = t.closest('[data-aporte]');
+  if (ap) return anotarAporte(Number(ap.dataset.aporte));
+  if (t.closest('[data-aporte-otro]')) { $id('a-monto').value = ''; return abrir(da, $id('a-monto')); }
+  const re = t.closest('[data-reto]');
+  if (re) { datos.retos = { ...datos.retos, [HOY]: { id: re.dataset.reto, estado: 'aceptado' } }; guardar(); pintarReto(); $id('t-reto')?.focus?.(); return avisar('Reto elegido. Si no sale, no pasa nada'); }
+  const rs = t.closest('[data-reto-estado]');
+  if (rs) { datos.retos[HOY] = { ...datos.retos[HOY], estado: rs.dataset.retoEstado }; guardar(); pintarReto(); return; }
+  if (t.closest('[data-reto-cambiar]')) { const { [HOY]: _, ...resto } = datos.retos; datos.retos = resto; guardar(); pintarReto(); return; }
   if (t.closest('[data-exportar]')) return exportarCopia();
   if (t.closest('[data-importar-copia]')) { $id('archivo-copia').value = ''; return $id('archivo-copia').click(); }
   if (t.closest('[data-simular-desde-contado]')) return simularDesdeContado();
@@ -1551,7 +1744,7 @@ else {
 if (LOCAL) $id('modo-local').hidden = false;
 pintarTodo();
 const inicial = location.hash.slice(1);
-if (['tarjetas', 'cargado', 'escalera', 'contado', 'simular'].includes(inicial)) verVista(inicial, { foco: false });
+if (['tarjetas', 'cargado', 'escalera', 'contado', 'simular', ...(F.dondeRinde ? ['rinde'] : [])].includes(inicial)) verVista(inicial, { foco: false });
 iniciarGuiaSiHaceFalta();
 marcarPush(pushActivo());
 if (pushActivo()) { ultimoSync = null; programarSync(); }   // al abrir, manda las fechas del ciclo nuevo

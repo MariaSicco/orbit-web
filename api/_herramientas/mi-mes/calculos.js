@@ -1280,7 +1280,7 @@ export function consejos(datos, hoy) {
   const out = [];
   const vistos = new Set(datos?.consejosVistos || []);
   const ultimo = (datos?.resumenes || []).slice().sort((a, b) => difMeses(a.mes, b.mes)).pop();
-  if (ultimo) {
+  if (ultimo && difMeses(ultimo.mes, mes) <= 1) {
     const c = cargosDelResumen(ultimo, datos);
     if (c.ars > 0) out.push({ id: `intereses:${ultimo.mes}`, tipo: 'intereses',
       texto: `En el último resumen pagaste ${formatoPesos(c.ars)} en intereses y cargos de tarjeta. Pagando el total, ese número baja a cero.` });
@@ -1289,7 +1289,7 @@ export function consejos(datos, hoy) {
   const lib = proximaLiberacion(datos, mes);
   if (r.libres < 0 && lib) out.push({ id: `negativo:${mes}`, tipo: 'negativo',
     texto: `Este mes faltan ${formatoPesos(-r.libres)}. En ${nombreMes(lib.mes)} se te liberan ${formatoPesos(lib.libera)} de cuotas por mes.` });
-  if (lib && difMeses(mes, lib.mes) <= 3) out.push({ id: `libera:${lib.mes}`, tipo: 'libera',
+  if (lib && r.libres >= 0 && difMeses(mes, lib.mes) <= 3) out.push({ id: `libera:${lib.mes}`, tipo: 'libera',
     texto: `En ${nombreMes(lib.mes)} se te liberan ${formatoPesos(lib.libera)} por mes de cuotas. ¿Los separás?`, libera: lib });
   const anual = (datos?.gastos || []).filter(g => !g.repite && difMeses(mes, g.desde) >= 1 && difMeses(mes, g.desde) <= 6)
     .sort((a, b) => difMeses(b.desde, a.desde))[0];
@@ -1305,7 +1305,8 @@ export function consejos(datos, hoy) {
       texto: `Te quedan libres ${formatoPesos(r.libres)}. Si separás el 10 % (${formatoPesos(diez)}) ${cobro ? `el ${fechaCorta(cobro.fecha)}, cuando cobrás` : 'el día que cobrás'}, en 6 meses tenés ${formatoPesos(diez * 6)} de colchón.` });
   }
   const subs = (datos?.gastos || []).filter(g => g.categoria === 'Suscripciones' && activoEn(g, mes));
-  const subsResumen = (ultimo?.consumos || []).filter(c => c.rubro === 'Suscripciones');
+  const subsResumen = ultimo && difMeses(ultimo.mes, mes) <= 1
+    ? [...new Map((ultimo.consumos || []).filter(c => c.rubro === 'Suscripciones').map(c => [normalizarComercio(c.comercio), c])).values()] : [];
   const nSubs = subs.length + subsResumen.length;
   if (nSubs >= 2) {
     const total = subs.reduce((a, g) => a + g.monto, 0) + subsResumen.reduce((a, c) => a + (aPesos(c.monto, c.moneda, datos) ?? 0), 0);
@@ -1329,9 +1330,44 @@ export function estadoMeta(meta, hoy) {
 }
 /* Meta sugerida con lo que se libera: separar esa cuota durante 6 meses. */
 export function metaSugerida(datos, hoy) {
-  const lib = proximaLiberacion(datos, aFecha(hoy).slice(0, 7));
-  if (!lib) return null;
-  return { nombre: 'Colchón', objetivo: lib.libera * 6, fecha: sumarMeses(lib.mes, 5), desde: lib };
+  const mes = aFecha(hoy).slice(0, 7);
+  const lib = proximaLiberacion(datos, mes);
+  if (lib && difMeses(mes, lib.mes) <= 6) {
+    const porMes = Math.round(lib.libera / 100_000) * 100_000 || lib.libera;
+    return { nombre: 'Colchón', objetivo: porMes * 6, fecha: sumarMeses(mes, 6), porMes, desde: 'libera', mesLibera: lib.mes };
+  }
+  const libres = resumenMes(datos, mes).libres;
+  if (libres > 0) {
+    const porMes = Math.max(100_000, Math.round(libres * 0.10 / 100_000) * 100_000);
+    return { nombre: 'Colchón', objetivo: porMes * 6, fecha: sumarMeses(mes, 6), porMes, desde: 'diez' };
+  }
+  return null;
+}
+/* Victorias que se ven cuando pasan (una línea, sin confeti). */
+export function victorias(datos, hoy) {
+  const mes = aFecha(hoy).slice(0, 7);
+  const out = [];
+  for (const t of datos?.tarjetas || []) {
+    const de = (datos?.cuotas || []).filter(c => c.tarjetaId === t.id);
+    if (de.length && de.every(c => difMeses(ultimoMes(c), mes) >= 0) && de.some(c => difMeses(ultimoMes(c), mes) <= 1))
+      out.push({ id: `sincuotas:${t.id}:${mes}`, texto: `Terminaste las cuotas de tu ${t.nombre}.` });
+  }
+  const ultimo = (datos?.resumenes || []).slice().sort((a, b) => difMeses(a.mes, b.mes)).pop();
+  if (ultimo && difMeses(ultimo.mes, mes) <= 1 && (ultimo.cargos || []).length && cargosDelResumen(ultimo, datos).ars <= 0)
+    out.push({ id: `sinintereses:${ultimo.mes}`, texto: '$ 0 de intereses en tu último resumen.' });
+  return out;
+}
+
+/* ── "Dónde puede rendir tu plata": solo cuentas generales ──
+   Interés simple, antes de impuestos: capital × TNA × días ÷ 365. */
+export const interesSimple = (capital, tnaPct, dias) => Math.round(capital * (tnaPct / 100) * dias / 365);
+export const tnaMensual = tnaPct => Math.round((tnaPct / 12) * 100) / 100;
+export const DIAS_DATO_VIEJO = 7;
+export const datoViejo = (fecha, hoy, max = DIAS_DATO_VIEJO) => !esFecha(fecha) || diasEntre(fecha, aFecha(hoy)) > max;
+/* para la calculadora: rango por categoría, sin cruzar con productos */
+export function calculoRendir(capital, opcion, dias) {
+  if (!Number.isSafeInteger(capital) || capital <= 0 || !opcion?.tna) return null;
+  return { min: interesSimple(capital, opcion.tna.min, dias), max: interesSimple(capital, opcion.tna.max, dias) };
 }
 
 /* ── retos de un mes: sin rachas ni culpa ── */
