@@ -159,7 +159,7 @@ function shrink(file, max, q) {
 let cutLib = null;
 function loadCut() {
   if (window.MZCUT) return Promise.resolve(window.MZCUT);
-  if (!cutLib) cutLib = new Promise((ok, no) => { const sc = document.createElement('script'); sc.type = 'module'; sc.src = '/assets/js/mascotas-cutout.js?v=3'; sc.onload = () => setTimeout(() => window.MZCUT ? ok(window.MZCUT) : no(new Error('cut')), 0); sc.onerror = () => { cutLib = null; no(new Error('cut')); }; document.head.appendChild(sc); });
+  if (!cutLib) cutLib = new Promise((ok, no) => { const sc = document.createElement('script'); sc.type = 'module'; sc.src = '/assets/js/mascotas-cutout.js?v=4'; sc.onload = () => setTimeout(() => window.MZCUT ? ok(window.MZCUT) : no(new Error('cut')), 0); sc.onerror = () => { cutLib = null; no(new Error('cut')); }; document.head.appendChild(sc); });
   return cutLib;
 }
 function cutFlow(file, pet) {
