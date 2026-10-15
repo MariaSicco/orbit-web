@@ -13,7 +13,8 @@ test('E8: "Algo pasó" sale de la barra de escritorio (sigue en Inicio y primero
   assert.match(app, /opt\('algo', 'alert', 'perdida', 'Algo pasó'/);
   assert.match(inicio, /class="algo-cta" data-act="algo"/);
   assert.match(css, /\.top>\.tnav-box\{justify-content:safe center\}/);
-  assert.doesNotMatch(css, /\.brand \.by\{display:none\}\n/, '"by Orbit" se ve desde 1024');
+  /* premium: la hoja de estilos quedó una regla por línea; "by Orbit" solo se esconde por debajo de 400 px */
+  for (const m of css.matchAll(/\.brand \.by\{display:none\}/g)) assert.match(css.slice(0, m.index).split('@media').pop(), /^\(max-width:400px\)/, '"by Orbit" se ve desde 1024');
 });
 
 test('E9: "Me fui" sin emojis; la casa con la puerta abierta es un ícono de línea', async () => {
