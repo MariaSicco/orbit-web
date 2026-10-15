@@ -26,6 +26,28 @@
       }).join('')}</ul></section>`;
   }
 
+  /* Inicio: versión compacta. Una línea con cuántas van y la próxima tarea con su tilde a un toque;
+     la lista completa queda en su pantalla (#/hoy) y en el link del cuidador. opts.more: href o acción para "Ver el día" */
+  function compact(hoy, name) {
+    const head = n => `<div class="sec-h"><h2 id="h-hoy">Hoy con ${esc(name)}</h2>${n}</div>`;
+    if (!hoy) return `<section class="sec hoy hoy-c" aria-labelledby="h-hoy" aria-busy="true">${head('')}<p class="dim">Cargando el día…</p></section>`;
+    const items = hoy.items || [], done = items.filter(i => i.done).length;
+    if (!items.length) return `<section class="sec hoy hoy-c" aria-labelledby="h-hoy">${head('')}<p class="dim">No hay nada para hoy.</p></section>`;
+    const next = items.find(i => !i.done), pct = Math.round(done / items.length * 100);
+    const u = next ? UI[next.kind] || UI.otro : null;
+    return `<section class="sec hoy hoy-c" aria-labelledby="h-hoy">
+      ${head(`<span class="hoy-n" aria-live="polite">${done} de ${items.length} ${items.length === 1 ? 'hecha' : 'hechas'}</span>`)}
+      <div class="hoy-bar" role="progressbar" aria-label="Hechas hoy" aria-valuemin="0" aria-valuemax="${items.length}" aria-valuenow="${done}"><i style="width:${pct}%"></i></div>
+      ${next ? `<p class="hoy-lbl">Próxima</p><ul class="list hoy-list" role="list"><li><button type="button" class="hoy-it" data-hoy="${esc(next.key)}" data-kind="${next.kind}" aria-pressed="false" aria-label="${esc(`Marcar ${u[2].toLowerCase()} de las ${next.time}: ${next.label}${next.qty ? ', ' + next.qty : ''}`)}">
+          <span class="ib c-${u[1]}" aria-hidden="true">${I(u[0])}</span>
+          <span class="hoy-t" aria-hidden="true">${esc(next.time)}</span>
+          <span class="what" aria-hidden="true"><b>${esc(next.label)}</b><small>${next.qty ? esc(next.qty).replace(/ /g, '&nbsp;') : esc(u[2])}</small></span>
+          <span class="hoy-st" aria-hidden="true"><span>Marcar</span></span></button></li></ul>`
+        : `<p class="hoy-all">${I('check')} Todo hecho por hoy.</p>`}
+      <button type="button" class="btn ghost sm hoy-more" data-act="go" data-to="hoy">Ver el día${items.length > 1 ? ` (${items.length})` : ''} ${I('chevron')}</button>
+    </section>`;
+  }
+
   /* confirmación explícita para repetir (hoja con dos botones; por defecto queda en "No") */
   function confirmAgain(c) {
     const when = hhmm(c.at), by = c.by || 'alguien';
@@ -75,5 +97,5 @@
     });
   }
 
-  g.MZHOYUI = { html, attach, confirmAgain, hhmm };
+  g.MZHOYUI = { html, compact, attach, confirmAgain, hhmm };
 })(window);

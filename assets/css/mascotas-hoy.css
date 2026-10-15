@@ -27,3 +27,13 @@
 .rut-row{display:grid;grid-template-columns:7.5em 6.5em minmax(0,1fr) 7em auto;gap:10px;align-items:end;background:var(--card);border-radius:var(--r-s);padding:12px;box-shadow:var(--sh1)}
 .rut-row select,.rut-row input{min-height:44px}
 @media (max-width:640px){.rut-row{grid-template-columns:minmax(0,1fr) minmax(0,1.15fr) auto;align-items:start}.rut-row .f:nth-child(3),.rut-row .f:nth-child(4){grid-column:1/-1}.rut-row [data-rm]{grid-row:1;grid-column:3;align-self:end}.rut-row select,.rut-row input{height:48px}}
+/* Inicio: "Hoy con…" compacto (cuántas van, la próxima con su tilde y "Ver el día") */
+.hoy-c{display:flex;flex-direction:column;gap:10px}
+.hoy-bar{height:6px;border-radius:999px;background:var(--sunk);overflow:hidden}
+.hoy-bar i{display:block;height:100%;border-radius:inherit;background:var(--ok);transition:width .3s var(--ease)}
+.hoy-lbl{margin:2px 0 -4px;font:500 11.5px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.hoy-c .hoy-list{border-radius:var(--r-s);overflow:hidden;box-shadow:var(--sh1)}
+.hoy-all{display:flex;align-items:center;gap:8px;margin:0;font-weight:600;color:var(--ok)}
+.hoy-all svg.i{width:18px;height:18px}
+.hoy-more{align-self:flex-start;min-height:44px}
+@media (prefers-reduced-motion:reduce){.hoy-bar i{transition:none}}

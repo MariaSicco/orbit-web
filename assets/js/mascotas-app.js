@@ -922,7 +922,7 @@ function followCard(p) {
 function weekCard(p) {
   const gs = Z.lastWeek(p); if (!gs.length) return '';
   return `<section class="sec card2 span2 al-week" aria-labelledby="h-week"><div class="sec-h"><h2 id="h-week">Últimos 7 días</h2><button class="link" data-act="algo">${I('plus')} Algo pasó</button></div>
-    <div class="list">${gs.slice(0, 5).map(g => { const s = g.last, again = Z.repeatText(Z.epRepeat(p, s)); return `<button type="button" class="row link-row" data-act="detail" data-kind="sym" data-id="${s.id}">${bubble(Z.ALGO_I[s.kind] || 'note', 'perdida')}<span class="what"><b>${esc(Z.epTitle(s))}${g.n > 1 ? ` · ${g.n} veces` : ''}</b><small>${esc([Z.epWhen(s), again, Z.SEV[s.sev] || '', Z.RES[s.res] || ''].filter(Boolean).join(' · '))}</small></span>${I('chevron')}</button>`; }).join('')}</div></section>`;
+    <div class="list">${gs.slice(0, 3).map(g => { const s = g.last, again = Z.repeatText(Z.epRepeat(p, s)); return `<button type="button" class="row link-row" data-act="detail" data-kind="sym" data-id="${s.id}">${bubble(Z.ALGO_I[s.kind] || 'note', 'perdida')}<span class="what"><b>${esc(Z.epTitle(s))}${g.n > 1 ? ` · ${g.n} veces` : ''}</b><small>${esc([Z.epWhen(s), again, Z.SEV[s.sev] || '', Z.RES[s.res] || ''].filter(Boolean).join(' · '))}</small></span>${I('chevron')}</button>`; }).join('')}</div>${gs.length > 3 ? `<button class="btn ghost sm" data-act="histOf" data-f="sintoma" style="align-self:flex-start">Ver más (${gs.length - 3})</button>` : ''}</section>`;
 }
 function tripForm(p) {
   openForm({
@@ -1053,7 +1053,7 @@ async function uploadStudy(file, extra = {}) {
 const TABS = [['inicio', 'home', 'Inicio'], ['libreta', 'book', 'Libreta'], ['agenda', 'grid', 'Agenda'], ['gastos', 'wallet', 'Gastos'], ['cuenta', 'user', 'Cuenta']];
 /* en el celu: 4 secciones y el + en el medio; Cuenta queda en el avatar de arriba */
 const PILL = ['inicio', 'libreta', '+', 'agenda', 'gastos'];
-const TAB_OF = { vets: 'inicio', antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta', mefui: 'inicio' };
+const TAB_OF = { hoy: 'inicio', historial: 'inicio', vets: 'inicio', antecedentes: 'inicio', viajes: 'inicio', datos: 'inicio', pdf: 'libreta', avisos: 'cuenta', mefui: 'inicio' };
 const BARE = ['alta', 'lectura', 'estudios', 'gmail', 'outlook', 'preguntar'];
 const nav = $('#nav'), topBar = $('.top');
 function parseHash() { const [name = 'inicio', arg = ''] = location.hash.replace(/^#\/?/, '').split('/'); return { name: name || 'inicio', arg: decodeURIComponent(arg) }; }
@@ -1150,6 +1150,8 @@ function view() {
     case 'antecedentes': return renderAntecedentes(p);
     case 'viajes': return renderViajes(p);
     case 'datos': return renderDatos(p);
+    case 'hoy': return renderHoy(p);
+    case 'historial': return renderHistorial(p);
     case 'vets': return window.MZVETS ? window.MZVETS.render(p, route.arg) : renderInicio(p);
     case 'mefui': return mefui && window.MZAWAY ? window.MZAWAY.render(p) : renderInicio(p);
     default: return renderInicio(p);
@@ -1315,7 +1317,7 @@ function renderInicio(p) {
       <div class="span2">${historySection(p)}</div>
       <section class="sec span2" aria-labelledby="h-more">
         <h2 id="h-more">Accesos rápidos</h2>
-        <div class="list">${quick.map(([a, ic, c, t, d]) => { const [act, to] = a.split(':'); return `<button class="row link-row" data-act="${act}"${to ? ` data-to="${to}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}</div>
+        <div class="list quick">${quick.map(([a, ic, c, t, d]) => { const [act, to] = a.split(':'); return `<button class="row link-row" data-act="${act}"${to ? ` data-to="${to}"` : ''}>${bubble(ic, c)}<span class="what"><b>${t}</b><small>${d}</small></span>${I('chevron')}</button>`; }).join('')}</div>
       </section>
     </div>
   </div>`;
@@ -1360,7 +1362,7 @@ function petHero(p, sm, vacc, anti) {
 /* próximos cuidados con la cinta de fecha a la derecha */
 const RIB = { vacuna: 'r-azul', desparasitacion: 'r-rosa', control: 'r-naranja', otro: 'r-lila' };
 function careCard(p) {
-  const list = Z.upcoming(p).filter(x => x.s.days <= 180).slice(0, 4);
+  const up = Z.upcoming(p).filter(x => x.s.days <= 180), list = up.slice(0, 2);
   const when = x => x.s.days < 0 ? `Vencida hace ${-x.s.days} d` : x.s.days === 0 ? 'Hoy' : x.s.days === 1 ? 'Mañana' : `En ${x.s.days} días`;
   return `<section class="sec card2 care-card" aria-labelledby="h-care"><h2 id="h-care">Próximos cuidados</h2>
     ${list.length ? `<div class="care">${list.map(x => `<div class="care-item"><button class="care-row" data-act="detail" data-kind="rec" data-id="${x.r.id}">
@@ -1368,7 +1370,7 @@ function careCard(p) {
       <span class="what"><b>${esc(x.r.name)}</b><small>${esc(x.r.vet || x.r.lot || Z.TYPE[x.r.type] || '')}${Z.isSug(x.r) ? ' · sugerida' : ''}</small></span>
       <span class="rib ${x.s.days < 0 ? 'r-late' : RIB[x.r.type] || 'r-lila'}"><b>${fmt(x.r.next, { day: 'numeric', month: 'short' }).replace('.', '')}</b><small>${when(x)}</small></span></button>${Z.renewable(x.r) ? `<div class="care-act">${doneBtn(p, x.r, 'wide')}</div>` : ''}</div>`).join('')}</div>`
       : `<p class="dim">Cuando cargues una vacuna o una pipeta con su próxima fecha, aparece acá.</p>${p.records.some(r => r.next) ? '' : `<button class="btn sm soft" data-act="suggest" style="align-self:flex-start">${I('sparkle')} Armar el calendario sugerido</button>`}`}
-    <button class="btn ghost sm" data-act="go" data-to="agenda" style="align-self:flex-start">Ver más</button></section>`;
+    <button class="btn ghost sm" data-act="go" data-to="agenda" style="align-self:flex-start">Ver más${up.length > 2 ? ` (${up.length - 2})` : ''}</button></section>`;
 }
 /* barras finas: la última, activa */
 const bars = (vals, tone) => { const mx = Math.max(...vals, 1); return `<div class="vbars ${tone}" aria-hidden="true">${vals.map((v, i) => `<i style="height:${Math.max(8, Math.round(v / mx * 100))}%"${i === vals.length - 1 ? ' class="on"' : ''}></i>`).join('')}</div>`; };
@@ -1394,7 +1396,7 @@ function hoyBox(p) {
   if (!window.MZHOYUI || mode !== 'full') return '';
   const c = hoyCache[p.id];
   if (!c || Date.now() - c.t > 30000) after(() => loadHoy(p.id));
-  return `<div class="span2" id="hoyBox">${window.MZHOYUI.html(c?.data || null, p.name)}</div>`;
+  return `<div class="span2" id="hoyBox">${window.MZHOYUI.compact(c?.data || null, p.name)}</div>`;
 }
 async function loadHoy(id) {
   if (hoyCache[id]?.loading) return;
@@ -1404,7 +1406,10 @@ async function loadHoy(id) {
     if (r.ok) hoyCache[id] = { data: await r.json(), t: Date.now() };
     else hoyCache[id].loading = false;
   } catch { hoyCache[id].loading = false; }
-  if (route.name === 'inicio' && curPet()?.id === id && hoyCache[id].data) { const box = $('#hoyBox'); if (box) box.innerHTML = window.MZHOYUI.html(hoyCache[id].data, curPet().name); }
+  if (curPet()?.id === id && hoyCache[id].data) {
+    if (route.name === 'inicio') { const box = $('#hoyBox'); if (box) box.innerHTML = window.MZHOYUI.compact(hoyCache[id].data, curPet().name); }
+    if (route.name === 'hoy') render();
+  }
 }
 if (window.MZHOYUI) window.MZHOYUI.attach(app, {
   ymd: () => hoyCache[curPet()?.id]?.data?.ymd || '',
@@ -1424,13 +1429,30 @@ if (window.MZHOYUI) window.MZHOYUI.attach(app, {
   toast,
 });
 
+/* pantalla completa de "Hoy con…" (desde "Ver el día" en Inicio) */
+function renderHoy(p) {
+  if (!window.MZHOYUI || mode !== 'full') return renderInicio(p);
+  const c = hoyCache[p.id];
+  if (!c || Date.now() - c.t > 30000) after(() => loadHoy(p.id));
+  return `${backTo(p)}
+    <div><span class="eyebrow">${esc(p.name)}</span><h1 class="h-xl">Hoy</h1><p class="dim" style="margin-top:6px">Cada cosa se marca con un toque. ${esc(Cap(quienCuida(p)))} ve la misma lista en su link.</p></div>
+    ${window.MZHOYUI.html(c?.data || null, p.name)}
+    <button class="row link-row" data-act="rutina">${bubble('cal', 'cuida')}<span class="what"><b>Cambiar la rutina</b><small>Comidas, paseos y otras cosas del día</small></span>${I('chevron')}</button>`;
+}
+/* pantalla completa del historial, con filtros y búsqueda (desde "Ver todo el historial" en Inicio) */
+function renderHistorial(p) {
+  return `${backTo(p)}
+    <div><span class="eyebrow">${esc(p.name)}</span><h1 class="h-xl">Historial</h1></div>
+    ${historySection(p, true)}`;
+}
+
 /* lo que anotó el cuidador desde su link (últimos 10 días) */
 function sitterLog(p) {
   const since = Date.now() - 10 * 864e5, KL = { comida: ['Comió', 'bowl', 'comida'], paseo: ['Salió a pasear', 'walk', 'viaje'], med: ['Remedio', 'pill', 'med'], ok: ['Todo bien', 'check', 'salud'], nota: ['Nota', 'note', 'plata'], otro: ['Listo', 'drop', 'plata'] };
-  const list = p.log.filter(l => l.by !== 'Vos' && Date.parse(l.at) > since).slice(-6).reverse();
+  const all = p.log.filter(l => l.by !== 'Vos' && Date.parse(l.at) > since), list = all.slice(ui.slogAll ? -30 : -3).reverse();
   if (!list.length) return '';
   const medName = id => p.meds.find(m => m.id === id)?.name || 'Remedio';
-  return `<section class="sec"><h2>Lo que anotó ${esc(quienCuida(p))}</h2><div class="list">${list.map(l => { const k = KL[l.kind] || KL.nota; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? 'Le dio ' + esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by)}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div></section>`;
+  return `<section class="sec"><h2>Lo que anotó ${esc(quienCuida(p))}</h2><div class="list">${list.map(l => { const k = KL[l.kind] || KL.nota; return `<div class="row">${bubble(k[1], k[2])}<span class="what"><b>${l.kind === 'med' ? 'Le dio ' + esc(medName(l.medId)) : l.kind === 'nota' ? esc(l.note) : k[0]}</b><small>${esc(l.by)}</small></span><span class="when">${Z.fmtWhen(new Date(l.at))}</span></div>`; }).join('')}</div>${all.length > list.length ? `<button class="btn ghost sm" data-act="slogAll" style="align-self:flex-start">Ver todo (${all.length})</button>` : ''}</section>`;
 }
 function scanBanner(p) {
   const last = scans.filter(x => x.petId === p.id).pop();
@@ -1460,7 +1482,17 @@ function historyItems(p) {
   const h = ui.hist, q = norm1(h.q);
   return Z.timeline(p).filter(e => (h.type === 'todo' || e.k === h.type || (h.type === 'consulta' && (e.k === 'control' || e.k === 'cirugia'))) && (!h.year || e.date.startsWith(h.year)) && (!q || norm1(e.title + ' ' + e.sub).includes(q)));
 }
-function historySection(p) {
+const HIST_HOME = 3;
+function historySection(p, full) {
+  if (!full) {
+    const all = Z.timeline(p), n = all.length;
+    if (!n) return `<section class="sec" aria-labelledby="h-hist"><div class="sec-h"><h2 id="h-hist">Historial</h2></div>${historyList(p)}</section>`;
+    return `<section class="sec" aria-labelledby="h-hist">
+      <div class="sec-h"><h2 id="h-hist">Historial</h2>${n > HIST_HOME ? `<span class="hoy-n">${n} en total</span>` : ''}</div>
+      <div class="timeline">${all.slice(0, HIST_HOME).map(tlRow).join('')}</div>
+      ${n > HIST_HOME ? `<button class="btn ghost wide" data-act="histOf" data-f="todo">Ver todo el historial ${I('chevron')}</button>` : ''}
+    </section>`;
+  }
   const years = [...new Set(Z.timeline(p).map(e => e.date.slice(0, 4)))].sort().reverse();
   return `<section class="sec" aria-labelledby="h-hist">
     <div class="sec-h"><h2 id="h-hist">Historial</h2></div>
@@ -1472,12 +1504,13 @@ function historySection(p) {
     <div id="histList">${historyList(p)}</div>
   </section>`;
 }
+const tlRow = e => { const u = e.ref?.kind ? [Z.ALGO_I[e.ref.kind] || 'note', 'perdida'] : KIND_UI[e.k]; return `<button class="tl" data-act="detail" data-kind="${e.kind}" data-id="${e.ref.id}"><span class="tl-date">${fmt(e.date, { day: '2-digit', month: 'short' })}</span>${bubble(u[0], u[1])}<span class="what"><b>${esc(e.title)}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span>${I('chevron')}</button>`; };
 function historyList(p) {
   const tl = historyItems(p), any = Z.timeline(p).length;
   if (!tl.length) return any ? `<div class="empty dash"><p>No encontramos nada con esos filtros.</p><button class="btn sm ghost" data-act="hclear">Limpiar filtros</button></div>`
     : `<div class="empty dash"><p>Su historia empieza acá. Cada vacuna, consulta o estudio que cargues aparece en orden, con fecha.</p><button class="btn sm soft" data-act="add">${I('plus')} Cargar lo primero</button></div>`;
   let year = '';
-  return `<p class="sr" role="status">${tl.length} resultados</p><div class="timeline">${tl.slice(0, 60).map(e => { const y = e.date.slice(0, 4), head = y !== year ? `<div class="year">${y}</div>` : ''; year = y; const u = e.ref?.kind ? [Z.ALGO_I[e.ref.kind] || 'note', 'perdida'] : KIND_UI[e.k]; return `${head}<button class="tl" data-act="detail" data-kind="${e.kind}" data-id="${e.ref.id}"><span class="tl-date">${fmt(e.date, { day: '2-digit', month: 'short' })}</span>${bubble(u[0], u[1])}<span class="what"><b>${esc(e.title)}</b>${e.sub ? `<small>${esc(e.sub)}</small>` : ''}</span>${I('chevron')}</button>`; }).join('')}</div>`;
+  return `<p class="sr" role="status">${tl.length} resultados</p><div class="timeline">${tl.slice(0, ui.hist.n || 60).map(e => { const y = e.date.slice(0, 4), head = y !== year ? `<div class="year">${y}</div>` : ''; year = y; return head + tlRow(e); }).join('')}</div>${tl.length > (ui.hist.n || 60) ? `<button class="btn ghost wide" data-act="hmore">Ver más (${tl.length - (ui.hist.n || 60)})</button>` : ''}`;
 }
 app.addEventListener('input', e => {
   if (e.target.id === 'histQ') { ui.hist.q = e.target.value; $('#histList').innerHTML = historyList(curPet()); }
@@ -3037,9 +3070,9 @@ function rutinaPanel(p) {
       if (e.target.id === 'rSave') {
         if (list.some(x => !/^\d{2}:\d{2}$/.test(x.time))) return toast('Poné la hora de cada cosa.');
         p.routine = list.map(x => ({ id: String(x.id).replace(/[^a-z0-9]/gi, '').slice(0, 12) || uid().slice(0, 8), kind: x.kind, time: x.time, label: x.label.trim() || RUT_K.find(k => k[0] === x.kind)[1], qty: (x.qty || '').trim() }));
-        changed(); sitterPanel(p); toast('Rutina guardada. Ya la ven los dos.'); flushNow().then(() => { delete hoyCache[p.id]; render(); });
+        changed(); route.name === 'hoy' ? dPanel.close() : sitterPanel(p); toast('Rutina guardada. Ya la ven los dos.'); flushNow().then(() => { delete hoyCache[p.id]; render(); });
       }
-      if (e.target.id === 'rAuto') { p.routine = null; changed(); sitterPanel(p); flushNow().then(() => { delete hoyCache[p.id]; render(); }); toast('Listo, se arma sola con lo que tenés cargado.'); }
+      if (e.target.id === 'rAuto') { p.routine = null; changed(); route.name === 'hoy' ? dPanel.close() : sitterPanel(p); flushNow().then(() => { delete hoyCache[p.id]; render(); }); toast('Listo, se arma sola con lo que tenés cargado.'); }
     };
   };
   draw();
@@ -3350,6 +3383,9 @@ document.addEventListener('click', e => {
     case 'detailOf': return detail(p, b.dataset.kind, b.dataset.id);
     case 'hfilter': ui.hist.type = b.dataset.f; b.parentNode.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', String(c === b))); $('#histList').innerHTML = historyList(cur); return;
     case 'hclear': ui.hist = { type: 'todo', year: '', q: '' }; return render();
+    case 'histOf': ui.hist = { type: b.dataset.f, year: '', q: '' }; return go('historial');
+    case 'slogAll': ui.slogAll = true; return render();
+    case 'hmore': ui.hist.n = (ui.hist.n || 60) + 60; $('#histList').innerHTML = historyList(cur); return;
     case 'libsec': ui.lib.jump = ui.lib.secFirst?.[b.dataset.sec] ?? ({ vac: 2, des: 3 }[b.dataset.sec] || 0); return go('libreta');
     case 'lsec': return bookGo(ui.lib.secFirst[b.dataset.sec]);
     case 'lprev': return bookGo(bookIdx - (matchMedia('(min-width:1024px)').matches ? 2 : 1));
@@ -3383,6 +3419,7 @@ document.addEventListener('click', e => {
     case 'vet': return vetForm(cur);
     case 'share': return sharePanel(cur);
     case 'sitter': return sitterPanel(cur);
+    case 'rutina': return rutinaPanel(cur);
     case 'lost': return lostPanel(cur);
     case 'suggest': return suggestPanel(cur);
     case 'export': return exportCopy();

@@ -1460,3 +1460,24 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 .sheetdoc .pd-th small{position:relative;width:100%;font-size:9px;line-height:1.3;text-align:center;background:rgba(255,255,255,.88)}
 .sheetdoc .pd-eps td{vertical-align:top}
 @media(max-width:400px){.sl-btns{grid-template-columns:minmax(0,1fr)}}
+/* Inicio en el celu: Peso y Gastos lado a lado, accesos rápidos en grilla de 2 (sin la bajada) */
+@media(max-width:1023px){
+  .dash-r{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+  .dash-r>*{grid-column:1/-1;min-width:0}
+  .dash-r>.w-card,.dash-r>.s-card{grid-column:auto;padding:16px;gap:8px}
+  .dash-r>.w-card .big-num,.dash-r>.s-card .big-num{font-size:24px}
+  .dash-r>.w-card .vbars,.dash-r>.s-card .vbars{height:40px;gap:4px}
+  .dash-r>.w-card .sic,.dash-r>.s-card .sic{width:34px;height:34px}
+  .list.quick{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;background:transparent;box-shadow:none}
+  .list.quick .row{border:0;border-radius:var(--r-s);box-shadow:var(--sh1);grid-template-columns:auto minmax(0,1fr);min-height:64px;padding:10px 12px;gap:10px}
+  .list.quick .row small,.list.quick .row>svg.i:last-child{display:none}
+  .list.quick .row b{font-size:14.5px;line-height:1.25}
+}
+@media(max-width:1023px){
+  .dash-r .bookcard{padding:12px 14px;gap:14px}
+  .dash-r .bookcard .mini{transform:scale(.72);margin:-14px -10px}
+  .dash-r .bookcard b{font-size:17px}
+  .dash-r .bookcard small{font-size:13px;margin-top:2px;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden}
+  .dash-r .bookcard .go{margin-top:4px}
+}
+@media(max-width:1023px){.dash-r .summary .sum{min-height:0;padding:10px 12px;gap:4px}}
