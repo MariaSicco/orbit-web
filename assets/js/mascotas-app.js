@@ -1154,7 +1154,11 @@ window.addEventListener('scroll', () => $('.top').classList.toggle('scrolled', w
 /* ---------- render ---------- */
 function render() {
   if (mode === 'full' && route.name === 'renovar') openRenewRoute(route.arg);
-  const bare = mode !== 'full' || BARE.includes(route.name);
+  /* sin mascotas: primero la pantalla de bienvenida sola (sin barras), después los pasos */
+  const first = mode === 'full' && !doc.pets.length && route.name === 'inicio';
+  const splash = first && !ui.welcomed;
+  const bare = mode !== 'full' || BARE.includes(route.name) || splash;
+  document.body.dataset.first = first ? (splash ? 'splash' : 'steps') : '';
   document.body.dataset.shell = bare ? 'bare' : 'app';
   nav.hidden = bare;
   if (!bare) drawNav();
@@ -1284,14 +1288,19 @@ async function relogin() { try { await fetch('/api/auth/logout', { method: 'POST
 function renderFirst() {
   const tabName = TABS.find(t => t[0] === (TAB_OF[route.name] || route.name))?.[2];
   if (route.name !== 'inicio' && tabName) return `<section class="empty" style="margin-top:8px">${bubble(TABS.find(t => t[2] === tabName)[1], 'salud')}<h2>${tabName} se arma con tu mascota</h2><p>Primero cargá a tu mascota. Después acá vas a ver ${{ Libreta: 'su libreta sanitaria completa', Agenda: 'todas las fechas que le tocan', Gastos: 'cuánto gastás por mes' }[tabName] || 'su información'}.</p><button class="btn" data-act="newPet">${I('plus')} Agregar a mi mascota</button></section>`;
-  /* la primera pantalla de todas: el logo, qué es Mimitos y recién después el alta */
+  /* 1) la bienvenida sola, a pantalla completa, con el logo animado */
+  if (!ui.welcomed) return `<section class="splash" aria-labelledby="splashT">
+    <div class="splash-logo">${heart()}</div>
+    <p class="splash-hi">${me.name ? 'Hola, ' + esc(me.name.split(' ')[0]) : 'Te damos la bienvenida'}</p>
+    <h1 id="splashT" class="splash-word">mimitos</h1>
+    <p class="splash-sub">La app de tu mascota</p>
+    <button class="btn big splash-go" data-act="welcomeGo">Empezar</button>
+    <p class="splash-by">hecho con Orbit</p>
+  </section>`;
+  /* 2) después, los pasos y recién ahí el alta */
   return `<section class="first">
-    <div class="first-brand">${heart()}<span class="first-word">mimitos</span><span class="first-by">by Orbit</span></div>
-    <span class="eyebrow">${me.name ? 'Hola, ' + esc(me.name.split(' ')[0]) : 'Te damos la bienvenida'}</span>
-    <h1>La app de tu mascota</h1>
-    <p class="lead">Su libreta sanitaria, sus avisos y su historia, en un solo lugar. Te avisamos antes de cada vacuna, pipeta o control, y si se pierde, su QR te avisa a vos.</p>
-    <h2 class="first-h2">Empecemos por tu mascota</h2>
-    <p class="first-sub">En menos de un minuto tenés su libreta armada y sabés cuándo le toca la próxima vacuna.</p>
+    <h1>Empecemos por tu mascota</h1>
+    <p class="lead">En menos de un minuto tenés su libreta armada y sabés cuándo le toca la próxima vacuna.</p>
     <ol class="steps3">
       <li><span class="n">1</span><span><b>Nombre, especie y foto</b><small>La foto va en la tapa de su libreta.</small></span></li>
       <li><span class="n">2</span><span><b>Su última vacuna</b><small>La copiás de la libreta del veterinario o le sacás una foto.</small></span></li>
@@ -3463,6 +3472,7 @@ document.addEventListener('click', e => {
   const p = b.dataset.pet ? petById(b.dataset.pet) : cur;
   switch (b.dataset.act) {
     case 'retry': mode = 'loading'; render(); return boot();
+    case 'welcomeGo': ui.welcomed = true; render(); window.scrollTo(0, 0); return;
     case 'newPet': return startOnboard();
     case 'bulkStudies': return startBulk(cur);
     case 'bulkSave': return saveBulk();

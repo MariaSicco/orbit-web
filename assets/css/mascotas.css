@@ -1556,11 +1556,20 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 @media(min-width:1024px){body[data-shell="app"] .top{max-width:1640px;padding-left:48px;padding-right:48px}}
 /* el avatar de escritorio: .desk-only lo pasa a flex y la inicial quedaba corrida a la izquierda */
 @media(min-width:1024px){.me.desk-only{justify-content:center;align-items:center}}
-/* v37: bienvenida de la primera vez, con el logo antes del alta */
-.first-brand{display:flex;align-items:center;gap:12px;margin:8px 0 22px}
-.first-brand svg{width:64px;height:64px;flex:none}
-.first-word{font:800 32px/1 var(--f);letter-spacing:-.04em;color:#6B1A35}
-.first-by{font:600 11px/1 var(--f);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);padding-top:10px}
-.first-h2{font:800 20px/1.2 var(--f);letter-spacing:-.02em;margin:26px 0 4px}
-.first-sub{color:var(--ink2);margin:0 0 6px}
-.first-note{color:var(--ink2);font-size:13px;text-align:center;margin:10px 0 0}
+/* v38: la primera vez, sin mascotas. 1) Bienvenida sola a pantalla completa, en el rosa del logo, con el logo que
+   entra y se balancea; 2) los pasos sobre el fondo neutro (sin la banda de color de una mascota que todavía no existe) */
+body[data-first]{background:var(--bg)}
+body[data-first="steps"] .top{background:var(--bg)}
+.splash{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:calc(24px + env(safe-area-inset-top,0px)) 24px calc(24px + env(safe-area-inset-bottom,0px));background:#F8C8D8;color:#6B1A35;text-align:center}
+.splash-logo{width:132px;height:132px;margin-bottom:18px;animation:spl-in .9s cubic-bezier(.7,0,.2,1) both,spl-sway 3.2s ease-in-out 1s infinite}
+.splash-logo svg{width:100%;height:100%;display:block;filter:drop-shadow(0 18px 30px rgba(107,26,53,.25))}
+.splash-hi{margin:0;font:700 13px/1 var(--f);letter-spacing:.12em;text-transform:uppercase;opacity:.8;animation:spl-up .7s cubic-bezier(.7,0,.2,1) .35s both}
+.splash-word{margin:0;font:800 clamp(52px,14vw,88px)/1 var(--f);letter-spacing:-.05em;color:#6B1A35;animation:spl-up .8s cubic-bezier(.7,0,.2,1) .45s both}
+.splash-sub{margin:0 0 28px;font:600 clamp(18px,4.6vw,24px)/1.3 var(--f);color:#4A0F23;animation:spl-up .8s cubic-bezier(.7,0,.2,1) .6s both}
+.splash-go{min-width:min(320px,100%);background:#6B1A35;color:#fff;animation:spl-up .8s cubic-bezier(.7,0,.2,1) .8s both}
+.splash-go:hover{background:#4A0F23}
+.splash-by{position:absolute;bottom:calc(20px + env(safe-area-inset-bottom,0px));left:0;right:0;margin:0;font:600 12px/1 var(--f);letter-spacing:.06em;color:#6B1A35;opacity:.7}
+@keyframes spl-in{0%{transform:scale(.4) rotate(-14deg);opacity:0}60%{transform:scale(1.08) rotate(4deg);opacity:1}100%{transform:none;opacity:1}}
+@keyframes spl-sway{0%,100%{transform:rotate(0)}50%{transform:rotate(-4deg) translateY(-4px)}}
+@keyframes spl-up{from{transform:translateY(14px);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.splash-logo,.splash-hi,.splash-word,.splash-sub,.splash-go{animation:none}}
