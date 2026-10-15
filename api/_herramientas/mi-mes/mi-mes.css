@@ -644,3 +644,8 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 .mm-cp-num span{display:block;font-size:13px;font-weight:500;color:var(--tinta2);letter-spacing:0}
 .mm-cp-op .mm-fuente{margin:0}
 .neg{color:var(--neg)}
+
+/* ════════ (8) Compartidas ════════ */
+.mm-compartida{border:1px solid var(--linea);border-radius:var(--r2);padding:12px 14px 6px}
+.mm-comp-t{margin:0 0 8px;font-size:16px;font-weight:700}
+.mm-compartida .mm-chips{margin:0 0 6px}

@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, confirmarGasto, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -1181,6 +1181,56 @@ function pintarFicha(c) {
       <span class="mm-tag ${o.estado === 'resumen' ? '' : 'ext'}">${o.estado === 'resumen' ? 'En el resumen' : 'Estimada'}</span></li>`).join('')}</ol>
     <p class="mm-fuente">Cada mes cuenta solo su cuota. Pagar el resumen no es otro gasto: es cómo se pagan estas cuotas.</p>`;
 }
+/* (8) la pago con alguien: se guarda al toque, sin tocar el cronograma de la tarjeta */
+function pintarCompartida(c) {
+  const el = $id('c-comp');
+  if (!F.compartidas || !c) { el.hidden = true; el.innerHTML = ''; return; }
+  el.hidden = false;
+  const x = compartidaDe(datos, c.id, HOY_ISO);
+  const m = c.moneda || 'ARS';
+  if (!x) {
+    el.innerHTML = `<h3 class="mm-comp-t" id="cc-comp-t">¿La pagás con alguien?</h3>
+      <div class="mm-fila"><div class="mm-campo"><label for="cp-con">Con quién (nombre o alias)</label><input id="cp-con" type="text" maxlength="40" autocomplete="off" placeholder="Ej: Juli"></div>
+      <div class="mm-campo"><label for="cp-val">Su parte</label><input id="cp-val" type="text" inputmode="decimal" autocomplete="off" placeholder="50" aria-describedby="cp-err"></div></div>
+      <div class="mm-chips" role="radiogroup" aria-label="La parte va en"><label class="mm-chip"><input type="radio" name="cp-tipo" value="%" checked><span>% del total</span></label><label class="mm-chip"><input type="radio" name="cp-tipo" value="$"><span>$ en total</span></label></div>
+      <p class="mm-err" id="cp-err"></p><button type="button" class="mm-btn sec chico" data-comp-guardar="${esc(c.id)}">Guardar</button>`;
+    return;
+  }
+  el.innerHTML = `<h3 class="mm-comp-t" id="cc-comp-t">La pagás con ${esc(x.con)}</h3>
+    <dl class="mm-datos"><div><dt>Al banco le debés</dt><dd>${esc(fm(x.alEmisor, m))}</dd></div><div><dt>Tu parte</dt><dd>${esc(fm(x.tuParte, m))}</dd></div>
+    <div><dt>Te debe ${esc(x.con)}</dt><dd>${esc(fm(x.teDeben, m))}</dd></div><div><dt>Ya te devolvió</dt><dd>${esc(fm(x.teDevolvieron, m))}</dd></div></dl>
+    <p class="mm-fuente">${x.falta ? `Falta que te devuelva ${esc(fm(x.falta, m))}. ` : 'Ya te devolvió todo. '}${x.cuotasCubiertas ? `Cubre ${x.cuotasCubiertas} de ${x.cuotas.length} cuotas.` : ''} Lo que te devuelven no suma a tus ingresos: la tarjeta se paga igual, entera.</p>
+    <div class="mm-fila"><div class="mm-campo"><label for="cp-dev">Me devolvió</label><input id="cp-dev" type="text" inputmode="decimal" autocomplete="off" placeholder="${esc(sinSimbolo(x.cuotas[0].suParte, m))}" aria-describedby="cp-err"></div></div>
+    <p class="mm-err" id="cp-err"></p>
+    <div class="mm-meta-acc"><button type="button" class="mm-btn sec chico" data-comp-dev="${esc(c.id)}">Anotar</button><button type="button" class="mm-link quieto" data-comp-quitar="${esc(c.id)}">Ya no es compartida</button></div>`;
+}
+function guardarCompartida(id, cambio) {
+  datos.cuotas = datos.cuotas.map(c => (c.id === id ? cambio(c) : c));
+  guardar(); pintarTodo();
+  const c = datos.cuotas.find(x => x.id === id);
+  pintarCompartida(c); pintarFicha(c);
+}
+$id('c-comp').addEventListener('click', e => {
+  const g = e.target.closest('[data-comp-guardar]');
+  if (g) {
+    const con = $id('cp-con').value.trim();
+    const tipo = $id('c-comp').querySelector('[name="cp-tipo"]:checked')?.value || '%';
+    const valor = tipo === '%' ? numero($id('cp-val').value) : leerMonto($id('cp-val').value);
+    const c = datos.cuotas.find(x => x.id === g.dataset.compGuardar);
+    const x = compartidaValida({ con, tipo, valor }, c.total);
+    if (!x) { $id('cp-err').textContent = !con ? 'Poné un nombre o alias.' : 'Revisá su parte: tiene que ser menos que el total.'; return; }
+    guardarCompartida(c.id, q => ({ ...q, compartida: x })); return avisar(`Listo: la pagás con ${con}`);
+  }
+  const d = e.target.closest('[data-comp-dev]');
+  if (d) {
+    const v = leerMonto($id('cp-dev').value);
+    if (!v) { $id('cp-err').textContent = 'Escribí cuánto te devolvió.'; return; }
+    guardarCompartida(d.dataset.compDev, q => ({ ...q, compartida: { ...q.compartida, devoluciones: [...(q.compartida.devoluciones || []), { fecha: HOY_ISO, monto: v }] } }));
+    return avisar('Anotado');
+  }
+  const q = e.target.closest('[data-comp-quitar]');
+  if (q) { guardarCompartida(q.dataset.compQuitar, x => { const { compartida, ...resto } = x; return resto; }); return avisar('Ya no es compartida'); }
+});
 function abrirCuota(id = null, tarjetaId = null) {
   editCuota = id;
   const c = id ? datos.cuotas.find(x => x.id === id) : null;
@@ -1206,6 +1256,7 @@ function abrirCuota(id = null, tarjetaId = null) {
     guardar(); pintarTodo(); cerrar(dc); avisar('Cuota borrada');
   });
   pintarFicha(c);
+  pintarCompartida(c);
   textoMesCompra();
   $id('c-mes-wrap').open = false;
   marcarCantRapida(); previewCuota();
@@ -1226,7 +1277,8 @@ dc.querySelector('form').addEventListener('submit', e => {
   const previa = editCuota ? datos.cuotas.find(x => x.id === editCuota) : null;
   const cuota = { id: editCuota || nuevoId(), descripcion: $id('c-desc').value.trim().slice(0, 60),
     total, moneda: monedaCuota(), cantidad: n, tarjetaId, primerMes: $id('c-mes').value,
-    origen: previa?.origen || 'manual', fecha: previa?.fecha || HOY_ISO };
+    origen: previa?.origen || 'manual', fecha: previa?.fecha || HOY_ISO,
+    ...(previa?.compartida && compartidaValida(previa.compartida, total) ? { compartida: previa.compartida } : {}) };
   if (editCuota) datos.cuotas = datos.cuotas.map(x => (x.id === editCuota ? cuota : x));
   else datos.cuotas.push(cuota);
   guardar(); pintarTodo(); cerrar(dc);

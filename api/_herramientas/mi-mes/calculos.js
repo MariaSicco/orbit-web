@@ -668,7 +668,8 @@ export function migrar(crudo) {
     out.cuotas.push({ id: String(c.id), descripcion: texto(c.descripcion), total: c.total,
       moneda: esMoneda(c.moneda) ? c.moneda : 'ARS',
       cantidad: c.cantidad, tarjetaId: String(c.tarjetaId), primerMes: c.primerMes,
-      ...(c.origen === 'resumen' || c.origen === 'manual' ? { origen: c.origen } : {}), ...(esFecha(c.fecha) ? { fecha: c.fecha } : {}) });
+      ...(c.origen === 'resumen' || c.origen === 'manual' ? { origen: c.origen } : {}), ...(esFecha(c.fecha) ? { fecha: c.fecha } : {}),
+      ...(compartidaValida(c.compartida, c.total) ? { compartida: compartidaValida(c.compartida, c.total) } : {}) });
   }
   for (const r of Array.isArray(crudo.resumenes) ? crudo.resumenes : []) {
     if (!r?.id || !ids.has(String(r.tarjetaId)) || !esMes(r.mes)) continue;
@@ -1791,4 +1792,40 @@ export function comoPagar(datos, { precio, descuentoEfectivo = 0, cuotas = 1, in
       faltaDificil: pr ? pr.falta : null });
   }
   return { contado, precio, sinComprar: { libres: libresSin(mes), faltaDificil: base ? base.falta : null }, opciones: out };
+}
+
+
+/* ═══════════════ (8) Cuotas compartidas ═══════════════
+   La tarjeta no cambia: al emisor le debés la cuota entera. Aparte se lleva
+   tu parte, lo que te deben y lo que ya te devolvieron (también adelantos de
+   varias cuotas). Lo que te deben NO es ingreso hasta que te lo devuelven, y
+   aun así no suma a "te quedan libres": es plata que vuelve, no un ingreso. */
+export function compartidaValida(x, total) {
+  if (!x || typeof x !== 'object') return null;
+  const con = texto(x.con, 40);
+  const tipo = x.tipo === '$' ? '$' : '%';
+  const valor = Number(x.valor);
+  if (!con || !Number.isFinite(valor) || valor <= 0) return null;
+  if (tipo === '%' && valor >= 100) return null;
+  if (tipo === '$' && (!Number.isSafeInteger(valor) || (Number.isSafeInteger(total) && valor >= total))) return null;
+  const devoluciones = (Array.isArray(x.devoluciones) ? x.devoluciones : []).filter(d => esFecha(d?.fecha) && Number.isSafeInteger(d?.monto) && d.monto > 0)
+    .slice(-60).map(d => ({ fecha: d.fecha, monto: d.monto }));
+  return { con, tipo, valor, devoluciones };
+}
+export function compartidaDe(datos, cuotaId, hoy) {
+  const c = (datos?.cuotas || []).find(x => x.id === cuotaId);
+  const x = compartidaValida(c?.compartida, c?.total);
+  if (!x) return null;
+  const f = fichaCompra(datos, cuotaId, hoy);
+  const suParte = x.tipo === '%' ? Math.round(c.total * x.valor / 100) : x.valor;
+  const porCuota = repartirCuotas(suParte, c.cantidad);
+  const devuelto = x.devoluciones.reduce((a, d) => a + d.monto, 0);
+  let acumulado = 0;
+  const cuotas = f.obligaciones.map((o, i) => {
+    acumulado += porCuota[i];
+    return { n: o.n, mes: o.mes, alEmisor: o.monto, tuParte: o.monto - porCuota[i], suParte: porCuota[i], cubierta: devuelto >= acumulado, pasada: o.pasada };
+  });
+  const vencidoSinDevolver = cuotas.filter(q => q.pasada && !q.cubierta).reduce((a, q) => a + q.suParte, 0);
+  return { con: x.con, alEmisor: c.total, tuParte: c.total - suParte, teDeben: suParte, teDevolvieron: devuelto, falta: Math.max(0, suParte - devuelto),
+    aFavor: Math.max(0, devuelto - suParte), cuotasCubiertas: cuotas.filter(q => q.cubierta).length, vencidoSinDevolver, cuotas };
 }
