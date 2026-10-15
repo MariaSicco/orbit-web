@@ -1112,7 +1112,6 @@ function drawTop(bare) {
   const desk = `<nav class="tnav desk-only" aria-label="Secciones">${TABS.filter(t => t[0] !== 'cuenta').map(([k, , l]) => `<a href="#/${k}" ${tab === k && route.name !== 'mefui' ? 'aria-current="page"' : ''}>${l}</a>`).join('')}${mf ? `<a href="#/mefui" class="tnav-mf" title="Me fui" aria-label="Me fui" ${route.name === 'mefui' ? 'aria-current="page"' : ''}>${I('camera')}Me fui${window.MZAWAY.hasCamOn() || doc.away?.on ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}</a>` : ''}</nav>
     ${doc.pets.length ? `<div class="tpets desk-only" aria-label="Tus mascotas">${topPets(p).map(x => `<button type="button" class="tpet" data-act="pick" data-id="${x.id}" aria-current="${x.id === p?.id}" title="${esc(x.name)}" aria-label="${esc(x.name)}">${avatar(x)}</button>`).join('')}${topPets(p).length < doc.pets.length ? `<button type="button" class="tpet more" data-act="petsMore" aria-label="Ver todas tus mascotas (${doc.pets.length})">+${doc.pets.length - topPets(p).length}</button>` : ''}<button type="button" class="tpet add" data-act="newPet" aria-label="Agregar mascota">${I('plus')}</button></div>` : ''}
     ${doc.pets.length ? askBtn('desk-only') : ''}
-    ${doc.pets.length ? `<button type="button" class="btn sm ghost desk-only al-top" data-act="algo">${I('plus')} Algo pasó</button>` : ''}
     <button type="button" class="btn sm lime desk-only" data-act="add">${I('plus')} Cargar algo</button>`;
   $('#tnavBox').innerHTML = desk;
   box.innerHTML = `${doc.pets.length ? `<button type="button" class="round ask-ic mob-only" data-act="askGo" aria-label="Preguntale a Mimitos">${ASK_IC.stars}</button>` : ''}${mf ? window.MZAWAY.topIcon().replace('class="round', 'class="round mob-only') : ''}<a class="round" href="#/avisos" aria-label="Avisos">${I('bell')}</a><a class="me${onHome ? ' desk-only' : ''}" href="#/cuenta" aria-label="Tu cuenta">${esc(ini)}</a>`;
@@ -1273,7 +1272,7 @@ function petMeta(p) { return [Z.species(p), p.breed, Z.age(p.birth), p.weight ? 
 /* ---------- INICIO ---------- */
 function nextItems(p) {
   const out = [];
-  for (const m of p.meds) { const s = Z.medState(m, p.log); if (s.state === 'due' || s.state === 'late') out.push({ order: s.state === 'late' ? -2 : -1, html: medRow(p, m) }); }
+  for (const m of p.meds) { const s = Z.medState(m, p.log); if (s.state === 'due' || s.state === 'late') out.push({ med: true, order: s.state === 'late' ? -2 : -1, html: medRow(p, m) }); }
   for (const x of Z.upcoming(p)) if (x.s.days <= 60) out.push({ kind: 'rec', order: x.s.days, html: `<div class="row ${x.s.c}">${bubble(recIcon(x.r), 'salud')}<button class="what plain" data-act="detail" data-kind="rec" data-id="${x.r.id}"><b>${esc(x.r.name)}</b><small><span class="stt">${x.s.t}</span>${Z.isSug(x.r) ? ' · sugerida, confirmala con tu veterinario' : ''}</small></button><button class="ibtn" data-act="icsRec" data-pet="${p.id}" data-rec="${x.r.id}" aria-label="Agregar ${esc(x.r.name)} al calendario">${I('cal')}</button></div>` });
   const f = Z.food(p.food); if (f && f.left <= 5) out.push({ order: f.left, html: `<div class="row ${f.left < 0 ? 'st-late' : 'st-soon'}">${bubble('bowl', 'comida')}<span class="what"><b>Comprar alimento</b><small class="stt">${f.left < 0 ? 'Ya se terminó' : f.left === 0 ? 'Se termina hoy' : `Quedan ${f.left} días`}</small></span><button class="ibtn" data-act="icsFood" data-pet="${p.id}" aria-label="Aviso para comprar alimento">${I('cal')}</button></div>` });
   out.push(...(window.MZVETS?.homeItems(p) || []));
@@ -1288,12 +1287,15 @@ function medRow(p, m) {
 }
 function renderInicio(p) {
   /* las vacunas y pipetas van en Próximos cuidados; acá quedan remedios y alimento */
-  const sm = Z.summary(p), next = nextItems(p).filter(x => x.kind !== 'rec').slice(0, 5);
-  const activeMeds = p.meds.filter(m => ['ok', 'soon'].includes(Z.medState(m, p.log).state));
+  /* v33: el bloque "Salud" y la tarjeta de la libreta salen de Inicio. Los remedios en curso pasan a "Hoy y estos días"
+     (todos, sin tope), problemas y alergias al acceso "Antecedentes", y la libreta ya está en la barra (Libreta, con su PDF) */
+  const sm = Z.summary(p), activeMeds = p.meds.filter(m => ['ok', 'soon'].includes(Z.medState(m, p.log).state));
+  const due = nextItems(p).filter(x => x.kind !== 'rec'), meds = [...due.filter(x => x.med), ...activeMeds.map(m => ({ html: medRow(p, m) }))];
+  const next = [...meds, ...due.filter(x => !x.med).slice(0, Math.max(0, 5 - meds.length))];
+  const salud = [sm.active.length ? `Problemas: ${sm.active.map(c => c.name).join(', ')}` : '', p.allergies ? `Alergias: ${p.allergies}` : ''].filter(Boolean).join(' · ');
   const vacc = { ok: ['Al día', 'ok'], sug: ['Sin confirmar', 'none'], late: [`Vencida: ${sm.vaccLate.map(x => x.r.name).join(', ')}`, 'late'], none: ['Sin cargar', 'none'] }[sm.vacc];
   const anti = { ok: ['Al día', 'ok'], sug: ['Sin confirmar', 'none'], late: ['Vencido', 'late'], none: ['Sin cargar', 'none'], unknown: [`Último: ${sm.lastAnti ? fmt(sm.lastAnti.date, { day: 'numeric', month: 'short' }) : '—'}`, 'none'] }[sm.anti];
-  const recs = p.records.filter(r => r.date).length;
-  const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', esc(Cap(quienCuida(p)).replace(/^Quien/, 'Quién')), 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
+  const quick = [['share', 'qr', 'viaje', 'QR del collar', `Para que te ${la(p)} devuelvan si se pierde`], ['sitter', 'hand', 'cuida', esc(Cap(quienCuida(p)).replace(/^Quien/, 'Quién')), 'Un link con todo para el cuidador'], ['lost', 'search', 'perdida', p.lost.on ? 'Modo perdida activo' : 'Se perdió', 'Cartel de búsqueda y qué hacer'], ['go:antecedentes', 'heart', 'cuida', 'Antecedentes', salud ? esc(salud) : 'Problemas de salud, cirugías y alergias'], ['go:viajes', 'plane', 'viaje', 'Viaje al exterior', 'Qué papeles necesita y cuándo'], ['suggest', 'sparkle', 'salud', 'Calendario sugerido', 'Fechas de referencia por especie y edad'], ['go:datos', 'doc', 'plata', 'Datos y veterinaria', 'Microchip, señas, teléfonos y guardia']];
   quick.unshift(['vets', 'pin', 'cuida', 'Veterinarias cerca', 'Pedir turno, guardias 24 h y pet shops']);
   return `<div class="dash">
     <div class="dash-l">${petHero(p, sm, vacc, anti)}</div>
@@ -1315,15 +1317,6 @@ function renderInicio(p) {
       ${careCard(p)}
       ${weightCard(p)}
       ${spendCard(p)}
-      <section class="sec card2" aria-labelledby="h-health">
-        <h2 id="h-health">Salud: problemas, alergias y remedios</h2>
-        <div class="summary">
-          <button class="sum" data-act="go" data-to="antecedentes"><span>Problemas de salud</span><b>${sm.active.length ? esc(sm.active.map(c => c.name).join(', ')) : 'Ninguno cargado'}</b></button>
-          <button class="sum" data-act="go" data-to="antecedentes"><span>Alergias</span><b>${esc(p.allergies || 'Ninguna cargada')}</b></button>
-        </div>
-        ${activeMeds.length ? `<div class="list">${activeMeds.map(m => medRow(p, m)).join('')}</div>` : ''}
-      </section>
-      <button class="bookcard span2 c-${Z.tone(p)}" data-act="go" data-to="libreta"><span class="mini">${avatar(p)}</span><span><span class="eyebrow">Libreta sanitaria</span><b>La libreta de ${esc(p.name)}</b><small>${recs ? `${recs} ${recs === 1 ? 'registro' : 'registros'} entre vacunas, antiparasitarios y controles. Lista para imprimir.` : 'Se completa sola con lo que cargás: vacunas, desparasitaciones, controles y peso.'}</small><span class="go">Abrir libreta ${I('next')}</span></span></button>
       ${sitterLog(p)}
       <div class="span2">${historySection(p)}</div>
       <section class="sec span2" aria-labelledby="h-more">

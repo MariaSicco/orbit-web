@@ -84,3 +84,36 @@ test('layout a 360–414 px: Inicio, Quién la cuida (crear link) y /cuida/:t si
     }
   } finally { await browser.close(); srv.close(); }
 });
+
+/* v33: la barra de arriba de 1024 a 1920 (logo entero con "by Orbit", nada encima y todo adentro de la barra)
+   e Inicio sin el bloque "Salud" ni la tarjeta de la libreta, sin emojis en "Me fui" (con "Me fui" prendido: la barra más llena) */
+test('barra de escritorio 1024–1920: logo entero y sin pisarse; Inicio sin bloques repetidos ni emojis', { skip }, async () => {
+  Object.assign(process.env, { MIMITOS_MEFUI: '1', MIMITOS_MEFUI_ALLOW: EMAIL });
+  const { srv, base } = await server();
+  const browser = await PW.chromium.launch({ executablePath: EXE, args: ['--mute-audio', '--headless=new'] });
+  try {
+    for (const W of [1024, 1100, 1180, 1279, 1280, 1366, 1440, 1600, 1920, 360, 390]) {
+      const ctx = await browser.newContext({ viewport: { width: W, height: 900 }, isMobile: W < 900, hasTouch: W < 900, locale: 'es-AR', timezoneId: 'America/Argentina/Buenos_Aires' });
+      const p = await ctx.newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+      await p.goto(base + '/mascotas#/inicio'); await p.waitForSelector('main [data-act=sitter]'); await p.waitForTimeout(800);
+      if (W >= 1024) {
+        const r = await p.evaluate(() => {
+          const top = document.querySelector('.top'), b = top.querySelector('.brand'), br = b.getBoundingClientRect(), tr = top.getBoundingClientRect();
+          const items = [b, ...top.querySelectorAll('#tnavBox > *, .top-acts > *')].filter(e => e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden')
+            .map(e => { const q = e.getBoundingClientRect(); return { n: e.className || e.tagName, l: q.left, r: q.right }; }).sort((a, c) => a.l - c.l);
+          const pisa = items.slice(1).filter((x, i) => x.l < items[i].r - 0.5).map(x => x.n);
+          const tapa = []; for (let x = br.left + 2; x < br.right - 1; x += 4) { const e = document.elementFromPoint(x, br.top + br.height / 2); if (e && !b.contains(e)) tapa.push(e.className); }
+          return { texto: b.innerText.replace(/\s+/g, ' ').trim(), recorte: b.scrollWidth - b.clientWidth, pisa, tapa: tapa.slice(0, 3), afuera: items.filter(x => x.l < tr.left - 0.5 || x.r > tr.right + 0.5).map(x => x.n) };
+        });
+        assert.equal(r.texto, 'mimitos BY ORBIT', `${W}: logo entero`);
+        assert.equal(r.recorte, 0, `${W}: logo sin recorte`); assert.deepEqual(r.tapa, [], `${W}: nada encima del logo`);
+        assert.deepEqual(r.pisa, [], `${W}: elementos de la barra pisados`); assert.deepEqual(r.afuera, [], `${W}: elementos fuera de la barra`);
+        assert.equal(await p.$('.top .al-top'), null, `${W}: "Algo pasó" ya no va en la barra`);
+      }
+      const ini = await p.evaluate(() => ({ salud: !!document.getElementById('h-health'), libreta: !!document.querySelector('#app .bookcard'), emoji: /🏠|📷/.test(document.getElementById('app').innerHTML), mf: !!document.querySelector('.mf-cam-ic svg.i') || !document.querySelector('.mf-cam-ic') }));
+      assert.deepEqual(ini, { salud: false, libreta: false, emoji: false, mf: true }, `${W}: Inicio`);
+      assert.deepEqual(errs, []);
+      await ctx.close();
+    }
+  } finally { await browser.close(); srv.close(); }
+});
