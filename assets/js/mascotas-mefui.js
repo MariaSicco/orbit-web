@@ -120,7 +120,7 @@ function camHomeCard(p) {
     loadEvents(since, true).finally(() => { st.loadingHome = false; if (A().route.name === 'inicio' && !document.querySelector('dialog[open]')) A().render(); });
   }
   return `<section class="mf-cam span2" aria-labelledby="h-mfcam">
-    <div class="mf-cam-h"><span class="mf-cam-ic" aria-hidden="true">📷</span><div><h2 id="h-mfcam">Ver a ${esc(pet?.name || 'tu mascota')} en vivo</h2>
+    <div class="mf-cam-h"><span class="mf-cam-ic" aria-hidden="true">${I('camera')}</span><div><h2 id="h-mfcam">Ver a ${esc(pet?.name || 'tu mascota')} en vivo</h2>
       <p class="mf-cam-st ${c.online ? 'on' : 'off'}"><span class="mf-cam-dot" aria-hidden="true"></span>${esc(c.name)} · ${esc(camState(c))}</p></div></div>
     ${a.on ? `<div class="mf-cam-away"><div class="mf-top"><span class="mf-dot" aria-hidden="true"></span><span class="eyebrow">Me fui · en curso</span></div><p class="mf-clock" data-away-clock>${clockHtml()}</p>${statusHtml(true)}</div>` : ''}
     <div class="btns"><button class="btn big" data-mf="live" data-cam="${c.camId}">${I('camera')} Ver en vivo</button>${a.on ? `<button class="btn ghost" data-mf="back">${I('check')} Volví</button>` : `<button class="btn ghost" data-mf="leave">${I('home')} Me fui</button>`}</div>
@@ -140,7 +140,7 @@ function homeCard(p) {
     const one = D().pets.length === 1 ? D().pets[0] : null;
     const who = one ? `se queda ${esc(one.name)} ${sola(one)}` : 'se quedan solas tus mascotas';
     return `<section class="mf-cam none span2" aria-labelledby="h-mfnone">
-      <div class="mf-cam-h"><span class="mf-cam-ic" aria-hidden="true">🏠</span><div><h2 id="h-mfnone">Me fui</h2><p class="mf-cam-st">Contamos cuánto tiempo ${who}${D().awaySet.alertH ? ` y te avisamos si pasa de ${D().awaySet.alertH} h` : ''}. Con un celu viejo en casa, además la ves en vivo y te avisamos si ladra.</p></div></div>
+      <div class="mf-cam-h"><span class="mf-cam-ic" aria-hidden="true">${I('away')}</span><div><h2 id="h-mfnone">Me fui</h2><p class="mf-cam-st">Contamos cuánto tiempo ${who}${D().awaySet.alertH ? ` y te avisamos si pasa de ${D().awaySet.alertH} h` : ''}. Con un celu viejo en casa, además la ves en vivo y te avisamos si ladra.</p></div></div>
       <div class="btns"><button class="btn big" data-mf="leave">${I('home')} Me fui</button><button class="btn ghost" data-mf="pair">${I('camera')} Convertir un celu viejo en cámara</button></div>
     </section>`;
   }

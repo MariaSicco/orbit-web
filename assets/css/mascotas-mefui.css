@@ -135,4 +135,5 @@ dialog.mf-live-open .sheet{gap:12px}
 @media(min-width:1024px){.top .al-top,.top .btn.lime{white-space:nowrap}.tnav:has(.tnav-mf) a{padding:0 13px}}
 @media(min-width:1024px) and (max-width:1366px){.tnav:has(.tnav-mf) a{padding:0 9px}}
 /* escritorio angosto: "Me fui" queda como ícono de cámara (con el punto verde) y el nombre en aria-label */
-@media(min-width:1024px) and (max-width:1279px){.tnav-mf{font-size:0!important;gap:3px}.tnav-mf svg.i{width:19px;height:19px}.top .btn.lime{white-space:normal}}
+@media(min-width:1024px) and (max-width:1279px){.tnav-mf{font-size:0!important;gap:3px}.tnav-mf svg.i{width:19px;height:19px}.top .btn.lime{white-space:normal}.tnav:has(.tnav-mf) a{padding:0 7px}}
+.mf-cam-ic svg.i{width:26px;height:26px;stroke-width:1.75}

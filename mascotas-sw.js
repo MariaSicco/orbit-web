@@ -10,7 +10,7 @@ self.addEventListener('push', e => {
   const actions = Array.isArray(d.actions) && max ? d.actions.slice(0, max) : undefined;
   e.waitUntil(self.registration.showNotification(d.title || 'Mimitos', {
     body: d.body || '', tag: d.tag || undefined, data: { url: d.url || '/mascotas' }, actions,
-    icon: '/assets/img/mimitos/icon-192.png', badge: '/assets/img/mimitos/icon-192.png', lang: 'es-AR',
+    icon: '/assets/img/mimitos/icon-192.png?v=2', badge: '/assets/img/mimitos/icon-192.png?v=2', lang: 'es-AR',
   }));
 });
 self.addEventListener('notificationclick', e => {

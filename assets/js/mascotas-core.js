@@ -294,6 +294,8 @@
     piggy: '<path d="M19 11c0-3.3-3.1-5.5-7-5.5S4 8 4 11c0 1.7.8 3.1 2 4.2V19h3v-2h5v2h3v-3.6c.9-.7 1.6-1.6 2-2.4h1.5V10H19"/><circle cx="15.5" cy="10" r=".6"/><path d="M9.5 6.2 8 3.5"/>',
     share: '<circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.8 7.6-4.6M8.2 13.2l7.6 4.6"/>',
     home: '<path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-5v-6h-4v6H5a1 1 0 0 1-1-1z"/>',
+    /* "Me fui": la casa con la puerta abierta */
+    away: '<path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1z"/><path d="M9.5 20v-7h5v7"/><path d="m9.5 13 3.8 1.8V20"/>',
     camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/>',
     flask: '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 1.8 3h10.4a2 2 0 0 0 1.8-3l-5-9V3"/><path d="M7.5 15h9"/>',
     steth: '<path d="M6 3v5a4 4 0 0 0 8 0V3"/><path d="M10 12v3a5 5 0 0 0 10 0v-1"/><circle cx="20" cy="12" r="2"/>',
