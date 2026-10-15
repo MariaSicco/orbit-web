@@ -240,3 +240,14 @@ test('[QA2 · 10 y 12] foto de una copia sin números se descarta; tarjeta sin n
   d.tarjetas.push({ id: 'a', nombre: 'Amex', red: 'American Express', banco: '', ultimos4: '', color: 'azul', diaCierre: 20, diaVence: 2 });
   assert.equal(M.lineaDelMes(d, '2026-11').some(e => e.tipo === 'vence'), false);
 });
+
+test('[QA2 · 8] flags: QA aprobadas prendidas; historia y dondeRinde apagadas', async () => {
+  const { FLAGS } = await import('../api/_herramientas/mi-mes/flags.js');
+  for (const k of ['diaDificil', 'queCambio', 'comoPagar', 'compartidas', 'devolver', 'gastoEstimado', 'cambioTarjeta']) assert.equal(FLAGS[k], true, k);
+  assert.equal(FLAGS.historia, false);
+  assert.equal(FLAGS.dondeRinde, false);
+  const src = readFileSync(new URL('../api/_herramientas/mi-mes/app.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /La plata quieta pierde contra la inflación/);
+  assert.match(src, /A confirmar/);
+  assert.match(src, /const inf = supuesto\(datos, 'inflacion'\)/, 'misma inflación que ¿cuotas o contado?');
+});

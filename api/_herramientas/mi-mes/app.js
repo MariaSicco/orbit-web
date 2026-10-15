@@ -24,7 +24,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t11';
+const VERSION = '2026-10-15.t12';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -225,20 +225,20 @@ function itemsRevisar(lim) {
 }
 function preguntaHTML(q) {
   const acc = {
-    resumen: `<button type="button" class="mm-btn chico" data-importar="${esc(q.tarjetaId)}">${ic('subir')} Subir resumen</button>`,
-    lectura: `<button type="button" class="mm-btn chico" data-pregunta-ok="${esc(q.resumenId)}">Está bien</button><button type="button" class="mm-link" data-ir-tarjeta="${esc(q.tarjetaId)}">Ver el resumen</button>`,
-    concilia: `<button type="button" class="mm-btn chico" data-concilia-q="si" data-cuota="${esc(q.cuotaId)}">Sí, es la misma</button><button type="button" class="mm-link" data-concilia-q="no" data-cuota="${esc(q.cuotaId)}">No, son dos</button>`,
-    gasto: `<button type="button" class="mm-btn chico" data-confirmar-gasto="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-editar="gasto" data-id="${esc(q.gastoId)}">Cambió</button>`,
-    cobro: `<button type="button" class="mm-btn chico" data-editar="ingreso" data-id="${esc(q.ingresoId)}" data-foco-cobro>Elegir el día</button>`,
-    cambio: `<button type="button" class="mm-btn chico" data-cambio>Actualizar</button>`,
-    copia: `<button type="button" class="mm-btn chico" data-exportar>Guardar copia</button>`,
-    saldo: `<button type="button" class="mm-btn chico" data-saldo>${esc(q.accion)}</button>`,
-    estimados: `<button type="button" class="mm-btn chico" data-gastos-ok="${esc(q.gastoIds.join(','))}">${esc(q.accion)}</button><button type="button" class="mm-link" data-ir="cargado">Alguno cambió</button>`,
-    estimado: `<button type="button" class="mm-btn chico" data-gasto-ok="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-gasto-real="${esc(q.gastoId)}">Fue otro monto</button><button type="button" class="mm-link" data-gasto-baja="${esc(q.gastoId)}">Lo di de baja</button>`,
-    gastoTarjeta: `<button type="button" class="mm-btn chico" data-gasto-tj="${esc(q.gastoId)}" data-tj="${esc(q.tarjetaId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-pregunta-luego="${esc(q.id)}">No, es otro</button>`,
-    pagado: Object.entries(PAGOS_VENCIDO).map(([k, v], i) => `<button type="button" class="${i ? 'mm-link' : 'mm-btn chico'}" data-pago-res="${esc(q.resumenId)}" data-pago="${k}">${esc(v)}</button>`).join(''),
-    dificil: `<button type="button" class="mm-btn chico" data-ver-dificil>Ver día por día</button>`,
-  }[q.tipo] || '';
+    resumen: () => `<button type="button" class="mm-btn chico" data-importar="${esc(q.tarjetaId)}">${ic('subir')} Subir resumen</button>`,
+    lectura: () => `<button type="button" class="mm-btn chico" data-pregunta-ok="${esc(q.resumenId)}">Está bien</button><button type="button" class="mm-link" data-ir-tarjeta="${esc(q.tarjetaId)}">Ver el resumen</button>`,
+    concilia: () => `<button type="button" class="mm-btn chico" data-concilia-q="si" data-cuota="${esc(q.cuotaId)}">Sí, es la misma</button><button type="button" class="mm-link" data-concilia-q="no" data-cuota="${esc(q.cuotaId)}">No, son dos</button>`,
+    gasto: () => `<button type="button" class="mm-btn chico" data-confirmar-gasto="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-editar="gasto" data-id="${esc(q.gastoId)}">Cambió</button>`,
+    cobro: () => `<button type="button" class="mm-btn chico" data-editar="ingreso" data-id="${esc(q.ingresoId)}" data-foco-cobro>Elegir el día</button>`,
+    cambio: () => `<button type="button" class="mm-btn chico" data-cambio>Actualizar</button>`,
+    copia: () => `<button type="button" class="mm-btn chico" data-exportar>Guardar copia</button>`,
+    saldo: () => `<button type="button" class="mm-btn chico" data-saldo>${esc(q.accion)}</button>`,
+    estimados: () => `<button type="button" class="mm-btn chico" data-gastos-ok="${esc(q.gastoIds.join(','))}">${esc(q.accion)}</button><button type="button" class="mm-link" data-ir="cargado">Alguno cambió</button>`,
+    estimado: () => `<button type="button" class="mm-btn chico" data-gasto-ok="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-gasto-real="${esc(q.gastoId)}">Fue otro monto</button><button type="button" class="mm-link" data-gasto-baja="${esc(q.gastoId)}">Lo di de baja</button>`,
+    gastoTarjeta: () => `<button type="button" class="mm-btn chico" data-gasto-tj="${esc(q.gastoId)}" data-tj="${esc(q.tarjetaId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-pregunta-luego="${esc(q.id)}">No, es otro</button>`,
+    pagado: () => Object.entries(PAGOS_VENCIDO).map(([k, v], i) => `<button type="button" class="${i ? 'mm-link' : 'mm-btn chico'}" data-pago-res="${esc(q.resumenId)}" data-pago="${k}">${esc(v)}</button>`).join(''),
+    dificil: () => `<button type="button" class="mm-btn chico" data-ver-dificil>Ver día por día</button>`,
+  }[q.tipo]?.() || '';
   return `<details class="mm-fila-alerta pregunta">
     <summary><span class="mm-fa-ic">${ic(q.tipo === 'resumen' ? 'subir' : q.tipo === 'cobro' ? 'calendario' : q.tipo === 'cambio' ? 'dolar' : 'alerta')}</span><span class="mm-fa-txt">${esc(q.titulo)}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
     <div class="mm-fa-det"><p>${esc(q.porque)}</p><div class="mm-fa-acc">${acc}<button type="button" class="mm-link quieto" data-pregunta-luego="${esc(q.id)}">Más tarde</button></div></div>
@@ -691,16 +691,18 @@ da.querySelector('form').addEventListener('submit', e => {
 let rindeDias = 30;
 const pctR = n => `${String(n).replace('.', ',')} %`;
 const fechaLarga = f => `${fechaCorta(f)} ${f.slice(0, 4)}`;
-const fuenteTasa = o => `${o.url ? `<a href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">${esc(o.fuente)}</a>` : esc(o.fuente)} · ${esc(fechaLarga(o.fecha))}${datoViejo(o.fecha, HOY_ISO) ? ` <span class="mm-tag">Dato del ${esc(fechaCorta(o.fecha))}: puede haber cambiado</span>` : ''}`;
+const fuenteTasa = o => `${o.url ? `<a href="${esc(o.url)}" target="_blank" rel="noopener noreferrer">${esc(o.fuente)}</a>` : esc(o.fuente)}${o.fecha ? ` · ${esc(fechaLarga(o.fecha))}` : ''}${o.confirmar ? ' <span class="mm-tag ext">A confirmar</span>' : ''}${o.fecha && datoViejo(o.fecha, HOY_ISO) ? ` <span class="mm-tag">Dato del ${esc(fechaCorta(o.fecha))}: puede haber cambiado</span>` : ''}`;
 function pintarRinde() {
-  const inf = TASAS.inflacion;
+  /* QA v2 · dondeRinde: la misma inflación que ¿cuotas o contado? y un título que no empuja a invertir */
+  const inf = supuesto(datos, 'inflacion');
   const pf = TASAS.opciones[0];
   $id('rinde').innerHTML = `
     <section class="mm-panel mm-rinde-inf" aria-labelledby="ri-inf">
-      <h2 id="ri-inf" class="mm-h2">La plata quieta pierde contra la inflación</h2>
-      <p class="mm-rinde-big">${esc(pctR(inf.mensual))} <span>en ${esc(nombreMes(inf.mes))}</span></p>
-      <p class="mm-meta-txt">Inflación esperada a 12 meses: ${esc(pctR(inf.rem12))}. Para comparar con una tasa anual, dividila por 12: ${esc(pctR(pf.tna.min))} TNA ≈ ${esc(pctR(tnaMensual(pf.tna.min)))} por mes.</p>
-      <p class="mm-fuente">${fuenteTasa(inf)}</p>
+      <h2 id="ri-inf" class="mm-h2">Cuánto rinde hoy cada tipo de opción</h2>
+      <p class="mm-meta-txt">Para comparar, la inflación que usamos en toda la app:</p>
+      <p class="mm-rinde-big">${esc(pctR(inf.valor))} <span>por mes, esperada</span></p>
+      <p class="mm-meta-txt">Las tasas de abajo son anuales (TNA). Para compararlas, dividilas por 12: ${esc(pctR(pf.tna.min))} TNA ≈ ${esc(pctR(tnaMensual(pf.tna.min)))} por mes.</p>
+      <p class="mm-fuente">${fuenteHTML(inf)}</p>
     </section>
     <ul class="mm-rinde-ops">${TASAS.opciones.map(o => `<li class="mm-panel mm-rinde-op ${esc(o.clase)}">
       <div class="mm-rinde-cab"><h2 class="mm-h2">${esc(o.nombre)}</h2><span class="mm-tag">${o.clase === 'deposito' ? 'Depósito' : 'Fondo común'}</span></div>
@@ -2004,7 +2006,7 @@ function pintarGuia() {
   } else if (pasoGuia === 1) {
     cuerpo.innerHTML = `<p class="mm-ayuda">Solo el monto por mes. Dejá vacío el que no tengas.</p>` + GUIA_GASTOS.map((c, i) => {
       const previo = datos.gastos.find(g => g.id === `guia-g${i}`);
-      const fila = `<div class="mm-guia-fila"><label for="gu-g${i}">${esc(c)}</label><input id="gu-g${i}" type="text" inputmode="decimal" autocomplete="off" placeholder="$ por mes" value="${previo ? esc(sinSimbolo(previo.monto, 'ARS')) : ''}" aria-describedby="gu-g-err"></div>`;
+      const fila = `<div class="mm-guia-fila"><label for="gu-g${i}">${esc(c)}</label><input id="gu-g${i}" type="text" inputmode="decimal" autocomplete="off" placeholder="$ por mes" value="${previo ? esc(sinSimbolo(previo.monto, 'ARS')) : ''}" aria-describedby="gu-g-err"${c === 'Suscripciones' && guiaSubs === 'tarjeta' ? ' disabled' : ''}></div>`;
       /* QA v2 · 4: las suscripciones suelen ir con tarjeta: si es así, salen en el resumen y no se cargan aparte */
       return c !== 'Suscripciones' ? fila : `${fila}<div class="mm-chips mm-guia-tj" role="radiogroup" aria-label="¿Cómo pagás las suscripciones?">
         <label class="mm-chip"><input type="radio" name="gu-subs" value="tarjeta"${guiaSubs === 'tarjeta' ? ' checked' : ''}><span>Con tarjeta</span></label>

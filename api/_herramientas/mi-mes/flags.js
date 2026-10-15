@@ -10,15 +10,15 @@ export const FLAGS = {
   preguntas: true,        // 2 · "preguntame solo lo que cambia mi mes"
   finDeCuota: true,       // 3 · lo que se libera va a la meta
   pagoVencido: true,      // resumen ya vencido al importarlo: ¿ya lo pagaste? (ajuste del socio, 15/10)
-  /* tanda 11: se encienden de a una cuando pasan la QA */
-  diaDificil: false,      // (4) saldo de hoy y día por día
-  cambioTarjeta: false,   // (7) cambiar o dejar una tarjeta
+  /* tanda 11: encendidas tras la QA v2 (15/10) y sus arreglos; historia y dondeRinde siguen apagadas */
+  diaDificil: true,       // (4) saldo de hoy y día por día
+  cambioTarjeta: true,    // (7) cambiar o dejar una tarjeta
   historia: false,        // (2) una sola historia por gasto
-  devolver: false,        // (6) plata que te tienen que devolver
-  compartidas: false,     // (8) cuotas compartidas
-  comoPagar: false,       // (9) ¿cómo me conviene pagar esta compra?
-  queCambio: false,       // (3) qué cambió en tu mes desde la última vez
-  gastoEstimado: false,   // (5) gasto fijo estimado hasta que aparece, con monto real y "lo di de baja"
+  devolver: true,         // (6) plata que te tienen que devolver
+  compartidas: true,      // (8) cuotas compartidas
+  comoPagar: true,        // (9) ¿cómo me conviene pagar esta compra?
+  queCambio: true,        // (3) qué cambió en tu mes desde la última vez
+  gastoEstimado: true,    // (5) gasto fijo estimado hasta que aparece, con monto real y "lo di de baja"
   dondeRinde: false,      // B4 · "Dónde puede rendir tu plata": APAGADO hasta el OK legal de Majo
 };
 export function flagsActivos(search = '') {
