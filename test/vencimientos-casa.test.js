@@ -45,11 +45,14 @@ test('casa compartida: de punta a punta', async () => {
   assert.equal(c.body.casa.miembros[0].nombre, 'Majo');
   // invita
   const inv = await post('majo@orbit.test', { accion: 'invitar' });
-  const token = new URL(inv.body.link).searchParams.get('unirse');
+  const token = new URL(inv.body.link).pathname.split('/').pop();
+  assert.match(inv.body.link, /\/casa\/[\w-]+$/);
   assert.ok(token);
   // sin sesión: página para entrar
   const sinSesion = await llamar(pedido(null, { metodo: 'GET', query: { unirse: token } }));
   assert.match(String(sinSesion.body), /Te invitaron a una casa/);
+  assert.match(String(sinSesion.body), /Majo<\/b> te sumó/);
+  assert.match(String(sinSesion.body), /next=%2Fcasa%2F/);
   // con sesión se une, recibe acceso sin comprar y vuelve a la app
   const une = await llamar(pedido('pareja@orbit.test', { metodo: 'GET', query: { unirse: token } }));
   assert.equal(une.location, '/herramientas/vencimientos#casa-unida');
@@ -102,7 +105,7 @@ test('varias casas: una persona puede estar en más de una y salir de una sola',
   assert.equal(g.body.casas.length, 2);
   // invitación a la quinta (b): la pareja entra solo a esa
   const inv = await post('majo@orbit.test', { accion: 'invitar', casa: b.body.casa.id });
-  await llamar(pedido('lu@orbit.test', { metodo: 'GET', query: { unirse: new URL(inv.body.link).searchParams.get('unirse') } }));
+  await llamar(pedido('lu@orbit.test', { metodo: 'GET', query: { unirse: new URL(inv.body.link).pathname.split('/').pop() } }));
   const gl = await llamar(pedido('lu@orbit.test', { metodo: 'GET' }));
   assert.deepEqual(gl.body.casas.map(c => c.id), [b.body.casa.id]);
   // guardar en una casa no toca la otra

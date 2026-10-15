@@ -7,6 +7,10 @@
       "destination": "/api/producto?id=:id"
     },
     {
+      "source": "/casa/:token",
+      "destination": "/api/vencimientos-casa?unirse=:token"
+    },
+    {
       "source": "/propuesta/:id",
       "destination": "/propuesta"
     },

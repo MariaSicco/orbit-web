@@ -8,7 +8,7 @@
    Todas las acciones, salvo crear, llevan `casa` (id); si falta, se usa la primera.
 
    GET                         → { ok, casas: [{ id, rev, doc, miembros, soyDueno, yo }], casa (la primera, por compatibilidad) }
-   GET  ?unirse=<token>        → link de invitación: une a la casa y lleva a la app
+   GET  ?unirse=<token>        → link de invitación (/casa/<token>): une a la casa y lleva a la app
    POST {accion:'crear', doc}  → crea la casa con los datos del teléfono (solo quien compró)
    POST {accion:'guardar', doc, rev} → guarda; 409 con la versión del servidor si cambió
    POST {accion:'invitar'}     → { link } válido 7 días, un solo uso
@@ -67,15 +67,19 @@ function docValido(doc) {
   return JSON.stringify(limpio).length <= MAX_DOC ? limpio : null;
 }
 
-/* Página mínima para quien abre la invitación sin sesión. */
-function paginaEntrar(res) {
+/* Página para quien abre la invitación sin sesión: entra (o crea su cuenta) y vuelve sola al link. */
+const escHtml = t => String(t || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+function paginaEntrar(res, token, { de = '', casa = '' } = {}) {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store');
+  const quien = de ? `<b>${escHtml(de)}</b> te sumó` : 'Te sumaron';
+  const donde = casa ? `a <b>«${escHtml(casa)}»</b>` : 'a su casa';
+  const volver = encodeURIComponent(`/casa/${token}`);
   return res.status(200).send(`<!doctype html><html lang="es-AR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Te invitaron a una casa · Orbit</title>
-<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F2EFE8;color:#0D0D0E;font:16px/1.5 system-ui,sans-serif;padding:24px}main{max-width:380px;text-align:center}h1{font-size:30px;line-height:1;letter-spacing:-.03em;text-transform:uppercase;margin:0 0 12px}ol{text-align:left;padding-left:20px}a{display:inline-block;margin-top:12px;background:#3047FF;color:#F2EFE8;padding:14px 22px;border-radius:14px;font-weight:600;text-decoration:none}small{display:block;color:#5E5C57;margin-top:14px}</style></head>
-<body><main><h1>Te invitaron a una casa</h1><p>Alguien te sumó a su casa en <b>Vencimientos de la Casa</b>, para ver y marcar juntos lo que vence.</p>
-<ol><li>Entrá con tu cuenta de Orbit, o creala gratis.</li><li>Volvé a tocar el link que te mandaron.</li></ol>
-<a href="/acceso">Entrar o crear mi cuenta</a><small>La invitación vale ${DIAS_INVITACION} días.</small></main></body></html>`);
+<style>body{margin:0;min-height:100vh;display:grid;place-items:center;background:#F2EFE8;color:#0D0D0E;font:16px/1.5 system-ui,sans-serif;padding:24px}main{max-width:380px;text-align:center}h1{font-size:30px;line-height:1;letter-spacing:-.03em;text-transform:uppercase;margin:0 0 12px}a{display:inline-block;margin-top:16px;background:#3047FF;color:#F2EFE8;padding:14px 22px;border-radius:14px;font-weight:600;text-decoration:none}small{display:block;color:#5E5C57;margin-top:14px}</style></head>
+<body><main><h1>Te invitaron a una casa</h1><p>${quien} ${donde} en <b>Vencimientos de la Casa</b>, para ver juntos lo que vence y quién pagó qué.</p>
+<p>Entrá con tu cuenta de Orbit o creala gratis: después volvés solo a la casa.</p>
+<a href="/acceso?next=${volver}">Entrar y sumarme</a><small>La invitación vale ${DIAS_INVITACION} días.</small></main></body></html>`);
 }
 
 export default async function handler(req, res) {
@@ -122,9 +126,10 @@ export default async function handler(req, res) {
     if (accion === 'invitar') {
       if (casa.miembros.length >= MAX_MIEMBROS) return responder(res, 409, { ok: false, error: `Una casa puede tener hasta ${MAX_MIEMBROS} personas.` });
       const token = newToken();
-      await kvSet(kInvitacion(token), { casa: casa.id, de: email }, DIAS_INVITACION * 86400);
       const base = `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
-      return responder(res, 200, { ok: true, link: `${base}/api/vencimientos-casa?unirse=${token}`, dias: DIAS_INVITACION });
+      const de = casa.miembros.find(m => m.email === email)?.nombre || '';
+      await kvSet(kInvitacion(token), { casa: casa.id, de: email, deNombre: de }, DIAS_INVITACION * 86400);
+      return responder(res, 200, { ok: true, link: `${base}/casa/${token}`, dias: DIAS_INVITACION, casa: casa.doc?.config?.nombreCasa || '', de });
     }
     if (accion === 'nombre') {
       const m = casa.miembros.find(x => x.email === email);
@@ -171,9 +176,12 @@ async function sacarDeCasa(email, casaId) {
 
 async function unirseConLink(req, res, token) {
   const s = readSession(req);
-  if (!s) return paginaEntrar(res);
-  const email = s.email;
   const inv = await kvGet(kInvitacion(token));
+  if (!s) {
+    const c = inv ? await kvGet(kCasa(inv.casa)) : null;
+    return paginaEntrar(res, token, { de: inv?.deNombre || '', casa: c?.doc?.config?.nombreCasa || '' });
+  }
+  const email = s.email;
   const volver = motivo => { res.setHeader('Cache-Control', 'no-store'); return res.redirect(302, `/herramientas/vencimientos#casa-${motivo}`); };
   if (!inv) return volver('vencida');
   const casa = await kvGet(kCasa(inv.casa));

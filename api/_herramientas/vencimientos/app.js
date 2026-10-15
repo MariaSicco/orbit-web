@@ -195,14 +195,23 @@ function seccionCasa() {
     <button type="button" class="bt peligro ancho" data-acc="casa-salir">${ui.borrarArmado === 'casa' ? '¿Seguro? Tocá de nuevo' : casa.soyDueno ? 'Dejar de compartir' : 'Salir de esta casa'}</button></div>
     <p class="leyenda">${casa.soyDueno ? 'Si dejás de compartir, cada persona se queda con su copia en el teléfono.' : 'Si salís, te quedás con una copia en este teléfono.'}</p></div>`;
 }
+let invitacion = null;
 async function invitarACasa() {
   const { r, j } = await pedirCasa({ accion: 'invitar', casa: casa.id }).catch(() => ({ r: { ok: false }, j: {} }));
   if (!r.ok) { toast(j.error || 'No pudimos crear la invitación. Probá de nuevo.'); return; }
-  const texto = `Te sumo a ${d.config?.nombreCasa ? `«${d.config.nombreCasa}»` : 'nuestra casa'} en Vencimientos de la Casa, para ver juntos lo que vence y quién pagó qué: ${j.link}`;
-  if (navigator.share) { try { await navigator.share({ text: texto }); return; } catch (e) { if (e?.name === 'AbortError') return; } }
-  abrir('Invitar a la casa', `<p class="leyenda" style="margin-top:0">Mandale este link. Vale ${j.dias} días y sirve para una persona.</p><pre class="compartir">${esc(j.link)}</pre>
-    <div class="acciones"><a class="bt prim ancho" href="https://wa.me/?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">Mandar por WhatsApp</a>
-    <button type="button" class="bt sec ancho" data-acc="copiar-link" data-t="${esc(j.link)}">Copiar el link</button></div>`);
+  const nombre = d.config?.nombreCasa || j.casa || '';
+  const texto = `Te sumo a ${nombre ? `«${nombre}»` : 'nuestra casa'} en Vencimientos de la Casa, así vemos juntos lo que vence y quién pagó qué. Entrá acá: ${j.link}`;
+  invitacion = { link: j.link, texto, nombre };
+  abrir('Invitar a la casa', `<p class="leyenda" style="margin-top:0">Mandale este link a quien quieras sumar. Vale ${j.dias} días y sirve para una persona: para sumar a otra, generá otro.</p>
+    <div class="invita-link"><span>${esc(j.link.replace(/^https?:\/\//, ''))}</span></div>
+    <div class="acciones"><a class="bt prim ancho" href="https://wa.me/?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener"><svg><use href="#i-compartir"/></svg> Mandar por WhatsApp</a>
+    <button type="button" class="bt sec ancho" data-acc="copiar" data-t="${esc(texto)}">Copiar el mensaje con el link</button>
+    ${navigator.share ? '<button type="button" class="bt sec ancho" data-acc="invitar-compartir">Otras apps…</button>' : ''}</div>`);
+}
+async function compartirInvitacion() {
+  if (!invitacion) return;
+  try { await navigator.share({ title: `Sumate a ${invitacion.nombre || 'la casa'}`, text: invitacion.texto.replace(` Entrá acá: ${invitacion.link}`, ''), url: invitacion.link }); }
+  catch (e) { if (e?.name !== 'AbortError') toast('No se pudo abrir. Usá WhatsApp o copiá el link.'); }
 }
 
 /* ── tus casas ── */
@@ -1675,6 +1684,7 @@ document.addEventListener('click', e => {
     case 'entrar': cerrarEntrada(); break;
     case 'compartir': compartirMes(); break;
     case 'casa-invitar': invitarACasa(); break;
+    case 'invitar-compartir': compartirInvitacion(); break;
     case 'casas': ui.borrarArmado = null; abrirCasas(); break;
     case 'radar': abrirRadar(Number(b.dataset.i)); break;
     case 'radar-todo': abrirRadarTodo(); break;
