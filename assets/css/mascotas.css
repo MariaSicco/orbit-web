@@ -1556,3 +1556,11 @@ input.sug{border-style:dashed;border-color:var(--act);background:var(--act-soft)
 @media(min-width:1024px){body[data-shell="app"] .top{max-width:1640px;padding-left:48px;padding-right:48px}}
 /* el avatar de escritorio: .desk-only lo pasa a flex y la inicial quedaba corrida a la izquierda */
 @media(min-width:1024px){.me.desk-only{justify-content:center;align-items:center}}
+/* v37: bienvenida de la primera vez, con el logo antes del alta */
+.first-brand{display:flex;align-items:center;gap:12px;margin:8px 0 22px}
+.first-brand svg{width:64px;height:64px;flex:none}
+.first-word{font:800 32px/1 var(--f);letter-spacing:-.04em;color:#6B1A35}
+.first-by{font:600 11px/1 var(--f);letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);padding-top:10px}
+.first-h2{font:800 20px/1.2 var(--f);letter-spacing:-.02em;margin:26px 0 4px}
+.first-sub{color:var(--ink2);margin:0 0 6px}
+.first-note{color:var(--ink2);font-size:13px;text-align:center;margin:10px 0 0}

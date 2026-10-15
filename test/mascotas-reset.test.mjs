@@ -173,12 +173,12 @@ test('en producción: 403 y sin botón para quien no es admin; la admin sí pued
   } finally { delete process.env.VERCEL_ENV; delete process.env.ADMIN_EMAILS; }
 });
 
-test('la app: el botón sale solo si el servidor lo habilita, con BORRAR y botón rojo, y vuelve al alta', () => {
+test('la app: el botón sale solo si el servidor lo habilita, con BORRAR y botón rojo, y vuelve a la bienvenida', () => {
   const src = readFileSync(new URL('../assets/js/mascotas-app.js', import.meta.url), 'utf8');
   assert.match(src, /resetOk = Boolean\(d\.reset\)/);
   assert.match(src, /\$\{resetOk \? resetSection\(\) : ''\}/);
   assert.match(src, /Borrar todo y empezar de cero/);
   assert.match(src, /btn big wide orange" id="rsYes" disabled/);
   assert.match(src, /fetch\('\/api\/mascotas\?reset=1'/);
-  assert.match(src, /startOnboard\(\);\s*toast\('Listo, Mimitos quedó vacía/);
+  assert.match(src, /ob = null; go\('inicio'\);\s*toast\('Listo, Mimitos quedó vacía/);
 });

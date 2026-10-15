@@ -1102,7 +1102,7 @@ function go(name, arg) { const h = '#/' + name + (arg ? '/' + encodeURIComponent
 window.addEventListener('hashchange', () => { route = parseHash(); if (dPanel.open) dPanel.close(); mailRoute(); render(); window.scrollTo(0, 0); if (route.name === 'preguntar' && mode === 'full') askLoadLeft(); });
 function drawNav() {
   const tab = TAB_OF[route.name] || route.name;
-  nav.innerHTML = `<a class="brand side-only" href="#/inicio" aria-label="Mimitos, inicio">${HEART}<b>mimitos</b><span class="by">by Orbit</span></a>
+  nav.innerHTML = `<a class="brand side-only" href="#/inicio" aria-label="Mimitos, inicio">${heart()}<b>mimitos</b><span class="by">by Orbit</span></a>
     <button type="button" class="nav-add side-only" data-act="add">${I('plus')}<span>Cargar algo</span></button>
     <div class="nav-items">${PILL.map(k => k === '+' ? `<button type="button" class="nav-plus" data-act="add" aria-label="Cargar algo"><span class="np-c">${I('plus')}</span><span class="np-l" aria-hidden="true">Cargar</span></button>` : (([kk, ic, l]) => `<a href="#/${kk}" class="nav-i" aria-label="${l}" ${tab === kk ? 'aria-current="page"' : ''}>${I(ic)}<span>${l}</span></a>`)(TABS.find(t => t[0] === k))).join('')}<a href="#/cuenta" class="nav-i side-only" ${tab === 'cuenta' ? 'aria-current="page"' : ''}>${I('user')}<span>Cuenta</span></a></div>
     <div class="side-only side-pets">${doc.pets.length ? `<span class="eyebrow">Tus mascotas</span>${doc.pets.map(p => `<button type="button" class="side-pet" data-act="pick" data-id="${p.id}" ${p.id === curPet()?.id ? 'aria-current="true"' : ''}>${avatar(p)}<span>${esc(p.name)}</span></button>`).join('')}<button type="button" class="side-pet add" data-act="newPet">${I('plus')}<span>Agregar mascota</span></button>` : ''}</div>`;
@@ -1147,6 +1147,8 @@ function drawTop(bare) {
 }
 const greet = () => { const h = new Date().getHours(); return h < 6 ? 'Buenas noches' : h < 13 ? 'Buen día' : h < 20 ? 'Buenas tardes' : 'Buenas noches'; };
 const HEART = '<svg viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="mzlogo-c"><rect width="64" height="64" rx="16"/></clipPath></defs><g clip-path="url(#mzlogo-c)"><rect width="64" height="64" fill="#F8C8D8"/></g><g transform="translate(7 7) scale(.78)"><defs><mask id="mzlogo-k" maskUnits="userSpaceOnUse" x="-6" y="-6" width="76" height="76"><rect x="-6" y="-6" width="76" height="76" fill="#fff"/><path d="M40.6 19.2C47 14.6 56.2 14.8 60.4 21.1 63 25.1 62.8 32.6 60.6 37 59.1 40 55.5 40.2 54.3 37L52.9 32.6C51.5 27.7 47.6 22.8 40.6 19.2Z" fill="#000" stroke="#000" stroke-width="3.4" stroke-linejoin="round"/></mask></defs><g transform="translate(-2.4 0)"><g mask="url(#mzlogo-k)"><path d="M12.5 52V32a9.75 9.75 0 0 1 19.5 0v20M32 32a9.75 9.75 0 0 1 19.5 0v20" fill="none" stroke="#6B1A35" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 31 10.2 9 23.2 18.8Z" fill="#6B1A35" stroke="#6B1A35" stroke-width="3.2" stroke-linejoin="round"/></g><path d="M40.6 19.2C47 14.6 56.2 14.8 60.4 21.1 63 25.1 62.8 32.6 60.6 37 59.1 40 55.5 40.2 54.3 37L52.9 32.6C51.5 27.7 47.6 22.8 40.6 19.2Z" fill="#6B1A35"/></g></g></svg>';
+let heartN = 0;
+const heart = () => HEART.replace(/mzlogo-/g, `mzl${++heartN}-`);
 window.addEventListener('scroll', () => $('.top').classList.toggle('scrolled', window.scrollY > 4), { passive: true });
 
 /* ---------- render ---------- */
@@ -1282,16 +1284,20 @@ async function relogin() { try { await fetch('/api/auth/logout', { method: 'POST
 function renderFirst() {
   const tabName = TABS.find(t => t[0] === (TAB_OF[route.name] || route.name))?.[2];
   if (route.name !== 'inicio' && tabName) return `<section class="empty" style="margin-top:8px">${bubble(TABS.find(t => t[2] === tabName)[1], 'salud')}<h2>${tabName} se arma con tu mascota</h2><p>Primero cargá a tu mascota. Después acá vas a ver ${{ Libreta: 'su libreta sanitaria completa', Agenda: 'todas las fechas que le tocan', Gastos: 'cuánto gastás por mes' }[tabName] || 'su información'}.</p><button class="btn" data-act="newPet">${I('plus')} Agregar a mi mascota</button></section>`;
+  /* la primera pantalla de todas: el logo, qué es Mimitos y recién después el alta */
   return `<section class="first">
-    <span class="eyebrow">${me.name ? 'Hola, ' + esc(me.name.split(' ')[0]) : 'Bienvenida, bienvenido'}</span>
-    <h1>Empecemos por tu mascota</h1>
-    <p class="lead">En menos de un minuto tenés su libreta armada y sabés cuándo le toca la próxima vacuna.</p>
+    <div class="first-brand">${heart()}<span class="first-word">mimitos</span><span class="first-by">by Orbit</span></div>
+    <span class="eyebrow">${me.name ? 'Hola, ' + esc(me.name.split(' ')[0]) : 'Te damos la bienvenida'}</span>
+    <h1>La app de tu mascota</h1>
+    <p class="lead">Su libreta sanitaria, sus avisos y su historia, en un solo lugar. Te avisamos antes de cada vacuna, pipeta o control, y si se pierde, su QR te avisa a vos.</p>
+    <h2 class="first-h2">Empecemos por tu mascota</h2>
+    <p class="first-sub">En menos de un minuto tenés su libreta armada y sabés cuándo le toca la próxima vacuna.</p>
     <ol class="steps3">
       <li><span class="n">1</span><span><b>Nombre, especie y foto</b><small>La foto va en la tapa de su libreta.</small></span></li>
       <li><span class="n">2</span><span><b>Su última vacuna</b><small>La copiás de la libreta del veterinario o le sacás una foto.</small></span></li>
       <li><span class="n">3</span><span><b>Calendario sugerido</b><small>Fechas de referencia que confirmás con tu veterinario.</small></span></li>
     </ol>
-    <button class="btn big wide" data-act="newPet">${I('plus')} Agregar a mi mascota</button>
+    <button class="btn big wide" data-act="newPet">Empezar</button>
   </section>`;
 }
 
@@ -1802,7 +1808,7 @@ function passport(p, print = false) {
   const f = [['Nacimiento', p.birth ? dd(p.birth) : '—'], ['Sexo', p.sex === 'h' ? 'Hembra' : p.sex === 'm' ? 'Macho' : '—'], ['Especie', Z.species(p)], [p.chip ? 'Microchip' : 'ID Mimitos', id]];
   const band = `Libreta sanitaria · Actualizada el ${upd} · `;
   return `<div class="passport" style="--hero:${hueOf(p)[0]}">
-    <div class="pp-top"><span class="pp-k">${HEART}Pasaporte</span><span class="pp-id num">N.º ${esc(id)}</span></div>
+    <div class="pp-top"><span class="pp-k">${heart()}Pasaporte</span><span class="pp-id num">N.º ${esc(id)}</span></div>
     <div class="pp-body">
       <div class="pp-photo">${img ? `<img src="${esc(img)}" alt="Foto de ${esc(p.name)}">` : Z.petIcon(p)}</div>
       <dl>${f.map(([k, v]) => `<div><dt>${k}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
@@ -1812,7 +1818,7 @@ function passport(p, print = false) {
   </div>`;
 }
 function coverPage(p) {
-  return `${passport(p)}<span class="mark">${HEART}mimitos <small>by Orbit</small></span>`;
+  return `${passport(p)}<span class="mark">${heart()}mimitos <small>by Orbit</small></span>`;
 }
 function coverPageOld(p) {
   const meta = [Z.species(p), p.breed].filter(Boolean).join(' · ');
@@ -1820,7 +1826,7 @@ function coverPageOld(p) {
     <span class="kicker">Libreta sanitaria</span>
     <div class="photo">${p.photo ? `<img src="${esc(p.photo)}" alt="Foto de ${esc(p.name)}">` : Z.petIcon(p)}</div>
     <div><div class="pname">${esc(p.name)}</div><div class="pmeta">${esc(meta)}</div></div>
-    <span class="mark">${HEART}mimitos <small>by Orbit</small></span>`;
+    <span class="mark">${heart()}mimitos <small>by Orbit</small></span>`;
 }
 function bookHtml(p) {
   const pages = libPages(p), total = pages.length;
@@ -2147,7 +2153,7 @@ function resetPanel() {
     ask.turns = []; ask.error = null; ask.pending = ''; askStore.clear(); gm = null;
     (FEAT.hooks.afterReset || []).forEach(fn => fn());
     setSave(''); dPanel.close(); loadMail();
-    startOnboard();
+    ob = null; go('inicio');
     toast('Listo, Mimitos quedó vacía. Empezá por tu mascota.');
   };
 }
