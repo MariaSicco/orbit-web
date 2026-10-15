@@ -365,8 +365,9 @@ const hm = d => new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/
    Solo transcribe: no interpreta, no diagnostica, no completa valores que no se leen. */
 const STUDY_PROMPT = `Sos un asistente que ordena estudios veterinarios (análisis, ecografías, radiografías) de mascotas de Argentina.
 Leé el documento y devolvé SOLO un JSON con esta forma:
-{"date":"AAAA-MM-DD","kind":"sangre|orina|materia|rx|eco|otro","title":"","lab":"","summary":"","confidence":"alta|media|baja","warnings":[""]}
+{"date":"AAAA-MM-DD","kind":"sangre|orina|materia|rx|eco|otro","title":"","lab":"","summary":"","confidence":"alta|media|baja","warnings":[""],"records":[{"type":"vacuna|desparasitacion","name":"","product":"","date":"AAAA-MM-DD","next":"AAAA-MM-DD","vet":""}]}
 Reglas:
+- "records": si el documento es un certificado o sticker de vacunación o de desparasitación, o una página de la libreta sanitaria, listá cada aplicación que figure (nombre de la vacuna o del antiparasitario, marca o producto, fecha de aplicación, próxima dosis si está escrita y veterinario). Si no hay ninguna, dejá la lista vacía. No inventes fechas: si no se leen, dejalas vacías y avisalo en "warnings".
 - "date": la fecha en que se hizo el estudio, tal como figura (convertí DD/MM/AA a AAAA-MM-DD). Si no figura o no se lee, dejala vacía. No la inventes.
 - "kind": sangre (hemograma, bioquímica, perfil), orina, materia (coproparasitológico), rx (radiografía), eco (ecografía), otro.
 - "title": el nombre del estudio como figura, corto (por ejemplo "Hemograma y bioquímica", "Ecografía abdominal").
@@ -397,6 +398,8 @@ async function scanStudy(buf, type, pets, pages = 1) {
     date: day(j.date), kind: pick(j.kind, ['sangre', 'orina', 'materia', 'rx', 'eco', 'otro'], 'otro'), title: str(j.title, 120), lab: str(j.lab, 80),
     summary: str(j.summary, 600), confidence: pick(j.confidence, ['alta', 'media', 'baja'], 'media'),
     warnings: (Array.isArray(j.warnings) ? j.warnings : []).map(w => str(w, 200)).filter(Boolean).slice(0, 4),
+    /* vacunas y antiparasitarios que figuran (certificado, sticker o página de libreta): la app los ofrece para la libreta */
+    records: (Array.isArray(j.records) ? j.records : []).slice(0, 20).map(x => ({ type: pick(x?.type, ['vacuna', 'desparasitacion'], 'vacuna'), name: str(x?.name, 80), product: str(x?.product, 80), date: day(x?.date), next: day(x?.next), vet: str(x?.vet, 80) })).filter(x => x.name && (x.date || x.next)),
     ...(pets?.length ? { pet: { name: str(j.pet?.name, 60), species: str(j.pet?.species, 30), breed: str(j.pet?.breed, 60) } } : {}),
   };
 }

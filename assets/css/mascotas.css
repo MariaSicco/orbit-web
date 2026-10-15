@@ -1588,3 +1588,7 @@ body[data-first="steps"] .top{background:var(--bg)}
 .scan-pet-row .f{margin:0}
 .scan-pet-row input,.scan-pet-row select{width:100%}
 @media(max-width:420px){.warn-list li{grid-template-columns:auto minmax(0,1fr)}.warn-list li .btn{grid-column:2;justify-self:start}}
+/* v41: un archivo que trae vacunas o antiparasitarios ofrece cargarlos en la libreta (destacado, arriba de "guardar el archivo") */
+.bk-lib{background:#E8F4EC;border-radius:16px;padding:10px 12px}
+.bk-lib .toggle span b{display:block}
+.bk-lib .toggle small{display:block;margin-top:4px;color:var(--ink2);line-height:1.45}

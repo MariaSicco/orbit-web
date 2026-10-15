@@ -2586,7 +2586,8 @@ function renderBulk() {
         <div class="f"><label for="${id}_lab">Laboratorio o veterinaria <span class="opt">(opcional)</span></label><input id="${id}_lab" maxlength="80" value="${esc(d.lab)}"></div></div>
         <div class="f"><label for="${id}_sum">Qué dice <span class="opt">(resumen, sin interpretar)</span></label><textarea id="${id}_sum" maxlength="600" rows="3">${esc(d.summary)}</textarea></div>
         ${bulk.source === 'mail' && doc.pets.length > 1 ? petPick(it, id) : ''}
-        <label class="toggle"><input type="checkbox" id="${id}_keep" ${it.keep ? 'checked' : ''}><span><b>Guardar este estudio</b></span></label>` : ''}
+        ${d.records?.length ? `<div class="bk-lib"><label class="toggle"><input type="checkbox" id="${id}_lib" ${it.toLib !== false ? 'checked' : ''}><span><b>Cargar en la libreta ${d.records.length === 1 ? 'esta aplicación' : `estas ${d.records.length} aplicaciones`}</b><small>${d.records.map(r => `${esc(r.name)}${r.date ? ' · ' + fmt(r.date) : ''}${r.next ? ' · próxima ' + fmt(r.next) : ''}`).join('<br>')}</small></span></label></div>` : ''}
+        <label class="toggle"><input type="checkbox" id="${id}_keep" ${it.keep ? 'checked' : ''}><span><b>Guardar ${d.records?.length ? 'también el archivo en el historial' : 'este estudio'}</b></span></label>` : ''}
     </article>`;
   };
   return `<section class="sec bulk">
@@ -2599,15 +2600,19 @@ function renderBulk() {
     ${bulk.queued ? `<p class="bk-msg" role="status">${esc(bulk.queued)}</p>` : ''}
     ${aiLeftNote()}
     <p class="note">${HIST_NOTE} Cada archivo leído cuenta como una importación inteligente: uso personal razonable, incluido por 12 meses.</p>
-    ${working ? '' : `<p class="err-msg" id="bkErr" role="alert" hidden></p><button class="btn big wide" data-act="bulkSave"${keep ? '' : ' disabled'}>Guardar ${keep} ${keep === 1 ? 'estudio' : 'estudios'} en su historial</button>`}
+    ${working ? '' : `<p class="err-msg" id="bkErr" role="alert" hidden></p><button class="btn big wide" data-act="bulkSave"${keep || bulk.items.some(x => x.data.records?.length) ? '' : ' disabled'}>${bulk.items.some(x => x.data.records?.length) ? 'Guardar' : `Guardar ${keep} ${keep === 1 ? 'estudio' : 'estudios'} en su historial`}</button>`}
   </section>`;
 }
 function saveBulk() {
   const p = petById(bulk?.petId); if (!p) return;
   const out = [], v = id => ($('#' + id)?.value || '').trim();
   const err = (t, el) => { const e = $('#bkErr'); e.hidden = false; e.textContent = t; el?.focus(); };
+  const libs = [];
   for (const it of bulk.items) {
-    const id = 'bk' + it.i; if (!it.ref || !$('#' + id + '_keep')?.checked) continue;
+    const id = 'bk' + it.i;
+    /* vacunas o antiparasitarios leídos del archivo: van a la libreta (aunque el archivo no se guarde en el historial) */
+    if (it.data.records?.length && $('#' + id + '_lib')?.checked) libs.push({ to: $('#' + id + '_pet') ? petById(v(id + '_pet')) : p, recs: it.data.records });
+    if (!it.ref || !$('#' + id + '_keep')?.checked) continue;
     const date = v(id + '_date');
     if (!date) return err(`Falta la fecha de "${it.name}". Si no figura, poné una aproximada.`, $('#' + id + '_date'));
     /* desde Gmail cada estudio puede ir a una mascota distinta */
@@ -2616,12 +2621,15 @@ function saveBulk() {
     const kind = v(id + '_kind') || 'otro';
     out.push({ to, st: { id: uid(), date, kind, title: v(id + '_title') || Z.STUDY[kind], lab: v(id + '_lab'), notes: v(id + '_sum'), files: [it.ref] } });
   }
-  if (!out.length) return;
+  const nLib = libs.reduce((a, x) => a + (x.to ? x.recs.length : 0), 0);
+  if (!out.length && !nLib) return;
+  for (const x of libs) if (x.to) for (const r of x.recs) x.to.records.push(normRec({ id: uid(), type: r.type, name: r.name, date: r.date, next: r.next, vet: r.vet, lot: r.product || '', notes: '' }));
   for (const x of out) x.to.studies.push(x.st);
-  const pets = [...new Set(out.map(x => x.to))];
+  const pets = [...new Set([...out.map(x => x.to), ...libs.map(x => x.to).filter(Boolean)])];
   if (pets.length === 1) selectPet(pets[0].id);
-  bulk = null; ui.lib.jumpSec = 'hist'; setRoute('libreta'); changed(); window.scrollTo(0, 0);
-  toast(`${out.length} ${out.length === 1 ? 'estudio guardado' : 'estudios guardados'} en ${pets.length === 1 ? `el historial de ${pets[0].name}` : 'sus historiales'}.`);
+  bulk = null; ui.lib.jumpSec = nLib && !out.length ? '' : 'hist'; setRoute('libreta'); changed(); window.scrollTo(0, 0);
+  const who = pets.length === 1 ? ` de ${pets[0].name}` : '';
+  toast([nLib ? `${nLib} ${nLib === 1 ? 'aplicación cargada' : 'aplicaciones cargadas'} en la libreta${who}` : '', out.length ? `${out.length} ${out.length === 1 ? 'archivo guardado' : 'archivos guardados'} en el historial${nLib ? '' : who}` : ''].filter(Boolean).join(' y ') + '.');
 }
 
 /* ---------- Conectar tu mail (Gmail u Outlook): busca estudios y los trae por el mismo motor (api/_lib/petmail.js) ----------
