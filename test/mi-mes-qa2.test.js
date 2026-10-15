@@ -75,3 +75,21 @@ test('[QA2 · 2] pagué el total: octubre cuenta el total y no hay deuda; todav�
   assert.equal(M.resumenMes(no, '2026-10').totResumenes, 0);
   assert.equal(M.resumenMes(no, '2026-11').financiados[0].saldo, total);
 });
+
+/* ── QA v2 · 3: la percepción no se estima otra vez si el resumen ya la trae ── */
+test('[QA2 · 3] resumen con "DB.RG 5617" cobrado: el mes siguiente no suma otra percepción', () => {
+  const E = M.validarLectura(fixture('dolares-rg5617')).lectura;
+  assert.ok(E.cargos.some(c => c.tipo === 'percepcion' && c.monto > 0), 'el fixture trae la percepción cobrada');
+  const r = M.importarResumen(M.datosVacios(), E, { nuevoId: () => 'p' + Math.random().toString(36).slice(2, 8) });
+  assert.equal(M.percepcionEstimada(r.datos.resumenes[0], r.datos), 0);
+  assert.deepEqual(M.resumenMes(r.datos, '2026-11').percepciones, []);
+  assert.equal(M.creditoTotal(r.datos, '2026-10-01').percepcion, 0);
+});
+test('[QA2 · 3] sin percepción cobrada: se estima para el saldo en US$ de ESE resumen, en el siguiente, y se va con el real', () => {
+  const E = M.validarLectura(fixture('dolares-rg5617')).lectura;
+  E.cargos = E.cargos.filter(c => c.tipo !== 'percepcion');
+  const r = M.importarResumen(M.datosVacios(), E, { nuevoId: () => 'p' + Math.random().toString(36).slice(2, 8) });
+  const usd = r.datos.resumenes[0].totales.USD;
+  assert.equal(M.resumenMes(r.datos, '2026-11').percepciones[0].monto, Math.round(M.aPesos(usd, 'USD', r.datos) * 0.3));
+  assert.deepEqual(M.resumenMes(r.datos, '2026-12').percepciones, [], 'una sola vez');
+});

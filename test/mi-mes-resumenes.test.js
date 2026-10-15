@@ -83,8 +83,8 @@ test('cuotas a vencer: el mes de la tabla es el del cierre; se paga con el venci
 test('escalera: usa la tabla del banco para esos meses y la cruza con la proyección propia', () => {
   const coherente = importar('dolares-rg5617');
   const e1 = M.escalera(coherente.datos, '2026-11', 4);
-  // noviembre suma la percepción estimada de los US$ 55 de octubre al oficial por defecto: 55 × 1.535 × 30 % = 25.327,50
-  assert.deepEqual(e1.filas.map(f => f.total / 100), [120_000 + 25_327.5, 120_000, 120_000, 120_000]);
+  // QA v2 · 3: octubre ya trae la percepción cobrada, así que noviembre no estima otra
+  assert.deepEqual(e1.filas.map(f => f.total / 100), [120_000, 120_000, 120_000, 120_000]);
   assert.deepEqual(e1.filas.map(f => f.delBanco.length > 0), [true, true, true, false]);
   assert.deepEqual(e1.diferencias, [], 'la tabla y la proyección coinciden');
   assert.equal(e1.mesLibre, '2027-10', 'cuota 1/12 de septiembre: la última se paga en septiembre 2027');

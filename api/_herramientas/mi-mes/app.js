@@ -749,6 +749,8 @@ function pintarContraste(r, cred) {
 
 /* Si el resumen tiene saldo en otra moneda: lo que cobra de percepción el siguiente si se paga en pesos */
 function lineaPercepcion(res) {
+  const cobrada = (res.cargos || []).filter(c => c.tipo === 'percepcion' && c.monto > 0).reduce((a, c) => a + (aPesos(c.monto, c.moneda || 'ARS', datos) ?? 0), 0);
+  if (cobrada) return `<p class="mm-cargos-linea">Este resumen ya trae la percepción del 30 % (<b>${esc($(cobrada))}</b>): no sumamos otra estimada.</p>`;
   const p = percepcionEstimada(res, datos);
   if (!p) return '';
   const ext = Object.entries(res.totales || {}).filter(([m, v]) => m !== 'ARS' && v > 0).map(([m, v]) => fm(v, m)).join(' y ');

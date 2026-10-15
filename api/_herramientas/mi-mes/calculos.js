@@ -177,6 +177,8 @@ export const PERCEPCION_RG5617 = 0.30;
 /* Percepción que el resumen siguiente va a cobrar en pesos si el saldo en
    moneda extranjera de este resumen se paga con pesos (al oficial). */
 export function percepcionEstimada(resumen, datos) {
+  /* QA v2 · 3: si el resumen ya trae la percepción cobrada (DB.RG 5617), no se estima otra vez */
+  if ((resumen?.cargos || []).some(c => c.tipo === 'percepcion' && c.monto > 0)) return 0;
   let base = 0;
   for (const [m, v] of Object.entries(resumen?.totales || {})) {
     if (m === 'ARS' || v <= 0) continue;

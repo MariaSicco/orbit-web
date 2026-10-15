@@ -36,10 +36,10 @@ test('noviembre: manda la tabla del banco y la compra nueva se suma aparte', () 
   const nov = M.resumenMes(d, '2026-11');
   assert.deepEqual(nov.delBanco.map(x => x.monto), [$(120_000)]);
   assert.equal(nov.totNuevas, $(30_000));
-  // + percepción estimada por los US$ 55 de octubre pagados en pesos: 55 × 2.000 × 30 % = 33.000
-  assert.deepEqual(nov.percepciones.map(p => [p.monto, p.estimado]), [[$(33_000), true]]);
-  assert.equal(nov.totTarjetas, $(150_000) + $(33_000));
-  assert.equal(nov.totAnteriores, $(120_000) + $(33_000));
+  // QA v2 · 3: el resumen de octubre ya trae la percepción cobrada: no se estima otra
+  assert.deepEqual(nov.percepciones, []);
+  assert.equal(nov.totTarjetas, $(150_000));
+  assert.equal(nov.totAnteriores, $(120_000));
   assert.equal(nov.dentroDeResumen.length, 1, 'la cuota detectada no se cuenta dos veces');
 });
 test('crédito por tarjeta: resumen sin vencer + cuotas que vienen (tabla) + compras nuevas', () => {
@@ -48,7 +48,7 @@ test('crédito por tarjeta: resumen sin vencer + cuotas que vienen (tabla) + com
   assert.equal(c.resumen, $(507_130) + $(110_000), 'US$ 55 a 2.000');
   assert.equal(c.futuras, $(120_000) * 3 + $(960_000), 'nov, dic, ene y "a partir de"');
   assert.equal(c.nuevas, 0);
-  assert.equal(c.percepcion, $(33_000), 'percepción estimada del resumen siguiente');
+  assert.equal(c.percepcion, 0, 'QA v2 · 3: el resumen ya trae la percepción cobrada');
   assert.equal(c.total, c.resumen + c.futuras + c.percepcion);
   // vencido el resumen, el saldo ya no se debe (se pagó) y las cuotas que vienen siguen
   assert.equal(M.creditoTarjeta(d, tarjeta, '2026-10-20').resumen, 0);
@@ -85,7 +85,7 @@ test('alerta principal: mes a mes, cuando lo que vence supera la plata líquida,
   const b = M.alertasCredito(d, '2026-10-05', 6);
   const nov = b.find(x => x.mes === '2026-11');
   assert.equal(nov.nivel, 'aviso');
-  assert.deepEqual([nov.anteriores, nov.nuevas], [$(120_000) + $(33_000), $(30_000) + $(700_000)]);
+  assert.deepEqual([nov.anteriores, nov.nuevas], [$(120_000), $(30_000) + $(700_000)]);
   assert.match(nov.texto, /viene de antes .* compras nuevas/);
   assert.deepEqual(M.mesesCreditoSupera(d, '2026-10-05'), ['2026-10', '2026-11', '2026-12']);
   d.alertasVistas = ['credito:2026-11'];
@@ -213,7 +213,7 @@ test('[QA 4] dólares sin doble conteo: el saldo en US$ al oficial y la percepci
   const oct = M.resumenMes(d, '2026-10');
   assert.equal(oct.totTarjetas, $(507_130) + $(55) * 1_535, 'octubre: el total en pesos (que ya trae su percepción) + US$ 55 al oficial, sin otro 30 %');
   const nov = M.resumenMes(d, '2026-11');
-  assert.equal(nov.percepciones[0].monto, Math.round($(55) * 1_535 * 0.3), 'noviembre: la percepción de esos US$, una vez y marcada estimada');
+  assert.deepEqual(nov.percepciones, [], 'QA v2 · 3: el resumen ya trae la percepción cobrada: noviembre no estima otra');
   // llega el resumen de noviembre con la percepción real: la estimada desaparece
   const sig = structuredClone(E);
   sig.vencimiento = '2026-11-11'; sig.cuotasAVencer = []; sig.totales = { ARS: $(30_000) };
