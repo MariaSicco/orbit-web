@@ -594,3 +594,25 @@ fieldset.mm-campo>legend{margin-bottom:8px}
 .mm-ficha-lista li.pasada .mm-ficha-txt b{color:var(--tinta3);font-weight:600}
 .mm-ficha .mm-tag{margin:0}
 .mm-ficha .mm-fuente{margin:6px 0 8px}
+
+/* ════════ Tu mes en 30 segundos (en la tarjeta azul) ════════ */
+body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
+.mm-en30-tit{margin:0 0 6px;font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.08em;text-transform:uppercase;display:flex;align-items:center;gap:8px}
+.mm-en30-n{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;background:var(--ac);color:var(--k);font-family:var(--sans);font-size:12px;font-weight:700;letter-spacing:0}
+.mm-pagar{margin:16px 0 0;padding-top:14px;border-top:1px solid rgba(255,255,255,.22)}
+.mm-pagar-lista{list-style:none;margin:0;padding:0}
+.mm-pagar-lista li{display:grid;grid-template-columns:72px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:36px}
+.mm-pagar-dia{font-family:var(--mono);font-size:12px;text-transform:uppercase;opacity:.9}
+.mm-pagar-nom{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mm-pagar-lista b{font-weight:700}
+.mm-revisa{margin:14px 0 0;padding:12px 12px 6px;border-radius:16px;background:var(--papel);color:var(--tinta)}
+.mm-revisa .mm-en30-tit{color:var(--tinta2);margin-bottom:4px}
+.mm-revisa-lista{display:grid;gap:0}
+.mm-revisa .mm-fila-alerta{box-shadow:none;border-radius:0;border-top:1px solid var(--linea);background:transparent}
+.mm-revisa .mm-fila-alerta:first-child{border-top:0}
+.mm-revisa-mas{display:block;margin:0 0 2px}
+.mm-al-dia{display:flex;align-items:center;gap:8px;margin:4px 0 8px;font-weight:600}
+.mm-al-dia .ic{color:var(--azul)}
+.mm-luego{margin:4px 0}
+.mm-luego>summary{min-height:44px;display:flex;align-items:center;font-size:13px;color:var(--tinta2);cursor:pointer}
+.mm-btn.chico{min-height:44px;padding:0 16px;font-size:14px}

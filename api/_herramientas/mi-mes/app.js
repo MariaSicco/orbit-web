@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  fichaCompra, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -132,6 +132,7 @@ function pintarInicio(animar = false) {
   pintarMeta();
   pintarReto();
   pintarAlertas();
+  pintarMesEn30(lim);
   const cred = creditoTotal(datos, HOY_ISO);
   $id('s-ing').textContent = $(r.totIngresos);
   $id('s-gas').textContent = $(r.totGastos);
@@ -189,6 +190,68 @@ function pintarInicio(animar = false) {
 
   if (animar) { const h = $id('hero'); h.classList.remove('mm-entra'); void h.offsetWidth; h.classList.add('mm-entra'); }
 }
+/* ════════ TU MES EN 30 SEGUNDOS ════════
+   En la tarjeta azul, tres respuestas: cuánto podés gastar (te quedan libres),
+   qué tenés que pagar (próximos vencimientos) y qué tenés que revisar.
+   "Qué revisar" absorbe la franja de avisos: un solo lugar para lo que pide
+   atención, ordenado por urgencia y por plata, en vez de dos listas arriba. */
+const CLAVE_COPIA = 'orbit:mi-mes:copia';
+const ultimaCopia = () => { try { return localStorage.getItem(CLAVE_COPIA); } catch { return null; } };
+let revisaAbierta = false;
+function itemsRevisar(lim) {
+  const alertas = [...alertasCredito(datos, HOY_ISO), ...alertasTarjetas(datos, HOY_ISO)];
+  for (const c of F.diaDeCobro ? alertasCobro(datos, HOY_ISO) : []) {
+    const v = alertas.find(a => a.tipo === 'vence' && a.tarjetaId === c.tarjetaId && a.fecha === c.fecha);
+    if (v) { v.antesCobro = true; v.texto = `${v.texto} Vence antes de que cobres: ${c.texto}`; } else alertas.push(c);
+  }
+  const fuertes = alertas.filter(a => nivelVisual(a) === 'fuerte');
+  const suaves = alertas.filter(a => nivelVisual(a) !== 'fuerte');
+  const p = F.preguntas ? preguntas(datos, HOY_ISO, { ultimaCopia: ultimaCopia(), diaDeCobro: F.diaDeCobro }) : { ahora: [], masTarde: [], alDia: true };
+  const tope = lim?.supera ? [{ clase: 'tope', lim }] : [];
+  return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
+    masTarde: p.masTarde };
+}
+function preguntaHTML(q) {
+  const acc = {
+    resumen: `<button type="button" class="mm-btn chico" data-importar="${esc(q.tarjetaId)}">${ic('subir')} Subir resumen</button>`,
+    lectura: `<button type="button" class="mm-btn chico" data-pregunta-ok="${esc(q.resumenId)}">Está bien</button><button type="button" class="mm-link" data-ir-tarjeta="${esc(q.tarjetaId)}">Ver el resumen</button>`,
+    concilia: `<button type="button" class="mm-btn chico" data-concilia-q="si" data-cuota="${esc(q.cuotaId)}">Sí, es la misma</button><button type="button" class="mm-link" data-concilia-q="no" data-cuota="${esc(q.cuotaId)}">No, son dos</button>`,
+    gasto: `<button type="button" class="mm-btn chico" data-confirmar-gasto="${esc(q.gastoId)}">${esc(q.accion)}</button><button type="button" class="mm-link" data-editar="gasto" data-id="${esc(q.gastoId)}">Cambió</button>`,
+    cobro: `<button type="button" class="mm-btn chico" data-editar="ingreso" data-id="${esc(q.ingresoId)}" data-foco-cobro>Elegir el día</button>`,
+    cambio: `<button type="button" class="mm-btn chico" data-cambio>Actualizar</button>`,
+    copia: `<button type="button" class="mm-btn chico" data-exportar>Guardar copia</button>`,
+  }[q.tipo] || '';
+  return `<details class="mm-fila-alerta pregunta">
+    <summary><span class="mm-fa-ic">${ic(q.tipo === 'resumen' ? 'subir' : q.tipo === 'cobro' ? 'calendario' : q.tipo === 'cambio' ? 'dolar' : 'alerta')}</span><span class="mm-fa-txt">${esc(q.titulo)}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
+    <div class="mm-fa-det"><p>${esc(q.porque)}</p><div class="mm-fa-acc">${acc}<button type="button" class="mm-link quieto" data-pregunta-luego="${esc(q.id)}">Más tarde</button></div></div>
+  </details>`;
+}
+function filaRevisar(x) {
+  if (x.clase === 'pregunta') return preguntaHTML(x.q);
+  if (x.clase === 'tope') return `<details class="mm-fila-alerta suave"><summary><span class="mm-fa-ic">${ic('escalera')}</span><span class="mm-fa-txt">Las cuotas son el ${Math.round(x.lim.usado * 100)} % de tus ingresos</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
+    <div class="mm-fa-det"><p>Tu tope es ${x.lim.pct} %. Lo podés cambiar en la escalera.</p><div class="mm-fa-acc"><button type="button" class="mm-link" data-ir="escalera">Ver escalera</button></div></div></details>`;
+  return alertaHTML(x.a, { descartable: true });
+}
+function pintarMesEn30(lim) {
+  const on = F.mesEn30;
+  document.body.classList.toggle('mm-en30', on);
+  const pagar = $id('pagar'), rev = $id('revisa');
+  if (!on || mes !== HOY) { pagar.hidden = rev.hidden = true; return; }
+  /* 2 · qué tenés que pagar */
+  const pp = proximosPagos(datos, HOY_ISO, 3);
+  pagar.hidden = !pp.length;
+  pagar.innerHTML = pp.length ? `<h2 class="mm-en30-tit" id="t-pagar">Qué tenés que pagar</h2><ul class="mm-pagar-lista">${pp.map(e => `<li>
+      <span class="mm-pagar-dia">${e.dias === 0 ? 'Hoy' : e.dias === 1 ? 'Mañana' : esc(fechaCorta(e.fecha))}</span><span class="mm-pagar-nom">${esc(e.nombre)}</span><b>${esc($(e.monto))}</b></li>`).join('')}</ul>` : '';
+  /* 3 · qué tenés que revisar (incluye los avisos) */
+  const { lista, masTarde } = itemsRevisar(lim);
+  rev.hidden = false;
+  const visibles = revisaAbierta ? lista : lista.slice(0, 3);
+  rev.innerHTML = `<h2 class="mm-en30-tit" id="t-revisa">Qué tenés que revisar${lista.length ? ` <span class="mm-en30-n">${lista.length}</span>` : ''}</h2>
+    ${lista.length ? `<div class="mm-revisa-lista">${visibles.map(filaRevisar).join('')}</div>` : `<p class="mm-al-dia">${ic('check')} Tu mes está al día.</p>`}
+    ${lista.length > 3 ? `<button type="button" class="mm-link mm-revisa-mas" data-revisa-mas aria-expanded="${revisaAbierta}">${revisaAbierta ? 'Ver menos' : `Ver ${lista.length - 3} más`}</button>` : ''}
+    ${masTarde.length ? `<details class="mm-luego"><summary>Más tarde (${masTarde.length})</summary><p class="mm-fuente">Mueven menos del 1 % de tus ingresos, no mueven plata o los dejaste para después.</p><div class="mm-revisa-lista">${masTarde.map(preguntaHTML).join('')}</div></details>` : ''}`;
+}
+
 /* ════════ DÍA DE COBRO ════════ */
 function pintarCobroLinea() {
   const el = $id('cobro-linea');
@@ -747,7 +810,9 @@ $id('dlg-concilia').addEventListener('click', e => {
   const b = e.target.closest('[data-concilia]');
   if (!b) return;
   const d = dudasConcilia.shift();
-  if (b.dataset.concilia === 'si' && d) { datos.cuotas = datos.cuotas.filter(c => c.id !== d.cuotaId); guardar(); pintarTodo(); avisar('Listo: queda la del resumen'); }
+  if (d) datos.concilia = (datos.concilia || []).filter(x => x.cuotaId !== d.cuotaId);
+  if (b.dataset.concilia === 'si' && d) { datos.cuotas = datos.cuotas.filter(c => c.id !== d.cuotaId); avisar('Listo: queda la del resumen'); }
+  guardar(); pintarTodo();
   if (dudasConcilia.length) siguienteDuda(); else cerrar($id('dlg-concilia'));
 });
 $id('dlg-concilia').addEventListener('cancel', e => e.preventDefault());
@@ -1343,6 +1408,7 @@ function alertaHTML(a, { descartable = false } = {}) {
   </details>`;
 }
 function pintarAlertas() {
+  if (F.mesEn30) { $id('alertas').hidden = true; $id('alertas').innerHTML = ''; return; }
   const as = [...alertasCredito(datos, HOY_ISO), ...alertasTarjetas(datos, HOY_ISO)];
   /* "vence antes de que cobres": si ya hay un aviso de vencimiento de esa tarjeta, se suma a ese (uno solo por tarjeta) */
   for (const c of F.diaDeCobro ? alertasCobro(datos, HOY_ISO) : []) {
@@ -1503,7 +1569,9 @@ function cargarSimulada() {
 function exportarCopia() {
   const copia = { app: 'mi-mes-by-orbit', version: datos.v, exportado: new Date().toISOString(), datos };
   bajarArchivo(JSON.stringify(copia, null, 2), `mi-mes-copia-${HOY_ISO}.json`, 'application/json');
+  try { localStorage.setItem(CLAVE_COPIA, HOY_ISO); } catch { /* comodidad: si no se puede, vuelve a preguntar */ }
   avisar('Copia descargada');
+  pintarInicio();
 }
 let copiaPendiente = null;
 $id('archivo-copia').addEventListener('change', async e => {
@@ -1725,6 +1793,20 @@ document.addEventListener('click', e => {
   if (t.closest('[data-franja]')) { alertasAbiertas = !alertasAbiertas; pintarAlertas(); return $id('alertas').querySelector('[data-franja]')?.focus(); }
   const ics = t.closest('[data-ics]');
   if (ics) return bajarICS(ics.dataset.ics);
+  const pl = t.closest('[data-pregunta-luego]');
+  if (pl) { datos.preguntasLuego = [...datos.preguntasLuego, pl.dataset.preguntaLuego].slice(-100); guardar(); pintarInicio(); return avisar('Queda para más tarde'); }
+  const po = t.closest('[data-pregunta-ok]');
+  if (po) { const r = datos.resumenes.find(x => x.id === po.dataset.preguntaOk); if (r) delete r.dudoso; guardar(); pintarInicio(); return avisar('Listo, confirmado'); }
+  const cg = t.closest('[data-confirmar-gasto]');
+  if (cg) { datos.confirmados = { ...datos.confirmados, [HOY]: [...(datos.confirmados[HOY] || []), cg.dataset.confirmarGasto] }; guardar(); pintarInicio(); return avisar('Confirmado para este mes'); }
+  const cq = t.closest('[data-concilia-q]');
+  if (cq) {
+    const idc = cq.dataset.cuota;
+    datos.concilia = datos.concilia.filter(x => x.cuotaId !== idc);
+    if (cq.dataset.conciliaQ === 'si') datos.cuotas = datos.cuotas.filter(c => c.id !== idc);
+    guardar(); pintarTodo(); return avisar(cq.dataset.conciliaQ === 'si' ? 'Listo: queda la del resumen' : 'Listo: quedan las dos');
+  }
+  if (t.closest('[data-revisa-mas]')) { revisaAbierta = !revisaAbierta; pintarInicio(); return $id('revisa').querySelector('[data-revisa-mas]')?.focus(); }
   if (t.closest('[data-consejo-sig]')) { consejoIdx++; pintarConsejo(); return $id('consejo').querySelector('[data-consejo-sig]')?.focus(); }
   const oc = t.closest('[data-consejo-ocultar]');
   if (oc) { datos.consejosVistos = [...datos.consejosVistos, oc.dataset.consejoOcultar].slice(-100); guardar(); pintarConsejo(); return avisar('Listo, no lo mostramos más'); }
