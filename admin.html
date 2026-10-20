@@ -168,6 +168,14 @@ td .mono{opacity:.55}
         <div class="bh"><h2>Últimos pedidos</h2><span class="hint" id="pCount"></span></div>
         <div class="scroll"><table id="tPed"></table></div>
       </div>
+      <div class="blk">
+        <div class="bh"><h2>Contracargo</h2><span class="hint">Cuando el comprador desconoce el pago ante su banco o tarjeta. Corta el acceso a la herramienta; se puede deshacer</span></div>
+        <div class="afgen">
+          <label for="ccId" class="mono dim">Número de pedido (para los que no están en la lista)</label>
+          <div class="afrow"><input id="ccId" type="text" placeholder="ej. OB1A2B3C4D5E6F" autocomplete="off" spellcheck="false"></div>
+          <div><button class="alt-url" id="ccBuscar" data-accion="marcar">Marcar contracargo</button> · <button class="alt-url" id="ccDeshacer" data-accion="deshacer">Deshacer contracargo</button><span class="rmsg mono" id="ccMsg"></span></div>
+        </div>
+      </div>
     </section>
     <section class="pane hidden" data-pane="equipo">
       <div class="blk">
@@ -295,14 +303,18 @@ $('#tGente').innerHTML = '<thead><tr><th>Email</th><th>Nombre</th><th>Alta</th><
     + '</tr>').join('') : '<tr><td colspan="5" style="opacity:.5">Todavía no hay cuentas creadas.</td></tr>') + '</tbody>';
 
 /* ── pedidos ── */
-$('#pCount').textContent = pe.total + ' en total · ' + pe.pagados + ' pagados';
+$('#pCount').textContent = pe.total + ' en total · ' + pe.pagados + ' pagados' + (pe.contracargos ? ' · ' + pe.contracargos + ' con contracargo' : '');
 $('#tPed').innerHTML = '<thead><tr><th>Pedido</th><th>Cliente</th><th>Productos</th><th>Medio</th><th>Estado</th><th>Comprobante</th><th class="num">Total</th></tr></thead><tbody>'
   + (data.ultimosPedidos.length ? data.ultimosPedidos.map(o => '<tr>'
     + '<td><span class="mono">' + esc(o.id) + '</span><br><span class="mono">' + fecha(o.fecha) + '</span></td>'
     + '<td>' + esc(o.email) + (o.ref ? '<br><span class="tag tag-soft">ref ' + esc(o.ref) + '</span>' : '') + '</td>'
     + '<td>' + o.items.map(i => '<span class="mono">' + esc(i.code) + '</span> ' + esc(i.name) + (i.qty > 1 ? ' ×' + i.qty : '')).join('<br>') + '</td>'
     + '<td><span class="mono">' + (o.via === 'paypal' ? 'PayPal' : 'Mercado Pago') + '</span></td>'
-    + '<td>' + (o.status === 'paid' ? '<span class="tag tag-ok">Pagado</span>' : '<span class="tag tag-pend">Pendiente</span>') + '</td>'
+    + '<td>' + (o.status === 'paid'
+        ? (o.contracargo ? '<span class="tag tag-pend" data-cctag="' + esc(o.id) + '">Contracargo ' + fecha(o.contracargo.at) + '</span>' : '<span class="tag tag-ok" data-cctag="' + esc(o.id) + '">Pagado</span>')
+          + '<br><button class="alt-url" data-contracargo="' + esc(o.id) + '" data-accion="' + (o.contracargo ? 'deshacer' : 'marcar') + '">' + (o.contracargo ? 'Deshacer contracargo' : 'Marcar contracargo') + '</button>'
+          + '<span class="rmsg mono" data-ccpara="' + esc(o.id) + '"></span>'
+        : '<span class="tag tag-pend">Pendiente</span>') + '</td>'
     + '<td>' + (o.status !== 'paid' ? (o.recordatorio ? '<span class="tag tag-soft">' + (String(o.recordatorio).startsWith('error') ? 'Recordatorio falló' : 'Recordatorio enviado') + '</span>' : '<span class="mono">—</span>')
         : '<span class="tag ' + (o.mail === 'ok' ? 'tag-ok' : o.mail ? 'tag-pend' : 'tag-soft') + '">'
           + (o.mail === 'ok' ? 'Enviado' : o.mail ? 'Falló' : 'Sin dato') + '</span>'
@@ -370,6 +382,53 @@ document.addEventListener('click', async e => {
   } catch (err) { if (aviso) { aviso.textContent = ' no se pudo'; aviso.style.color = 'var(--or)'; } }
   b.textContent = antes; b.disabled = false;
 });
+
+/* marcar o deshacer un contracargo: primero trae el pedido, pide confirmación
+   con los datos a la vista y recién ahí lo manda */
+async function contracargo(orderId, accion, aviso) {
+  const post = body => fetch('/api/admin/contracargo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json());
+  const decir = (t, ok) => { if (aviso) { aviso.textContent = ' ' + t; aviso.style.color = ok ? 'var(--ac)' : 'var(--or)'; } };
+  const v = await post({ orderId, accion: 'ver' });
+  if (!v.ok) { decir(v.error === 'pedido_desconocido' ? 'no existe ese pedido' : (v.error || 'falló')); return null; }
+  const p = v.pedido;
+  if (accion === 'marcar' && p.contracargo) { decir('ya estaba marcado'); return null; }
+  if (accion === 'deshacer' && !p.contracargo) { decir('no estaba marcado'); return null; }
+  const quien = p.email + (p.emailOriginal ? ' (y ' + p.emailOriginal + ')' : '');
+  const que = p.items.map(i => i.code + ' ' + i.name).join(', ');
+  const texto = accion === 'marcar'
+    ? '¿Marcar el pedido ' + p.id + ' como CONTRACARGO?\n\n' + quien + '\n' + que + '\n\n' + quien + ' deja de poder abrir estas herramientas. No se le avisa a nadie y no se toca Mercado Pago ni PayPal. Se puede deshacer.'
+    : '¿Deshacer el contracargo del pedido ' + p.id + '?\n\n' + quien + '\n' + que + '\n\nVuelve a tener acceso a estas herramientas.';
+  if (!confirm(texto)) { decir('cancelado'); return null; }
+  const d = await post({ orderId: p.id, accion, confirmar: p.id });
+  if (!d.ok) { decir(d.error || 'falló'); return null; }
+  decir(accion === 'marcar' ? 'Marcado · acceso cortado (' + d.compras + ')' : 'Deshecho · acceso devuelto (' + d.compras + ')', true);
+  return d.pedido;
+}
+document.addEventListener('click', async e => {
+  const b = e.target.closest('[data-contracargo]');
+  if (!b) return;
+  const id = b.dataset.contracargo;
+  b.disabled = true;
+  try {
+    const p = await contracargo(id, b.dataset.accion, document.querySelector('.rmsg[data-ccpara="' + id + '"]'));
+    if (p) {
+      const marcado = Boolean(p.contracargo);
+      b.dataset.accion = marcado ? 'deshacer' : 'marcar';
+      b.textContent = marcado ? 'Deshacer contracargo' : 'Marcar contracargo';
+      const t = document.querySelector('[data-cctag="' + id + '"]');
+      if (t) { t.className = 'tag ' + (marcado ? 'tag-pend' : 'tag-ok'); t.textContent = marcado ? 'Contracargo ' + fecha(p.contracargo.at) : 'Pagado'; }
+    }
+  } catch (err) { const a = document.querySelector('.rmsg[data-ccpara="' + id + '"]'); if (a) { a.textContent = ' no se pudo'; a.style.color = 'var(--or)'; } }
+  b.disabled = false;
+});
+for (const b of [$('#ccBuscar'), $('#ccDeshacer')]) b.onclick = async () => {
+  const id = $('#ccId').value.trim().toUpperCase();
+  if (!id) { $('#ccId').focus(); return; }
+  b.disabled = true;
+  try { await contracargo(id, b.dataset.accion, $('#ccMsg')); }
+  catch (err) { $('#ccMsg').textContent = ' no se pudo'; $('#ccMsg').style.color = 'var(--or)'; }
+  b.disabled = false;
+};
 
 /* ── equipo ── */
 let equipo = [];

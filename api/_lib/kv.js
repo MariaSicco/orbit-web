@@ -116,3 +116,5 @@ export async function addPurchase(email, purchase) {
   await kvSet(purchasesKey(email), list);
   return list;
 }
+/* Reescribe la lista entera (para marcas del panel, como un contracargo). */
+export async function setPurchases(email, list) { await kvSet(purchasesKey(email), list); }
