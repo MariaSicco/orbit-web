@@ -443,11 +443,11 @@ window.ORBIT_PRODUCTS = [
   {
     /* Mimitos: herramienta online (app en /mascotas), una sola versión paga.
        Se entrega como acceso desde Mi cuenta, igual que Orbit IVA. */
-    /* Precio aprobado (14/10/2026): lanzamiento USD 24 / ARS 35.990 hasta el 12/11/2026 inclusive.
+    /* Precio aprobado (plan B, 20/10/2026): lanzamiento USD 29 / ARS 43.990 hasta el 12/11/2026 inclusive.
        La tienda no tiene precio tachado ni promo con fecha: se carga el de lanzamiento como vigente.
-       // PRECIO DE LISTA desde 13/11/2026: price: 29, ars: 43990 */
+       // PRECIO DE LISTA desde 13/11/2026: price: 39, ars: 58990 */
     id: 'ob-018', cover: 'libro', code: 'OB\u2014018', n: '18', name: 'Mimitos',
-    family: 'systems', status: 'soon', price: 24, ars: 35990,
+    family: 'systems', status: 'soon', price: 29, ars: 43990,
     accent: 'blue', checkout: '', photo: 'ob-018',
     acceso: '/mascotas',
     /* sello propio en la ficha: reemplaza "12 meses de actualizaciones" de las herramientas (producto.html) */

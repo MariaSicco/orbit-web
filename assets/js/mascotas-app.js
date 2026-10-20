@@ -225,7 +225,7 @@ const BUY_URL = '/p/ob-018';
 const SUPPORT_MAIL = 'hola@orbitando.com.ar';
 /* Precio aprobado (14/10/2026): lanzamiento hasta el 12/11/2026 inclusive. El 13/11 se saca el bloque
    de lanzamiento y queda el de lista (ver api/_lib/catalog.js y assets/js/products.js). */
-const PRICE = { ars: 35990, usd: 24, listArs: 43990, listUsd: 29, until: '12/11/2026' };
+const PRICE = { ars: 43990, usd: 29, listArs: 58990, listUsd: 39, until: '12/11/2026' };
 const ars = n => '$\u00a0' + n.toLocaleString('es-AR');
 const AI_ROUTES = ['lectura', 'preguntar', 'gmail', 'outlook'];
 const aiExpired = () => Boolean(aiq?.expired);

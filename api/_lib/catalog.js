@@ -54,11 +54,11 @@ export const CATALOG = {
   /* Mimitos: herramienta online en /mascotas, una sola versión paga */
   /* herramienta: la biblioteca y el email muestran "Abrir" hacia /mascotas; el acceso lo
      controla api/mascotas.js con la base (api/_lib/herramienta-acceso.js), no api/herramienta.js */
-  /* Precio aprobado por Majo (14/10/2026). El checkout no tiene precios de lanzamiento ni promos con
+  /* Precio aprobado por Majo (plan B, 20/10/2026). El checkout no tiene precios de lanzamiento ni promos con
      fecha: el vigente es el de lanzamiento, hasta el 12/11/2026 inclusive.
-     // PRECIO DE LISTA desde 13/11/2026: usd: 29, ars: 43990
+     // PRECIO DE LISTA desde 13/11/2026: usd: 39, ars: 58990
      Sigue en `soon`: no está a la venta hasta que Majo lo apruebe. */
-  'ob-018': { code: 'OB—018', name: 'Mimitos',            usd: 24, ars: 35990, soon: true, foto: 'ob-018', herramienta: '/mascotas',
+  'ob-018': { code: 'OB—018', name: 'Mimitos',            usd: 29, ars: 43990, soon: true, foto: 'ob-018', herramienta: '/mascotas',
     bajada: 'La libreta sanitaria de tu mascota en el celu, con avisos antes de cada fecha. Organizador: no reemplaza al veterinario.' },
 };
 
