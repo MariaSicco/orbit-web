@@ -286,6 +286,92 @@ body:has(.buybar.on) .totop{bottom:calc(92px + env(safe-area-inset-bottom,0px))}
 .cv-libro .suma{position:absolute;left:7cqw;right:7cqw;bottom:37cqw;height:2.6cqw;z-index:1;
   border-top:.8cqw solid var(--k);border-bottom:.8cqw solid var(--k)}
 
+.cv-mim .t,.cv-mes .t,.cv-ven .t{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;position:relative;z-index:3}
+.cv-mim .t .wm,.cv-mes .t .wm,.cv-ven .t .wm{font-size:7cqw}
+.cv-mim .badge,.cv-mes .badge{background:#6B1A35;color:#F8C8D8}
+.cv-ven .badge{background:var(--k);color:var(--ac)}
+/* 06 mimitos — libreta sanitaria, rosa y vino (submarca) */
+.cv-mim .spine{background:#6B1A35;color:#F8C8D8}
+.cv-mim .body{background:#F8C8D8;color:#6B1A35}
+.cv-mim .brand{display:flex;align-items:center;gap:2.4cqw}
+.cv-mim .brand svg{width:9cqw;height:9cqw}
+.cv-mim .brand b{font-family:"Plus Jakarta Sans",var(--sans);font-weight:800;font-size:8.6cqw;letter-spacing:-.03em}
+.cv-mim .kind{margin-top:2cqw;opacity:.8}
+/* página de identificación de la libreta, renglones punteados */
+.cv-mim .id{position:relative;z-index:2;margin-top:6cqw;display:grid;gap:3.2cqw;width:44%}
+.cv-mim .id>span{display:flex;gap:1.6cqw;align-items:flex-end;white-space:nowrap}
+.cv-mim .id>span::after{content:"";flex:1;border-bottom:.5cqw dotted currentColor;opacity:.55;transform:translateY(-.6cqw)}
+.cv-mim .id em{font-family:var(--serif);font-style:italic;font-size:5.4cqw;letter-spacing:0;text-transform:none;order:2}
+/* el sticker de la vacuna: borde troquelado */
+.cv-mim .stk{position:absolute;z-index:2;background:#FFF7F0;padding:3cqw;
+  -webkit-mask:linear-gradient(#000 0 0) content-box,radial-gradient(circle,transparent .9cqw,#000 1cqw) -1.6cqw -1.6cqw/3.2cqw 3.2cqw;
+          mask:linear-gradient(#000 0 0) content-box,radial-gradient(circle,transparent .9cqw,#000 1cqw) -1.6cqw -1.6cqw/3.2cqw 3.2cqw}
+.cv-mim .stk-w{position:absolute;z-index:2;filter:drop-shadow(0 1cqw 1.2cqw rgba(0,0,0,.18))}
+.cv-mim .stk .ph{display:block;background:#F8C8D8;overflow:hidden;position:relative}
+.cv-mim .stk img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+.cv-mim .stk{position:relative}
+.cv-mim .stk .lab{display:flex;justify-content:space-between;margin-top:1.6cqw;color:#6B1A35;font-size:max(7px,2.5cqw)}
+.cv-mim .s1{width:50%;right:4%;top:33%;transform:rotate(6deg)}
+.cv-mim .s1 .ph{aspect-ratio:1/1.05;background:#FCE48B}
+.cv-mim .s2{width:31%;right:56%;top:52%;transform:rotate(-8deg)}
+.cv-mim .s2 .ph{aspect-ratio:1;background:#F8C8D8}
+.cv-mim .b{position:relative;z-index:3;margin-top:auto;display:flex;justify-content:space-between;align-items:flex-end}
+.cv-mim .num{font-size:30cqw}
+.cv-mim .meta{text-align:right}
+
+/* 07 mi mes — la tarjeta y el resumen, clara */
+.cv-mes .spine{background:var(--blue);color:#fff}
+.cv-mes .body{background:#F7F7F3;color:var(--k)}
+.cv-mes .ttl{position:relative;z-index:2;font-size:13cqw;margin-top:5cqw}
+.cv-mes .ttl i{font-style:italic;text-transform:none;color:var(--blue)}
+.cv-mes .card{position:absolute;z-index:2;right:-14%;top:23%;width:66%;aspect-ratio:1.586;border-radius:4cqw;
+  background:linear-gradient(135deg,#3047FF 0%,#1B2BB8 70%,#121C80 100%);color:#fff;padding:4.5cqw 5cqw;transform:rotate(-9deg);
+  box-shadow:0 3cqw 6cqw -2cqw rgba(0,0,0,.35);display:flex;flex-direction:column;justify-content:space-between}
+.cv-mes .card::before{content:"";position:absolute;inset:0;border-radius:inherit;background:radial-gradient(120% 80% at 90% 0%,rgba(255,255,255,.22),transparent 60%)}
+.cv-mes .chip{width:9cqw;aspect-ratio:1.3;border-radius:1.4cqw;background:linear-gradient(135deg,#F1D58A,#C9A34E);position:relative}
+.cv-mes .card .mono{font-size:max(7px,2.8cqw);opacity:.9;position:relative}
+/* el resumen: renglones y el total */
+.cv-mes .stmt{position:relative;z-index:3;margin-top:auto;display:grid;gap:1.8cqw;font-family:var(--mono);font-size:max(7px,2.9cqw);letter-spacing:.04em;text-transform:uppercase}
+.cv-mes .stmt>div{display:flex;justify-content:space-between;gap:2cqw;opacity:.7}
+.cv-mes .stmt>div>span:first-child::after{content:" ··········"; opacity:.5}
+.cv-mes .stmt .tot{opacity:1;color:var(--blue);font-weight:500;border-top:.5cqw solid var(--k);padding-top:2cqw}
+.cv-mes .stmt .tot>span:first-child::after{content:""}
+.cv-mes .bar{height:2cqw;border-radius:2cqw;background:#E3E5F7;overflow:hidden}
+.cv-mes .bar i{display:block;height:100%;width:62%;background:var(--blue);border-radius:inherit}
+.cv-mes .b{position:relative;z-index:3;margin-top:4cqw;display:flex;justify-content:space-between;align-items:flex-end}
+.cv-mes .num{font-size:24cqw;color:var(--blue)}
+.cv-mes .meta{text-align:right}
+
+/* 08 vencimientos — almanaque y boleta, lima */
+.cv-ven .spine{background:var(--k);color:var(--ac)}
+.cv-ven .body{background:var(--ac);color:var(--k)}
+.cv-ven .ttl{position:relative;z-index:2;font-size:9.4cqw;margin-top:5cqw}
+.cv-ven .ttl i{font-style:italic;text-transform:none}
+/* hoja de almanaque: el número de la app es el día */
+.cv-ven .cal{position:relative;z-index:2;margin-top:6cqw;width:60%;background:var(--b);box-shadow:0 1.6cqw 0 -.4cqw #cfcab9,0 3.2cqw 0 -.8cqw #b8b3a3}
+.cv-ven .cal .hd{background:var(--k);color:var(--b);display:flex;justify-content:space-between;padding:2cqw 3cqw;position:relative}
+.cv-ven .cal .hd::before,.cv-ven .cal .hd::after{content:"";position:absolute;top:-1.6cqw;width:2.4cqw;height:4cqw;border-radius:2cqw;background:#8C8A84;border:.5cqw solid var(--ac)}
+.cv-ven .cal .hd::before{left:22%}.cv-ven .cal .hd::after{right:22%}
+.cv-ven .cal .num{font-size:30cqw;text-align:center;padding:3cqw 0 1cqw}
+.cv-ven .cal .dw{text-align:center;padding-bottom:3cqw;opacity:.7}
+/* sello */
+.cv-ven .stamp{position:absolute;z-index:3;right:7%;top:47%;transform:rotate(-14deg);color:var(--or);border:.9cqw solid currentColor;border-radius:2cqw;padding:1.6cqw 3cqw;
+  font-family:var(--sans);font-weight:800;font-size:7cqw;letter-spacing:.06em;mix-blend-mode:multiply}
+.cv-ven .stamp small{display:block;font-family:var(--mono);font-weight:500;font-size:2.6cqw;letter-spacing:.08em;text-align:center}
+/* talón de la boleta con código de barras */
+.cv-ven .talon{position:relative;z-index:2;margin-top:auto;border-top:.5cqw dashed var(--k);padding-top:3cqw;display:flex;justify-content:space-between;align-items:flex-end;gap:4cqw}
+.cv-ven .bars{height:9cqw;flex:1;max-width:46%;background:repeating-linear-gradient(90deg,var(--k) 0 .5cqw,transparent .5cqw 1.1cqw,var(--k) 1.1cqw 2.3cqw,transparent 2.3cqw 2.8cqw,var(--k) 2.8cqw 3.1cqw,transparent 3.1cqw 4cqw)}
+.cv-ven .meta{text-align:right}
+/* chicas (carrito, buscador): queda la marca, el título, el dibujo y el número */
+@container (max-width:180px){
+  .cv-mim .id,.cv-mim .kind,.cv-mim .stk .lab,.cv-ven .cal .hd>span:last-child,.cv-mim .s2,.cv-mim .meta,
+  .cv-mes .t>.mono,.cv-mes .stmt>div:not(.tot),.cv-mes .card .mono,.cv-mes .meta,
+  .cv-ven .t>.mono:not(.badge),.cv-ven .stamp small,.cv-ven .cal .dw,.cv-ven .meta{display:none}
+  .cv-mim .s1{top:22%;width:58%}
+  .cv-mes .stmt .tot{font-size:0}.cv-mes .stmt .tot::after{content:none}
+}
+
+
 .pcard .cover{transition:transform .5s var(--ease),box-shadow .5s var(--ease)}
 .pcard:hover .cover{transform:translateY(-8px) rotate(-1deg);box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
 .pcard .row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;border-top:1px solid currentColor;padding-top:12px}

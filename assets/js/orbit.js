@@ -124,6 +124,8 @@ const bookSpine = (p, wmColor) => `<div class="spine">${wm({color:wmColor}, fals
 /* títulos con palabras largas (VENCIMIENTOS) bajan de cuerpo para no cortarse */
 const lng = p => Math.max(...p.name.split(' ').map(w => w.length)) > 10 ? ' long' : '';
 const pages = '<span class="pages" aria-hidden="true"></span>';
+/* isotipo de Mimitos (pastel 2 · Rosa, product/mimitos-logo/a3-2) para su tapa */
+const MIM_ISO = `<svg viewBox="0 0 64 64" aria-hidden="true"><g transform="translate(-2.4 0)"><path d="M12.5 52V32a9.75 9.75 0 0 1 19.5 0v20M32 32a9.75 9.75 0 0 1 19.5 0v20" fill="none" stroke="#6B1A35" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 31 10.2 9 23.2 18.8Z" fill="#6B1A35" stroke="#6B1A35" stroke-width="3.2" stroke-linejoin="round"/><path d="M40.6 19.2C47 14.6 56.2 14.8 60.4 21.1 63 25.1 62.8 32.6 60.6 37 59.1 40 55.5 40.2 54.3 37L52.9 32.6C51.5 27.7 47.6 22.8 40.6 19.2Z" fill="#6B1A35"/></g></svg>`;
 const soonBadge = p => p.status === 'soon' ? `<span class="mono badge">${L('Próximamente','Coming soon')}</span>` : '';
 const COVERS = {
   /* 01 — archivo: tapa bone, lomo negro */
@@ -169,6 +171,43 @@ const COVERS = {
       <div class="ttl${lng(p)}">${p.name.replace(' ','<br>')}</div>
       <span class="suma" aria-hidden="true"></span>
       <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L(p.specs[0][1])}<br>${L(p.specs[2][1])}</div></div>
+    </div>${pages}</div>`,
+  /* Las tres apps del drop 01: cada tapa cita el objeto que la app reemplaza (decision-log 20/10). */
+  /* 06 mimitos — la libreta sanitaria del veterinario: página de identificación y el sticker
+     troquelado de la vacuna, con la mascota adentro. Rosa y vino de su logo; Orbit firma en el lomo. */
+  mimitos: p => `<div class="cover cv-mim">${bookSpine(p, '#F8C8D8')}
+    <div class="body">
+      <div class="t"><div><div class="brand">${MIM_ISO}<b>mimitos</b></div><div class="mono kind">${L('Libreta sanitaria','Health booklet')}</div></div>${soonBadge(p) || wm({color:'#6B1A35', dot:C.blue})}</div>
+      <div class="id mono"><span>${L('Nombre','Name')}<em>Felisa</em></span><span>${L('Especie','Species')}<em>${L('Gata','Cat')}</em></span><span>${L('Dueña','Owner')}<em></em></span></div>
+      <div class="stk-w s1"><div class="stk"><span class="ph"><img src="/assets/img/tapas/felisa.webp" alt="" loading="lazy"></span><span class="lab mono"><span>${L('Triple felina','Feline triple')}</span><span>✓</span></span></div></div>
+      <div class="stk-w s2"><div class="stk"><span class="ph"><img src="/assets/img/tapas/aika.webp" alt="" loading="lazy"></span><span class="lab mono"><span>${L('Antirrábica','Rabies')}</span></span></div></div>
+      <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L('Vacunas · turnos<br>avisos · cámara','Vaccines · visits<br>reminders · camera')}</div></div>
+    </div>${pages}</div>`,
+  /* 07 mimes — clara, estilo home banking: la tarjeta se sale de la tapa y el resumen termina en
+     "te quedan libres", la pantalla principal de Mi Mes. */
+  mimes: p => `<div class="cover cv-mes">${bookSpine(p, '#FFFFFF')}
+    <div class="body">
+      <div class="t">${wm({color:C.k, dot:C.blue})}${soonBadge(p) || `<span class="mono">${L('Finanzas','Finance')} · ARS / USD</span>`}</div>
+      <div class="ttl">Mi <i>Mes</i></div>
+      <div class="card" aria-hidden="true"><span class="chip"></span><span class="mono">•••• 4821 &nbsp; ${L('Cierra','Closes')} 24/10</span></div>
+      <div class="stmt" aria-hidden="true">
+        <div><span>${L('Sueldo','Salary')}</span><span>+ 1.240.000</span></div>
+        <div><span>${L('Fijos','Fixed')}</span><span>− 412.300</span></div>
+        <div><span>${L('Tarjetas','Cards')}</span><span>− 356.900</span></div>
+        <div class="tot"><span>${L('Te quedan libres','Left to spend')}</span><span>470.800</span></div>
+        <span class="bar"><i></i></span>
+      </div>
+      <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L('Tarjetas · cuotas<br>dólares · alertas','Cards · installments<br>dollars · alerts')}</div></div>
+    </div>${pages}</div>`,
+  /* 08 venc — el almanaque y la boleta: el número de la app es el día, con el sello de VENCE
+     y el talón con su código de barras. Lima y negro. */
+  venc: p => `<div class="cover cv-ven">${bookSpine(p, C.ac)}
+    <div class="body">
+      <div class="t">${wm({color:C.k, dot:C.or})}${soonBadge(p) || `<span class="mono">${L('Hogar','Home')}</span>`}</div>
+      <div class="ttl">${L('Vencimientos<br><i>de la</i> casa','Household<br><i>due</i> dates')}</div>
+      <div class="cal" aria-hidden="true"><div class="hd mono"><span>${L('Noviembre','November')}</span><span>2026</span></div><div class="num">${p.n}</div><div class="dw mono">${L('Sábado','Saturday')}</div></div>
+      <div class="stamp" aria-hidden="true">${L('VENCE','DUE')}<small>${L('Luz · Gas · ABL','Power · Gas · Tax')}</small></div>
+      <div class="talon"><span class="bars" aria-hidden="true"></span><div class="mono meta">${L('Cuentas · casas<br>avisos · radar','Bills · homes<br>reminders · radar')}</div></div>
     </div>${pages}</div>`,
 };
 const cover = p => (COVERS[p.cover] || COVERS.archive)(p);

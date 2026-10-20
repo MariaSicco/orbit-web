@@ -398,7 +398,7 @@ window.ORBIT_PRODUCTS = [
        Se entrega como acceso desde Mi cuenta, igual que Orbit IVA y Mimitos. */
     /* Precio del plan B (decision-log 20/10): USD 24 / ARS 35.990 de lanzamiento hasta el 12/11;
        el 13/11 pasa a USD 34 / ARS 50.990 de lista (a mano, acá y en api/_lib/catalog.js). */
-    id: 'ob-019', cover: 'libro', code: 'OB—019', n: '19', name: 'Mi Mes by Orbit',
+    id: 'ob-019', cover: 'mimes', code: 'OB—019', n: '19', name: 'Mi Mes by Orbit',
     family: 'systems', status: 'available', price: 24, ars: 35990,
     accent: 'blue', checkout: '', photo: 'studio',
     /* sello propio en la ficha, como Mimitos: la lectura automática con IA vence a los 12 meses */
