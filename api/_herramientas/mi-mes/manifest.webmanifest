@@ -1,0 +1,32 @@
+{
+  "name": "Mi Mes by Orbit",
+  "short_name": "Mi Mes",
+  "description": "Cuánto te queda libre este mes y los que vienen, con tus cuotas ya descontadas.",
+  "lang": "es-AR",
+  "id": "/herramientas/mi-mes",
+  "start_url": "/herramientas/mi-mes",
+  "scope": "/herramientas/mi-mes",
+  "display": "standalone",
+  "background_color": "#F2EFE8",
+  "theme_color": "#3047FF",
+  "icons": [
+    {
+      "src": "/assets/img/mi-mes/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/mi-mes/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/mi-mes/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

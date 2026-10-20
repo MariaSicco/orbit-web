@@ -25,6 +25,13 @@ export const CATALOG = {
     bajada: '55 actividades para empezar a leer y escribir en imprenta mayúscula.' },
   'ob-017': { code: 'OB—017', name: 'Comandos eléctricos',            usd: 9, ars: 12990, foto: 'studio',
     bajada: '25 diagramas de comando verificados y una calculadora que te arma la lista de materiales del tablero.' },
+  /* Drop 01 (19/10/2026) · herramientas online */
+  'ob-019': { code: 'OB—019', name: 'Mi Mes by Orbit',
+    /* Precio del plan B (decision-log 20/10): USD 24 / ARS 35.990 de lanzamiento hasta el 12/11.
+       El 13/11 pasa a USD 34 / ARS 50.990 de lista (cambiarlo a mano acá y en products.js; no está automatizado).
+       La lectura automática con IA vence a los 12 meses de la compra (api/_lib/mi-mes-ia.js). */
+    usd: 24, ars: 35990, herramienta: '/herramientas/mi-mes',
+    bajada: 'Cuánto te queda libre este mes y los que vienen, con tus cuotas ya descontadas.' },
   /* Drop 1 · Fleteros */
   'ob-006': { code: 'OB—006', name: 'Tarifador de fletes',            usd: 10, ars: 14999, foto: 'arch',
     bajada: 'Cargá el viaje y sabé en un minuto cuánto cobrar y cuánto ganás.' },

@@ -28,6 +28,57 @@ export async function kvSet(key, val, ttlSeconds) {
   await cmd(...args);
 }
 export async function kvDel(key) { if (!hasKV) { mem.delete(key); return; } await cmd('DEL', key); }
+/* SET NX: guarda solo si la clave no existe. Devuelve true si la tomó esta llamada (sirve de candado idempotente). */
+export async function kvSetNX(key, val, ttlSeconds) {
+  if (!hasKV) {
+    const v = mem.get(key);
+    if (v && (!v.exp || v.exp > Date.now())) return false;
+    mem.set(key, { val, exp: ttlSeconds ? Date.now() + ttlSeconds * 1000 : 0 });
+    return true;
+  }
+  const args = ['SET', key, JSON.stringify(val), 'NX'];
+  if (ttlSeconds) args.push('EX', String(ttlSeconds));
+  return (await cmd(...args)) === 'OK';
+}
+/* Contador atómico: INCRBY (n puede ser negativo) y devuelve el valor nuevo.
+   El TTL se pone solo cuando la clave nace (el valor nuevo es igual a n), así no se estira con cada uso.
+   Sirve para topes con pedidos en paralelo: se suma primero y se compara después. */
+export async function kvIncrBy(key, n = 1, ttlSeconds) {
+  n = Math.trunc(Number(n) || 0);
+  if (!hasKV) {
+    const v = mem.get(key);
+    const alive = v && (!v.exp || v.exp > Date.now());
+    const val = (alive ? Number(v.val) || 0 : 0) + n;
+    mem.set(key, { val, exp: alive ? v.exp : (ttlSeconds ? Date.now() + ttlSeconds * 1000 : 0) });
+    return val;
+  }
+  const val = Number(await cmd('INCRBY', key, String(n)));
+  if (ttlSeconds && val === n) await cmd('EXPIRE', key, String(ttlSeconds));
+  return val;
+}
+/* listas (registro de "Hoy con…"): RPUSH atómico, se recorta a las últimas `max` y vence a los ttl segundos */
+const memList = key => { let v = mem.get(key); if (!v || !Array.isArray(v.val)) { v = { val: [], exp: 0 }; mem.set(key, v); } return v; };
+export async function kvRPush(key, member, max = 300, ttlSeconds) {
+  if (!hasKV) { const v = memList(key); v.val.push(member); if (v.val.length > max) v.val.splice(0, v.val.length - max); if (ttlSeconds) v.exp = Date.now() + ttlSeconds * 1000; return; }
+  await cmd('RPUSH', key, member);
+  await cmd('LTRIM', key, String(-max), '-1');
+  if (ttlSeconds) await cmd('EXPIRE', key, String(ttlSeconds));
+}
+export async function kvLRange(key) {
+  if (!hasKV) { const v = mem.get(key); return v && Array.isArray(v.val) && (!v.exp || v.exp > Date.now()) ? [...v.val] : []; }
+  return (await cmd('LRANGE', key, '0', '-1')) || [];
+}
+export async function kvLRem(key, member) {
+  if (!hasKV) { const v = mem.get(key); if (v && Array.isArray(v.val)) v.val = v.val.filter(x => x !== member); return; }
+  await cmd('LREM', key, '0', member);
+}
+/* conjuntos (índices chicos): agregar, sacar y listar */
+const memSet = key => { let v = mem.get(key); if (!v || !(v.val instanceof Set)) { v = { val: new Set(), exp: 0 }; mem.set(key, v); } return v.val; };
+export async function kvSAdd(key, member) { if (!hasKV) { memSet(key).add(member); return; } await cmd('SADD', key, member); }
+export async function kvSRem(key, member) { if (!hasKV) { memSet(key).delete(member); return; } await cmd('SREM', key, member); }
+export async function kvSMembers(key) { if (!hasKV) return [...memSet(key)]; return (await cmd('SMEMBERS', key)) || []; }
+export async function kvSIsMember(key, member) { if (!hasKV) return memSet(key).has(member); return Number(await cmd('SISMEMBER', key, member)) === 1; }
+export async function kvSCard(key) { if (!hasKV) return memSet(key).size; return Number(await cmd('SCARD', key)) || 0; }
 
 /* Recorrido para los informes del panel: SCAN por patrón + lectura en tandas. */
 export async function kvKeys(pattern, max = 5000) {

@@ -1,0 +1,246 @@
+{
+ "tarjeta": {
+  "banco": "Banco Inventado Dos",
+  "red": "Visa",
+  "ultimos4": "2222"
+ },
+ "tarjetas": [
+  {
+   "ultimos4": "3333",
+   "adicional": true,
+   "totales": [
+    {
+     "moneda": "ARS",
+     "monto": 69000.0
+    },
+    {
+     "moneda": "USD",
+     "monto": 0
+    }
+   ]
+  },
+  {
+   "ultimos4": "2222",
+   "adicional": false,
+   "totales": [
+    {
+     "moneda": "ARS",
+     "monto": 591500.0
+    },
+    {
+     "moneda": "USD",
+     "monto": 0
+    }
+   ]
+  }
+ ],
+ "periodo": {
+  "desde": null,
+  "hasta": null
+ },
+ "cierre": "2026-08-20",
+ "vencimiento": "2026-09-01",
+ "cierreAnterior": "2026-07-23",
+ "vencimientoAnterior": "2026-08-03",
+ "proximoCierre": "2026-09-24",
+ "proximoVencimiento": "2026-10-02",
+ "saldoAnterior": [
+  {
+   "moneda": "ARS",
+   "monto": 250000.0
+  },
+  {
+   "moneda": "USD",
+   "monto": 0
+  }
+ ],
+ "totales": [
+  {
+   "moneda": "ARS",
+   "monto": 662920.0
+  },
+  {
+   "moneda": "USD",
+   "monto": 0
+  }
+ ],
+ "pagoMinimo": {
+  "moneda": "ARS",
+  "monto": 95000
+ },
+ "limites": {
+  "compra": 5000000,
+  "financiacion": 5000000
+ },
+ "consumos": [
+  {
+   "fecha": "2026-07-21",
+   "comercio": "AEROLINEA GENERICA",
+   "monto": 21000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": {
+    "n": 2,
+    "de": 6
+   },
+   "tarjeta": "3333"
+  },
+  {
+   "fecha": "2026-07-21",
+   "comercio": "AEROLINEA GENERICA",
+   "monto": 33000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": {
+    "n": 2,
+    "de": 6
+   },
+   "tarjeta": "3333"
+  },
+  {
+   "fecha": "2026-07-22",
+   "comercio": "AEROLINEA GENERICA",
+   "monto": 15000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": {
+    "n": 2,
+    "de": 3
+   },
+   "tarjeta": "3333"
+  },
+  {
+   "fecha": "2026-08-05",
+   "comercio": "TIENDA DEPORTES GENERICA",
+   "monto": 40000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": {
+    "n": 1,
+    "de": 12
+   },
+   "tarjeta": "2222"
+  },
+  {
+   "fecha": "2026-08-12",
+   "comercio": "ALQUILER AUTOS GENERICO",
+   "monto": 350000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": null,
+   "tarjeta": "2222"
+  },
+  {
+   "fecha": "2026-08-14",
+   "comercio": "CENTRO DE ESQUI GENERICO",
+   "monto": 90000.0,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": {
+    "n": 1,
+    "de": 3
+   },
+   "tarjeta": "2222"
+  },
+  {
+   "fecha": "2026-08-17",
+   "comercio": "SUPER GENERICO",
+   "monto": 62500.5,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": null,
+   "tarjeta": "2222"
+  },
+  {
+   "fecha": "2026-08-19",
+   "comercio": "ESTACION DE SERVICIO GENERICA",
+   "monto": 48999.5,
+   "moneda": "ARS",
+   "rubro": "Otros",
+   "cuota": null,
+   "tarjeta": "2222"
+  }
+ ],
+ "pagosYCreditos": [
+  {
+   "fecha": "2026-07-23",
+   "concepto": "CREDITO PROV. CONSUMO CUEST.",
+   "monto": -21000.0,
+   "moneda": "ARS",
+   "tipo": "credito"
+  },
+  {
+   "fecha": "2026-07-23",
+   "concepto": "CREDITO PROV. CONSUMO CUEST.",
+   "monto": -33000.0,
+   "moneda": "ARS",
+   "tipo": "credito"
+  },
+  {
+   "fecha": "2026-08-10",
+   "concepto": "SU PAGO EN PESOS",
+   "monto": -250000.0,
+   "moneda": "ARS",
+   "tipo": "pago"
+  },
+  {
+   "fecha": "2026-07-23",
+   "concepto": "CONSUMO VERIFICADO PROPIO",
+   "monto": 21000.0,
+   "moneda": "ARS",
+   "tipo": "reversion"
+  },
+  {
+   "fecha": "2026-07-23",
+   "concepto": "CONSUMO VERIFICADO PROPIO",
+   "monto": 33000.0,
+   "moneda": "ARS",
+   "tipo": "reversion"
+  }
+ ],
+ "cargos": [
+  {
+   "fecha": "2026-08-20",
+   "concepto": "INTERESES FINANCIACION",
+   "monto": 2000.0,
+   "moneda": "ARS",
+   "tipo": "interes"
+  },
+  {
+   "fecha": "2026-08-20",
+   "concepto": "DB IVA 21%",
+   "monto": 420.0,
+   "moneda": "ARS",
+   "tipo": "iva"
+  }
+ ],
+ "cuotasAVencer": [
+  {
+   "mes": "2026-09",
+   "monto": 184000.0,
+   "moneda": "ARS",
+   "desde": false
+  },
+  {
+   "mes": "2026-10",
+   "monto": 169000.0,
+   "moneda": "ARS",
+   "desde": false
+  },
+  {
+   "mes": "2026-11",
+   "monto": 40000.0,
+   "moneda": "ARS",
+   "desde": false
+  },
+  {
+   "mes": "2026-12",
+   "monto": 40000.0,
+   "moneda": "ARS",
+   "desde": true
+  }
+ ],
+ "confianza": "alta",
+ "avisos": [],
+ "_nota": "Fixture INVENTADO para tests: misma estructura que un resumen real, datos 100% falsos."
+}

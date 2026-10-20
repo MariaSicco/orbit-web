@@ -3,3 +3,6 @@ node_modules/
 .DS_Store
 
 .claude/
+
+# Resúmenes reales de prueba: NUNCA se suben (datos personales)
+privado/
