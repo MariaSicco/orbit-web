@@ -101,15 +101,15 @@ test('[IA] endpoint real: con el techo lleno no llama a Claude y dice "en pausa 
   } finally { delete process.env.ANTHROPIC_API_KEY; }
 });
 
-test('[precio] ob-019 USD 19 / ARS 28.990 de lanzamiento, comprable, y en products.js con el mismo precio', async () => {
+test('[precio] ob-019 USD 24 / ARS 35.990 de lanzamiento, comprable, y en products.js con el mismo precio', async () => {
   const { getCatalog } = await import('../api/_lib/catalog.js');
   const CAT = await getCatalog();
-  assert.deepEqual([CAT['ob-019'].usd, CAT['ob-019'].ars, CAT['ob-019'].soon], [19, 28990, undefined]);
+  assert.deepEqual([CAT['ob-019'].usd, CAT['ob-019'].ars, CAT['ob-019'].soon], [24, 35990, undefined]);
   const { readFileSync } = await import('node:fs');
   const src = readFileSync(new URL('../api/_lib/catalog.js', import.meta.url), 'utf8');
-  assert.match(src, /13\/11.*USD 24.*ARS 35\.990/);
+  assert.match(src, /13\/11.*USD 34.*ARS 50\.990/);
   const prod = readFileSync(new URL('../assets/js/products.js', import.meta.url), 'utf8');
-  assert.match(prod, /id: 'ob-019'[^]*?price: 19, ars: 28990/);
+  assert.match(prod, /id: 'ob-019'[^]*?price: 24, ars: 35990/);
 });
 
 
