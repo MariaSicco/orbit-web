@@ -7,6 +7,7 @@ import { sendEmail, emailReady, layout, it } from './email.js';
 import { upsertContact, listClientes } from './marketing.js';
 import { capiPurchase } from './capi.js';
 import { destinoComprobante } from './herramientas.js';
+import { acreditar } from './creditos.js';
 
 const key = id => `orbit:order:${id}`;
 const listKey = email => `orbit:orders:${email.toLowerCase()}`;
@@ -71,6 +72,12 @@ export async function markPaid(id, { paymentId, amount, currency }) {
       currency: order.via === 'paypal' ? 'USD' : 'ARS',
       date: order.paidAt,
     });
+  }
+  /* Herramientas con lecturas con IA (Orbit IVA): la compra suma su saldo. Una sola vez por pago. */
+  const CAT = await getCatalog().catch(() => ({}));
+  for (const it of order.items) {
+    const creditos = CAT[it.id]?.creditos;
+    if (creditos) await acreditar(order.email, creditos * (it.qty || 1), `${id}:${it.id}`);
   }
   /* Aviso al comprador y alta como cliente.
      Los dos se esperan: en Vercel, lo que queda pendiente cuando la función

@@ -1,0 +1,32 @@
+{
+  "esperado": {
+    "es_comprobante": true,
+    "tipo_codigo": "001",
+    "letra": "A",
+    "punto_venta": 5,
+    "numero": 1925,
+    "fecha": "2026-08-26",
+    "cuit_emisor": "30712345671",
+    "razon_social_emisor": "PROVEEDOR UNO SA",
+    "cuit_receptor": "30799999990",
+    "moneda": "PES",
+    "cotizacion": 1,
+    "alicuotas": [
+      {
+        "tasa": 21,
+        "neto": 310187.37,
+        "iva": 65139.35
+      }
+    ],
+    "no_gravado": null,
+    "exento": null,
+    "percepciones_iva": 9305.62,
+    "percepciones_iibb": 7754.68,
+    "otros_tributos": null,
+    "total": 392387.02,
+    "cae": "76000030864175",
+    "campos_dudosos": []
+  },
+  "qrTexto": "https://www.arca.gob.ar/fe/qr/?p=eyJ2ZXIiOjEsImZlY2hhIjoiMjAyNi0wOC0yNiIsImN1aXQiOjMwNzEyMzQ1NjcxLCJwdG9WdGEiOjUsInRpcG9DbXAiOjEsIm5yb0NtcCI6MTkyNSwiaW1wb3J0ZSI6MzkyMzg3LjAyLCJtb25lZGEiOiJQRVMiLCJjdHoiOjEsInRpcG9Eb2NSZWMiOjgwLCJucm9Eb2NSZWMiOjMwNzk5OTk5OTkwLCJ0aXBvQ29kQXV0IjoiRSIsImNvZEF1dCI6NzYwMDAwMzA4NjQxNzV9",
+  "degradacion": null
+}

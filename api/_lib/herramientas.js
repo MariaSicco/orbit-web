@@ -43,7 +43,7 @@ const TIPOS = {
   html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8',
   css: 'text/css; charset=utf-8', json: 'application/json; charset=utf-8', svg: 'image/svg+xml',
   png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', webp: 'image/webp', ico: 'image/x-icon',
-  woff2: 'font/woff2', wasm: 'application/wasm', webmanifest: 'application/manifest+json', txt: 'text/plain; charset=utf-8',
+  woff2: 'font/woff2', wasm: 'application/wasm', webmanifest: 'application/manifest+json', txt: 'text/plain; charset=utf-8', csv: 'text/csv; charset=utf-8',
 };
 export const tipoDe = archivo => TIPOS[String(archivo).split('.').pop().toLowerCase()] || 'application/octet-stream';
 
