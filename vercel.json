@@ -17,6 +17,10 @@
     {
       "source": "/herramientas/:slug/:path*",
       "destination": "/api/herramienta?slug=:slug&path=:path*"
+    },
+    {
+      "source": "/regalo/:t",
+      "destination": "/api/regalo?t=:t"
     }
   ],
   "crons": [
@@ -66,6 +70,12 @@
       "maxDuration": 60
     },
     "api/mi-mes-leer.js": {
+      "maxDuration": 60
+    },
+    "api/iva/extraer.js": {
+      "maxDuration": 60
+    },
+    "api/iva/asistente.js": {
       "maxDuration": 60
     }
   }

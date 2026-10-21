@@ -1,0 +1,32 @@
+{
+  "esperado": {
+    "es_comprobante": true,
+    "tipo_codigo": "001",
+    "letra": "A",
+    "punto_venta": 4,
+    "numero": 1148,
+    "fecha": "2026-08-05",
+    "cuit_emisor": "30722222225",
+    "razon_social_emisor": "COMERCIO CUATRO SRL",
+    "cuit_receptor": "30799999990",
+    "moneda": "PES",
+    "cotizacion": 1,
+    "alicuotas": [
+      {
+        "tasa": 21,
+        "neto": 391174.93,
+        "iva": 82146.74
+      }
+    ],
+    "no_gravado": null,
+    "exento": null,
+    "percepciones_iva": null,
+    "percepciones_iibb": null,
+    "otros_tributos": null,
+    "total": 473321.67,
+    "cae": "76000004938268",
+    "campos_dudosos": []
+  },
+  "qrTexto": null,
+  "degradacion": null
+}

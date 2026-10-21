@@ -46,7 +46,10 @@ export const CATALOG = {
     bajada: 'Casos, clientes, audiencias, tareas y honorarios en un solo tablero de Notion.' },
   'ob-011': { code: 'OB—011', name: 'Control de honorarios',          usd: 19, ars: 28999, foto: 'corridor',
     bajada: 'Sabé cuánto te deben, quién y cuándo vas a cobrar.' },
+  /* Herramienta online (no se descarga): la compra (o un regalo desde el panel) da acceso a /herramientas/iva
+     y suma lecturas de facturas con IA. Sigue en "soon": no se vende en la tienda hasta que se decida. */
   'ob-005': { code: 'OB—005', name: 'Orbit IVA',          usd: 79, ars: 79000, soon: true, foto: 'ob-005',
+    herramienta: '/herramientas/iva', creditos: 1500,
     bajada: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.' },
 };
 

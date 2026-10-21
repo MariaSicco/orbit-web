@@ -161,6 +161,17 @@ td .mono{opacity:.55}
         <div class="bh"><h2>Últimas cuentas</h2><span class="hint" id="gCount"></span></div>
         <div class="scroll"><table id="tGente"></table></div>
       </div>
+      <div class="blk">
+        <div class="bh"><h2>Regalar Orbit IVA</h2><span class="hint">Le da el acceso como si la hubiera comprado, con 1.500 lecturas con IA. No cuenta como venta.</span></div>
+        <form class="prod" id="regForm">
+          <div class="grid4">
+            <div class="fld"><label for="regName">Nombre</label><input id="regName" name="name" maxlength="60" placeholder="Opcional"></div>
+            <div class="fld"><label for="regMail">Email</label><input id="regMail" name="email" type="email" placeholder="persona@…" required><span class="tip">Sus datos quedan guardados en esta cuenta. No le llega ningún mail.</span></div>
+            <div class="fld"><label>&nbsp;</label><button class="btn btn-acid sm" type="submit">Crear link <span class="ar">→</span></button></div>
+          </div>
+          <p class="pmsg" id="regMsg"></p>
+        </form>
+      </div>
     </section>
 
     <section class="pane hidden" data-pane="ped">
@@ -369,6 +380,25 @@ document.addEventListener('click', async e => {
     if (aviso) { aviso.textContent = d.ok ? ' Enviado a ' + d.para : ' ' + (d.resultado || d.error || 'falló'); aviso.style.color = d.ok ? 'var(--ac)' : 'var(--or)'; }
   } catch (err) { if (aviso) { aviso.textContent = ' no se pudo'; aviso.style.color = 'var(--or)'; } }
   b.textContent = antes; b.disabled = false;
+});
+
+/* ── regalar una herramienta: link personal que la deja adentro ── */
+$('#regForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const m = $('#regMsg'); m.classList.remove('ok'); m.textContent = 'Creando el link…';
+  try {
+    const r = await fetch('/api/admin/regalar', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ productId: 'ob-005', name: $('#regName').value, email: $('#regMail').value }) });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error);
+    m.classList.add('ok');
+    m.innerHTML = (d.yaTenia ? 'Ya tenía el acceso: este link nuevo reemplaza al anterior. ' : 'Listo, regalado. ') + 'Pasale este link y entra directo a la calculadora (sirve las veces que quiera, no lo publiques): '
+      + '<br><input readonly id="regLink" value="' + esc(d.link) + '" style="width:100%;margin:8px 0;font:inherit"> <button type="button" class="btn btn-line sm" id="regCopiar">Copiar link</button> · Lecturas con IA: ' + Number(d.lecturas).toLocaleString('es-AR');
+    $('#regCopiar').onclick = async () => { try { await navigator.clipboard.writeText(d.link); $('#regCopiar').textContent = 'Copiado'; } catch (err) { $('#regLink').select(); } };
+    e.target.reset();
+  } catch (err) {
+    m.textContent = String(err.message) === 'invalid_email' ? 'Revisá el email.' : 'No pudimos crear el link. Probá de nuevo.';
+  }
 });
 
 /* ── equipo ── */
