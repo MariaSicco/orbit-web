@@ -3,6 +3,10 @@
   "trailingSlash": false,
   "rewrites": [
     {
+      "source": "/mi-mes/mail/:prov",
+      "destination": "/api/mi-mes-mail?accion=callback&prov=:prov"
+    },
+    {
       "source": "/p/:id",
       "destination": "/api/producto?id=:id"
     },
@@ -71,6 +75,12 @@
     },
     "api/mi-mes-leer.js": {
       "maxDuration": 60
+    },
+    "api/mi-mes-mail.js": {
+      "maxDuration": 120
+    },
+    "api/cron/mi-mes.js": {
+      "maxDuration": 300
     },
     "api/iva/extraer.js": {
       "maxDuration": 60
