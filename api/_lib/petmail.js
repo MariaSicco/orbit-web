@@ -480,9 +480,10 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
   const at = await accessToken(P, email, st, cfg);
   /* lo ya importado y lo que está en cola no se vuelve a ofrecer */
   const imported = new Set([...st.imported, ...st.queue.map(x => dedupeKey(x.m, x.part))]);
-  const candidates = [], noFile = [];
+  const candidates = [], noFile = [], seenM = new Set();
   const rel = relContext(doc, await getSenders(email));
-  const out = extra => ({ candidates: candidates.sort((a, b) => b.score - a.score), noFile, ...extra });
+  /* "mode": cómo buscó el proveedor (Outlook: completa, simple o respaldo), para que la pantalla lo diga */
+  const out = extra => ({ candidates: candidates.sort((a, b) => b.score - a.score), noFile, ...(P.mode ? { mode: P.mode(cur) } : {}), ...extra });
   for (;;) {
     let list;
     try { list = await P.list(at, cur); }
@@ -516,6 +517,8 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
       for (const g of got) {
         if (!g) continue;
         const { c, r } = g;
+        /* con varias consultas seguidas (Outlook) el mismo mail puede volver: una sola vez por búsqueda */
+        if (seenM.has(c.m)) continue; seenM.add(c.m);
         const links = (c.links || []).filter(l => !imported.has(dedupeKey(c.m, l.part))).map(l => ({ part: l.part, name: `Estudio por link · ${l.host}`, type: 'link', size: 0, url: l.url, host: l.host }));
         const files = [...c.files.filter(f => !imported.has(dedupeKey(c.m, f.part))), ...links];
         /* veterinario pero sin adjunto ni link de estudio: se lista aparte para abrirlo en el mail */

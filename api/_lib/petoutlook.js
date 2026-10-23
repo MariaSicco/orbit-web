@@ -54,6 +54,11 @@ export function buildKqlLegacy(doc, since, senders) {
   while (k.length > 1400 && (known.length || froms.length)) { if (known.length) known.pop(); else froms.pop(); k = make(); }
   return k;
 }
+/* asuntos de estudio sin propiedades KQL (busca en asunto, remitente y cuerpo); la app se queda solo con los que traen adjunto */
+export function docsKql(since) {
+  const t = [...new Set(M.DOC_SUBJECTS.map(x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))];
+  return `(${t.join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
+}
 /* $search="…": las comillas y barras de adentro van escapadas */
 export const searchParam = kql => '"' + kql.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
 const SELECT = 'id,subject,from,receivedDateTime,hasAttachments,webLink';
@@ -99,7 +104,11 @@ export const outlook = {
   config: outlookConfig,
   validId: okId,
   validPart: okId,
-  query: (doc, opts, now) => { const since = M.sinceOf(opts, now); return { kql: buildKql(doc, since, opts.senders), since }; },
+  /* tres consultas, de la más completa a la más simple: si Graph rechaza una (400), se prueba la siguiente antes de caer
+     al modo respaldo (solo los mails con adjunto más recientes). "plain" son KQL sin propiedades (from:, subject:,
+     attachment:), que algunas casillas no aceptan: [la de siempre, asuntos de estudio] */
+  query: (doc, opts, now) => { const since = M.sinceOf(opts, now); return { kql: buildKql(doc, since, opts.senders), plain: [buildKqlLegacy(doc, since, opts.senders), docsKql(since)], since }; },
+  mode: cur => cur.f ? 'respaldo' : (cur.ph || 0) === 0 ? 'completa' : 'simple',
   legacyQuery: (doc, opts, now) => { const since = M.sinceOf(opts, now); return { kql: buildKqlLegacy(doc, since, opts.senders), since }; },
   authUrl: (cfg, state, challenge) => LOGIN + '/authorize?' + form({
     client_id: cfg.clientId, response_type: 'code', redirect_uri: cfg.redirect, response_mode: 'query',
@@ -125,19 +134,25 @@ export const outlook = {
   async revoke() { return false; },
   async list(at, cur) {
     let url = cur.page;
+    /* "phase:N": terminó una consulta simple y sigue la próxima (la arma este mismo adaptador, va firmada en el cursor) */
+    if (url && /^phase:[12]$/.test(url)) { cur.ph = Number(url.slice(6)); url = ''; }
     if (url && !url.startsWith(GRAPH + '/me/messages')) throw fail('cursor_invalido', 400);
+    /* en la consulta de asuntos de estudio solo sirven los mails con adjunto; al terminar la 1 sigue la 2 */
+    const wrap = (d, ph) => ({ items: (d.value || []).filter(x => ph !== 2 || x.hasAttachments), next: d['@odata.nextLink'] || (ph === 1 && cur.q.plain?.[1] ? 'phase:2' : '') });
     if (!url) {
-      if (!cur.f) {
-        url = `/me/messages?$search=${encodeURIComponent(searchParam(cur.q.kql))}&$select=${SELECT}&$top=${M.PAGE}`;
-        try { const d = await graph(url, at); return { items: d.value || [], next: d['@odata.nextLink'] || '' }; }
-        catch (e) { if (e.code !== 'mail_consulta') throw e; cur.f = 1; }   // si la búsqueda no está disponible en esa casilla, va el filtro
+      while (!cur.f) {
+        const ph = cur.ph || 0, kql = ph === 0 ? cur.q.kql : cur.q.plain?.[ph - 1];
+        if (!kql) { cur.f = 1; break; }
+        url = `/me/messages?$search=${encodeURIComponent(searchParam(kql))}&$select=${SELECT}&$top=${M.PAGE}`;
+        try { return wrap(await graph(url, at), ph); }
+        catch (e) { if (e.code !== 'mail_consulta') throw e; cur.ph = ph + 1; url = ''; }   // esa consulta no la acepta esta casilla: la siguiente
       }
       /* modo filtro: adjuntos y fecha en el servidor; la relevancia (asunto, remitente y nombres de archivo) la decide el puntaje */
       const since = new Date(cur.q.since || Date.parse('2000-01-01')).toISOString();
       url = `/me/messages?$filter=${encodeURIComponent(`receivedDateTime ge ${since} and hasAttachments eq true`)}&$orderby=${encodeURIComponent('receivedDateTime desc')}&$select=${SELECT}&$top=${M.PAGE}`;
     }
     const d = await graph(url, at);
-    return { items: d.value || [], next: d['@odata.nextLink'] || '' };
+    return cur.f ? { items: d.value || [], next: d['@odata.nextLink'] || '' } : wrap(d, cur.ph || 0);
   },
   async candidate(at, msg) {
     if (!okId(msg?.id)) return null;

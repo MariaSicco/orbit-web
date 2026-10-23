@@ -66,7 +66,7 @@ function fakeMs() {
       if (p === '/me/messages') {
         const sel = u.searchParams.get('$select');
         assert.ok(!/body/i.test(sel), 'no pide el cuerpo');
-        if (u.searchParams.get('$search')) { if (g.searchFails) return json({ error: { code: 'BadRequest' } }, 400); g.lastSearch = u.searchParams.get('$search'); }
+        if (u.searchParams.get('$search')) { const q = u.searchParams.get('$search'); if (g.searchFails || (g.noProps && /(attachment|subject|hasattachment):/.test(q))) return json({ error: { code: 'BadRequest' } }, 400); g.searches = [...(g.searches || []), q]; g.lastSearch = q; }
         else g.lastFilter = u.searchParams.get('$filter');
         return json({ value: g.msgs.filter(m => !u.searchParams.get('$filter') || m.hasAttachments) });
       }
@@ -215,4 +215,23 @@ test('si la persona no da Mail.Read, no queda conectada', async () => {
   const go = await call('GET', { outlook: 'start' });
   const cb = await call('GET', { outlook: 'callback', code: 'buen-code', state: new URL(go.headers.location).searchParams.get('state') });
   assert.equal(cb.headers.location, '/mascotas#/outlook/sinpermiso');
+});
+
+test('si la casilla rechaza la consulta con propiedades (subject:, attachment:), prueba las simples antes del respaldo', async () => {
+  await purchase(EMAIL);
+  await kvSet(`orbit:pets:${EMAIL}`, { ...doc, rev: 1 });
+  const go = await call('GET', { outlook: 'start' });
+  await call('GET', { outlook: 'callback', code: 'buen-code', state: new URL(go.headers.location).searchParams.get('state') });
+  ms.noProps = true;
+  /* caso real (15/10): la plataforma de la veterinaria manda desde noreply@ con el asunto pelado */
+  ms.msgs.push({ id: LONG('m9'), subject: 'Radiografia', from: { emailAddress: { name: '', address: 'noreply@myvete.com' } }, receivedDateTime: '2025-04-07T10:00:00Z', hasAttachments: true });
+  ms.atts[LONG('m9')] = [{ '@odata.type': '#microsoft.graph.fileAttachment', id: LONG('c1'), name: 'estudio.pdf', contentType: 'application/pdf', size: 250000, isInline: false }];
+  const s = await call('POST', { outlook: 'search' }, { mode: 'all' });
+  assert.equal(s.code, 200, JSON.stringify(s.body));
+  assert.equal(s.body.mode, 'simple');
+  assert.equal(ms.lastFilter, undefined, 'no cae al respaldo');
+  assert.equal(ms.searches.length, 2, 'la de siempre y la de asuntos de estudio');
+  assert.ok(/radiografia/.test(ms.searches[1]) && !/subject:/.test(ms.searches[1]));
+  assert.ok(s.body.candidates.some(c => c.subject === 'Radiografia'), JSON.stringify(s.body.candidates.map(c => c.subject)));
+  assert.equal(new Set(s.body.candidates.map(c => c.m)).size, s.body.candidates.length);
 });

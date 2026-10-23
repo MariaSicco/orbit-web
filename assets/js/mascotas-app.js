@@ -2726,7 +2726,9 @@ async function mailSearch(p, mode, more, range) {
       const r = await fetch(`/api/mascotas?${p}=search`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode, cursor, ...(range && !cursor ? { range } : {}) }) });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) throw Object.assign(new Error(d.error || 'error'), { code: d.error });
-      gm.cands.push(...d.candidates); gm.noFile.push(...(d.noFile || [])); gm.cands.sort((a, b) => (b.score || 0) - (a.score || 0)); gm.scanned = base + d.scanned; gm.more = d.more || null;
+      /* sin repetidos: con varias consultas seguidas (Outlook) un mail puede venir dos veces */
+      const seenM = new Set(gm.cands.map(c => c.m)), seenN = new Set(gm.noFile.map(c => c.m));
+      gm.cands.push(...d.candidates.filter(c => !seenM.has(c.m))); gm.noFile.push(...(d.noFile || []).filter(c => !seenN.has(c.m))); if (d.mode) gm.mode2 = d.mode; gm.cands.sort((a, b) => (b.score || 0) - (a.score || 0)); gm.scanned = base + d.scanned; gm.more = d.more || null;
       cursor = d.cursor;
       if (route.name === p) render();
     } while (cursor);
@@ -2759,7 +2761,7 @@ function renderMail(p) {
   if (gm.phase === 'error') return `<section class="sec">${back}<h1 class="h-xl">No pudimos buscar</h1><p class="dim">${esc(gm.err)}</p><button class="btn big wide" data-act="mailOpen" data-p="${p}" data-mode="${gm.mode}">Probar de nuevo</button></section>`;
   const files = gmFiles(), n = gm.sel.size, queue = s.queue || [];
   const qBox = queue.length ? `<div class="gm-queue"><span class="what"><b>${queue.length} en cola</b><small>Los elegiste y no entraron en el tope de importaciones inteligentes. Seguí cuando se renueve.</small></span><button class="btn sm ghost" data-act="mailQueue">Seguir con la cola</button></div>` : '';
-  const moreBox = gm.more ? `<div class="gm-more"><p class="note">Revisamos los ${gm.scanned} mails más recientes. Puede haber más viejos.</p><button class="btn sm ghost" data-act="mailMore">Buscar 200 más</button></div>` : '';
+  const moreBox = gm.more ? `<div class="gm-more"><p class="note">${gm.mode2 === 'respaldo' ? `${L} no aceptó la búsqueda por palabras en tu casilla, así que revisamos los ${gm.scanned} mails con adjunto más recientes. Los estudios más viejos pueden estar más atrás.` : `Revisamos los ${gm.scanned} mails más recientes. Puede haber más viejos.`}</p><button class="btn sm ghost" data-act="mailMore">Buscar 200 más</button></div>` : '';
   const who = s.address ? `${L} · ${esc(s.address)}` : L;
   const noFile = gm.noFile?.length ? `<section class="gm-nofile"><h2>Sin archivo adjunto: abrilo en ${L}</h2><p class="note">Parecen de tu veterinaria o laboratorio, pero no traen el PDF (muchos mandan un link). Abrilo, bajá el estudio y sumalo con “Subir estudios”.</p>
     <div class="list">${gm.noFile.map(x => `<a class="row link-row" href="${esc(x.link)}" target="_blank" rel="noopener">${bubble('mail', 'plata')}<span class="what"><b>${esc(x.subject || '(Sin asunto)')}</b><small>${esc(x.from)}${x.date ? ' · ' + fmt(x.date.slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</small></span>${I('chevron')}</a>`).join('')}</div></section>` : '';
