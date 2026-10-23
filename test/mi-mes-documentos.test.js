@@ -445,3 +445,13 @@ test('[QA t17 · 1] factura real después de la bonificación: manda su monto; l
   assert.deepEqual(d3.gastos[0].sube, { desde: '2027-07', monto: $(45_000) });
   assert.deepEqual(['2027-02', '2027-07'].map(m => M.resumenMes(d3, m).totGastos), [$(31_500), $(45_000)]);
 });
+
+test('[conectarMail] Gmail u Outlook con diálogo (sin window.confirm), sin sessionStorage.clear y tope de 25 adjuntos', async () => {
+  const src = readFileSync(new URL('../api/_herramientas/mi-mes/correo-mi-mes.js', import.meta.url), 'utf8');
+  const html = readFileSync(new URL('../api/_herramientas/mi-mes/index.html', import.meta.url), 'utf8');
+  assert.doesNotMatch(src, /window\.confirm/);
+  assert.doesNotMatch(src, /sessionStorage\.clear/);
+  assert.match(src, /MAX_ADJUNTOS = 25/);
+  assert.equal(D.TOPE_DIA_DOCS, 25);
+  assert.match(html, /id="dlg-mail"[\s\S]*data-mail="google"[\s\S]*data-mail="microsoft"/);
+});

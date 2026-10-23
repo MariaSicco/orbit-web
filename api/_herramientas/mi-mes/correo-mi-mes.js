@@ -9,7 +9,7 @@
    últimos 6 meses y los devuelve como archivos; después pasan por el mismo
    "revisá lo que leí" (y por /api/mi-mes-leer, como si los subieras vos).
    No se guarda el mail, ni la lista de mensajes, ni el token. */
-const MAX_ADJUNTOS = 30;
+const MAX_ADJUNTOS = 25; /* = tope de archivos por día (TOPE_DIA_DOCS) */
 const MAX_BYTES = 4e6;
 const CONSULTA_GMAIL = 'has:attachment filename:pdf newer_than:6m (resumen OR "estado de cuenta" OR factura OR boleta OR expensas OR "recibo de sueldo" OR haberes OR liquidación OR vencimiento)';
 const KQL = '"resumen" OR "estado de cuenta" OR "factura" OR "boleta" OR "expensas" OR "recibo de sueldo" OR "haberes"';
@@ -68,6 +68,10 @@ export async function buscarEnGmail(clientId, avance) {
 export async function buscarEnOutlook(clientId, avance) {
   await cargarScript('vendor/msal-browser-2.38.3.min.js');
   if (!window.msal) throw new Error('No pudimos cargar el acceso de Microsoft. Probá de nuevo en un rato.');
+  /* al terminar se borra solo lo que dejó MSAL, no el resto de la sesión del origen */
+  let antes = new Set();
+  try { antes = new Set(Object.keys(sessionStorage)); } catch {}
+  const limpiar = () => { try { for (const k of Object.keys(sessionStorage)) if (!antes.has(k)) sessionStorage.removeItem(k); } catch {} };
   const app = new window.msal.PublicClientApplication({
     auth: { clientId, authority: 'https://login.microsoftonline.com/common', redirectUri: `${location.origin}/herramientas/mi-mes` },
     cache: { cacheLocation: 'sessionStorage' },
@@ -77,7 +81,7 @@ export async function buscarEnOutlook(clientId, avance) {
   try {
     const r = await app.loginPopup({ scopes: ['Mail.Read'], prompt: 'select_account' });
     token = r.accessToken || (await app.acquireTokenSilent({ scopes: ['Mail.Read'], account: r.account })).accessToken;
-  } catch { throw new Error('Se cerró la ventana de Microsoft o no diste el permiso.'); }
+  } catch { limpiar(); throw new Error('Se cerró la ventana de Microsoft o no diste el permiso.'); }
   try {
     const pedir = u => fetch(u, { headers: { Authorization: `Bearer ${token}` } });
     const desde = Date.now() - 183 * 864e5;
@@ -95,14 +99,16 @@ export async function buscarEnOutlook(clientId, avance) {
     }
     return out;
   } finally {
-    try { sessionStorage.clear(); } catch {}
+    limpiar();
   }
 }
-/* Elige el proveedor: si hay los dos, pregunta; si no hay ninguno configurado, el mensaje de "todavía no". */
-export async function buscarDocumentosEnMail(avance) {
+/* Elige el proveedor: si hay los dos, pregunta con elegir() (diálogo de la app;
+   null = la persona lo cerró); si no hay ninguno configurado, el mensaje de "todavía no". */
+export async function buscarDocumentosEnMail(avance, elegir) {
   const c = await config();
   if (!c.google && !c.microsoft) throw new Error(SIN_CUPO);
-  const cual = c.google && c.microsoft ? (window.confirm('¿Tu mail es de Gmail? Aceptar = Gmail · Cancelar = Outlook o Hotmail') ? 'google' : 'microsoft') : c.google ? 'google' : 'microsoft';
+  const cual = c.google && c.microsoft ? await elegir() : c.google ? 'google' : 'microsoft';
+  if (!cual) return null;
   return cual === 'google' ? buscarEnGmail(c.google, avance) : buscarEnOutlook(c.microsoft, avance);
 }
 

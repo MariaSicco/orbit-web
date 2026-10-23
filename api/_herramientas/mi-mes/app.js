@@ -632,10 +632,23 @@ async function conectarMail() {
   if (!F.conectarMail) return;
   try {
     const { buscarDocumentosEnMail } = await import('./correo-mi-mes.js');
-    const encontrados = await buscarDocumentosEnMail(n => { $id('subir-sub').textContent = `Buscando en tu mail… ${n} archivos`; });
+    const encontrados = await buscarDocumentosEnMail(n => { $id('subir-sub').textContent = `Buscando en tu mail… ${n} archivos`; }, elegirMail);
+    if (!encontrados) return;
     if (!encontrados.length) return avisar('No encontramos resúmenes, facturas ni recibos en tu mail.');
     agregarArchivos(encontrados.map(x => new File([x.bytes], x.nombre, { type: 'application/pdf' })));
   } catch (e) { avisar(e?.message || 'Por ahora subí los PDF; te avisamos cuando se habilite.'); }
+}
+
+/* Gmail u Outlook: diálogo con dos botones (antes window.confirm). Cerrarlo = no conectar. */
+function elegirMail() {
+  const d = $id('dlg-mail');
+  return new Promise(ok => {
+    let elegido = null;
+    const clic = e => { const b = e.target.closest('[data-mail]'); if (b) { elegido = b.dataset.mail; cerrar(d); } };
+    d.addEventListener('click', clic);
+    d.addEventListener('close', () => { d.removeEventListener('click', clic); ok(elegido); }, { once: true });
+    abrir(d, d.querySelector('[data-mail]'));
+  });
 }
 
 /* ════════ (6) TE TIENEN QUE DEVOLVER ════════ */
