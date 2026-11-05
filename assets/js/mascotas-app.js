@@ -220,9 +220,9 @@ async function uploadPhoto(data) {
   const d = await r.json().catch(() => ({})); if (!r.ok || !d.u) throw Object.assign(new Error(d.error || 'upload'), { msg: uploadErr(d, 'foto') }); return d.u;
 }
 
-const BUY_URL = '/p/ob-018';
+const BUY_URL = window.MIMITOS_BYMAJO ? 'https://bymajostudio.com/tienda/mimitos' : '/p/ob-018';
 /* el mismo mail de soporte que usa la web (orbitando.com.ar, términos y privacidad) */
-const SUPPORT_MAIL = 'hola@orbitando.com.ar';
+const SUPPORT_MAIL = window.MIMITOS_BYMAJO ? 'hola@bymajostudio.com' : 'hola@orbitando.com.ar';
 /* Precio aprobado (14/10/2026): lanzamiento hasta el 12/11/2026 inclusive. El 13/11 se saca el bloque
    de lanzamiento y queda el de lista (ver api/_lib/catalog.js y assets/js/products.js). */
 const PRICE = { ars: 43990, usd: 29, listArs: 58990, listUsd: 39, until: '12/11/2026' };

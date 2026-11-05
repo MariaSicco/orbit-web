@@ -1,3 +1,4 @@
+import { esMimitos, MIMITOS_HOST } from './marca.js';
 /* Catálogo del lado del servidor: precios y archivos.
    Los precios en pesos (ARS) se usan en Mercado Pago; USD en PayPal.
 
@@ -134,4 +135,4 @@ export async function fileUrlFor(id) {
 }
 /* Compatibilidad: solo mira las variables de entorno. */
 export const fileUrl = id => envFile(id);
-export const siteUrl = req => process.env.SITE_URL || `https://${req.headers['x-forwarded-host'] || req.headers.host}`;
+export const siteUrl = req => esMimitos(req) ? `https://${MIMITOS_HOST}` : process.env.SITE_URL || `https://${req.headers['x-forwarded-host'] || req.headers.host}`;

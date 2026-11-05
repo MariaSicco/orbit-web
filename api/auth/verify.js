@@ -4,6 +4,7 @@ import { kvGet, kvDel, kvSet } from '../_lib/kv.js';
 import { setSessionCookie } from '../_lib/auth.js';
 import { siteUrl } from '../_lib/catalog.js';
 import { getUser } from '../_lib/users.js';
+import { esMimitos } from '../_lib/marca.js';
 
 export default async function handler(req, res) {
   const site = siteUrl(req);
@@ -16,5 +17,6 @@ export default async function handler(req, res) {
   const user = await getUser(data.email);
   setSessionCookie(res, data.email, user?.name);
   if (reset) await kvSet(`orbit:reset:${data.email}`, { at: Date.now() }, 60 * 15);
+  if (esMimitos(req)) return res.redirect(302, `${site}/mascotas`);
   res.redirect(302, reset ? `${site}/biblioteca?reset=1` : `${site}/biblioteca`);
 }
