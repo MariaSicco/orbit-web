@@ -847,3 +847,8 @@ body[data-hero="a"] .hv:not(.hv-a),body[data-hero="b"] .hv:not(.hv-b),body[data-
 .rm .pn{position:relative;opacity:1;visibility:visible;margin-bottom:40px}
 .rm .mas-panels{height:auto}
 .rm .cc-push{opacity:1}
+
+/* entrar si ya la compraste: lleva a /acceso?next=mascotas (con sesión abierta va directo a la app) */
+.nav-enter{font:600 14px/1 var(--f);color:inherit;text-decoration:underline;text-underline-offset:3px;padding:12px 6px;white-space:nowrap}
+.lnk{color:inherit;font-weight:600;text-decoration:underline;text-underline-offset:3px}
+@media (max-width:599px){.nav-enter .ne-l{display:none}}
