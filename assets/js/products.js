@@ -450,6 +450,8 @@ window.ORBIT_PRODUCTS = [
     family: 'systems', status: 'soon', price: 29, ars: 43990,
     accent: 'blue', checkout: '', photo: 'ob-018',
     acceso: '/mascotas',
+    /* landing propia (decision-log 20/10): desde la home y el catálogo se entra por acá */
+    landing: '/mimitos',
     /* sello propio en la ficha: reemplaza "12 meses de actualizaciones" de las herramientas (producto.html) */
     sello: ['12 meses de funciones inteligentes', '12 months of smart features'],
     pantallasDir: 'ob-018',

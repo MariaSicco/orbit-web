@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mimitos by Orbit · se acuerda de todo por vos</title>
+<meta name="description" content="Mimitos se acuerda de todo por vos: vacunas, estudios, avisos, alimento, gastos, la chapita con QR y, cuando no estás, un celu viejo que la acompaña. Pago único.">
+<meta name="theme-color" content="#FBF6F0">
+<link rel="icon" href="/mimitos/media/fotos/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,500&family=IBM+Plex+Mono:wght@500&display=swap">
+<link rel="preload" as="image" href="/mimitos/media/fotos/felisa.webp">
+<link rel="stylesheet" href="/mimitos/styles.css?v=1">
+<!--
+  Mimitos · landing de lanzamiento V2 (2026-10-15)
+  Historia: Felisa (gata, amarillo) y Aika (perra, rosa) son las dos mascotas de la misma casa en toda la página.
+  Cada escena: ESCENA → MOVIMIENTO → DEMOSTRACIÓN → FRASE CORTA. El CSS guarda el estado final de cada escena
+  (lo que se ve con "reducir movimiento"); app.js anima desde el caos hasta ese estado.
+  Checkout: todos los CTA van a CHECKOUT (data-buy), que hoy apunta a la ficha ob-018 de orbit-web.
+-->
+</head>
+<body data-hero="a">
+<a class="skip" href="#main">Ir al contenido</a>
+
+<!-- íconos (sprite) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-vac" viewBox="0 0 24 24"><path d="m18 2 4 4M17 7l3-3M19 9 8.7 19.3a2.4 2.4 0 0 1-3.4 0l-.6-.6a2.4 2.4 0 0 1 0-3.4L15 5M9 11l4 4M5 19l-3 3M14 4l6 6"/></symbol>
+  <symbol id="i-pdf" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M8 13h8M8 17h5"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="3"/><path d="m3 6 9 7 9-7"/></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 2.7s6 6.4 6 11a6 6 0 0 1-12 0c0-4.6 6-11 6-11z"/></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><path d="M6 7h12l1 14H5z"/><path d="M8 7V5a4 4 0 0 1 8 0v2"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></symbol>
+  <symbol id="i-kg" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M8 9a5 5 0 0 1 8 0l-3 3"/></symbol>
+  <symbol id="i-rx" viewBox="0 0 24 24"><path d="M10.5 20.5 3.5 13.5a5 5 0 0 1 7-7l7 7a5 5 0 0 1-7 7zM8.5 8.5l7 7"/></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></symbol>
+  <symbol id="i-cash" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="3"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></symbol>
+  <symbol id="i-steth" viewBox="0 0 24 24"><path d="M5 3v6a5 5 0 0 0 10 0V3M10 14v2a5 5 0 0 0 10 0v-2"/><circle cx="20" cy="12" r="2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-6.3 7-12a7 7 0 0 0-14 0c0 5.7 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 3h4l2 5-2.5 1.5a11 11 0 0 0 6 6L16 13l5 2v4a2 2 0 0 1-2 2A17 17 0 0 1 3 5a2 2 0 0 1 2-2"/></symbol>
+  <symbol id="i-wa" viewBox="0 0 24 24"><path d="M3.5 20.5 5 16a8.5 8.5 0 1 1 3 3z"/><path d="M9 9.5c.3 2 2.5 4.2 4.5 4.5l1.2-1.2 2 .9c-.2 1.3-1.2 2-2.5 2-3.5 0-7.4-3.9-7.4-7.4 0-1.3.7-2.3 2-2.5l.9 2z"/></symbol>
+  <symbol id="i-route" viewBox="0 0 24 24"><path d="m3 11 19-8-8 19-2-9z"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 4.6L18 9l-4.2 1.6L12 15l-1.8-4.4L6 9l4.2-1.4zM19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/></symbol>
+  <symbol id="i-paw" viewBox="0 0 24 24"><ellipse cx="12" cy="16" rx="4.5" ry="3.8"/><circle cx="6" cy="10" r="2"/><circle cx="18" cy="10" r="2"/><circle cx="9.5" cy="6" r="2"/><circle cx="14.5" cy="6" r="2"/></symbol>
+  <symbol id="logo-m" viewBox="0 0 64 64"><rect width="64" height="64" rx="16" fill="#F8C8D8"/><g transform="translate(7 7) scale(.78) translate(-2.4 0)"><path d="M12.5 52V32a9.75 9.75 0 0 1 19.5 0v20M32 32a9.75 9.75 0 0 1 19.5 0v20" fill="none" stroke="#6B1A35" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 31 10.2 9 23.2 18.8Z" fill="#6B1A35" stroke="#6B1A35" stroke-width="3.2" stroke-linejoin="round"/><path d="M40.6 19.2C47 14.6 56.2 14.8 60.4 21.1 63 25.1 62.8 32.6 60.6 37 59.1 40 55.5 40.2 54.3 37L52.9 32.6C51.5 27.7 47.6 22.8 40.6 19.2Z" fill="#6B1A35"/></g></symbol>
+</svg>
+
+<header class="nav" id="nav">
+  <a class="brand" href="#top" aria-label="Mimitos by Orbit, inicio"><svg aria-hidden="true"><use href="#logo-m"/></svg><b>mimitos</b><span class="mono">by Orbit</span></a>
+  <div class="nav-r">
+    <button class="spot-open" type="button" data-spot aria-label="Ver el spot de 30 segundos, con sonido"><span class="tri" aria-hidden="true"></span><span class="lbl">Spot · 30 s</span></button>
+    <a class="pill ink sm" href="#precio">Quiero Mimitos</a>
+  </div>
+</header>
+
+<main id="main">
+
+<!-- ============ 1 · HERO (3 versiones para elegir: ?hero=a|b|c) ============ -->
+<section class="sc hero" id="top" data-pet="felisa" aria-labelledby="hero-h">
+  <div class="stage">
+    <div class="hero-copy">
+      <h1 id="hero-h" class="h-xl" data-split>Mimitos se acuerda<br>de todo <em>por vos.</em></h1>
+      <p class="hero-sub" data-fade>Toda la vida de tu mascota, organizada sola. Y cuando no estás, la ves.</p>
+      <div class="buy" data-fade>
+        <a class="pill ink lg" href="#precio" data-buy>Quiero Mimitos · $43.990</a>
+        <p class="buy-fine"><b>Pago único · precio lanzamiento.</b><br>App para siempre + 12 meses de funciones inteligentes.</p>
+      </div>
+    </div>
+    <div class="hero-world hv hv-a" id="world">
+     <div class="hbox" id="hbox">
+      <!-- la app (estado final: todo ordenado) -->
+      <div class="home sl on" data-s="0" id="home" aria-label="Inicio de Mimitos con Felisa">
+        <div class="home-band">
+          <svg class="cl cl1" viewBox="0 0 120 44" aria-hidden="true"><path d="M20 40h86a14 14 0 0 0 0-28 22 22 0 0 0-41-6A16 16 0 0 0 36 18 11 11 0 0 0 20 40Z" fill="#fff"/></svg>
+          <svg class="cl cl2" viewBox="0 0 120 44" aria-hidden="true"><path d="M20 40h86a14 14 0 0 0 0-28 22 22 0 0 0-41-6A16 16 0 0 0 36 18 11 11 0 0 0 20 40Z" fill="#fff"/></svg>
+          <svg class="dash" viewBox="0 0 400 160" preserveAspectRatio="none" aria-hidden="true"><path d="M-10 120C80 60 160 150 250 80S380 40 420 30" fill="none" stroke="#fff" stroke-width="2.5" stroke-dasharray="2 9" stroke-linecap="round" opacity=".75"/></svg>
+          <div class="pets-sw" role="group" aria-label="Elegí mascota">
+            <button type="button" class="pav" data-pick="felisa" aria-pressed="true"><img src="/mimitos/media/fotos/felisa.webp" alt=""><span>Felisa</span></button>
+            <button type="button" class="pav" data-pick="aika" aria-pressed="false"><img src="/mimitos/media/fotos/aika.webp" alt=""><span>Aika</span></button>
+          </div>
+        </div>
+        <div class="home-sheet">
+          <div class="home-name"><b data-f="name">Felisa</b><span data-f="breed">Gata · 3 años</span></div>
+          <div class="tiles">
+            <div class="tile" data-k="vac"><i class="ic c-rosa"><svg><use href="#i-vac"/></svg></i><span>Vacunas</span><b data-f="vac">Al día</b></div>
+            <div class="tile" data-k="drop"><i class="ic c-nar"><svg><use href="#i-drop"/></svg></i><span>Pipeta</span><b data-f="drop">28 oct</b></div>
+            <div class="tile" data-k="cal"><i class="ic c-vio"><svg><use href="#i-steth"/></svg></i><span>Control</span><b data-f="cal">14 nov · 18:30</b></div>
+            <div class="tile" data-k="kg"><i class="ic c-ver"><svg><use href="#i-kg"/></svg></i><span>Peso</span><b data-f="kg">4,2 kg</b></div>
+          </div>
+          <div class="home-row">
+            <span class="mini"><svg><use href="#i-pdf"/></svg><b data-f="docs">3 estudios</b></span>
+            <span class="mini"><svg><use href="#i-bag"/></svg><b data-f="food">Alimento · 5 días</b></span>
+            <span class="mini"><svg><use href="#i-qr"/></svg><b>QR activo</b></span>
+          </div>
+        </div>
+      </div>
+      <img class="hero-pet" id="heroPet" src="/mimitos/media/fotos/felisa.webp" alt="Felisa, una gata tricolor, recortada sobre su color" width="728" height="627">
+      <span class="absorb" id="absorb" aria-hidden="true"></span>
+      <!-- vidriera: las otras funciones pasan solas en el mismo lugar que la ficha -->
+      <div class="sl sl-live" data-s="1" aria-label="Me fui: Aika en vivo desde la cámara de casa">
+        <video src="/mimitos/media/video/aika-cam.mp4" poster="/mimitos/media/video/aika-cam.jpg" muted loop playsinline preload="none"></video>
+        <span class="lf" data-in><i></i>En vivo · Living</span>
+        <div class="r-live" data-in><b>Aika está sola hace 1 h 24 min</b><span class="r-bark"><span class="wv" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>Ladró 40 s a las 15:20 · te avisó</span></div>
+        <span class="lf-talk" data-in>Mantené para hablarle</span>
+      </div>
+      <div class="sl sl-mail" data-s="2" aria-label="Un estudio de Felisa encontrado en el mail y guardado en su historial">
+        <div class="m-mail" data-in>
+          <span class="mono m-k"><svg><use href="#i-mail"/></svg>Llegó a tu mail</span>
+          <b class="m-from">Laboratorio Panda</b>
+          <span class="m-sub">Resultados de Felisa</span>
+          <span class="m-att"><svg><use href="#i-pdf"/></svg>hemograma.pdf</span>
+        </div>
+        <div class="m-arrow" data-in><svg viewBox="0 0 24 40" aria-hidden="true"><path d="M12 2v32M4 26l8 9 8-9" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Mimitos lo encontró</span></div>
+        <div class="m-hist" data-in>
+          <span class="mono">Historial de Felisa</span>
+          <div class="m-row new"><svg><use href="#i-pdf"/></svg><div><b>Hemograma completo</b><small>13/10 · Laboratorio Panda</small></div><span class="m-new">Nuevo</span></div>
+          <div class="m-row"><svg><use href="#i-steth"/></svg><div><b>Control anual</b><small>02/09 · Veterinaria Panda</small></div></div>
+        </div>
+      </div>
+      <div class="sl sl-ask" data-s="3" aria-label="Preguntale a Mimitos">
+        <div class="r-q" data-in><img src="/mimitos/media/fotos/aika.webp" alt=""><span class="r-qt">¿Cuándo fue la última pipeta de Aika?</span></div>
+        <div class="r-trail"><span>Libreta</span><i></i><span>Desparasitación externa</span><i></i><span class="last">14 de septiembre</span></div>
+        <div class="r-ans"><p>La última pipeta registrada fue el <b>14 de septiembre</b>.</p><small class="mono">Fuente: Libreta › Desparasitación externa</small></div>
+        <span class="r-nodx" data-in>No diagnostica ni receta</span>
+      </div>
+      <div class="sl sl-qr" data-s="4" aria-label="Alguien escaneó la chapita de Felisa">
+        <div class="r-qpet"><img src="/mimitos/media/fotos/felisa.webp" alt=""><div class="collar" aria-hidden="true"><span class="tag"><svg viewBox="0 0 21 21"><path fill="#1F1A17" d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1zM3 3v3h3V3zM15 3v3h3V3zM3 15v3h3v-3zM10 1h2v2h-2zM10 5h2v4h-2zM13 10h2v2h-2zM17 10h3v2h-3zM10 13h3v2h-3zM15 13h2v4h-2zM18 15h2v5h-2zM10 17h4v3h-4z"/></svg></span></div><span class="r-vf" aria-hidden="true"><i></i><i></i><i></i><i></i></span></div>
+        <div class="r-notif"><svg><use href="#logo-m"/></svg><div><b>Alguien escaneó el QR de Felisa</b><span>Cerca de Palermo · hace unos segundos</span></div></div>
+        <div class="r-pub"><b>Hola, soy Felisa. Avisale a mi familia.</b><div class="qp-btns"><span class="qb call"><svg><use href="#i-phone"/></svg>Llamar</span><span class="qb wa"><svg><use href="#i-wa"/></svg>WhatsApp</span></div></div>
+      </div>
+
+      <!-- el caos: piezas sueltas de su vida -->
+      <div class="chaos" aria-hidden="true">
+        <span class="fr" style="--x:-44%;--y:-36%;--r:-8deg"><svg><use href="#i-vac"/></svg>Vacuna triple</span>
+        <span class="fr" style="--x:42%;--y:-40%;--r:6deg"><svg><use href="#i-pdf"/></svg>analisis.pdf</span>
+        <span class="fr" style="--x:-50%;--y:4%;--r:4deg"><svg><use href="#i-mail"/></svg>Lab. Panda</span>
+        <span class="fr" style="--x:50%;--y:-6%;--r:-5deg"><svg><use href="#i-drop"/></svg>Pipeta</span>
+        <span class="fr" style="--x:-38%;--y:40%;--r:-6deg"><svg><use href="#i-bag"/></svg>Bolsa 10 kg</span>
+        <span class="fr" style="--x:40%;--y:36%;--r:7deg"><svg><use href="#i-cal"/></svg>Turno 18:30</span>
+        <span class="fr d" style="--x:-8%;--y:-52%;--r:3deg"><svg><use href="#i-kg"/></svg>4,2 kg</span>
+        <span class="fr d" style="--x:14%;--y:52%;--r:-4deg"><svg><use href="#i-rx"/></svg>Receta</span>
+        <span class="fr d" style="--x:-56%;--y:-14%;--r:9deg"><svg><use href="#i-qr"/></svg>QR</span>
+        <span class="fr d" style="--x:58%;--y:18%;--r:-8deg"><svg><use href="#i-cash"/></svg>$14.000</span>
+      </div>
+     </div>
+     <div class="reel-ui">
+      <div class="reel-bars" role="group" aria-label="Funciones de Mimitos">
+        <button type="button" data-go="0" aria-label="Su ficha"><i></i></button><button type="button" data-go="1" aria-label="En vivo"><i></i></button><button type="button" data-go="2" aria-label="Estudios del mail"><i></i></button><button type="button" data-go="3" aria-label="Preguntale"><i></i></button><button type="button" data-go="4" aria-label="Chapita con QR"><i></i></button>
+      </div>
+      <p class="reel-cap" id="reelCap"><b>Su ficha.</b> Todo lo que le toca, de un vistazo.</p>
+     </div>
+    </div>
+
+    <!-- versión B: collage vivo alrededor de la mascota -->
+    <div class="hero-world hv hv-b" aria-label="Mimitos trabajando alrededor de Felisa">
+      <div class="cb">
+        <span class="cb-disc" aria-hidden="true"></span>
+        <img class="cb-pet" src="/mimitos/media/fotos/felisa.webp" alt="Felisa, una gata tricolor" width="728" height="627">
+        <div class="cbc c1"><svg class="an-i"><use href="#logo-m"/></svg><div><b>Le toca la pipeta a Felisa</b><span>Miércoles 28 · te aviso a la mañana</span></div></div>
+        <div class="cbc c2 vid"><video src="/mimitos/media/video/aika-cam.mp4" poster="/mimitos/media/video/aika-cam.jpg" muted loop playsinline preload="none"></video><span class="lf"><i></i>En vivo · Living</span></div>
+        <div class="cbc c3 pg"><img src="/mimitos/media/libreta/p2.webp" alt="Página de vacunas de la libreta" loading="lazy"></div>
+        <div class="cbc c4"><svg class="an-i"><use href="#logo-m"/></svg><div><b>Encontré un estudio de Felisa</b><span>hemograma.pdf · ya está en su historial</span></div></div>
+        <div class="cbc c5"><svg class="an-i"><use href="#logo-m"/></svg><div><b>Escanearon su chapita</b><span>Cerca de Palermo · hace un momento</span></div></div>
+      </div>
+    </div>
+    <!-- versión C: la cámara en vivo como protagonista -->
+    <div class="hero-world hv hv-c" aria-label="Un celu viejo en casa y tu celu con Felisa en vivo">
+      <div class="cc">
+        <div class="cc-old"><div class="cc-old-s"><span class="cc-dot"></span><b>Cámara activa</b><small>Living · escuchando</small><div class="meter"><span id="ccMeter"></span></div></div></div>
+        <div class="cc-mine">
+          <video src="/mimitos/media/video/aika-cam.mp4" poster="/mimitos/media/video/aika-cam.jpg" muted loop playsinline preload="none"></video>
+          <span class="lf"><i></i>En vivo · Living</span>
+          <div class="cc-push" id="ccPush"><svg><use href="#logo-m"/></svg><div><b>Aika ladró 40 segundos</b><span>Tocá para verla en vivo</span></div></div>
+          <span class="lf-talk">Mantené para hablarle</span>
+        </div>
+        <span class="cc-tag mono">Un celu viejo en casa → tu celu</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 2 · SE ACUERDA POR VOS: caos → un aviso → Mimitos ============ -->
+<section class="sc pin recuerda" id="recuerda" aria-label="Mimitos se acuerda por vos">
+  <div class="stage">
+    <div class="rc-lines">
+      <p class="rc-l l1">No necesita otra app<br><em>llena de datos.</em></p>
+      <p class="rc-l l2">Necesita que alguien<br><em>se acuerde.</em></p>
+      <p class="rc-l l3">Ese es <em>Mimitos.</em><span class="rc-sub">Te avisa antes: no cuando ya pasó.</span></p>
+    </div>
+    <div class="rc-cloud" aria-hidden="true">
+      <span class="dc" style="--x:-40%;--y:-30%">Vacuna triple · 02/02</span><span class="dc" style="--x:30%;--y:-34%">hemograma.pdf</span>
+      <span class="dc" style="--x:-12%;--y:-18%">Pipeta · ¿cuándo?</span><span class="dc" style="--x:42%;--y:-8%">Turno 18:30</span>
+      <span class="dc" style="--x:-44%;--y:4%">Bolsa 10 kg</span><span class="dc" style="--x:8%;--y:2%">4,2 kg</span>
+      <span class="dc" style="--x:-26%;--y:22%">receta.jpg</span><span class="dc" style="--x:30%;--y:20%">Antirrábica · vence</span>
+      <span class="dc d" style="--x:-4%;--y:34%">$40.000 veterinaria</span><span class="dc d" style="--x:46%;--y:36%">Gotas cada 12 h</span>
+      <span class="dc d" style="--x:-46%;--y:38%">Lab. Panda</span><span class="dc d" style="--x:16%;--y:-42%">Control anual</span>
+      <span class="dc d" style="--x:-22%;--y:-42%">eco.pdf</span><span class="dc d" style="--x:20%;--y:44%">Microchip</span>
+    </div>
+    <div class="lock" id="lock" aria-label="Avisos de Mimitos en la pantalla del celu">
+      <div class="lock-h"><span class="lock-d">Jueves 22 de octubre</span><b class="lock-t">9:00</b></div>
+      <div class="lock-list">
+        <div class="an an-1"><svg class="an-i"><use href="#logo-m"/></svg><div><b>Mañana, turno de Aika</b><span>Viernes 23 · 18:30 · Veterinaria Panda</span></div><span class="an-c">Mañana</span></div>
+        <div class="an an-bag"><svg class="an-i"><use href="#logo-m"/></svg><div><b>Se termina el alimento de Felisa</b><span>Aprendí su ritmo: le queda para unos 5 días.</span>
+          <div class="bagbar" aria-hidden="true"><i id="bagFill"></i></div><small class="bag-when">Bolsa de 10 kg · quedan <b id="bagPct">12</b>% · se termina el martes 27</small></div><span class="an-c">5 días</span></div>
+        <div class="an"><svg class="an-i"><use href="#logo-m"/></svg><div><b>Pipeta de Felisa</b><span>Le toca el miércoles 28. ¿La anoto en tu calendario?</span></div><span class="an-c">6 días</span></div>
+        <div class="an"><svg class="an-i"><use href="#logo-m"/></svg><div><b>Antirrábica de Aika</b><span>Vence el 5 de noviembre. Pedí turno con tiempo.</span></div><span class="an-c">14 días</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 3 · SE CARGA SOLA: foto + mail → su libreta ============ -->
+<section class="sc pin libreta" id="libreta" data-pet="aika" aria-labelledby="lib-h">
+  <div class="stage">
+    <div class="lib-side">
+      <span class="mono kick">Se carga sola</span>
+      <h2 id="lib-h" class="h-l lib-h">No cargues todo<br><em>a mano.</em></h2>
+      <div class="cap-steps" id="libSteps" aria-live="polite">
+        <div class="cs on"><span class="cs-n">1</span><div><b>Le sacás una foto a la libreta del vete.</b><small>Mimitos lee la vacuna, la fecha y cuándo vence.</small></div></div>
+        <div class="cs"><span class="cs-n">2</span><div><b>Conectás tu mail.</b><small>Encuentra los estudios que te mandó la veterinaria y los guarda.</small></div></div>
+        <div class="cs"><span class="cs-n">3</span><div><b>Todo queda en su libreta.</b><small>Vacunas, antiparasitarios, historial y peso. En PDF para el vete.</small></div></div>
+      </div>
+      <div class="cs-dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+    </div>
+    <div class="lib-world" id="libWorld">
+      <!-- fuente 1: libreta veterinaria de papel -->
+      <div class="paper-book" id="book" aria-hidden="true">
+        <div class="pb-head"><b>CERTIFICADO DE VACUNACIÓN</b><span>Aika · canino · hembra</span></div>
+        <div class="pb-grid">
+          <div class="pb-row hd"><span>Fecha</span><span>Vacuna</span><span>Próxima</span></div>
+          <div class="pb-row"><span class="hw">06/11/25</span><span class="sticker s2"><b>Séxtuple</b><small>Nobivac DHPPi+L</small></span><span class="hw">06/11/26</span></div>
+          <div class="pb-row target">
+            <span class="hw" data-box="fecha">05/11/25</span>
+            <span class="sticker" data-box="vacuna"><b>Antirrábica</b><small data-box="lab">Nobivac R · A123</small></span>
+            <span class="hw" data-box="prox">05/11/26</span>
+          </div>
+        </div>
+        <span class="stamp">Vet. Panda<br>M.P. 4412</span>
+        <span class="sign">~ Dra. Ruiz</span>
+        <i class="box b1"><em>Vacuna</em></i><i class="box b2"><em>Fecha</em></i><i class="box b3"><em>Laboratorio</em></i><i class="box b4"><em>Próxima</em></i>
+      </div>
+      <div class="viewfinder" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+      <div class="flash" aria-hidden="true"></div>
+
+      <!-- fuente 2: el mail -->
+      <div class="lib-inbox" id="libInbox" aria-hidden="true">
+        <div class="li-top"><svg><use href="#i-mail"/></svg><span class="mono">Tu mail · conectado</span><span class="li-scan">Buscando estudios…</span></div>
+        <div class="li-row v"><span class="av-l">LP</span><div><b>Laboratorio Panda</b><span>Resultados de Aika</span><em class="li-att" id="att1"><svg><use href="#i-pdf"/></svg>hemograma.pdf</em></div></div>
+        <div class="li-row"><span class="av-l g">MP</span><div><b>Mercado Pago</b><span>Recibiste un pago</span></div></div>
+        <div class="li-row v"><span class="av-l b">VP</span><div><b>Veterinaria Panda</b><span>Ecografía de Aika</span><em class="li-att" id="att2"><svg><use href="#i-pdf"/></svg>eco.pdf</em></div></div>
+        <div class="li-row"><span class="av-l o">B</span><div><b>Banco</b><span>Tu resumen de octubre</span></div></div>
+      </div>
+
+      <!-- destino: su libreta, tal cual la app (páginas reales del libro de Mimitos) -->
+      <div class="rbook" id="rbook" role="img" aria-label="La libreta de Aika en Mimitos: pasaporte, identificación, vacunas, antiparasitarios, controles, historial clínico y peso">
+        <div class="rb-page rb-l"><img src="/mimitos/media/libreta/p0.webp" alt="" loading="lazy"></div>
+        <div class="rb-page rb-r"><img src="/mimitos/media/libreta/p7.webp" alt="" loading="lazy"></div>
+        <div class="leaf" data-l="0"><div class="face f"><img src="/mimitos/media/libreta/p1.webp" alt="" loading="lazy"></div><div class="face b"><img src="/mimitos/media/libreta/p2.webp" alt="" loading="lazy"><i class="hl" id="hlVac"><span>De la foto</span></i></div></div>
+        <div class="leaf" data-l="1"><div class="face f"><img src="/mimitos/media/libreta/p3.webp" alt="" loading="lazy"></div><div class="face b"><img src="/mimitos/media/libreta/p4.webp" alt="" loading="lazy"></div></div>
+        <div class="leaf" data-l="2"><div class="face f"><img src="/mimitos/media/libreta/p5.webp" alt="" loading="lazy"><i class="hl" id="hlEco"><span>Del mail</span></i></div><div class="face b"><img src="/mimitos/media/libreta/p6.webp" alt="" loading="lazy"><i class="hl" id="hlHem"><span>Del mail</span></i></div></div>
+        <span class="rb-spine" aria-hidden="true"></span>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="after-cta" id="afterLib"><a class="pill ink" href="#precio" data-buy>Quiero Mimitos · $43.990</a><span class="mono">Pago único</span></div>
+
+<!-- ============ 4 · CUANDO NO ESTÁS: Me fui ============ -->
+<section class="sc pin mefui" id="mefui" data-pet="aika" aria-labelledby="mf-h">
+  <div class="stage">
+    <div class="mf-side">
+      <span class="mono kick">Cuando no estás</span>
+      <h2 id="mf-h" class="h-l mf-h">Un celu viejo<br><em>la cuida por vos.</em></h2>
+      <div class="cap-steps" id="mfSteps" aria-live="polite">
+        <div class="cs on"><span class="cs-n">1</span><div><b>Lo dejás en casa: es su cámara.</b><small>Sin cámaras para comprar. Un celu que ya tenés.</small></div></div>
+        <div class="cs"><span class="cs-n">2</span><div><b>Si ladra o maúlla, te avisa.</b><small>El sonido se analiza en ese celu y no sale de tu casa.</small></div></div>
+        <div class="cs"><span class="cs-n">3</span><div><b>La ves en vivo y le hablás.</b><small>Desde tu celu, estés donde estés.</small></div></div>
+        <div class="cs"><span class="cs-n">4</span><div><b>Al volver, sabés cómo estuvo.</b><small>Cuánto tiempo estuvo sola y qué escuchó la cámara.</small></div></div>
+      </div>
+      <div class="cs-dots" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></div>
+    </div>
+    <div class="mf-world">
+      <div class="table" aria-hidden="true"></div>
+      <!-- celu viejo → cámara -->
+      <div class="oldph" id="oldph" aria-label="Celu viejo usado como cámara">
+        <div class="op-screen">
+          <div class="op-off"></div>
+          <div class="cam-ui">
+            <div class="cam-b"><svg><use href="#logo-m"/></svg><span>Cámara Mimitos</span></div>
+            <div class="cam-live"><span class="ldot"></span><b>Cámara activa</b>
+              <span class="lvl-l">Lo que escucha</span><div class="meter"><span id="meter"></span></div>
+              <div class="cchips"><span>✓ Ladridos</span><span>✓ Maullidos</span></div>
+            </div>
+            <div class="hit" id="hit"><b>Ladrido detectado · 15:20</b><small>Le avisamos a tu celu.</small></div>
+          </div>
+        </div>
+      </div>
+      <svg class="p2p" viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true"><path id="p2pPath" d="M5 100 C 90 0, 210 0, 295 100" fill="none" stroke="#1F1A17" stroke-opacity=".25" stroke-width="2" stroke-dasharray="3 9" stroke-linecap="round"/><circle r="4.5" fill="#F2789F"><animateMotion dur="2.2s" repeatCount="indefinite"><mpath href="#p2pPath"/></animateMotion></circle></svg>
+      <!-- tu celu -->
+      <div class="myph" id="myph">
+        <div class="mp-screen">
+          <div class="mp-away">
+            <span class="mono mp-k"><i></i>Me fui · en curso</span>
+            <b class="mp-big">Aika está sola hace <span id="soloT">1 h 24 min</span></b>
+            <ul class="mp-list">
+              <li><svg><use href="#i-check"/></svg>Checklist completo</li>
+              <li class="bark"><span class="wv" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>2 períodos de ladridos</li>
+            </ul>
+            <span class="mp-live" id="seeLive"><span class="rd"></span>Ver en vivo</span>
+          </div>
+          <div class="mp-feed" id="feed">
+            <video src="/mimitos/media/video/aika-cam.mp4" poster="/mimitos/media/video/aika-cam.jpg" muted loop playsinline preload="none" data-lazy></video>
+            <span class="lf"><i></i>En vivo · Living</span>
+            <span class="lf-talk">Mantené para hablarle</span>
+          </div>
+          <div class="mp-push" id="mpPush"><svg><use href="#logo-m"/></svg><div><b>Aika ladró 40 segundos</b><span>A las 15:20. Tocá para verla.</span></div></div>
+          <div class="mp-week" id="week">
+            <span class="mono">Esta semana</span>
+            <b>Aika estuvo sola <span>6 h 42 min</span></b>
+            <div class="bars" aria-hidden="true"><i style="--h:.55"></i><i style="--h:.2"></i><i style="--h:.7"></i><i style="--h:.35"></i><i style="--h:.9"></i><i style="--h:.1"></i><i style="--h:.6"></i></div>
+            <div class="bars-l mono" aria-hidden="true"><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span><span>D</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+<div class="after-cta"><a class="pill ink" href="#precio" data-buy>Quiero Mimitos · $43.990</a><span class="mono">Sin cámaras para comprar</span></div>
+
+<!-- ============ 5 · Y ADEMÁS: una escena con pestañas que pasan solas ============ -->
+<section class="sc mas" id="mas" aria-labelledby="mas-h">
+  <div class="mas-head">
+    <span class="mono kick">Y además</span>
+    <h2 id="mas-h" class="h-l" data-split>Para todo lo demás,<br><em>también está.</em></h2>
+  </div>
+  <div class="mas-body">
+    <div class="mas-tabs" role="tablist" aria-label="Más funciones">
+      <button role="tab" aria-selected="true" aria-controls="pn0" data-t="0"><b>Preguntale</b><small>Responde con sus datos</small><i></i></button>
+      <button role="tab" aria-selected="false" aria-controls="pn1" data-t="1"><b>Si se pierde</b><small>La chapita te avisa</small><i></i></button>
+      <button role="tab" aria-selected="false" aria-controls="pn2" data-t="2"><b>Guardia</b><small>La más cerca, abierta</small><i></i></button>
+      <button role="tab" aria-selected="false" aria-controls="pn3" data-t="3"><b>Cuidador</b><small>Nadie repite un remedio</small><i></i></button>
+      <button role="tab" aria-selected="false" aria-controls="pn4" data-t="4"><b>Gastos</b><small>Cuánto se va, por mes</small><i></i></button>
+    </div>
+    <div class="mas-panels">
+      <div class="pn on" id="pn0" role="tabpanel" data-pet="aika"><p class="pn-l"><b>Preguntale como a alguien que se acuerda de todo.</b> Responde con los datos de Aika y te dice de dónde lo sacó. No diagnostica ni receta.</p>
+  <div class="ask-world" id="askWorld" aria-live="off">
+    <div class="ask-q"><img src="/mimitos/media/fotos/aika.webp" alt="" class="ask-av"><span class="q-txt" id="qTxt">¿Cuándo fue la última pipeta de Aika?</span><span class="caret" aria-hidden="true"></span></div>
+    <div class="trail" id="trail" aria-hidden="true">
+      <span class="tn"><i></i><b>Libreta</b></span><span class="tl"></span>
+      <span class="tn"><i></i><b>Desparasitación externa</b></span><span class="tl"></span>
+      <span class="tn last"><i></i><b>14 de septiembre</b></span>
+    </div>
+    <div class="ans" id="ans">
+      <p class="a-txt" id="aTxt">La última pipeta registrada fue el <b>14 de septiembre</b>.</p>
+      <div class="a-viz" id="aViz" aria-hidden="true"></div>
+      <p class="a-src mono" id="aSrc">Fuente: Libreta › Desparasitación externa</p>
+    </div>
+    <div class="ask-dots" aria-hidden="true"><i class="on"></i><i></i><i></i></div>
+  </div>
+      </div>
+      <div class="pn" id="pn1" role="tabpanel" data-pet="felisa"><p class="pn-l"><b>Si se pierde, su chapita avisa.</b> Quien la encuentra te llama o te escribe; a vos te llega dónde la escanearon. Su salud no se muestra.</p>
+  <div class="qr-world" id="qrWorld" aria-label="Demostración: alguien escanea la chapita de Felisa">
+    <div class="qr-pet">
+      <img src="/mimitos/media/fotos/felisa.webp" alt="Felisa con su collar y su chapita" loading="lazy" width="728" height="627">
+      <div class="collar" aria-hidden="true"><span class="tag" id="tag"><svg viewBox="0 0 21 21"><path fill="#1F1A17" d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1zM3 3v3h3V3zM15 3v3h3V3zM3 15v3h3v-3zM10 1h2v2h-2zM10 5h2v4h-2zM13 10h2v2h-2zM17 10h3v2h-3zM10 13h3v2h-3zM15 13h2v4h-2zM18 15h2v5h-2zM10 17h4v3h-4zM1 10h4v2H1zM7 10h2v2H7z"/></svg></span></div>
+    </div>
+    <div class="scanner" id="scanner" aria-hidden="true"><div class="sc-vf"><i></i><i></i><i></i><i></i></div><span class="mono">Escaneando…</span></div>
+    <div class="qr-notif" id="qrNotif"><svg><use href="#logo-m"/></svg><div><b>Alguien escaneó el QR de Felisa</b><span>Cerca de Palermo · hace unos segundos</span></div></div>
+    <div class="qr-public" id="qrPublic">
+      <img src="/mimitos/media/fotos/felisa.webp" alt="">
+      <b>Hola, soy Felisa.<br>Avisale a mi familia.</b>
+      <div class="qp-btns"><span class="qb call"><svg><use href="#i-phone"/></svg>Llamar</span><span class="qb wa"><svg><use href="#i-wa"/></svg>WhatsApp</span></div>
+      <small>No muestra su historial médico.</small>
+    </div>
+    <div class="lost" id="lost">
+      <span class="lost-sw"><i></i>Activar “Se perdió”</span>
+      <div class="poster" aria-label="Cartel de Se perdió generado">
+        <b class="ps-t">SE PERDIÓ</b>
+        <img src="/mimitos/media/fotos/felisa.webp" alt="">
+        <b class="ps-n">Felisa</b>
+        <small>Gata tricolor · collar con chapita</small>
+        <span class="ps-q"><svg viewBox="0 0 21 21"><path fill="#1F1A17" d="M1 1h7v7H1zM13 1h7v7h-7zM1 13h7v7H1zM3 3v3h3V3zM15 3v3h3V3zM3 15v3h3v-3zM10 1h2v2h-2zM10 5h2v4h-2zM13 10h2v2h-2zM17 10h3v2h-3zM10 13h3v2h-3zM15 13h2v4h-2zM18 15h2v5h-2zM10 17h4v3h-4z"/></svg>Si la ves, escaneá y avisá</span>
+      </div>
+    </div>
+  </div>
+      </div>
+      <div class="pn" id="pn2" role="tabpanel"><p class="pn-l" id="vetSit"><b>¿Una guardia, ahora?</b> Mimitos te muestra la más cerca que está abierta: llamás o vas.</p>
+        <span class="clock" id="clock">22:43</span>
+  <div class="vet-world" id="vetWorld">
+    <div class="map" aria-hidden="true">
+      <svg viewBox="0 0 400 300" preserveAspectRatio="xMidYMid slice"><rect width="400" height="300" fill="var(--map-bg)"/><path d="M0 90h400M0 210h400M120 0v300M280 0v300M340 0 220 300" stroke="var(--map-st)" stroke-width="14"/><path d="M0 150h400" stroke="var(--map-av)" stroke-width="22"/><rect x="150" y="20" width="100" height="50" rx="8" fill="var(--map-park)"/><rect x="300" y="230" width="80" height="50" rx="8" fill="var(--map-park)"/></svg>
+      <span class="me"></span>
+      <span class="mpin p1"><svg><use href="#i-pin"/></svg></span><span class="mpin p2"><svg><use href="#i-pin"/></svg></span><span class="mpin p3 er"><svg><use href="#i-pin"/></svg></span>
+    </div>
+    <div class="vcard er" id="vcER"><span class="mono">Guardia 24 h · abierta</span><b>Clínica Vet Norte</b><small>1,2 km · 6 min en auto</small><div class="vb"><span class="qb call"><svg><use href="#i-phone"/></svg>Llamar</span><span class="qb"><svg><use href="#i-route"/></svg>Cómo llegar</span></div></div>
+    <div class="vcard mine" id="vcMine"><span class="mono">Tu veterinaria ★</span><b>Veterinaria Panda</b><div class="wa-msg">Hola, ¿tienen turno esta semana para Felisa? Es para el control anual.</div><span class="qb wa"><svg><use href="#i-wa"/></svg>Pedir turno por WhatsApp</span></div>
+  </div>
+      </div>
+      <div class="pn" id="pn3" role="tabpanel" data-pet="felisa"><p class="pn-l"><b>Felisa se queda con Mamá.</b> Le pasás un link con las tareas; ella marca lo que hizo y, si alguien va a repetir un remedio, Mimitos frena.</p>
+  <div class="care-world" id="careWorld">
+    <span class="link-chip" id="careLink"><svg><use href="#i-spark"/></svg>Link para Mamá · hasta el domingo</span>
+    <div class="cphone sitter"><span class="mono">El celu de Mamá</span><b>Hoy con Felisa</b>
+      <div class="task done"><i></i>Comida<small>08:14</small></div>
+      <div class="task done"><i></i>Piedritas<small>08:20</small></div>
+      <div class="task" id="gotas"><i></i>Gotas<small>21:00</small></div>
+      <div class="dose" id="dose"><b>Dosis repetida</b>Esta dosis ya la marcó Majo a las 21:02. ¿Seguro que querés marcarla de nuevo?</div>
+    </div>
+    <div class="cphone owner"><span class="mono">Tu celu</span>
+      <div class="feed-i"><svg><use href="#i-check"/></svg>Mamá registró comida · 08:14</div>
+      <div class="feed-i"><svg><use href="#i-check"/></svg>Mamá registró piedritas · 08:20</div>
+    </div>
+  </div>
+      </div>
+      <div class="pn" id="pn4" role="tabpanel"><p class="pn-l"><b>¿Cuánto se va en ellas? Lo sabés.</b> Por mes, por rubro y por mascota.</p>
+  <div class="money-world" id="moneyWorld">
+    <div class="mv-in" aria-hidden="true">
+      <span class="mv a">Alimento · $56.800</span><span class="mv v">Veterinaria · $40.000</span><span class="mv o">Peluquería · $14.000</span><span class="mv o">Pipeta · $12.700</span>
+    </div>
+    <div class="m-sum">
+      <div class="m-tabs" role="tablist" aria-label="Mascota"><button role="tab" aria-selected="true" data-m="all">Todas</button><button role="tab" aria-selected="false" data-m="aika">Aika</button><button role="tab" aria-selected="false" data-m="felisa">Felisa</button></div>
+      <span class="mono">Octubre</span>
+      <b class="m-total">$<span id="mTotal">123.500</span></b>
+      <div class="m-bar" aria-hidden="true"><i class="a" style="--w:46"></i><i class="v" style="--w:32"></i><i class="o" style="--w:22"></i></div>
+      <div class="m-leg"><span class="a">Alimento <b data-p="a">46%</b></span><span class="v">Veterinaria <b data-p="v">32%</b></span><span class="o">Otros <b data-p="o">22%</b></span></div>
+    </div>
+  </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 6 · PRECIO + CONFIANZA + CIERRE ============ -->
+<section class="sc price" id="precio" aria-labelledby="price-h">
+  <h2 id="price-h" class="price-h" data-split>Una compra.<br><em>Mimitos queda para siempre.</em></h2>
+  <div class="price-row">
+    <div class="pr-num" data-fade>
+      <span class="pr-big">$<span id="prNum">43.990</span></span>
+      <span class="pr-meta"><s>$58.990</s> Precio lanzamiento hasta el 12/11 · o USD 29 con PayPal</span>
+    </div>
+    <ul class="pr-list" data-fade>
+      <li>Pago único</li>
+      <li>Todas tus mascotas</li>
+      <li>Cámara, libreta, avisos y QR para siempre</li>
+      <li>12 meses de funciones inteligentes</li>
+    </ul>
+  </div>
+  <p class="pr-after" data-fade><b>¿Y después de los 12 meses?</b> Mimitos sigue siendo tuya y tus datos siguen ahí. Libreta, agenda, avisos, cámara, QR y gastos siguen funcionando. Solo renovás leer estudios y Preguntale, si querés.</p>
+  <a class="pill pink xl" href="#comprar" data-buy data-fade>Quiero Mimitos</a>
+  <ul class="trust">
+    <li><b>Tus estudios son tuyos.</b> Elegís qué importar del mail; lo que subís se borra en 24 h.</li>
+    <li><b>La chapita no muestra su salud.</b> Solo cómo contactarte.</li>
+    <li><b>La cámara vive en tu casa.</b> El sonido no sale de ese celu.</li>
+  </ul>
+  <p class="pr-fine">Mercado Pago (ARS) o PayPal (USD) · Mimitos no reemplaza al veterinario</p>
+</section>
+
+<section class="sc fin" id="fin" aria-labelledby="fin-h">
+  <div class="fin-world" aria-hidden="true">
+    <div class="orbit">
+      <span class="ob"><svg><use href="#i-vac"/></svg></span><span class="ob"><svg><use href="#i-pdf"/></svg></span><span class="ob"><svg><use href="#i-mail"/></svg></span><span class="ob"><svg><use href="#i-bag"/></svg></span><span class="ob"><svg><use href="#i-qr"/></svg></span><span class="ob"><svg><use href="#i-cal"/></svg></span><span class="ob"><svg><use href="#i-kg"/></svg></span>
+    </div>
+    <img class="fin-pet" src="/mimitos/media/fotos/felisa.webp" alt="" loading="lazy" width="728" height="627">
+    <svg class="fin-logo"><use href="#logo-m"/></svg>
+  </div>
+  <h2 id="fin-h" class="h-xl fin-h" data-split>Vos disfrutala.<br><em>Mimitos se acuerda del resto.</em></h2>
+  <a class="pill ink lg" href="#precio" data-buy data-fade>Quiero Mimitos · $43.990</a>
+</section>
+
+
+</main>
+
+
+<footer class="foot"><span>Mimitos by Orbit · orbitando.com.ar</span><span><a href="/privacidad">Privacidad</a> · <a href="/terminos">Términos</a></span></footer>
+
+<!-- CTA fija en el celu (aparece con contexto) -->
+<a class="sticky-buy" id="stickyBuy" href="#precio" data-buy><span>Mimitos · <b>$43.990</b></span><span aria-hidden="true">→</span></a>
+
+<dialog class="spot" id="spot" aria-label="Spot de Mimitos">
+  <div class="spot-box"><button class="spot-x" type="button" data-close aria-label="Cerrar">×</button><video id="spotVideo" src="/mimitos/media/video/spot.mp4" poster="/mimitos/media/video/spot.jpg" controls playsinline preload="none"></video></div>
+</dialog>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="/mimitos/app.js?v=1"></script>
+</body>
+</html>

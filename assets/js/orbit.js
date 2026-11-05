@@ -97,7 +97,8 @@ const money = (x, qty = 1) => {
   const usd = fmtUsd((x.price || 0) * qty);
   return Number.isFinite(x.ars) ? L(fmtArs(x.ars * qty), usd) : usd;
 };
-const url = p => `/p/${p.id}`;
+/* Las apps con landing propia (Mimitos en /mimitos) llevan ahí; el resto, a su ficha */
+const url = p => p.landing || `/p/${p.id}`;
 /* Nichos: el catálogo se muestra por oficio, y dentro de cada uno en el
    orden de la escalera (entrada → ancla → complemento). Sólo aparecen los
    nichos con productos disponibles. */
