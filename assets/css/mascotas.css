@@ -1592,3 +1592,5 @@ body[data-first="steps"] .top{background:var(--bg)}
 .bk-lib{background:#E8F4EC;border-radius:16px;padding:10px 12px}
 .bk-lib .toggle span b{display:block}
 .bk-lib .toggle small{display:block;margin-top:4px;color:var(--ink2);line-height:1.45}
+.petphoto-msg{display:block;margin-top:8px}.petphoto-msg:empty{display:none}
+#fBody>.note:first-child .btn svg{width:18px;height:18px}
