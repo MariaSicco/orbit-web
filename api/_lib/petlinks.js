@@ -36,9 +36,13 @@ const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLow
 const FILE_SERVICE = /(^|\.)(drive\.google\.com|docs\.google\.com|dropbox\.com|dl\.dropboxusercontent\.com|1drv\.ms|onedrive\.live\.com|sharepoint\.com|wetransfer\.com|we\.tl|box\.com|mega\.nz)$/;
 const JUNK_HOST = /(^|\.)(facebook\.com|fb\.me|instagram\.com|twitter\.com|x\.com|linkedin\.com|youtube\.com|youtu\.be|tiktok\.com|wa\.me|whatsapp\.com|api\.whatsapp\.com|t\.me|pinterest\.com|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|waze\.com|apple\.com|play\.google\.com|apps\.apple\.com|list-manage\.com|mailchi\.mp|sendgrid\.net|mandrillapp\.com|mailgun\.org|hubspotlinks\.com|hs-sites\.com|sparkpostmail\.com|mcusercontent\.com|doubleclick\.net|google-analytics\.com|w3\.org|schemas\.microsoft\.com)$/;
 const JUNK_PATH = /(unsubscribe|desuscrib|darse-de-baja|dar-de-baja|\/baja|optout|opt-out|preferenc|manage-subscription|privacy|privacidad|terminos|terms|\/maps|google\.com\/maps|pixel|beacon|\/open\?|\/o\/|tracking)/i;
+/* en modo loose, los links de navegación de la veterinaria no son estudios */
+const LOOSE_SKIP = /(turno|login|ingres|registr|contacto|nosotros|inicio|home|horario|tienda|shop|carrito|blog|promo|noticia|servicio)/;
 const STUDY_WORDS = /(resultado|informe|descarg|download|\bpdf\b|\.pdf|estudio|laborator|report|analisis|hemograma|ecograf|radiograf|placa|archivo|adjunto|ver-?resultado|ordenes ?medicas)/i;
 
-export function extractLinks({ html = '', text = '' } = {}, { senderDomain = '' } = {}) {
+/* loose: cualquier link que no sea basura (redes, mapas, bajas, seguimiento), aunque no diga "resultado" ni sea un PDF.
+   Para los mails que ya nombran a la mascota o anuncian un estudio y no traen un link reconocible (05/11) */
+export function extractLinks({ html = '', text = '' } = {}, { senderDomain = '', loose = false } = {}) {
   const found = new Map();
   const add = (raw, anchor) => {
     let u; try { u = new URL(decode(raw).trim()); } catch { return; }
@@ -49,7 +53,7 @@ export function extractLinks({ html = '', text = '' } = {}, { senderDomain = '' 
     let path; try { path = decodeURIComponent(u.pathname + u.search); } catch { path = u.pathname + u.search; }
     const hay = fold(`${path.replace(/[-_]/g, ' ')} ${anchor}`);
     const service = FILE_SERVICE.test(host), file = /\.(pdf|jpe?g|png|webp)$/i.test(u.pathname), words = STUDY_WORDS.test(hay);
-    if (!service && !file && !words) return;
+    if (!service && !file && !words && (!loose || u.pathname === '/' || LOOSE_SKIP.test(hay))) return;
     const fromSender = senderDomain && (host === senderDomain || host.endsWith('.' + senderDomain));
     const score = (file ? 4 : 0) + (service ? 3 : 0) + (words ? 2 : 0) + (fromSender ? 2 : 0) + (u.protocol === 'https:' ? 1 : 0);
     const prev = found.get(href);
@@ -168,7 +172,16 @@ export function httpsGet(url, ip, { signal, maxBytes }) {
 
 /* baja un estudio por link con todas las defensas. Devuelve { buf, type, name, finalUrl } o tira un error con code:
    http (no es https), ip_privada, dns, redirects, tiempo, muy_grande, html (pide login), tipo, http_<status>, red */
-export async function safeFetch(rawUrl, { lookup = dnsLookup, get = httpsGet, maxBytes = MAX_BYTES, timeoutMs = TIMEOUT_MS } = {}) {
+function pdfInHtml(html, base) {
+  const abs = v => { try { const x = new URL(decode(v).trim(), base); return x.protocol === 'https:' ? x.href : ''; } catch { return ''; } };
+  for (const m of html.matchAll(/<(?:iframe|embed|object)\b[^>]*?(?:src|data)\s*=\s*(["'])(.*?)\1/gi)) { const h = abs(m[2]); if (h && /\.pdf($|\?)|pdf/i.test(h)) return h; }
+  for (const m of html.matchAll(/<a\b[^>]*?href\s*=\s*(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi)) {
+    const h = abs(m[2]); if (!h) continue;
+    if (/\.pdf($|\?)/i.test(new URL(h).pathname + '?') || /(descargar|download|\bpdf\b|imprimir)/i.test(fold(stripTags(m[3])))) return h;
+  }
+  return '';
+}
+export async function safeFetch(rawUrl, { lookup = dnsLookup, get = httpsGet, maxBytes = MAX_BYTES, timeoutMs = TIMEOUT_MS, hopHtml = true } = {}) {
   const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), timeoutMs);
   try {
     let url = directUrl(rawUrl);
@@ -186,6 +199,11 @@ export async function safeFetch(rawUrl, { lookup = dnsLookup, get = httpsGet, ma
       if (r.body.length > maxBytes) throw err('muy_grande');
       const ct = String(r.headers['content-type'] || '').toLowerCase().split(';')[0].trim();
       const real = sniff(r.body);
+      if (!real && hopHtml && (ct.includes('html') || looksHtml(r.body))) {
+        /* página del laboratorio con el PDF a la vista (link .pdf, iframe o embed): se sigue una sola vez */
+        const inner = pdfInHtml(r.body.toString('utf8', 0, 300000), u);
+        if (inner) { clearTimeout(timer); return safeFetch(inner, { lookup, get, maxBytes, timeoutMs, hopHtml: false }); }
+      }
       if (!real) throw err(ct.includes('html') || looksHtml(r.body) ? 'html' : 'tipo');
       if (!(ct === 'application/pdf' || ct.startsWith('image/') || ct === 'application/octet-stream' || ct === 'binary/octet-stream' || ct === 'application/force-download' || ct === '')) throw err(ct.includes('html') ? 'html' : 'tipo');
       const cd = String(r.headers['content-disposition'] || '');

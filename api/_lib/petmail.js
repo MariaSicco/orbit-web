@@ -521,6 +521,9 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
         if ((r.show === 'nofile' || r.show === 'probe') && P.body) {
           const b = await P.body(at, c.m).catch(e => { if (e.code === 'mail_vencido' || e.code === 'mail_limite') throw e; return null; });
           if (b) c.links = extractLinks(b, { senderDomain: domainOf(c.from) });
+          /* sin un link que diga "resultado" o sea un PDF: los que haya (sin redes ni bajas), hasta 2. Si no es un
+             estudio, al importar avisa "El link no lleva a un estudio" */
+          if (b && !c.links.length) c.links = extractLinks(b, { senderDomain: domainOf(c.from), loose: true }).slice(0, 2);
         }
         if (r.show === 'probe' && !(c.links || []).length) return null;
         return { c, r };
@@ -560,7 +563,7 @@ export async function importOne(P, email, st, cfg, body, deps) {
   if (byLink) {
     /* la URL nunca viene del navegador: se vuelve a sacar del mail y se busca por su hash */
     const b = P.body ? await P.body(at, m) : null;
-    link = b && extractLinks(b, { senderDomain: domainOf(b.from) }).find(l => l.part === part);
+    link = b && (extractLinks(b, { senderDomain: domainOf(b.from) }).find(l => l.part === part) || extractLinks(b, { senderDomain: domainOf(b.from), loose: true }).find(l => l.part === part));
     if (!link) throw fail('adjunto_no_encontrado', 404);
     meta = { name: `Estudio por link · ${link.host}`, type: 'application/pdf', size: 1, from: b.from || '' };
   } else {
