@@ -22,8 +22,10 @@ test('ficha: Mimitos muestra "12 meses de funciones inteligentes" en vez de actu
 });
 
 test('ficha: las demás herramientas con acceso siguen con "12 meses de actualizaciones"', () => {
-  const otras = list.filter(p => p.acceso && p.id !== 'ob-018');
+  /* Mi Mes (ob-019) también tiene sello propio desde main; las que no tienen sello siguen con el genérico */
+  const otras = list.filter(p => p.acceso && !p.sello);
   for (const p of otras.length ? otras : [{ id: 'x', acceso: '/x' }]) assert.equal(TRUST(p)[2][0], '12 meses de actualizaciones');
   assert.equal(TRUST({ id: 'archivo' })[0][0], 'Descarga inmediata');
-  assert.ok(list.filter(p => p.sello).every(p => p.id === 'ob-018'), 'solo Mimitos tiene sello propio');
+  assert.ok(list.filter(p => p.sello).every(p => ['ob-018', 'ob-019'].includes(p.id)), 'solo Mimitos y Mi Mes tienen sello propio');
+  assert.equal(TRUST(list.find(p => p.id === 'ob-018'))[2][0], '12 meses de funciones inteligentes');
 });
