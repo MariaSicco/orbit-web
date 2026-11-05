@@ -182,7 +182,9 @@ const [w1, ...rest] = p.name.split(' ');
    ni lleva licencia comercial, así que decirlo sería mentir. */
 const TRUST_ARCHIVO = [['Descarga inmediata','Instant download'],['Uso comercial','Commercial use'],['Actualizaciones sin cargo','Free updates'],['Soporte por email','Email support']];
 const TRUST_HERRAMIENTA = [['Acceso desde Mi cuenta','Access from My account'],['Licencia por persona','Per-person license'],['12 meses de actualizaciones','12 months of updates'],['Soporte por email','Email support']];
-const TRUST = p => (p && p.acceso ? TRUST_HERRAMIENTA : TRUST_ARCHIVO);
+/* Una herramienta puede reemplazar el sello de actualizaciones con el suyo (campo opcional `sello` en
+   products.js, por ejemplo Mimitos: "12 meses de funciones inteligentes"). Las demás no cambian. */
+const TRUST = p => (p && p.acceso ? TRUST_HERRAMIENTA.map((t, i) => (i === 2 && Array.isArray(p.sello) ? p.sello : t)) : TRUST_ARCHIVO);
 $('#info').innerHTML = `<span class="mono">${p.code} · ${fam}</span>
   <h1 class="display">${w1}<br><span class="it">${rest.join(' ').toLowerCase()}.</span></h1>
   <p class="lead" style="opacity:.8;margin:22px 0 0">${L(p.tagline)}</p>

@@ -1,0 +1,6 @@
+u2netp.onnx — U²-Netp (Qin et al., "U²-Net: Going Deeper with Nested U-Structure for Salient Object Detection").
+Pesos originales de https://github.com/xuebinqin/U-2-Net, licencia Apache-2.0
+(https://github.com/xuebinqin/U-2-Net/blob/master/LICENSE). Conversión a ONNX de rembg
+(https://github.com/danielgatis/rembg, MIT). Cambio de Orbit: alto y ancho de la entrada dinámicos
+(mismos pesos), para correrlo respetando la proporción de la foto.
+Se usa en assets/js/mascotas-cutout.js (Mimitos), en el navegador con onnxruntime-web (MIT).
