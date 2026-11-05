@@ -15,6 +15,9 @@ test('interruptor: apagado por defecto; prendido solo admin y la lista', () => {
   process.env.MIMITOS_MEFUI = '1';
   assert.equal(W.mefuiAllowed('admin@orbit.test'), true);
   assert.equal(W.mefuiAllowed('majo@x.com'), false, 'lista vacía = nadie salvo admin');
+  process.env.MIMITOS_MEFUI_ABIERTO = '1';
+  assert.equal(W.mefuiAllowed('majo@x.com'), true, 'abierta = cualquier compradora');
+  delete process.env.MIMITOS_MEFUI_ABIERTO;
   process.env.MIMITOS_MEFUI_ALLOW = 'otra@x.com; Majo@X.com';
   assert.equal(W.mefuiAllowed('majo@x.com'), true);
   delete process.env.MIMITOS_MEFUI_ALLOW;

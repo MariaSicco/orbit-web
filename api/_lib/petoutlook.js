@@ -11,6 +11,7 @@
 
    Rutas: las mismas que Gmail con ?outlook=… (status, start, callback, search, import, queue, unqueue,
    disconnect). Redirect URI: /mascotas/outlook/callback. */
+import { esMimitos } from './marca.js';
 import * as M from './petmail.js';
 
 const LOGIN = 'https://login.microsoftonline.com/common/oauth2/v2.0';
@@ -18,7 +19,7 @@ const GRAPH = 'https://graph.microsoft.com/v1.0';
 export const SCOPES = ['openid', 'email', 'offline_access', 'https://graph.microsoft.com/Mail.Read'];
 const { fail, form } = M;
 
-export function redirectUri(req) { return process.env.MS_REDIRECT_URI || M.hostBase(req) + '/mascotas/outlook/callback'; }
+export function redirectUri(req) { return (!esMimitos(req) && process.env.MS_REDIRECT_URI) || M.hostBase(req) + '/mascotas/outlook/callback'; }
 export function outlookConfig(req) {
   const clientId = process.env.MS_CLIENT_ID || '', secret = process.env.MS_CLIENT_SECRET || '';
   const key = M.tokenKey();

@@ -21,6 +21,7 @@
                                    (anda con sesión aunque no haya compra ni configuración: api/mascotas.js)
    El cuerpo del mail se lee (format=full) SOLO en los mails veterinarios sin adjunto, para buscar el link
    al estudio; no se guarda ni se loguea (ver petmail.js). OAuth con state firmado + PKCE S256. */
+import { esMimitos } from './marca.js';
 import * as M from './petmail.js';
 
 export const SCOPE = 'https://www.googleapis.com/auth/gmail.readonly';
@@ -35,7 +36,7 @@ export { MAX_MESSAGES, PAGE, TIME_BUDGET_MS, MAX_FILE, MIN_IMG, BASE_TERMS, toke
 export const gmailAllowed = email => M.mailAllowed(email, 'gmail');
 export const RANGES = { '12m': 'newer_than:1y', '3y': 'newer_than:3y', all: '' };
 
-export function redirectUri(req) { return process.env.GOOGLE_REDIRECT_URI || M.hostBase(req) + '/mascotas/gmail/callback'; }
+export function redirectUri(req) { return (!esMimitos(req) && process.env.GOOGLE_REDIRECT_URI) || M.hostBase(req) + '/mascotas/gmail/callback'; }
 export function gmailConfig(req) {
   const clientId = process.env.GOOGLE_CLIENT_ID || '', secret = process.env.GOOGLE_CLIENT_SECRET || '';
   const key = M.tokenKey();

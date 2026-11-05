@@ -740,6 +740,7 @@ export default async function handler(req, res) {
       const out = await scanStudy(prep.buf, type, null, prep.pages);
       return res.status(200).json({ ...out, ...(prep.truncated ? { truncated: true, pages: prep.total, note: TRUNCATED_NOTE } : {}), quota: { left: took.left, show: took.show } });
     } catch (e) {
+      console.error('[mimitos] lectura de estudio', e?.message, e?.apiStatus || '', String(e?.apiText || '').slice(0, 300));
       /* se devuelve solo si la IA no cobró (sin respuesta 200) */
       if (took?.ok && e?.billed === false) await refundImport(took.ticket).catch(() => {});
       if (e?.code === 'ai_paused') return res.status(503).json(pausedBody());
@@ -759,6 +760,7 @@ export default async function handler(req, res) {
       const out = await scanBooklet(images, str(body.species, 10));
       return res.status(200).json({ ...out, quota: { left: took.left, show: took.show } });
     } catch (e) {
+      console.error('[mimitos] lectura de libreta', e?.message, e?.apiStatus || '', String(e?.apiText || '').slice(0, 300));
       if (e?.billed === false) await refundImport(took.ticket).catch(() => {});
       if (e?.code === 'ai_paused') return res.status(503).json(pausedBody());
       return res.status(e.status || 502).json({ error: e.message || 'ia_error' });
