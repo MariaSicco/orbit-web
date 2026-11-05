@@ -14,10 +14,6 @@ const fmt = n => Math.round(n).toLocaleString('es-AR');
 
 /* ---------- lo que funciona con o sin motion ---------- */
 $$('[data-buy]').forEach(a => { a.href = CHECKOUT; });
-const spot = $('#spot'), spotV = $('#spotVideo');
-$$('[data-spot]').forEach(b => b.addEventListener('click', () => { spot.showModal(); spotV.play().catch(() => {}); }));
-spot.addEventListener('click', e => { if (e.target === spot || e.target.closest('[data-close]')) spot.close(); });
-spot.addEventListener('close', () => spotV.pause());
 
 /* cambiar de mascota en el Inicio del hero: el universo cambia de color */
 const PETS = {
@@ -43,9 +39,8 @@ $$('.pav').forEach(b => b.addEventListener('click', () => setPet(b.dataset.pick)
 $$('[data-split]').forEach(el => { el.innerHTML = el.innerHTML.split(/<br\s*\/?>/i).map(p => `<span class="ln"><span>${p.trim()}</span></span>`).join(''); });
 
 /* versión del hero para revisar: ?hero=a|b|c (A por defecto) */
-const HV = (new URLSearchParams(location.search).get('hero') || 'a').toLowerCase().replace(/[^abc]/g, '') || 'a';
+const HV = 'a';  /* las versiones B y C del hero eran para elegir; quedó la A */
 document.body.dataset.hero = HV;
-$$('.review-switch button').forEach(b => { b.setAttribute('aria-pressed', String(b.dataset.hv === HV)); b.addEventListener('click', () => { const u = new URL(location.href); u.searchParams.set('hero', b.dataset.hv); u.hash = ''; location.href = u.toString(); }); });
 
 const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 if (!window.gsap || !window.ScrollTrigger || reduce.matches) { root.classList.add('rm'); return; }
@@ -186,25 +181,23 @@ mm.add({ mobile: '(max-width: 899px)', desk: '(min-width: 900px)' }, ctx => {
 
     /* vidriera: en el mismo lugar de la ficha van pasando solas las mejores funciones */
     const slides = $$('.sl', world), bars = $$('.reel-bars button'), cap = $('#reelCap');
-    const CAPS = [['Su ficha.', 'Todo lo que le toca, de un vistazo.'], ['En vivo.', 'Un celu viejo en casa la acompaña y te avisa si ladra.'], ['Estudios del mail.', 'Mimitos los encuentra y los suma a su historial.'],
+    const CAPS = [['Su ficha.', 'Todo lo que le toca, de un vistazo.'], ['Estudios del mail.', 'Mimitos los encuentra y los suma a su historial.'],
       ['Preguntale.', 'Responde con sus datos y te dice de dónde salió.'], ['Chapita con QR.', 'Si alguien la encuentra, te enterás al toque.']];
-    const DUR = [4.5, 6, 5.5, 6, 5.5];
+    const DUR = [4.5, 5.5, 6, 5.5];
     let cur = 0, prog = null, inner = null, z = 5, live = true;
     const fill = (i, p) => bars[i].firstElementChild.style.setProperty('--p', p);
     const SC = {
       0: s => gsap.timeline().from(tiles, { y: 12, opacity: 0, stagger: .06, duration: .5, ease: SPR }, .2),
-      1: s => { const v = $('video', s); v.preload = 'auto'; try { v.currentTime = 0; } catch (e) {} v.play().catch(() => {});
-        return gsap.timeline().fromTo($$('.wv i', s), { scaleY: .25 }, { scaleY: 1, stagger: .03, duration: .3, yoyo: true, repeat: 5, ease: 'sine.inOut' }, 1.3); },
-      2: s => gsap.timeline().from($('.m-mail', s), { y: -16, duration: .5, ease: E }, .3)
+      1: s => gsap.timeline().from($('.m-mail', s), { y: -16, duration: .5, ease: E }, .3)
         .from($('.m-arrow', s), { opacity: 0, y: -10, duration: .4 }, 1)
         .fromTo($('.m-row.new', s), { opacity: 0, y: -12, backgroundColor: '#FFE38A' }, { opacity: 1, y: 0, backgroundColor: '#FFFBEE', duration: .8, ease: SPR }, 1.5)
         .from($('.m-new', s), { scale: 0, duration: .35, ease: SPR }, 2),
-      3: s => { const q = $('.r-qt', s), txt = '¿Cuándo fue la última pipeta de Aika?', n = { c: 0 };
+      2: s => { const q = $('.r-qt', s), txt = '¿Cuándo fue la última pipeta de Aika?', n = { c: 0 };
         return gsap.timeline().set($$('.r-trail > *', s), { opacity: 0, scale: .8 }).set($('.r-ans', s), { opacity: 0, y: 16 })
           .to(n, { c: txt.length, duration: 1.1, ease: 'none', onUpdate: () => { q.textContent = txt.slice(0, Math.round(n.c)); } }, .3)
           .to($$('.r-trail > *', s), { opacity: 1, scale: 1, stagger: .22, duration: .35, ease: SPR }, 1.6)
           .to($('.r-ans', s), { opacity: 1, y: 0, duration: .6, ease: E }, 2.9); },
-      4: s => gsap.timeline().set([$('.r-notif', s), $('.r-pub', s)], { opacity: 0 })
+      3: s => gsap.timeline().set([$('.r-notif', s), $('.r-pub', s)], { opacity: 0 })
         .fromTo($('.r-vf', s), { opacity: 0, scale: 1.4 }, { opacity: 1, scale: 1, duration: .45, ease: 'power3.out' }, .5)
         .to(s, { backgroundColor: '#FFFFFF', duration: .08, yoyo: true, repeat: 1 }, 1.05)
         .to($('.r-vf', s), { opacity: 0, duration: .3 }, 1.3)
@@ -297,36 +290,6 @@ mm.add({ mobile: '(max-width: 899px)', desk: '(min-width: 900px)' }, ctx => {
     flip(2, 8.1, true, .7); flip(1, 8.45, true, .7); flip(0, 8.8, true, .7);
     tl.to({}, { duration: .9 }, 9.3);
     scrub(sec, tl);
-  }
-
-  /* ================= 7 · Me fui ================= */
-  {
-    const sec = $('#mefui'), vid = $('#feed video'), meter = $('#meter'), steps = $$('#mfSteps .cs'), dots = $$('.cs-dots i', sec);
-    let last = -1;
-    const stepAt = t => (t < 2.9 ? 0 : t < 4.8 ? 1 : t < 6.5 ? 2 : 3);
-    let playing = false;
-    const vidSync = () => { const show = gsap.getProperty('#feed', 'opacity') > .4; if (show && !playing) { vid.preload = 'auto'; vid.play().catch(() => {}); playing = true; } else if (!show && playing) { vid.pause(); playing = false; } };
-    const tl = gsap.timeline({ defaults: { ease: 'none' }, onUpdate: () => { const s = stepAt(tl.time()); if (s !== last) { last = s; steps.forEach((c, i) => c.classList.toggle('on', i === s)); dots.forEach((d, i) => d.classList.toggle('on', i <= s)); } } });
-    tl.fromTo('#oldph', { rotationX: 74, y: 40, scale: .9 }, { rotationX: 0, y: 0, scale: 1, duration: 1.2, ease: 'power2.out' })
-      .to('.op-off', { opacity: 0, duration: .4 }, 1.05)
-      .from('.cam-live', { scale: .85, opacity: 0, duration: .5, ease: 'power2.out' }, 1.2)
-      .fromTo('#myph', { xPercent: 70, opacity: 0 }, { xPercent: 0, opacity: 1, duration: 1, ease: 'power3.out' }, 1.7)
-      .fromTo('.p2p', { opacity: 0 }, { opacity: 1, duration: .4 }, 2.4)
-      .from($$('.mp-away > *'), { y: 16, opacity: 0, stagger: .12, duration: .5, ease: 'power2.out' }, 2.2)
-      .fromTo('#hit', { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: .3 }, 3.1)
-      .fromTo($$('.bark .wv i'), { scaleY: .3 }, { scaleY: 1, stagger: .02, duration: .4 }, 3.1)
-      .fromTo('#mpPush', { opacity: 0, y: -24 }, { opacity: 1, y: 0, duration: .35, ease: 'power3.out' }, 3.4)
-      .to('#mpPush', { keyframes: [{ x: -3, duration: .04 }, { x: 3, duration: .04 }, { x: -2, duration: .04 }, { x: 0, duration: .04 }] }, 3.75)
-      .to(['#mpPush', '#hit'], { opacity: 0, y: -10, duration: .3 }, 4.5)
-      .to('#seeLive', { scale: .93, duration: .1, yoyo: true, repeat: 1 }, 4.75)
-      .fromTo('#feed', { opacity: 0, scale: 1.04 }, { opacity: 1, scale: 1, duration: .6, ease: 'power2.out' }, 4.95)
-      .fromTo('#week', { yPercent: 105 }, { yPercent: 0, duration: .7, ease: 'power3.out' }, 6.6)
-      .from($$('#week .bars i'), { scaleY: 0, stagger: .06, duration: .4, ease: 'power2.out' }, 6.9)
-      .to({}, { duration: .6 });
-    scrub(sec, tl, { onUpdate: vidSync });
-    /* lo que escucha la cámara: un nivel que respira, con pico en el ladrido */
-    const lv = gsap.to(meter, { scaleX: () => gsap.utils.random(.08, .34), duration: .18, repeat: -1, repeatRefresh: true, ease: 'none', paused: true });
-    ScrollTrigger.create({ trigger: sec, start: 'top bottom', end: 'bottom top', onToggle: s => s.isActive ? lv.play() : lv.pause() });
   }
 
   /* ================= 4 · Preguntale (rota sola entre 3 preguntas) ================= */
