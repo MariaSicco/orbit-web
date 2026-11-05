@@ -1,0 +1,15 @@
+yamnet.tflite — YAMNet (Google), clasificador de eventos de audio entrenado con AudioSet (521 clases).
+Archivo tal cual lo publica MediaPipe (con metadatos y lista de etiquetas adentro):
+https://storage.googleapis.com/mediapipe-models/audio_classifier/yamnet/float32/1/yamnet.tflite
+SHA-256 4d8b4a53282dc83ef04e3e7dbc4fbc98082e34e44ed798e16c3a0cdd4c584faf · 4.126.810 bytes.
+
+Licencia de los pesos: Apache-2.0 (http://www.apache.org/licenses/LICENSE-2.0), declarada en los metadatos
+del propio .tflite y en Kaggle Models para todas sus variantes (https://www.kaggle.com/models/google/yamnet).
+Código de origen: https://github.com/tensorflow/models/tree/master/research/audioset/yamnet (Apache-2.0,
+https://github.com/tensorflow/models/blob/master/LICENSE).
+Nombres de las clases: ontología de AudioSet, Google, CC BY-SA 4.0 (https://research.google.com/audioset/download.html).
+Se ejecuta con MediaPipe Tasks Audio (@mediapipe/tasks-audio, Apache-2.0,
+https://github.com/google-ai-edge/mediapipe/blob/master/LICENSE), cargado desde jsDelivr.
+
+Se usa en assets/js/mascotas-audio.js (Mimitos, "Modo Me fui"). El audio se analiza en el celular
+y nunca se sube: solo sale del dispositivo el tipo de sonido, la hora y la confianza.

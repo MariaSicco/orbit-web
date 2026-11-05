@@ -1,0 +1,24 @@
+/* Mimitos · introducción de bienvenida (mascotas-f-tour.js) */
+.tour{position:fixed;inset:0;z-index:1000;pointer-events:auto}
+.tour-shade{position:absolute;inset:0;background:transparent}
+.tour.no-spot .tour-shade{background:rgba(31,26,23,.55)}
+.tour-spot{position:fixed;border-radius:16px;box-shadow:0 0 0 3px var(--lime,#D9FF45),0 0 0 9999px rgba(31,26,23,.55);pointer-events:none;transition:left .3s var(--ease),top .3s var(--ease),width .3s var(--ease),height .3s var(--ease)}
+.tour-card{position:fixed;left:16px;top:16px;background:var(--card);color:var(--ink);border-radius:20px;padding:16px 18px 18px;box-shadow:0 18px 48px -12px rgba(31,26,23,.45),0 0 0 1px rgba(31,26,23,.06);max-width:calc(100vw - 32px)}
+.tour-card.in{animation:tourIn .25s var(--ease) both}
+@keyframes tourIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.tour-h{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:-6px -8px 4px 0}
+.tour-n{font:600 12px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--ink3)}
+.tour-skip{min-height:44px;min-width:44px;padding:0 10px;border:0;background:transparent;color:var(--ink2);font-weight:600;font-size:14.5px;border-radius:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.tour-skip:hover{color:var(--ink);background:var(--sunk)}
+.tour-card h2{margin:0 0 6px;font-size:19px;line-height:1.2;font-weight:700;letter-spacing:-.015em}
+.tour-card p{margin:0;font-size:15px;line-height:1.45;color:var(--ink2)}
+.tour-dots{display:flex;gap:5px;margin:14px 0 0}
+.tour-dots i{width:6px;height:6px;border-radius:3px;background:var(--line2);transition:width .2s var(--ease),background-color .2s var(--ease)}
+.tour-dots i.on{width:18px;background:var(--act)}
+.tour-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:14px}
+.tour-acts .btn[data-tour=next]{flex:1;max-width:220px}
+.tour-card.final .tour-acts .btn[data-tour=next]{max-width:none}
+.tour .btn:focus-visible,.tour-skip:focus-visible{outline:2.5px solid var(--act);outline-offset:2px}
+.tour.still .tour-spot,.tour.still .tour-dots i{transition:none}
+.tour.still .tour-card.in{animation:none}
+@media(prefers-reduced-motion:reduce){.tour-spot,.tour-dots i{transition:none}.tour-card.in{animation:none}}

@@ -5,9 +5,10 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.129.0",
     "@vercel/blob": "^2.8.0",
+    "pdf-lib": "^1.17.1",
     "web-push": "^3.6.7"
   },
   "scripts": {
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js test/*.test.mjs"
   }
 }

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Mimitos · la libreta sanitaria de tu mascota</title>
+<meta name="description" content="La libreta sanitaria de tu mascota en el celu: vacunas, desparasitaciones, consultas, peso, avisos y QR por si se pierde. Hecho con Orbit.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#F7F3EE">
+<link rel="icon" href="/assets/img/mimitos/icon-192.png?v=2">
+<link rel="apple-touch-icon" href="/assets/img/mimitos/apple-touch-icon.png?v=2">
+<link rel="manifest" href="/mascotas.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Mimitos">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="/assets/css/mascotas.css?v=54">
+<!-- Veterinarias cerca: estilos propios y Roboto solo para la atribución "Google Maps" (pauta de Google) -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400&text=Google%20Maps&display=swap">
+<link rel="stylesheet" href="/assets/css/mascotas-vets.css?v=4">
+<link rel="stylesheet" href="/assets/css/mascotas-mefui.css?v=7">
+<link rel="stylesheet" href="/assets/css/mascotas-hoy.css?v=4">
+</head>
+<body data-shell="bare">
+<a class="skip" href="#app">Ir al contenido</a>
+<nav class="nav" id="nav" aria-label="Secciones" hidden></nav>
+<div class="content">
+  <header class="top">
+    <a class="brand" href="#/inicio" aria-label="Mimitos, inicio"><svg viewBox="0 0 64 64" aria-hidden="true"><defs><clipPath id="mzlogo-c"><rect width="64" height="64" rx="16"/></clipPath></defs><g clip-path="url(#mzlogo-c)"><rect width="64" height="64" fill="#F8C8D8"/></g><g transform="translate(7 7) scale(.78)"><defs><mask id="mzlogo-k" maskUnits="userSpaceOnUse" x="-6" y="-6" width="76" height="76"><rect x="-6" y="-6" width="76" height="76" fill="#fff"/><path d="M40.6 19.2C47 14.6 56.2 14.8 60.4 21.1 63 25.1 62.8 32.6 60.6 37 59.1 40 55.5 40.2 54.3 37L52.9 32.6C51.5 27.7 47.6 22.8 40.6 19.2Z" fill="#000" stroke="#000" stroke-width="3.4" stroke-linejoin="round"/></mask></defs><g transform="translate(-2.4 0)"><g mask="url(#mzlogo-k)"><path d="M12.5 52V32a9.75 9.75 0 0 1 19.5 0v20M32 32a9.75 9.75 0 0 1 19.5 0v20" fill="none" stroke="#6B1A35" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.6 31 10.2 9 23.2 18.8Z" fill="#6B1A35" stroke="#6B1A35" stroke-width="3.2" stroke-linejoin="round"/></g><path d="M40.6 19.2C47 14.6 56.2 14.8 60.4 21.1 63 25.1 62.8 32.6 60.6 37 59.1 40 55.5 40.2 54.3 37L52.9 32.6C51.5 27.7 47.6 22.8 40.6 19.2Z" fill="#6B1A35"/></g></g></svg><b>mimitos</b><span class="by">by Orbit</span></a>
+    <div class="hi" id="hi" hidden></div>
+    <div class="tnav-box" id="tnavBox"></div>
+    <span class="sp"></span>
+    <button class="save" id="save" type="button" aria-live="polite" tabindex="-1" aria-hidden="true"></button>
+    <span class="top-acts" id="topActs"></span>
+  </header>
+  <main id="app" tabindex="-1"></main>
+  <p class="disclaimer">Mimitos es un organizador: no reemplaza al veterinario.</p>
+  <footer class="made">hecho con <a href="/"><svg viewBox="0 0 100 100" aria-hidden="true"><path d="M74.6 80.5A39 39 0 1 1 89 50" fill="none" stroke="#1F1A17" stroke-width="22"/><circle cx="75" cy="80" r="12.5" fill="#3047FF"/></svg>Orbit</a></footer>
+</div>
+
+<dialog id="dForm" aria-labelledby="dFormT"><form class="sheet" id="fForm" novalidate>
+  <div class="sheet-h"><h2 id="dFormT"></h2><button class="x" type="button" data-close aria-label="Cerrar"></button></div>
+  <div id="fBody" class="fbody"></div>
+  <p class="err-msg" id="fErr" role="alert" hidden></p>
+  <button class="btn wide big" type="submit" id="fSave">Guardar</button>
+  <button class="btn ghost wide" type="button" id="fAlt" hidden></button>
+  <button class="btn ghost wide danger" type="button" id="fDel" hidden>Borrar</button>
+</form></dialog>
+
+<dialog id="dPanel" aria-labelledby="dPanelT"><div class="sheet">
+  <div class="sheet-h"><h2 id="dPanelT"></h2><button class="x" type="button" data-close aria-label="Cerrar"></button></div>
+  <div id="pBody" class="fbody"></div>
+</div></dialog>
+
+<dialog id="dCut" aria-labelledby="dCutT"><div class="sheet">
+  <div class="sheet-h"><h2 id="dCutT">Su foto</h2><button class="x" type="button" data-close aria-label="Cerrar"></button></div>
+  <div id="cutBody" class="fbody"></div>
+</div></dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="qrScratch" hidden></div>
+<div id="print" aria-hidden="true"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="/assets/js/mascotas-rules.js?v=32"></script>
+<script src="/assets/js/mascotas-away-rules.js?v=1"></script>
+<script src="/assets/js/mascotas-core.js?v=37"></script>
+<script src="/assets/js/mascotas-food.js?v=1"></script>
+<script src="/assets/js/mascotas-turnos.js?v=2"></script>
+<script src="/assets/js/mascotas-hoy-rules.js?v=2"></script>
+<script src="/assets/js/mascotas-hoy.js?v=3"></script>
+<script src="/assets/js/mascotas-app.js?v=64"></script>
+<script src="/assets/js/mascotas-vets.js?v=4"></script>
+<script src="/assets/js/mascotas-mefui.js?v=8"></script>
+</body>
+</html>

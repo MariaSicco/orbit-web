@@ -1,0 +1,180 @@
+/* Mimitos · adaptador de Outlook (Outlook.com, Hotmail, Live y Microsoft 365) para "Conectar tu mail".
+   El motor común está en petmail.js; este archivo solo habla con Microsoft.
+
+   Permisos delegados: Mail.Read (leer mails y adjuntos) + offline_access (refresh token) +
+   openid/email (solo para mostrar "Conectado como …" con la dirección del id_token). Nada de enviar
+   ni modificar. Endpoint "common": entran cuentas personales y de trabajo o estudio.
+
+   Microsoft no tiene un endpoint para que una app revoque su propio refresh token: "Desconectar"
+   borra lo guardado y la app le indica a la persona dónde quitar el permiso
+   (account.live.com/consent/Manage en cuentas personales; myapps.microsoft.com en las de trabajo).
+
+   Rutas: las mismas que Gmail con ?outlook=… (status, start, callback, search, import, queue, unqueue,
+   disconnect). Redirect URI: /mascotas/outlook/callback. */
+import * as M from './petmail.js';
+
+const LOGIN = 'https://login.microsoftonline.com/common/oauth2/v2.0';
+const GRAPH = 'https://graph.microsoft.com/v1.0';
+export const SCOPES = ['openid', 'email', 'offline_access', 'https://graph.microsoft.com/Mail.Read'];
+const { fail, form } = M;
+
+export function redirectUri(req) { return process.env.MS_REDIRECT_URI || M.hostBase(req) + '/mascotas/outlook/callback'; }
+export function outlookConfig(req) {
+  const clientId = process.env.MS_CLIENT_ID || '', secret = process.env.MS_CLIENT_SECRET || '';
+  const key = M.tokenKey();
+  return { clientId, secret, key, redirect: redirectUri(req), ready: Boolean(clientId && secret && key && (process.env.SESSION_SECRET || '').length >= 16) };
+}
+
+/* ---------- consulta (KQL de $search) ---------- */
+const ymd = ms => new Date(ms).toISOString().slice(0, 10);
+/* señal veterinaria, nombres de mascotas, veterinarias y remitentes conocidos (con y sin acento); el resto lo decide el puntaje.
+   Sin exigir adjunto: los mails veterinarios sin archivo se listan aparte para abrirlos en Outlook. */
+/* KQL de Graph (https://learn.microsoft.com/graph/search-query-parameter): sin propiedad busca en from, subject y
+   body; "attachment:" busca en el NOMBRE de los adjuntos (así entra "Fwd: Informe" con "Informe_Laboratorio_Veterinario.pdf").
+   No hay categorías de Promociones como en Gmail ni se puede combinar $search con $filter en mensajes: las promos y
+   los silenciados los saca el puntaje (List-Unsubscribe viene en internetMessageHeaders). */
+const ATT = ['veterinaria', 'veterinario', 'vet', 'canino', 'felino', 'antirrabica', 'hemograma'];
+export function buildKql(doc, since, senders) {
+  const P = M.queryParts(doc, senders);
+  const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`), froms = P.froms.map(f => `from:${f}`);
+  const att = [...ATT, ...(P.petNames || [])].map(t => `attachment:${/\s/.test(t) ? `"${t}"` : t}`);
+  /* asuntos de estudio con adjunto (ver M.DOC_SUBJECTS): sin tildes, KQL no las distingue */
+  const docs = `(hasattachment:true AND (${[...new Set(M.DOC_SUBJECTS.map(t => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))].map(t => `subject:${t}`).join(' OR ')}))`;
+  const make = () => `(${[...P.vet.map(t => /\s/.test(t) ? `"${t}"` : t), ...names, ...known, ...froms, ...att, docs].join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
+  let k = make();
+  while (k.length > 1700 && (known.length || froms.length || att.length > ATT.length)) { if (known.length) known.pop(); else if (att.length > ATT.length) att.pop(); else froms.pop(); k = make(); }
+  return k;
+}
+/* la consulta de antes del 15/10 (sin attachment:): respaldo si Graph rechaza la nueva */
+export function buildKqlLegacy(doc, since, senders) {
+  const P = M.queryParts(doc, senders);
+  const names = P.names.map(n => `"${n}"`), known = P.knownNames.map(n => `"${n}"`), froms = P.froms.map(f => `from:${f}`);
+  const make = () => `(${[...P.vet.map(t => /\s/.test(t) ? `"${t}"` : t), ...names, ...known, ...froms].join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
+  let k = make();
+  while (k.length > 1400 && (known.length || froms.length)) { if (known.length) known.pop(); else froms.pop(); k = make(); }
+  return k;
+}
+/* asuntos de estudio sin propiedades KQL (busca en asunto, remitente y cuerpo); la app se queda solo con los que traen adjunto */
+export function docsKql(since) {
+  const t = [...new Set(M.DOC_SUBJECTS.map(x => x.normalize('NFD').replace(/[\u0300-\u036f]/g, '')))];
+  return `(${t.join(' OR ')})${since ? ` AND received>=${ymd(since)}` : ''}`;
+}
+/* $search="…": las comillas y barras de adentro van escapadas */
+export const searchParam = kql => '"' + kql.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+const SELECT = 'id,subject,from,receivedDateTime,hasAttachments,webLink';
+const ATT_SELECT = 'id,name,contentType,size,isInline';
+
+/* ---------- Microsoft ---------- */
+async function tokenCall(params) {
+  const r = await fetch(LOGIN + '/token', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: form(params) });
+  const d = await r.json().catch(() => ({}));
+  return { ok: r.ok, status: r.status, d };
+}
+/* ids inmutables: así un mail que se mueve de carpeta conserva su id (y el dedupe sigue andando) */
+const wait = ms => new Promise(ok => setTimeout(ok, ms));
+async function graph(url, at, { raw = false } = {}, retried = false) {
+  const r = await fetch(url.startsWith('https://') ? url : GRAPH + url, { headers: { Authorization: `Bearer ${at}`, Prefer: 'IdType="ImmutableId"' } });
+  /* 429/503: una vez más, después de lo que pida Microsoft (Retry-After), hasta 3 s */
+  if (!retried && (r.status === 429 || r.status === 503)) { await wait(Math.min(3000, Math.max(500, (Number(r.headers.get('retry-after')) || 1) * 1000))); return graph(url, at, { raw }, true); }
+  if (r.status === 401) throw fail('mail_vencido', 401);
+  if (r.status === 429 || r.status === 503) throw fail('mail_limite', 429);
+  if (r.status === 404) throw fail('mail_no_encontrado', 404);
+  if (!r.ok) {
+    const why = await r.clone().json().then(d => `${d.error?.code || ''} ${d.error?.innerError?.code || ''}`).catch(() => '');
+    console.warn('outlook api:', r.status, url.split('?')[0].replace(/https:\/\/[^/]+/, '').replace(/\/messages\/[^/]+/, '/messages/<id>'), String(why).replace(/https?:\/\/\S+/g, '<url>').slice(0, 200));
+  }
+  if (r.status === 400) throw fail('mail_consulta', 400);
+  if (!r.ok) throw fail('mail_error', 502);
+  return raw ? Buffer.from(await r.arrayBuffer()) : r.json();
+}
+/* la dirección para mostrar sale del id_token (lo manda Microsoft por TLS a nuestro servidor; solo se usa para mostrarla) */
+export function addressOf(idToken) {
+  try { const p = JSON.parse(Buffer.from(String(idToken).split('.')[1], 'base64url').toString()); return String(p.email || p.preferred_username || '').slice(0, 120); } catch { return ''; }
+}
+const okId = v => /^[A-Za-z0-9+/=_-]{16,400}$/.test(v);
+const isFile = a => String(a?.['@odata.type'] || '').toLowerCase() === '#microsoft.graph.fileattachment' && !a.isInline;
+const metaOf = a => ({ part: String(a.id), name: String(a.name || '').trim().slice(0, 120), type: M.typeOf(a.contentType, a.name), size: Number(a.size) || 0 });
+const fromOf = f => { const e = f?.emailAddress || {}; return [e.name, e.address ? `<${e.address}>` : ''].filter(Boolean).join(' ').slice(0, 120); };
+
+export const outlook = {
+  /* Outlook acepta 4 pedidos simultáneos por casilla: con 3 queda margen */
+  parallel: 3,
+  id: 'outlook', label: 'Outlook', revokes: false, consentUrl: 'https://account.live.com/consent/Manage',
+  key: email => `orbit:petoutlook:${String(email).toLowerCase()}`,
+  config: outlookConfig,
+  validId: okId,
+  validPart: okId,
+  /* tres consultas, de la más completa a la más simple: si Graph rechaza una (400), se prueba la siguiente antes de caer
+     al modo respaldo (solo los mails con adjunto más recientes). "plain" son KQL sin propiedades (from:, subject:,
+     attachment:), que algunas casillas no aceptan: [la de siempre, asuntos de estudio] */
+  query: (doc, opts, now) => { const since = M.sinceOf(opts, now); return { kql: buildKql(doc, since, opts.senders), plain: [buildKqlLegacy(doc, since, opts.senders), docsKql(since)], since }; },
+  mode: cur => cur.f ? 'respaldo' : (cur.ph || 0) === 0 ? 'completa' : 'simple',
+  legacyQuery: (doc, opts, now) => { const since = M.sinceOf(opts, now); return { kql: buildKqlLegacy(doc, since, opts.senders), since }; },
+  authUrl: (cfg, state, challenge) => LOGIN + '/authorize?' + form({
+    client_id: cfg.clientId, response_type: 'code', redirect_uri: cfg.redirect, response_mode: 'query',
+    scope: SCOPES.join(' '), state, prompt: 'select_account', code_challenge: challenge, code_challenge_method: 'S256',
+  }),
+  async exchange(cfg, code, verifier) {
+    const { ok, d } = await tokenCall({ client_id: cfg.clientId, client_secret: cfg.secret, code, redirect_uri: cfg.redirect, grant_type: 'authorization_code', code_verifier: verifier, scope: SCOPES.join(' ') });
+    if (!ok || !d.access_token) {
+      /* solo el código y la descripción de Microsoft (AADSTS…), nunca el secreto ni el code */
+      console.warn('outlook exchange:', d.error || 'sin_token', String(d.error_description || '').split('\n')[0].slice(0, 200));
+      return { error: d.error === 'consent_required' ? 'sinpermiso' : 'error' };
+    }
+    if (!/(^|\s|\/)mail\.read(\s|$)/i.test(String(d.scope || ''))) return { error: 'sinpermiso' };
+    if (!d.refresh_token) return { error: 'error' };
+    return { refresh: d.refresh_token, address: addressOf(d.id_token) };
+  },
+  /* Microsoft rota el refresh token en cada uso: el motor guarda el nuevo */
+  async refresh(cfg, refresh) {
+    const { ok, d } = await tokenCall({ client_id: cfg.clientId, client_secret: cfg.secret, refresh_token: refresh, grant_type: 'refresh_token', scope: SCOPES.join(' ') });
+    if (!ok) { if (['invalid_grant', 'interaction_required', 'consent_required'].includes(d.error)) return { expired: true }; console.warn('outlook refresh:', d.error || '-'); throw fail('mail_error', 502); }
+    return { access: d.access_token, refresh: d.refresh_token || '' };
+  },
+  async revoke() { return false; },
+  async list(at, cur) {
+    let url = cur.page;
+    /* "phase:N": terminó una consulta simple y sigue la próxima (la arma este mismo adaptador, va firmada en el cursor) */
+    if (url && /^phase:[12]$/.test(url)) { cur.ph = Number(url.slice(6)); url = ''; }
+    if (url && !url.startsWith(GRAPH + '/me/messages')) throw fail('cursor_invalido', 400);
+    /* en la consulta de asuntos de estudio solo sirven los mails con adjunto; al terminar la 1 sigue la 2 */
+    const wrap = (d, ph) => ({ items: (d.value || []).filter(x => ph !== 2 || x.hasAttachments), next: d['@odata.nextLink'] || (ph === 1 && cur.q.plain?.[1] ? 'phase:2' : '') });
+    if (!url) {
+      while (!cur.f) {
+        const ph = cur.ph || 0, kql = ph === 0 ? cur.q.kql : cur.q.plain?.[ph - 1];
+        if (!kql) { cur.f = 1; break; }
+        url = `/me/messages?$search=${encodeURIComponent(searchParam(kql))}&$select=${SELECT}&$top=${M.PAGE}`;
+        try { return wrap(await graph(url, at), ph); }
+        catch (e) { if (e.code !== 'mail_consulta') throw e; cur.ph = ph + 1; url = ''; }   // esa consulta no la acepta esta casilla: la siguiente
+      }
+      /* modo filtro: adjuntos y fecha en el servidor; la relevancia (asunto, remitente y nombres de archivo) la decide el puntaje */
+      const since = new Date(cur.q.since || Date.parse('2000-01-01')).toISOString();
+      url = `/me/messages?$filter=${encodeURIComponent(`receivedDateTime ge ${since} and hasAttachments eq true`)}&$orderby=${encodeURIComponent('receivedDateTime desc')}&$select=${SELECT}&$top=${M.PAGE}`;
+    }
+    const d = await graph(url, at);
+    return cur.f ? { items: d.value || [], next: d['@odata.nextLink'] || '' } : wrap(d, cur.ph || 0);
+  },
+  async candidate(at, msg) {
+    if (!okId(msg?.id)) return null;
+    const base = { m: msg.id, date: msg.receivedDateTime || '', from: fromOf(msg.from), subject: String(msg.subject || '').slice(0, 160), link: /^https:\/\/outlook\.(live|office|office365)\.com\//.test(msg.webLink || '') ? msg.webLink : '' };
+    if (!msg.hasAttachments) return { ...base, files: [] };
+    const d = await graph(`/me/messages/${encodeURIComponent(msg.id)}/attachments?$select=${ATT_SELECT}`, at);
+    const files = (d.value || []).filter(isFile).map(metaOf).filter(f => okId(f.part) && M.fileOk(f));
+    /* tenía adjuntos pero ninguno es PDF o foto: no hay nada para traer ni un "sin adjunto" que mostrar */
+    return files.length ? { ...base, files } : null;
+  },
+  /* el texto del mail, SOLO para buscar el link a un estudio en mails que ya parecen veterinarios; no se guarda */
+  async body(at, id) {
+    const d = await graph(`/me/messages/${encodeURIComponent(id)}?$select=body,from`, at);
+    const c = String(d.body?.content || '').slice(0, 400000), html = String(d.body?.contentType || '').toLowerCase() === 'html';
+    return { html: html ? c : '', text: html ? '' : c, from: fromOf(d.from) };
+  },
+  async find(at, m, part) {
+    const a = await graph(`/me/messages/${encodeURIComponent(m)}/attachments/${encodeURIComponent(part)}?$select=${ATT_SELECT}`, at);
+    if (!isFile(a)) return null;
+    const msg = await graph(`/me/messages/${encodeURIComponent(m)}?$select=from`, at).catch(() => ({}));
+    return { ...metaOf(a), from: fromOf(msg.from) };
+  },
+  /* el contenido se baja recién al importar, crudo con /$value */
+  download: (at, m, part) => graph(`/me/messages/${encodeURIComponent(m)}/attachments/${encodeURIComponent(part)}/$value`, at, { raw: true }),
+};
