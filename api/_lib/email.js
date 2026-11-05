@@ -11,8 +11,8 @@ export const FROM = () => {
 };
 export const emailReady = () => Boolean(process.env.BREVO_API_KEY || process.env.RESEND_API_KEY);
 
-export async function sendEmail({ to, subject, html, text }) {
-  const from = FROM();
+export async function sendEmail({ to, subject, html, text, fromName }) {
+  const from = fromName ? { ...FROM(), name: fromName } : FROM();
   if (process.env.BREVO_API_KEY) {
     const r = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
