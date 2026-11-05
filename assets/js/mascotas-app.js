@@ -381,6 +381,7 @@ function petForm(p) {
   openForm({
     title: p ? 'Datos de ' + p.name : 'Nueva mascota',
     values: p ? { ...p, weight: p.weight ? String(p.weight).replace('.', ',') : '', ownerName: p.contact.name, ownerPhone: p.contact.phone } : { species: 'perro' },
+    intro: `<button type="button" class="btn ghost wide" id="petFromPhoto">${I('camera')} Completar con una foto de la libreta</button><span class="petphoto-msg" id="petPhotoMsg" role="status"></span>`,
     fields: [
       { k: 'photo', type: 'photo', hint: 'Una foto clara, con la mascota entera. La recortamos sola y la ponemos sobre su color.' },
       { k: 'hue', type: 'hue', label: 'Su color', hint: 'El fondo de su Inicio, la tapa de su libreta y su pasaporte.' },
@@ -399,7 +400,7 @@ function petForm(p) {
       { k: 'notes', label: 'Notas privadas', type: 'textarea', max: 600, ph: 'Solo las ves vos.' },
     ],
     onChip: (k, v) => { if (k === 'species') { showField('speciesOther', v === 'otra'); $('#f_breed_dl').innerHTML = (Z.BREEDS[v] || []).map(o => `<option value="${esc(o)}">`).join(''); } },
-    after: () => showField('speciesOther', (p?.species || 'perro') === 'otra'),
+    after: () => { showField('speciesOther', (p?.species || 'perro') === 'otra'); $('#petFromPhoto').onclick = () => petFromPhoto(); },
     onDelete: p ? () => { const undo = drop(doc.pets, p); if (curId === p.id) selectPet(doc.pets[0]?.id || ''); return { msg: `${p.name} se borró con toda su historia.`, undo: () => { undo(); selectPet(p.id); } }; } : null,
     deleteLabel: 'Borrar mascota', confirm: p ? `Tocá de nuevo para borrar a ${p.name} y toda su historia` : '',
     onHue(h) { applyHue({ hue: h }); },
@@ -416,8 +417,38 @@ function petForm(p) {
       if (v.photo) { try { pet.photo = await uploadPhoto(v.photo); pet.photoFull = full ? await uploadPhoto(full) : ''; } catch (e) { toast((e?.msg || 'La foto no se pudo subir.') + ' El resto quedó guardado.'); } }
       if (!p) { doc.pets.push(pet); selectPet(pet.id); }
       toast(p ? 'Datos guardados.' : `${pet.name} ya está en Mimitos.`);
+      /* lo que la foto de la libreta trajo además de los datos (vacunas, controles) pasa a revisarse antes de guardarse */
+      const leidos = form.fromPhoto;
+      if (leidos?.items?.length) setTimeout(() => { scan = { petId: pet.id, state: 'review', items: leidos.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) })), warnings: leidos.warnings || [], warnOk: [], petRead: {} }; setRoute('lectura'); render(); window.scrollTo(0, 0); }, 50);
     },
   });
+}
+/* Nueva mascota o datos que faltan: lee la libreta y completa el formulario. Lo ya escrito no se pisa; nada se guarda hasta tocar Guardar. */
+function petFromPhoto() {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+  inp.onchange = async () => {
+    const files = [...inp.files].slice(0, 4); if (!files.length) return;
+    const btn = $('#petFromPhoto'), msg = $('#petPhotoMsg'), abierto = form;
+    const decir = t => { if (form === abierto) msg.textContent = t; };
+    btn.disabled = true; decir('Leyendo la libreta. Tarda unos segundos…');
+    try {
+      const images = []; for (const f of files) images.push(await shrink(f, 1600, .85));
+      const species = $('#f_species [aria-pressed="true"]')?.dataset.v || 'perro';
+      const r = await fetch('/api/mascotas?scan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, species }) });
+      const d = await r.json().catch(() => ({}));
+      if (form !== abierto) return;
+      if (!r.ok) return decir(/^limite_|^ai_/.test(d.error || '') ? limitMsg(d) : 'No pudimos leerla. Probá con una foto con más luz, de frente y sin reflejos, o completá a mano.');
+      setQuota(d.quota);
+      const lp = d.pet || {}; let puestos = 0;
+      for (const k of ['name', 'breed', 'birth', 'sex', 'chip']) { const el = $('#f_' + k); if (el && lp[k] && !el.value.trim() && !(k === 'birth' && lp[k] > iso(Z.today()))) { el.value = lp[k]; puestos++; } }
+      if (lp.species) { const c = $(`#f_species .chip[data-v="${lp.species}"]`); if (c) { c.parentNode.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', String(x === c))); form.onChip?.('species', lp.species); } }
+      form.fromPhoto = { items: [...(form.fromPhoto?.items || []), ...(d.items || [])], warnings: d.warnings || [] };
+      const n = form.fromPhoto.items.length;
+      decir(puestos || n ? `${puestos ? 'Completé los datos que encontré: revisalos.' : 'No encontré datos nuevos de la mascota.'}${n ? ` Al guardar vas a ver ${n === 1 ? '1 registro' : n + ' registros'} de la libreta.` : ''}` : 'No encontramos datos en esa foto. Probá con la tapa o la primera página de la libreta.');
+    } catch { decir('No pudimos leerla. Revisá la conexión y probá de nuevo.'); }
+    finally { if (form === abierto) btn.disabled = false; }
+  };
+  inp.click();
 }
 const REC_TYPES = [['vacuna', 'Vacuna'], ['desparasitacion', 'Antiparasitario'], ['control', 'Control'], ['otro', 'Otro']];
 function recForm(p, r, preset) {
@@ -427,6 +458,8 @@ function recForm(p, r, preset) {
   openForm({
     title: r ? 'Editar registro' : preset?.title || `Nuevo registro · ${p.name}`,
     values: base,
+    /* también con foto, en cualquier momento (no solo al crear la mascota) */
+    intro: r ? '' : `<button type="button" class="btn ghost wide" id="recFromPhoto">${I('camera')} Cargar con una foto de la libreta</button>`,
     fields: [
       { k: 'type', label: 'Tipo', type: 'chips', options: REC_TYPES },
       { k: 'scope', label: '¿Interna o externa?', type: 'chips', options: [['interna', 'Interna (parásitos)'], ['externa', 'Externa (pulgas, garrapatas)']] },
@@ -436,7 +469,7 @@ function recForm(p, r, preset) {
       { k: 'sticker', label: 'Foto del sticker', type: 'photo', square: true, opt: true, hint: 'El sticker que pega el veterinario. Aparece en la libreta como sello.' },
       { k: 'notes', label: 'Notas', type: 'textarea', max: 300, ph: 'Observaciones', opt: true },
     ],
-    after: () => showField('scope', t === 'desparasitacion'),
+    after: () => { showField('scope', t === 'desparasitacion'); const b = $('#recFromPhoto'); if (b) b.onclick = () => { dForm.close(); startScan(p); }; },
     onChip: (k, v) => { if (k === 'type') { $('#f_name_dl').innerHTML = sugg(v).map(o => `<option value="${esc(o)}">`).join(''); showField('scope', v === 'desparasitacion'); } },
     onQuick: (k, m) => { const b = pd($('#f_date').value) || Z.today(); setVal('next', Z.addMonths(iso(b), +m)); },
     onDelete: r ? () => ({ msg: `${r.name || 'Registro'} borrado.`, undo: drop(p.records, r) }) : null,
