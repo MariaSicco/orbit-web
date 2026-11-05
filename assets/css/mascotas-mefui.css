@@ -137,3 +137,13 @@ dialog.mf-live-open .sheet{gap:12px}
 /* escritorio angosto: "Me fui" queda como ícono de cámara (con el punto verde) y el nombre en aria-label */
 @media(min-width:1024px) and (max-width:1279px){.tnav-mf{font-size:0!important;gap:3px}.tnav-mf svg.i{width:19px;height:19px}.top .btn.lime{white-space:normal}.tnav:has(.tnav-mf) a{padding:0 7px}}
 .mf-cam-ic svg.i{width:26px;height:26px;stroke-width:1.75}
+
+/* emparejar: paso a paso */
+.mf-steps{list-style:none;counter-reset:mfs;margin:0;padding:0;display:grid;gap:14px}
+.mf-steps>li{counter-increment:mfs;position:relative;padding-left:40px;display:grid;gap:6px}
+.mf-steps>li::before{content:counter(mfs);position:absolute;left:0;top:-2px;width:28px;height:28px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;font:700 14px/1 var(--f)}
+.mf-steps small{color:var(--ink2,#5b524c);font-size:14px;line-height:1.4}
+.mf-steps .mf-qr{margin:4px 0}
+.mf-steps .mf-code{font-size:30px;text-align:left;margin:0}
+.mf-share{display:flex;flex-wrap:wrap;gap:8px}
+.mf-wait{display:flex;align-items:center;gap:4px}

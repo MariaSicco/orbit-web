@@ -199,6 +199,12 @@ export function readCursor(c, email, secret = process.env.SESSION_SECRET || '') 
 }
 
 /* ---------- términos de búsqueda ---------- */
+/* el nombre como lo escribe la gente: con s, z o c ("Felisa", "Feliza"), plegado y en minúscula. Máximo 4 variantes */
+export function nameVariants(n) {
+  const b = fold(n); if (b.length < 3) return [];
+  const out = new Set([b, b.replace(/z/g, 's'), b.replace(/s/g, 'z'), b.replace(/c(?=[ei])/g, 's'), b.replace(/s(?=[ei])/g, 'c')]);
+  return [...out].filter(v => v.length >= 3).slice(0, 4);
+}
 /* nombre seguro para meter entre comillas: letras, números, espacios y . ' - */
 export const term = v => String(v || '').normalize('NFC').replace(/["()\\{}:]/g, ' ').replace(/[^\p{L}\p{N} .'-]/gu, ' ').replace(/\s+/g, ' ').trim().slice(0, 40);
 export function namesOf(doc) {
@@ -280,7 +286,7 @@ export function relContext(doc, senders = { manual: [], learned: [] }) {
   }
   for (const v of senders.learned || []) add(v, false, true);
   for (const v of senders.manual || []) add(v, true, false);
-  const pets = [...new Set((doc?.pets || []).map(p => fold(term(p.name))).filter(n => n.length >= 3 && n !== 'sin nombre'))];
+  const pets = [...new Set((doc?.pets || []).map(p => fold(term(p.name))).filter(n => n.length >= 3 && n !== 'sin nombre').flatMap(n => nameVariants(n)))];
   const breeds = [...new Set([...BREEDS, ...(doc?.pets || []).map(p => p.breed)].map(b => fold(term(b))).filter(b => b.length >= 4))];
   /* nombre del tutor (de la ficha): "paciente BENITEZ" sin la mascota es un estudio de la persona */
   const owner = [...new Set((doc?.pets || []).flatMap(p => fold(term(p.contact?.name)).split(' ')).filter(w => w.length >= 4))];
@@ -360,8 +366,11 @@ export function judge(c, rel) {
      afuera, aunque venga de la veterinaria. Sin adjunto: solo si anuncia un resultado y no es un turno o un
      recordatorio; recién ahí se lee el cuerpo para buscar el link */
   const veto = VETO.some(k => minus.includes(k)) && !count(subj, DOC);
-  const show = !pass || veto ? '' : (c.files || []).length ? 'file' : (count(subj, RESULTISH) && !count(subj, NO_DOC) ? 'nofile' : '');
-  return { score, why, minus, pass: Boolean(show), show };
+  let show = !pass || veto ? '' : (c.files || []).length ? 'file' : (count(subj, RESULTISH) && !count(subj, NO_DOC) ? 'nofile' : '');
+  /* "Feliza" que te reenviaste vos con el link del laboratorio: el asunto solo nombra a la mascota. Se lee el cuerpo
+     y entra únicamente si trae un link a un estudio (pedido de Majo, 05/11) */
+  if (!show && petSeen && !neg && !(c.files || []).length && !count(subj, NO_DOC)) show = 'probe';
+  return { score, why: show === 'probe' ? ['mascota'] : why, minus, pass: Boolean(show), show };
 }
 /* compatibilidad: relevance() es judge() */
 export const relevance = judge;
@@ -369,7 +378,7 @@ export const relevance = judge;
 export function queryParts(doc, senders) {
   const rel = relContext(doc, senders);
   const ok = n => n.length >= 3 && !/^sin nombre$/i.test(n);
-  const petNames = [...new Set((doc?.pets || []).map(p => term(p.name)).filter(ok))];
+  const petNames = [...new Set((doc?.pets || []).map(p => term(p.name)).filter(ok).flatMap(n => [n, ...nameVariants(n).filter(v => v !== fold(n))]))];
   const names = [...new Set([...petNames, ...(doc?.pets || []).map(p => term(p.breed)).filter(ok)])];
   /* nombres de veterinarias tal como están escritos y sin acento (no suponemos que el proveedor los ignore) */
   const raw = [];
@@ -508,10 +517,11 @@ export async function search(P, email, doc, st, cfg, body, now = Date.now) {
         if (!r.show) return null;
         /* solo los mails que ya parecen veterinarios, no traen el estudio adjunto y anuncian un resultado: se lee el
            cuerpo para buscar el link al estudio (muchos laboratorios mandan un link). No se guarda ni sale de acá */
-        if (r.show === 'nofile' && P.body) {
+        if ((r.show === 'nofile' || r.show === 'probe') && P.body) {
           const b = await P.body(at, c.m).catch(e => { if (e.code === 'mail_vencido' || e.code === 'mail_limite') throw e; return null; });
           if (b) c.links = extractLinks(b, { senderDomain: domainOf(c.from) });
         }
+        if (r.show === 'probe' && !(c.links || []).length) return null;
         return { c, r };
       }).map(pr => pr.catch(e => { if (e.code === 'mail_vencido' || e.code === 'mail_limite') throw e; return null; })));
       for (const g of got) {

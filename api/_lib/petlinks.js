@@ -36,7 +36,7 @@ const fold = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLow
 const FILE_SERVICE = /(^|\.)(drive\.google\.com|docs\.google\.com|dropbox\.com|dl\.dropboxusercontent\.com|1drv\.ms|onedrive\.live\.com|sharepoint\.com|wetransfer\.com|we\.tl|box\.com|mega\.nz)$/;
 const JUNK_HOST = /(^|\.)(facebook\.com|fb\.me|instagram\.com|twitter\.com|x\.com|linkedin\.com|youtube\.com|youtu\.be|tiktok\.com|wa\.me|whatsapp\.com|api\.whatsapp\.com|t\.me|pinterest\.com|maps\.google\.[a-z.]+|maps\.app\.goo\.gl|waze\.com|apple\.com|play\.google\.com|apps\.apple\.com|list-manage\.com|mailchi\.mp|sendgrid\.net|mandrillapp\.com|mailgun\.org|hubspotlinks\.com|hs-sites\.com|sparkpostmail\.com|mcusercontent\.com|doubleclick\.net|google-analytics\.com|w3\.org|schemas\.microsoft\.com)$/;
 const JUNK_PATH = /(unsubscribe|desuscrib|darse-de-baja|dar-de-baja|\/baja|optout|opt-out|preferenc|manage-subscription|privacy|privacidad|terminos|terms|\/maps|google\.com\/maps|pixel|beacon|\/open\?|\/o\/|tracking)/i;
-const STUDY_WORDS = /(resultado|informe|descarg|download|\bpdf\b|\.pdf|estudio|laborator|report|analisis|hemograma|ecograf|radiograf|placa|archivo|adjunto|ver-?resultado)/i;
+const STUDY_WORDS = /(resultado|informe|descarg|download|\bpdf\b|\.pdf|estudio|laborator|report|analisis|hemograma|ecograf|radiograf|placa|archivo|adjunto|ver-?resultado|ordenes ?medicas)/i;
 
 export function extractLinks({ html = '', text = '' } = {}, { senderDomain = '' } = {}) {
   const found = new Map();
@@ -57,7 +57,8 @@ export function extractLinks({ html = '', text = '' } = {}, { senderDomain = '' 
   };
   for (const m of String(html).matchAll(/<a\b[^>]*?href\s*=\s*(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi)) add(m[2], m[3].replace(/<[^>]+>/g, ' '));
   const plain = text || stripTags(String(html).replace(/<(script|style)[\s\S]*?<\/\1>/gi, ' '));
-  for (const m of String(plain).matchAll(/https?:\/\/[^\s<>"')\]]+/g)) add(m[0].replace(/[.,;:!?]+$/, ''), '');
+  /* en texto plano no hay ancla: cuenta lo que dice justo antes del link ("Aquí tiene disponibles sus resultados: https://…") */
+  for (const m of String(plain).matchAll(/https?:\/\/[^\s<>"')\]]+/g)) add(m[0].replace(/[.,;:!?]+$/, ''), String(plain).slice(Math.max(0, m.index - 80), m.index).split(/\n\s*\n/).pop());
   return [...found.values()].sort((a, b) => b.score - a.score).slice(0, MAX_LINKS).map(l => ({ ...l, part: linkPart(l.url) }));
 }
 

@@ -328,7 +328,7 @@ const CONSENT = `<ul class="mf-ul">
   <li><b>Otras personas:</b> no la apuntes a lugares donde haya personas (empleadas, visitas, vecinos) sin que lo sepan y estén de acuerdo.</li></ul>`;
 function pairPanel() {
   clearInterval(st.pairTimer); st.pair = null;
-  A().panel('Convertir un celu viejo en Cámara Mimitos', `<p>Sirve cualquier celu viejo con Chrome o Safari. Dejalo enchufado, con la pantalla hacia arriba, cerca de donde se queda.</p>${CONSENT}
+  A().panel('Convertir un celu viejo en Cámara Mimitos', `<p>Sirve cualquier celu viejo, tablet o compu con cámara y Chrome o Safari. <b>Tenelo a mano:</b> en el paso siguiente lo conectás con un QR, sin instalar nada.</p>${CONSENT}
     <label class="toggle"><input type="checkbox" id="mfOk"><span><b>Entiendo y no la voy a apuntar a otras personas sin su consentimiento</b></span></label>
     <div class="f"><label for="mfName">Nombre de la cámara <span class="opt">(opcional)</span></label><input id="mfName" maxlength="40" placeholder="Living, cocina, patio…"></div>
     <div id="mfPairErr" class="err-msg" role="alert" hidden></div>
@@ -339,6 +339,7 @@ function pairPanel() {
     const b = e.target.closest('[data-mfp]'); if (!b) return;
     if (b.dataset.mfp === 'code') return makeCode(b);
     if (b.dataset.mfp === 'close') A().dPanel.close();
+    if (b.dataset.mfp === 'copy') { try { await navigator.clipboard.writeText(st.pairUrl || ''); b.textContent = 'Copiado'; } catch { b.textContent = 'No se pudo copiar'; } }
   };
   A().dPanel.addEventListener('close', () => { clearInterval(st.pairTimer); st.pairTimer = null; }, { once: true });
 }
@@ -352,11 +353,23 @@ async function makeCode(btn) {
     const before = new Set((st.cams || []).map(c => c.camId));
     st.pair = { code: d.code, exp: Date.parse(d.exp) };
     const url = `${location.origin}/mascotas/camara#c=${d.code}`;
-    $('#pBody').innerHTML = `<p>En el celu viejo, abrí <b>${esc(location.host)}/mascotas/camara</b> y escribí este código, o escaneá el QR con la cámara de ese celu.</p>
-      <p class="mf-code" aria-label="Código ${esc(d.code.split('').join(' '))}">${esc(d.code.slice(0, 4))}<span aria-hidden="true">-</span>${esc(d.code.slice(4))}</p>
-      <div class="mf-qr" id="mfQr" role="img" aria-label="QR para emparejar la cámara"></div>
-      <p class="dim" id="mfLeft" aria-live="polite">Vence en 10 minutos. Sirve una sola vez.</p>
+    /* paso a paso (pedido de Majo, 05/11): costaba abrir la cámara en el otro aparato. Tres caminos: QR, link
+       mandado a uno mismo (WhatsApp o copiar) o escribir la dirección y el código */
+    const code = `${esc(d.code.slice(0, 4))}<span aria-hidden="true">-</span>${esc(d.code.slice(4))}`;
+    $('#pBody').innerHTML = `<ol class="mf-steps">
+        <li><b>Agarrá el otro aparato</b><small>Un celu viejo, una tablet o una compu con cámara, con wifi. Dejalo a mano.</small></li>
+        <li><b>Abrí Mimitos en ese aparato</b><small>La forma más fácil: <b>apuntale la cámara a este QR</b> y tocá el link que aparece.</small>
+          <div class="mf-qr" id="mfQr" role="img" aria-label="QR para emparejar la cámara"></div>
+          <small>¿No lee el QR? Mandate el link y abrilo desde ese aparato:</small>
+          <div class="mf-share"><a class="btn sm" href="https://wa.me/?text=${encodeURIComponent('Cámara Mimitos: abrí este link en el celu que va a quedar en casa ' + url)}" target="_blank" rel="noopener">${I('mail')} Mandármelo por WhatsApp</a><button type="button" class="btn sm ghost" data-mfp="copy">Copiar link</button></div>
+          <small>O escribí <b>${esc(location.host)}/mascotas/camara</b> en el navegador y poné este código:</small>
+          <p class="mf-code" aria-label="Código ${esc(d.code.split('').join(' '))}">${code}</p></li>
+        <li><b>Tocá "Permitir"</b><small>El navegador te pide la cámara y el micrófono: hacen falta para verla y para avisarte si ladra o maúlla.</small></li>
+        <li><b>Dejalo enchufado</b><small>Apuntando a donde se queda tu mascota. Listo: acá vas a ver que se conectó.</small></li>
+      </ol>
+      <p class="dim mf-wait" id="mfLeft" aria-live="polite"><span class="mf-topdot inline" aria-hidden="true"></span>Esperando que el otro aparato se conecte… El código vence en 10 minutos y sirve una sola vez.</p>
       <div class="d-acts"><button class="btn ghost wide" data-mfp="close">Cerrar</button></div>`;
+    st.pairUrl = url;
     if (window.QRCode) new QRCode($('#mfQr'), { text: url, width: 200, height: 200, colorDark: '#1F1A17', colorLight: '#FFFFFF', correctLevel: QRCode.CorrectLevel.M });
     /* espera a que el celu cámara canjee el código */
     let ticks = 0;
@@ -364,7 +377,7 @@ async function makeCode(btn) {
       const left = st.pair.exp - Date.now();
       const el = $('#mfLeft');
       if (left <= 0) { clearInterval(st.pairTimer); if (el) el.textContent = 'El código venció. Cerrá y generá otro.'; return; }
-      if (el && ++ticks % 4 === 0) el.textContent = `Vence en ${Math.ceil(left / 60e3)} min. Sirve una sola vez.`;
+      if (el && ++ticks % 4 === 0) el.innerHTML = `<span class="mf-topdot inline" aria-hidden="true"></span>Esperando que el otro aparato se conecte… Vence en ${Math.ceil(left / 60e3)} min.`;
       const cams = await loadCams(true);
       const nu = (cams || []).find(c => !before.has(c.camId));
       if (nu) {
@@ -595,13 +608,12 @@ setInterval(async () => {
 /* al cargar, si hay una salida en curso, se piden las cámaras para el "Cámara activa" del Inicio */
 setTimeout(function wait() { if (A()?.mode === 'full') { if (A().mefui) loadCams().then(() => A().render()); } else if (A()?.mode === 'loading') setTimeout(wait, 400); }, 400);
 
-/* acceso fijo en la barra de arriba: píldora con texto ("Me fui", o "En vivo" con punto verde si hay una cámara activa).
-   Antes era un ícono de cámara solo y se leía como "sacar una foto". */
+/* acceso fijo en la barra de arriba: ícono de cámara (pedido de Majo, 05/11), con punto verde si hay una cámara
+   activa o una salida en curso. El nombre ("Me fui", "En vivo") queda en el aria-label y el title. */
 function topIcon() {
   const on = (st.cams || []).some(c => c.online), away = D().away?.on;
-  const txt = on ? 'En vivo' : 'Me fui';
-  const lbl = on ? 'Me fui: Cámara Mimitos en vivo' : away ? 'Me fui: salida en curso' : 'Me fui';
-  return `<a class="round mf-topic mf-pill${on ? ' is-on' : ''}${away ? ' is-away' : ''}" href="#/mefui" aria-label="${lbl}" title="${lbl}">${on || away ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}<span>${txt}</span></a>`;
+  const lbl = on ? 'Me fui: Cámara Mimitos en vivo' : away ? 'Me fui: salida en curso' : 'Me fui: Cámara Mimitos';
+  return `<a class="round mf-topic${on ? ' is-on' : ''}${away ? ' is-away' : ''}" href="#/mefui" aria-label="${lbl}" title="${lbl}">${I('camera')}${on || away ? '<span class="mf-topdot" aria-hidden="true"></span>' : ''}</a>`;
 }
 const hasCamOn = () => (st.cams || []).some(c => c.online);
 window.MZAWAY = { homeCard, render, cuentaSection, loadCams, topIcon, hasCamOn, state: st };

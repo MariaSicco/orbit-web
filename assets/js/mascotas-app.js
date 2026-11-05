@@ -1034,8 +1034,9 @@ function studyForm(p, st) {
     },
     after() {
       const box = document.createElement('div'); box.className = 'f';
-      box.innerHTML = `<span class="lb">Archivos</span><div class="list" id="stFiles"></div><label class="btn ghost sm" for="stIn">${I('file')} Subir foto o PDF</label><input id="stIn" type="file" accept="image/*,application/pdf" multiple class="sr"><small id="stMsg" role="status"></small>`;
+      box.innerHTML = `<span class="lb">Archivos</span><div class="list" id="stFiles"></div><div class="gm-acts"><label class="btn ghost sm" for="stIn">${I('file')} Subir foto o PDF</label>${!st && mOn() ? `<button type="button" class="btn ghost sm" id="stMail">${I('mail')} Buscar en tu mail</button>` : ''}</div><input id="stIn" type="file" accept="image/*,application/pdf" multiple class="sr"><small id="stMsg" role="status"></small>`;
       $('#fBody').appendChild(box); drawFiles();
+      const sm = $('#stMail'); if (sm) sm.onclick = () => { dForm.close(); mailPickPanel(); };
       $('#stIn').onchange = async e => {
         const files = [...e.target.files]; e.target.value = '';
         for (const f of files) {
@@ -2494,6 +2495,7 @@ function addPanel(p) {
     ${opt('remedio', 'pill', 'med', 'Remedio', 'Con horarios y aviso en cada toma')}
     ${opt('estudio', 'flask', 'viaje', 'Estudio', 'Análisis, radiografía o ecografía')}
     ${opt('estudios', 'file', 'viaje', 'Subir varios estudios', 'Fotos o PDF de una: los leemos y los ordenamos')}
+    ${mOn() ? opt('mail', 'mail', 'cuida', 'Buscar estudios en tu mail', 'Gmail u Outlook: traemos los que te mandó tu veterinaria o laboratorio') : ''}
     ${opt('problema', 'heart', 'perdida', 'Problema de salud', 'Algo que tuvo o tiene')}
   </div>
   <button class="scanbox" data-add="scan">${bubble('camera', 'viaje')}<span><b>Foto de la libreta</b><small>${aiExpired() ? 'Función inteligente vencida: podés cargar las vacunas a mano.' : 'Leemos vacunas, antiparasitarios y controles con sus fechas. Vos revisás antes de guardar.'}</small></span></button>
@@ -2502,6 +2504,7 @@ function addPanel(p) {
     const b = e.target.closest('[data-add]'); if (!b) return;
     /* la hoja de "Algo pasó" usa el mismo panel: se reemplaza sin cerrarlo (el cierre vaciaría la hoja nueva) */
     if (b.dataset.add === 'algo') return algoSheet(p);
+    if (b.dataset.add === 'mail') return mailPickPanel();
     dPanel.close();
     ({ algo: () => algoSheet(p), estudios: () => startBulk(p), scan: () => startScan(p), vacuna: () => recForm(p), anti: () => recForm(p, null, { type: 'desparasitacion', name: p.species === 'otra' ? 'Antiparasitario' : 'Pipeta antipulgas', scope: 'externa' }), consulta: () => visitForm(p), estudio: () => studyForm(p), sintoma: () => symptomForm(p), remedio: () => medForm(p), peso: () => weightForm(p), problema: () => conditionForm(p) })[b.dataset.add]();
   };
@@ -2755,7 +2758,9 @@ function renderMail(p) {
   if (!s.connected || gm?.phase === 'intro' || !gm) {
     if (s.connected && !gm) { after(() => mailSearch(p, s.lastSearch ? 'new' : 'all')); return `<section class="sec reading"><div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu ${L}</h1></section>`; }
     if (mFull(p)) mailInterest(p);
-    return mailIntro(p, back);
+    /* antes de conectar, "volver" lleva a elegir entre Gmail y Outlook (si tocaste el que no era), no a la libreta */
+    const backPick = MAILS.filter(x => mstat[x]).length > 1 ? `<button class="link" data-act="mailPick" style="align-self:flex-start">${I('back')} Elegir Gmail u Outlook</button>` : back;
+    return mailIntro(p, backPick);
   }
   if (gm.phase === 'searching') return `<section class="sec reading" aria-busy="true">${back}<div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu ${L}</h1><p class="dim" role="status">Revisamos ${gm.scanned} ${gm.scanned === 1 ? 'mail' : 'mails'}${gm.cands.length ? ` y encontramos ${gmFiles().length} ${gmFiles().length === 1 ? 'documento' : 'documentos'}` : ''}. Solo miramos el asunto, quién lo mandó y los adjuntos.</p></section>`;
   if (gm.phase === 'error') return `<section class="sec">${back}<h1 class="h-xl">No pudimos buscar</h1><p class="dim">${esc(gm.err)}</p><button class="btn big wide" data-act="mailOpen" data-p="${p}" data-mode="${gm.mode}">Probar de nuevo</button></section>`;
