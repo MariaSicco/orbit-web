@@ -3,6 +3,17 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/acceso",
+      "has": [
+        {
+          "type": "host",
+          "value": "mimitos.bymajostudio.com"
+        }
+      ],
+      "destination": "/mimitos-acceso",
+      "permanent": false
+    },
+    {
       "source": "/",
       "has": [
         {
@@ -36,16 +47,6 @@
     }
   ],
   "rewrites": [
-    {
-      "source": "/acceso",
-      "has": [
-        {
-          "type": "host",
-          "value": "mimitos.bymajostudio.com"
-        }
-      ],
-      "destination": "/mimitos-acceso"
-    },
     {
       "source": "/p/:id",
       "destination": "/api/producto?id=:id"
