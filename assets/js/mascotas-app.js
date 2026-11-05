@@ -423,32 +423,60 @@ function petForm(p) {
     },
   });
 }
-/* Nueva mascota o datos que faltan: lee la libreta y completa el formulario. Lo ya escrito no se pisa; nada se guarda hasta tocar Guardar. */
+/* Elegir fotos de la libreta y leerlas. El input va dentro del DOM (y del formulario abierto): con un
+   dialog modal, Safari puede no avisar qué se eligió si el input queda suelto. */
+function pedirFotos(cb) {
+  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true; inp.hidden = true;
+  (dForm.open ? dForm : document.body).appendChild(inp);
+  inp.onchange = () => { const files = [...inp.files].slice(0, 4); inp.remove(); if (files.length) cb(files); };
+  inp.oncancel = () => inp.remove();
+  inp.click();
+}
+async function leerLibreta(files, species) {
+  const images = []; for (const f of files) images.push(await shrink(f, 1600, .85));
+  const r = await fetch('/api/mascotas?scan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, species }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw Object.assign(new Error(/^limite_|^ai_/.test(d.error || '') ? limitMsg(d) : 'No pudimos leerla. Probá con una foto con más luz, de frente y sin reflejos, o completá a mano.'), { lectura: true });
+  setQuota(d.quota);
+  return d;
+}
+/* Datos de una mascota: completa el formulario con la libreta. Lo ya escrito no se pisa; nada se guarda hasta tocar Guardar. */
 function petFromPhoto() {
-  const inp = document.createElement('input'); inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
-  inp.onchange = async () => {
-    const files = [...inp.files].slice(0, 4); if (!files.length) return;
+  pedirFotos(async files => {
     const btn = $('#petFromPhoto'), msg = $('#petPhotoMsg'), abierto = form;
-    const decir = t => { if (form === abierto) msg.textContent = t; };
+    const decir = t => { if (form === abierto) { msg.textContent = t; msg.scrollIntoView({ block: 'nearest' }); } };
     btn.disabled = true; decir('Leyendo la libreta. Tarda unos segundos…');
     try {
-      const images = []; for (const f of files) images.push(await shrink(f, 1600, .85));
       const species = $('#f_species [aria-pressed="true"]')?.dataset.v || 'perro';
-      const r = await fetch('/api/mascotas?scan=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ images, species }) });
-      const d = await r.json().catch(() => ({}));
+      const d = await leerLibreta(files, species);
       if (form !== abierto) return;
-      if (!r.ok) return decir(/^limite_|^ai_/.test(d.error || '') ? limitMsg(d) : 'No pudimos leerla. Probá con una foto con más luz, de frente y sin reflejos, o completá a mano.');
-      setQuota(d.quota);
       const lp = d.pet || {}; let puestos = 0;
       for (const k of ['name', 'breed', 'birth', 'sex', 'chip']) { const el = $('#f_' + k); if (el && lp[k] && !el.value.trim() && !(k === 'birth' && lp[k] > iso(Z.today()))) { el.value = lp[k]; puestos++; } }
-      if (lp.species) { const c = $(`#f_species .chip[data-v="${lp.species}"]`); if (c) { c.parentNode.querySelectorAll('.chip').forEach(x => x.setAttribute('aria-pressed', String(x === c))); form.onChip?.('species', lp.species); } }
+      const yaTenia = ['name', 'breed', 'birth', 'sex', 'chip'].filter(k => lp[k] && String($('#f_' + k)?.value || '') !== String(lp[k]));
       form.fromPhoto = { items: [...(form.fromPhoto?.items || []), ...(d.items || [])], warnings: d.warnings || [] };
-      const n = form.fromPhoto.items.length;
-      decir(puestos || n ? `${puestos ? 'Completé los datos que encontré: revisalos.' : 'No encontré datos nuevos de la mascota.'}${n ? ` Al guardar vas a ver ${n === 1 ? '1 registro' : n + ' registros'} de la libreta.` : ''}` : 'No encontramos datos en esa foto. Probá con la tapa o la primera página de la libreta.');
-    } catch { decir('No pudimos leerla. Revisá la conexión y probá de nuevo.'); }
+      const n = form.fromPhoto.items.length, regs = n ? ` Al guardar vas a ver ${n === 1 ? '1 registro' : n + ' registros'} de la libreta.` : '';
+      decir(puestos ? `Completé los datos que encontré: revisalos.${regs}` : yaTenia.length ? `La libreta dice otra cosa en ${yaTenia.length === 1 ? 'un dato' : yaTenia.length + ' datos'} que ya tenías (${yaTenia.map(k => `${({ name: 'nombre', breed: 'raza', birth: 'nacimiento', sex: 'sexo', chip: 'microchip' })[k]}: ${lp[k]}`).join(', ')}). No los cambié: si querés, editalos a mano.${regs}` : n ? `Los datos de la mascota no figuran en esa foto.${regs}` : 'No encontramos datos en esa foto. Probá con la tapa o la primera página de la libreta.');
+    } catch (e) { decir(e?.lectura ? e.message : 'No pudimos leerla. Revisá la conexión y probá de nuevo.'); }
     finally { if (form === abierto) btn.disabled = false; }
-  };
-  inp.click();
+  });
+}
+/* Alta de cero: la libreta completa lo básico antes de empezar. Las vacunas que lea se revisan al terminar. */
+function obFromPhoto() {
+  pedirFotos(async files => {
+    ob.reading = true; ob.readMsg = 'Leyendo la libreta. Tarda unos segundos…'; render();
+    try {
+      const d = await leerLibreta(files, ob.pet.species || 'perro');
+      if (!ob) return;
+      const lp = d.pet || {}, p = ob.pet; let puestos = 0;
+      for (const k of ['name', 'breed', 'sex', 'chip']) if (lp[k] && !p[k]) { p[k] = lp[k]; puestos++; }
+      if (lp.birth && !p.birth && lp.birth <= iso(Z.today())) { p.birth = lp.birth; puestos++; }
+      if (lp.species && (lp.species !== p.species)) { p.species = lp.species; puestos++; }
+      ob.fromPhoto = { items: [...(ob.fromPhoto?.items || []), ...(d.items || [])], warnings: d.warnings || [] };
+      const n = ob.fromPhoto.items.length;
+      ob.readMsg = puestos ? `Completé lo que encontré: revisalo en cada paso.${n ? ` Al terminar vas a ver ${n === 1 ? '1 registro' : n + ' registros'} de la libreta.` : ''}` : n ? `Los datos de la mascota no figuran en esa foto. Al terminar vas a ver ${n === 1 ? '1 registro' : n + ' registros'} de la libreta.` : 'No encontramos datos en esa foto. Probá con la tapa o la primera página de la libreta.';
+    } catch (e) { if (ob) ob.readMsg = e?.lectura ? e.message : 'No pudimos leerla. Revisá la conexión y probá de nuevo.'; }
+    if (ob) { ob.reading = false; render(); }
+  });
 }
 const REC_TYPES = [['vacuna', 'Vacuna'], ['desparasitacion', 'Antiparasitario'], ['control', 'Control'], ['otro', 'Otro']];
 function recForm(p, r, preset) {
@@ -2395,6 +2423,7 @@ function renderOnboard() {
   let h = '', primary = 'Siguiente', skip = '';
   if (ob.step === 0) {
     h = obHead('¿Cómo se llama?', 'Empezamos por lo básico. Lo demás lo completás cuando quieras.') + `
+    <button type="button" class="btn ghost wide" data-ob="fromphoto"${ob.reading ? ' disabled' : ''}>${I('camera')} Completar con una foto de la libreta</button>${ob.readMsg ? `<p class="note" role="status">${esc(ob.readMsg)}</p>` : ''}
     <div class="f"><label for="ob_name" class="sr">Nombre</label><input id="ob_name" class="big-input" maxlength="60" value="${esc(p.name)}" placeholder="Nombre" autocomplete="off"></div>
     <div class="f"><span class="lb">Es un…</span>${tiles('species', [['perro', 'Perro', 'dog'], ['gato', 'Gato', 'cat'], ['otra', 'Otro', 'paw']], p.species)}</div>
     <div class="f" ${p.species === 'otra' ? '' : 'hidden'}><label for="ob_other">¿Qué es?</label><input id="ob_other" maxlength="40" value="${esc(p.speciesOther)}" placeholder="Conejo, hurón, loro…"></div>
@@ -2453,8 +2482,11 @@ async function obFinish(scanFiles) {
   p.onboarded = true;
   if (ob.photo) { try { p.photo = await uploadPhoto(ob.photo); p.photoFull = ob.photoFull ? await uploadPhoto(ob.photoFull) : ''; } catch (e) { toast((e?.msg ? e.msg + ' ' : 'La foto no se pudo subir. ') + 'Podés agregarla después.'); } }
   applySug(p, ob.sug || []);
+  const leidos = ob.fromPhoto;
   doc.pets.push(p); selectPet(p.id); ob = null;
   if (scanFiles?.length) { changed(); return runScan(p, scanFiles); }
+  /* lo que la libreta trajo al empezar (vacunas, controles) se revisa antes de guardarse */
+  if (leidos?.items?.length) { changed(); scan = { petId: p.id, state: 'review', items: leidos.items.map(x => ({ ...x, keep: x.confidence !== 'baja' || Boolean(x.date) })), warnings: leidos.warnings || [], warnOk: [], petRead: {} }; setRoute('lectura'); render(); window.scrollTo(0, 0); return; }
   setRoute('inicio'); changed(); window.scrollTo(0, 0);
   const nx = Z.upcoming(p)[0];
   /* lo que se promete es "te avisamos antes de cada dosis": si los avisos están apagados, el alta termina ofreciéndolos */
@@ -2473,6 +2505,7 @@ app.addEventListener('click', e => {
   if (c) { obRead(); const n = c.dataset.c; if (ob.conds[n]) delete ob.conds[n]; else ob.conds[n] = 'activa'; render(); return; }
   const b = e.target.closest('[data-ob]'); if (!b) return;
   const a = b.dataset.ob;
+  if (a === 'fromphoto') { obRead(); return obFromPhoto(); }
   if (a === 'plus') { obRead(); const base = ob.vac.date || iso(Z.today()); ob.vac.next = Z.addMonths(base, +b.dataset.m); render(); return; }
   if (a === 'back') { if (!ob.step) { ob = null; go('inicio'); return; } obRead(); ob.step--; render(); return; }
   if (a === 'skipstep') { if (ob.step === 2) ob.vac = { name: '', date: '', next: '' }; if (ob.step === 3) ob.sug = []; if (ob.step === 4) { ob.conds = {}; ob.pet.allergies = ''; return obFinish(); } }
