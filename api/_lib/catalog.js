@@ -58,7 +58,7 @@ export const CATALOG = {
      fecha: el vigente es el de lanzamiento, hasta el 12/11/2026 inclusive.
      // PRECIO DE LISTA desde 13/11/2026: usd: 39, ars: 58990
      Sigue en `soon`: no está a la venta hasta que Majo lo apruebe. */
-  'ob-018': { code: 'OB—018', name: 'Mimitos',            usd: 29, ars: 43990, soon: true, foto: 'ob-018', herramienta: '/mascotas',
+  'ob-018': { code: 'OB—018', name: 'Mimitos',            usd: 29, ars: 43990, soon: false, foto: 'ob-018', herramienta: '/mascotas',
     bajada: 'La libreta sanitaria de tu mascota en el celu, con avisos antes de cada fecha. Organizador: no reemplaza al veterinario.' },
 };
 

@@ -447,7 +447,7 @@ window.ORBIT_PRODUCTS = [
        La tienda no tiene precio tachado ni promo con fecha: se carga el de lanzamiento como vigente.
        // PRECIO DE LISTA desde 13/11/2026: price: 39, ars: 58990 */
     id: 'ob-018', cover: 'libro', code: 'OB\u2014018', n: '18', name: 'Mimitos',
-    family: 'systems', status: 'soon', price: 29, ars: 43990,
+    family: 'systems', status: 'available', price: 29, ars: 43990,
     accent: 'blue', checkout: '', photo: 'ob-018',
     acceso: '/mascotas',
     /* landing propia (decision-log 20/10): desde la home y el catálogo se entra por acá */

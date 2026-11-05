@@ -61,9 +61,9 @@ test('orden: queda pagada y la compra se guarda con productId ob-018 en el email
   assert.equal((await compraDe(COMPRADORA, ID)).orderId, `${orden.id}:${ID}`);
 });
 
-test('catálogo: ob-018 es herramienta en /mascotas, sigue sin venta y no lo sirve /herramientas/', () => {
+test('catálogo: ob-018 es herramienta en /mascotas, a la venta desde el lanzamiento y no lo sirve /herramientas/', () => {
   assert.equal(herramientaDe(CAT, ID), '/mascotas');
-  assert.equal(CAT[ID].soon, true);
+  assert.equal(CAT[ID].soon, false);
   assert.equal(productoPorSlug(CAT, 'mascotas'), null);
 });
 
