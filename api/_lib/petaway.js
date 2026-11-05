@@ -1,5 +1,5 @@
 /* Mimitos · "Me fui" y "Cámara Mimitos" (un celu viejo como cámara).
-   TODO detrás de MIMITOS_MEFUI=1 y de la lista MIMITOS_MEFUI_ALLOW (vacía = nadie salvo admin). Apagado por defecto:
+   TODO detrás de MIMITOS_MEFUI=1 y de MIMITOS_MEFUI_ABIERTO=1 (todos los compradores) o la lista MIMITOS_MEFUI_ALLOW (vacía = nadie salvo admin). Apagado por defecto:
    con el interruptor apagado, todas las rutas dan 404 y el cron no toca KV.
 
    Cámaras (lo que usan los otros módulos, firma estable):
@@ -31,6 +31,8 @@ export const mefuiOn = () => String(process.env.MIMITOS_MEFUI || '').trim() === 
 export function mefuiAllowed(email) {
   if (!mefuiOn() || !email) return false;
   if (isAdmin(email)) return true;
+  /* abierta a todos los compradores (decisión de Majo, 05/11): la compra se exige en cada ruta */
+  if (String(process.env.MIMITOS_MEFUI_ABIERTO || '').trim() === '1') return true;
   return listOf(process.env.MIMITOS_MEFUI_ALLOW).includes(normMail(email));
 }
 
