@@ -49,15 +49,21 @@ async function connectGmail(email) {
   return cb.headers.location;
 }
 
-test('MIMITOS_MAIL_ALLOW vacía: Gmail y Outlook abiertos para cualquier comprador', async () => {
-  assert.ok(M.mailAllowed('cualquiera@ejemplo.com', 'gmail'));
+test('MIMITOS_MAIL_ALLOW vacía: Outlook abierto para cualquier comprador; Gmail cerrado por defecto (05/11)', async () => {
+  assert.ok(!M.mailAllowed('cualquiera@ejemplo.com', 'gmail'), 'Gmail cerrado hasta que Google verifique la app');
   assert.ok(M.mailAllowed('cualquiera@ejemplo.com', 'outlook'));
   assert.ok(!M.mailAllowed('', 'gmail'));
   await purchase('cualquiera@ejemplo.com');
-  for (const p of ['gmail', 'outlook']) {
-    const st = await call('GET', { [p]: 'status' }, 'cualquiera@ejemplo.com');
+  const ol = await call('GET', { outlook: 'status' }, 'cualquiera@ejemplo.com');
+  assert.equal(ol.code, 200); assert.equal(ol.body.allowed, true); assert.equal(ol.body.full, false);
+  const gm = await call('GET', { gmail: 'status' }, 'cualquiera@ejemplo.com');
+  assert.equal(gm.code, 403); assert.equal(gm.body.allowed, false);
+  /* abierto a propósito, entran todos */
+  process.env.MIMITOS_GMAIL_OPEN = '1';
+  try {
+    const st = await call('GET', { gmail: 'status' }, 'cualquiera@ejemplo.com');
     assert.equal(st.code, 200); assert.equal(st.body.allowed, true); assert.equal(st.body.full, false);
-  }
+  } finally { delete process.env.MIMITOS_GMAIL_OPEN; }
   const main = await call('GET', {}, 'cualquiera@ejemplo.com');
   assert.equal(main.body.mail.allowed, true);
   /* sin compra no entra: lo resuelve la base de herramientas */
@@ -80,19 +86,21 @@ test('MIMITOS_MAIL_ALLOW con valores: lista restringida para los dos proveedores
   } finally { delete process.env.MIMITOS_MAIL_ALLOW; }
 });
 
-test('MIMITOS_GMAIL_OPEN=0: Gmail vuelve a la lista (MIMITOS_GMAIL_ALLOW + admin) y Outlook sigue abierto', () => {
+test('MIMITOS_GMAIL_OPEN vacía o 0: Gmail queda en la lista (MIMITOS_GMAIL_ALLOW + admin) y Outlook sigue abierto', () => {
   process.env.MIMITOS_GMAIL_OPEN = '0'; process.env.MIMITOS_GMAIL_ALLOW = 'tester@ejemplo.com';
   try {
     assert.ok(!M.mailAllowed('cualquiera@ejemplo.com', 'gmail'));
     assert.ok(M.mailAllowed('tester@ejemplo.com', 'gmail'));
     assert.ok(M.mailAllowed('admin@ejemplo.com', 'gmail'));
     assert.ok(M.mailAllowed('cualquiera@ejemplo.com', 'outlook'));
-    for (const v of ['false', 'no', 'OFF']) { process.env.MIMITOS_GMAIL_OPEN = v; assert.ok(!M.gmailOpen()); }
-    for (const v of ['1', 'true', '']) { process.env.MIMITOS_GMAIL_OPEN = v; assert.ok(M.gmailOpen()); }
+    for (const v of ['false', 'no', 'OFF', '']) { process.env.MIMITOS_GMAIL_OPEN = v; assert.ok(!M.gmailOpen()); }
+    for (const v of ['1', 'true', 'on', 'SI']) { process.env.MIMITOS_GMAIL_OPEN = v; assert.ok(M.gmailOpen()); }
   } finally { delete process.env.MIMITOS_GMAIL_OPEN; delete process.env.MIMITOS_GMAIL_ALLOW; }
 });
 
-test('cupo de Gmail: 90 por defecto; la 91 rebota con su interés guardado y las ya conectadas siguen', async () => {
+test('cupo de Gmail: 90 por defecto; la 91 rebota con su interés guardado y las ya conectadas siguen', async t => {
+  /* el cupo vale con Gmail abierto (MIMITOS_GMAIL_OPEN=1) */
+  process.env.MIMITOS_GMAIL_OPEN = '1'; t.after(() => { delete process.env.MIMITOS_GMAIL_OPEN; });
   assert.equal(M.gmailCap(), 90);
   /* 89 cuentas que ya conectaron Gmail alguna vez */
   for (let i = 1; i <= 89; i++) await kvSAdd(M.GMAIL_USERS, `previa${i}@ejemplo.com`);

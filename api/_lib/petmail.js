@@ -96,8 +96,9 @@ const sKey = nonce => `orbit:petmstate:${nonce}`;
    Variables (todas opcionales; cambiar una en Vercel pide "Redeploy" del mismo código, sin tocar código):
    - MIMITOS_MAIL_ALLOW: vacía = todos los compradores (Gmail y Outlook). Con mails (separados por coma,
      punto y coma o renglón) = solo esa lista, para los dos proveedores (modo prueba / preview).
-   - MIMITOS_GMAIL_OPEN: "0", "false", "no" u "off" cierra Gmail y vuelve a la lista: solo MIMITOS_GMAIL_ALLOW
-     y admin. Outlook no se toca. Vacía o cualquier otro valor = abierto.
+   - MIMITOS_GMAIL_OPEN: Gmail está CERRADO por defecto (decisión de Majo, 05/11: hasta que Google verifique la app,
+     nadie ve el cartel de "app no verificada"). Solo entran MIMITOS_GMAIL_ALLOW y admin. "1", "true", "si" u "on"
+     lo abre para todos los compradores. Outlook no se toca.
    - MIMITOS_GMAIL_CAP: cuántas cuentas de Orbit distintas pueden conectar Gmail mientras Google no verifique
      la app (Google corta en 100 usuarios en toda la vida del proyecto y no se resetea). 90 por defecto.
    Admin siempre entra y no cuenta para el cupo. */
@@ -105,7 +106,7 @@ const norm = e => String(e || '').replace(/\s+/g, '').toLowerCase();
 const listOf = v => String(v || '').split(/[,;\n]+/).map(norm).filter(Boolean);
 export const allowList = () => listOf(process.env.MIMITOS_MAIL_ALLOW);
 export const gmailList = () => listOf(process.env.MIMITOS_GMAIL_ALLOW);
-export const gmailOpen = () => !/^(0|false|no|off)$/i.test(String(process.env.MIMITOS_GMAIL_OPEN || '').trim());
+export const gmailOpen = () => /^(1|true|si|sí|on)$/i.test(String(process.env.MIMITOS_GMAIL_OPEN || '').trim());
 export function mailAllowed(email, provider) {
   if (!email) return false;
   if (isAdmin(email)) return true;
