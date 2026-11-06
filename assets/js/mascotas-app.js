@@ -1215,6 +1215,7 @@ window.addEventListener('scroll', () => $('.top').classList.toggle('scrolled', w
 
 /* ---------- render ---------- */
 function render() {
+  bulkLeer(); mailGuardar();
   if (mode === 'full' && route.name === 'renovar') openRenewRoute(route.arg);
   /* sin mascotas: primero la pantalla de bienvenida sola (sin barras), después los pasos */
   const first = mode === 'full' && !doc.pets.length && route.name === 'inicio';
@@ -1385,7 +1386,7 @@ function renderNoPurchase() {
     <p class="note">Si la compraste hace un momento y no aparece, recargá la página en unos minutos. ¿Sigue sin aparecer? Escribinos a <a href="mailto:${SUPPORT_MAIL}?subject=${encodeURIComponent('Mimitos: no veo mi compra')}">${SUPPORT_MAIL}</a> y lo resolvemos.</p>
   </section>`;
 }
-async function relogin() { try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {} location.href = '/acceso?next=mascotas'; }
+async function relogin() { mailOlvidar(); try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {} location.href = '/acceso?next=mascotas'; }
 
 /* primer ingreso, cuenta sin mascotas */
 function renderFirst() {
@@ -2307,6 +2308,7 @@ function exportCopy() {
   toast('Copia descargada. En iPhone la encontrás en Archivos › Descargas.');
 }
 async function logout() {
+  mailOlvidar(); gm = null; bulk = null;
   if (dirty) await flushNow();
   try { await fetch('/api/auth/logout', { method: 'POST' }); } catch {}
   location.href = '/acceso?salir=1';
@@ -2596,6 +2598,19 @@ function histEntry(e) {
 
 /* ---------- subir varios estudios de una: se suben, se leen con IA y se revisan antes de guardar ---------- */
 let bulk = null;
+/* Lo que se escribió en la revisión: se lee antes de redibujar, si no se pierde al volver de otra app */
+function bulkLeer() {
+  if (!bulk || bulk.state !== 'review') return;
+  const v = id => document.getElementById(id);
+  for (const it of bulk.items) {
+    const id = 'bk' + it.i;
+    if (!v(id + '_date')) continue;
+    it.data = { ...it.data, date: v(id + '_date').value, kind: v(id + '_kind').value, title: v(id + '_title').value, lab: v(id + '_lab').value, summary: v(id + '_sum').value };
+    it.keep = v(id + '_keep').checked;
+    if (v(id + '_lib')) it.toLib = v(id + '_lib').checked;
+    if (v(id + '_pet')) it.petId = v(id + '_pet').value;
+  }
+}
 const BULK_MAX = 20;
 const dataToFile = (d, name) => { const [h, b] = d.split(','); const bin = atob(b); const u = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return new File([u], name, { type: /data:(.*?);/.exec(h)[1] }); };
 function startBulk(p) {
@@ -2640,6 +2655,7 @@ async function runBulk(p, files) {
 const BULK_ST = { cola: ['En cola', 'none'], pendiente: ['En espera', 'none'], subiendo: ['Subiendo…', 'none'], leyendo: ['Leyendo…', 'none'], listo: ['Leído', 'ok'], revisar: ['Revisalo', 'soon'], manual: ['Completalo a mano', 'soon'], error: ['No se subió', 'late'] };
 function renderBulk() {
   const p = petById(bulk?.petId); if (!p || !bulk) { setTimeout(() => go('libreta')); return ''; }
+  mailVolverScroll();
   const working = bulk.state === 'working', done = bulk.items.filter(x => !['pendiente', 'subiendo', 'leyendo'].includes(x.status)).length;
   const keep = bulk.items.filter(x => x.keep && x.ref).length;
   const card = it => {
@@ -2774,6 +2790,8 @@ function mailPickPanel() {
 function openMail(p, m) {
   if (!mstat[p]) return;
   if (!mstat[p].connected) { gm = { p, phase: 'intro' }; return go(p); }
+  /* ya hay una lista de esta casilla: se vuelve a ella. "Buscar de nuevo" la renueva */
+  if (gm?.p === p && gm.phase === 'list') return go(p);
   go(p); mailSearch(p, m);
 }
 async function mailConnect(p) {
@@ -2813,6 +2831,40 @@ async function mailSearch(p, mode, more, range) {
   }
   if (route.name === p) render();
 }
+/* Al abrir un mail o un estudio salís de la app, y el celu puede recargarla al volver. La lista, lo marcado
+   y la revisión quedan hasta 2 horas en este navegador (nunca en el servidor); cerrar sesión los borra. */
+const MAIL_TTL = 2 * 36e5;
+const mailClave = () => me.email ? 'mimitos:mail:' + me.email : '';
+let mailY = null;
+function mailGuardar() {
+  const k = mailClave(); if (!k) return;
+  try {
+    const g = gm?.phase === 'list' && gm.cands ? { ...gm, sel: [...gm.sel] } : null;
+    const b = bulk?.source === 'mail' ? bulk : null;
+    if (g || b) localStorage.setItem(k, JSON.stringify({ at: Date.now(), g, b, y: window.scrollY }));
+    else localStorage.removeItem(k);
+  } catch { /* sin memoria: vuelve a buscar, como antes */ }
+}
+function mailRecuperar() {
+  const k = mailClave(); if (!k) return;
+  try {
+    const d = JSON.parse(localStorage.getItem(k) || 'null');
+    if (!d) return;
+    if (Date.now() - d.at > MAIL_TTL) return localStorage.removeItem(k);
+    if (d.g) gm = { ...d.g, sel: new Set(d.g.sel) };
+    if (d.b) {
+      bulk = d.b;
+      /* se cortó en medio de la importación: lo que no llegó se puede reintentar */
+      bulk.items.forEach(it => { if (['pendiente', 'subiendo', 'leyendo'].includes(it.status)) { it.status = 'error'; it.keep = false; it.retry = true; it.msg = 'Se cortó mientras lo traíamos. Probá de nuevo.'; } });
+      bulk.state = 'review';
+    }
+    if (route.name === 'estudios' || MAILS.includes(route.name)) mailY = d.y || 0;
+  } catch { /* guardado roto: se ignora */ }
+}
+const mailOlvidar = () => { const k = mailClave(); try { if (k) localStorage.removeItem(k); } catch {} };
+const mailVolverScroll = () => { if (mailY == null) return; const y = mailY; mailY = null; after(() => window.scrollTo(0, y)); };
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { bulkLeer(); mailGuardar(); } });
+window.addEventListener('pagehide', () => { bulkLeer(); mailGuardar(); });
 const kb = n => n >= 1048576 ? (n / 1048576).toFixed(1).replace('.', ',') + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB';
 function renderMail(p) {
   const s = mstat[p];
@@ -2830,11 +2882,12 @@ function renderMail(p) {
   }
   if (gm.phase === 'searching') return `<section class="sec reading" aria-busy="true">${back}<div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu ${L}</h1><p class="dim" role="status">Revisamos ${gm.scanned} ${gm.scanned === 1 ? 'mail' : 'mails'}${gm.cands.length ? ` y encontramos ${gmFiles().length} ${gmFiles().length === 1 ? 'documento' : 'documentos'}` : ''}. Solo miramos el asunto, quién lo mandó y los adjuntos.</p></section>`;
   if (gm.phase === 'error') return `<section class="sec">${back}<h1 class="h-xl">No pudimos buscar</h1><p class="dim">${esc(gm.err)}</p><button class="btn big wide" data-act="mailOpen" data-p="${p}" data-mode="${gm.mode}">Probar de nuevo</button></section>`;
+  mailVolverScroll();
   const files = gmFiles(), n = gm.sel.size, queue = s.queue || [];
   const qBox = queue.length ? `<div class="gm-queue"><span class="what"><b>${queue.length} en cola</b><small>Los elegiste y no entraron en el tope de importaciones inteligentes. Seguí cuando se renueve.</small></span><button class="btn sm ghost" data-act="mailQueue">Seguir con la cola</button></div>` : '';
   const moreBox = gm.more ? `<div class="gm-more"><p class="note">${gm.mode2 === 'respaldo' ? `${L} no aceptó la búsqueda por palabras en tu casilla, así que revisamos los ${gm.scanned} mails con adjunto más recientes. Los estudios más viejos pueden estar más atrás.` : `Revisamos los ${gm.scanned} mails más recientes. Puede haber más viejos.`}</p><button class="btn sm ghost" data-act="mailMore">Buscar 200 más</button></div>` : '';
   const who = s.address ? `${L} · ${esc(s.address)}` : L;
-  const noFile = gm.noFile?.length ? `<section class="gm-nofile"><h2>Sin archivo adjunto: abrilo en ${L}</h2><p class="note">Parecen de tu veterinaria o laboratorio, pero no traen el PDF (muchos mandan un link). Abrilo, bajá el estudio y sumalo con “Subir estudios”.</p>
+  const noFile = gm.noFile?.length ? `<section class="gm-nofile"><h2>Sin archivo adjunto: abrilo en ${L}</h2><p class="note">Parecen de tu veterinaria o laboratorio, pero no traen el PDF (muchos mandan un link). Abrilo, bajá el estudio y sumalo con “Subir estudios”. Se abre afuera de Mimitos: cuando vuelvas, esta lista sigue acá.</p>
     <div class="list">${gm.noFile.map(x => `<a class="row link-row" href="${esc(x.link)}" target="_blank" rel="noopener">${bubble('mail', 'plata')}<span class="what"><b>${esc(x.subject || '(Sin asunto)')}</b><small>${esc(x.from)}${x.date ? ' · ' + fmt(x.date.slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</small></span>${I('chevron')}</a>`).join('')}</div></section>` : '';
   /* pocos o ningún resultado: qué probar */
   const tips = files.length < 3 ? `<div class="gm-tips"><b>${files.length ? '¿Falta alguno?' : '¿Qué probar?'}</b><ul>
@@ -2844,15 +2897,16 @@ function renderMail(p) {
   const srcBox = sendersBox(p, true);
   if (!files.length) return `<section class="sec gmail">${back}<div><span class="eyebrow">${who}</span><h1 class="h-xl">${gm.mode === 'new' ? 'No hay documentos nuevos' : 'No encontramos documentos'}</h1>
     <p class="lead-s" style="margin-top:6px">${gm.mode === 'new' ? 'Desde la última búsqueda no llegaron mails veterinarios con estudios.' : `Buscamos mails de veterinarias y laboratorios, o que nombren a ${doc.pets.length === 1 ? esc(doc.pets[0].name) : 'tus mascotas'}. Lo genérico (cursos, certificados, facturas) lo dejamos afuera.`} Lo que ya trajiste no aparece de nuevo.</p></div>
-    ${qBox}${tips}${srcBox}${noFile}${moreBox}<button class="btn big wide" data-act="go" data-to="libreta">Volver a la libreta</button></section>`;
+    ${qBox}${tips}${srcBox}${noFile}${moreBox}${gm.mode === 'new' ? `<button class="btn big wide ghost" data-act="mailAgain">Ver otra vez lo que no importé</button>` : ''}<button class="btn big wide" data-act="go" data-to="libreta">Volver a la libreta</button></section>`;
   const date = c => c.date ? fmt(c.date.slice(0, 10), { day: 'numeric', month: 'short', year: 'numeric' }) : '';
   return `<section class="sec gmail">${back}
     <div><span class="eyebrow">${who}</span><h1 class="h-xl">Encontramos ${files.length} ${files.length === 1 ? 'documento que podría ser' : 'documentos que podrían ser'} de tus mascotas</h1>
-      <p class="lead-s" style="margin-top:6px">Elegí cuáles traer. Nada se descarga ni se lee hasta que tocás Importar.</p></div>
+      <p class="lead-s" style="margin-top:6px">Elegí cuáles traer. Nada se descarga ni se lee hasta que tocás Importar. Si abrís un mail, se abre afuera de Mimitos: cuando vuelvas, tu lista y lo que marcaste siguen acá.</p>
+      <button class="link" data-act="mailAgain" style="margin-top:6px">Buscar de nuevo</button></div>
     ${qBox}
     <div class="gm-bar"><span class="dim">${n ? `${n} ${n === 1 ? 'elegido' : 'elegidos'}` : 'Ninguno elegido'}</span><button class="link" data-act="mailAll">${files.every(k => gm.sel.has(k)) ? 'Desmarcar todos' : 'Marcar todos'}</button></div>
     <div class="gm-list">${gm.cands.map(c => `<article class="gm-mail"><div class="gm-h"><b>${esc(c.subject || '(Sin asunto)')}</b><small>${esc(c.from)}${c.date ? ' · ' + date(c) : ''}</small>
-      <button type="button" class="link gm-not" data-act="mailMute" data-m="${esc(c.m)}">No es de la mascota</button></div>
+      <span class="gm-h-acts">${outLink(c.link) ? `<a class="gm-ver" href="${esc(c.link)}" target="_blank" rel="noopener">Ver el mail</a>` : ''}<button type="button" class="link gm-not" data-act="mailMute" data-m="${esc(c.m)}">No es de la mascota</button></span></div>
       ${c.files.map(f => { const k = c.m + '|' + f.part; return `<label class="gm-file"><input type="checkbox" data-gsel="${esc(k)}" ${gm.sel.has(k) ? 'checked' : ''}>${bubble(f.type === 'link' ? 'download' : f.type === 'application/pdf' ? 'doc' : 'camera', f.type === 'link' ? 'cuida' : 'viaje')}<span class="what"><b>${esc(f.name)}</b><small>${f.type === 'link' ? 'Link en el mail · lo bajamos del sitio del laboratorio' : `${f.type === 'application/pdf' ? 'PDF' : 'Foto'} · ${kb(f.size)}`}${/heic|heif/.test(f.type) ? ' · se adjunta sin leer' : ''}</small></span></label>`; }).join('')}
     </article>`).join('')}</div>
     ${moreBox}${noFile}${tips}${srcBox}
@@ -3629,6 +3683,7 @@ document.addEventListener('click', e => {
     case 'mailImport': return mailImport(gm.p, [...gm.sel].map(k => gmFile(k)).filter(Boolean));
     case 'mailQueue': return mailImport(gm.p, mstat[gm.p].queue.map(x => ({ m: x.m, part: x.part, name: x.name, type: x.type })));
     case 'mailMore': return mailSearch(gm.p, gm.mode, gm.more);
+    case 'mailAgain': return mailSearch(gm.p, 'all');
     case 'mailOff': return mailOffPanel(b.dataset.p);
     case 'mailRangeGo': return mailSearch(route.name, 'all', null, b.dataset.v);
     case 'srcAdd': { const v = ($('#srcIn')?.value || '').trim(); if (v.length < 3) { $('#srcIn')?.focus(); return toast('Escribí el nombre o el mail (3 letras o más).'); } return sendersPost({ add: v }); }
@@ -3724,6 +3779,7 @@ async function boot() {
     mode = 'full'; purchase = d.purchase || null; me.email = d.email || ''; aiq = d.ai || null; renewAsked = Boolean(d.renew); sitterLinks = d.sitterLinks && typeof d.sitterLinks === 'object' ? d.sitterLinks : {}; mailAllowed = d.mail && typeof d.mail === 'object' ? Boolean(d.mail.allowed) : null; mefui = Boolean(d.mefui); resetOk = Boolean(d.reset);
     adopt(d.doc); setSave(doc.pets.length ? 'Guardado' : ''); scans = d.scans || [];
     curId = petById(store.get('pet'))?.id || doc.pets[0]?.id || '';
+    mailRecuperar();
     fetch('/api/mascotas?notify=1').then(r => r.json()).then(x => {
       if (!x || !('devices' in x)) return;
       notify = x; render();
