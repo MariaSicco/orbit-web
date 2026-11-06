@@ -33,6 +33,8 @@ export const CATALOG = {
        La lectura automática con IA vence a los 12 meses de la compra (api/_lib/mi-mes-ia.js). */
     usd: 24, ars: 35990, herramienta: '/herramientas/mi-mes',
     bajada: 'Cuánto te queda libre este mes y los que vienen, con tus cuotas ya descontadas.' },
+  'ob-021': { code: 'OB—021', name: 'Vencimientos de la Casa', usd: 0, ars: 0, soon: true,
+    bajada: 'Todo lo que vence en tu casa, en un lugar: cuánto te falta pagar este mes y aviso antes de cada vencimiento.' },
   /* Drop 1 · Fleteros */
   'ob-006': { code: 'OB—006', name: 'Tarifador de fletes',            usd: 10, ars: 14999, foto: 'arch',
     bajada: 'Cargá el viaje y sabé en un minuto cuánto cobrar y cuánto ganás.' },
