@@ -104,6 +104,8 @@ const alertLine = () => { const h = D().awaySet.alertH; return h ? `Te avisamos 
    escuchó y "Me fui" (o el estado de la salida en curso). Sin cámara: "Me fui" y "Usar un celu viejo como cámara". */
 const camState = c => !c.online ? 'sin conexión' : c.listen === 'error' ? 'activa · no está escuchando' : c.listen === 'pausado' ? 'activa · en pausa' : 'activa · escuchando';
 const bestCam = () => { const cams = st.cams || []; return cams.find(c => c.online && c.listen !== 'pausado' && c.listen !== 'error') || cams.find(c => c.online) || cams[0] || null; };
+/* sin salida en curso, la cámara registra pero no avisa: que no parezca que está rota */
+const awayOnlyNote = () => D().away.on ? '' : '<p class="note">Los avisos de ladridos y maullidos te llegan solo con "Me fui" activo. Igual queda guardado acá.</p>';
 function recentHtml() {
   if (st.events == null) return '<p class="dim mf-rec-empty">Buscando lo último que escuchó…</p>';
   const evs = st.events.slice(-3).reverse();
@@ -128,6 +130,7 @@ function camHomeCard(p) {
     ${others.length ? `<div class="mf-cam-more">${others.map(x => `<button class="link" data-mf="live" data-cam="${x.camId}">Ver ${esc(x.name)}</button>`).join('')}</div>` : ''}
     <div class="mf-rec-h"><h3 class="mf-h3">${a.on ? 'Desde que saliste' : 'Lo último que escuchó'}</h3><button class="link" data-mf="refresh">Actualizar</button></div>
     ${recentHtml()}
+    ${awayOnlyNote()}
     <button class="link" data-mf="open">Ver todo en Me fui ${I('chevron')}</button>
   </section>`;
 }
@@ -296,7 +299,8 @@ function render(p) {
         ${camsListHtml(true)}
       </section>
       ${(st.cams || []).length ? `<section class="sec" aria-labelledby="h-mft"><h2 id="h-mft">${a.on ? 'Desde que saliste' : 'Últimas 24 horas'}</h2>
-        ${st.events == null ? '<p class="dim">Cargando…</p>' : st.events.length ? timelineHtml(st.events) : '<p class="dim">Sin ladridos, maullidos ni llanto.</p>'}</section>` : ''}
+        ${st.events == null ? '<p class="dim">Cargando…</p>' : st.events.length ? timelineHtml(st.events) : '<p class="dim">Sin ladridos, maullidos ni llanto.</p>'}
+        ${awayOnlyNote()}</section>` : ''}
     </div></div>
   </div>`;
 }
