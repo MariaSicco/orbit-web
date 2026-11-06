@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, SIN_RED, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, tarjetaDeGasto, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, SIN_RED, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, tarjetaDeGasto, confirmarGasto, confirmarTodos, darDeBajaGasto, gastoEditado, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   MAS_HABILES, rangoDeCobro, textoRangoCobro, COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
   MAX_PROPIEDADES, SIN_PROPIEDAD, PROPIEDADES_SUGERIDAS, TEXTOS_PROPIEDADES, agregarPropiedad, renombrarPropiedad, borrarPropiedad, nombrePropiedad, resumenPropiedades,
 } from './calculos.js';
@@ -1972,7 +1972,7 @@ dg.querySelector('form').addEventListener('submit', e => {
   /* con el interruptor apagado no hay selector: la propiedad que tuviera el gasto se conserva */
   const propG = F.propiedades ? (dg.querySelector('[name="g-prop"]:checked')?.value || '') : (previoG?.propiedadId || '');
   if (propG) x.propiedadId = propG;
-  if (editGasto) datos.gastos = datos.gastos.map(g => (g.id === editGasto ? x : g));
+  if (editGasto) datos.gastos = datos.gastos.map(g => (g.id === editGasto ? gastoEditado(previoG, x) : g));
   else datos.gastos.push(x);
   guardar(); pintarTodo(); cerrar(dg);
   avisar(editGasto ? 'Gasto actualizado' : 'Gasto cargado');

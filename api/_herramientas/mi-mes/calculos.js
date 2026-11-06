@@ -1864,6 +1864,14 @@ export function confirmarGasto(datos, gastoId, mes, real = null) {
       : `${g.nombre} vino ${formatoPesos(-dif)} menos que el estimado: te quedan libres ${formatoPesos(-dif)} más.` };
 }
 /* "Lo di de baja": deja de contar desde este mes (o desde el que viene, si este ya se pagó). */
+/* Editar un gasto: lo que el formulario no muestra (frecuencia, suba programada, factura de origen) no se pierde.
+   Si la persona corrige el monto, deja de ser un estimado de una factura vieja. */
+export function gastoEditado(previo, nuevo) {
+  if (!previo) return nuevo;
+  const { frecuencia, sube, doc } = previo;
+  const docNuevo = doc && nuevo.monto !== previo.monto ? { fecha: doc.fecha } : doc;
+  return { ...nuevo, ...(nuevo.repite && frecuencia ? { frecuencia } : {}), ...(nuevo.repite && sube ? { sube } : {}), ...(docNuevo ? { doc: docNuevo } : {}) };
+}
 export function confirmarTodos(datos, mes, ids = null) {
   const r = resumenMes(datos, mes);
   const lista = ids || r.gastos.filter(g => !g.confirmado).map(g => g.id);

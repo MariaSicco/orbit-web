@@ -218,3 +218,39 @@ test('todo texto de propiedades está en español y en inglés', () => {
   assert.deepEqual(claves(M.TEXTOS_PROPIEDADES.en), claves(M.TEXTOS_PROPIEDADES.es));
   assert.equal(M.PROPIEDADES_SUGERIDAS.en.length, M.PROPIEDADES_SUGERIDAS.es.length);
 });
+
+/* ── editar un gasto desde el formulario: lo que el formulario no muestra no se pierde ── */
+const delForm = (id, monto, extra = {}) => ({ id, nombre: 'Luz', categoria: 'Luz', monto: $(monto), repite: true, desde: '2026-10', ...extra });
+test('editar un gasto bimestral: sigue siendo bimestral y no cambia los meses en que cuenta', () => {
+  const previo = delForm('g', 40_000, { frecuencia: 2 });
+  const editado = M.gastoEditado(previo, delForm('g', 45_000));
+  assert.equal(editado.frecuencia, 2);
+  assert.equal(editado.monto, $(45_000));
+  const d = { ...M.datosVacios(), gastos: [editado] };
+  assert.equal(M.resumenMes(d, '2026-11').totGastos, 0);
+  assert.equal(M.resumenMes(d, '2026-12').totGastos, $(45_000));
+});
+test('editar un gasto conserva la suba programada y la fecha de la factura', () => {
+  const previo = delForm('g', 40_000, { sube: { desde: '2027-03', monto: $(60_000) }, doc: { fecha: '2026-10-20' } });
+  const editado = M.gastoEditado(previo, delForm('g', 40_000));
+  assert.deepEqual(editado.sube, previo.sube);
+  assert.deepEqual(editado.doc, previo.doc);
+  assert.equal(M.resumenMes({ ...M.datosVacios(), gastos: [editado] }, '2027-03').totGastos, $(60_000));
+});
+test('monto estimado de una factura vieja: sigue estimado si no se toca, deja de serlo si la persona lo corrige', () => {
+  const previo = delForm('g', 40_000, { doc: { fecha: '2026-08-20', estimado: true } });
+  assert.deepEqual(M.gastoEditado(previo, delForm('g', 40_000)).doc, { fecha: '2026-08-20', estimado: true });
+  assert.deepEqual(M.gastoEditado(previo, delForm('g', 45_000)).doc, { fecha: '2026-08-20' });
+});
+test('si deja de repetirse, no le quedan frecuencia ni suba; la factura sí', () => {
+  const previo = delForm('g', 40_000, { frecuencia: 2, sube: { desde: '2027-03', monto: $(60_000) }, doc: { fecha: '2026-10-20' } });
+  const editado = M.gastoEditado(previo, delForm('g', 40_000, { repite: false }));
+  assert.equal('frecuencia' in editado, false);
+  assert.equal('sube' in editado, false);
+  assert.deepEqual(editado.doc, previo.doc);
+});
+test('un gasto nuevo o sin esos datos queda tal cual lo armó el formulario', () => {
+  const nuevo = delForm('g', 40_000);
+  assert.deepEqual(M.gastoEditado(undefined, nuevo), nuevo);
+  assert.deepEqual(M.gastoEditado(delForm('g', 30_000), nuevo), nuevo);
+});
