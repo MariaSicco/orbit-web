@@ -34,7 +34,7 @@ const SITE = () => process.env.SITE_URL || 'https://www.orbitando.com.ar';
 export async function marcaAvisos(email) {
   let bymajo = false;
   try { bymajo = (await compraDe(email, PRODUCT_ID))?.via === 'bymajo'; } catch { /* sin datos, la marca de siempre */ }
-  return bymajo ? { site: `https://${MIMITOS_HOST}`, hecho: 'Hecho con By Majo.', fromName: 'Mimitos by Majo' } : { site: SITE(), hecho: 'Hecho con Orbit.' };
+  return bymajo ? { site: `https://${MIMITOS_HOST}`, hecho: 'Hecho con By Majo.', fromName: 'Mimitos by Majo', fromEmail: 'hola@bymajostudio.com' } : { site: SITE(), hecho: 'Hecho con Orbit.' };
 }
 
 let vapid = null;
@@ -175,7 +175,7 @@ ${items.map(i => `<tr><td bgcolor="#FFFDF9" style="background:#FFFDF9;border-rad
 </table></td></tr></table></body></html>`;
   const text = items.map(i => `${i.title}. ${i.body}`).join('\n') + `\n\nAbrir Mimitos: ${url}`;
   const subject = items.length === 1 ? items[0].title : `${items[0].title} y ${items.length - 1} aviso${items.length > 2 ? 's' : ''} más`;
-  await sendEmail({ to: email, subject, html, text, fromName: marca.fromName });
+  await sendEmail({ to: email, subject, html, text, fromName: marca.fromName, fromEmail: marca.fromEmail });
   return true;
 }
 
@@ -194,6 +194,6 @@ export async function mailNotice(email, { title, body, map = '', phone = '', why
 <tr><td style="padding:18px 0 0;font-size:12px;color:#5E554E;line-height:1.5">Te llega porque activaste los avisos por mail en Mimitos y ${esc(why)}. Los apagás desde Avisos en la app. ${esc(marca.hecho)}</td></tr>
 </table></td></tr></table></body></html>`;
   const text = `${title}\n${body}${map ? `\nUbicación: ${map}` : ''}\n\nAbrir Mimitos: ${url}`;
-  await sendEmail({ to: email, subject: title, html, text, fromName: marca.fromName });
+  await sendEmail({ to: email, subject: title, html, text, fromName: marca.fromName, fromEmail: marca.fromEmail });
   return true;
 }
