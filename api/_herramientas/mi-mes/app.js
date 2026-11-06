@@ -28,7 +28,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t20';
+const VERSION = '2026-10-23.mail';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -230,7 +230,7 @@ function itemsRevisar(lim) {
   if (F.etapas) {
     const faltanRes = p.ahora.concat(p.masTarde).filter(q => q.tipo === 'resumen');
     const viejos = estimadosViejos(datos, HOY_ISO);
-    const etapa = etapaPrimerUso(datos, { visitas: VISITAS, pendientes: faltanRes.length + viejos.length, mailConectado: false });
+    const etapa = etapaPrimerUso(datos, { visitas: VISITAS, pendientes: faltanRes.length + viejos.length, mailConectado: Boolean(mail?.conexion?.conectado) });
     if (etapa === 2) {
       const partes = [...faltanRes.sort((a, b) => b.impacto - a.impacto).map(q => ({ txt: `el resumen de este mes de ${tarjetaDe(q.tarjetaId)?.nombre || 'tu tarjeta'}`, imp: q.impacto })),
         ...viejos.map(g => ({ txt: `la factura de ${g.nombre.toLowerCase() === g.nombre ? g.nombre : g.nombre} de ${nombreMes(HOY).split(' ')[0]}`, imp: g.monto }))].sort((a, b) => b.imp - a.imp);
@@ -240,7 +240,11 @@ function itemsRevisar(lim) {
       /* las preguntas sueltas de "falta tu resumen" quedan dentro de esta invitación */
       p.ahora = p.ahora.filter(q => q.tipo !== 'resumen');
     }
-    if (etapa === 3 && F.conectarMail) etapas.push({ clase: 'etapa', etapa: 3, titulo: 'Conectá tu mail para que lleguen solos tus resúmenes y facturas.' });
+    if (etapa === 3 && F.conectarMail && mail?.encendido && !mail.conexion?.conectado) etapas.push({ clase: 'etapa', etapa: 3, titulo: 'Conectá tu mail para que tus resúmenes y facturas entren solos durante 6 meses.' });
+  }
+  /* el permiso del mail vence a los 6 meses: 7 días antes se pide renovarlo (también llega por push y por mail) */
+  if (F.conectarMail && mail?.conexion?.conectado && mail.conexion.faltan <= 7) {
+    etapas.push({ clase: 'etapa', etapa: 3, renovar: true, titulo: `Tu permiso para leer el mail vence ${mail.conexion.faltan <= 1 ? 'mañana' : `el ${fechaAR(mail.conexion.venceEl)}`}. Renovalo para que tus resúmenes y facturas sigan entrando solos.` });
   }
   return { lista: [...fuertes.map(a => ({ clase: 'alerta', a })), ...etapas, ...cambios, ...dev, ...p.ahora.map(q => ({ clase: 'pregunta', q })), ...tope, ...suaves.map(a => ({ clase: 'alerta', a }))],
     masTarde: p.masTarde };
@@ -283,8 +287,8 @@ function filaRevisar(x) {
       <div class="mm-fa-acc"><button type="button" class="mm-link" data-cambios-visto>Entendido</button></div></div></details>`;
   }
   if (x.clase === 'etapa') {
-    return `<details class="mm-fila-alerta pregunta etapa" ${x.etapa === 2 ? 'open' : ''}><summary><span class="mm-fa-ic">${ic(x.etapa === 2 ? 'subir' : 'campana')}</span><span class="mm-fa-txt">${esc(x.etapa === 2 ? 'Actualizá con lo de este mes' : 'Que lleguen solos')}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
-      <div class="mm-fa-det"><p>${esc(x.titulo)}</p><div class="mm-fa-acc">${x.etapa === 2 ? '<button type="button" class="mm-btn chico" data-ir="subir">Subir lo de este mes</button>' : '<button type="button" class="mm-btn chico" data-conectar-mail>Conectar mi mail</button>'}</div></div></details>`;
+    return `<details class="mm-fila-alerta pregunta etapa" ${x.etapa === 2 || x.renovar ? 'open' : ''}><summary><span class="mm-fa-ic">${ic(x.etapa === 2 ? 'subir' : x.renovar ? 'alerta' : 'campana')}</span><span class="mm-fa-txt">${esc(x.etapa === 2 ? 'Actualizá con lo de este mes' : x.renovar ? 'Renová el permiso de tu mail' : 'Que lleguen solos')}</span><svg class="ic mm-fa-flecha"><use href="#i-der"/></svg></summary>
+      <div class="mm-fa-det"><p>${esc(x.titulo)}</p><div class="mm-fa-acc">${x.etapa === 2 ? '<button type="button" class="mm-btn chico" data-ir="subir">Subir lo de este mes</button>' : `<button type="button" class="mm-btn chico" data-conectar-mail>${x.renovar ? 'Renovar 6 meses más' : 'Conectar mi mail'}</button>`}</div></div></details>`;
   }
   if (x.clase === 'devolver') {
     const v = x.bd.vencidos, c = x.bd.candidatos.filter(k => k.parecido.length);
@@ -430,17 +434,7 @@ function pintarSubir() {
   const listos = cola.filter(x => x.estado === 'listo').length;
   $id('ir-revisar').hidden = !listos || pendientes;
   $id('ir-revisar').textContent = `Revisar lo que leí (${listos})`;
-  $id('conectar-mail').hidden = !F.conectarMail;
-  $id('quitar-permiso').hidden = !F.conectarMail;
-  if (F.conectarMail && !$id('quitar-permiso-txt').dataset.listo) {
-    $id('quitar-permiso-txt').dataset.listo = '1';
-    import('./correo-mi-mes.js').then(({ QUITAR_PERMISO: q }) => {
-      $id('quitar-permiso-txt').innerHTML = `<p class="mm-fuente">${esc(q.microsoft.texto)}</p>
-        <p><a class="mm-link" href="${q.microsoft.personal}" target="_blank" rel="noopener noreferrer">Quitar permiso de Microsoft (cuenta personal)</a></p>
-        <p><a class="mm-link" href="${q.microsoft.trabajo}" target="_blank" rel="noopener noreferrer">Quitar permiso de Microsoft (trabajo o facultad)</a></p>
-        <p class="mm-fuente">${esc(q.google.texto)}</p><p><a class="mm-link" href="${q.google.url}" target="_blank" rel="noopener noreferrer">Permisos de tu cuenta de Google</a></p>`;
-    }).catch(() => {});
-  }
+  pintarMail();
 }
 async function prepararArchivo(f) {
   const heic = /heic|heif/i.test(f.type) || /\.(heic|heif)$/i.test(f.name);
@@ -613,6 +607,8 @@ function guardarTodo() {
   const r = aplicarItems(datos, itemsLeido, { nuevoId, hoy: HOY_ISO });
   datos = r.datos;
   const subidos = cola.filter(x => x.estado === 'listo' && x.huella);
+  const deMail = subidos.filter(x => x.origen === 'mail').map(x => x.id);
+  if (deMail.length) { apiMail('recibido', { ids: deMail }).catch(() => {}); mailPorConfirmar = []; }
   datos.documentos = [...(datos.documentos || []), ...subidos.map(x => ({ huella: x.huella, tipo: x.tipo, fecha: HOY_ISO }))].slice(-200);
   /* en el primer uso, lo subido es el punto de partida (no un "cambio"); después, qué cambió lo explica */
   if (eraVacio) { if (F.queCambio) { datos.fotoBase = fotoProyeccion(datos, HOY); datos.cambios = []; } }
@@ -627,15 +623,127 @@ function guardarTodo() {
   if (r.n.sinTarjeta) return avisar(`Guardado. ${r.n.sinTarjeta} compra${r.n.sinTarjeta === 1 ? '' : 's'} de la captura no se guardaron porque no elegiste la tarjeta: cargalas a mano.`);
   avisar(`Listo: ${[n.resumenes && `${n.resumenes} resumen${n.resumenes === 1 ? '' : 'es'}`, n.ingresos && `${n.ingresos} ingreso${n.ingresos === 1 ? '' : 's'}`, n.gastos && `${n.gastos} gasto${n.gastos === 1 ? '' : 's'} fijo${n.gastos === 1 ? '' : 's'}`, n.compras && `${n.compras} compra${n.compras === 1 ? '' : 's'}`, n.actualizados && `${n.actualizados} actualizado${n.actualizados === 1 ? '' : 's'}`].filter(Boolean).join(', ') || 'nada nuevo'}`);
 }
-/* ── conectar el mail (etapa 3; interruptor conectarMail) ── */
-async function conectarMail() {
+/* ── mail conectado por 6 meses (interruptor conectarMail; servidor: /api/mi-mes-mail) ──
+   Al autorizar se leen los últimos 6 meses y el permiso queda activo 6 meses: lo nuevo lo busca y lo lee
+   el servidor (cron diario) y lo deja en una bandeja cifrada. Al abrir la app se baja: si todo se leyó
+   bien, se guarda solo; si algo tiene dudas, va a "Revisá lo que leí". 7 días antes del vencimiento
+   se pide renovar (acá, por push y por mail). */
+const API_MAIL = '/api/mi-mes-mail';
+let mail = null;               // { encendido, listo: { gmail, outlook }, conexion, bandeja }
+let mailTrabajando = false;
+let mailUltimaVez = 0;
+const MAIL_QUE = 'Qué hacemos con tu mail: buscamos solo adjuntos PDF de resúmenes, facturas, expensas y recibos. No leemos el resto, no mandamos ni borramos nada. El permiso queda guardado cifrado hasta que vence (6 meses) o lo quitás; lo leído espera cifrado hasta que abrís la app y los PDF no se guardan.';
+const MAIL_MSJ = {
+  ok: 'Listo: conectamos tu mail. Estamos trayendo tus resúmenes y facturas de los últimos 6 meses.',
+  cupo: 'Por ahora no hay lugar para más cuentas de Gmail. Subí los PDF y te avisamos cuando se habilite.',
+  cancelado: 'No conectamos tu mail.', sinpermiso: 'Sin el permiso para leer el mail no podemos traer tus resúmenes.',
+  error: 'No pudimos conectar tu mail. Probá de nuevo.', apagado: 'La conexión con el mail todavía no está disponible.',
+  sesion: 'Entrá con tu cuenta de Orbit para conectar tu mail.', compra: 'La conexión con el mail es para quienes compraron Mi Mes.',
+};
+async function apiMail(accion, cuerpo) {
+  let r;
+  try { r = await fetch(`${API_MAIL}?accion=${accion}`, { credentials: 'same-origin', cache: 'no-store', ...(cuerpo ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(cuerpo) } : {}) }); }
+  catch { throw new Error(SIN_RED); }
+  const j = await r.json().catch(() => null);
+  if (!r.ok || !j?.ok) throw Object.assign(new Error(j?.error || SIN_RED), { motivo: j?.motivo });
+  return j;
+}
+function conectarMail(prov) {
   if (!F.conectarMail) return;
+  prov ||= mail?.conexion?.conectado ? mail.conexion.prov : null;
+  if (!prov) { verVista('subir'); pintarMail(); return $id('mail-panel').scrollIntoView({ block: 'center' }); }
+  location.href = `${API_MAIL}?accion=conectar&prov=${encodeURIComponent(prov)}`;
+}
+async function desconectarMail() {
+  const prov = mail?.conexion?.prov;
+  if (!window.confirm('¿Desconectar tu mail? Lo nuevo deja de entrar solo y borramos el permiso guardado.')) return;
+  try { await apiMail('desconectar', {}); }
+  catch (e) { return avisar(e.message); }
+  mail.conexion = { conectado: false };
+  pintarMail(); pintarTodo();
+  avisar(prov === 'outlook' ? 'Desconectado. Para quitar el permiso también en Microsoft, mirá "Cómo quitar el permiso del mail".' : 'Desconectado: borramos el permiso de tu mail.');
+}
+function pintarMail() {
+  const box = $id('mail-panel');
+  box.hidden = !F.conectarMail || LOCAL;
+  $id('quitar-permiso').hidden = box.hidden || mail?.conexion?.prov !== 'outlook';
+  if (!$id('quitar-permiso').hidden && !$id('quitar-permiso-txt').dataset.listo) {
+    $id('quitar-permiso-txt').dataset.listo = '1';
+    import('./correo-mi-mes.js').then(({ QUITAR_PERMISO: q }) => {
+      $id('quitar-permiso-txt').innerHTML = `<p class="mm-fuente">${esc(q.microsoft.texto)}</p>
+        <p><a class="mm-link" href="${q.microsoft.personal}" target="_blank" rel="noopener noreferrer">Quitar permiso de Microsoft (cuenta personal)</a></p>
+        <p><a class="mm-link" href="${q.microsoft.trabajo}" target="_blank" rel="noopener noreferrer">Quitar permiso de Microsoft (trabajo o facultad)</a></p>`;
+    }).catch(() => {});
+  }
+  if (box.hidden) return;
+  if (!mail) { box.innerHTML = '<p class="mm-fuente">Revisando la conexión con tu mail…</p>'; return; }
+  const c = mail.conexion;
+  if (!mail.encendido || (!mail.listo?.gmail && !mail.listo?.outlook)) { box.innerHTML = `<p class="mm-fuente">${esc(MAIL_MSJ.apagado)}</p>`; return; }
+  if (!c?.conectado) {
+    box.innerHTML = `<h2 class="mm-h2">Conectá tu mail una vez</h2>
+      <p class="mm-sub">Leemos los últimos 6 meses y, durante los próximos 6, tus resúmenes, facturas y recibos nuevos entran solos.</p>
+      <div class="mm-subir-acc">${mail.listo.gmail ? '<button type="button" class="mm-btn" data-mail-con="gmail">Conectar Gmail</button>' : ''}${mail.listo.outlook ? '<button type="button" class="mm-btn sec" data-mail-con="outlook">Outlook o Hotmail</button>' : ''}</div>
+      <p class="mm-fuente">${esc(MAIL_QUE)}</p>`;
+    return;
+  }
+  const quien = c.direccion || (c.prov === 'gmail' ? 'Gmail' : 'Outlook');
+  box.innerHTML = `<h2 class="mm-h2">Tu mail está conectado</h2>
+    <p class="mm-sub">${esc(quien)} · lo nuevo entra solo hasta el ${esc(fechaAR(c.venceEl))}${c.faltan <= 7 ? ` (faltan ${c.faltan} día${c.faltan === 1 ? '' : 's'})` : ''}.</p>
+    ${mailTrabajando ? '<p class="mm-fuente">Leyendo lo que llegó a tu mail…</p>' : c.pendientes ? `<p class="mm-fuente">${c.pendientes} documento${c.pendientes === 1 ? '' : 's'} por leer: los traemos solos.</p>` : ''}
+    <div class="mm-subir-acc">${c.faltan <= 7 ? `<button type="button" class="mm-btn" data-mail-con="${esc(c.prov)}">Renovar 6 meses más</button>` : ''}<button type="button" class="mm-link" data-mail-quitar>Desconectar mi mail</button></div>
+    <p class="mm-fuente">${esc(MAIL_QUE)}</p>`;
+}
+/* Al abrir (y al volver a la app): estado, lectura de lo pendiente y lo que espera en la bandeja */
+async function sincronizarMail({ forzar = false } = {}) {
+  if (!F.conectarMail || LOCAL || mailTrabajando) return;
+  if (!forzar && Date.now() - mailUltimaVez < 10 * 60 * 1000) return;
+  mailUltimaVez = Date.now();
+  try { mail = await apiMail('estado'); }
+  catch { mail = null; return pintarMail(); }
+  pintarMail(); pintarTodo();
+  const c = mail.conexion;
+  if (!c?.conectado) return;
+  mailTrabajando = true; pintarMail();
   try {
-    const { buscarDocumentosEnMail } = await import('./correo-mi-mes.js');
-    const encontrados = await buscarDocumentosEnMail(n => { $id('subir-sub').textContent = `Buscando en tu mail… ${n} archivos`; });
-    if (!encontrados.length) return avisar('No encontramos resúmenes, facturas ni recibos en tu mail.');
-    agregarArchivos(encontrados.map(x => new File([x.bytes], x.nombre, { type: 'application/pdf' })));
-  } catch (e) { avisar(e?.message || 'Por ahora subí los PDF; te avisamos cuando se habilite.'); }
+    for (let i = 0; i < 6 && c.pendientes > 0 && !document.hidden; i++) {
+      const r = await apiMail('procesar', {});
+      c.pendientes = r.quedan ?? 0; pintarMail();
+      if (!r.procesado) break;   // en espera por un tope: sigue el servidor
+    }
+    const { items } = await apiMail('bandeja');
+    if (items?.length) aplicarMail(items);
+  } catch (e) {
+    if (e.motivo === 'vencido') { mail.conexion = { conectado: false }; avisar(e.message); }
+  } finally { mailTrabajando = false; pintarMail(); }
+}
+let mailPorConfirmar = [];
+function aplicarMail(items) {
+  const leidos = [], descartar = [];
+  for (const x of items) {
+    if (!x?.id || yaSubido(datos, x.huella) || !['resumen', 'factura', 'recibo', 'captura'].includes(x.tipo)) { descartar.push(x?.id); continue; }
+    if (x.tipo === 'resumen') { const v = validarLectura(x.lectura); if (!v.ok) { descartar.push(x.id); continue; } leidos.push({ ...x, lectura: v.lectura, confiable: x.confiable !== false && v.lectura.confianza === 'alta' }); }
+    else if (x.tipo === 'factura') { if (!x.propuesta) { descartar.push(x.id); continue; } leidos.push({ ...x, confiable: x.confiable !== false && Boolean(x.propuesta.monto) }); }
+    else leidos.push(x);
+  }
+  if (descartar.filter(Boolean).length) apiMail('recibido', { ids: descartar.filter(Boolean) }).catch(() => {});
+  if (!leidos.length) return;
+  const tj = datos.tarjetas[0]?.id || null;
+  const its = consolidar(leidos.map(x => ({ archivo: x.id, tipo: x.tipo, lectura: x.tipo === 'factura' ? x.propuesta : x.lectura, confiable: x.confiable, tarjetaId: tj })), datos, HOY_ISO);
+  /* se guarda solo si todo se leyó con seguridad y no hay nada que decidir (sueldo sin día de cobro, reemplazos, compras sin tarjeta) */
+  const dudas = its.some(it => it.confiable === false || it.pideCobro || it.pregunta || it.grupo === 'compras');
+  if (!dudas) {
+    const r = aplicarItems(datos, its, { nuevoId, hoy: HOY_ISO });
+    datos = r.datos;
+    datos.documentos = [...(datos.documentos || []), ...leidos.map(x => ({ huella: x.huella, tipo: x.tipo, fecha: HOY_ISO }))].slice(-200);
+    registrarCambio('Llegó de tu mail');
+    guardar(); pintarTodo();
+    apiMail('recibido', { ids: leidos.map(x => x.id) }).catch(() => {});
+    return avisar(leidos.length === 1 ? 'Llegó un documento de tu mail y ya está en tu mes.' : `Llegaron ${leidos.length} documentos de tu mail y ya están en tu mes.`);
+  }
+  cola = [...cola.filter(c => c.origen !== 'mail'), ...leidos.map(x => ({ id: x.id, nombre: x.nombre || 'Del mail', estado: 'listo', tipo: x.tipo, lectura: x.lectura, propuesta: x.propuesta, confiable: x.confiable, huella: x.huella, origen: 'mail' }))];
+  mailPorConfirmar = leidos.map(x => x.id);
+  verVista('subir'); pintarSubir();
+  avisar(leidos.length === 1 ? 'Llegó un documento de tu mail: revisalo antes de guardar.' : `Llegaron ${leidos.length} documentos de tu mail: revisalos antes de guardar.`);
 }
 
 /* ════════ (6) TE TIENEN QUE DEVOLVER ════════ */
@@ -2539,6 +2647,9 @@ document.addEventListener('click', e => {
   if (gtodos) { datos = confirmarTodos(datos, HOY, gtodos.dataset.gastosOk.split(',')); registrarCambio('Confirmaste tus gastos fijos'); guardar(); pintarTodo(); return avisar('Listo: confirmados para este mes'); }
   if (t.closest('[data-guardar-todo]')) return guardarTodo();
   if (t.closest('[data-conectar-mail]')) { if (vista !== 'subir') verVista('subir'); return conectarMail(); }
+  const mc = t.closest('[data-mail-con]');
+  if (mc) return conectarMail(mc.dataset.mailCon);
+  if (t.closest('[data-mail-quitar]')) return desconectarMail();
   if (t.closest('[data-cambios-visto]')) { datos.fotoBase = fotoProyeccion(datos, HOY); datos.cambios = []; guardar(); pintarInicio(); return avisar('Listo: tomamos esto como punto de partida'); }
   if (t.closest('[data-saldo]')) return abrirSaldo();
   if (t.closest('[data-ver-dificil]')) { $id('dificil').scrollIntoView({ block: 'start', behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' }); return $id('t-dificil')?.focus?.(); }
@@ -2609,6 +2720,15 @@ document.addEventListener('click', e => { if (e.target.closest('[data-recargar]'
 if (F.queCambio && !datos.fotoBase && puedeGuardar) { datos.fotoBase = fotoProyeccion(datos, HOY); guardar(); }
 pintarTodo();
 const inicial = location.hash.slice(1);
+if (inicial.startsWith('mail-') && F.conectarMail) {
+  history.replaceState(null, '', location.pathname + location.search);
+  verVista('subir', { foco: false });
+  avisar(MAIL_MSJ[inicial.slice(5)] || MAIL_MSJ.error);
+}
+if (F.conectarMail && !LOCAL) {
+  sincronizarMail({ forzar: true });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) sincronizarMail(); });
+}
 if (['tarjetas', 'cargado', 'escalera', 'contado', 'simular', ...(F.dondeRinde ? ['rinde'] : []), ...(F.devolver ? ['devolver'] : [])].includes(inicial)) verVista(inicial, { foco: false });
 iniciarGuiaSiHaceFalta();
 marcarPush(pushActivo());
