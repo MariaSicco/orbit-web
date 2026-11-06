@@ -18,7 +18,7 @@ import { kvGet, kvSet, kvDel, kvSetNX, kvIncrBy, kvSAdd, kvSRem, kvSMembers } fr
 import { isAdmin } from './admin.js';
 import { readBody, isEmail } from './auth.js';
 import { accesoHerramienta } from './herramienta-acceso.js';
-import { hasMimitos, getNotify, pushTo, PRODUCT_ID } from './petpush.js';
+import { hasMimitos, getNotify, pushTo, PRODUCT_ID, marcaAvisos } from './petpush.js';
 import { sendEmail, emailReady } from './email.js';
 /* reglas compartidas con la app (define globalThis.MZAWAYR) */
 import '../../assets/js/mascotas-away-rules.js';
@@ -184,18 +184,19 @@ const hhmm = (ms, tz) => new Intl.DateTimeFormat('es-AR', { timeZone: tz || 'Ame
 const SITE = () => process.env.SITE_URL || 'https://www.orbitando.com.ar';
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 /* mail suelto de "Me fui" y de la cámara, con la estética de Mimitos y su propio pie */
-export async function awayMail(to, { title, body, footer, cta = true }) {
+export async function awayMail(to, { title, body, footer, cta = true, owner = to }) {
   if (!emailReady()) return false;
-  const url = `${SITE()}/mascotas#/mefui`;
+  const marca = await marcaAvisos(owner);
+  const url = `${marca.site}/mascotas#/mefui`;
   const html = `<!doctype html><html><body style="margin:0;background:#F7F3EE;font-family:Helvetica,Arial,sans-serif;color:#1F1A17">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F7F3EE"><tr><td align="center" style="padding:28px 16px">
 <table role="presentation" width="100%" style="max-width:480px" cellpadding="0" cellspacing="0">
 <tr><td style="padding:0 0 16px;font:700 22px Helvetica,Arial,sans-serif;color:#1F1A17">mimitos</td></tr>
 <tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border-radius:18px;padding:18px 20px"><b style="font-size:17px">${esc(title)}</b><br><span style="font-size:14px;line-height:1.55;color:#5E554E">${esc(body)}</span></td></tr>
 ${cta ? `<tr><td style="padding:16px 0 0"><a href="${url}" style="display:inline-block;background:#1F4D40;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:13px 22px">Abrir Mimitos</a></td></tr>` : ''}
-<tr><td style="padding:18px 0 0;font-size:12px;color:#5E554E;line-height:1.5">${esc(footer)} Hecho con Orbit.</td></tr>
+<tr><td style="padding:18px 0 0;font-size:12px;color:#5E554E;line-height:1.5">${esc(footer)} ${esc(marca.hecho)}</td></tr>
 </table></td></tr></table></body></html>`;
-  await sendEmail({ to, subject: title, html, text: `${title}\n${body}${cta ? `\n\nAbrir Mimitos: ${url}` : ''}\n\n${footer}` });
+  await sendEmail({ to, subject: title, html, text: `${title}\n${body}${cta ? `\n\nAbrir Mimitos: ${url}` : ''}\n\n${footer}`, fromName: marca.fromName });
   return true;
 }
 const OWNER_FOOTER = 'Te llega porque activaste los avisos por mail en Mimitos y usaste "Me fui". Los apagás desde Avisos en la app.';
@@ -236,7 +237,7 @@ export async function runAway({ now = Date.now(), send = {} } = {}) {
         out.avisos++;
         out.push += await push(n, { title: tx.owner.title, body: tx.owner.body, url: '/mascotas#/mefui', tag: `away-${doc.away.id}` });
         if (n.mail && await mail(email, { ...tx.owner, footer: OWNER_FOOTER }).catch(() => false)) out.mails++;
-        if (tx.sitter && doc.awaySet?.sitterMail && await mail(doc.awaySet.sitterMail, { ...tx.sitter, cta: false }).catch(() => false)) out.cuidador++;
+        if (tx.sitter && doc.awaySet?.sitterMail && await mail(doc.awaySet.sitterMail, { ...tx.sitter, cta: false, owner: email }).catch(() => false)) out.cuidador++;
       }
     } catch (e) { out.errores++; console.error('[mimitos] me fui', e?.message || e); }
   }
