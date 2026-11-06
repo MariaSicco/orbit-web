@@ -2785,14 +2785,15 @@ function mailPickPanel() {
     return `<button class="row link-row" data-mail="${p}"${s.ready || s.connected ? '' : ' disabled'}>${bubble('mail', p === 'gmail' ? 'viaje' : 'cuida')}<span class="what"><b>${s.connected ? `Buscar en ${PROV[p].label}` : `Conectar ${PROV[p].label}`}</b><small>${sub}</small></span>${I('chevron')}</button>`;
   };
   panel('Traé estudios desde tu mail', `<p class="dim">Buscamos los análisis, ecografías, radiografías, recetas e informes que te mandaron y elegís cuáles sumar. Podés conectar uno o los dos.</p><div class="list">${MAILS.map(row).join('')}</div>`);
-  $('#pBody').onclick = e => { const b = e.target.closest('[data-mail]'); if (!b || b.disabled) return; dPanel.close(); openMail(b.dataset.mail, 'new'); };
+  $('#pBody').onclick = e => { const b = e.target.closest('[data-mail]'); if (!b || b.disabled) return; dPanel.close(); openMail(b.dataset.mail); };
 }
-function openMail(p, m) {
+function openMail(p) {
   if (!mstat[p]) return;
   if (!mstat[p].connected) { gm = { p, phase: 'intro' }; return go(p); }
   /* ya hay una lista de esta casilla: se vuelve a ella. "Buscar de nuevo" la renueva */
   if (gm?.p === p && gm.phase === 'list') return go(p);
-  go(p); mailSearch(p, m);
+  /* siempre trae todo lo que no importaste: con solo lo nuevo desde la última búsqueda, los estudios sin importar desaparecían */
+  go(p); mailSearch(p, 'all');
 }
 async function mailConnect(p) {
   if (dirty) await flushNow();
@@ -2851,7 +2852,8 @@ function mailRecuperar() {
     const d = JSON.parse(localStorage.getItem(k) || 'null');
     if (!d) return;
     if (Date.now() - d.at > MAIL_TTL) return localStorage.removeItem(k);
-    if (d.g) gm = { ...d.g, sel: new Set(d.g.sel) };
+    /* las listas de "solo lo nuevo" (versión anterior) no se recuperan: dejaban afuera lo que no se importó */
+    if (d.g && d.g.mode !== 'new') gm = { ...d.g, sel: new Set(d.g.sel) };
     if (d.b) {
       bulk = d.b;
       /* se cortó en medio de la importación: lo que no llegó se puede reintentar */
@@ -2874,7 +2876,7 @@ function renderMail(p) {
   const pet = curPet(), L = PROV[p].label;
   const back = `<button class="link" data-act="go" data-to="libreta" style="align-self:flex-start">${I('back')} ${pet ? `Libreta de ${esc(pet.name)}` : 'Volver'}</button>`;
   if (!s.connected || gm?.phase === 'intro' || !gm) {
-    if (s.connected && !gm) { after(() => mailSearch(p, s.lastSearch ? 'new' : 'all')); return `<section class="sec reading"><div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu ${L}</h1></section>`; }
+    if (s.connected && !gm) { after(() => mailSearch(p, 'all')); return `<section class="sec reading"><div class="ib big c-viaje spin">${I('mail')}</div><h1 class="h-xl">Buscando en tu ${L}</h1></section>`; }
     if (mFull(p)) mailInterest(p);
     /* antes de conectar, "volver" lleva a elegir entre Gmail y Outlook (si tocaste el que no era), no a la libreta */
     const backPick = MAILS.filter(x => mstat[x]).length > 1 ? `<button class="link" data-act="mailPick" style="align-self:flex-start">${I('back')} Elegir Gmail u Outlook</button>` : back;
@@ -3089,7 +3091,7 @@ function gmailAccount() {
     const last = s.lastSearch ? `Última búsqueda: ${fmt(isoLocal(new Date(s.lastSearch)).slice(0, 10), { day: 'numeric', month: 'long' })}` : 'Todavía no buscaste';
     if (s.connected) return `<div class="card gm-acc">
       <div class="gm-acc-h">${bubble('mail', p === 'gmail' ? 'viaje' : 'cuida')}<span class="what"><b>${L} · ${esc(s.address || 'conectado')}</b><small>${last}${s.queue?.length ? ` · ${s.queue.length} en cola` : ''}</small></span></div>
-      <div class="gm-acts"><button class="btn sm" data-act="mailOpen" data-p="${p}" data-mode="new">Buscar de nuevo</button><button class="btn sm ghost" data-act="mailOff" data-p="${p}">Desconectar</button></div></div>`;
+      <div class="gm-acts"><button class="btn sm" data-act="mailOpen" data-p="${p}" data-fresh="1">Buscar de nuevo</button><button class="btn sm ghost" data-act="mailOff" data-p="${p}">Desconectar</button></div></div>`;
     return `<div class="list"><button class="row link-row" data-act="mailOpen" data-p="${p}"${s.ready ? '' : ' disabled'}>${bubble('mail', p === 'gmail' ? 'viaje' : 'cuida')}<span class="what"><b>${s.expired ? `Volver a conectar ${L}` : `Conectar ${L}`}</b><small>${!s.ready ? 'Todavía no disponible' : mFull(p) ? 'Completo por ahora: te avisamos cuando se libere' : s.expired ? 'La conexión venció o se quitó el permiso.' : p === 'gmail' ? 'Tu cuenta de Google' : 'Outlook, Hotmail, Live o Microsoft 365'}</small></span>${I('chevron')}</button></div>`;
   };
   return `<section class="sec"><h2>Tu mail</h2><div class="gm-accs">${MAILS.map(card).join('')}</div><p class="note">Solo lectura. Mimitos no manda ni modifica mails.</p></section>`;
@@ -3676,7 +3678,7 @@ document.addEventListener('click', e => {
     case 'bulkBack': { const g = bulk?.source === 'mail' ? bulk.prov : ''; bulk = null; return go(g || 'libreta'); }
     case 'mailPick': return mailPickPanel();
     case 'bulkRetry': return retryItem(+b.dataset.i);
-    case 'mailOpen': return openMail(b.dataset.p, b.dataset.mode || 'new');
+    case 'mailOpen': if (b.dataset.fresh && gm?.p === b.dataset.p) gm = null; return openMail(b.dataset.p);
     case 'mailConnect': return mailConnect(b.dataset.p);
     case 'mailRange': gm = { ...(gm?.p === b.dataset.p ? gm : {}), p: b.dataset.p, phase: gm?.phase || 'intro', range: b.dataset.v }; b.parentNode.querySelectorAll('.tile').forEach(t => t.setAttribute('aria-pressed', String(t === b))); return;
     case 'mailAll': { const all = gmFiles(); const on = all.some(k => !gm.sel.has(k)); gm.sel = new Set(on ? all : []); return render(); }
