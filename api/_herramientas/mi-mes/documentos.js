@@ -176,6 +176,14 @@ export function gastoQueCoincide(gastos, nombre, categoria, preset = null) {
   return (['Alquiler', 'Expensas'].includes(categoria) ? (gastos || []).find(g => g.categoria === categoria) : null) || null;
 }
 
+/* Más de un gasto parecido (dos "Luz"): la factura pregunta de cuál es, en vez de actualizar el primero sin avisar. */
+function candidatosFactura(datos, nombre, categoria, preset) {
+  const out = [];
+  let resto = datos?.gastos || [];
+  for (let c; (c = gastoQueCoincide(resto, nombre, categoria, preset)); resto = resto.filter(g => g.id !== c.id)) out.push(c);
+  return out.length > 1 ? out : [];
+}
+
 /* ── cada lectura → ítems para "revisá lo que leí" ──
    Un ítem: { id, grupo: 'ingresos'|'gastos'|'tarjetas'|'compras'|'saldo', accion: 'nuevo'|'actualizar'|'igual', ... } */
 export function itemsDeRecibo(recibo, datos, { archivo = '' } = {}) {
@@ -209,6 +217,8 @@ export function itemsDeFactura(p, datos, { archivo = '', hoy = null, cantidad = 
   /* de un mes anterior al actual: queda como estimado hasta que llegue la de este mes */
   const estimado = !!(hoy && fechaDoc && difMeses(fechaDoc.slice(0, 7), hoy.slice(0, 7)) > 0);
   const masViejo = previo?.doc?.fecha && fechaDoc && previo.doc.fecha > fechaDoc;
+  const candidatos = candidatosFactura(datos, nombre, categoria, p.preset).map(g => ({ id: g.id, nombre: g.nombre, antes: vigente(g, fechaDoc),
+    accion: g.doc?.fecha && fechaDoc && g.doc.fecha > fechaDoc ? 'viejo' : vigente(g, fechaDoc) === p.monto && !g.doc?.estimado && !g.sube ? 'igual' : 'actualizar' }));
   /* t17 · 4: bonificación con plazo: se guarda lo que se paga hoy y el precio lleno desde que termina */
   const promo = p.promo?.precioLleno > (p.monto || 0) ? p.promo : null;
   if (promo?.finDescuento) gasto.sube = { desde: promo.finDescuento, monto: promo.precioLleno };
@@ -222,9 +232,9 @@ export function itemsDeFactura(p, datos, { archivo = '', hoy = null, cantidad = 
     detalle: [categoria, p.vence ? `vence el ${Number(p.vence.slice(8))}` : null, frecuencia > 1 ? `cada ${frecuencia} meses` : 'todos los meses',
       estimado ? `estimado de ${cantidad > 1 ? `${cantidad} facturas anteriores` : 'meses anteriores'}` : null].filter(Boolean).join(' · '),
     accion: masViejo ? 'viejo' : previo ? (vigente(previo, fechaDoc) === p.monto && !previo.doc?.estimado && !previo.sube ? 'igual' : 'actualizar') : 'nuevo', previoId: previo?.id || null, antes: previo ? vigente(previo, fechaDoc) : null,
-    gasto, falta: p.monto ? null : 'Falta el monto', avisos: p.avisos || [], ...(aviso ? { aviso } : {}), ...(nota ? { nota } : {}),
+    gasto, falta: p.monto ? null : 'Falta el monto', avisos: p.avisos || [], ...(aviso ? { aviso } : {}), ...(nota ? { nota } : {}), ...(candidatos.length ? { candidatos } : {}),
     /* cargado con otro nombre (Gas ↔ Metrogas): se pregunta, con sí por defecto */
-    ...(previo?._porTipo && !masViejo ? { pregunta: `¿Es tu gasto de ${previo.nombre}? Lo actualizamos con esta factura.`, previoNombre: previo.nombre } : {}),
+    ...(previo?._porTipo && !masViejo && !candidatos.length ? { pregunta: `¿Es tu gasto de ${previo.nombre}? Lo actualizamos con esta factura.`, previoNombre: previo.nombre } : {}),
     /* QA t15 · 2: un "Servicios" genérico que probablemente la incluye: se separa (sí por defecto) */
     ...(!previo ? separarDeGenerico(datos, p, nombre) : {}) }];
 }

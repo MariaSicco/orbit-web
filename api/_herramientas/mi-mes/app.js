@@ -10,7 +10,7 @@ import {
   cuotasOContado, supuesto, simularCompra, LIMITE_DEFECTO, datosParaAvisos,
   cargosDelResumen, proximaLiberacion, percepcionEstimada, GASTOS_UN_MES, mesAguinaldo,
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
-  asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, SIN_RED, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, tarjetaDeGasto, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
+  gastoEditado, ingresoEditado, asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, SIN_RED, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, tarjetaDeGasto, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   MAS_HABILES, rangoDeCobro, textoRangoCobro, COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
@@ -28,7 +28,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t20';
+const VERSION = '2026-11-06.t21';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -81,8 +81,9 @@ function avisar(texto) {
 /* ── piezas ── */
 function textoRepite(x) {
   if (!x.repite) return `Solo ${corto(x.desde)}`;
-  if (x.hasta) return `Todos los meses hasta ${corto(x.hasta)}`;
-  return 'Todos los meses';
+  const cada = x.frecuencia > 1 ? `Cada ${x.frecuencia} meses` : 'Todos los meses';
+  if (x.hasta) return `${cada} hasta ${corto(x.hasta)}`;
+  return cada;
 }
 function item({ tipo, id, icono, claseIc = '', titulo, meta, monto, montoClase = '', sub = '', extra = '', ir = '' }) {
   const attrs = ir ? `data-ir-tarjeta="${esc(ir)}"` : `data-editar="${tipo}" data-id="${esc(id)}"`;
@@ -551,6 +552,7 @@ function pintarLeido() {
           ${['dia', 'quintoHabil', 'ultimoHabil'].includes(it.ingreso.cobro?.tipo) ? `<div class="mm-chips" role="radiogroup" aria-label="Hasta cuándo puede llegar">${MAS_HABILES.map(n => `<label class="mm-chip"><input type="radio" name="mas-${esc(it.id)}" value="${n}" data-it-mas${(it.ingreso.cobro.mas || 0) === n ? ' checked' : ''}><span>${esc(masTxt(n))}</span></label>`).join('')}</div>` : ''}
           ${it.ingreso.cobro ? `<span class="mm-fuente">${esc((() => { return textoCobroForm(rangoDeCobro({ cobro: it.ingreso.cobro }, HOY)); })())}</span>` : ''}
           <span class="mm-fuente">El recibo no trae la fecha de depósito. Si no sabés, seguí: te lo preguntamos después.</span></fieldset>` : ''}
+        ${it.candidatos ? `<label class="mm-fuente" for="cand-${esc(it.id)}">¿De cuál es esta factura?</label><select id="cand-${esc(it.id)}" data-it-candidato>${it.candidatos.map(c => `<option value="${esc(c.id)}"${c.id === it.previoId ? ' selected' : ''}>${esc(c.nombre)} · ${esc($(c.antes))}</option>`).join('')}<option value=""${it.previoId ? '' : ' selected'}>Es otro gasto</option></select>` : ''}
         ${it.pregunta ? `<label class="mm-check mm-reemplaza"><input type="checkbox" data-it-reemplaza ${it.accion === 'actualizar' || it.separar ? 'checked' : ''}> <span>${esc(it.pregunta)}</span></label>` : ''}
         ${it.grupo === 'tarjetas' && it.confiable === false ? '<span class="mm-tag">Leído con dudas: revisá el total</span>' : ''}
         ${it.grupo === 'compras' ? `<label class="mm-sr" for="tj-${esc(it.id)}">Tarjeta</label><select id="tj-${esc(it.id)}" data-it-tarjeta>${datos.tarjetas.length ? datos.tarjetas.map(t => `<option value="${esc(t.id)}"${t.id === it.compra.tarjetaId ? ' selected' : ''}>${esc(t.nombre)}</option>`).join('') : `<option value="">${itemsLeido.some(i => i.grupo === 'tarjetas') ? 'La del resumen que subiste' : 'Primero agregá la tarjeta'}</option>`}</select>` : ''}</span>
@@ -578,6 +580,11 @@ $id('leido').addEventListener('change', e => {
   if (e.target.matches('[data-it-dia]')) { it.ingreso.cobro = cobroValido({ tipo: 'dia', dia: Number(e.target.value), mas: it.ingreso.cobro?.mas || 0 }); return pintarLeido(); }
   if (e.target.matches('[data-it-mas]')) { it.ingreso.cobro = cobroValido({ ...it.ingreso.cobro, mas: Number(e.target.value) }); return pintarLeido(); }
   if (e.target.matches('[data-it-incluir]')) { it.descartado = !e.target.checked; li.classList.toggle('fuera', it.descartado); }
+  if (e.target.matches('[data-it-candidato]')) {
+    const c = it.candidatos.find(x => x.id === e.target.value);
+    Object.assign(it, c ? { previoId: c.id, antes: c.antes, accion: c.accion } : { previoId: null, antes: null, accion: 'nuevo' });
+    return pintarLeido();
+  }
   if (e.target.matches('[data-it-reemplaza]') && (it.separar || it._separar)) {
     /* QA t15 · 2: sí (por defecto) lo separa del "Servicios" genérico; no, lo suma aparte */
     if (!it._separar) it._separar = it.separar;
@@ -1836,7 +1843,7 @@ di.querySelector('form').addEventListener('submit', e => {
   const cobro = F.diaDeCobro ? (tipoCobro ? cobroDelForm() : null) : cobroValido(previo?.cobro);
   const x = { id: editIngreso || nuevoId(), nombre,
     monto, repite: $id('i-repite').checked, desde: $id('i-desde').value, ...(cobro ? { cobro } : {}) };
-  if (editIngreso) datos.ingresos = datos.ingresos.map(i => (i.id === editIngreso ? x : i));
+  if (editIngreso) datos.ingresos = datos.ingresos.map(i => (i.id === editIngreso ? ingresoEditado(previo, x) : i));
   else datos.ingresos.push(x);
   guardar(); pintarTodo(); cerrar(di);
   registrarCambio(editIngreso ? 'Editaste un ingreso' : 'Cargaste un ingreso'); guardar();
@@ -1914,7 +1921,7 @@ dg.querySelector('form').addEventListener('submit', e => {
   else if (previoG?.sinTarjeta || gastoTjInferida) x.sinTarjeta = true;
   const diaG = F.diaDeCobro ? Number($id('g-dia').value) : (datos.gastos.find(g => g.id === editGasto)?.dia || 0);
   if (diaG >= 1 && diaG <= 31) x.dia = diaG;
-  if (editGasto) datos.gastos = datos.gastos.map(g => (g.id === editGasto ? x : g));
+  if (editGasto) datos.gastos = datos.gastos.map(g => (g.id === editGasto ? gastoEditado(previoG, x) : g));
   else datos.gastos.push(x);
   guardar(); pintarTodo(); cerrar(dg);
   avisar(editGasto ? 'Gasto actualizado' : 'Gasto cargado');
