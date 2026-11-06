@@ -704,3 +704,12 @@ body.mm-en30 #saldo-pie,body.mm-en30 #tope,body.mm-en30 #libera{display:none}
 
 .mm-ia-vence{margin:0 0 10px;font-size:14px;color:var(--tinta2)}
 .mm-ia-pausa{width:auto;margin:0 0 12px}
+
+/* varias propiedades */
+.mm-prop-total{margin:14px 0 0;padding:10px 14px;border-radius:14px;background:rgba(255,255,255,.14);font-size:14px}
+.mm-prop-total small{display:block;margin-top:2px;font-size:12.5px;line-height:1.4}
+.mm-prop-fila{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.mm-prop-fila b{font-size:18px;font-weight:800;white-space:nowrap}
+.mm-prop-sel{margin:12px 0 4px}
+.mm-prop-sel .mm-fuente{margin:6px 0 0}
+#panel-prop{grid-column:1/-1}

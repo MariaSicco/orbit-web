@@ -12,6 +12,7 @@ import {
   creditoTarjeta, creditoTotal, alertasCredito, mesesCreditoSupera, primerMesDeCompra, EMISORES, nombreTarjeta,
   asistenteCambio, aplicarCambio, verificarCambio, CHECKLIST_CAMBIO, historiaCompra, vincularCredito, TIPOS_EVIDENCIA, textoTNA, textoCargos, SIN_RED, PAGOS_VENCIDO, resumenVencido, registrarPagoResumen, financiacionEstimada, sumarDias, bandejaDevolver, mensajeReclamo, TIPOS_DEVOLVER, compartidaValida, compartidaDe, comoPagar, fotoProyeccion, cambiosDesde, tarjetaDeGasto, confirmarGasto, confirmarTodos, darDeBajaGasto, proyeccionSaldo, CUENTAS_COMUNES, destinoLiberacion, asignarLiberacion, aporteSugerido, fichaCompra, preguntas, proximosPagos, consejos, victorias, estadoMeta, metaSugerida, METAS_SUGERIDAS, RETOS, retoDelMes, calculoRendir, tnaMensual, datoViejo,
   MAS_HABILES, rangoDeCobro, textoRangoCobro, COBROS, cobroValido, proximoCobro, venceAntesDeCobrar, lineaDelMes, lineaHastaCobrar, alertasCobro, textoCobroEn,
+  MAX_PROPIEDADES, SIN_PROPIEDAD, PROPIEDADES_SUGERIDAS, TEXTOS_PROPIEDADES, agregarPropiedad, renombrarPropiedad, borrarPropiedad, nombrePropiedad, resumenPropiedades,
 } from './calculos.js';
 import { resumenEjemplo } from './ejemplo.js';
 import { flagsActivos } from './flags.js';
@@ -28,7 +29,7 @@ const HOY = mesDe();
 const HOY_ISO = hoyISO();
 const LOCAL = location.protocol === 'file:';
 /* versión: si la pestaña quedó abierta con un JS viejo, avisa "recargá". Tiene que coincidir con version.json. */
-const VERSION = '2026-10-15.t20';
+const VERSION = '2026-11-06.t21';
 /* interruptores: ?flag=x prende una función apagada, pero nunca en el dominio de producción */
 const F = flagsActivos(/(^|\.)orbitando\.com\.ar$/.test(location.hostname) ? '' : location.search);
 
@@ -56,6 +57,11 @@ let vista = 'inicio';
 let tarjetaVista = null;      // id de la tarjeta abierta
 let pendiente = null;         // lectura de un resumen esperando revisión
 let tarjetaDestino = null;    // si se sube el resumen desde una tarjeta
+let propVista = 'todas';      // selector de propiedades: 'todas', el id de una o SIN_PROPIEDAD. No cambia "te quedan libres"
+/* la app hoy está solo en español: los textos de propiedades ya tienen su EN para cuando se sume el idioma */
+const LANG_PROP = document.documentElement.lang === 'en' ? 'en' : 'es';
+const TP = TEXTOS_PROPIEDADES[LANG_PROP];
+const conPropiedades = () => F.propiedades && !!datos.propiedades?.length;
 
 const nuevoId = () => (globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 8)}`);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -107,6 +113,13 @@ function tcard(t, { mesTotal = null, boton = true, grande = false } = {}) {
   </${cierre}>`;
 }
 
+/* Selector de propiedades: filtra los gastos fijos, nunca cambia "te quedan libres". */
+function selectorPropiedades(nota = '') {
+  const hay = datos.gastos.some(g => !datos.propiedades.some(p => p.id === g.propiedadId));
+  const op = [['todas', TP.todas], ...datos.propiedades.map(p => [p.id, p.nombre]), ...(hay ? [[SIN_PROPIEDAD, TP.sinAsignar]] : [])];
+  return `<div class="mm-prop-sel"><div class="mm-chips" role="group" aria-label="${esc(TP.selector)}">${op.map(([id, n]) => `<button type="button" class="mm-chip" data-prop-ver="${esc(id)}" aria-pressed="${propVista === id}">${esc(n)}</button>`).join('')}</div>${nota ? `<p class="mm-fuente">${esc(nota)}</p>` : ''}</div>`;
+}
+
 /* ════════ INICIO ════════ */
 function pintarInicio(animar = false) {
   const r = resumenMes(datos, mes);
@@ -145,6 +158,17 @@ function pintarInicio(animar = false) {
   $id('s-gas').textContent = $(r.totGastos);
   $id('s-tar').textContent = $(r.totTarjetas);
   pintarContraste(r, cred);
+  const rp = conPropiedades() ? resumenPropiedades(datos, mes, r) : null;
+  /* la opción elegida ya no existe (se borró, se importó otra copia, ya no queda nada sin asignar): vuelve a Todas */
+  if (rp && propVista !== 'todas' && !(propVista === SIN_PROPIEDAD ? datos.gastos.some(g => !datos.propiedades.some(p => p.id === g.propiedadId)) : rp.propiedades.some(p => p.id === propVista))) propVista = 'todas';
+  const vistaProp = !rp || propVista === 'todas' ? null : propVista === SIN_PROPIEDAD ? rp.sinAsignar : rp.propiedades.find(p => p.id === propVista);
+  $id('prop-total').hidden = !rp || sinNada;
+  if (rp && !sinNada) {
+    /* igual que el número grande: que se pueda sumar a ojo */
+    const n = rp.propiedades.length;
+    $id('prop-total').innerHTML = `<span class="mm-prop-fila"><span>${esc(n === 1 ? TP.totalUna : TP.totalVarias(n))}</span><b>${esc($(rp.propiedades.reduce((s, p) => s + redondo(p.total), 0)))}</b></span>
+      ${n > 1 ? `<small>${rp.propiedades.map(p => `${esc(p.nombre)} ${esc($(redondo(p.total)))}`).join(' · ')}</small>` : ''}<small>${esc(TP.descontado)}</small>`;
+  }
 
   /* acción principal: sin tarjetas, agregar una (subiendo el resumen); con tarjetas, subir el resumen */
   const principal = $id('accion-principal');
@@ -160,11 +184,18 @@ function pintarInicio(animar = false) {
 
   /* movimientos */
   const ing = r.ingresos.map(i => item({ tipo: 'ingreso', id: i.id, icono: 'ingreso', claseIc: 'ing', titulo: i.nombre, meta: textoRepite(i), monto: '+' + $(i.monto), montoClase: 'mas' }));
-  const gasTj = (r.gastosTarjeta || []).map(g => item({ tipo: 'gasto', id: g.id, icono: 'tarjetas', titulo: g.nombre,
-    meta: `${g.dentro ? `Con ${g.tarjeta}: ya está adentro del resumen` : `Con ${g.tarjeta}: se paga con la tarjeta`}${g.inferida ? ' (lo vimos en el resumen)' : ''}`, monto: g.dentro ? '' : '−' + $(g.monto) }));
-  const gas = r.gastos.map(g => item({ tipo: 'gasto', id: g.id, icono: 'gasto', titulo: g.nombre,
-    meta: `${g.nombre === g.categoria ? '' : g.categoria + ' · '}${F.gastoEstimado && g.real !== null ? `estimado ${$(g.estimado)}` : textoRepite(g)}`, monto: '−' + $(g.monto),
-    extra: (F.gastoEstimado && !g.confirmado ? ' <span class="mm-tag ext">Estimado</span>' : '') + (g.subaEstimada ? ' <span class="mm-tag ext">Sin descuento · estimado</span>' : '') }));
+  /* con propiedades: el nombre de la propiedad al frente, para distinguir "Luz" de "Luz" */
+  const dePropiedad = g => (rp && g.propiedadId && !vistaProp ? `${nombrePropiedad(datos, g.propiedadId)} · ` : '');
+  /* en la vista de una propiedad el gasto con tarjeta muestra su monto, para que la lista sume el total de arriba */
+  const filaTj = (g, conMonto = false) => item({ tipo: 'gasto', id: g.id, icono: 'tarjetas', titulo: g.nombre,
+    meta: `${dePropiedad(g)}${g.dentro ? `Con ${g.tarjeta}: ya está adentro del resumen` : `Con ${g.tarjeta}: se paga con la tarjeta`}${g.inferida ? ' (lo vimos en el resumen)' : ''}`, monto: g.dentro && !conMonto ? '' : '−' + $(g.monto) });
+  const filaGas = g => item({ tipo: 'gasto', id: g.id, icono: 'gasto', titulo: g.nombre,
+    meta: `${dePropiedad(g)}${g.nombre === g.categoria ? '' : g.categoria + ' · '}${F.gastoEstimado && g.real !== null ? `estimado ${$(g.estimado)}` : textoRepite(g)}`, monto: '−' + $(g.monto),
+    extra: (F.gastoEstimado && !g.confirmado ? ' <span class="mm-tag ext">Estimado</span>' : '') + (g.subaEstimada ? ' <span class="mm-tag ext">Sin descuento · estimado</span>' : '') });
+  const gasTj = (r.gastosTarjeta || []).map(g => filaTj(g));
+  const gas = vistaProp ? vistaProp.gastos.map(g => (g.tarjeta ? filaTj(g, true) : filaGas(g))) : r.gastos.map(filaGas);
+  const totGasVista = vistaProp ? vistaProp.total : r.totGastos;
+  const nombreVista = vistaProp ? vistaProp.nombre || TP.sinAsignar : '';
   const tar = [
     ...r.resumenes.map(x => {
       const ext = listaMonedas(x.porMoneda);
@@ -189,7 +220,8 @@ function pintarInicio(animar = false) {
   $id('movs').innerHTML = sinNada
     ? `<p class="mm-vacio"><b>Empezá por tu sueldo.</b> Después sumá tus gastos fijos y tus cuotas (o subí el resumen de tu tarjeta) y arriba ves cuánto te queda libre este mes y los que vienen.</p>`
     : grupo('Ingresos', '+' + $(r.totIngresos), ing, datos.ingresos.length ? 'Sin ingresos este mes.' : '<b>Cargá tu sueldo</b> o lo que cobres todos los meses.') +
-      grupo('Gastos fijos', (r.totGastos ? '−' : '') + $(r.totGastos), gas, datos.gastos.length ? 'Sin gastos fijos este mes.' : 'Alquiler, expensas, servicios, suscripciones: lo que pagás sí o sí.') +
+      (rp ? selectorPropiedades(vistaProp ? TP.libresIgual : '') : '') +
+      grupo(vistaProp ? `Gastos fijos · ${esc(nombreVista)}` : 'Gastos fijos', (totGasVista ? '−' : '') + $(totGasVista), gas, vistaProp ? esc(TP.sinGastos(nombreVista)) : datos.gastos.length ? 'Sin gastos fijos este mes.' : 'Alquiler, expensas, servicios, suscripciones: lo que pagás sí o sí.') +
       grupo('Tarjetas y cuotas', (r.totTarjetas ? '−' : '') + $(r.totTarjetas), [...tar, ...gasTj, ...((r.financiados || []).some(f => f.tnaDe !== 'resumen') ? [`<li class="mm-tna"><button type="button" class="mm-link" data-tna>Cambiar la TNA supuesta (${esc(String(supuesto(datos, 'financiacion').valor).replace('.', ','))} %)</button></li>`] : [])], datos.cuotas.length || datos.resumenes.length ? 'Sin cuotas ni resúmenes este mes.' : 'Cargá una compra en cuotas o subí el resumen de tu tarjeta.', dentro);
 
   /* moneda extranjera */
@@ -551,6 +583,7 @@ function pintarLeido() {
           ${['dia', 'quintoHabil', 'ultimoHabil'].includes(it.ingreso.cobro?.tipo) ? `<div class="mm-chips" role="radiogroup" aria-label="Hasta cuándo puede llegar">${MAS_HABILES.map(n => `<label class="mm-chip"><input type="radio" name="mas-${esc(it.id)}" value="${n}" data-it-mas${(it.ingreso.cobro.mas || 0) === n ? ' checked' : ''}><span>${esc(masTxt(n))}</span></label>`).join('')}</div>` : ''}
           ${it.ingreso.cobro ? `<span class="mm-fuente">${esc((() => { return textoCobroForm(rangoDeCobro({ cobro: it.ingreso.cobro }, HOY)); })())}</span>` : ''}
           <span class="mm-fuente">El recibo no trae la fecha de depósito. Si no sabés, seguí: te lo preguntamos después.</span></fieldset>` : ''}
+        ${it.candidatos ? `<label class="mm-fuente" for="prop-${esc(it.id)}">${esc(TP.facturaDe)}</label><select id="prop-${esc(it.id)}" data-it-candidato>${it.candidatos.map(c => `<option value="${esc(c.id)}"${c.id === it.previoId ? ' selected' : ''}>${esc(c.nombre)} · ${esc(nombrePropiedad(datos, c.propiedadId) || TP.sinAsignar)}</option>`).join('')}</select>` : ''}
         ${it.pregunta ? `<label class="mm-check mm-reemplaza"><input type="checkbox" data-it-reemplaza ${it.accion === 'actualizar' || it.separar ? 'checked' : ''}> <span>${esc(it.pregunta)}</span></label>` : ''}
         ${it.grupo === 'tarjetas' && it.confiable === false ? '<span class="mm-tag">Leído con dudas: revisá el total</span>' : ''}
         ${it.grupo === 'compras' ? `<label class="mm-sr" for="tj-${esc(it.id)}">Tarjeta</label><select id="tj-${esc(it.id)}" data-it-tarjeta>${datos.tarjetas.length ? datos.tarjetas.map(t => `<option value="${esc(t.id)}"${t.id === it.compra.tarjetaId ? ' selected' : ''}>${esc(t.nombre)}</option>`).join('') : `<option value="">${itemsLeido.some(i => i.grupo === 'tarjetas') ? 'La del resumen que subiste' : 'Primero agregá la tarjeta'}</option>`}</select>` : ''}</span>
@@ -578,6 +611,12 @@ $id('leido').addEventListener('change', e => {
   if (e.target.matches('[data-it-dia]')) { it.ingreso.cobro = cobroValido({ tipo: 'dia', dia: Number(e.target.value), mas: it.ingreso.cobro?.mas || 0 }); return pintarLeido(); }
   if (e.target.matches('[data-it-mas]')) { it.ingreso.cobro = cobroValido({ ...it.ingreso.cobro, mas: Number(e.target.value) }); return pintarLeido(); }
   if (e.target.matches('[data-it-incluir]')) { it.descartado = !e.target.checked; li.classList.toggle('fuera', it.descartado); }
+  if (e.target.matches('[data-it-candidato]')) {
+    const c = it.candidatos.find(x => x.id === e.target.value);
+    Object.assign(it, { previoId: c.id, antes: c.antes, accion: c.accion });
+    if (it._previo) it._previo = { previoId: c.id, antes: c.antes };
+    return pintarLeido();
+  }
   if (e.target.matches('[data-it-reemplaza]') && (it.separar || it._separar)) {
     /* QA t15 · 2: sí (por defecto) lo separa del "Servicios" genérico; no, lo suma aparte */
     if (!it._separar) it._separar = it.separar;
@@ -1187,14 +1226,24 @@ function agruparPorMoneda(consumos) {
 /* ════════ LO CARGADO ════════ */
 function pintarCargado() {
   const ing = datos.ingresos.slice().sort((a, b) => b.monto - a.monto);
-  const gas = datos.gastos.slice().sort((a, b) => b.monto - a.monto);
+  const conProp = conPropiedades();
+  const enVista = g => !conProp || propVista === 'todas' || (propVista === SIN_PROPIEDAD ? !datos.propiedades.some(p => p.id === g.propiedadId) : g.propiedadId === propVista);
+  const gas = datos.gastos.filter(enVista).sort((a, b) => b.monto - a.monto);
   const cuo = datos.cuotas.slice().sort((a, b) => difMeses(ultimoMes(b), ultimoMes(a)));
   $id('todo-ing').innerHTML = ing.length
     ? ing.map(i => item({ tipo: 'ingreso', id: i.id, icono: 'ingreso', claseIc: 'ing', titulo: i.nombre, meta: `${textoRepite(i)}${i.repite ? ' · desde ' + corto(i.desde) : ''}`, monto: $(i.monto) })).join('')
     : vacio('Todavía no cargaste ingresos.');
   $id('todo-gas').innerHTML = gas.length
-    ? gas.map(g => item({ tipo: 'gasto', id: g.id, icono: 'gasto', titulo: g.nombre, meta: `${g.nombre === g.categoria ? '' : g.categoria + ' · '}${textoRepite(g)}`, monto: $(g.monto) })).join('')
-    : vacio('Todavía no cargaste gastos fijos.');
+    ? gas.map(g => item({ tipo: 'gasto', id: g.id, icono: 'gasto', titulo: g.nombre, meta: `${conProp && g.propiedadId ? `${nombrePropiedad(datos, g.propiedadId)} · ` : ''}${g.nombre === g.categoria ? '' : g.categoria + ' · '}${textoRepite(g)}`, monto: $(g.monto) })).join('')
+    : vacio(conProp && propVista !== 'todas' && datos.gastos.length ? esc(TP.sinGastos(propVista === SIN_PROPIEDAD ? TP.sinAsignar : nombrePropiedad(datos, propVista))) : 'Todavía no cargaste gastos fijos.');
+  $id('todo-prop-sel').innerHTML = conProp ? selectorPropiedades() : '';
+  $id('panel-prop').hidden = !F.propiedades;
+  if (F.propiedades) {
+    const rp = resumenPropiedades(datos, HOY);
+    $id('todo-prop').innerHTML = rp.propiedades.length
+      ? rp.propiedades.map(p => item({ tipo: 'propiedad', id: p.id, icono: 'gasto', titulo: p.nombre, meta: TP.gastos(datos.gastos.filter(g => g.propiedadId === p.id).length), monto: $(p.total), sub: TP.esteMes })).join('')
+      : vacio(esc(TP.ayuda));
+  }
   $id('todo-cuo').innerHTML = cuo.length
     ? cuo.map(c => {
       const terminada = difMeses(ultimoMes(c), HOY) > 0;
@@ -1864,6 +1913,10 @@ $id('g-unmes').addEventListener('change', e => {
   etiquetaDesde('g');
 });
 const opcionesHasta = (desde, elegido) => opcionesMes($id('g-hasta'), desde, sumarMeses(HOY, ADELANTE), elegido || '', 'Sin fecha de fin');
+function pintarPropiedadesGasto(elegida) {
+  $id('g-props').innerHTML = [{ id: '', nombre: TP.ninguna }, ...(datos.propiedades || [])].map(p => `<label class="mm-chip"><input type="radio" name="g-prop" value="${esc(p.id)}"${elegida === p.id ? ' checked' : ''}><span>${esc(p.nombre)}</span></label>`).join('');
+  $id('g-prop-nueva').hidden = (datos.propiedades || []).length >= MAX_PROPIEDADES;
+}
 function abrirGasto(id = null) {
   editGasto = id;
   const x = id ? datos.gastos.find(g => g.id === id) : null;
@@ -1881,6 +1934,8 @@ function abrirGasto(id = null) {
   const tjActual = x ? (tarjetaDeGasto(datos, x, HOY)?.id || '') : '';
   gastoTjInferida = !!(x && !x.tarjetaId && tjActual);
   $id('g-tj').innerHTML = [{ id: '', nombre: 'No, de la cuenta' }, ...datos.tarjetas.filter(t => !t.baja)].map(t => `<label class="mm-chip"><input type="radio" name="g-tj" value="${esc(t.id)}"${tjActual === t.id ? ' checked' : ''}><span>${esc(t.nombre)}</span></label>`).join('');
+  $id('g-prop-wrap').hidden = !F.propiedades;
+  if (F.propiedades) pintarPropiedadesGasto(x ? x.propiedadId || '' : datos.propiedades?.some(p => p.id === propVista) ? propVista : '');
   $id('g-dia').innerHTML = '<option value="">Sin día</option>' + Array.from({ length: 31 }, (_, k) => `<option value="${k + 1}">El ${k + 1}</option>`).join('');
   $id('g-dia').value = x?.dia ? String(x.dia) : '';
   const desde = x ? x.desde : mes;
@@ -1914,10 +1969,45 @@ dg.querySelector('form').addEventListener('submit', e => {
   else if (previoG?.sinTarjeta || gastoTjInferida) x.sinTarjeta = true;
   const diaG = F.diaDeCobro ? Number($id('g-dia').value) : (datos.gastos.find(g => g.id === editGasto)?.dia || 0);
   if (diaG >= 1 && diaG <= 31) x.dia = diaG;
+  /* con el interruptor apagado no hay selector: la propiedad que tuviera el gasto se conserva */
+  const propG = F.propiedades ? (dg.querySelector('[name="g-prop"]:checked')?.value || '') : (previoG?.propiedadId || '');
+  if (propG) x.propiedadId = propG;
   if (editGasto) datos.gastos = datos.gastos.map(g => (g.id === editGasto ? x : g));
   else datos.gastos.push(x);
   guardar(); pintarTodo(); cerrar(dg);
   avisar(editGasto ? 'Gasto actualizado' : 'Gasto cargado');
+});
+
+/* ── propiedad ── */
+const dp = $id('dlg-propiedad');
+let editPropiedad = null;
+function abrirPropiedad(id = null) {
+  editPropiedad = id;
+  const nombre = id ? nombrePropiedad(datos, id) : '';
+  $id('dprop-tit').textContent = id ? TP.editar : TP.nueva;
+  $id('p-nombre').value = nombre;
+  const usados = new Set((datos.propiedades || []).map(p => p.nombre));
+  const sugeridas = id ? [] : PROPIEDADES_SUGERIDAS[LANG_PROP].filter(n => !usados.has(n));
+  $id('p-sugeridas').hidden = !sugeridas.length;
+  $id('p-sugeridas').innerHTML = sugeridas.map(n => `<button type="button" class="mm-chip" data-prop-sugerida="${esc(n)}">${esc(n)}</button>`).join('');
+  $id('p-borrar').hidden = !id;
+  $id('p-borrar-ayuda').hidden = !id;
+  if (id) armarBorrar($id('p-borrar'), TP.borrar, () => {
+    datos = borrarPropiedad(datos, id);
+    if (propVista === id) propVista = 'todas';
+    guardar(); pintarTodo(); cerrar(dp); avisar(TP.aviso.borrada);
+  });
+  abrir(dp, $id('p-nombre'));
+}
+dp.querySelector('form').addEventListener('submit', e => {
+  e.preventDefault();
+  const r = editPropiedad ? renombrarPropiedad(datos, editPropiedad, $id('p-nombre').value) : agregarPropiedad(datos, $id('p-nombre').value, nuevoId);
+  if (r.error) { error($id('p-nombre'), 'p-nombre-err', TP.error[r.error]).focus(); return; }
+  datos = r.datos;
+  guardar(); pintarTodo(); cerrar(dp);
+  /* si se creó desde el formulario de un gasto, queda elegida ahí */
+  if (dg.open) pintarPropiedadesGasto(r.propiedad?.id ?? (dg.querySelector('[name="g-prop"]:checked')?.value || ''));
+  avisar(TP.aviso.guardada);
 });
 
 /* ── tarjeta ── */
@@ -2471,9 +2561,26 @@ $id('dlg-push').addEventListener('click', async e => {
 });
 
 /* ── clics de toda la app ── */
-const ABRIR = { cuota: abrirCuota, ingreso: abrirIngreso, gasto: abrirGasto };
+const ABRIR = { cuota: abrirCuota, ingreso: abrirIngreso, gasto: abrirGasto, propiedad: abrirPropiedad };
 document.addEventListener('click', e => {
   const t = e.target;
+  const pv = t.closest('[data-prop-ver]');
+  if (pv) {
+    propVista = pv.dataset.propVer;
+    pintarInicio(); pintarCargado();
+    /* el selector se volvió a pintar: el foco sigue en la misma opción */
+    return document.querySelector(`#vista-${vista} [data-prop-ver="${CSS.escape(propVista)}"]`)?.focus();
+  }
+  const ps = t.closest('[data-prop-sugerida]');
+  if (ps) { $id('p-nombre').value = ps.dataset.propSugerida; return $id('p-nombre').focus(); }
+  if (t.closest('#g-prop-nueva')) {
+    /* encima del gasto: al cerrar, el foco vuelve a donde estaba cuando se abrió el gasto */
+    const desde = abiertoDesde;
+    abrirPropiedad();
+    const volver = t.closest('#g-prop-nueva');
+    dp.addEventListener('close', () => { volver.focus(); abiertoDesde = desde; }, { once: true });
+    return;
+  }
   const n = t.closest('[data-nuevo]');
   if (n) return ABRIR[n.dataset.nuevo]?.(null, n.dataset.tarjeta || (vista === 'tarjeta' ? tarjetaVista : null));
   const ed = t.closest('[data-editar]');
@@ -2596,6 +2703,17 @@ else {
 }
 if (LOCAL) $id('modo-local').hidden = false;
 $id('acceso-devolver').hidden = !F.devolver;
+if (F.propiedades) {
+  $id('c-prop').textContent = TP.titulo;
+  $id('panel-prop-nueva').textContent = TP.agregar;
+  $id('g-prop-lbl').textContent = TP.deCual;
+  $id('g-prop-nueva').textContent = TP.agregarOtra;
+  $id('p-nombre-lbl').textContent = TP.nombre;
+  $id('p-nombre').placeholder = TP.ejemplo;
+  $id('p-guardar').textContent = TP.guardar;
+  $id('p-borrar').textContent = TP.borrar;
+  $id('p-borrar-ayuda').textContent = TP.borrarAyuda;
+}
 async function revisarVersion() {
   if (LOCAL || document.hidden) return;
   try {

@@ -85,6 +85,7 @@
         <section class="mm-pagar" id="pagar" aria-labelledby="t-pagar" hidden></section>
         <section class="mm-revisa" id="revisa" aria-labelledby="t-revisa" hidden></section>
         <button type="button" class="mm-tope" id="tope" data-ir="escalera" hidden></button>
+        <p class="mm-prop-total" id="prop-total" hidden></p>
         <dl class="mm-saldo-pie" id="saldo-pie">
           <div><dt>Ingresos</dt><dd id="s-ing">$ 0</dd></div>
           <div><dt>Gastos fijos</dt><dd id="s-gas">$ 0</dd></div>
@@ -169,8 +170,9 @@
       <div class="mm-acciones"><button type="button" class="mm-btn sec" data-exportar><svg class="ic"><use href="#i-bajar"/></svg> Exportar copia</button><button type="button" class="mm-btn sec" data-importar-copia><svg class="ic"><use href="#i-subir"/></svg> Importar copia</button></div>
     </section>
     <div class="mm-cargado-grid">
+      <section class="mm-panel" id="panel-prop" aria-labelledby="c-prop" hidden><div class="mm-seccion-top"><h2 id="c-prop"></h2><button type="button" class="mm-link" id="panel-prop-nueva" data-nuevo="propiedad"></button></div><ul class="mm-lista" id="todo-prop"></ul></section>
       <section class="mm-panel" aria-labelledby="c-ing"><div class="mm-seccion-top"><h2 id="c-ing">Ingresos</h2><button type="button" class="mm-link" data-nuevo="ingreso">+ Agregar</button></div><ul class="mm-lista" id="todo-ing"></ul></section>
-      <section class="mm-panel" aria-labelledby="c-gas"><div class="mm-seccion-top"><h2 id="c-gas">Gastos fijos</h2><button type="button" class="mm-link" data-nuevo="gasto">+ Agregar</button></div><ul class="mm-lista" id="todo-gas"></ul></section>
+      <section class="mm-panel" aria-labelledby="c-gas"><div class="mm-seccion-top"><h2 id="c-gas">Gastos fijos</h2><button type="button" class="mm-link" data-nuevo="gasto">+ Agregar</button></div><div id="todo-prop-sel"></div><ul class="mm-lista" id="todo-gas"></ul></section>
       <section class="mm-panel" aria-labelledby="c-cuo"><div class="mm-seccion-top"><h2 id="c-cuo">Cuotas</h2><button type="button" class="mm-link" data-nuevo="cuota">+ Agregar</button></div><ul class="mm-lista" id="todo-cuo"></ul></section>
     </div>
   </section>
@@ -378,6 +380,7 @@
     <div class="mm-campo"><label for="g-monto" id="g-monto-lbl">Monto por mes, en pesos</label><input id="g-monto" class="mm-grande" type="text" inputmode="decimal" autocomplete="off" placeholder="Ej: 450.000" aria-describedby="g-monto-err" required><p class="mm-err" id="g-monto-err"></p></div>
     <label class="mm-check"><input type="checkbox" id="g-repite" checked> <span>Se repite todos los meses</span></label>
     <fieldset class="mm-campo" id="g-tj-wrap" hidden><legend>¿Se debita de una tarjeta?</legend><div class="mm-chips" id="g-tj"></div></fieldset>
+    <fieldset class="mm-campo" id="g-prop-wrap" hidden><legend id="g-prop-lbl"></legend><div class="mm-chips" id="g-props"></div><button type="button" class="mm-link" id="g-prop-nueva"></button></fieldset>
     <div class="mm-campo" id="g-dia-wrap" hidden><label for="g-dia">¿Qué día vence? <span class="opc">(opcional)</span></label><select id="g-dia"></select><p class="mm-ayuda">Con el día te avisamos si vence antes de que cobres.</p></div>
     <fieldset class="mm-campo mm-meses" id="g-meses-wrap" hidden><legend>¿En qué mes?</legend><div class="mm-chips" id="g-meses"></div></fieldset>
     <div class="mm-fila">
@@ -385,6 +388,17 @@
       <div class="mm-campo" id="g-hasta-wrap"><label for="g-hasta">Hasta</label><select id="g-hasta"></select></div>
     </div>
     <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="g-borrar" hidden>Borrar</button><button type="submit" class="mm-btn">Guardar gasto</button></div>
+  </form>
+</dialog>
+
+<!-- ── Propiedad ── -->
+<dialog class="mm-dlg" id="dlg-propiedad" aria-labelledby="dprop-tit">
+  <form class="mm-form" novalidate>
+    <div class="mm-dlg-top"><h2 id="dprop-tit"></h2><button type="button" class="mm-cerrar" data-cerrar aria-label="Cerrar"><svg class="ic"><use href="#i-cerrar"/></svg></button></div>
+    <div class="mm-chips" id="p-sugeridas"></div>
+    <div class="mm-campo"><label for="p-nombre" id="p-nombre-lbl"></label><input id="p-nombre" type="text" maxlength="30" autocomplete="off" aria-describedby="p-nombre-err" required><p class="mm-err" id="p-nombre-err"></p></div>
+    <p class="mm-ayuda" id="p-borrar-ayuda" hidden></p>
+    <div class="mm-dlg-pie"><button type="button" class="mm-borrar" id="p-borrar" hidden></button><button type="submit" class="mm-btn" id="p-guardar"></button></div>
   </form>
 </dialog>
 

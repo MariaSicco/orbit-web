@@ -23,6 +23,7 @@ export const FLAGS = {
   queCambio: true,        // (3) qué cambió en tu mes desde la última vez
   gastoEstimado: true,    // (5) gasto fijo estimado hasta que aparece, con monto real y "lo di de baja"
   dondeRinde: false,      // B4 · "Dónde puede rendir tu plata": APAGADO hasta el OK legal de Majo
+  propiedades: false,     // varias propiedades (casa, depto, quinta): APAGADO hasta que Majo lo pruebe y dé el OK
 };
 export function flagsActivos(search = '') {
   const f = { ...FLAGS };

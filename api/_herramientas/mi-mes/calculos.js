@@ -718,6 +718,9 @@ export function migrar(crudo) {
       ...(esFecha(t.baja) ? { baja: t.baja } : {}) });
   }
   const ids = new Set(out.tarjetas.map(t => t.id));
+  /* propiedades: se guardan aunque el interruptor esté apagado (nunca se pierde lo cargado); sin propiedades, la clave no existe */
+  const propiedades = propiedadesValidas(crudo.propiedades);
+  if (propiedades.length) out.propiedades = propiedades;
   for (const i of Array.isArray(crudo.ingresos) ? crudo.ingresos : []) {
     if (!i?.id || !entero(i.monto) || !esMes(i.desde)) continue;
     out.ingresos.push({ id: String(i.id), nombre: texto(i.nombre) || 'Ingreso', monto: i.monto,
@@ -733,6 +736,7 @@ export function migrar(crudo) {
       ...(dia(g.dia) ? { dia: g.dia } : {}),
       ...(typeof g.tarjetaId === 'string' && out.tarjetas.some(t => t.id === g.tarjetaId) ? { tarjetaId: g.tarjetaId } : {}),
       ...(g.sinTarjeta === true ? { sinTarjeta: true } : {}),
+      ...(propiedades.some(p => p.id === g.propiedadId) ? { propiedadId: g.propiedadId } : {}),
       ...(g.repite && Number.isInteger(g.frecuencia) && g.frecuencia > 1 && g.frecuencia <= 12 ? { frecuencia: g.frecuencia } : {}),
       ...(docValido(g.doc) ? { doc: docValido(g.doc) } : {}),
       ...(g.sube && esMes(g.sube.desde) && entero(g.sube.monto) ? { sube: { desde: g.sube.desde, monto: g.sube.monto } } : {}) });
@@ -2249,3 +2253,92 @@ export function tarjetaDeGasto(datos, g, mes) {
 
 /* De qué documento salió un ingreso o gasto (solo la fecha y si es estimado de meses anteriores). */
 export const docValido = d => (d && typeof d === 'object' && esFecha(d.fecha) ? { fecha: d.fecha, ...(d.estimado === true ? { estimado: true } : {}) } : null);
+
+/* ═══════════════ Varias propiedades (casa, departamento, quinta) ═══════════════
+   A diferencia de Vencimientos, acá NO hay un documento por propiedad: el sueldo y
+   las tarjetas son de la persona, no de la casa. Una propiedad es una etiqueta en el
+   gasto fijo (`propiedadId`), y "te quedan libres" sigue siendo uno solo, de todo el mes.
+   Por eso resumenMes no se toca: esto solo reparte lo que resumenMes ya calculó.
+
+   Cada gasto cae en una de tres columnas, las mismas de resumenMes:
+   - aparte: se paga de la cuenta (suma a totGastos);
+   - conTarjeta: se debita de una tarjeta sin resumen ese mes (suma a totCuotas);
+   - dentro: ya está adentro del resumen de la tarjeta (no se resta de nuevo).
+   El total de una propiedad es lo que cuesta: las tres. Ya está descontado de
+   "te quedan libres", así que se muestra al lado y nunca se vuelve a restar. */
+export const MAX_PROPIEDADES = 8;
+export const SIN_PROPIEDAD = 'sin';
+export const PROPIEDADES_SUGERIDAS = { es: ['Casa', 'Departamento', 'Quinta'], en: ['House', 'Apartment', 'Country house'] };
+export const TEXTOS_PROPIEDADES = {
+  es: {
+    titulo: 'Propiedades', agregar: '+ Agregar', nueva: 'Nueva propiedad', editar: 'Editar propiedad', nombre: '¿Cómo le decís?', ejemplo: 'Ej: La quinta',
+    guardar: 'Guardar propiedad', borrar: 'Borrar propiedad', borrarAyuda: 'Si la borrás, sus gastos siguen contando: quedan en Sin asignar.',
+    ayuda: 'Sumá tu casa, un departamento o la quinta y asigná a cada una sus gastos fijos.', vacio: 'Todavía no cargaste propiedades.',
+    deCual: '¿De qué propiedad es?', ninguna: 'De ninguna', agregarOtra: '+ Agregar propiedad', selector: 'Ver gastos fijos de', todas: 'Todas', sinAsignar: 'Sin asignar',
+    totalUna: 'Tu propiedad', totalVarias: n => `Tus ${n} propiedades`, descontado: 'Ya está descontado de lo que te queda libre.',
+    libresIgual: '«Te quedan libres» sigue siendo el de todo tu mes.', sinGastos: n => `Sin gastos de ${n} este mes.`, gastos: n => (n === 1 ? '1 gasto fijo' : `${n} gastos fijos`), esteMes: 'este mes',
+    aviso: { guardada: 'Propiedad guardada', borrada: 'Propiedad borrada: sus gastos quedaron en Sin asignar' },
+    error: { vacio: 'Escribí un nombre, por ejemplo La quinta.', repetido: 'Ya tenés una propiedad con ese nombre.', tope: `Llegaste al máximo de ${MAX_PROPIEDADES} propiedades.` },
+    facturaDe: 'Tenés más de un gasto así. ¿De cuál es esta factura?',
+  },
+  en: {
+    titulo: 'Properties', agregar: '+ Add', nueva: 'New property', editar: 'Edit property', nombre: 'What do you call it?', ejemplo: 'E.g. The country house',
+    guardar: 'Save property', borrar: 'Delete property', borrarAyuda: 'If you delete it, its expenses still count: they move to Unassigned.',
+    ayuda: 'Add your house, an apartment or the country house and assign each one its fixed expenses.', vacio: 'You have no properties yet.',
+    deCual: 'Which property is it for?', ninguna: 'None', agregarOtra: '+ Add property', selector: 'See fixed expenses for', todas: 'All', sinAsignar: 'Unassigned',
+    totalUna: 'Your property', totalVarias: n => `Your ${n} properties`, descontado: 'Already taken out of what you have left.',
+    libresIgual: '“You have left” is still for your whole month.', sinGastos: n => `No expenses for ${n} this month.`, gastos: n => (n === 1 ? '1 fixed expense' : `${n} fixed expenses`), esteMes: 'this month',
+    aviso: { guardada: 'Property saved', borrada: 'Property deleted: its expenses are now Unassigned' },
+    error: { vacio: 'Type a name, for example The country house.', repetido: 'You already have a property with that name.', tope: `You reached the limit of ${MAX_PROPIEDADES} properties.` },
+    facturaDe: 'You have more than one expense like this. Which one is this bill for?',
+  },
+};
+export function propiedadesValidas(lista) {
+  const out = [];
+  for (const p of Array.isArray(lista) ? lista : []) {
+    const nombre = texto(p?.nombre, 30);
+    if (!p?.id || !nombre || String(p.id) === SIN_PROPIEDAD || out.some(x => x.id === String(p.id))) continue;
+    out.push({ id: String(p.id), nombre });
+  }
+  return out.slice(0, MAX_PROPIEDADES);
+}
+const claveNombre = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const mismoNombre = (a, b) => claveNombre(a) === claveNombre(b);
+function nombrePropiedadOk(datos, nombre, id = null) {
+  if (!nombre) return 'vacio';
+  return (datos.propiedades || []).some(p => p.id !== id && mismoNombre(p.nombre, nombre)) ? 'repetido' : null;
+}
+export function agregarPropiedad(datos, nombreCrudo, nuevoId) {
+  const nombre = texto(nombreCrudo, 30);
+  const error = (datos.propiedades || []).length >= MAX_PROPIEDADES ? 'tope' : nombrePropiedadOk(datos, nombre);
+  if (error) return { datos, error };
+  const propiedad = { id: nuevoId(), nombre };
+  return { datos: { ...datos, propiedades: [...(datos.propiedades || []), propiedad] }, propiedad };
+}
+export function renombrarPropiedad(datos, id, nombreCrudo) {
+  const nombre = texto(nombreCrudo, 30);
+  const error = nombrePropiedadOk(datos, nombre, id);
+  if (error) return { datos, error };
+  return { datos: { ...datos, propiedades: (datos.propiedades || []).map(p => (p.id === id ? { ...p, nombre } : p)) } };
+}
+/* Borrar una propiedad no borra plata: sus gastos siguen contando, sin asignar. Sin propiedades, la clave desaparece. */
+export function borrarPropiedad(datos, id) {
+  const { propiedades: lista = [], ...resto } = datos;
+  const quedan = lista.filter(p => p.id !== id);
+  return { ...resto, ...(quedan.length ? { propiedades: quedan } : {}),
+    gastos: (datos.gastos || []).map(g => { if (g.propiedadId !== id) return g; const { propiedadId: _p, ...sin } = g; return sin; }) };
+}
+export const nombrePropiedad = (datos, id) => (datos?.propiedades || []).find(p => p.id === id)?.nombre || '';
+/* Cómo se reparte el mes entre las propiedades. Un gasto con una propiedad que ya no existe va a sinAsignar. */
+export function resumenPropiedades(datos, mes, r = resumenMes(datos, mes)) {
+  const fila = (id, nombre) => ({ id, nombre, aparte: 0, conTarjeta: 0, dentro: 0, total: 0, gastos: [] });
+  const propiedades = (datos?.propiedades || []).map(p => fila(p.id, p.nombre));
+  const sinAsignar = fila(SIN_PROPIEDAD, '');
+  const poner = (g, columna) => {
+    const f = propiedades.find(p => p.id === g.propiedadId) || sinAsignar;
+    f[columna] += g.monto; f.total += g.monto; f.gastos.push(g);
+  };
+  for (const g of r.gastos) poner(g, 'aparte');
+  for (const g of r.gastosTarjeta) poner(g, g.dentro ? 'dentro' : 'conTarjeta');
+  return { propiedades, sinAsignar, total: propiedades.reduce((s, p) => s + p.total, 0) };
+}
