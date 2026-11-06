@@ -179,7 +179,7 @@ const COVERS = {
   mimitos: p => `<div class="cover cv-mim">${bookSpine(p, '#F8C8D8')}
     <div class="body">
       <div class="t"><div><div class="brand">${MIM_ISO}<b>mimitos</b></div><div class="mono kind">${L('Libreta sanitaria','Health booklet')}</div></div>${soonBadge(p) || wm({color:'#6B1A35', dot:C.blue})}</div>
-      <div class="id mono"><span>${L('Nombre','Name')}<em>Feliza</em></span><span>${L('Especie','Species')}<em>${L('Gata','Cat')}</em></span><span>${L('Dueña','Owner')}<em></em></span></div>
+      <div class="id mono"><span>${L('Nombre','Name')}<em>Felisa</em></span><span>${L('Especie','Species')}<em>${L('Gata','Cat')}</em></span><span>${L('Dueña','Owner')}<em></em></span></div>
       <div class="stk-w s1"><div class="stk"><span class="ph"><img src="/assets/img/tapas/felisa.webp" alt="" loading="lazy"></span><span class="lab mono"><span>${L('Triple felina','Feline triple')}</span><span>✓</span></span></div></div>
       <div class="stk-w s2"><div class="stk"><span class="ph"><img src="/assets/img/tapas/aika.webp" alt="" loading="lazy"></span><span class="lab mono"><span>${L('Antirrábica','Rabies')}</span></span></div></div>
       <div class="b"><div class="num">${p.n}</div><div class="mono meta">${L('Vacunas · turnos<br>avisos · cámara','Vaccines · visits<br>reminders · camera')}</div></div>

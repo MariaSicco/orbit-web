@@ -349,6 +349,7 @@ window.ORBIT_PRODUCTS = [
     /* Herramienta online, no es un archivo que se descarga: por eso la entrega
        es un acceso desde Mi cuenta y la licencia es por persona, no comercial. */
     id: 'ob-005', cover: 'iva', code: 'OB\u2014005', n: '05', name: 'Orbit IVA',
+    landing: '/orbit-iva',
     family: 'business', status: 'soon', price: 79, accent: 'blue', checkout: '', photo: 'ob-005',
     acceso: '/herramientas/iva',
     /* Lo que se muestra de este producto son sus propias pantallas, no una foto
@@ -399,6 +400,7 @@ window.ORBIT_PRODUCTS = [
     /* Precio del plan B (decision-log 20/10): USD 24 / ARS 35.990 de lanzamiento hasta el 12/11;
        el 13/11 pasa a USD 34 / ARS 50.990 de lista (a mano, acá y en api/_lib/catalog.js). */
     id: 'ob-019', cover: 'mimes', code: 'OB—019', n: '19', name: 'Mi Mes by Orbit',
+    landing: '/mi-mes',
     family: 'systems', status: 'available', price: 24, ars: 35990,
     accent: 'blue', checkout: '', photo: 'studio',
     /* sello propio en la ficha, como Mimitos: la lectura automática con IA vence a los 12 meses */
@@ -443,6 +445,7 @@ window.ORBIT_PRODUCTS = [
   {
     /* Vencimientos de la Casa: app de la rama drop01/vencimientos-casa, todavía sin publicar. Solo se muestra: no se puede comprar. */
     id: 'ob-021', cover: 'venc', code: 'OB—021', n: '21', name: 'Vencimientos de la Casa',
+    landing: '/vencimientos-casa',
     family: 'systems', status: 'soon', price: 0, ars: 0, accent: 'blue', checkout: '', photo: 'studio',
     tagline: {es: 'Todo lo que vence en tu casa, en un lugar: cuánto te falta pagar este mes y aviso antes de cada vencimiento.', en: 'Everything due at home, in one place: what’s left to pay this month and a reminder before each due date.'},
     specs: [
