@@ -20,7 +20,7 @@ export async function accesoIva(req) {
   return { email: s.email, nombre: String(user?.name || '').split(/\s+/)[0] || s.email.split('@')[0], ilimitado: admin };
 }
 
-// Estado para la herramienta: nombre y saldo de lecturas. Sin recarga por ahora (Orbit IVA no se vende todavía):
+// Estado para la herramienta: nombre y saldo de lecturas. Sin recarga por ahora:
 // cuando se agote el saldo, la herramienta sigue con el lector del teléfono.
 export async function estadoIva(acc) {
   return { ok: true, modo: 'cuenta', nombre: acc.nombre, email: acc.email, ilimitado: acc.ilimitado, saldo: await saldo(acc.email), recarga: null };

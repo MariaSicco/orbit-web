@@ -350,7 +350,7 @@ window.ORBIT_PRODUCTS = [
        es un acceso desde Mi cuenta y la licencia es por persona, no comercial. */
     id: 'ob-005', cover: 'iva', code: 'OB\u2014005', n: '05', name: 'Orbit IVA',
     landing: '/orbit-iva',
-    family: 'business', status: 'soon', price: 79, accent: 'blue', checkout: '', photo: 'ob-005',
+    family: 'business', status: 'available', price: 79, ars: 79000, accent: 'blue', checkout: '', photo: 'ob-005',
     acceso: '/herramientas/iva',
     /* Lo que se muestra de este producto son sus propias pantallas, no una foto
        de ambiente: es una herramienta, se vende mostrando lo que hace. Cada
@@ -385,7 +385,7 @@ window.ORBIT_PRODUCTS = [
       [{es: 'Conciliador ARCA', en: 'ARCA reconciler'}, {es: 'Cruza el Excel de tu sistema contable con Mis Comprobantes y te muestra solo lo que necesita atenci\u00f3n, con el motivo de cada diferencia', en: 'Cross-checks your accounting system\u2019s Excel against Mis Comprobantes and shows only what needs attention, with the reason for every difference'}],
       [{es: 'Cada factura, controlada', en: 'Every invoice, checked'}, {es: 'La lectura la hace IA y despu\u00e9s se controla con cuentas: la suma tiene que dar el total y la CUIT tiene que ser v\u00e1lida. Lo dudoso queda marcado para que lo revises', en: 'AI does the reading and arithmetic checks it: the parts must add up to the total and the tax ID must be valid. Anything doubtful is flagged for you to review'}],
       [{es: 'Reglas en tus palabras', en: 'Rules in your own words'}, {es: 'Escrib\u00eds \u201cignor\u00e1 diferencias menores a $2\u201d y queda guardado para el mes siguiente', en: 'Write \u201cignore differences under $2\u201d and it\u2019s saved for next month'}],
-      [{es: '1.500 lecturas incluidas', en: '1,500 reads included'}, {es: 'Cuando se terminan, recarg\u00e1s 1.000 m\u00e1s por USD 19 desde adentro de la herramienta', en: 'When they run out, top up 1,000 more for USD 19 from inside the tool'}],
+      [{es: '1.500 lecturas incluidas', en: '1,500 reads included'}, {es: 'Cada factura que se lee usa una. Cuando se terminan, la herramienta sigue con el lector del tel\u00e9fono, que es menos preciso', en: 'Each invoice read uses one. When they run out, the tool keeps working with the phone reader, which is less accurate'}],
       [{es: 'Uso sin vencimiento', en: 'No expiry'}, {es: 'La herramienta sigue siendo tuya; los 12 meses son de actualizaciones', en: 'The tool stays yours; the 12 months are for updates'}],
     ],
     for: [
