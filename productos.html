@@ -210,7 +210,7 @@
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=56"></script>
+<script src="assets/js/products.js?v=57"></script>
 <script src="/api/catalog"></script>
 <script src="assets/js/orbit.js?v=60"></script>
 <script>
@@ -321,7 +321,7 @@ function pintar() {
   $('#mcGrid').innerHTML = grupos.map(({g, items}) => `<section class="mc-grupo" id="sub-${g.id}">
     <div class="mc-gcab"><h2><small>${g.f === 'p' ? L('Plantillas','Templates') : L('Sistemas','Systems')} · ${items.length}</small>${L(...g.n)}</h2>${g.d[0] ? `<em>${L(...g.d)}</em>` : ''}</div>
     <div class="mc-grid">${items.map(tapa).join('')}</div></section>`).join('');
-  $('#mcCount').innerHTML = `2 ${L('disponibles','available')} · 2 ${L('en camino','on the way')}`;
+  { const a = APPS_M.map(id => P.find(p => p.id === id)).filter(Boolean), d = a.filter(p => p.status !== 'soon').length; $('#mcCount').innerHTML = `${d} ${L('disponibles','available')} · ${a.length - d} ${L('en camino','on the way')}`; }
 }
 document.getElementById('mcat').addEventListener('click', e => {
   const b = e.target.closest('[data-f]'); if (!b) return;

@@ -50,8 +50,8 @@ export const CATALOG = {
   'ob-011': { code: 'OB—011', name: 'Control de honorarios',          usd: 19, ars: 28999, foto: 'corridor',
     bajada: 'Sabé cuánto te deben, quién y cuándo vas a cobrar.' },
   /* Herramienta online (no se descarga): la compra (o un regalo desde el panel) da acceso a /herramientas/iva
-     y suma lecturas de facturas con IA. Sigue en "soon": no se vende en la tienda hasta que se decida. */
-  'ob-005': { code: 'OB—005', name: 'Orbit IVA',          usd: 79, ars: 79000, soon: true, foto: 'ob-005',
+     y suma lecturas de facturas con IA. A la venta desde que Majo aprobó el precio (ARS 79.000 / USD 79, 6/11/2026). */
+  'ob-005': { code: 'OB—005', name: 'Orbit IVA',          usd: 79, ars: 79000, soon: false, foto: 'ob-005',
     herramienta: '/herramientas/iva', creditos: 1500,
     bajada: 'Dos herramientas para cerrar el IVA del mes: arma el Libro de Compras desde las facturas y cruza tu sistema con ARCA.' },
   /* Mimitos: herramienta online en /mascotas, una sola versión paga */
