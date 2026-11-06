@@ -12,6 +12,7 @@ import { isAdmin } from './admin.js';
 import '../../assets/js/mascotas-rules.js';
 const R = globalThis.MZRULES;
 import { sendEmail, emailReady } from './email.js';
+import { MIMITOS_HOST } from './marca.js';
 
 /* Mimitos es paga: sin compra del producto no hay app, avisos ni links públicos.
    Administración entra sin compra. Una compra marcada como reintegrada no cuenta. */
@@ -29,6 +30,12 @@ export const notifyKey = email => `orbit:petnotify:${String(email).toLowerCase()
 /* med: "remedio sin marcar" (api/_lib/pethoy.js). Es opcional: anda solo si la persona lo prendió (off.med === false) */
 export const KINDS = ['vac', 'pip', 'food', 'check', 'qr', 'med'];
 const SITE = () => process.env.SITE_URL || 'https://www.orbitando.com.ar';
+/* Los mails salen del cron, sin dominio del que leer la marca: la dice la compra. Quien compró en By Majo los recibe con su marca y su dominio. */
+export async function marcaAvisos(email) {
+  let bymajo = false;
+  try { bymajo = (await compraDe(email, PRODUCT_ID))?.via === 'bymajo'; } catch { /* sin datos, la marca de siempre */ }
+  return bymajo ? { site: `https://${MIMITOS_HOST}`, hecho: 'Hecho con By Majo.', fromName: 'Mimitos by Majo' } : { site: SITE(), hecho: 'Hecho con Orbit.' };
+}
 
 let vapid = null;
 /* En producción las llaves salen SOLO de VAPID_PUBLIC_KEY y VAPID_PRIVATE_KEY: si faltan, el push falla
@@ -156,25 +163,27 @@ export function dueToday(doc, today = todayAR()) {
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 export async function mailDigest(email, items) {
   if (!items.length || !emailReady()) return false;
-  const url = `${SITE()}/mascotas`;
+  const marca = await marcaAvisos(email);
+  const url = `${marca.site}/mascotas`;
   const html = `<!doctype html><html><body style="margin:0;background:#FBF2E7;font-family:Helvetica,Arial,sans-serif;color:#2B2119">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#FBF2E7"><tr><td align="center" style="padding:28px 16px">
 <table role="presentation" width="100%" style="max-width:480px" cellpadding="0" cellspacing="0">
 <tr><td style="padding:0 0 16px;font:700 22px Georgia,serif;color:#2B2119">mimitos</td></tr>
 ${items.map(i => `<tr><td bgcolor="#FFFDF9" style="background:#FFFDF9;border-radius:18px;padding:16px 18px"><b style="font-size:16px">${esc(i.title)}</b><br><span style="font-size:14px;line-height:1.5;color:#6B5A4E">${esc(i.body)}</span></td></tr><tr><td style="height:10px"></td></tr>`).join('')}
 <tr><td style="padding:8px 0 0"><a href="${url}" style="display:inline-block;background:#1E5D4C;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:13px 22px">Abrir Mimitos</a></td></tr>
-<tr><td style="padding:22px 0 0;font-size:12px;color:#6B5A4E;line-height:1.5">Te llega porque activaste los avisos por mail en Mimitos. Los apagás desde Avisos en la app. Hecho con Orbit.</td></tr>
+<tr><td style="padding:22px 0 0;font-size:12px;color:#6B5A4E;line-height:1.5">Te llega porque activaste los avisos por mail en Mimitos. Los apagás desde Avisos en la app. ${esc(marca.hecho)}</td></tr>
 </table></td></tr></table></body></html>`;
   const text = items.map(i => `${i.title}. ${i.body}`).join('\n') + `\n\nAbrir Mimitos: ${url}`;
   const subject = items.length === 1 ? items[0].title : `${items[0].title} y ${items.length - 1} aviso${items.length > 2 ? 's' : ''} más`;
-  await sendEmail({ to: email, subject, html, text });
+  await sendEmail({ to: email, subject, html, text, fromName: marca.fromName });
   return true;
 }
 
 /* aviso suelto por mail (escaneo del QR o mensaje de quien la encontró), con la estética de Mimitos */
 export async function mailNotice(email, { title, body, map = '', phone = '', why = 'el aviso del QR' }) {
   if (!emailReady()) return false;
-  const url = `${SITE()}/mascotas#/inicio`, tel = String(phone || '').replace(/[^\d+]/g, '');
+  const marca = await marcaAvisos(email);
+  const url = `${marca.site}/mascotas#/inicio`, tel = String(phone || '').replace(/[^\d+]/g, '');
   const btn = (href, label, bg, fg) => `<a href="${esc(href)}" style="display:inline-block;background:${bg};color:${fg};text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:13px 22px;margin:0 8px 8px 0">${label}</a>`;
   const html = `<!doctype html><html><body style="margin:0;background:#F7F3EE;font-family:Helvetica,Arial,sans-serif;color:#1F1A17">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" bgcolor="#F7F3EE"><tr><td align="center" style="padding:28px 16px">
@@ -182,9 +191,9 @@ export async function mailNotice(email, { title, body, map = '', phone = '', why
 <tr><td style="padding:0 0 16px;font:700 22px Helvetica,Arial,sans-serif;color:#1F1A17">mimitos</td></tr>
 <tr><td bgcolor="#FFFFFF" style="background:#FFFFFF;border-radius:18px;padding:18px 20px"><b style="font-size:17px">${esc(title)}</b><br><span style="font-size:14px;line-height:1.55;color:#5E554E">${esc(body)}</span></td></tr>
 <tr><td style="padding:16px 0 0">${map ? btn(map, 'Ver la ubicación', '#1F4D40', '#FFFFFF') : ''}${tel ? btn('tel:' + tel, 'Llamar', '#1F4D40', '#FFFFFF') : ''}${btn(url, 'Abrir Mimitos', map || tel ? '#E3EDE6' : '#1F4D40', map || tel ? '#1F4D40' : '#FFFFFF')}</td></tr>
-<tr><td style="padding:18px 0 0;font-size:12px;color:#5E554E;line-height:1.5">Te llega porque activaste los avisos por mail en Mimitos y ${esc(why)}. Los apagás desde Avisos en la app. Hecho con Orbit.</td></tr>
+<tr><td style="padding:18px 0 0;font-size:12px;color:#5E554E;line-height:1.5">Te llega porque activaste los avisos por mail en Mimitos y ${esc(why)}. Los apagás desde Avisos en la app. ${esc(marca.hecho)}</td></tr>
 </table></td></tr></table></body></html>`;
   const text = `${title}\n${body}${map ? `\nUbicación: ${map}` : ''}\n\nAbrir Mimitos: ${url}`;
-  await sendEmail({ to: email, subject: title, html, text });
+  await sendEmail({ to: email, subject: title, html, text, fromName: marca.fromName });
   return true;
 }

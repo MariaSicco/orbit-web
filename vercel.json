@@ -3,6 +3,28 @@
   "trailingSlash": false,
   "redirects": [
     {
+      "source": "/terminos",
+      "has": [
+        {
+          "type": "host",
+          "value": "mimitos.bymajostudio.com"
+        }
+      ],
+      "destination": "https://bymajostudio.com/terminos#mimitos",
+      "permanent": false
+    },
+    {
+      "source": "/privacidad",
+      "has": [
+        {
+          "type": "host",
+          "value": "mimitos.bymajostudio.com"
+        }
+      ],
+      "destination": "https://bymajostudio.com/privacidad#mimitos",
+      "permanent": false
+    },
+    {
       "source": "/acceso",
       "has": [
         {
