@@ -196,7 +196,7 @@ export async function awayMail(to, { title, body, footer, cta = true, owner = to
 ${cta ? `<tr><td style="padding:16px 0 0"><a href="${url}" style="display:inline-block;background:#1F4D40;color:#FFFFFF;text-decoration:none;font-weight:700;font-size:15px;border-radius:999px;padding:13px 22px">Abrir Mimitos</a></td></tr>` : ''}
 <tr><td style="padding:18px 0 0;font-size:12px;color:#5E554E;line-height:1.5">${esc(footer)} ${esc(marca.hecho)}</td></tr>
 </table></td></tr></table></body></html>`;
-  await sendEmail({ to, subject: title, html, text: `${title}\n${body}${cta ? `\n\nAbrir Mimitos: ${url}` : ''}\n\n${footer}`, fromName: marca.fromName });
+  await sendEmail({ to, subject: title, html, text: `${title}\n${body}${cta ? `\n\nAbrir Mimitos: ${url}` : ''}\n\n${footer}`, fromName: marca.fromName, fromEmail: marca.fromEmail });
   return true;
 }
 const OWNER_FOOTER = 'Te llega porque activaste los avisos por mail en Mimitos y usaste "Me fui". Los apagás desde Avisos en la app.';
