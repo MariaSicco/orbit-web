@@ -348,7 +348,7 @@ window.ORBIT_PRODUCTS = [
   {
     /* Herramienta online, no es un archivo que se descarga: por eso la entrega
        es un acceso desde Mi cuenta y la licencia es por persona, no comercial. */
-    id: 'ob-005', cover: 'libro', code: 'OB\u2014005', n: '05', name: 'Orbit IVA',
+    id: 'ob-005', cover: 'iva', code: 'OB\u2014005', n: '05', name: 'Orbit IVA',
     family: 'business', status: 'soon', price: 79, accent: 'blue', checkout: '', photo: 'ob-005',
     acceso: '/herramientas/iva',
     /* Lo que se muestra de este producto son sus propias pantallas, no una foto
@@ -398,7 +398,7 @@ window.ORBIT_PRODUCTS = [
        Se entrega como acceso desde Mi cuenta, igual que Orbit IVA y Mimitos. */
     /* Precio del plan B (decision-log 20/10): USD 24 / ARS 35.990 de lanzamiento hasta el 12/11;
        el 13/11 pasa a USD 34 / ARS 50.990 de lista (a mano, acá y en api/_lib/catalog.js). */
-    id: 'ob-019', cover: 'libro', code: 'OB—019', n: '19', name: 'Mi Mes by Orbit',
+    id: 'ob-019', cover: 'mimes', code: 'OB—019', n: '19', name: 'Mi Mes by Orbit',
     family: 'systems', status: 'available', price: 24, ars: 35990,
     accent: 'blue', checkout: '', photo: 'studio',
     /* sello propio en la ficha, como Mimitos: la lectura automática con IA vence a los 12 meses */
@@ -441,12 +441,32 @@ window.ORBIT_PRODUCTS = [
     ],
   },
   {
+    /* Vencimientos de la Casa: app de la rama drop01/vencimientos-casa, todavía sin publicar. Solo se muestra: no se puede comprar. */
+    id: 'ob-021', cover: 'venc', code: 'OB—021', n: '21', name: 'Vencimientos de la Casa',
+    family: 'systems', status: 'soon', price: 0, ars: 0, accent: 'blue', checkout: '', photo: 'studio',
+    tagline: {es: 'Todo lo que vence en tu casa, en un lugar: cuánto te falta pagar este mes y aviso antes de cada vencimiento.', en: 'Everything due at home, in one place: what’s left to pay this month and a reminder before each due date.'},
+    specs: [
+      [{es: 'Formato', en: 'Format'}, {es: 'Online, sin instalar', en: 'Online, no install'}],
+      [{es: 'Avisos', en: 'Reminders'}, {es: 'Antes de cada vencimiento', en: 'Before each due date'}],
+      [{es: 'Casas', en: 'Homes'}, {es: 'Una o varias', en: 'One or several'}],
+      [{es: 'Acceso', en: 'Access'}, {es: 'Con tu cuenta de Orbit', en: 'With your Orbit account'}],
+    ],
+    includes: [
+      [{es: 'Todos los vencimientos juntos', en: 'All due dates together'}, {es: 'Cuánto te falta pagar este mes.', en: 'What’s left to pay this month.'}],
+      [{es: 'Aviso antes de que venza', en: 'A reminder before it’s due'}, {es: 'Y te marca si una factura sube de golpe.', en: 'And it flags a bill that jumps.'}],
+      [{es: 'Compartida', en: 'Shared'}, {es: 'Con quien vivís: cada uno marca lo que pagó.', en: 'With who you live with: each marks what they paid.'}],
+    ],
+    for: [
+      {es: 'Quien quiere tener las cuentas de la casa en un solo lugar', en: 'Anyone who wants the household bills in one place'},
+    ],
+  },
+  {
     /* Mimitos: herramienta online (app en /mascotas), una sola versión paga.
        Se entrega como acceso desde Mi cuenta, igual que Orbit IVA. */
     /* Precio aprobado (plan B, 20/10/2026): lanzamiento USD 29 / ARS 43.990 hasta el 12/11/2026 inclusive.
        La tienda no tiene precio tachado ni promo con fecha: se carga el de lanzamiento como vigente.
        // PRECIO DE LISTA desde 13/11/2026: price: 39, ars: 58990 */
-    id: 'ob-018', cover: 'libro', code: 'OB\u2014018', n: '18', name: 'Mimitos',
+    id: 'ob-018', cover: 'mimitos', code: 'OB\u2014018', n: '18', name: 'Mimitos',
     family: 'systems', status: 'available', price: 29, ars: 43990,
     accent: 'blue', checkout: '', photo: 'ob-018',
     acceso: '/mascotas',

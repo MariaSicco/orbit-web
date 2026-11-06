@@ -26,7 +26,7 @@
 <link rel="manifest" href="/site.webmanifest">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;1,400;1,500&family=IBM+Plex+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="assets/css/orbit.css?v=61">
+<link rel="stylesheet" href="assets/css/orbit.css?v=67">
 <style>
 .cat-head{min-height:max(620px,100svh);padding-top:calc(88px + env(safe-area-inset-top,0px));padding-bottom:28px;display:flex;flex-direction:column;justify-content:space-between;gap:20px}
 .cat-head .top{display:flex;justify-content:space-between;gap:20px}
@@ -65,7 +65,21 @@
 @media (max-width:860px){.cat-head{height:auto;min-height:100svh}.shelf{grid-template-columns:1fr 1fr;row-gap:28px}.shelf .cv{width:100%}}
 .filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between;margin-bottom:clamp(28px,4vw,48px)}
 .filters .l{display:flex;flex-wrap:wrap;gap:8px}
-#grid{display:grid;gap:clamp(48px,7vw,96px)}
+#grid{display:grid;gap:clamp(28px,3vw,44px)}
+/* apps: protagonistas; plantillas: compactas */
+.shelf{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:clamp(20px,3vw,52px)!important;align-items:start!important}
+.shelf .cv{max-width:calc(60vh * .75)!important}
+.shelf .baj{font-size:clamp(14px,1.1vw,17px);line-height:1.35;opacity:.75;max-width:30ch}
+.pl-cab{display:flex;align-items:baseline;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-bottom:18px}
+.pl-cab h2{margin:0;font-size:clamp(26px,3vw,42px);font-weight:800;letter-spacing:-.04em;text-transform:uppercase;line-height:1}
+.pl-cab p{margin:0;opacity:.65;font-size:15px}
+.plantillas{grid-template-columns:repeat(6,minmax(0,1fr))!important;gap:26px 16px!important}
+@media (max-width:1180px){.plantillas{grid-template-columns:repeat(4,minmax(0,1fr))!important}}
+.plantillas .pcard>.row:not([style]){display:none}
+.plantillas .pcard>.row:last-of-type{flex-direction:column;align-items:flex-start;gap:4px;margin-top:10px}
+.plantillas .pcard h3{font-size:14px;line-height:1.1;margin:0}
+.plantillas .pcard .price{font-size:13px;white-space:nowrap;opacity:.7}
+.filters .chip.on{background:var(--k);color:var(--b)}
 .grupo{scroll-margin-top:100px}
 .grupo .cab{display:grid;gap:8px;padding-bottom:clamp(18px,2.6vw,30px);
   border-bottom:1px solid var(--k3);margin-bottom:clamp(22px,3vw,38px)}
@@ -90,6 +104,20 @@
   main>.sec.cat-head,main>.sec.light{display:none}
   .mcat{display:block;background:var(--k);color:var(--b);padding:84px 0 56px}
   .mc-w{padding:0 16px}
+  .mc-apps{display:grid;grid-template-columns:1fr 1fr;gap:22px 14px;padding:4px 16px 36px}
+  .mc-apps a{display:flex;flex-direction:column;gap:8px;color:inherit;text-decoration:none;min-width:0}
+  .mc-apps strong{font-weight:800;letter-spacing:-.03em;font-size:17px;line-height:1.05}
+  .mc-apps .mono{font-size:11px;opacity:.7}
+  .mc-plant{border-top:1px solid #242426;padding-top:26px}
+  #mcTabs,#mcInfo{display:none}
+  .mc-gcab small,.mc-item small{display:none!important}
+  .mc-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:14px 10px!important}
+  .mc-grupo{padding-top:14px!important;padding-bottom:6px!important}
+  .mc-gcab h2{font-size:17px!important}
+  .mc-gcab em{font-size:13px!important}
+  .mc-item strong{font-size:13px!important;line-height:1.1!important}
+  .mc-item .pr{font-size:12px!important}
+  .mc-plant h2{margin:0 0 6px;font-weight:900;font-size:30px;letter-spacing:-.04em;text-transform:uppercase}
   .mc-eti{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;opacity:.55}
   .mc-h{margin:14px 0 12px;font-weight:900;font-size:clamp(40px,12.3vw,56px);line-height:.9;letter-spacing:-.04em;text-transform:uppercase}
   .mc-h .it{font-family:var(--serif);font-style:italic;font-weight:400;text-transform:none;color:var(--ac)}
@@ -104,7 +132,7 @@
   .orb3 i{position:absolute;box-sizing:border-box;border-radius:50%;border:1px solid currentColor;opacity:.3}
   .orb3 i.on{opacity:1}
   .orb3 b{position:absolute;border-radius:50%;background:var(--blue)}
-  .mc-leyenda{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid #242426;border-bottom:1px solid #242426;margin:18px 16px 0}
+  .mc-leyenda{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-top:1px solid #242426;border-bottom:1px solid #242426;margin:18px 16px 0}
   .mc-leyenda button{display:flex;flex-direction:column;align-items:flex-start;gap:8px;padding:14px 10px 14px 12px;background:none;border:0;color:var(--b);cursor:pointer;text-align:left;font-family:inherit}
   .mc-leyenda button:first-child{padding-left:0}
   .mc-leyenda button+button{border-left:1px solid #242426}
@@ -152,17 +180,13 @@
 <section class="mcat" id="mcat" aria-label="Catálogo">
   <div class="mc-w">
     <div class="mc-eti"><span><span data-l="es">Catálogo · Vol.01</span><span data-l="en">Catalog · Vol.01</span></span><span id="mcCount"></span></div>
-    <h1 class="mc-h"><span data-l="es">Todo lo que está <span class="it">en órbita.</span></span><span data-l="en">Everything <span class="it">in orbit.</span></span></h1>
-    <p class="mc-p"><span data-l="es">Pago único. Lo recibís al instante por email.</span><span data-l="en">One-time payment. Delivered instantly by email.</span></p>
+    <h1 class="mc-h"><span data-l="es">Las <span class="it">apps.</span></span><span data-l="en">The <span class="it">apps.</span></span></h1>
+    <p class="mc-p"><span data-l="es">Cada una nace de un problema real.</span><span data-l="en">Each one starts with a real problem.</span></p>
   </div>
+  <div class="mc-apps" id="mcApps"></div>
+  <div class="mc-w mc-plant"><h2><span data-l="es">Plantillas</span><span data-l="en">Templates</span></h2><p class="mc-p"><span data-l="es">Pago único. Lo recibís al instante por email.</span><span data-l="en">One-time payment. Delivered instantly by email.</span></p></div>
   <div class="mc-tabs" id="mcTabs" role="tablist" aria-label="Formato"></div>
   <div id="mcInfo"></div>
-  <a class="mc-drop" id="mcDrop" href="/m#drop">
-    <span class="r"><span>Drop 01</span><span>19.10</span></span>
-    <strong>Microapps</strong>
-    <em><span data-l="es">Lógica propia, base de datos e IA. Anotate y te avisamos.</span><span data-l="en">Their own logic, a database and AI. Sign up and we’ll let you know.</span></em>
-    <span class="b"><span data-l="es">Avisame el 19.10</span><span data-l="en">Notify me on Oct 19</span> <span>→</span></span>
-  </a>
   <div class="mc-grupos" id="mcGrid"></div>
   <div class="mc-falta">
     <span class="k"><span data-l="es">¿NO ESTÁ EL TUYO?</span><span data-l="en">NOT HERE?</span></span>
@@ -172,33 +196,36 @@
 </section>
 <section class="sec dark cat-head">
   <div class="wrap top"><span class="mono">Vol.01 — 2026</span><span class="mono" style="text-align:right" id="count"></span></div>
-  <div class="wrap"><h1 class="display"><span data-l="es">La <span class="it">colección.</span></span><span data-l="en">The <span class="it">collection.</span></span></h1></div>
+  <div class="wrap"><h1 class="display"><span data-l="es">Las <span class="it">apps.</span></span><span data-l="en">The <span class="it">apps.</span></span></h1></div>
   <div class="wrap shelf" id="shelf"></div>
   <div class="wrap base"><p class="lead"><span data-l="es">Cada herramienta nace de un problema real. Elegí el tuyo.</span><span data-l="en">Every tool starts with a real problem. Pick yours.</span></p><a class="mono" href="#grid" style="text-decoration:none"><span data-l="es">Ver catálogo completo ↓</span><span data-l="en">See full catalog ↓</span></a></div>
 </section>
 
 <section class="sec light">
   <div class="wrap">
+    <div class="pl-cab"><h2><span data-l="es">Plantillas</span><span data-l="en">Templates</span></h2><p><span data-l="es">Excel, PDF y guías para tu oficio. Pago único.</span><span data-l="en">Excel, PDF and guides for your trade. One-time payment.</span></p></div>
     <div class="filters"><div class="l" id="filt" role="group" aria-label="Filtro"></div><span class="mono dim">Vol.01 — 2026</span></div>
     <div id="grid"></div>
 
   </div>
 </section>
 </main>
-<script src="assets/js/products.js?v=54"></script>
+<script src="assets/js/products.js?v=56"></script>
 <script src="/api/catalog"></script>
-<script src="assets/js/orbit.js?v=58"></script>
+<script src="assets/js/orbit.js?v=60"></script>
 <script>
 (() => {
 const {$, $$, L, tr, card, reveal, P, FAM} = ORBIT;
 const {cover, url, C} = ORBIT;
-const PO = ORBIT.ordenados().filter(p => p.status !== 'soon');
+const APPS = ['ob-019','ob-018','ob-005','ob-021'];
+const BAJADA = {'ob-019':['Cuánta plata te queda libre, este mes y los que vienen.','What you really have left, this month and the next.'],'ob-018':['La libreta de tus mascotas, con avisos y cámara.','Your pets’ health book, with reminders and a camera.'],'ob-005':['El Libro de IVA desde las fotos de tus facturas, y el cruce con ARCA.','Your VAT book from photos of your invoices, checked against ARCA.'],'ob-021':['Todo lo que vence en tu casa, en un solo lugar.','Everything due at home, in one place.']};
+const PO = APPS.map(id => P.find(p => p.id === id)).filter(Boolean);
 $('#shelf').innerHTML = PO.map(p => `<a href="${url(p)}"><div class="cv"><div class="flip"><div class="face front">${cover(p)}</div><div class="face back"><span class="pg"></span>
   <span class="mono">${p.code}<br>Digital goods</span>
   <p>${L(p.tagline)}</p>
   <ul>${p.includes.slice(0,3).map(([t]) => `<li>${L(t)}</li>`).join('')}</ul>
   <div><span class="mono">Orbit® — ${L('Ideas en movimiento','Ideas in motion')}<br>Est. 2026</span><div class="bf" style="margin-top:3cqw"><b>${p.status==='soon' ? L('Pronto','Soon') : ORBIT.money(p)}</b><span class="mono">${L('Ver detalle','See details')} →</span></div></div>
-</div></div></div><span class="to"><b>${p.name}</b><span class="mono dim">${p.status==='soon' ? L('Pronto','Soon') : ORBIT.money(p)}</span></span>
+</div></div></div><span class="to"><b>${p.name}</b><span class="mono dim">${p.status==='soon' ? L('Próximamente','Coming soon') : ORBIT.money(p)}</span></span><span class="baj">${L(...BAJADA[p.id])}</span>
 <button class="chip qbtn" type="button" data-flip>${L('¿Qué es?','What is it?')}</button></a>`).join('');
 $$('#shelf [data-flip]').forEach(b => b.onclick = e => { e.preventDefault(); const f = $('.flip', b.closest('a')); f.classList.toggle('flipped'); b.innerHTML = f.classList.contains('flipped') ? L('Ver tapa','Show cover') : L('¿Qué es?','What is it?'); });
 const grid = $('#grid'), filt = $('#filt');
@@ -206,31 +233,19 @@ const grid = $('#grid'), filt = $('#filt');
 /* El catálogo se agrupa por oficio (nicho), en el orden de la escalera:
    entrada → ancla → complemento. Lo que todavía no tiene nicho (o está por
    salir) va al final, en "Próximamente". */
-const GRUPOS = ORBIT.nichos().map(n => ({id:n.id, n:n.n, d:n.d, lista:n.items}));
-const resto = P.filter(p => !GRUPOS.some(g => g.lista.includes(p)));
-if (resto.length) GRUPOS.push({id:'pronto', n:{es:'Próximamente', en:'Coming soon'},
-  d:{es:'Lo que estamos terminando.', en:'What we are finishing.'}, lista:resto});
-filt.innerHTML = GRUPOS.map((t, i) =>
-  `<a class="chip" href="#${t.id}">${String(i + 1).padStart(2, '0')} ${L(t.n)}</a>`).join('');
-
+const GRUPOS = ORBIT.nichos().map(n => ({id:n.id, n:n.n, d:n.d, lista:n.items.filter(p => !APPS.includes(p.id))})).filter(g => g.lista.length);
+/* una sola grilla compacta: los rubros filtran, no ocupan una sección cada uno */
+let rubro = GRUPOS.some(g => '#' + g.id === location.hash) ? location.hash.slice(1) : 'todas';
 function pintar() {
-  grid.innerHTML = GRUPOS.map((t, i) => {
-    const lista = t.lista;
-    return `<section class="grupo" id="${t.id}">
-      <div class="cab">
-        <span class="nn">${String(i + 1).padStart(2, '0')}</span>
-        <h2>${L(t.n)}</h2>
-        <p>${L(t.d)}</p>
-      </div>
-      ${lista.length
-        ? `<div class="pgrid">${lista.map(card).join('')}</div>`
-        : `<p class="nada">${L('Todavía no hay nada en este escalón.','Nothing on this step yet.')}</p>`}
-    </section>`;
-  }).join('');
+  const chips = [{id:'todas', n:{es:'Todas', en:'All'}}, ...GRUPOS];
+  filt.innerHTML = chips.map(t => `<a class="chip${t.id === rubro ? ' on' : ''}" href="#${t.id}" data-rubro="${t.id}" aria-current="${t.id === rubro}">${L(t.n)}</a>`).join('');
+  const vis = rubro === 'todas' ? GRUPOS.flatMap(g => g.lista) : GRUPOS.find(g => g.id === rubro).lista;
+  grid.innerHTML = `<div class="pgrid plantillas">${vis.map(card).join('')}</div>`;
   $$('.rv', grid).forEach(el => el.classList.remove('rv'));
-  const n = P.filter(p => p.status !== 'soon').length;
-  $('#count').textContent = `${n} ${n === 1 ? tr('producto disponible','product available') : tr('productos disponibles','products available')}`;
+  const n = PO.filter(p => p.status !== 'soon').length;
+  $('#count').textContent = `${n} ${tr('apps disponibles','apps available')} · ${PO.length - n} ${tr('en camino','on the way')}`;
 }
+filt.addEventListener('click', e => { const a = e.target.closest('[data-rubro]'); if (!a) return; e.preventDefault(); rubro = a.dataset.rubro; history.replaceState(null, '', rubro === 'todas' ? location.pathname : '#' + rubro); pintar(); });
 pintar();
 addEventListener('orbit:lang', pintar);
 reveal();
@@ -255,8 +270,9 @@ const TAPAS = {
   'ob-016': ['#3047FF','#F2EFE8','p',['¿Cómo empieza a escribir?','How do they start writing?']],
 };
 const ORDEN = Object.keys(TAPAS);
+const APPS_M = ['ob-019','ob-018','ob-005','ob-021'];
 const lista = ORDEN.map(id => P.find(p => p.id === id && p.status !== 'soon')).filter(Boolean)
-  .concat(P.filter(p => p.status !== 'soon' && !TAPAS[p.id]));
+  .concat(P.filter(p => p.status !== 'soon' && !TAPAS[p.id] && !APPS_M.includes(p.id)));
 const fmt = p => (TAPAS[p.id] || [])[2] || 's';
 /* subcategorías: por lo que resuelve, no por oficio */
 const SUBS = [
@@ -271,7 +287,6 @@ const FMTS = [
   {id:'all', n:['Todo','All'], lv:0, c:'#F2EFE8', i:'#0D0D0E'},
   {id:'p', n:['Plantillas','Templates'], lv:1, c:'#F2EFE8', i:'#0D0D0E', v:['Para leer y usar.','To read and use.'], tags:[['Entregables','Deliverables'],['Imprimibles','Printable'],['No guardan datos','No data saved']]},
   {id:'s', n:['Sistemas','Systems'], lv:2, c:'#D9FF45', i:'#0D0D0E', v:['Para cargar y calcular.','To enter data and calculate.'], tags:[['Cargás tus datos','You enter your data'],['Hacen las cuentas','They do the math'],['Excel o Notion','Excel or Notion']]},
-  {id:'a', n:['Apps','Apps'], lv:3, c:'#3047FF', i:'#F2EFE8', v:['Para que trabajen con vos.','To work alongside you.'], tags:[['Lógica propia','Own logic'],['Base de datos','Database'],['IA incluida','AI included']]},
 ];
 /* tres órbitas; se marca la del nivel, como en el video de la home */
 const orb = (lv, px) => {
@@ -289,7 +304,7 @@ function pintar() {
   $('#mcInfo').innerHTML = f === 'all'
     ? `<div class="mc-leyenda">${FMTS.slice(1).map(x => `<button type="button" data-f="${x.id}">${orb(x.lv, 26)}<b>${L(...x.n)}</b><em>${L(x.v[0].replace('Para ','').replace('.',''), x.v[1].replace('To ','').replace('.',''))}</em></button>`).join('')}</div>`
     : `<div class="mc-uno" style="--c:${cur.id === 'p' ? '#F2EFE8' : cur.id === 's' ? '#D9FF45' : '#7D8CFF'}"><strong>${L(...cur.n)}</strong><em>${L(...cur.v)}</em><p>${cur.tags.map(t => L(...t)).join(' · ')}</p></div>`;
-  $('#mcDrop').hidden = !(f === 'all' || f === 'a');
+  $('#mcApps').innerHTML = APPS_M.map(id => P.find(p => p.id === id)).filter(Boolean).map(p => `<a href="${url(p)}">${ORBIT.cover(p)}<strong>${p.name}</strong><span class="mono">${p.status === 'soon' ? L('Próximamente','Coming soon') : money(p)}</span></a>`).join('');
   const vis = lista.filter(p => f === 'all' || fmt(p) === f);
   $('#mcGrid').hidden = !vis.length;
   const tapa = p => {
@@ -306,7 +321,7 @@ function pintar() {
   $('#mcGrid').innerHTML = grupos.map(({g, items}) => `<section class="mc-grupo" id="sub-${g.id}">
     <div class="mc-gcab"><h2><small>${g.f === 'p' ? L('Plantillas','Templates') : L('Sistemas','Systems')} · ${items.length}</small>${L(...g.n)}</h2>${g.d[0] ? `<em>${L(...g.d)}</em>` : ''}</div>
     <div class="mc-grid">${items.map(tapa).join('')}</div></section>`).join('');
-  $('#mcCount').innerHTML = vis.length + ' ' + (vis.length === 1 ? L('herramienta','tool') : L('herramientas','tools'));
+  $('#mcCount').innerHTML = `2 ${L('disponibles','available')} · 2 ${L('en camino','on the way')}`;
 }
 document.getElementById('mcat').addEventListener('click', e => {
   const b = e.target.closest('[data-f]'); if (!b) return;
