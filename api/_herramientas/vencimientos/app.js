@@ -6,6 +6,9 @@ import { datosEjemplo } from './ejemplo.js';
 import { propuestaDesde, cuentaQueCoincide } from './factura.js';
 import { cuentasDesdeMails } from './correo-lector.js';
 import { configCorreo, buscarEnGmail, buscarEnOutlook, mailsDemo } from './correo.js';
+
+/* «Buscar en mi mail» queda apagado hasta probar los permisos de Gmail y Outlook con cuentas reales. */
+const MAIL = false;
 import { cuentasDesdeResumen, nombreDesdeComercio } from './resumen-tarjeta.js';
 import * as R from './radar.js';
 import * as P from './reparto.js';
@@ -459,7 +462,7 @@ function completaTuCasa() {
   const tiene = re => d.cuentas.some(c => re.test(`${c.preset || ''} ${c.nombre} ${c.categoria}`.toLowerCase()));
   const pasos = [
     { ok: tiene(/tarjetas/), ic: 'tarjeta', t: 'Subí los resúmenes de tus tarjetas', s: 'Podés elegir varios juntos: traen suscripciones y débitos con su monto.', acc: 'resumen' },
-    { ok: !!d.fuentes?.mail, ic: 'sobre', t: 'Buscá tus facturas en el mail', s: 'Luz, gas, agua, celular: con fecha y monto.', acc: 'correo' },
+    ...(MAIL ? [{ ok: !!d.fuentes?.mail, ic: 'sobre', t: 'Buscá tus facturas en el mail', s: 'Luz, gas, agua, celular: con fecha y monto.', acc: 'correo' }] : []),
     { ok: tiene(/expensa|alquiler|hipoteca/), ic: 'casa', t: 'Sumá expensas o alquiler', s: 'Casi nunca llegan por mail: cargalo en un toque.', acc: 'elegir', s2: 'expensas' },
     { ok: !!d.fuentes?.ics, ic: 'campana', t: 'Que te avise el celular', s: 'Sumá todo al calendario, con aviso antes.', acc: 'ics' },
   ];
@@ -867,11 +870,11 @@ function primerUso() {
     </div>
     <div class="primer primer-mail">
       <h2>Que las busque <span class="it">la app</span></h2>
-      <p>Subí los resúmenes de tus tarjetas y conectá tu mail, todo en un paso: encontramos lo que pagás todos los meses, con fechas y montos.</p>
+      <p>${MAIL ? 'Subí los resúmenes de tus tarjetas y conectá tu mail, todo en un paso: encontramos lo que pagás todos los meses, con fechas y montos.' : 'Subí los resúmenes de tus tarjetas: encontramos lo que pagás todos los meses, con fechas y montos.'}</p>
       <div class="acciones">
         <button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> Cargá todo junto</button>
       </div>
-      <p style="margin:12px 0 0;font-size:13px">También podés hacer uno solo: <button type="button" class="btn-txt" data-acc="resumen">solo resúmenes</button> · <button type="button" class="btn-txt" data-acc="correo">solo mail</button> · <button type="button" class="btn-txt" data-acc="nota">pegar mi nota de servicios</button></p>
+      <p style="margin:12px 0 0;font-size:13px">También podés hacer uno solo: <button type="button" class="btn-txt" data-acc="resumen">solo resúmenes</button> · ${MAIL ? '<button type="button" class="btn-txt" data-acc="correo">solo mail</button> · ' : ''}<button type="button" class="btn-txt" data-acc="nota">pegar mi nota de servicios</button></p>
     </div>
     <div class="primer">
       <h2>O elegí <span class="it">a mano</span></h2>
@@ -1221,8 +1224,8 @@ function elegirServicio(filtro = '') {
 function abrirAgregar() {
   abrir('Agregar', `
     <button type="button" class="bt prim ancho foto-bt" data-acc="leer"><svg><use href="#i-camara"/></svg> Sacale una foto a la factura</button>
-    <div class="acciones dos" style="margin-top:10px"><button type="button" class="bt sec" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Resumen de tarjeta</button><button type="button" class="bt sec" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar en mi mail</button></div>
-    <p class="leyenda" style="margin:8px 2px 16px">Leemos la fecha, el 2º vencimiento y el monto, de una foto, del PDF o directo de tu mail.</p>
+    <div class="acciones${MAIL ? ' dos' : ''}" style="margin-top:10px"><button type="button" class="bt sec${MAIL ? '' : ' ancho'}" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Resumen de tarjeta</button>${MAIL ? '<button type="button" class="bt sec" data-acc="correo"><svg><use href="#i-sobre"/></svg> Buscar en mi mail</button>' : ''}</div>
+    <p class="leyenda" style="margin:8px 2px 16px">Leemos la fecha, el 2º vencimiento y el monto, de una foto o del PDF${MAIL ? ' o directo de tu mail' : ''}.</p>
     <div class="buscar"><svg><use href="#i-buscar"/></svg><input type="search" id="buscar-serv" placeholder="Buscá: luz, ABL, prepaga, VTV…" aria-label="Buscar un servicio o vencimiento" autocomplete="off"></div>
     <button type="button" class="bt sec ancho" data-acc="elegir" data-s=""><svg><use href="#i-mas"/></svg> Otra cuenta, con nombre propio</button>
     <div id="lista-serv">${elegirServicio()}</div>`);
@@ -1584,15 +1587,15 @@ async function abrirCargaTodo({ files = null, proveedor } = {}) {
   const cfg = carga.cfg;
   const op = (v, t, ok) => `<label class="${ok ? '' : 'off'}"><input type="radio" name="prov" value="${v}" ${carga.proveedor === v ? 'checked' : ''} ${ok ? '' : 'disabled'} data-acc="carga-prov"><span>${t}</span></label>`;
   abrir('Cargá todo junto', `
-    <p class="lead-s" style="margin-top:0">Juntamos lo que se cobra en tus tarjetas y las facturas que te llegan por mail, y te mostramos todo en una sola lista. Vos elegís qué cargar.</p>
+    <p class="lead-s" style="margin-top:0">${MAIL ? 'Juntamos lo que se cobra en tus tarjetas y las facturas que te llegan por mail, y te mostramos todo en una sola lista.' : 'Juntamos lo que se cobra en tus tarjetas y lo que tenés anotado, y te mostramos todo en una sola lista.'} Vos elegís qué cargar.</p>
     <div class="carga-paso${carga.files.length ? ' listo' : ''}"><span class="carga-n">1</span><div><b>Resúmenes de tarjeta</b><small>${carga.files.length ? `${carga.files.length} elegido${carga.files.length > 1 ? 's' : ''}: ${esc(carga.files.map(f => f.name).join(', '))}` : 'Los PDF que bajás del banco. Podés elegir varios: meses y tarjetas distintas.'}</small>
       <button type="button" class="bt sec" data-acc="carga-archivos"><svg><use href="#i-tarjeta"/></svg> ${carga.files.length ? 'Cambiar' : 'Elegir resúmenes'}</button></div></div>
-    <div class="carga-paso${carga.proveedor ? ' listo' : ''}"><span class="carga-n">2</span><div><b>Tu mail</b><small>Solo lectura, se lee en este teléfono y el permiso se cierra al terminar.</small>
-      <div class="seg carga-prov">${op('gmail', 'Gmail', !!cfg.google)}${op('outlook', 'Outlook o Hotmail', !!cfg.microsoft)}${op('', 'Sin mail', true)}</div></div></div>
-    <div class="carga-paso${carga.nota.trim() ? ' listo' : ''}"><span class="carga-n">3</span><div><b>Tu nota de servicios <span class="dim">(opcional)</span></b><small>Si tenés anotados tus servicios con el número de cliente, copiá la nota y pegala acá. Se lee en este teléfono.</small>
+    ${MAIL ? `<div class="carga-paso${carga.proveedor ? ' listo' : ''}"><span class="carga-n">2</span><div><b>Tu mail</b><small>Solo lectura, se lee en este teléfono y el permiso se cierra al terminar.</small>
+      <div class="seg carga-prov">${op('gmail', 'Gmail', !!cfg.google)}${op('outlook', 'Outlook o Hotmail', !!cfg.microsoft)}${op('', 'Sin mail', true)}</div></div></div>` : ''}
+    <div class="carga-paso${carga.nota.trim() ? ' listo' : ''}"><span class="carga-n">${MAIL ? 3 : 2}</span><div><b>Tu nota de servicios <span class="dim">(opcional)</span></b><small>Si tenés anotados tus servicios con el número de cliente, copiá la nota y pegala acá. Se lee en este teléfono.</small>
       <textarea id="carga-nota" rows="4" placeholder="Edenor cliente 0012345678 vence 21&#10;ABL partida 1234567&#10;Wifi Telecentro 98765432">${esc(carga.nota)}</textarea></div></div>
     <div class="acciones"><button type="button" class="bt prim ancho" data-acc="carga-buscar"><svg><use href="#i-buscar"/></svg> Buscar todo</button></div>
-    <p class="leyenda">El resumen trae suscripciones y débitos de la tarjeta; el mail, las facturas con vencimiento (luz, gas, internet, celular). Con los dos juntos aparece casi todo.</p>`);
+    <p class="leyenda">${MAIL ? 'El resumen trae suscripciones y débitos de la tarjeta; el mail, las facturas con vencimiento (luz, gas, internet, celular). Con los dos juntos aparece casi todo.' : 'El resumen trae suscripciones y débitos de la tarjeta. Las facturas de luz, gas o internet las sumás con una foto.'}</p>`);
 }
 async function cargarTodo({ files = [], proveedor = null, nota = '' } = {}) {
   files = [...files];
@@ -1704,7 +1707,7 @@ function abrirAjustes() {
   </div>
   <div class="ajustes-sec"><h3>Tu mail y tus tarjetas</h3>
     <p class="leyenda" style="margin-top:0">Buscá facturas nuevas cuando quieras. El permiso es de solo lectura y se cierra al terminar.</p>
-    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> Resúmenes y mail, todo junto</button><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Solo el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Solo resúmenes</button><button type="button" class="bt sec ancho" data-acc="nota"><svg><use href="#c-doc"/></svg> Pegar mi nota de servicios</button></div>
+    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> ${MAIL ? 'Resúmenes y mail, todo junto' : 'Resúmenes y notas, todo junto'}</button><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Solo el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Solo resúmenes</button><button type="button" class="bt sec ancho" data-acc="nota"><svg><use href="#c-doc"/></svg> Pegar mi nota de servicios</button></div>
   </div>
   <div class="ajustes-sec"><h3>Tu copia</h3>
     <p class="leyenda" style="margin-top:0">Tus datos viven solo en este dispositivo. ${ult}</p>
@@ -1873,7 +1876,7 @@ document.addEventListener('click', e => {
     case 'leer': leerPara = b.dataset.para || null; $id('f-factura').click(); break;
     case 'leer-reintentar': $id('f-factura').click(); break;
     case 'leer-manual': abrirAgregar(); break;
-    case 'correo': abrirCorreo(); break;
+    case 'correo': if (MAIL) abrirCorreo(); break;
     case 'resumen': $id('f-resumen').click(); break;
     case 'cargar-todo': abrirCargaTodo(); break;
     case 'carga-archivos': carga.nota = $id('carga-nota')?.value ?? carga.nota; $id('f-resumen').dataset.para = 'carga'; $id('f-resumen').click(); break;

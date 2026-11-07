@@ -446,6 +446,7 @@ window.ORBIT_PRODUCTS = [
     /* Vencimientos de la Casa: app de la rama drop01/vencimientos-casa, todavía sin publicar. Solo se muestra: no se puede comprar. */
     id: 'ob-021', cover: 'venc', code: 'OB—021', n: '21', name: 'Vencimientos de la Casa',
     landing: '/vencimientos-casa',
+    acceso: '/herramientas/vencimientos',
     family: 'systems', status: 'soon', price: 0, ars: 0, accent: 'blue', checkout: '', photo: 'studio',
     tagline: {es: 'Todo lo que vence en tu casa, en un lugar: cuánto te falta pagar este mes y aviso antes de cada vencimiento.', en: 'Everything due at home, in one place: what’s left to pay this month and a reminder before each due date.'},
     specs: [
