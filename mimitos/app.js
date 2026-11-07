@@ -437,7 +437,7 @@ mm.add({ mobile: '(max-width: 899px)', desk: '(min-width: 900px)' }, ctx => {
   /* ================= precio ================= */
   {
     const n = $('#prNum'), o = { v: 0 };
-    ScrollTrigger.create({ trigger: '.pr-num', start: 'top 85%', once: true, onEnter: () => gsap.fromTo(o, { v: 0 }, { v: 43990, duration: 1.4, ease: 'power3.out', onUpdate: () => { n.textContent = fmt(o.v); } }) });
+    ScrollTrigger.create({ trigger: '.pr-num', start: 'top 85%', once: true, onEnter: () => gsap.fromTo(o, { v: 0 }, { v: 58990, duration: 1.4, ease: 'power3.out', onUpdate: () => { n.textContent = fmt(o.v); } }) });
   }
 
   /* ================= cierre: todo orbita y se acomoda ================= */

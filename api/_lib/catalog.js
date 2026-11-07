@@ -28,10 +28,9 @@ export const CATALOG = {
     bajada: '25 diagramas de comando verificados y una calculadora que te arma la lista de materiales del tablero.' },
   /* Drop 01 (19/10/2026) · herramientas online */
   'ob-019': { code: 'OB—019', name: 'Mi Mes by Orbit',
-    /* Precio del plan B (decision-log 20/10): USD 24 / ARS 35.990 de lanzamiento hasta el 12/11.
-       El 13/11 pasa a USD 34 / ARS 50.990 de lista (cambiarlo a mano acá y en products.js; no está automatizado).
+    /* Precio de lista del plan B (decision-log 20/10): USD 34 / ARS 50.990.
        La lectura automática con IA vence a los 12 meses de la compra (api/_lib/mi-mes-ia.js). */
-    usd: 24, ars: 35990, herramienta: '/herramientas/mi-mes',
+    usd: 34, ars: 50990, herramienta: '/herramientas/mi-mes',
     bajada: 'Cuánto te queda libre este mes y los que vienen, con tus cuotas ya descontadas.' },
   'ob-021': { code: 'OB—021', name: 'Vencimientos de la Casa', usd: 34, ars: 50990, // Precio aprobado por Majo el 7/11: igual que el de lista de Mi Mes. La lectura con IA vence a los 12 meses (api/_lib/vencimientos-ia.js).
     soon: false, herramienta: '/herramientas/vencimientos',
@@ -58,11 +57,9 @@ export const CATALOG = {
   /* Mimitos: herramienta online en /mascotas, una sola versión paga */
   /* herramienta: la biblioteca y el email muestran "Abrir" hacia /mascotas; el acceso lo
      controla api/mascotas.js con la base (api/_lib/herramienta-acceso.js), no api/herramienta.js */
-  /* Precio aprobado por Majo (plan B, 20/10/2026). El checkout no tiene precios de lanzamiento ni promos con
-     fecha: el vigente es el de lanzamiento, hasta el 12/11/2026 inclusive.
-     // PRECIO DE LISTA desde 13/11/2026: usd: 39, ars: 58990
+  /* Precio de lista aprobado por Majo (plan B, 20/10/2026).
      Sigue en `soon`: no está a la venta hasta que Majo lo apruebe. */
-  'ob-018': { code: 'OB—018', name: 'Mimitos',            usd: 29, ars: 43990, soon: false, foto: 'ob-018', herramienta: '/mascotas',
+  'ob-018': { code: 'OB—018', name: 'Mimitos',            usd: 39, ars: 58990, soon: false, foto: 'ob-018', herramienta: '/mascotas',
     bajada: 'La libreta sanitaria de tu mascota en el celu, con avisos antes de cada fecha. Organizador: no reemplaza al veterinario.' },
 };
 
