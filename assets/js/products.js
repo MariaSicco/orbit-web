@@ -397,11 +397,10 @@ window.ORBIT_PRODUCTS = [
   {
     /* Mi Mes by Orbit: herramienta online (app en /herramientas/mi-mes), una sola versión paga.
        Se entrega como acceso desde Mi cuenta, igual que Orbit IVA y Mimitos. */
-    /* Precio del plan B (decision-log 20/10): USD 24 / ARS 35.990 de lanzamiento hasta el 12/11;
-       el 13/11 pasa a USD 34 / ARS 50.990 de lista (a mano, acá y en api/_lib/catalog.js). */
+    /* Precio de lista del plan B (decision-log 20/10): USD 34 / ARS 50.990. */
     id: 'ob-019', cover: 'mimes', code: 'OB—019', n: '19', name: 'Mi Mes by Orbit',
     landing: '/mi-mes',
-    family: 'systems', status: 'available', price: 24, ars: 35990,
+    family: 'systems', status: 'available', price: 34, ars: 50990,
     accent: 'blue', checkout: '', photo: 'studio',
     /* sello propio en la ficha, como Mimitos: la lectura automática con IA vence a los 12 meses */
     sello: ['12 meses de lectura automática', '12 months of automatic reading'],
@@ -472,11 +471,9 @@ window.ORBIT_PRODUCTS = [
   {
     /* Mimitos: herramienta online (app en /mascotas), una sola versión paga.
        Se entrega como acceso desde Mi cuenta, igual que Orbit IVA. */
-    /* Precio aprobado (plan B, 20/10/2026): lanzamiento USD 29 / ARS 43.990 hasta el 12/11/2026 inclusive.
-       La tienda no tiene precio tachado ni promo con fecha: se carga el de lanzamiento como vigente.
-       // PRECIO DE LISTA desde 13/11/2026: price: 39, ars: 58990 */
+    /* Precio de lista aprobado (plan B, 20/10/2026): USD 39 / ARS 58.990. */
     id: 'ob-018', cover: 'mimitos', code: 'OB\u2014018', n: '18', name: 'Mimitos',
-    family: 'systems', status: 'available', price: 29, ars: 43990,
+    family: 'systems', status: 'available', price: 39, ars: 58990,
     accent: 'blue', checkout: '', photo: 'ob-018',
     acceso: '/mascotas',
     /* landing propia (decision-log 20/10): desde la home y el catálogo se entra por acá */

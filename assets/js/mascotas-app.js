@@ -223,9 +223,8 @@ async function uploadPhoto(data) {
 const BUY_URL = window.MIMITOS_BYMAJO ? 'https://bymajostudio.com/tienda/mimitos' : '/p/ob-018';
 /* el mismo mail de soporte que usa la web (orbitando.com.ar, términos y privacidad) */
 const SUPPORT_MAIL = window.MIMITOS_BYMAJO ? 'hola@bymajostudio.com' : 'hola@orbitando.com.ar';
-/* Precio aprobado (14/10/2026): lanzamiento hasta el 12/11/2026 inclusive. El 13/11 se saca el bloque
-   de lanzamiento y queda el de lista (ver api/_lib/catalog.js y assets/js/products.js). */
-const PRICE = { ars: 43990, usd: 29, listArs: 58990, listUsd: 39, until: '12/11/2026' };
+/* Precio de lista (ver api/_lib/catalog.js y assets/js/products.js). */
+const PRICE = { ars: 58990, usd: 39 };
 const ars = n => '$\u00a0' + n.toLocaleString('es-AR');
 const AI_ROUTES = ['lectura', 'preguntar', 'gmail', 'outlook'];
 const aiExpired = () => Boolean(aiq?.expired);
@@ -1348,9 +1347,9 @@ function renderGate() {
         <div class="hook">${bubble('flask', 'salud')}<span><b>Estudios guardados en su historia</b><small>Análisis, radiografías y ecografías en foto o PDF, con lo que dijo el veterinario.</small></span></div>
       </div>
       <div class="price-row">
-        <span class="eyebrow">Precio de lanzamiento · hasta el ${PRICE.until}</span>
-        <span class="price"><b class="now">${ars(PRICE.ars)}</b><s class="was"><span class="sr">Precio de lista: </span>${ars(PRICE.listArs)}</s></span>
-        <small>O USD ${PRICE.usd} con PayPal <s><span class="sr">en lugar de </span>USD ${PRICE.listUsd}</s>. Una sola versión, para todas tus mascotas.</small>
+        <span class="eyebrow">Pago único</span>
+        <span class="price"><b class="now">${ars(PRICE.ars)}</b></span>
+        <small>O USD ${PRICE.usd} con PayPal. Una sola versión, para todas tus mascotas.</small>
         <ul class="terms">
           <li>${I('check')}<span><b>Pago único.</b> Mimitos es tuya para siempre.</span></li>
           <li>${I('check')}<span><b>Incluye 12 meses de funciones inteligentes.</b> Preguntale a Mimitos, lectura automática de la libreta y los estudios e importación desde el mail. Uso personal razonable.</span></li>
