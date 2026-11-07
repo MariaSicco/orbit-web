@@ -1,0 +1,16 @@
+{
+  "name": "Vencimientos de la Casa · Orbit",
+  "short_name": "Vencimientos",
+  "description": "Todo lo que vence en tu casa, en un lugar: cuánto te falta pagar este mes y aviso antes de cada vencimiento.",
+  "lang": "es-AR",
+  "id": "/herramientas/vencimientos",
+  "start_url": "/herramientas/vencimientos",
+  "scope": "/herramientas/vencimientos",
+  "display": "standalone",
+  "background_color": "#F2EFE8",
+  "theme_color": "#0D0D0E",
+  "icons": [
+    { "src": "/assets/img/vencimientos/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/img/vencimientos/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

@@ -135,7 +135,7 @@ export const MESES_IA = 12;
 /* QA t19 · 2: la fecha de primer uso (solo si la compra no tiene fecha; el checkout siempre la guarda)
    vence a los 13 meses: alcanza para contar los 12 meses, con un mes de margen. */
 export const TTL_DESDE_S = 13 * 31 * 86400;
-const sumarMesesISO = (t, n) => { const d = new Date(t); const dia = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n); d.setUTCDate(Math.min(dia, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate())); return d.getTime(); };
+export const sumarMesesISO = (t, n) => { const d = new Date(t); const dia = d.getUTCDate(); d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n); d.setUTCDate(Math.min(dia, new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate())); return d.getTime(); };
 export async function vigenciaIA(acc, compras = [], now = Date.now()) {
   if (acc?.admin) return { hasta: null, vencida: false };
   const fechas = (compras || []).filter(p => p.productId === 'ob-019').map(p => Date.parse(p.date || '')).filter(Number.isFinite);

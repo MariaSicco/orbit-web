@@ -21,6 +21,8 @@
 .pd-grid{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:clamp(20px,4vw,64px);align-items:start}
 .pd-info{position:sticky;top:calc(90px + env(safe-area-inset-top,0px))}
 .pd-info h1{font-size:clamp(52px,6.6vw,110px);margin:14px 0 0}
+/* una primera palabra larga («Vencimientos») no entra en la columna al tamaño normal */
+.pd-info h1.largo{font-size:clamp(38px,5vw,78px)}
 .pd-price{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:26px 0 18px;padding-top:16px;border-top:1px solid var(--k3)}
 .pd-price b{font-size:clamp(34px,3.4vw,52px);font-weight:800;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
 /* en el celular el precio va en su renglón: al competir con la aclaración se partía */
@@ -79,7 +81,7 @@
 .buybar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--k);color:var(--b);border-top:1px solid var(--k3);padding:12px var(--pad) calc(12px + env(safe-area-inset-bottom,0px));display:flex;justify-content:space-between;align-items:center;gap:16px;transform:translateY(110%);transition:transform .45s var(--ease)}
 .buybar.on{transform:none}
 .buybar .btn{padding:12px 16px}
-@media (max-width:960px){.pd-grid,.for{grid-template-columns:1fr}.pd-info{position:static}.specs{grid-template-columns:1fr 1fr}.inc{grid-template-columns:1fr}}
+@media (max-width:960px){.pd-grid,.for{grid-template-columns:1fr}.pd-info{position:static}.pd-info h1.largo{font-size:clamp(44px,12vw,78px)}.specs{grid-template-columns:1fr 1fr}.inc{grid-template-columns:1fr}}
 </style>
 </head>
 <body data-page="productos">
@@ -186,7 +188,7 @@ const TRUST_HERRAMIENTA = [['Acceso desde Mi cuenta','Access from My account'],[
    products.js, por ejemplo Mimitos: "12 meses de funciones inteligentes"). Las demás no cambian. */
 const TRUST = p => (p && p.acceso ? TRUST_HERRAMIENTA.map((t, i) => (i === 2 && Array.isArray(p.sello) ? p.sello : t)) : TRUST_ARCHIVO);
 $('#info').innerHTML = `<span class="mono">${p.code} · ${fam}</span>
-  <h1 class="display">${w1}<br><span class="it">${rest.join(' ').toLowerCase()}.</span></h1>
+  <h1 class="display${w1.length > 10 ? ' largo' : ''}">${w1}<br><span class="it">${rest.join(' ').toLowerCase()}.</span></h1>
   <p class="lead" style="opacity:.8;margin:22px 0 0">${L(p.tagline)}</p>
   <div class="pd-price"><b>${p.status==='soon' ? L('Pronto','Soon') : money(p)}</b><span class="mono dim">${p.status==='soon' ? L('Lanzamiento 2026','Launching 2026') : L('Pago único · impuestos según país','One-time payment · taxes by country')}</span></div>
   <div class="pd-buy">${buyBtn(p)}<a class="btn btn-line" href="#inc">${L('Qué incluye','What’s inside')}</a></div>

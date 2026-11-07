@@ -26,6 +26,6 @@ test('ficha: las demás herramientas con acceso siguen con "12 meses de actualiz
   const otras = list.filter(p => p.acceso && !p.sello);
   for (const p of otras.length ? otras : [{ id: 'x', acceso: '/x' }]) assert.equal(TRUST(p)[2][0], '12 meses de actualizaciones');
   assert.equal(TRUST({ id: 'archivo' })[0][0], 'Descarga inmediata');
-  assert.ok(list.filter(p => p.sello).every(p => ['ob-018', 'ob-019'].includes(p.id)), 'solo Mimitos y Mi Mes tienen sello propio');
+  assert.ok(list.filter(p => p.sello).every(p => ['ob-018', 'ob-019', 'ob-021'].includes(p.id)), 'solo Mimitos, Mi Mes y La Casa tienen sello propio');
   assert.equal(TRUST(list.find(p => p.id === 'ob-018'))[2][0], '12 meses de funciones inteligentes');
 });
