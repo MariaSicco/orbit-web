@@ -447,13 +447,15 @@ window.ORBIT_PRODUCTS = [
     id: 'ob-021', cover: 'venc', code: 'OB—021', n: '21', name: 'Vencimientos de la Casa',
     landing: '/vencimientos-casa',
     acceso: '/herramientas/vencimientos',
+    /* sello propio en la ficha: la lectura automática con IA vence a los 12 meses */
+    sello: ['12 meses de lectura automática', '12 months of automatic reading'],
     family: 'systems', status: 'available', price: 34, ars: 50990, accent: 'blue', checkout: '', photo: 'studio',
     tagline: {es: 'Todo lo que vence en tu casa, en un lugar: cuánto te falta pagar este mes y aviso antes de cada vencimiento.', en: 'Everything due at home, in one place: what’s left to pay this month and a reminder before each due date.'},
     specs: [
       [{es: 'Formato', en: 'Format'}, {es: 'Online, sin instalar', en: 'Online, no install'}],
       [{es: 'Avisos', en: 'Reminders'}, {es: 'Antes de cada vencimiento', en: 'Before each due date'}],
       [{es: 'Casas', en: 'Homes'}, {es: 'Una o varias', en: 'One or several'}],
-      [{es: 'Lectura automática', en: 'Automatic reading'}, {es: 'Fotos o PDF de facturas y resúmenes de tarjeta, con IA (Claude). Los archivos no se guardan', en: 'Photos or PDFs of bills and card statements, with AI (Claude). Files are not stored'}],
+      [{es: 'Lectura automática', en: 'Automatic reading'}, {es: 'Fotos o PDF de facturas y resúmenes de tarjeta, con IA (Claude), por 12 meses. Los archivos no se guardan', en: 'Photos or PDFs of bills and card statements, with AI (Claude), for 12 months. Files are not stored'}],
       [{es: 'Tus datos', en: 'Your data'}, {es: 'Quedan en tu dispositivo. Si compartís una casa, esa casa también se guarda en Orbit', en: 'They stay on your device. If you share a home, that home is also stored by Orbit'}],
       [{es: 'Acceso', en: 'Access'}, {es: 'Con tu cuenta de Orbit', en: 'With your Orbit account'}],
       [{es: 'Alcance', en: 'Scope'}, {es: 'Organizador: no paga las cuentas por vos', en: 'An organizer: it does not pay your bills for you'}],

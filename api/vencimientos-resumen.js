@@ -3,9 +3,10 @@
    el mismo lector de Mi Mes (api/_lib/mi-mes-lector.js). La app convierte la lectura en
    cuentas (la tarjeta y lo que se cobra todos los meses). Sin key: resumen de ejemplo.
    El PDF no se guarda: se procesa en memoria y se descarta. El log no lleva datos del resumen.
-   Controles: compra de ob-021 (o admin), tamaño, que sea PDF, páginas y tope diario. */
+   Controles: compra de ob-021 (o admin), tamaño, que sea PDF, páginas, tope diario y 12 meses desde la compra. */
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
 import { kvGet, kvSet } from './_lib/kv.js';
+import { vigenciaLectura, mensajeVencida } from './_lib/vencimientos-ia.js';
 import { resumenEjemplo } from './_herramientas/mi-mes/ejemplo.js';
 import { hayKey, leerResumenConClaude, ErrorLectura, MODELO, SISTEMA, ESQUEMA, ESFUERZO } from './_lib/mi-mes-lector.js';
 
@@ -40,7 +41,9 @@ export default async function handler(req, res) {
   const acc = await requireHerramienta(req, res, PRODUCTO);
   if (!acc) return;
   if (req.method === 'GET' && req.query?.diag && acc.admin) return responder(res, 200, await diagnostico());
-  if (req.method === 'GET') return responder(res, 200, { ok: true, modo: hayKey() ? 'real' : 'prueba' });
+  const vig = await vigenciaLectura(acc);
+  if (req.method === 'GET') return responder(res, 200, { ok: true, modo: hayKey() ? 'real' : 'prueba', iaHasta: vig.hasta, iaVencida: vig.vencida });
+  if (vig.vencida) return responder(res, 403, { ok: false, motivo: 'ia_vencida', error: mensajeVencida(vig.hasta) });
 
   if (Number(req.headers['content-length'] || 0) > MAX_BYTES) return responder(res, 413, { ok: false, motivo: 'grande', error: GRANDE });
   const buf = await leerCuerpo(req, MAX_BYTES);

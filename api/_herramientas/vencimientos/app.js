@@ -1676,6 +1676,17 @@ function descargarRespaldo() {
 }
 
 /* ── ajustes ── */
+/* Lectura automática: 12 meses desde la compra. La app y los datos siguen después. */
+async function pintarLectura() {
+  try {
+    const j = await (await fetch('/api/leer-factura', { credentials: 'same-origin' })).json();
+    const el = $id('ia-vence');
+    if (!el || !j.iaHasta) return;
+    const f = j.iaHasta.split('-').reverse().join('/');
+    el.textContent = j.iaVencida ? `Tu lectura automática venció el ${f}. La app y tus datos siguen; podés cargar a mano.` : `Lectura automática incluida hasta el ${f}.`;
+    el.hidden = false;
+  } catch {}
+}
 function abrirAjustes() {
   const av = new Set(d.config.avisos || [3, 0]);
   const ult = d.ultimoRespaldo ? `Última copia: ${V.fechaLarga(d.ultimoRespaldo.slice(0, 10))}.` : 'Todavía no descargaste ninguna copia.';
@@ -1707,6 +1718,7 @@ function abrirAjustes() {
   </div>
   <div class="ajustes-sec"><h3>${MAIL ? 'Tu mail y tus tarjetas' : 'Tus tarjetas y tus notas'}</h3>
     <p class="leyenda" style="margin-top:0">${MAIL ? 'Buscá facturas nuevas cuando quieras. El permiso es de solo lectura y se cierra al terminar.' : 'Subí resúmenes nuevos o tus notas cuando quieras.'}</p>
+    <p class="leyenda" id="ia-vence" hidden></p>
     <div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> ${MAIL ? 'Resúmenes y mail, todo junto' : 'Resúmenes y notas, todo junto'}</button>${MAIL ? '<button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Solo el mail</button>' : ''}<button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Solo resúmenes</button><button type="button" class="bt sec ancho" data-acc="nota"><svg><use href="#c-doc"/></svg> Pegar mi nota de servicios</button></div>
   </div>
   <div class="ajustes-sec"><h3>Tu copia</h3>
@@ -1723,6 +1735,7 @@ function abrirAjustes() {
     ${!d.cuentas.length ? `<button type="button" class="bt sec ancho" data-acc="ejemplo">Ver con datos de ejemplo</button>` : `<button type="button" class="bt peligro ancho" data-acc="borrar-todo">${ui.borrarArmado === '*' ? '¿Seguro? Se borra todo. Tocá de nuevo' : 'Borrar todos mis datos'}</button>`}
   </div>
   <p class="legal">Vencimientos de la Casa es un organizador: no paga por vos ni se conecta con bancos ni empresas. Los montos estimados son orientativos; revisá siempre tu factura. Tus datos se guardan solo en este navegador y no se mandan a Orbit ni a nadie. Hecho por <a href="/" target="_blank" rel="noopener">Orbit</a>.</p>`);
+  pintarLectura();
 }
 
 /* ── toast ── */

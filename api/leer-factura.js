@@ -8,10 +8,11 @@
    en memoria y se descarta.
 
    Controles: compra de ob-021 (o admin), tamaño, tipo real del archivo (por
-   sus primeros bytes, no por lo que dice el navegador), páginas del PDF y un
-   tope de lecturas por persona por día. El log no lleva datos de la factura. */
+   sus primeros bytes, no por lo que dice el navegador), páginas del PDF, un
+   tope de lecturas por persona por día y 12 meses desde la compra. El log no lleva datos de la factura. */
 import { requireHerramienta } from './_lib/herramienta-acceso.js';
 import { kvGet, kvSet } from './_lib/kv.js';
+import { vigenciaLectura, mensajeVencida } from './_lib/vencimientos-ia.js';
 import { lecturaEjemplo } from './_herramientas/vencimientos/factura.js';
 import { hayKey, leerFacturaConClaude, ErrorLectura, MODELO } from './_lib/vencimientos-lector.js';
 
@@ -52,7 +53,9 @@ export default async function handler(req, res) {
   if (req.method !== 'POST' && req.method !== 'GET') { res.setHeader('Allow', 'GET, POST'); return responder(res, 405, { ok: false, error: 'Usá POST con la foto o el PDF.' }); }
   const acc = await requireHerramienta(req, res, PRODUCTO);
   if (!acc) return;
-  if (req.method === 'GET') return responder(res, 200, { ok: true, modo: hayKey() ? 'real' : 'prueba' });
+  const vig = await vigenciaLectura(acc);
+  if (req.method === 'GET') return responder(res, 200, { ok: true, modo: hayKey() ? 'real' : 'prueba', iaHasta: vig.hasta, iaVencida: vig.vencida });
+  if (vig.vencida) return responder(res, 403, { ok: false, motivo: 'ia_vencida', error: mensajeVencida(vig.hasta) });
 
   if (Number(req.headers['content-length'] || 0) > MAX_BYTES) return responder(res, 413, { ok: false, motivo: 'grande', error: GRANDE });
   const buf = await leerCuerpo(req, MAX_BYTES);
