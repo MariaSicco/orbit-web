@@ -85,7 +85,10 @@ const POCAS = 100;
 function chipCuenta() {
   if (ia.estado !== 'activa') return '';
   const saldo = ia.ilimitado ? 'Admin · sin límite' : `${ia.saldo.toLocaleString('es-AR')} lecturas`;
-  return `<button class="ia-chip ${!ia.ilimitado && ia.saldo <= POCAS ? '' : 'on'}" data-accion="recarga" title="Sumar lecturas">${saldo}${!ia.ilimitado && ia.saldo <= POCAS ? ' · Sumar' : ''}</button>
+  const chip = ia.recarga
+    ? `<button class="ia-chip ${!ia.ilimitado && ia.saldo <= POCAS ? '' : 'on'}" data-accion="recarga" title="Sumar lecturas">${saldo}${!ia.ilimitado && ia.saldo <= POCAS ? ' · Sumar' : ''}</button>`
+    : `<span class="ia-chip ${!ia.ilimitado && ia.saldo <= POCAS ? '' : 'on'}" style="display:inline-flex;align-items:center;pointer-events:none">${saldo}</span>`;
+  return `${chip}
     <a class="volver" href="/biblioteca">Mi cuenta</a>`;
 }
 

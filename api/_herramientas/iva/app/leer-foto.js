@@ -84,7 +84,7 @@ async function leerImagen(grande, { cuitCliente, avisar = () => {}, imagenUrl, n
   avisar('Buscando el QR…');
   const qrTexto = await buscarQr(grande, { profundo: true }).catch(() => null);
   let motivo = modoCuenta
-    ? ia.estado === 'activa' ? 'te quedaste sin lecturas con IA (podés sumar más desde arriba)' : 'para leer con IA tenés que entrar con tu cuenta de Orbit'
+    ? ia.estado === 'activa' ? `te quedaste sin lecturas con IA${ia.recarga ? ' (podés sumar más desde arriba)' : ''}` : 'para leer con IA tenés que entrar con tu cuenta de Orbit'
     : ia.estado === 'activa' ? `llegaste al límite de ${ia.limite} lecturas con IA de hoy` : 'la lectura con IA no está disponible en este navegador (abrí el link de acceso que te pasaron)';
   if (iaDisponible()) {
     avisar('Leyendo con IA…');
