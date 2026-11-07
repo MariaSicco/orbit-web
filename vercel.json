@@ -74,6 +74,10 @@
       "destination": "/api/producto?id=:id"
     },
     {
+      "source": "/casa/:token",
+      "destination": "/api/vencimientos-casa?unirse=:token"
+    },
+    {
       "source": "/propuesta/:id",
       "destination": "/propuesta"
     },
@@ -126,6 +130,10 @@
     {
       "path": "/api/cron/mefui",
       "schedule": "*/10 * * * *"
+    },
+    {
+      "path": "/api/cron/vencimientos",
+      "schedule": "0 12 * * *"
     }
   ],
   "headers": [
@@ -300,6 +308,12 @@
     },
     "api/mascotas.js": {
       "maxDuration": 30
+    },
+    "api/leer-factura.js": {
+      "maxDuration": 60
+    },
+    "api/vencimientos-resumen.js": {
+      "maxDuration": 60
     }
   }
 }
