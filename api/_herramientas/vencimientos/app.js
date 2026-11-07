@@ -1627,7 +1627,7 @@ async function cargarTodo({ files = [], proveedor = null, nota = '' } = {}) {
   if (res) {
     const tarjetas = [...new Set(res.lecturas.map(l => [l.tarjeta?.red, l.tarjeta?.banco].filter(Boolean).join(' ') || 'tu tarjeta'))];
     if (res.prueba) partes.push('Modo prueba: los resúmenes son de ejemplo.');
-    if (res.lecturas.length) partes.push(res.lecturas.length > 1 ? `Leímos ${res.lecturas.length} resúmenes (${tarjetas.join(', ')}).` : `Leímos el resumen de ${tarjetas[0]}.`);
+    if (res.lecturas.length) partes.push(res.lecturas.length > 1 ? `Leímos ${res.lecturas.length} resúmenes (${tarjetas.join(', ')}).` : `Leímos el resumen de ${tarjetas[0].replace(/\.$/, '')}.`);
     if (res.malos.length) partes.push(`No pudimos leer: ${res.malos.join(' · ')}.`);
     if (res.dudosos) partes.push('Algunos montos no cerraron: revisalos.');
   }
@@ -1638,7 +1638,7 @@ async function cargarTodo({ files = [], proveedor = null, nota = '' } = {}) {
     if (res?.detalle) $id('hoja-cuerpo').insertAdjacentHTML('beforeend', `<details class="mas"><summary>Detalle técnico (solo administración)</summary><pre class="diag">${esc(JSON.stringify(res.detalle, null, 2))}</pre></details>`);
     return;
   }
-  const faltaUno = !files.length ? ' Sumá tus resúmenes de tarjeta para traer suscripciones y débitos.' : !proveedor ? ' Conectá tu mail para traer luz, gas, internet y celular.' : '';
+  const faltaUno = !files.length ? ' Sumá tus resúmenes de tarjeta para traer suscripciones y débitos.' : !proveedor && MAIL ? ' Conectá tu mail para traer luz, gas, internet y celular.' : '';
   mostrarEncontrados(partes.join(' ') + (encontrados.length ? faltaUno : ''), `${partes.join(' ')} No encontramos cuentas que se repitan.${faltaUno}`);
 }
 const leerResumen = files => cargarTodo({ files });
@@ -1705,12 +1705,12 @@ function abrirAjustes() {
     <p class="leyenda">Los mismos días valen para las notificaciones. Después de cambiarlos, volvé a sumar el calendario. En iPhone los avisos llegan solos; en Google Calendar, revisá las notificaciones del evento.</p>
     <div class="acciones" style="margin-top:12px"><button type="button" class="bt prim ancho" data-acc="ics"><svg><use href="#i-campana"/></svg> Sumar todo al calendario</button></div>
   </div>
-  <div class="ajustes-sec"><h3>Tu mail y tus tarjetas</h3>
-    <p class="leyenda" style="margin-top:0">Buscá facturas nuevas cuando quieras. El permiso es de solo lectura y se cierra al terminar.</p>
-    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> ${MAIL ? 'Resúmenes y mail, todo junto' : 'Resúmenes y notas, todo junto'}</button><button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Solo el mail</button><button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Solo resúmenes</button><button type="button" class="bt sec ancho" data-acc="nota"><svg><use href="#c-doc"/></svg> Pegar mi nota de servicios</button></div>
+  <div class="ajustes-sec"><h3>${MAIL ? 'Tu mail y tus tarjetas' : 'Tus tarjetas y tus notas'}</h3>
+    <p class="leyenda" style="margin-top:0">${MAIL ? 'Buscá facturas nuevas cuando quieras. El permiso es de solo lectura y se cierra al terminar.' : 'Subí resúmenes nuevos o tus notas cuando quieras.'}</p>
+    <div class="acciones"><button type="button" class="bt prim ancho" data-acc="cargar-todo"><svg><use href="#i-buscar"/></svg> ${MAIL ? 'Resúmenes y mail, todo junto' : 'Resúmenes y notas, todo junto'}</button>${MAIL ? '<button type="button" class="bt sec ancho" data-acc="correo"><svg><use href="#i-sobre"/></svg> Solo el mail</button>' : ''}<button type="button" class="bt sec ancho" data-acc="resumen"><svg><use href="#i-tarjeta"/></svg> Solo resúmenes</button><button type="button" class="bt sec ancho" data-acc="nota"><svg><use href="#c-doc"/></svg> Pegar mi nota de servicios</button></div>
   </div>
   <div class="ajustes-sec"><h3>Tu copia</h3>
-    <p class="leyenda" style="margin-top:0">Tus datos viven solo en este dispositivo. ${ult}</p>
+    <p class="leyenda" style="margin-top:0">${casa ? 'Esta casa está compartida: también se guarda en Orbit para las personas que invitaste.' : 'Tus datos viven solo en este dispositivo.'} ${ult}</p>
     <div class="acciones dos">
       <button type="button" class="bt sec" data-acc="respaldo"><svg><use href="#i-bajar"/></svg> Descargar</button>
       <button type="button" class="bt sec" data-acc="importar"><svg><use href="#i-subir"/></svg> Restaurar</button>
@@ -2059,7 +2059,7 @@ const marcarVisto = k => { try { localStorage.setItem(k, '1'); } catch {} };
 
 const SLIDES = [
   { t: 'Todo lo que <span class="it">vence,</span> en un lugar', p: 'Luz, gas, expensas, la tarjeta, Netflix, la VTV. Ves qué viene y cuánto vas a pagar en los próximos 30 días.', ilus: () => ILUS_CASA },
-  { t: 'Cargalo sin <span class="it">tipear</span>', p: 'Subí el resumen de tu tarjeta y conectá tu mail: encontramos lo que pagás todos los meses, con fecha y monto.', ilus: () => `<div class="slide-ics">${['tarjeta', 'sobre', 'camara'].map((x, i) => `<span style="--i:${i}"><svg><use href="#${x === 'tarjeta' ? 'c-' : 'i-'}${x}"/></svg></span>`).join('')}</div>` },
+  { t: 'Cargalo sin <span class="it">tipear</span>', p: MAIL ? 'Subí el resumen de tu tarjeta y conectá tu mail: encontramos lo que pagás todos los meses, con fecha y monto.' : 'Subí el resumen de tu tarjeta o sacale una foto a la factura: encontramos lo que pagás todos los meses, con fecha y monto.', ilus: () => `<div class="slide-ics">${(MAIL ? ['tarjeta', 'sobre', 'camara'] : ['tarjeta', 'camara']).map((x, i) => `<span style="--i:${i}"><svg><use href="#${x === 'tarjeta' ? 'c-' : 'i-'}${x}"/></svg></span>`).join('')}</div>` },
   { t: 'Te avisa <span class="it">antes</span>', p: 'Sumá todo al calendario de tu celular: te avisa unos días antes y el mismo día. Si algo se debita solo, te recuerda revisar.', ilus: () => `<div class="slide-ics slide-aviso"><span><svg><use href="#i-campana"/></svg></span><b>Edenor vence en 3 días</b></div>` },
   { t: 'Pagaste, <span class="it">tocás</span> y listo', p: 'Marcá cada cuenta como pagada en un toque. La app aprende el monto y te muestra cuánto subió cada servicio.', ilus: () => ILUS_LISTO },
 ];
@@ -2089,8 +2089,8 @@ const PASOS = [
   ['.mes', 'Esto es lo que tenés que pagar', 'El total de los próximos 30 días. Abajo, cuánto llevás pagado este mes.'],
   ['.spot', 'Lo próximo que vence', 'Cuando lo pagues, tocá "Ya lo pagué". Si es vencido, se pone en rojo.'],
   ['.tiles', 'Tus gastos, por categoría', 'Cada cuadradito suma lo de los próximos 30 días. Tocalo y ves el detalle: qué vence, cuándo y cuánto.'],
-  ['.completa', 'Completá tu casa', 'Seguí estos pasos para tener todo: resumen, mail, expensas y avisos.'],
-  ['#b-agregar', 'Sumá una cuenta', 'Con una foto de la factura, el resumen de la tarjeta, tu mail o a mano.'],
+  ['.completa', 'Completá tu casa', MAIL ? 'Seguí estos pasos para tener todo: resumen, mail, expensas y avisos.' : 'Seguí estos pasos para tener todo: resumen, expensas y avisos.'],
+  ['#b-agregar', 'Sumá una cuenta', MAIL ? 'Con una foto de la factura, el resumen de la tarjeta, tu mail o a mano.' : 'Con una foto de la factura, el resumen de la tarjeta o a mano.'],
   ['#b-cal-ics', 'Que te avise el celular', 'Activá las notificaciones o sumá todo a tu calendario, con aviso antes.'],
   ['.tabs [data-tab=numeros]', 'Mirá los números', 'Cuánto se va por año, por categoría y cuánto subió cada servicio.'],
 ];
