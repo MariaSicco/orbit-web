@@ -3,7 +3,8 @@ import { createHmac, timingSafeEqual, randomBytes, scryptSync } from 'node:crypt
 const SECRET = process.env.SESSION_SECRET || '';
 const COOKIE = 'orbit_session';
 const HINT = 'orbit_user'; /* pista legible por el sitio: solo dice que hay sesión y con qué nombre */
-const MAX_AGE = 60 * 60 * 24 * 7; /* tope del token firmado; la cookie muere antes, al cerrar el navegador */
+const MAX_AGE = 60 * 60 * 24 * 180; /* 180 días: la sesión sobrevive a cerrar el navegador o la app del celu */
+const RENEW_AFTER = 60 * 60 * 24; /* se renueva sola, como mucho una vez por día, mientras se use */
 
 const b64 = s => Buffer.from(s).toString('base64url');
 const unb64 = s => Buffer.from(s, 'base64url').toString();
@@ -29,14 +30,24 @@ export function readSession(req) {
     return data.exp > Date.now() ? data : null;
   } catch { return null; }
 }
-/* Sin Max-Age: son cookies de sesión. Se mantienen mientras navegás y
-   se borran solas cuando cerrás el navegador. */
+/* Con Max-Age: la sesión queda guardada aunque cierres el navegador o la app
+   de la pantalla de inicio (en el iPhone, las cookies de sesión se pierden al cerrarla). */
+const sessionCookies = (email, hint) => [
+  `${COOKIE}=${makeSession(email)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${MAX_AGE}`,
+  `${HINT}=${hint || '1'}; Path=/; Secure; SameSite=Lax; Max-Age=${MAX_AGE}`,
+];
 export function setSessionCookie(res, email, name = '') {
   const first = String(name || '').trim().split(/\s+/)[0].slice(0, 24);
-  res.setHeader('Set-Cookie', [
-    `${COOKIE}=${makeSession(email)}; Path=/; HttpOnly; Secure; SameSite=Lax`,
-    `${HINT}=${encodeURIComponent(first) || '1'}; Path=/; Secure; SameSite=Lax`,
-  ]);
+  res.setHeader('Set-Cookie', sessionCookies(email, encodeURIComponent(first)));
+}
+/* Mientras se usa, la sesión se estira otros 180 días (una vez por día como mucho):
+   quien entra seguido no vuelve a ver el login. Respeta las cookies que ya puso la respuesta. */
+export function renewSessionCookie(req, res, session) {
+  if (!session?.email || !hasSecret()) return;
+  if (session.exp - Date.now() > (MAX_AGE - RENEW_AFTER) * 1000) return;
+  const hint = (req.headers.cookie || '').split(';').map(c => c.trim()).find(c => c.startsWith(HINT + '='))?.slice(HINT.length + 1);
+  const prev = res.getHeader('Set-Cookie');
+  res.setHeader('Set-Cookie', [...(prev ? [].concat(prev) : []), ...sessionCookies(session.email, hint)]);
 }
 export function clearSessionCookie(res) {
   res.setHeader('Set-Cookie', [
