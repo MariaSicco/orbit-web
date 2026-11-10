@@ -1240,7 +1240,7 @@ function render() {
 }
 function view() {
   if (mode === 'loading') return skeleton();
-  if (mode === 'guest') { after(gateArt); return renderGate(); }
+  if (mode === 'guest') return skeleton();
   if (mode === 'nopurchase') return renderNoPurchase();
   if (mode === 'error') return renderError();
   if (route.name === 'alta') return renderOnboard();
@@ -1326,52 +1326,6 @@ function renderError() {
   return `<section class="state" role="alert">${bubble('wifi', 'perdida')}<h1 class="h-xl">No pudimos conectar</h1>
     <p class="lead">Revisá tu conexión. Tus datos están guardados en tu cuenta: no se perdió nada.</p>
     <button class="btn big" data-act="retry">Reintentar</button></section>`;
-}
-
-/* bienvenida sin sesión: sobria, con una sola acción principal */
-function renderGate() {
-  return `<section class="gate">
-    <div class="gate-copy">
-      <span class="eyebrow">Mimitos by Orbit</span>
-      <h1>La libreta sanitaria de tu mascota, <em>siempre con vos</em>.</h1>
-      <p class="lead">Vacunas, desparasitaciones, consultas y peso en una libreta digital que se arma con lo que cargás y queda lista para imprimir. Te avisamos antes de cada fecha.</p>
-      <div class="feat" aria-label="Qué incluye">
-        <div>${bubble('book', 'salud')}<span><b>Libreta digital</b><small>Como la del veterinario, con sus stickers. Se imprime o se guarda en PDF.</small></span></div>
-        <div>${bubble('bell', 'plata')}<span><b>Avisos antes de cada dosis</b><small>En el celu o por mail, o en tu calendario.</small></span></div>
-        <div>${bubble('qr', 'viaje')}<span><b>QR y modo perdida</b><small>Quien la encuentre escanea el QR y ve cómo contactarte.</small></span></div>
-        <div>${bubble('grid', 'cuida')}<span><b>Agenda y gastos</b><small>Todas las fechas y lo que gastás, de todas tus mascotas.</small></span></div>
-      </div>
-      <div class="hooks">
-        <span class="eyebrow">Lo que te ahorra trabajo</span>
-        <div class="hook">${bubble('camera', 'viaje')}<span><b>Le sacás foto a la libreta y se cargan las vacunas</b><small>Hasta 4 páginas. Leemos vacunas, antiparasitarios y controles con su fecha, próxima dosis si está escrita, marca y veterinario. Vos revisás antes de guardar.</small></span></div>
-        <div class="hook">${bubble('hand', 'cuida')}<span><b>Modo cuidador</b><small>Le mandás un link a quien la cuida con comida, paseos y remedios. Ahí marca si comió, paseó y le dio la pastilla, y vos lo ves en Mimitos.</small></span></div>
-        <div class="hook">${bubble('flask', 'salud')}<span><b>Estudios guardados en su historia</b><small>Análisis, radiografías y ecografías en foto o PDF, con lo que dijo el veterinario.</small></span></div>
-      </div>
-      <div class="price-row">
-        <span class="eyebrow">Precio de lanzamiento · hasta el ${PRICE.until}</span>
-        <span class="price"><b class="now">${ars(PRICE.ars)}</b><s class="was"><span class="sr">Precio de lista: </span>${ars(PRICE.listArs)}</s></span>
-        <small>O USD ${PRICE.usd} con PayPal <s><span class="sr">en lugar de </span>USD ${PRICE.listUsd}</s>. Una sola versión, para todas tus mascotas.</small>
-        <ul class="terms">
-          <li>${I('check')}<span><b>Pago único.</b> Mimitos es tuya para siempre.</span></li>
-          <li>${I('check')}<span><b>Incluye 12 meses de funciones inteligentes.</b> Preguntale a Mimitos, lectura automática de la libreta y los estudios e importación desde el mail. Uso personal razonable.</span></li>
-          <li>${I('check')}<span><b>No es una suscripción.</b> Pasados los 12 meses no perdés nada: solo se pausan esas funciones hasta que las renueves.</span></li>
-        </ul>
-      </div>
-      <div class="cta">
-        <a class="btn big wide" href="${BUY_URL}">Conseguir Mimitos</a>
-        <a class="btn ghost wide" href="/acceso?next=mascotas">Ya la compré · Ingresar</a>
-      </div>
-      <p class="note">Necesitás una cuenta de Orbit con el mail de la compra. Tus datos quedan en tu cuenta, no en el celu. En iPhone, para recibir los avisos en el celu, agregás Mimitos a la pantalla de inicio.</p>
-    </div>
-    <div class="art" id="gateArt" aria-hidden="true"></div>
-  </section>`;
-}
-/* ilustración de la bienvenida: se inserta el SVG en línea para que use Geist; si no carga, queda el espacio vacío */
-let gateSvg = '';
-async function gateArt() {
-  const box = $('#gateArt'); if (!box) return;
-  try { if (!gateSvg) { const r = await fetch('/assets/img/mimitos/bienvenida.svg?v=1'); if (r.ok) gateSvg = (await r.text()).replace(/<title>[^<]*<\/title>/, ''); } } catch {}
-  if (gateSvg && $('#gateArt')) $('#gateArt').innerHTML = CLOUDS + gateSvg;
 }
 
 /* con sesión pero sin la compra de Mimitos */
@@ -3792,7 +3746,8 @@ async function boot() {
     if (route.name === 'preguntar') askLoadLeft();
     fetch('/api/me').then(r => r.ok ? r.json() : null).then(x => { if (x?.name) { me.name = x.name; if (route.name === 'cuenta' || !doc.pets.length) render(); else if (mode === 'full') drawTop(BARE.includes(route.name)); } }).catch(() => {});
   } else if (st === 402 && d?.error === 'no_purchase') { mode = 'nopurchase'; me.email = d.email || ''; }
-  else if (st === 401 || st === 403) mode = 'guest';
+  /* sin sesión: directo a ingresar (la venta está en la tienda; acá entra quien ya la compró) */
+  else if (st === 401 || st === 403) { mode = 'guest'; location.replace('/acceso?next=mascotas'); }
   else mode = 'error';
   render();
 }

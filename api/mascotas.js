@@ -48,7 +48,7 @@
    GET  ?img=id               → una foto */
 import { randomBytes, createHash } from 'node:crypto';
 import { kvGet, kvSet, kvDel, kvIncrBy, kvSetNX } from './_lib/kv.js';
-import { readSession, readBody } from './_lib/auth.js';
+import { readSession, readBody, renewSessionCookie } from './_lib/auth.js';
 import { accesoHerramienta } from './_lib/herramienta-acceso.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath, putPrivate } from './_lib/blob.js';
 import { handleMail, disconnectAnyway, mailAllowed } from './_lib/petmail.js';
@@ -651,6 +651,7 @@ export default async function handler(req, res) {
     catch { return res.status(500).json({ error: 'no_pudimos_abrir' }); }
   }
   if (req.method === 'GET') {
+    renewSessionCookie(req, res, readSession(req));
     const doc = await withSitterLogs((await kvGet(docKey(s.email))) || { pets: [], rev: 0 }, s.email);
     /* estado de los links del cuidador: activo y hasta cuándo, o vencido (la app lo muestra) */
     const sitterLinks = {};
