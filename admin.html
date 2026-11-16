@@ -172,6 +172,10 @@ td .mono{opacity:.55}
           <p class="pmsg" id="regMsg"></p>
         </form>
       </div>
+      <div class="blk">
+        <div class="bh"><h2>Regalos dados</h2><span class="hint" id="rgCount">Cada link deja a la persona adentro. No lo publiques.</span></div>
+        <div class="scroll"><table id="tReg"></table></div>
+      </div>
     </section>
 
     <section class="pane hidden" data-pane="ped">
@@ -304,6 +308,36 @@ $('#tGente').innerHTML = '<thead><tr><th>Email</th><th>Nombre</th><th>Alta</th><
     + '<td>' + (u.news ? '<span class="tag tag-ok">Sí</span>' : '<span class="tag tag-soft">No</span>') + '</td>'
     + '<td><span class="mono">' + (u.conClave ? 'Contraseña' : 'Enlace por email') + '</span></td>'
     + '</tr>').join('') : '<tr><td colspan="5" style="opacity:.5">Todavía no hay cuentas creadas.</td></tr>') + '</tbody>';
+
+/* ── regalos dados: el link vigente de cada uno, para copiarlo o generar otro ── */
+function pintarRegalos(lista) {
+  $('#tReg').innerHTML = '<thead><tr><th>Para</th><th>Herramienta</th><th>Creado</th><th>Link</th><th></th></tr></thead><tbody>'
+    + (lista.length ? lista.map((r, i) => '<tr>'
+      + '<td><b>' + (esc(r.name) || '—') + '</b><br><span class="mono">' + esc(r.email) + '</span></td>'
+      + '<td>' + esc(r.producto) + '</td>'
+      + '<td><span class="mono">' + fecha(r.creada) + '</span></td>'
+      + '<td><input readonly value="' + esc(r.link) + '" style="width:100%;min-width:220px;font:inherit" onfocus="this.select()"></td>'
+      + '<td style="white-space:nowrap"><button type="button" class="alt-url" data-rg-copiar="' + i + '">Copiar</button> · '
+      + '<button type="button" class="alt-url" data-rg-nuevo="' + i + '" title="Crea un link nuevo y el anterior deja de andar">Link nuevo</button></td>'
+      + '</tr>').join('') : '<tr><td colspan="5" style="opacity:.5">Todavía no regalaste nada.</td></tr>') + '</tbody>';
+  $('#tReg').onclick = async e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const r = lista[Number(b.dataset.rgCopiar ?? b.dataset.rgNuevo)]; if (!r) return;
+    if (b.dataset.rgCopiar != null) {
+      try { await navigator.clipboard.writeText(r.link); b.textContent = 'Copiado'; } catch (err) { b.closest('tr').querySelector('input').select(); }
+      return;
+    }
+    if (!confirm('¿Crear un link nuevo para ' + r.email + '? El que tiene ahora deja de andar.')) return;
+    b.disabled = true; b.textContent = 'Creando…';
+    try {
+      const d = await (await fetch('/api/admin/regalar', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: r.productId, email: r.email, name: r.name }) })).json();
+      if (!d.ok) throw new Error(d.error);
+      r.link = d.link; r.creada = new Date().toISOString(); pintarRegalos(lista);
+    } catch (err) { b.disabled = false; b.textContent = 'No se pudo'; }
+  };
+}
+pintarRegalos(data.regalos || []);
 
 /* ── pedidos ── */
 $('#pCount').textContent = pe.total + ' en total · ' + pe.pagados + ' pagados';

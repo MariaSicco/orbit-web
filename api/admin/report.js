@@ -2,7 +2,8 @@
    Se arma recorriendo la base, sin índices que mantener. */
 import { requireAdmin } from '../_lib/admin.js';
 import { kvKeys, kvMGet } from '../_lib/kv.js';
-import { getCatalog } from '../_lib/catalog.js';
+import { getCatalog, siteUrl } from '../_lib/catalog.js';
+import { listarRegalos } from '../_lib/regalos.js';
 
 const days = (iso, n) => iso && Date.now() - new Date(iso).getTime() < n * 86400000;
 
@@ -12,7 +13,7 @@ export default async function handler(req, res) {
   const [userKeys, orderKeys, CAT] = await Promise.all([
     kvKeys('orbit:user:*'), kvKeys('orbit:order:*'), getCatalog(),
   ]);
-  const [users, orders] = await Promise.all([kvMGet(userKeys), kvMGet(orderKeys)]);
+  const [users, orders, regalos] = await Promise.all([kvMGet(userKeys), kvMGet(orderKeys), listarRegalos().catch(() => [])]);
 
   const gente = users.filter(Boolean);
   const pedidos = orders.filter(Boolean).sort((a, b) => new Date(b.paidAt || b.date) - new Date(a.paidAt || a.date));
@@ -76,6 +77,10 @@ export default async function handler(req, res) {
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
       .slice(0, 25)
       .map(u => ({ email: u.email, name: u.name || '', createdAt: u.createdAt || null, news: Boolean(u.news), conClave: Boolean(u.hash) })),
+    regalos: regalos.map(r => ({
+      email: r.email, name: r.name || '', producto: CAT[r.productId]?.name || r.productId, productId: r.productId,
+      creada: r.creada || null, link: `${siteUrl(req)}/regalo/${r.llave}`,
+    })),
     ultimosPedidos: pedidos.slice(0, 25).map(o => ({
       id: o.id, email: o.email, via: o.via, status: o.status, ref: o.ref || null,
       fecha: o.paidAt || o.date, ars: o.ars || 0, usd: o.usd || 0, mail: o.mail || null, capi: o.capi || null, recordatorio: o.recordatorio || null,
