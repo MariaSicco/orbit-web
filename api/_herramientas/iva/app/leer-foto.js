@@ -91,7 +91,7 @@ async function leerImagen(grande, { cuitCliente, avisar = () => {}, imagenUrl, n
     const r = await conLimite(leerConIa(grande, { qrTexto, cuitCliente }), 70000, 'la IA tardó demasiado')
       .catch(e => ({ ok: false, error: e.message }));
     if (r.comprobante) {
-      return { ...r.comprobante, id: nuevoId('foto'), origen, nombreArchivo, imagenUrl, alertas: r.alertas ?? [], revisionRapida: r.revisionRapida, conQr: !!qrTexto, conIa: true };
+      return { ...r.comprobante, id: nuevoId('foto'), origen, nombreArchivo, imagenUrl, alertas: r.alertas ?? [], revisionRapida: r.revisionRapida, conQr: !!(qrTexto && leerQrArca(qrTexto)), conIa: true };
     }
     if (r.ok === false && r.alertas?.length && !r.error) return comprobanteManual({ cuitCliente, imagenUrl, nombreArchivo, alertas: r.alertas });
     motivo = r.error ?? 'la IA no respondió';
@@ -106,7 +106,7 @@ function terminarLectura({ texto, lectura: yaLeida, qrTexto, cuitCliente, imagen
   const lectura = yaLeida ?? leerTextoOcr(texto, { cuitCliente });
   const r = combinarLectura(lectura, qrTexto ? leerQrArca(qrTexto) : null, { cuitCliente, id: nuevoId('foto') });
   if (!r.ok) return comprobanteManual({ cuitCliente, imagenUrl, nombreArchivo, alertas: r.alertas });
-  return { ...r.comprobante, origen, nombreArchivo, imagenUrl, alertas: r.alertas, revisionRapida: r.revisionRapida, conQr: !!qrTexto };
+  return { ...r.comprobante, origen, nombreArchivo, imagenUrl, alertas: r.alertas, revisionRapida: r.revisionRapida, conQr: qrTexto ? !!leerQrArca(qrTexto) : false };
 }
 
 // PDF: primero el texto que trae adentro (exacto). Si no trae (PDF escaneado), se lee la imagen de la página con OCR.
@@ -128,7 +128,7 @@ export async function leerPdf(archivo, { cuitCliente, avisar }) {
     const r = await conLimite(leerPdfConIa(archivo, { qrTexto, cuitCliente }), 70000, 'la IA tardó demasiado').catch(e => ({ ok: false, error: e.message }));
     if (r.comprobante) {
       doc.destroy();
-      return { ...r.comprobante, id: nuevoId('foto'), origen: 'pdf', nombreArchivo: archivo.name, imagenUrl, alertas: r.alertas ?? [], revisionRapida: r.revisionRapida, conQr: !!qrTexto, conIa: true };
+      return { ...r.comprobante, id: nuevoId('foto'), origen: 'pdf', nombreArchivo: archivo.name, imagenUrl, alertas: r.alertas ?? [], revisionRapida: r.revisionRapida, conQr: !!(qrTexto && leerQrArca(qrTexto)), conIa: true };
     }
   }
   const avisoPaginas = paginas > 1 ? [{ tipo: 'pdf_varias_paginas', mensaje: `El PDF tiene ${paginas} páginas y se leyó la primera${iaDisponible() ? '' : ' (con la IA activa se leen todas)'}. Revisá los totales.` }] : [];
