@@ -171,10 +171,19 @@ export function combinarLectura(ia, qr, { cuitCliente, id, archivoId } = {}) {
     }
   }
 
-  // Una A o M sin IVA discriminado es casi siempre una lectura incompleta
+  // Una A o M sin IVA discriminado es casi siempre una lectura incompleta.
+  // Si solo está el QR (que trae el total pero no el desglose), se propone todo al 21 %: total ÷ 1,21.
+  // Es una estimación: queda marcada para revisar, porque puede haber 10,5 %, percepciones o conceptos no gravados.
   if (tipo && (tipo.clase === 'A' || tipo.clase === 'M') && alicuotas.length === 0) {
     confianza.alicuotas = 'baja';
-    alertas.push({ tipo: 'sin_desglose', mensaje: 'Factura A o M sin IVA discriminado: falta leer el neto y el IVA.' });
+    const soloTotal = qr && total > 0 && !noGravado && !exento && !tributos.length;
+    if (soloTotal) {
+      const neto = Math.round(total / 1.21);
+      alicuotas = [{ tasa: 21, neto, iva: total - neto }];
+      alertas.push({ tipo: 'iva_estimado', campo: 'alicuotas', mensaje: `Neto e IVA estimados al 21 % desde el total del QR (${formatear(total)}). Confirmalos con la factura: si tiene 10,5 % o percepciones, corregilos.` });
+    } else {
+      alertas.push({ tipo: 'sin_desglose', mensaje: 'Factura A o M sin IVA discriminado: falta leer el neto y el IVA.' });
+    }
   }
 
   // La suma de conceptos tiene que dar el total
