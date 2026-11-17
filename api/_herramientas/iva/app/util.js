@@ -11,11 +11,17 @@ export const fechaCorta = f => (f && /^\d{4}-\d{2}-\d{2}$/.test(f) ? `${f.slice(
 export const fechaLarga = f => (f && /^\d{4}-\d{2}-\d{2}$/.test(f) ? `${f.slice(8)}/${f.slice(5, 7)}/${f.slice(0, 4)}` : f ?? '');
 export const nombreMes = mes => { const t = new Date(`${mes}-15`).toLocaleDateString('es-AR', { month: 'long', year: 'numeric' }); return t.charAt(0).toUpperCase() + t.slice(1); };
 
-export function avisar(texto) {
-  const t = document.createElement('div');
-  t.className = 'toast'; t.role = 'status'; t.textContent = texto;
+// Aviso abajo de la pantalla. Con { fijo: true } no se va solo: queda hasta que se toca (para avisos que no se pueden perder).
+export function avisar(texto, { fijo = false } = {}) {
+  const t = document.createElement(fijo ? 'button' : 'div');
+  t.className = fijo ? 'toast fijo' : 'toast'; t.role = fijo ? 'alert' : 'status'; t.textContent = texto;
+  if (fijo) {
+    t.type = 'button';
+    t.append(Object.assign(document.createElement('span'), { className: 'toast-cerrar', textContent: 'Entendido ✕' }));
+    t.addEventListener('click', () => t.remove());
+  }
   $('#avisos').replaceChildren(t);
-  setTimeout(() => t.remove(), 4200);
+  if (!fijo) setTimeout(() => t.remove(), 4200);
 }
 
 // Diálogo simple. Los formularios que tiene adentro los maneja el submit global de cada módulo.

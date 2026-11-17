@@ -198,6 +198,8 @@ select.angosto { max-width: 150px; }
 
 /* ——— Avisos del sistema ——— */
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--k); color: var(--b); padding: 12px 20px; font-size: 14px; z-index: 40; max-width: calc(100vw - 32px); border-radius: 999px; }
+.toast.fijo { border: 0; font: inherit; font-size: 14px; text-align: left; border-radius: 16px; padding: 14px 18px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; width: min(520px, calc(100vw - 32px)); }
+.toast-cerrar { font-family: var(--mono, 'IBM Plex Mono', monospace); font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: .75; }
 .progreso { height: 3px; background: var(--line); margin-top: 8px; }
 .progreso i { display: block; height: 100%; width: 100%; background: var(--blue); transform-origin: left; transition: transform .2s var(--ease); }
 
