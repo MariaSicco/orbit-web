@@ -24,7 +24,8 @@ export function leerTextoOcr(texto, { cuitCliente } = {}) {
   const cuitEmisor = cuits.find(c => c !== cliente) ?? null;
 
   // "Nº 0008 - 00030280": punto de venta de 4-5 dígitos y número de 8, juntos (tickets y muchas facturas)
-  const nroJunto = todo.match(/\bN[uú]mero\s*:?\s*(\d{4,5})\s*[-\s]\s*(\d{8})\b/i) ?? todo.match(/\bN\S{0,3}\s*(\d{4,5})\s*-\s*(\d{8})\b/);
+  const nroJunto = todo.match(/\bN[uú]mero\s*:?\s*(\d{4,5})\s*[-\s]\s*(\d{8})\b/i) ?? todo.match(/\bN\S{0,3}\s*(\d{4,5})\s*-\s*(\d{8})\b/)
+    ?? todo.match(/\bFACTURA\s*:?\s*(\d{4,5})\s*-\s*(\d{8})\b/i);
   const ptoVta = entero(todo.match(/Punto\s+de\s+Venta\s*:?\s*(\d{1,5})/i)) ?? (nroJunto ? parseInt(nroJunto[1], 10) : null);
   const numero = entero(todo.match(/Comp\.?\s*N(?:ro|°|º)\.?\s*:?\s*(\d{1,8})/i)) ?? (nroJunto ? parseInt(nroJunto[2], 10) : null);
   const f = todo.match(/Fecha\s+de\s+Emisi[oó]n\s*:?\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i) ?? todo.match(/\bFecha\s*:?\s*(\d{1,2})\/(\d{1,2})\/(\d{4})/i);
@@ -63,7 +64,7 @@ export function leerTextoOcr(texto, { cuitCliente } = {}) {
     tipo_codigo: cod ? cod[1].padStart(3, '0') : null,
     letra,
     punto_venta: ptoVta, numero, fecha,
-    cuit_emisor: cuitEmisor, razon_social_emisor: lineas[0] ?? null, cuit_receptor: cliente || null,
+    cuit_emisor: cuitEmisor, razon_social_emisor: razonSocial(lineas), cuit_receptor: cliente || null,
     moneda: usd ? 'DOL' : 'PES',
     cotizacion: ctz ? pesos(ctz[1]) : 1,
     alicuotas,
@@ -110,10 +111,22 @@ function alicuotasConNetoEnLinea(lineas) {
   return res;
 }
 
+// Nombre del emisor: la etiqueta "Razón social:" si está; si no, la primera línea que no sea un rótulo suelto
+// ("Factura", "Original", la letra), sin la letra ni "Original" pegadas al final.
+const ROTULO = /^(factura|original|duplicado|triplicado|[ABCM])$/i;
+function razonSocial(lineas) {
+  const rs = lineas.map(l => l.match(/Raz[oó]n\s+social\s*:?\s*(.+)$/i)).find(Boolean);
+  if (rs) return rs[1].trim();
+  const l = lineas.find(x => !ROTULO.test(x.trim()));
+  return l ? l.replace(/\s+(original|duplicado|triplicado)\s*$/i, '').replace(/\s+[ABCM]$/, '').trim() || null : null;
+}
+
 // "Importe Neto Gravado: $ X" y líneas "IVA 21%: $ Y". Si hay una sola alícuota, el neto es X.
+// También "Gravado $ X" (sin "Neto", nunca "No Gravado") y el IVA escrito "I.V.A. 21,00%" o "Importe IVA 21%".
 // Si hay varias, el neto de cada una se deduce de su IVA y tiene que sumar X (si no, no se arma y queda para revisar).
 function alicuotasConNetoUnico(lineas) {
   let iNeto = lineas.findIndex(l => /Importe\s+Neto\s+Gravado/i.test(l));
+  if (iNeto === -1) iNeto = lineas.findIndex(l => /\bGravado\b/i.test(l) && !/\bNo\s+Gravado\b/i.test(l) && !/Gravado\s+\d/i.test(l));
   let desde = iNeto === -1 ? 0 : lineas[iNeto].search(/Gravado/i) + 7;
   if (iNeto === -1) {
     // Sin "Neto Gravado": el "Subtotal" hace de neto (se descarta solo si el IVA no cierra)
@@ -124,7 +137,7 @@ function alicuotasConNetoUnico(lineas) {
   const netoTotal = importeCerca(lineas, iNeto, desde);
   const ivas = [];
   for (const [i, l] of lineas.entries()) {
-    const m = l.match(/^.{0,4}?\bIVA\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*%/i);
+    const m = l.match(/^(?:Importe\s+)?.{0,4}?\b(?:IVA|I\.V\.A\.?)\s*(\d{1,2}(?:[.,]\d{1,2})?)\s*%/i);
     if (!m) continue;
     const iva = importeCerca(lineas, i, m.index + m[0].length);
     if (iva) ivas.push({ tasa: Number(m[1].replace(',', '.')), iva });

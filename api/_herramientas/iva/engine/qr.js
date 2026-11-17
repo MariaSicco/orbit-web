@@ -1,5 +1,7 @@
 // QR de las facturas electrónicas (RG 4291 / RG 4892/2020).
-// Formato oficial: https://www.arca.gob.ar/fe/qr/?p={JSON en Base64}. Los comprobantes viejos usan afip.gob.ar.
+// Formato oficial: https://www.arca.gob.ar/fe/qr/?p={JSON en Base64}. Los comprobantes viejos usan afip.gob.ar, y algunos
+// sistemas de facturación usan otra dirección de AFIP (p. ej. serviciosweb.afip.gob.ar/genericos/comprobantes/cae.aspx?p=…):
+// se acepta cualquier dirección de afip.gob.ar o arca.gob.ar que traiga el parámetro p con los datos.
 // El QR identifica el comprobante y su total, pero NO trae neto, IVA por alícuota ni percepciones.
 // Este módulo solo interpreta el texto: decodificar la imagen lo hace la interfaz (BarcodeDetector o jsQR).
 
@@ -16,9 +18,10 @@ function base64aTexto(b64) {
 
 export function leerQrArca(texto) {
   const t = String(texto ?? '').trim();
-  if (!/^https?:\/\/(www\.)?(arca|afip)\.gob\.ar\/fe\/qr\/?\?/i.test(t)) return null;
-  let p;
-  try { p = new URL(t).searchParams.get('p'); } catch { return null; }
+  let url;
+  try { url = new URL(t); } catch { return null; }
+  if (!/^https?:$/.test(url.protocol) || !/(^|\.)(arca|afip)\.gob\.ar$/i.test(url.hostname)) return null;
+  const p = url.searchParams.get('p');
   if (!p) return null;
   let d;
   try { d = JSON.parse(base64aTexto(p)); } catch { return null; }
