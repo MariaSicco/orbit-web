@@ -13,6 +13,7 @@ import { aCentavos } from '../engine/dinero.js';
 import { $, esc, plata, aInput, cuitLindo, fechaCorta, nombreMes, avisar, abrirDialogo, cerrarDialogo } from './util.js';
 import * as conciliador from './conciliador.js';
 import { combinarLectura, TASAS_VALIDAS } from '../engine/lectura.js';
+import { buscarRepetida, claveComprobante } from '../engine/repetidas.js';
 import { columnas, totalesCompras, necesitaRevision, fueraDelResumen, porAlicuota } from '../engine/libro-compras.js';
 
 const numeroCorto = c => `${infoTipo(c.tipo)?.clase ?? '?'} ${String(c.ptoVta ?? '').padStart(4, '0')}-${Number.isFinite(c.numero) ? String(c.numero).padStart(8, '0') : 's/n'}`;
@@ -345,6 +346,12 @@ function guardarFactura(form) {
     total: aCentavos(d.get('total')) / 100 || null, cae: f.cae,
   };
   const r = combinarLectura(lectura, null, { cuitCliente: cliente.cuit, id: f.id });
+  const rep = buscarRepetida(S.periodos, p.clienteId, r.comprobante, { excluirId: f.id });
+  if (rep) {
+    Object.assign(f, r.comprobante, { lado: d.get('lado'), imagenUrl: f.imagenUrl, nombreArchivo: f.nombreArchivo, origen: f.origen, conIa: f.conIa, conQr: f.conQr, alertas: r.alertas, estadoRevision: 'pendiente' });
+    guardar(); render();
+    return avisar(`Esta factura ya está cargada (${dondeEsta(rep)}). Borrá una de las dos para no sumarla dos veces.`, { fijo: true });
+  }
   const problemas = (r.alertas || []).filter(a => ['cuit_invalido', 'sin_cuit', 'no_cierra', 'alicuota_no_cierra', 'tipo_desconocido', 'sin_desglose'].includes(a.tipo));
   Object.assign(f, r.comprobante, { lado: d.get('lado'), imagenUrl: f.imagenUrl, nombreArchivo: f.nombreArchivo, origen: f.origen, conIa: f.conIa, conQr: f.conQr, alertas: r.alertas });
   if (problemas.length && ui.confirmar !== f.id) {
@@ -374,8 +381,19 @@ async function recibirArchivos(clave, archivos) {
   guardar(); render();
 }
 
+// ¿Esta factura ya está cargada en algún mes de la empresa? Con la cuenta, los meses se traen recién cuando se abren:
+// antes de comparar se traen todos los de la empresa (una factura puede estar en un mes que no es el de su fecha).
+async function repetidaDe(clienteId, f, opciones) {
+  if (!claveComprobante(f)) return null;
+  await Promise.all(S.periodos.filter(x => x.clienteId === clienteId && x._pendiente).map(x => cargarPeriodo(x).catch(() => {})));
+  return buscarRepetida(S.periodos, clienteId, f, opciones);
+}
+
+const dondeEsta = rep => `${rep.factura.denominacion ? `${rep.factura.denominacion}, ` : ''}N.º ${String(rep.factura.ptoVta).padStart(4, '0')}-${String(rep.factura.numero).padStart(8, '0')}, en ${nombreMes(rep.periodo.mes).toLowerCase()}`;
+
 async function recibirFotos(p, cliente, archivos) {
   const lista = [...archivos];
+  const nuevas = [], repetidas = [];
   ui.leyendo = { hechas: 0, total: lista.length }; render();
   for (const archivo of lista) {
     let c;
@@ -386,13 +404,21 @@ async function recibirFotos(p, cliente, archivos) {
     } catch (e) {
       c = comprobanteManual({ cuitCliente: cliente.cuit, imagenUrl: esPdf ? null : URL.createObjectURL(archivo), nombreArchivo: archivo.name, alertas: [{ tipo: 'error', mensaje: e.message }] });
     }
-    p.fotos.push(c);
+    const rep = await repetidaDe(p.clienteId, c);
+    if (rep) repetidas.push(rep);
+    else { p.fotos.push(c); nuevas.push(c); }
     ui.leyendo.hechas++; render();
   }
   p.archivos.fotos = `${p.fotos.length} comprobantes cargados`;
   ui.leyendo = null;
-  const revisar = p.fotos.slice(-lista.length).filter(necesitaRevision).length;
-  avisar(`Listo: ${lista.length} ${lista.length === 1 ? 'factura leída' : 'facturas leídas'}${revisar ? `, ${revisar} para revisar (marcadas en naranja)` : ''}.`);
+  const revisar = nuevas.filter(necesitaRevision).length;
+  if (repetidas.length) {
+    const cuales = repetidas.length === 1 ? `Esta factura ya estaba cargada (${dondeEsta(repetidas[0])}): no se sumó de nuevo.`
+      : `${repetidas.length} facturas ya estaban cargadas y no se sumaron de nuevo: ${repetidas.map(dondeEsta).join(' · ')}.`;
+    avisar(nuevas.length ? `${nuevas.length} ${nuevas.length === 1 ? 'factura leída' : 'facturas leídas'}${revisar ? ` (${revisar} para revisar)` : ''}. ${cuales}` : cuales, { fijo: true });
+  } else {
+    avisar(`Listo: ${lista.length} ${lista.length === 1 ? 'factura leída' : 'facturas leídas'}${revisar ? `, ${revisar} para revisar (marcadas en naranja)` : ''}.`);
+  }
   S.actual.paso = 'liquidador';
 }
 
@@ -459,6 +485,18 @@ document.addEventListener('click', async e => {
       const cuitCliente = clienteDe(p).cuit;
       if (b.dataset.accion === 'qr-nuevo') {
         const r = combinarLectura(lecturaVacia(), qr, { cuitCliente, id: nuevoId('foto') });
+        const rep = await repetidaDe(p.clienteId, r.comprobante);
+        if (rep) {
+          const x = rep.factura, sumoQr = !x.conQr;
+          if (sumoQr) { // la que estaba no tenía el QR: se le suman sus datos, sin crear otra
+            const r2 = combinarLectura(lecturaDe(x), qr, { cuitCliente, id: x.id });
+            Object.assign(x, r2.comprobante, { origen: x.origen, nombreArchivo: x.nombreArchivo, imagenUrl: x.imagenUrl, conIa: x.conIa, alertas: r2.alertas, revisionRapida: r2.revisionRapida, conQr: true, estadoRevision: 'pendiente' });
+            marcarCambio(rep.periodo.id);
+          }
+          if (rep.periodo === p) ui.editando = x.id;
+          guardar(); render();
+          return avisar(`Esta factura ya estaba cargada (${dondeEsta(rep)}): no se sumó de nuevo.${sumoQr ? ' Le agregamos los datos del QR.' : ''}`, { fijo: true });
+        }
         p.fotos.push({ ...r.comprobante, origen: 'qr', nombreArchivo: 'QR escaneado', imagenUrl: null, alertas: r.alertas, revisionRapida: false, conQr: true });
         ui.editando = r.comprobante.id;
         const estimado = r.alertas.some(a => a.tipo === 'iva_estimado');
