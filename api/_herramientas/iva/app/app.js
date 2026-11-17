@@ -461,7 +461,8 @@ document.addEventListener('click', async e => {
         const r = combinarLectura(lecturaVacia(), qr, { cuitCliente, id: nuevoId('foto') });
         p.fotos.push({ ...r.comprobante, origen: 'qr', nombreArchivo: 'QR escaneado', imagenUrl: null, alertas: r.alertas, revisionRapida: false, conQr: true });
         ui.editando = r.comprobante.id;
-        guardar(); avisar('QR leído. Completá el neto y el IVA mirando la factura.');
+        const estimado = r.alertas.some(a => a.tipo === 'iva_estimado');
+        guardar(); avisar(estimado ? 'QR leído: completamos neto e IVA al 21 %. Revisalos con la factura.' : 'QR leído. Completá el neto y el IVA mirando la factura.');
         return ir('liquidador');
       }
       const f = p.fotos.find(x => x.id === ui.editando);
@@ -472,6 +473,7 @@ document.addEventListener('click', async e => {
       const r = combinarLectura(lecturaDe(f), qr, { cuitCliente, id: f.id });
       Object.assign(f, r.comprobante, { origen: f.origen, nombreArchivo: f.nombreArchivo, imagenUrl: f.imagenUrl, alertas: r.alertas, revisionRapida: r.revisionRapida, conQr: true, estadoRevision: 'pendiente' });
       guardar(); render();
+      if (r.alertas.some(a => a.tipo === 'iva_estimado')) return avisar('QR leído: completamos neto e IVA al 21 %. Revisalos con la factura.');
       return avisar(r.alertas.some(a => a.tipo === 'qr_distinto') ? 'QR leído: corregí lo que no coincidía con la foto.' : 'QR leído: los datos coinciden.');
     }
     case 'manual': {
