@@ -13,6 +13,7 @@ import '../../assets/js/mascotas-rules.js';
 const R = globalThis.MZRULES;
 import { sendEmail, emailReady } from './email.js';
 import { MIMITOS_HOST } from './marca.js';
+import { apnsSend, cleanApnsList } from './apns.js';
 
 /* Mimitos es paga: sin compra del producto no hay app, avisos ni links públicos.
    Administración entra sin compra. Una compra marcada como reintegrada no cuenta. */
@@ -55,11 +56,14 @@ export async function getVapid() {
   return (vapid = v);
 }
 
-export const shapeNotify = (email, n = {}) => ({ email: String(email).toLowerCase(), subs: Array.isArray(n.subs) ? n.subs : [], mail: Boolean(n.mail), off: n.off || {}, tz: cleanTz(n.tz), sent: n.sent || {} });
+/* apns: iPhones con la app nativa de Mimitos (api/_lib/apns.js), aparte de los subs de web push */
+export const shapeNotify = (email, n = {}) => ({ email: String(email).toLowerCase(), subs: Array.isArray(n.subs) ? n.subs : [], apns: cleanApnsList(n.apns), mail: Boolean(n.mail), off: n.off || {}, tz: cleanTz(n.tz), sent: n.sent || {} });
 export async function getNotify(email) { return shapeNotify(email, (await kvGet(notifyKey(email))) || {}); }
 /* guarda y mantiene el índice de cuentas con avisos activos */
 export const INDEX_KEY = 'orbit:petidx';
-export const notifyActive = n => Boolean(n && ((Array.isArray(n.subs) && n.subs.length) || n.mail));
+export const notifyActive = n => Boolean(n && ((Array.isArray(n.subs) && n.subs.length) || (Array.isArray(n.apns) && n.apns.length) || n.mail));
+/* cuántos aparatos reciben avisos al celu (web push + app nativa) */
+export const pushDevices = n => (n?.subs?.length || 0) + (n?.apns?.length || 0);
 export async function saveNotify(n) {
   await kvSet(notifyKey(n.email), n);
   await (notifyActive(n) ? kvSAdd(INDEX_KEY, n.email) : kvSRem(INDEX_KEY, n.email));
@@ -82,9 +86,10 @@ export function cleanSub(s) {
 
 /* manda a todos los celus de la cuenta; borra los que ya no existen */
 export async function pushTo(n, payload) {
-  if (!n.subs.length) return 0;
-  try { await getVapid(); } catch { return 0; }
-  let sent = 0; const alive = [];
+  const nat = await pushNative(n, payload);
+  if (!n.subs.length) return nat;
+  try { await getVapid(); } catch { return nat; }
+  let sent = nat; const alive = [];
   for (const s of n.subs) {
     /* una suscripción vieja guardada antes del filtro de hosts se descarta sin mandarle nada */
     if (!pushEndpointOk(s?.endpoint)) continue;
@@ -93,6 +98,20 @@ export async function pushTo(n, payload) {
     catch (e) { if (![401, 403, 404, 410].includes(e.statusCode)) alive.push(s); }
   }
   if (alive.length !== n.subs.length) { n.subs = alive; await saveNotify(n); }
+  return sent;
+}
+/* la app nativa de iPhone: guarda el ambiente que funcionó y borra los iPhones que ya no existen */
+async function pushNative(n, payload) {
+  const list = cleanApnsList(n.apns);
+  if (!list.length) return 0;
+  let sent = 0, changed = false; const alive = [];
+  for (const d of list) {
+    const r = await apnsSend(d, payload).catch(() => ({ ok: false }));
+    if (r.gone) { changed = true; continue; }
+    if (r.ok) { sent++; if (r.env && d.env !== r.env) { d.env = r.env; changed = true; } }
+    alive.push(d);
+  }
+  if (changed) { n.apns = alive; await saveNotify(n); }
   return sent;
 }
 

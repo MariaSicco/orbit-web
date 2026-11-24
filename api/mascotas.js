@@ -63,7 +63,8 @@ import { cleanAppointments, cleanPlace, syncApptIndex } from './_lib/petturnos.j
 import { cleanAway, syncAwayIndex, handleCam, mefuiAllowed } from './_lib/petaway.js';
 import * as HOY from './_lib/pethoy.js';
 import { handleReset, resetAllowed } from './_lib/petreset.js';
-import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos, todayAR } from './_lib/petpush.js';
+import { cleanApnsToken } from './_lib/apns.js';
+import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, pushDevices, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos, todayAR } from './_lib/petpush.js';
 
 export { PRODUCT_ID };
 const docKey = email => `orbit:pets:${email.toLowerCase()}`;
@@ -591,12 +592,15 @@ export default async function handler(req, res) {
     const n = await getNotify(s.email);
     /* si el push no está configurado en producción, el resto (mail y tipos) sigue andando */
     const key = async () => { try { return (await getVapid()).publicKey; } catch { return null; } };
-    const view = async () => { const publicKey = await key(); return { publicKey, pushReady: Boolean(publicKey), devices: n.subs.length, mail: n.mail, off: n.off, tz: n.tz, endpoints: n.subs.map(x => x.endpoint.slice(-24)) }; };
+    const view = async () => { const publicKey = await key(); return { publicKey, pushReady: Boolean(publicKey), devices: pushDevices(n), mail: n.mail, off: n.off, tz: n.tz, endpoints: n.subs.map(x => x.endpoint.slice(-24)), apns: n.apns.map(x => x.token.slice(-16)) }; };
     if (req.method === 'GET') return res.status(200).json(await view());
     if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
     const b = await readBody(req);
     if (b.sub) { const sub = cleanSub(b.sub); if (!sub) return res.status(400).json({ error: 'invalid' }); n.subs = [...n.subs.filter(x => x.endpoint !== sub.endpoint), sub].slice(-6); }
     if (typeof b.remove === 'string') n.subs = n.subs.filter(x => x.endpoint !== b.remove);
+    /* app nativa de iPhone: el token que le dio Apple (api/_lib/apns.js) */
+    if (b.apns) { const t = cleanApnsToken(b.apns); if (!t) return res.status(400).json({ error: 'invalid' }); n.apns = [...n.apns.filter(x => x.token !== t), { token: t, env: null, at: new Date().toISOString() }].slice(-6); }
+    if (typeof b.removeApns === 'string') n.apns = n.apns.filter(x => x.token !== b.removeApns.toLowerCase());
     if (typeof b.mail === 'boolean') n.mail = b.mail;
     if (b.off && typeof b.off === 'object') n.off = Object.fromEntries(KINDS.map(k => [k, Boolean(b.off[k])]));
     /* zona horaria del navegador, para mandar los avisos a las 9 de la persona */
