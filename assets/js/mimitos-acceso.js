@@ -8,6 +8,7 @@
   const q = new URLSearchParams(location.search);
   if (q.get('error')) decir('Ese enlace ya venció. Pedí uno nuevo.', true);
   if (q.get('salir') === '1') decir('Cerraste la sesión.');
+  if (q.get('borrada') === '1') decir('Listo: borramos tu cuenta y todo lo que habías cargado.');
   $('#cambiar').onclick = () => {
     conClave = !conClave;
     $('#conClave').hidden = !conClave;
