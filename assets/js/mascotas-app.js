@@ -1335,7 +1335,7 @@ function renderNoPurchase() {
     <span class="eyebrow">Mimitos by Orbit</span>
     <h1 class="h-xl">Mimitos es parte de tu compra en Orbit</h1>
     <p class="lead">No encontramos la compra de Mimitos en ${me.email ? `<b>${esc(me.email)}</b>` : 'esta cuenta'}. Con ella tenés la libreta digital, los avisos y el QR para todas tus mascotas.</p>
-    <div class="cta"><a class="btn big wide" href="${BUY_URL}">Conseguir Mimitos</a>
+    <div class="cta">${window.MIMITOS_APP ? '' : `<a class="btn big wide" href="${BUY_URL}">Conseguir Mimitos</a>`}
     <button class="btn ghost wide" data-act="relogin">Ya la compré con otro mail</button></div>
     <p class="note">Si la compraste hace un momento y no aparece, recargá la página en unos minutos. ¿Sigue sin aparecer? Escribinos a <a href="mailto:${SUPPORT_MAIL}?subject=${encodeURIComponent('Mimitos: no veo mi compra')}">${SUPPORT_MAIL}</a> y lo resolvemos.</p>
   </section>`;
@@ -2233,7 +2233,8 @@ function aiCard() {
     ${renewBtn('btn sm ghost')}`;
   return `<div class="ai-card"><span class="what"><b>Incluye 12 meses de funciones inteligentes</b><small>Incluidas hasta el ${longDate(aiq.expiresAt)}. ${what} Uso personal razonable.</small></span><span class="badge ok">Activas</span></div>${aiLeftNote()}`;
 }
-const renewBtn = (cls = 'btn big wide') => renewAsked
+/* en la app de iPhone/Android no se invita a renovar afuera (reglas de Apple y Google) */
+const renewBtn = (cls = 'btn big wide') => window.MIMITOS_APP ? '' : renewAsked
   ? `<p class="ai-renew-ok" role="status">${I('check')} Listo: te avisamos cuando puedas renovar.</p>`
   : `<button class="${cls}" data-act="renewAsk">Avisame cuando pueda renovar</button>`;
 /* pantalla de una función inteligente vencida: la app y los datos siguen; solo se pausa esto */
