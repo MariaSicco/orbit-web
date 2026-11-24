@@ -2272,7 +2272,9 @@ async function logout() {
 /* ---------- CENTRO DE AVISOS: push en el celu, mail y calendario (api/_lib/petpush.js) ---------- */
 const isIOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 const standalone = () => window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
-const pushSupported = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+/* en la app nativa de iPhone (Capacitor) los avisos van por Apple, no por web push: ver nativePush más abajo */
+const NPUSH = () => window.MIMITOS_APP ? window.Capacitor?.Plugins?.PushNotifications : null;
+const pushSupported = () => Boolean(NPUSH()) || ('serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window);
 const b64 = s => { const p = '='.repeat((4 - s.length % 4) % 4), raw = atob((s + p).replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
 let pushHere = null;
 async function currentSub() {
@@ -2280,6 +2282,12 @@ async function currentSub() {
   try { const reg = await navigator.serviceWorker.getRegistration('/mascotas'); return reg ? await reg.pushManager.getSubscription() : null; } catch { return null; }
 }
 async function refreshHere() {
+  if (NPUSH()) {
+    const t = localStorage.getItem('mz-apns') || '';
+    const on = Boolean(t && notify?.apns?.some(e => t.endsWith(e)));
+    if (on !== pushHere) { pushHere = on; if (route.name === 'avisos') render(); }
+    return;
+  }
   const here = await currentSub();
   const on = Boolean(here && notify?.endpoints?.some(e => here.endpoint.endsWith(e)));
   if (on !== pushHere) { pushHere = on; if (route.name === 'avisos') render(); }
@@ -2292,7 +2300,36 @@ async function notifyPost(body) {
 }
 const aMsg = (t, err) => { const el = $('#aMsg'); if (el) { el.textContent = t; el.hidden = !t; el.classList.toggle('err', Boolean(err)); } else if (t) toast(t); };
 const withTimeout = (pr, ms, what) => Promise.race([pr, new Promise((_, no) => setTimeout(() => no(new Error(what)), ms))]);
+/* app nativa: pide el permiso de iOS, registra el iPhone con Apple y nos manda el token */
+function nativeToken(P) {
+  return new Promise((ok, no) => {
+    const hs = [];
+    const off = () => hs.forEach(h => h.then(x => x.remove()).catch(() => {}));
+    hs.push(P.addListener('registration', t => { off(); ok(t.value); }));
+    hs.push(P.addListener('registrationError', () => { off(); no(new Error('sub')); }));
+    P.register().catch(() => { off(); no(new Error('sub')); });
+    setTimeout(() => { off(); no(new Error('sub')); }, 20000);
+  });
+}
+async function enableNativePush(P) {
+  const btn = $('#aOn'); if (btn) { btn.disabled = true; btn.textContent = 'Activando…'; }
+  aMsg('');
+  try {
+    let perm = await P.checkPermissions();
+    if (perm.receive !== 'granted') perm = await P.requestPermissions();
+    if (perm.receive !== 'granted') throw new Error('permiso');
+    const token = await nativeToken(P);
+    await notifyPost({ apns: token, test: true });
+    localStorage.setItem('mz-apns', token);
+    pushHere = true; render();
+    aMsg('Listo. Te mandamos uno de prueba: tiene que llegar en unos segundos.');
+  } catch (e) {
+    aMsg(e.message === 'permiso' ? 'No diste permiso para los avisos. Activalos en Ajustes del iPhone → Mimitos → Notificaciones y volvé a tocar.' : 'No se pudo activar. Revisá tu conexión y probá de nuevo.', true);
+    if (btn) { btn.disabled = false; btn.innerHTML = `${I('bell')} Activar en este celu`; }
+  }
+}
 function enablePush() {
+  if (NPUSH()) return enableNativePush(NPUSH());
   if (!pushSupported()) return aMsg(isIOS ? 'En iPhone primero agregá Mimitos a la pantalla de inicio y abrila desde el ícono.' : 'Este navegador no acepta avisos. En Android usá Chrome.', true);
   if (Notification.permission === 'denied') return aMsg('Los avisos están bloqueados para esta página. Habilitalos en los ajustes del navegador (Notificaciones) y volvé a tocar.', true);
   const btn = $('#aOn'); if (btn) { btn.disabled = true; btn.textContent = 'Activando…'; }
@@ -2320,6 +2357,12 @@ function enablePush() {
   })();
 }
 async function disablePush() {
+  if (NPUSH()) {
+    const t = localStorage.getItem('mz-apns');
+    if (t) { try { await notifyPost({ removeApns: t }); } catch {} localStorage.removeItem('mz-apns'); }
+    await NPUSH().unregister().catch(() => {});
+    pushHere = false; render(); toast('Avisos apagados en este celu.'); return;
+  }
   const sub = await currentSub();
   if (sub) { try { await notifyPost({ remove: sub.endpoint }); } catch {} await sub.unsubscribe().catch(() => {}); }
   pushHere = false; render(); toast('Avisos apagados en este celu.');
@@ -2333,7 +2376,7 @@ function renderAvisos() {
   let celu;
   if (pushHere) celu = `<div class="banner ok-b">${bubble('check', 'salud')}<span style="flex:1"><b>Activados en este celu</b><small class="dim">${n.devices > 1 ? `Y en ${n.devices - 1} dispositivo${n.devices > 2 ? 's' : ''} más.` : 'Te llegan aunque no tengas Mimitos abierta.'}</small></span></div>
     <div class="btns"><button class="btn ghost sm" data-act="aTest">Mandarme uno de prueba</button><button class="btn ghost sm danger" data-act="aOff">Apagar en este celu</button></div>`;
-  else if (isIOS && !standalone()) celu = `<div class="ios-steps"><b>En iPhone, primero instalala</b><ol><li>Tocá <b>Compartir</b> abajo en Safari (el cuadrado con la flecha).</li><li>Elegí <b>Agregar a inicio</b>.</li><li>Abrí Mimitos desde el ícono y volvé acá.</li></ol><small class="dim">Necesita iOS 16.4 o más nuevo.</small></div>`;
+  else if (isIOS && !standalone() && !NPUSH()) celu = `<div class="ios-steps"><b>En iPhone, primero instalala</b><ol><li>Tocá <b>Compartir</b> abajo en Safari (el cuadrado con la flecha).</li><li>Elegí <b>Agregar a inicio</b>.</li><li>Abrí Mimitos desde el ícono y volvé acá.</li></ol><small class="dim">Necesita iOS 16.4 o más nuevo.</small></div>`;
   else if (!pushSupported()) celu = `<p class="note">Este navegador no acepta avisos. En Android usá Chrome; en iPhone, Safari con Mimitos agregada a inicio. Mientras tanto, activá el mail.</p>`;
   else celu = `<button class="btn wide" id="aOn" data-act="aOn">${I('bell')} Activar en este celu</button><p class="note">Llegan como los de cualquier app, aunque no tengas Mimitos abierta.</p>`;
   return `<button class="link" data-act="go" data-to="cuenta" style="align-self:flex-start">${I('back')} Cuenta</button>

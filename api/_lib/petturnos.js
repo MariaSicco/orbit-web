@@ -51,7 +51,7 @@ export async function runTurnos({ now = new Date(), deps }) {
     try {
       if (!doc?.appointments?.length) { await kvSRem(APPT_INDEX, email); continue; }
       const n = await deps.getNotify(email);
-      if (!n.subs.length && !n.mail) continue;
+      if (!n.subs.length && !n.apns?.length && !n.mail) continue;
       const clock = T.localNow(n.tz, now);
       const due = T.reminders(doc.appointments, clock);
       if (!due.length) continue;

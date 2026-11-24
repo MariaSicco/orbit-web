@@ -429,7 +429,7 @@ export async function handleCam(req, res, deps = {}) {
       if (nt > 5) return res.status(429).json({ error: 'limite' });
       const n = await getNotify(cam.email);
       const sent = await (deps.push || pushTo)(n, { title: `Aviso de prueba${pet ? ' de ' + pet : ''}`, body: `Si ves esto, los avisos de la Cámara Mimitos (${me.name || 'cámara'}) te llegan bien.`, url: '/mascotas#/mefui', tag: 'cam-prueba' });
-      return res.status(200).json({ ok: true, sent, phones: n.subs.length });
+      return res.status(200).json({ ok: true, sent, phones: n.subs.length + (n.apns?.length || 0) });
     }
     /* evento: tope por cámara (hora y día) */
     const hr = new Date(now).toISOString().slice(0, 13);
