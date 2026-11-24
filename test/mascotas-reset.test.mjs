@@ -182,3 +182,31 @@ test('la app: el botón sale solo si el servidor lo habilita, con BORRAR y botó
   assert.match(src, /fetch\('\/api\/mascotas\?reset=1'/);
   assert.match(src, /ob = null; go\('inicio'\);\s*toast\('Listo, Mimitos quedó vacía/);
 });
+
+
+/* ---------- Borrar la cuenta (handleDeleteAccount): en producción y para cualquier cuenta ---------- */
+test('borrar la cuenta: se va todo, cierra la sesión y queda solo la compra', async () => {
+  const email = 'borrar-cuenta@ejemplo.com';
+  await seed(email);
+  await kvSet(`orbit:user:${email}`, { email, name: 'Majo', password: 'scrypt$x$y' });
+  process.env.VERCEL_ENV = 'production';
+  try {
+    const no = await call('POST', { deleteAccount: '1' }, { confirm: 'otra' }, email);
+    assert.equal(no.code, 400);
+    assert.ok(await kvGet(`orbit:pets:${email}`), 'sin BORRAR no toca nada');
+    const r = await new Promise(ok => {
+      const res = { code: 200, headers: {}, setHeader(k, v) { this.headers[k.toLowerCase()] = v; }, status(c) { this.code = c; return this; }, json(o) { ok({ code: this.code, body: o, headers: this.headers }); } };
+      mascotas({ method: 'POST', query: { deleteAccount: '1' }, body: { confirm: 'borrar' }, headers: { cookie: `orbit_session=${makeSession(email)}`, host: 'preview.orbitando.test' } }, res);
+    });
+    assert.equal(r.code, 200);
+    assert.equal(r.body.deleted, true);
+    assert.match(String([].concat(r.headers['set-cookie'] || []).join(' ')), /Max-Age=0/, 'cierra la sesión');
+  } finally { delete process.env.VERCEL_ENV; }
+  assert.equal(await kvGet(`orbit:pets:${email}`), null, 'el doc se borra');
+  assert.equal(await kvGet(`orbit:user:${email}`), null, 'nombre y contraseña se borran');
+  assert.equal(await kvGet(`orbit:petnotify:${email}`), null, 'los avisos se borran');
+  assert.ok(!(await kvSIsMember(INDEX_KEY, email)), 'sale del índice de avisos');
+  assert.equal(await kvGet('orbit:petshare:tokShare0001'), null, 'el QR deja de andar');
+  assert.equal(await kvGet(`orbit:petgmail:${email}`), null, 'Gmail desconectado');
+  assert.ok((await kvGet(`orbit:purchases:${email}`))?.length, 'la compra queda');
+});

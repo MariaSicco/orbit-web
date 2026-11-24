@@ -48,7 +48,7 @@
    GET  ?img=id               → una foto */
 import { randomBytes, createHash } from 'node:crypto';
 import { kvGet, kvSet, kvDel, kvIncrBy, kvSetNX } from './_lib/kv.js';
-import { readSession, readBody, renewSessionCookie } from './_lib/auth.js';
+import { readSession, readBody, renewSessionCookie, clearSessionCookie } from './_lib/auth.js';
 import { accesoHerramienta } from './_lib/herramienta-acceso.js';
 import { blobReady, signedPut, signedGet, makeRef, isBlobRef, refPath, putPrivate } from './_lib/blob.js';
 import { handleMail, disconnectAnyway, mailAllowed } from './_lib/petmail.js';
@@ -62,7 +62,7 @@ import { handlePlaces } from './_lib/petplaces.js';
 import { cleanAppointments, cleanPlace, syncApptIndex } from './_lib/petturnos.js';
 import { cleanAway, syncAwayIndex, handleCam, mefuiAllowed } from './_lib/petaway.js';
 import * as HOY from './_lib/pethoy.js';
-import { handleReset, resetAllowed } from './_lib/petreset.js';
+import { handleReset, resetAllowed, handleDeleteAccount } from './_lib/petreset.js';
 import { cleanApnsToken } from './_lib/apns.js';
 import { getVapid, getNotify, saveNotify, cleanSub, cleanTz, pushTo, pushDevices, mailNotice, KINDS, PRODUCT_ID, mimitosPurchase, hasMimitos, todayAR } from './_lib/petpush.js';
 
@@ -676,6 +676,8 @@ export default async function handler(req, res) {
 
   /* "Empezar de cero" (herramienta de prueba): solo fuera de producción o para admin; si no, 403 */
   if (q.reset) return handleReset(req, res, { email: s.email, body });
+  /* borrar la cuenta desde la app (Apple y Google lo exigen): ver api/_lib/petreset.js */
+  if (q.deleteAccount) return handleDeleteAccount(req, res, { email: s.email, body, clear: clearSessionCookie });
 
   /* "Avisame cuando pueda renovar": solo guarda el interés; todavía no hay checkout de renovación */
   if (q.renew) {

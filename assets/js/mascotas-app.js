@@ -2184,7 +2184,42 @@ function renderCuenta() {
       ${gmailAccount()}
       ${resetOk ? resetSection() : ''}
       <button class="btn ghost wide" data-act="logout">${I('logout')} Cerrar sesión</button>
+      <button class="link danger" data-act="deleteAsk" style="align-self:center">${I('trash')} Borrar mi cuenta</button>
     </div></div>`;
+}
+/* ---------- Borrar la cuenta (Apple y Google lo exigen dentro de la app; api/_lib/petreset.js) ---------- */
+function deletePanel() {
+  const li = t => `<li>${t}</li>`;
+  panel('¿Borrar tu cuenta?', `<p class="dim">Se borra para siempre y no se puede recuperar. Si querés guardar lo que cargaste, antes tocá «Exportar copia de tus datos».</p>
+    <div class="rs-cols"><div><h3 class="rs-h">Se borra</h3><ul class="rs-list rs-del">${['Tus mascotas, su libreta, historial y gastos', 'Fotos, estudios y videos', 'Turnos, veterinarias guardadas y tu zona', 'Los links del QR y del cuidador (dejan de andar)', 'Las cámaras de Me fui', 'Gmail y Outlook conectados', 'Los avisos en el celu y por mail', 'Tu nombre y tu contraseña'].map(li).join('')}</ul></div>
+    <div><h3 class="rs-h">Queda</h3><ul class="rs-list rs-keep">${['El registro de tu compra, que pide la ley. Si algún día volvés a entrar con este mail, Mimitos sigue siendo tuya, vacía'].map(li).join('')}</ul></div></div>
+    <div class="f"><label for="dlWord">Para confirmar, escribí <b>BORRAR</b></label><input id="dlWord" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12" aria-describedby="dlErr"></div>
+    <p class="err-msg" id="dlErr" role="alert" hidden></p>
+    <button class="btn big wide orange" id="dlYes" disabled>${I('trash')} Borrar mi cuenta</button><button class="btn ghost wide" id="dlNo">Cancelar</button>`);
+  const inp = $('#dlWord'), yes = $('#dlYes'), err = $('#dlErr');
+  const ok = () => inp.value.trim().toUpperCase() === 'BORRAR';
+  inp.oninput = () => { yes.disabled = !ok(); err.hidden = true; };
+  inp.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); if (ok()) yes.click(); } };
+  $('#dlNo').onclick = () => dPanel.close();
+  setTimeout(() => inp.focus(), 50);
+  yes.onclick = async () => {
+    if (!ok()) return;
+    yes.disabled = true; yes.textContent = 'Borrando…';
+    clearTimeout(saveTimer); saveTimer = null; pending = false;
+    while (saving) await new Promise(r => setTimeout(r, 100));
+    dirty = false;
+    let r = null, d = {};
+    try { r = await fetch('/api/mascotas?deleteAccount=1', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ confirm: inp.value.trim() }) }); d = await r.json().catch(() => ({})); } catch {}
+    if (!r || !r.ok || !d.deleted) {
+      err.textContent = !r ? 'No hay conexión. Probá de nuevo.' : r.status === 429 ? 'Probaste muchas veces hoy. Probá mañana o escribinos.' : r.status === 400 ? 'Escribí BORRAR para confirmar.' : `No se pudo borrar. Probá de nuevo o escribinos a ${SUPPORT_MAIL}.`;
+      err.hidden = false; yes.innerHTML = `${I('trash')} Borrar mi cuenta`; yes.disabled = !ok(); return;
+    }
+    /* lo guardado en este aparato: avisos nativos, mail recordado y lo de la app */
+    try { await NPUSH()?.unregister(); } catch {}
+    try { Object.keys(localStorage).filter(k => /^mz/i.test(k)).forEach(k => localStorage.removeItem(k)); } catch {}
+    try { mailOlvidar(); } catch {}
+    location.replace('/acceso?borrada=1');
+  };
 }
 /* ---------- "Empezar de cero" (solo pruebas: fuera de producción o cuenta administradora) ---------- */
 const resetSection = () => `<section class="sec"><h2>Zona de prueba</h2><div class="list">${featHook('cuentaPrueba')}<button class="row link-row" data-act="resetAsk">${bubble('trash', 'perdida')}<span class="what"><b>Borrar todo y empezar de cero</b><small>Para volver a probar Mimitos desde el alta. Tu compra queda.</small></span>${I('chevron')}</button></div></section>`;
@@ -3759,6 +3794,7 @@ document.addEventListener('click', e => {
     case 'suggest': return suggestPanel(cur);
     case 'export': return exportCopy();
     case 'resetAsk': return resetOk ? resetPanel() : null;
+    case 'deleteAsk': return deletePanel();
     case 'logout': return logout();
     case 'aOn': return enablePush();
     case 'aOff': return disablePush();

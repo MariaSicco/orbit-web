@@ -22,7 +22,7 @@ import { purgeAll } from './petfiles.js';
 import { listCameras, revokeCamera, evKey, AWAY_INDEX, PEND_INDEX } from './petaway.js';
 import { APPT_INDEX } from './petturnos.js';
 import { petKey, careKey } from './pethoy.js';
-import { getNotify, saveNotify } from './petpush.js';
+import { getNotify, saveNotify, notifyKey, INDEX_KEY } from './petpush.js';
 import { disconnectAnyway, clearSenders } from './petmail.js';
 import { gmail } from './petgmail.js';
 import { outlook } from './petoutlook.js';
@@ -116,6 +116,37 @@ export async function handleReset(req, res, { email, body = {}, now = Date.now()
     return res.status(200).json({ ok: true, doc, done: out, left: RESET_PER_DAY - used });
   } catch (e) {
     console.error('[mimitos] empezar de cero', e?.message);
+    return res.status(500).json({ error: 'no_pudimos_borrar' });
+  }
+}
+
+/* ---------- Borrar la cuenta (pedido de Apple y Google: tiene que poder hacerse desde la app) ----------
+   POST /api/mascotas?deleteAccount=1 { confirm: 'BORRAR' }, para cualquier cuenta y en producción.
+   Hace todo lo de resetAccount y además borra: el doc de mascotas, los avisos (push del celu, app nativa y
+   mail) y el perfil de la cuenta (nombre y contraseña). Cierra la sesión en este aparato.
+   Se CONSERVA solo el registro de la compra (obligación contable y para que, si vuelve a entrar con el mismo
+   mail, no pierda lo que pagó) y los contadores de uso que frenan abusos (IA, Maps, cupo de Gmail). */
+export const DELETE_PER_DAY = 3;
+export async function deleteAccount(email, { req, destroyFn } = {}) {
+  const e = lc(email);
+  const { out } = await resetAccount(e, { req, destroyFn });
+  await kvDel(docKey(e));
+  await kvDel(notifyKey(e));
+  await kvSRem(INDEX_KEY, e);
+  await kvDel(`orbit:user:${e}`);
+  return out;
+}
+export async function handleDeleteAccount(req, res, { email, body = {}, now = Date.now(), destroyFn, clear = () => {} } = {}) {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' });
+  if (String(body.confirm || '').trim().toUpperCase() !== RESET_WORD) return res.status(400).json({ error: 'confirmar', word: RESET_WORD });
+  const used = await kvIncrBy(`orbit:petdelete:${lc(email)}:${new Date(now).toISOString().slice(0, 10)}`, 1, 26 * 3600);
+  if (used > DELETE_PER_DAY) return res.status(429).json({ error: 'limite_diario', limit: DELETE_PER_DAY });
+  try {
+    const out = await deleteAccount(email, { req, destroyFn });
+    clear(res);
+    return res.status(200).json({ ok: true, deleted: true, done: out });
+  } catch (err) {
+    console.error('[mimitos] borrar cuenta', err?.message);
     return res.status(500).json({ error: 'no_pudimos_borrar' });
   }
 }
