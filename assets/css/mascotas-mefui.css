@@ -60,7 +60,7 @@ dialog.mf-live-open .sheet{gap:12px}
 .mf-cb.hang{background:#C2361F;color:#fff}
 .mf-cb.hang:hover{background:#A82C17}
 .mf-cb svg.i{width:20px;height:20px;flex:none}
-@media(max-width:420px){.mf-cb span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.mf-cb{padding:0;width:56px;min-height:56px}.mf-ctl{gap:18px}}
+@media(max-width:560px){.mf-cb span{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}.mf-cb{padding:0;width:56px;min-height:56px}.mf-ctl{gap:18px}}
 /* pantalla completa: la caja ocupa todo y el video entra entero */
 .mf-live:fullscreen{width:100vw;height:100vh;max-height:none;aspect-ratio:auto;margin:0;border-radius:0}
 .mf-live:-webkit-full-screen{width:100vw;height:100vh;max-height:none;aspect-ratio:auto;margin:0;border-radius:0}
