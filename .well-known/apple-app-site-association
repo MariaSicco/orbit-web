@@ -2,14 +2,35 @@
   "applinks": {
     "details": [
       {
-        "appIDs": ["LL5M8XA2QY.com.bymajostudio.mimitos"],
+        "appIDs": [
+          "LL5M8XA2QY.com.bymajostudio.mimitos"
+        ],
         "components": [
-          { "/": "/api/auth/verify", "comment": "enlace de ingreso del mail" },
-          { "/": "/mascotas", "comment": "avisos y mails que abren Mimitos" },
-          { "/": "/mascotas/*" }
+          {
+            "/": "/api/auth/verify",
+            "comment": "enlace de ingreso del mail"
+          },
+          {
+            "/": "/mimitos-acceso"
+          },
+          {
+            "/": "/acceso",
+            "comment": "ingreso (el link del mail de compra de Impultienda)"
+          },
+          {
+            "/": "/mascotas",
+            "comment": "avisos y mails que abren Mimitos"
+          },
+          {
+            "/": "/mascotas/*"
+          }
         ]
       }
     ]
   },
-  "webcredentials": { "apps": ["LL5M8XA2QY.com.bymajostudio.mimitos"] }
+  "webcredentials": {
+    "apps": [
+      "LL5M8XA2QY.com.bymajostudio.mimitos"
+    ]
+  }
 }
