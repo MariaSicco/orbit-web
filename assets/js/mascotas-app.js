@@ -2339,11 +2339,15 @@ const withTimeout = (pr, ms, what) => Promise.race([pr, new Promise((_, no) => s
 function nativeToken(P) {
   return new Promise((ok, no) => {
     const hs = [];
-    const off = () => hs.forEach(h => h.then(x => x.remove()).catch(() => {}));
-    hs.push(P.addListener('registration', t => { off(); ok(t.value); }));
-    hs.push(P.addListener('registrationError', () => { off(); no(new Error('sub')); }));
-    P.register().catch(() => { off(); no(new Error('sub')); });
-    setTimeout(() => { off(); no(new Error('sub')); }, 20000);
+    /* addListener devuelve el handle directo o una promesa según la versión del puente: soportamos las dos.
+       Si esto fallara, la respuesta de Apple nunca llegaría al botón (quedaba en «Activando…») */
+    let done = false;
+    const off = () => hs.forEach(h => { try { Promise.resolve(h).then(x => x?.remove?.()).catch(() => {}); } catch {} });
+    const fin = (fn, v) => { if (done) return; done = true; off(); fn(v); };
+    hs.push(P.addListener('registration', t => fin(ok, t?.value)));
+    hs.push(P.addListener('registrationError', () => fin(no, new Error('sub'))));
+    Promise.resolve(P.register()).catch(() => fin(no, new Error('sub')));
+    setTimeout(() => fin(no, new Error('sub')), 20000);
   });
 }
 async function enableNativePush(P) {

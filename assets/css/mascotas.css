@@ -1596,3 +1596,10 @@ body[data-first="steps"] .top{background:var(--bg)}
 .bk-lib .toggle small{display:block;margin-top:4px;color:var(--ink2);line-height:1.45}
 .petphoto-msg{display:block;margin-top:8px}.petphoto-msg:empty{display:none}
 #fBody>.note:first-child .btn svg{width:18px;height:18px}
+/* Libreta en el celu: cada hoja con su propio alto. Antes todas se estiraban hasta la más larga (vacunas)
+   y el pasaporte quedaba enorme, con mucho vacío de color arriba y abajo */
+@media(max-width:600px){
+  .pages{align-items:flex-start}
+  .page{min-height:0}
+  .page.cover{justify-content:flex-start;padding-top:24px}
+}

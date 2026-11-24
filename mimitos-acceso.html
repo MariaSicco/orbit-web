@@ -35,6 +35,9 @@ button{cursor:pointer;font:inherit}
 .pie{margin:26px 0 0;font-size:13px;opacity:.75}.pie a{color:inherit}
 [hidden]{display:none!important}
 @media(max-width:760px){.sala{grid-template-columns:1fr;min-height:0}.foto{padding:20px 20px 0}.foto .logo{height:58px;margin-bottom:14px}.foto .arco{height:250px;flex:none;border-radius:160px 160px 0 0}.form{padding:28px 20px 40px}}
+/* iPhone (app y Safari a pantalla completa): el logo no queda debajo de la hora ni de la isla */
+.foto{padding-top:calc(28px + env(safe-area-inset-top,0px))}
+@media(max-width:760px){.foto{padding-top:calc(20px + env(safe-area-inset-top,0px))}}
 </style>
 </head>
 <body>
